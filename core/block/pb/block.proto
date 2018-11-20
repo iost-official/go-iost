@@ -12,13 +12,12 @@ enum BlockType{
 message BlockHead {
     int64 version = 1;
     bytes parentHash = 2;
-    bytes txsHash = 3;
-    bytes merkleHash = 4;
+    bytes txMerkleHash = 3;
+    bytes txReceiptMerkleHash = 4;
     bytes info = 5;
     int64 number = 6;
     string witness = 7;
     int64 time = 8;
-    int64 gasUsage = 9;
 }
 
 message Block {

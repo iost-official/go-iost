@@ -3,9 +3,13 @@ package vm
 import (
 	"errors"
 	"fmt"
+	"strings"
+
+	"github.com/bitly/go-simplejson"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/iost-official/go-iost/vm/v8vm"
@@ -62,7 +66,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 
 	if err != nil {
-		return nil, host.ABINotFoundCost, fmt.Errorf("prepare contract: %v", err)
+		return nil, host.Costs["GetCost"], fmt.Errorf("prepare contract: %v", err)
 	}
 
 	h.PushCtx()
@@ -192,4 +196,61 @@ func Factory(lang string) VM {
 		return vm
 	}
 	return nil
+}
+
+func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
+	if strings.HasSuffix(data, ",]") {
+		data = data[:len(data)-2] + "]"
+	}
+	js, err := simplejson.NewJson([]byte(data))
+	if err != nil {
+		return nil, fmt.Errorf("error in data: %v, %v", err, data)
+	}
+
+	rtn := make([]interface{}, 0)
+	arr, err := js.Array()
+	if err != nil {
+		ilog.Error(js.EncodePretty())
+		return nil, err
+	}
+
+	if len(arr) != len(abi.Args) {
+		return nil, fmt.Errorf("args length unmatched to abi %v. need %v, got %v", abi.Name, len(abi.Args), len(arr))
+	}
+	for i := range arr {
+		switch abi.Args[i] {
+		case "string":
+			s, err := js.GetIndex(i).String()
+			if err != nil {
+				return nil, err
+			}
+			rtn = append(rtn, s)
+		case "bool":
+			s, err := js.GetIndex(i).Bool()
+			if err != nil {
+				return nil, err
+			}
+			rtn = append(rtn, s)
+		case "number":
+			s, err := js.GetIndex(i).Int64()
+			if err != nil {
+				return nil, err
+			}
+			rtn = append(rtn, s)
+		case "json":
+			s, err := js.GetIndex(i).Encode()
+			if err != nil {
+				return nil, err
+			}
+			// make sure s is a valid json
+			_, err = simplejson.NewJson(s)
+			if err != nil {
+				ilog.Error(string(s))
+				return nil, err
+			}
+			rtn = append(rtn, s)
+		}
+	}
+
+	return rtn, nil
 }

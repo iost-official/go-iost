@@ -97,7 +97,6 @@ func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMulti
 	if err != nil {
 		return nil, nil, err
 	}
-	blk.Head.GasUsage += r.GasUsage
 	blk.Txs = append(blk.Txs, baseTx)
 	blk.Receipts = append(blk.Receipts, r)
 	var pi = NewProvider(iter)
@@ -188,7 +187,6 @@ L:
 			continue L
 		}
 		isolator.Commit()
-		blk.Head.GasUsage += r.GasUsage
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
 	}
@@ -224,7 +222,6 @@ func batchGen(blk *block.Block, db database.IMultiValue, provider Provider, batc
 				provider.Return(t)
 				continue
 			}
-			blk.Head.GasUsage += batch.Receipts[i].GasUsage
 			blk.Txs = append(blk.Txs, t)
 			blk.Receipts = append(blk.Receipts, batch.Receipts[i])
 			provider.Drop(t, nil)

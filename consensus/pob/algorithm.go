@@ -22,13 +22,14 @@ var (
 	errWitness     = errors.New("wrong witness")
 	errSignature   = errors.New("wrong signature")
 	errTxDup       = errors.New("duplicate tx")
+	errDoubleTx    = errors.New("double tx in block")
 	errTxSignature = errors.New("tx wrong signature")
 	errHeadHash    = errors.New("wrong head hash")
 	generateTxsNum = 0
 )
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
-	ilog.Info("generate Block start")
+	ilog.Debug("generate Block start")
 
 	st := time.Now()
 	pTx, head := txPool.PendingTx()
@@ -41,7 +42,6 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
 			Time:       time.Now().UnixNano(),
-			GasUsage:   0,
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
@@ -58,14 +58,14 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	})
 	t2 := time.Since(t1)
 	if len(blk.Txs) != 0 {
-		ilog.Info("time spent per tx:", t2.Nanoseconds()/int64(len(blk.Txs)))
+		ilog.Debugf("time spent per tx: %v", t2.Nanoseconds()/int64(len(blk.Txs)))
 	}
 	if err != nil {
 		go txPool.DelTxList(dropList)
 		ilog.Errorf("Gen is err: %v", err)
 	}
-	blk.Head.TxsHash = blk.CalculateTxsHash()
-	blk.Head.MerkleHash = blk.CalculateMerkleHash()
+	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
 	err = blk.CalculateHeadHash()
 	if err != nil {
 		return nil, err
@@ -101,8 +101,14 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
 		return errWitness
 	}
-	ilog.Infof("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
+	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
+	blkTxSet := make(map[string]bool, len(blk.Txs))
 	for i, t := range blk.Txs {
+		if blkTxSet[string(t.Hash())] {
+			return errDoubleTx
+		}
+		blkTxSet[string(t.Hash())] = true
+
 		if i == 0 {
 			// base tx
 			continue

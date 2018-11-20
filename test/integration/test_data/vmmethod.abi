@@ -1,0 +1,18 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "contractName",
+      "args": []
+    },
+    {
+      "name": "receiptf",
+      "args": ["string"]
+    },
+    {
+      "name": "event",
+      "args": ["string"]
+    }
+  ]
+}

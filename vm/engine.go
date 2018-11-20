@@ -2,12 +2,9 @@ package vm
 
 import (
 	"errors"
-	"fmt"
 	"runtime"
 	"strings"
 	"time"
-
-	"github.com/bitly/go-simplejson"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -37,7 +34,6 @@ type Engine interface {
 	GC()
 }
 
-var staticMonitor = NewMonitor()
 var jsPath = "./v8vm/v8/libjs/"
 var logLevel = ""
 
@@ -71,9 +67,9 @@ func newEngine(bh *block.BlockHead, db *database.Visitor) Engine {
 
 	ctx = loadBlkInfo(ctx, bh)
 
-	//ilog.Error("iost.system is ", db.Contract("iost.system"))
+	//ilog.Error("system.iost is ", db.Contract("system.iost"))
 
-	if db.Contract("iost.system") == nil {
+	if db.Contract("system.iost") == nil {
 		db.SetContract(native.SystemABI())
 	}
 
@@ -146,7 +142,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 	hasSetCode := false
 
 	for _, action := range tx0.Actions {
-		if hasSetCode && action.Contract == "iost.system" && action.ActionName == "SetCode" {
+		if hasSetCode && action.Contract == "system.iost" && action.ActionName == "SetCode" {
 			txr.Receipts = nil
 			txr.Status.Code = tx.ErrorDuplicateSetCode
 			txr.Status.Message = "error duplicate set code in a tx"
@@ -154,7 +150,7 @@ func (e *engineImpl) exec(tx0 *tx.Tx, limit time.Duration) (*tx.TxReceipt, error
 			e.ho.DB().Rollback()
 			break
 		}
-		hasSetCode = action.Contract == "iost.system" && action.ActionName == "SetCode"
+		hasSetCode = action.Contract == "system.iost" && action.ActionName == "SetCode"
 
 		cost, status, receipts, err := e.runAction(*action)
 		ilog.Debugf("run action : %v, result is %v", action, status.Code)
@@ -212,63 +208,6 @@ func (e *engineImpl) GC() {
 	e.logger.Stop()
 }
 
-// nolint
-func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
-	if strings.HasSuffix(data, ",]") {
-		data = data[:len(data)-2] + "]"
-	}
-	js, err := simplejson.NewJson([]byte(data))
-	if err != nil {
-		return nil, fmt.Errorf("error in data: %v, %v", err, data)
-	}
-
-	rtn := make([]interface{}, 0)
-	arr, err := js.Array()
-	if err != nil {
-		ilog.Error(js.EncodePretty())
-		return nil, err
-	}
-
-	if len(arr) != len(abi.Args) {
-		return nil, errors.New("args length unmatched to abi " + abi.Name)
-	}
-	for i := range arr {
-		switch abi.Args[i] {
-		case "string":
-			s, err := js.GetIndex(i).String()
-			if err != nil {
-				return nil, err
-			}
-			rtn = append(rtn, s)
-		case "bool":
-			s, err := js.GetIndex(i).Bool()
-			if err != nil {
-				return nil, err
-			}
-			rtn = append(rtn, s)
-		case "number":
-			s, err := js.GetIndex(i).Int64()
-			if err != nil {
-				return nil, err
-			}
-			rtn = append(rtn, s)
-		case "json":
-			s, err := js.GetIndex(i).Encode()
-			if err != nil {
-				return nil, err
-			}
-			// make sure s is a valid json
-			_, err = simplejson.NewJson(s)
-			if err != nil {
-				ilog.Error(string(s))
-				return nil, err
-			}
-			rtn = append(rtn, s)
-		}
-	}
-
-	return rtn, nil
-}
 func errReceipt(hash []byte, code tx.StatusCode, message string) *tx.TxReceipt {
 	return &tx.TxReceipt{
 		TxHash:   hash,

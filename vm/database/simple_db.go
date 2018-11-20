@@ -106,7 +106,7 @@ func (d *SimpleDB) Keys(table string, prefix string) ([]string, error) {
 // Save save db data to json file
 func (d *SimpleDB) Save(path string) error {
 
-	d.json.Del("c-iost.system")
+	d.json.Del("c-system.iost")
 
 	f, err := os.Create(path)
 	if err != nil {
@@ -220,13 +220,13 @@ func (d *SimpleDB) AddSystem(path string) {
 		panic(err)
 	}
 
-	c, err := cp.Parse("iost.system", "", string(fd))
+	c, err := cp.Parse("system.iost", "", string(fd))
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(c)
 
-	d.json.Set("c-iost.system", c.Encode())
+	d.json.Set("c-system.iost", c.Encode())
 }
 
 // Commit do nothing

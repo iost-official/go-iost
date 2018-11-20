@@ -465,7 +465,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
-		ilog.Info("confirm ", retain.Head.Number)
+		ilog.Debug("confirm: ", retain.Head.Number)
 		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
 
 		if err != nil {

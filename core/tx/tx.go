@@ -14,6 +14,12 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 )
 
+const (
+	minGasPrice = 100
+	maxGasPrice = 10000
+	minGasLimit = 500
+)
+
 // values
 var (
 	MaxExpiration = int64(90 * time.Second)
@@ -291,6 +297,17 @@ func (t *Tx) IsTimeValid(ct int64) bool {
 		return false
 	}
 	return !t.IsExpired(ct)
+}
+
+// CheckGas checks whether the transaction's gas is valid.
+func (t *Tx) CheckGas() error {
+	if t.GasPrice < minGasPrice || t.GasPrice > maxGasPrice {
+		return fmt.Errorf("gas price illegal, should in [%d, %d]", minGasLimit, maxGasPrice)
+	}
+	if t.GasLimit < minGasLimit {
+		return fmt.Errorf("gas limit illegal, should >= %d", minGasLimit)
+	}
+	return nil
 }
 
 // ToBytes converts tx to bytes.

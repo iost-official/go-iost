@@ -81,8 +81,8 @@ func genconfig() {
 
 	adminInfo := &common.Witness{
 		ID:      "admin",
-		Owner:   "IOSTbbKmaZi1QRMfd7K8bK22KQSFuKadLhSNBw6tmyCHCRSvTr9QN",
-		Active:  "IOSTbbKmaZi1QRMfd7K8bK22KQSFuKadLhSNBw6tmyCHCRSvTr9QN",
+		Owner:   "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
+		Active:  "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
 		Balance: int64(21000000000) - int64(1000000000)*int64(*master),
 	}
 
@@ -96,8 +96,8 @@ func genconfig() {
 
 	foundationInfo := &common.Witness{
 		ID:      "foundation",
-		Owner:   "IOSTbbKmaZi1QRMfd7K8bK22KQSFuKadLhSNBw6tmyCHCRSvTr9QN",
-		Active:  "IOSTbbKmaZi1QRMfd7K8bK22KQSFuKadLhSNBw6tmyCHCRSvTr9QN",
+		Owner:   "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
+		Active:  "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
 		Balance: 0,
 	}
 
@@ -138,8 +138,8 @@ func genconfig() {
 		DataPath:   "/data/p2p/",
 	}
 	RPC := &common.RPCConfig{
-		JSONPort: 30001,
-		GRPCPort: 30002,
+		GatewayAddr: "0.0.0.0:30001",
+		GRPCAddr:    "0.0.0.0:30002",
 	}
 	Log := &common.LogConfig{
 		FileLog: &common.FileLogConfig{

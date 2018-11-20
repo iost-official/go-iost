@@ -42,7 +42,6 @@ func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
 	return Auth(h.h.db, id, p, authMap, reenterMap)
 }
 
-// ReadAuth read auth
 func (h *Authority) isContract(id string) bool {
 	// todo tell apart contractid and accountid
 	if strings.HasPrefix(id, "Contract") || strings.Contains(id, ".") {
@@ -53,7 +52,7 @@ func (h *Authority) isContract(id string) bool {
 
 // ReadAuth read auth
 func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost) {
-	sa := vi.MGet("iost.auth-account", id)
+	sa := vi.Get("auth.iost@" + id + "-auth")
 	acc := database.MustUnmarshal(sa)
 	c := contract.NewCost(0, 0, int64(len(sa)))
 	if acc == nil {

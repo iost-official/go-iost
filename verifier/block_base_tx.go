@@ -11,11 +11,11 @@ import (
 func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	acts := []*tx.Action{}
 	if blk.Head.Number > 0 {
-		txData, err := baseTxData(blk.Head, parent.Head)
+		txData, err := baseTxData(blk, parent)
 		if err != nil {
 			return nil, err
 		}
-		act := tx.NewAction("iost.base", "Exec", txData)
+		act := tx.NewAction("base.iost", "Exec", txData)
 		acts = append(acts, act)
 	}
 	tx := &tx.Tx{
@@ -27,11 +27,11 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	return tx, nil
 }
 
-func baseTxData(bh *block.BlockHead, pbh *block.BlockHead) (string, error) {
-	if pbh != nil {
-		return fmt.Sprintf(`[{"parent":["%v", "%v"]}]`, pbh.Witness, pbh.GasUsage), nil
+func baseTxData(b *block.Block, pb *block.Block) (string, error) {
+	if pb != nil {
+		return fmt.Sprintf(`[{"parent":["%v", "%v"]}]`, pb.Head.Witness, pb.CalculateGasUsage()), nil
 	}
-	if bh.Number != 0 {
+	if b.Head.Number != 0 {
 		return "", fmt.Errorf("block dit not have parent")
 	}
 	return `[{"parent":["", "0"]}]`, nil

@@ -7,7 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/golang/protobuf/ptypes/empty"
 	"github.com/mitchellh/go-homedir"
 	"google.golang.org/grpc"
 
@@ -15,9 +14,8 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/rpc"
+	"github.com/iost-official/go-iost/rpc/pb"
 )
 
 // SDK ...
@@ -122,14 +120,14 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
-func (s *SDK) getNodeInfo() (*rpc.NodeInfoRes, error) {
+func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	value, err := client.GetNodeInfo(context.Background(), &empty.Empty{})
+	client := rpcpb.NewApiServiceClient(conn)
+	value, err := client.GetNodeInfo(context.Background(), &rpcpb.EmptyRequest{})
 	if err != nil {
 		return nil, err
 	}
@@ -137,66 +135,58 @@ func (s *SDK) getNodeInfo() (*rpc.NodeInfoRes, error) {
 }
 
 // getAccountInfo return account info
-func (s *SDK) getAccountInfo(id string) (*rpc.GetAccountRes, error) {
+func (s *SDK) getAccountInfo(id string) (*rpcpb.Account, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	req := rpc.GetAccountReq{ID: id}
-	if s.useLongestChain {
-		req.UseLongestChain = true
-	}
-	value, err := client.GetAccountInfo(context.Background(), &req)
+	client := rpcpb.NewApiServiceClient(conn)
+	req := &rpcpb.GetAccountRequest{Name: id, ByLongestChain: s.useLongestChain}
+	value, err := client.GetAccount(context.Background(), req)
 	if err != nil {
 		return nil, err
 	}
 	return value, nil
 }
-func (s *SDK) getGetBlockByNum(num int64, complete bool) (*rpc.BlockInfo, error) {
+func (s *SDK) getGetBlockByNum(num int64, complete bool) (*rpcpb.BlockResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	return client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: num, Complete: complete})
+	client := rpcpb.NewApiServiceClient(conn)
+	return client.GetBlockByNumber(context.Background(), &rpcpb.GetBlockByNumberRequest{Number: num, Complete: complete})
 }
 
-func (s *SDK) getGetBlockByHash(hash string, complete bool) (*rpc.BlockInfo, error) {
+func (s *SDK) getGetBlockByHash(hash string, complete bool) (*rpcpb.BlockResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	return client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: hash, Complete: complete})
+	client := rpcpb.NewApiServiceClient(conn)
+	return client.GetBlockByHash(context.Background(), &rpcpb.GetBlockByHashRequest{Hash: hash, Complete: complete})
 }
 
-func (s *SDK) getTxByHash(hash string) (*rpc.TxRes, error) {
+func (s *SDK) getTxByHash(hash string) (*rpcpb.TransactionResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	return client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: hash})
+	client := rpcpb.NewApiServiceClient(conn)
+	return client.GetTxByHash(context.Background(), &rpcpb.TxHashRequest{Hash: hash})
 }
 
-func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*txpb.TxReceipt, error) {
+func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
 	}
 	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHashStr})
-	if err != nil {
-		return nil, err
-	}
-	//ilog.Debugf("getTxReceiptByTxHash(%v): %v", txHashStr, resp.TxReceiptRaw)
-	return resp.TxReceipt, nil
+	client := rpcpb.NewApiServiceClient(conn)
+	return client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHashStr})
 }
 
 func (s *SDK) sendTx(stx *tx.Tx) (string, error) {
@@ -205,8 +195,8 @@ func (s *SDK) sendTx(stx *tx.Tx) (string, error) {
 		return "", err
 	}
 	defer conn.Close()
-	client := rpc.NewApisClient(conn)
-	resp, err := client.SendTx(context.Background(), &rpc.TxReq{Tx: stx.ToPb()})
+	client := rpcpb.NewApiServiceClient(conn)
+	resp, err := client.SendTransaction(context.Background(), toTxRequest(stx))
 	if err != nil {
 		return "", err
 	}
@@ -226,8 +216,8 @@ func (s *SDK) checkTransaction(txHash string) bool {
 			fmt.Println("result not ready, please wait.")
 			continue
 		}
-		if tx.StatusCode(txReceipt.Status.Code) != tx.Success {
-			fmt.Println("exec tx failed: ", txReceipt.Status.Message)
+		if tx.StatusCode(txReceipt.StatusCode) != tx.Success {
+			fmt.Println("exec tx failed: ", txReceipt.Message)
 			fmt.Println("full error information: ", txReceipt)
 		} else {
 			fmt.Println("exec tx done. ", txReceipt.String())
@@ -330,11 +320,11 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 // CreateNewAccount ...
 func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*tx.Action
-	acts = append(acts, tx.NewAction("iost.auth", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
-	acts = append(acts, tx.NewAction("iost.ram", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
-	acts = append(acts, tx.NewAction("iost.gas", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
+	acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
+	acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
 	if initialCoins != 0 {
-		acts = append(acts, tx.NewAction("iost.token", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
+		acts = append(acts, tx.NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
 	}
 	trx, err := s.createTx(acts)
 	if err != nil {
@@ -398,7 +388,7 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 		data = `["` + c.B64Encode() + `", "` + updateID + `"]`
 	}
 
-	action := tx.NewAction("iost.system", methodName, data)
+	action := tx.NewAction("system.iost", methodName, data)
 	trx, err := s.createTx([]*tx.Action{action})
 	if err != nil {
 		return nil, "", err
@@ -414,4 +404,48 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	}
 	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", hash)
 	return trx, hash, nil
+}
+
+func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
+	ret := &rpcpb.TransactionRequest{
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasPrice:   float64(t.GasPrice) / 100,
+		GasLimit:   float64(t.GasLimit) / 100,
+		Delay:      t.Delay,
+		Signers:    t.Signers,
+		Publisher:  t.Publisher,
+	}
+	for _, a := range t.Actions {
+		ret.Actions = append(ret.Actions, &rpcpb.Action{
+			Contract:   a.Contract,
+			ActionName: a.ActionName,
+			Data:       a.Data,
+		})
+	}
+	for _, a := range t.AmountLimit {
+		fixed, err := common.UnmarshalFixed(a.Val)
+		if err != nil {
+			continue
+		}
+		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
+			Token: a.Token,
+			Value: fixed.ToFloat(),
+		})
+	}
+	for _, s := range t.Signs {
+		ret.Signatures = append(ret.Signatures, &rpcpb.Signature{
+			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
+			PublicKey: s.Pubkey,
+			Signature: s.Sig,
+		})
+	}
+	for _, s := range t.PublishSigns {
+		ret.PublisherSigs = append(ret.PublisherSigs, &rpcpb.Signature{
+			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
+			PublicKey: s.Pubkey,
+			Signature: s.Sig,
+		})
+	}
+	return ret
 }

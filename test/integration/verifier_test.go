@@ -36,16 +36,16 @@ func TestTransfer(t *testing.T) {
 		})
 
 		Convey("test transfer success case", func() {
-			r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v",""]`, testID[0], testID[2], 0.0001), kp.ID, kp)
+			r, err := s.Call("token.iost", "transfer", fmt.Sprintf(`["iost","%v","%v","%v",""]`, testID[0], testID[2], 0.0001), kp.ID, kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 721)
+			So(r.GasUsage, ShouldEqual, 2985)
 		})
 
 		Convey("test of token memo", func() {
-			r, err := s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v","memo"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
+			r, err := s.Call("token.iost", "transfer", fmt.Sprintf(`["iost","%v","%v","%v","memo"]`, testID[0], testID[2], 0.0001), kp.ID, kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -53,7 +53,7 @@ func TestTransfer(t *testing.T) {
 			for i := 0; i < 10; i++ {
 				memo = memo + memo
 			}
-			r, err = s.Call("iost.token", "transfer", fmt.Sprintf(`["iost","%v","%v","%v","%v"]`, testID[0], testID[2], 0.0001, memo), kp.ID, kp)
+			r, err = s.Call("token.iost", "transfer", fmt.Sprintf(`["iost","%v","%v","%v","%v"]`, testID[0], testID[2], 0.0001, memo), kp.ID, kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 			So(r.Status.Message, ShouldContainSubstring, "memo too large")
@@ -77,8 +77,8 @@ func TestSetCode(t *testing.T) {
 		cname, r, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldStartWith, "Contract")
-		So(r.GasUsage, ShouldEqual, 1526)
+		So(cname, ShouldEqual, "ContractEJuvctjsCVirp9g22As7KbrM71783oq4wYE1Fcy8AXns")
+		So(r.GasUsage, ShouldEqual, 1739)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -112,7 +112,7 @@ func TestStringGas(t *testing.T) {
 		r, err = s.Call(cname, "add9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldEqual, 14)
+		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 12, 14)
 
 		r, err = s.Call(cname, "equal9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
@@ -272,7 +272,7 @@ func TestTxAmountLimit(t *testing.T) {
 
 		Convey("test of tx amount limit", func() {
 			trx := tx.NewTx([]*tx.Action{{
-				Contract:   "iost.token",
+				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
 			}}, nil, 100000, 100, 10000000, 0)
@@ -290,7 +290,7 @@ func TestTxAmountLimit(t *testing.T) {
 
 		Convey("test out of amount limit", func() {
 			trx := tx.NewTx([]*tx.Action{{
-				Contract:   "iost.token",
+				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
 			}}, nil, 100000, 100, 10000000, 0)
@@ -308,7 +308,7 @@ func TestTxAmountLimit(t *testing.T) {
 
 		Convey("test invalid amount limit", func() {
 			trx := tx.NewTx([]*tx.Action{{
-				Contract:   "iost.token",
+				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
 			}}, nil, 100000, 100, 10000000, 0)
@@ -358,7 +358,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 		s.SetGas(kp.ID, 100000)
 
 		tx0 := tx.NewTx([]*tx.Action{{
-			Contract:   "iost.token",
+			Contract:   "token.iost",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
 		}}, nil, 550, 100, 10000000, 0)
@@ -386,8 +386,8 @@ func TestDomain(t *testing.T) {
 
 		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
-		s.Visitor.SetContract(native.ABI("iost.domain", native.DomainABIs))
-		r1, err := s.Call("iost.domain", "Link", fmt.Sprintf(`["abcde","%v"]`, cname), kp.ID, kp)
+		s.Visitor.SetContract(native.ABI("domain.iost", native.DomainABIs))
+		r1, err := s.Call("domain.iost", "Link", fmt.Sprintf(`["abcde","%v"]`, cname), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldEqual, "")
 		r2, err := s.Call("abcde", "read", "[]", kp.ID, kp)
@@ -402,22 +402,23 @@ func TestAuthority(t *testing.T) {
 	defer s.Clear()
 	Convey("test of Auth", t, func() {
 
-		ca, err := s.Compile("iost.auth", "../../contract/account", "../../contract/account.js")
+		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 100000)
+		s.SetRAM("myid", 1000)
 
-		r, err := s.Call("iost.auth", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldStartWith, `s{"id":"myid",`)
+		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldStartWith, `s{"id":"myid",`)
 
-		r, err = s.Call("iost.auth", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
+		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("iost.auth-account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
 }

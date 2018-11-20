@@ -3,7 +3,10 @@ package host
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
+
+	"encoding/json"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
@@ -52,7 +55,6 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 	h.DNS = NewDNS(h)
 	h.Authority = Authority{h: h}
 	h.GasManager = NewGasManager(h)
-
 	return h
 
 }
@@ -131,7 +133,7 @@ func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
 	code, err := h.monitor.Compile(c)
 	if err != nil {
-		return CompileErrCost, err
+		return Costs["CompileCost"], err
 	}
 	c.Code = code
 
@@ -162,11 +164,11 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (contract.Cost, error) {
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
-		return ContractNotFoundCost, ErrContractNotFound
+		return Costs["GetCost"], ErrContractNotFound
 	}
 	abi := oc.ABI("can_update")
 	if abi == nil {
-		return ABINotFoundCost, ErrUpdateRefused
+		return Costs["GetCost"], ErrUpdateRefused
 	}
 
 	oldL := len(oc.Encode())
@@ -183,7 +185,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 
 	// set code  without invoking init
 	code, err := h.monitor.Compile(c)
-	cost.AddAssign(CompileErrCost)
+	cost.AddAssign(Costs["CompileCost"])
 	if err != nil {
 		return cost, err
 	}
@@ -191,7 +193,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 
 	h.db.SetContract(c)
 
-	owner, co := h.GlobalMapGet("iost.system", "contract_owner", c.ID)
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
 	cost.AddAssign(co)
 	l := len(c.Encode()) // todo multi Encode call
 	h.PayCost(contract.NewCost(int64(l-oldL), 0, 0), owner.(string))
@@ -205,11 +207,11 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 
 	oc := h.db.Contract(contractName)
 	if oc == nil {
-		return ContractNotFoundCost, ErrContractNotFound
+		return Costs["GetCost"], ErrContractNotFound
 	}
 	abi := oc.ABI("can_destroy")
 	if abi == nil {
-		return ABINotFoundCost, ErrDestroyRefused
+		return Costs["GetCost"], ErrDestroyRefused
 	}
 
 	oldL := len(oc.Encode())
@@ -224,25 +226,25 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 		return cost, ErrDestroyRefused
 	}
 
-	owner, co := h.GlobalMapGet("iost.system", "contract_owner", oc.ID)
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
 	cost.AddAssign(co)
 	h.PayCost(contract.NewCost(int64(-oldL), 0, 0), owner.(string))
 
-	h.db.MDel("iost.system-contract_owner", oc.ID)
+	h.db.MDel("system.iost-contract_owner", oc.ID)
 
 	h.db.DelContract(contractName)
-	return DelContractCost, nil
+	return Costs["PutCost"], nil
 }
 
 // CancelDelaytx deletes delaytx hash.
 func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
 
 	if !h.db.HasDelaytx(txHash) {
-		return DelaytxNotFoundCost, ErrDelaytxNotFound
+		return Costs["DelaytxNotFoundCost"], ErrDelaytxNotFound
 	}
 
 	h.db.DelDelaytx(txHash)
-	return DelDelaytxCost, nil
+	return Costs["DelDelaytxCost"], nil
 }
 
 // Logger get a log in host
@@ -275,4 +277,30 @@ func (h *Host) Deadline() time.Time {
 // SetDeadline set this host's deadline
 func (h *Host) SetDeadline(t time.Time) {
 	h.deadline = t
+}
+
+// IsValidAccount check whether account exists
+func (h *Host) IsValidAccount(name string) bool {
+	if h.Context().Value("number") == int64(0) {
+		return true
+	}
+	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().Get("auth.iost@"+name+"-auth")) != nil
+}
+
+// ReadSettings read settings from db
+func (h *Host) ReadSettings() {
+	j, _ := h.DBHandler.GlobalMapGet("system.iost", "settings", "host")
+	if j == nil {
+		return
+	}
+	var s Setting
+	err := json.Unmarshal([]byte(j.(string)), &s)
+	if err != nil {
+		panic(err)
+	}
+
+	for k, v := range s.Costs {
+		Costs[k] = v
+	}
+
 }

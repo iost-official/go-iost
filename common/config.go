@@ -70,8 +70,8 @@ type P2PConfig struct {
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
-	JSONPort int
-	GRPCPort int
+	GatewayAddr string
+	GRPCAddr    string
 }
 
 // FileLogConfig is the config for filewriter of ilog.
@@ -108,9 +108,9 @@ type DebugConfig struct {
 	ListenAddr string
 }
 
-// VersionConfig contrains nettype(mainnet / testnet etc) and protocol info
+// VersionConfig contrains netname(mainnet / testnet etc) and protocol info
 type VersionConfig struct {
-	NetType         string
+	NetName         string
 	ProtocolVersion string
 }
 

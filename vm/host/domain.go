@@ -25,7 +25,7 @@ func NewDNS(h *Host) DNS {
 
 // ContractID find cid from url
 func (d *DNS) ContractID(url string) string {
-	cid, _ := d.h.GlobalMapGet("iost.domain", DNSTable, url)
+	cid, _ := d.h.GlobalMapGet("domain.iost", DNSTable, url)
 	if s, ok := cid.(string); ok {
 		return s
 	}
@@ -34,7 +34,7 @@ func (d *DNS) ContractID(url string) string {
 
 // URLOwner find owner of url
 func (d *DNS) URLOwner(url string) string {
-	owner, _ := d.h.GlobalMapGet("iost.domain", DNSOwnerTable, url)
+	owner, _ := d.h.GlobalMapGet("domain.iost", DNSOwnerTable, url)
 	if s, ok := owner.(string); ok {
 		return s
 	}
@@ -48,7 +48,7 @@ func (d *DNS) URLTransfer(url, to string) {
 
 // URL git url of cid
 func (d *DNS) URL(cid string) string {
-	domain, _ := d.h.GlobalMapGet("iost.domain", DNSRTable, cid)
+	domain, _ := d.h.GlobalMapGet("domain.iost", DNSRTable, cid)
 	if s, ok := domain.(string); ok {
 		return s
 	}
@@ -57,7 +57,7 @@ func (d *DNS) URL(cid string) string {
 
 // IsDomain determine if s is a domain
 func (d *DNS) IsDomain(s string) bool {
-	if strings.HasPrefix(s, "Contract") || strings.HasPrefix(s, "iost.") {
+	if strings.HasPrefix(s, "Contract") || strings.HasSuffix(s, ".iost") {
 		return false
 	}
 	return true

@@ -34,14 +34,14 @@ service ApiService {
     }
 
     // get block by hash
-    rpc GetBlockByHash (GetBlockByHashRequest) returns (Block) {
+    rpc GetBlockByHash (GetBlockByHashRequest) returns (BlockResponse) {
         option (google.api.http) = {
             get: "/getBlockByHash/{hash}/{complete}"
         };
     }
 
     // get block by number
-    rpc GetBlockByNumber (GetBlockByNumberRequest) returns (Block) {
+    rpc GetBlockByNumber (GetBlockByNumberRequest) returns (BlockResponse) {
         option (google.api.http) = {
             get: "/getBlockByNumber/{number}/{complete}"
         };
@@ -188,8 +188,8 @@ message TxReceipt {
     repeated Receipt receipts = 7;
 }
 
-// The message defines transaction response struct.
-message TransactionResponse {
+// The message defines transaction struct.
+message Transaction {
     // transaction hash
     string hash  = 1;
     // transaction timestamp
@@ -214,29 +214,36 @@ message TransactionResponse {
     repeated AmountLimit amount_limit = 11;
     // transaction receipt
     TxReceipt tx_receipt = 12;
+}
 
+// The message defines transaction response.
+message TransactionResponse {
     // The enumeration defines transaction status.
     enum Status {
         // pending in transaction pool
         PENDIND = 0;
         // packed in a block that has not been confirmed
         PACKED = 1;
-        // packed in a block that is ieerversible
+        // packed in a block that is irreversible
         IRREVERSIBLE = 2;
     }
 
     // transaction status
-    Status status = 13;
+    Status status = 1;
+    // transaction
+    Transaction transaction = 2;
 }
 
 // The message defines signature struct.
 message Signature {
     // The enumeration defines the signature algorithm.
     enum Algorithm {
+        // unknown
+        UNKNOWN = 0;
         // secp256k1
-        SECP256K1 = 0;
+        SECP256K1 = 1;
         // ed25519
-        ED25519 = 1;
+        ED25519 = 2;
     }
 
     // signature algorithm
@@ -276,9 +283,9 @@ message TransactionRequest {
 // The message defines the block struct.
 message Block {
     // block hash
-    int64 hash = 1;
+    string hash = 1;
     // block version
-    string version = 2;
+    int64 version = 2;
     // parent block hash
     string parent_hash = 3;
     // transaction merkle tree root hash
@@ -309,7 +316,23 @@ message Block {
     // extra information
     Info info = 11;
     // block transactions
-    repeated TransactionResponse transactions = 12;
+    repeated Transaction transactions = 12;
+}
+
+message BlockResponse {
+    // The enumeration defines block status.
+    enum Status {
+        // pending in block cache
+        PENDIND = 0;
+        // irreversible
+        IRREVERSIBLE = 1;
+    }
+
+    // transaction status
+    Status status = 1;
+    // block
+    Block block = 2;
+
 }
 
 // The message defines chain information response.
@@ -361,6 +384,14 @@ message Account {
     // account create timestamp
     int64 create_time = 3;
 
+    // The message defines account pledged coin information.
+    message PledgeInfo {
+        // the account who pledges
+        string pledger = 1;
+        // pledged amount
+        double amount = 2;
+    }
+
     // The message defines account gas information.
     message  GasInfo {
         // current total gas amount
@@ -369,8 +400,8 @@ message Account {
         double increase_speed = 2;
         // gas limit
         double limit = 3;
-        // pledged coin
-        double pledged_coin = 4;
+        // pledge information
+        repeated PledgeInfo pledged_info = 4;
     }
 
     // gas information
@@ -393,6 +424,8 @@ message Account {
         bool is_key_pair = 2;
         // permission weight
         int64 weight = 3;
+        // permission
+        string permission = 4;
     }
 
     // The message defines a permission group.
@@ -408,24 +441,35 @@ message Account {
         // permission name
         string name = 1;
         // permission groups
-        repeated Group groups = 2;
+        repeated string groups = 2;
         // permission items
         repeated Item items = 3;
         // permission threshold
         int64 threshold = 4;
     }
 
-    // owner permission
-    Permission owner = 6;
-    // active permission
-    Permission active = 7;
+    // account permission
+    map<string, Permission> permissions = 6;
+    // account groups
+    map<string, Group> groups = 7;
+
+    // The message defines the account's frozen balance.
+    message FrozenBalance {
+        // balance amount
+        string amount = 1;
+        // free time
+        int64 time = 2;
+    }
+
+    // frozen balance information
+    repeated FrozenBalance frozen_balances = 8;
 }
 
 // The message defines the get account request.
 message GetAccountRequest {
     // account name
     string name = 1;
-    // get account by longest chain head block or last irreversible block
+    // get account by longest chain's head block or last irreversible block
     bool by_longest_chain = 2;
 }
 
@@ -458,6 +502,8 @@ message Contract {
 message GetContractRequest {
     // contract id
     string id = 1;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 2;
 }
 
 // The message defines get contract storage request.
@@ -470,6 +516,8 @@ message GetContractStorageRequest {
     string key = 3;
     // get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
     string field = 4;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 5;
 }
 
 // The message defines get contract storage response.

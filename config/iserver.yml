@@ -20,8 +20,8 @@ p2p:
   blackIP:
   adminPort: 30005
 rpc:
-  jsonport: 30001
-  grpcport: 30002
+  gatewayaddr: 0.0.0.0:30001
+  grpcaddr: 0.0.0.0:30002
 log:
   filelog:
     path: logs/
@@ -40,5 +40,5 @@ metrics:
 debug:
   listenaddr: 0.0.0.0:30003
 version:
-  nettype: "debugnet"
+  netname: "debugnet"
   protocolversion: "1.0"
