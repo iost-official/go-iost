@@ -24,6 +24,8 @@ var (
 	heightTimeout           int64 = 100 * 22 * 3
 	continuousNum           int64 = 10
 	syncNumber                    = 11 * continuousNum
+	lastPrintHeight         int64 = 0
+	printInterval           int64 = 1000
 )
 
 // Synchronizer defines the functions of synchronizer module
@@ -129,7 +131,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 				ilog.Errorf("marshal syncheight failed. err=%v", err)
 				continue
 			}
-			ilog.Infof("broadcast sync height")
+			ilog.Debugf("broadcast sync height")
 			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage, true)
 		case req := <-sy.syncHeightChan:
 			var sh msgpb.SyncHeight
@@ -185,7 +187,11 @@ func (sy *SyncImpl) checkSync() bool {
 		return true
 	})
 	netHeight := heights[len(heights)/2]
-	ilog.Infof("check sync, heights: %+v", heights)
+	ilog.Debugf("check sync, heights: %+v", heights)
+	if netHeight-lastPrintHeight > printInterval {
+		ilog.Infof("sync heights: %+v", heights)
+		lastPrintHeight = netHeight
+	}
 	if netHeight > height+syncNumber {
 		sy.baseVariable.SetMode(global.ModeSync)
 		sy.dc.ReStart()
@@ -222,7 +228,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 		}
 	}
 	if num > continuousNum {
-		ilog.Infof("num: %v, continuousNum: %v", num, continuousNum)
+		ilog.Debugf("num: %v, continuousNum: %v", num, continuousNum)
 		go sy.syncBlocks(height+1, sy.blockCache.Head().Head.Number)
 		return true
 	}
@@ -235,12 +241,12 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
 	}
-	ilog.Infof("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
+	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
 	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage, true)
 }
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
-	ilog.Infof("sync Blocks %v, %v", startNumber, endNumber)
+	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
 	sy.syncEnd = endNumber
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Head.Number+3 < startNumber {
@@ -263,7 +269,7 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
-	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd)
+	ilog.Debugf("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd)
 	if sy.syncEnd <= sy.blockCache.Head().Head.Number {
 		sy.baseVariable.SetMode(global.ModeNormal)
 		sy.dc.ReStart()
@@ -395,7 +401,7 @@ func (sy *SyncImpl) handleHashQuery(rh *msgpb.BlockHashQuery, peerID p2p.PeerID)
 }
 
 func (sy *SyncImpl) handleHashResp(rh *msgpb.BlockHashResponse, peerID p2p.PeerID) {
-	ilog.Infof("receive block hashes: len=%v", len(rh.BlockInfos))
+	ilog.Debugf("receive block hashes: len=%v", len(rh.BlockInfos))
 	for _, blkInfo := range rh.BlockInfos {
 		if blkInfo.Number > sy.blockCache.LinkedRoot().Head.Number {
 			if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
