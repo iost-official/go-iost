@@ -53,7 +53,7 @@ class VoteContract {
 
         const producerNumber = pendingProducerList.length;
         this._put("producerNumber", producerNumber);
-      
+
         this._call("token.iost", "transfer", ["iost", proID, "vote_producer.iost", producerRegisterFee, ""]);
 
         const voteId = this._getVoteId();

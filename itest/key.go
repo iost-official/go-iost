@@ -2,6 +2,7 @@ package itest
 
 import (
 	"encoding/json"
+	"io/ioutil"
 	"os"
 
 	"github.com/iost-official/go-iost/account"
@@ -36,16 +37,13 @@ type KeyJSON struct {
 
 // LoadKeys will load keys from file
 func LoadKeys(file string) ([]*Key, error) {
-	data := []byte{}
+	var data []byte
 	if file == "" {
 		data = []byte(DefaultKeys)
 	} else {
-		f, err := os.Open(file)
+		var err error
+		data, err = ioutil.ReadFile(file)
 		if err != nil {
-			return nil, err
-		}
-
-		if _, err := f.Read(data); err != nil {
 			return nil, err
 		}
 	}

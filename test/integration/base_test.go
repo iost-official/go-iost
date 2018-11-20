@@ -50,6 +50,7 @@ func Test_Base(t *testing.T) {
 		s.Head.Number = 200
 		re, err := s.Call("base.iost", "Exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, kp.ID, 12345678), kp.ID, kp)
 		So(err, ShouldBeNil)
-		So(re.Status.Code, ShouldEqual, 0)
+		So(re.Status.Message, ShouldEqual, "")
 	})
 }
+

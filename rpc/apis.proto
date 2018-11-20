@@ -198,12 +198,21 @@ message GASInfo {
     string currentTotal = 1;
     string increaseSpeed = 2;
     string limit = 3;
-    string pledgedCoin = 4;
+    message PledgeInfo {
+        string pledger=1;
+        string amount=2;
+    }
+    repeated PledgeInfo pledgedInfo = 4;
 }
 
 message GetAccountRes {
     // the queried balance
     string balance=1;
+    message FrozenBalance {
+        string amount=1;
+        string time=2;
+    }
+    repeated FrozenBalance frozenBalances=5;
     // current gas
     GASInfo gas=2;
     RAMInfo ram=3;

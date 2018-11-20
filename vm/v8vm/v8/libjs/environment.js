@@ -328,6 +328,7 @@
         'floor',
         'log',
         'log10',
+        'log1p',
         'max',
         'min',
         'pow',
@@ -386,6 +387,12 @@
     Math.log10 = function() {
         _IOSTInstruction_counter.incr(40);
         return Mathlog10.call(this, ...arguments);
+    };
+
+    const Mathlog1p = Math.log1p;
+    Math.log1p = function() {
+        _IOSTInstruction_counter.incr(40);
+        return Mathlog1p.call(this, ...arguments);
     };
 
     const Mathmax = Math.max;

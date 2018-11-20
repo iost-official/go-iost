@@ -13,8 +13,8 @@ witnessinfo:
 contractpath: contract/
 admininfo:
   id: admin
-  owner: IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4 
-  active: IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4 
+  owner: IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4
+  active: IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4
   balance: 1000000000
 foundationinfo:
   id: foundation
