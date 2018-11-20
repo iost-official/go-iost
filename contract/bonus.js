@@ -121,7 +121,7 @@ class BonusContract {
         this._put("lastIssueBN", bi.number);
 
         const witness = data.parent[0];
-        const gasUsage = new BigNumber(data.parent[1]);
+        let gasUsage = new BigNumber(data.parent[1]);
         if (!gasUsage.isFinite()) {
             gasUsage = new BigNumber(0);
         }
