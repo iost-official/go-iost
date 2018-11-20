@@ -63,6 +63,9 @@ type WAL struct {
 // recorded at the head of each WAL file, and can be retrieved with ReadAll.
 func Create(dirpath string, metadata []byte) (*WAL, error) {
 	b, err := exists(dirpath)
+	if err != nil {
+		return nil, err
+	}
 	if !b {
 		err := os.MkdirAll(dirpath, 0777)
 		if err != nil {
@@ -327,15 +330,8 @@ func openAtIndex(dirpath string) (*WAL, error) {
 	return w, nil
 }
 
+// nolint
 // ReadAll reads out records of the current WAL.
-// If opened in write mode, it must read out all records until EOF. Or an error
-// will be returned.
-// If opened in read mode, it will try to read all records if possible.
-// If it cannot read out the expected snap, it will return ErrSnapshotNotFound.
-// If loaded snap doesn't match with the expected one, it will return
-// all the records and error ErrSnapshotMismatch.
-// TODO: detect not-last-snap error.
-// TODO: maybe loose the checking of match.
 // After ReadAll, the WAL will be ready for appending new records.
 func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	w.mu.Lock()
@@ -368,17 +364,6 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 				return nil, nil, ErrCRCMismatch
 			}
 			decoder.updateCRC(log.Checksum)
-
-		/*case snapshotType:
-		var snap walpb.Snapshot
-		pbutil.MustUnmarshal(&snap, log.Data)
-		if snap.Index == w.start.Index {
-			if snap.Term != w.start.Term {
-				state.Reset()
-				return nil, state, nil, ErrSnapshotMismatch
-			}
-			match = true
-		}*/
 
 		default:
 			return nil, nil, fmt.Errorf("unexpected block type %d", log.Type)
@@ -419,7 +404,6 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 		w.readClose()
 		w.readClose = nil
 	}
-	//w.start = walpb.Snapshot{}
 
 	w.metadata = metadata
 
@@ -526,7 +510,7 @@ func (w *WAL) cut() error {
 		return err
 	}
 
-	off, err = w.tail().Seek(0, io.SeekCurrent)
+	_, err = w.tail().Seek(0, io.SeekCurrent)
 	if err != nil {
 		return err
 	}

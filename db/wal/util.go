@@ -60,6 +60,7 @@ func Exist(dir string) bool {
 	return len(names) != 0 || len(names2) != 0
 }
 
+/*
 // searchIndex returns the last array index of names whose raft index section is
 // equal to or smaller than the given index.
 // The given names MUST be sorted.
@@ -93,7 +94,7 @@ func isValidSeq(names []string) bool {
 	}
 	return true
 }
-
+*/
 func readWALNames(dirpath string) ([]string, error) {
 	names, err := filterDirWithExt(dirpath, "")
 	if err != nil {

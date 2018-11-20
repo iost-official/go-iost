@@ -7,11 +7,6 @@ import (
 	"time"
 )
 
-const (
-	defaultFlushInterval = 50 * time.Millisecond // defaultFlushInterval Set to 50 Millisecond
-	defaultFlushSize     = 4096                  // defaultFlushInterval Set to 50 Millisecond
-)
-
 // StreamFile generate files like a endless stream
 type StreamFile struct {
 	// dir to put files

@@ -526,6 +526,9 @@ func (bc *BlockCacheImpl) writeAddNodeWAL(h *BlockCacheNode) (uint64, error) {
 		Type: BcMessageType_LinkType,
 	}
 	data, err := bcMessage.Marshal()
+	if err != nil {
+		return 0, err
+	}
 	ent := wal.Entry{
 		Data: data,
 	}
