@@ -1,11 +1,11 @@
 package blockcache
 
 import (
-	"strconv"
-	"errors"
 	"encoding/json"
+	"errors"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm/database"
+	"strconv"
 )
 
 // SetPending set pending witness list

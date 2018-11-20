@@ -1,14 +1,14 @@
 package wal
 
 import (
-	"sync"
-	"io"
-	"hash"
 	"bufio"
 	"encoding/binary"
-	"github.com/iost-official/go-iost/db/wal/pcrc"
 	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/go-iost/db/wal/pcrc"
 	"github.com/iost-official/go-iost/ilog"
+	"hash"
+	"io"
+	"sync"
 )
 
 const (
@@ -16,9 +16,9 @@ const (
 )
 
 type decoder struct {
-	mu  sync.Mutex
-	r []*bufio.Reader
-	crc	hash.Hash64
+	mu         sync.Mutex
+	r          []*bufio.Reader
+	crc        hash.Hash64
 	lastOffset int64
 }
 
@@ -30,7 +30,7 @@ func newDecoder(r ...io.Reader) *decoder {
 		readers[i] = bufio.NewReader(r[i])
 	}
 	return &decoder{
-		r: readers,
+		r:   readers,
 		crc: pcrc.New(0, crc64Table),
 	}
 }

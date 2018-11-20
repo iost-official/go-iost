@@ -1,17 +1,18 @@
 package wal
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
-	"fmt"
 	"time"
 )
 
 const (
 	defaultFlushInterval = 50 * time.Millisecond // defaultFlushInterval Set to 50 Millisecond
-	defaultFlushSize = 4096 // defaultFlushInterval Set to 50 Millisecond
+	defaultFlushSize     = 4096                  // defaultFlushInterval Set to 50 Millisecond
 )
 
+// StreamFile generate files like a endless stream
 type StreamFile struct {
 	// dir to put files
 	dir string
@@ -19,12 +20,12 @@ type StreamFile struct {
 	sizeLimit int64
 	// suffix of file to make
 	suffix string
-	count int64
+	count  int64
 
-	fileChannel   chan *os.File
+	fileChannel             chan *os.File
 	finishedFilePathChannel chan string
-	errorChannel  chan error
-	finishChannel chan struct{}
+	errorChannel            chan error
+	finishChannel           chan struct{}
 }
 
 func newStreamFile(dir string, size int64) *StreamFile {
@@ -33,33 +34,36 @@ func newStreamFile(dir string, size int64) *StreamFile {
 
 func newStreamFileFull(dir string, size int64) *StreamFile {
 	st := &StreamFile{
-		dir:           dir,
-		sizeLimit:          size,
-		suffix:		   "wal.tmp",
-		count: 0,
-		fileChannel:   make(chan *os.File),
-		errorChannel:  make(chan error),
-		finishChannel: make(chan struct{}),
+		dir:                     dir,
+		sizeLimit:               size,
+		suffix:                  "wal.tmp",
+		count:                   0,
+		fileChannel:             make(chan *os.File),
+		errorChannel:            make(chan error),
+		finishChannel:           make(chan struct{}),
 		finishedFilePathChannel: make(chan string),
 	}
-	go st.GenFile()
+	go st.genFile()
 	return st
 }
 
-func (st * StreamFile) GetNewFile() (f *os.File, err error){
+// GetNewFile get a new generated file
+func (st *StreamFile) GetNewFile() (f *os.File, err error) {
 	select {
-		case f =<- st.fileChannel:
-		case err =<- st.errorChannel:
+	case f = <-st.fileChannel:
+	case err = <-st.errorChannel:
 	}
 	return f, err
 }
 
-func (st * StreamFile) Close() error{
+// Close close the stream file
+func (st *StreamFile) Close() error {
 	close(st.finishChannel)
-	return <- st.errorChannel
+	return <-st.errorChannel
 }
 
-func (st * StreamFile) AllocateFile() (f *os.File, err error){
+// allocateFile allocate a file
+func (st *StreamFile) allocateFile() (f *os.File, err error) {
 	// count % 2 so this file isn't the same as the one last published
 	filePath := filepath.Join(st.dir, fmt.Sprintf(".%d.%d.%s", time.Now().UnixNano(), st.count, st.suffix))
 	if f, err = os.Create(filePath); err != nil {
@@ -68,21 +72,21 @@ func (st * StreamFile) AllocateFile() (f *os.File, err error){
 	if err = f.Truncate(st.sizeLimit); err != nil {
 		return nil, err
 	}
-	st.count = (st.count+1) % 100
+	st.count = (st.count + 1) % 100
 	return f, nil
 }
 
-func (st * StreamFile) GenFile(){
+func (st *StreamFile) genFile() {
 	defer close(st.errorChannel)
 	for {
 		//PreAllocate a New File
-		f, err := st.AllocateFile()
-		if err != nil{
-			st.errorChannel<-err
+		f, err := st.allocateFile()
+		if err != nil {
+			st.errorChannel <- err
 			return
 		}
 		select {
-		case st.fileChannel <-f:
+		case st.fileChannel <- f:
 			continue
 		case <-st.finishChannel:
 			os.Remove(f.Name())

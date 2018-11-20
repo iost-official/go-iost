@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"io"
 	"io/ioutil"
+	"math"
 	"os"
 	"path/filepath"
-	"math"
-	"testing"
 	"strings"
+	"testing"
 )
 
 func TestNew(t *testing.T) {
@@ -116,7 +116,7 @@ func TestSave(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(metad) != "somedata"{
+	if string(metad) != "somedata" {
 		t.Fatal("metadata not consistent! Got: ", string(metad), " expect: somedata")
 	}
 
@@ -124,16 +124,16 @@ func TestSave(t *testing.T) {
 		t.Fatal("Entry length not match, should be 4, got: ", len(entries))
 	}
 
-	if entries[0].Index != 0{
+	if entries[0].Index != 0 {
 		t.Fatal("Entry Index miss match, should be 0, got: ", entries[0].Index)
 	}
-	if entries[1].Index != 1{
+	if entries[1].Index != 1 {
 		t.Fatal("Entry Index miss match, should be 1, got: ", entries[0].Index)
 	}
-	if entries[2].Index != 2{
+	if entries[2].Index != 2 {
 		t.Fatal("Entry Index miss match, should be 2, got: ", entries[0].Index)
 	}
-	if entries[3].Index != 3{
+	if entries[3].Index != 3 {
 		t.Fatal("Entry Index miss match, should be 3, got: ", entries[0].Index)
 	}
 }
@@ -174,7 +174,7 @@ func TestSaveWithCut(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if string(metad) != "somedata"{
+	if string(metad) != "somedata" {
 		t.Fatal("metadata not consistent! Got: ", string(metad), " expect: somedata")
 	}
 
@@ -182,16 +182,16 @@ func TestSaveWithCut(t *testing.T) {
 		t.Fatal("Entry length not match, should be 4, got: ", len(entries))
 	}
 
-	if entries[0].Index != 0{
+	if entries[0].Index != 0 {
 		t.Fatal("Entry Index miss match, should be 0, got: ", entries[0].Index)
 	}
-	if entries[1].Index != 1{
+	if entries[1].Index != 1 {
 		t.Fatal("Entry Index miss match, should be 1, got: ", entries[0].Index)
 	}
-	if entries[2].Index != 2{
+	if entries[2].Index != 2 {
 		t.Fatal("Entry Index miss match, should be 2, got: ", entries[0].Index)
 	}
-	if entries[3].Index != 3{
+	if entries[3].Index != 3 {
 		t.Fatal("Entry Index miss match, should be 3, got: ", entries[0].Index)
 	}
 }

@@ -1,12 +1,12 @@
 package wal
 
 import (
-	"sync"
-	"hash"
-	"os"
-	"io"
 	"encoding/binary"
 	"github.com/iost-official/go-iost/db/wal/pcrc"
+	"hash"
+	"io"
+	"os"
+	"sync"
 )
 
 // walPageBytes is the alignment for flushing logs to the backing Writer.
@@ -103,4 +103,3 @@ func writeUint64(w io.Writer, n uint64, buf []byte) error {
 	_, err := w.Write(buf)
 	return err
 }
-

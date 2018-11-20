@@ -1,11 +1,11 @@
 package pcrc
 
 import (
-	"hash/crc64"
 	"hash"
+	"hash/crc64"
 )
 
-// The size of a CRC-64 checksum in bytes.
+// Size The size of a CRC-64 checksum in bytes.
 const Size = 8
 
 type digest struct {
@@ -13,6 +13,7 @@ type digest struct {
 	tab *crc64.Table
 }
 
+// New new pcrc with previous crc
 func New(prev uint64, table *crc64.Table) hash.Hash64 {
 	return &digest{prev, table}
 }

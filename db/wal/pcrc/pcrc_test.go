@@ -1,8 +1,8 @@
 package pcrc
 
 import (
-	"testing"
 	"hash/crc64"
+	"testing"
 )
 
 // TestHash64 tests that Hash64 provided by this package can take an initial
@@ -31,7 +31,7 @@ func TestHash64(t *testing.T) {
 	if g := hash.Sum(make([]byte, 64)); !reflect.DeepEqual(g, wsum) {
 		t.Errorf("sum = %v, want %v", g, wsum)
 	}
-*/
+	*/
 	// write something
 	if _, err := stdhash.Write([]byte("test data")); err != nil {
 		t.Fatalf("unexpected write error: %v", err)

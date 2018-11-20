@@ -1,19 +1,19 @@
-// This Module is in so many aspects inspired by etcd's WAL.
+// Package wal This Module is in so many aspects inspired by etcd's WAL.
 package wal
 
 import (
+	"bytes"
+	"errors"
+	"fmt"
+	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/go-iost/ilog"
 	"hash/crc64"
 	"io"
-	"path/filepath"
-	"time"
 	"os"
-	"errors"
-	"sync"
-	"bytes"
-	"fmt"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/gogo/protobuf/proto"
+	"path/filepath"
 	"strings"
+	"sync"
+	"time"
 )
 
 var (
@@ -23,10 +23,13 @@ var (
 	// so that tests can set a different segment size.
 	SegmentSizeBytes int64 = 64 * 1000 * 1000 // 64MB
 
+	// ErrMetadataConflict metadata not consist
 	ErrMetadataConflict = errors.New("wal: conflicting metadata found")
-	ErrFileNotFound     = errors.New("wal: file not found")
-	ErrCRCMismatch      = errors.New("wal: crc mismatch")
-	crc64Table = crc64.MakeTable(crc64.ECMA)
+	// ErrFileNotFound file not found
+	ErrFileNotFound = errors.New("wal: file not found")
+	// ErrCRCMismatch crc miss match
+	ErrCRCMismatch   = errors.New("wal: crc mismatch")
+	crc64Table       = crc64.MakeTable(crc64.ECMA)
 	warnSyncDuration = time.Second
 )
 
@@ -41,12 +44,12 @@ type WAL struct {
 	// dirFile is a fd for the wal directory for syncing on Rename
 	dirFile *os.File
 
-	metadata []byte           // metadata recorded at the head of each WAL
+	metadata []byte // metadata recorded at the head of each WAL
 	//state    raftpb.HardState // hardstate recorded at the head of WAL
 
 	//start     walpb.Snapshot // snapshot to start reading
-	decoder   *decoder       // decoder to decode records
-	readClose func() error   // closer for decode reader
+	decoder   *decoder     // decoder to decode records
+	readClose func() error // closer for decode reader
 
 	mu             sync.Mutex
 	lastEntryIndex uint64   // index of the last entry saved to the wal
@@ -83,7 +86,7 @@ func Create(dirpath string, metadata []byte) (*WAL, error) {
 	w := &WAL{
 		dir:      dirpath,
 		metadata: metadata,
-		st: streamFile,
+		st:       streamFile,
 	}
 
 	if w.dirFile, err = OpenDir(w.dir); err != nil {
@@ -178,7 +181,7 @@ func Create(dirpath string, metadata []byte) (*WAL, error) {
 
 func recoverFromDir(dirpath string, metadata []byte) (*WAL, error) {
 	w, err := Open(dirpath)
-	if err != nil{
+	if err != nil {
 		return nil, err
 	}
 
@@ -232,6 +235,7 @@ func (w *WAL) renameWALUnlock(tmpdirpath string) (*WAL, error) {
 	return newWAL, nil
 }
 */
+
 // Open opens the WAL at the given snap.
 // The snap SHOULD have been previously saved to the WAL, or the following
 // ReadAll will fail.
@@ -265,7 +269,7 @@ func openAtIndex(dirpath string) (*WAL, error) {
 	if !ok || !isValidSeq(names[nameIndex:]) {
 		return nil, ErrFileNotFound
 	}
-*/
+	*/
 	// open the wal files
 	rcs := make([]io.ReadCloser, 0)
 	rs := make([]io.Reader, 0)
@@ -279,7 +283,7 @@ func openAtIndex(dirpath string) (*WAL, error) {
 		}
 		ls = append(ls, l)
 		rs = append(rs, l)
-		if strings.HasSuffix(name, ".wal"){
+		if strings.HasSuffix(name, ".wal") {
 			rcs = append(rcs, l)
 		}
 
@@ -304,20 +308,20 @@ func openAtIndex(dirpath string) (*WAL, error) {
 		decoder:   newDecoder(rs...),
 		readClose: closer,
 		files:     ls,
-		st: streamFile,
+		st:        streamFile,
 	}
 
 	/*
-	if write {
-		// write reuses the file descriptors from read; don't close so
-		// WAL can append without dropping the file lock
-		w.readClose = nil
-		if _, _, err := parseWALName(filepath.Base(w.tail().Name())); err != nil {
-			closer()
-			return nil, err
+		if write {
+			// write reuses the file descriptors from read; don't close so
+			// WAL can append without dropping the file lock
+			w.readClose = nil
+			if _, _, err := parseWALName(filepath.Base(w.tail().Name())); err != nil {
+				closer()
+				return nil, err
+			}
+			w.st = newStreamFile(w.dir, SegmentSizeBytes)
 		}
-		w.st = newStreamFile(w.dir, SegmentSizeBytes)
-	}
 	*/
 
 	return w, nil
@@ -346,10 +350,10 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 			e := mustUnmarshalEntry(log.Data)
 			ents = append(ents, e)
 			w.lastEntryIndex = e.Index
-/*
-		case RecordType_stateType:
-			state = mustUnmarshalState(log.Data)
-*/
+			/*
+				case RecordType_stateType:
+					state = mustUnmarshalState(log.Data)
+			*/
 		case LogType_metaDataType:
 			if metadata != nil && !bytes.Equal(metadata, log.Data) {
 				return nil, nil, ErrMetadataConflict
@@ -366,15 +370,15 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 			decoder.updateCRC(log.Checksum)
 
 		/*case snapshotType:
-			var snap walpb.Snapshot
-			pbutil.MustUnmarshal(&snap, log.Data)
-			if snap.Index == w.start.Index {
-				if snap.Term != w.start.Term {
-					state.Reset()
-					return nil, state, nil, ErrSnapshotMismatch
-				}
-				match = true
-			}*/
+		var snap walpb.Snapshot
+		pbutil.MustUnmarshal(&snap, log.Data)
+		if snap.Index == w.start.Index {
+			if snap.Term != w.start.Term {
+				state.Reset()
+				return nil, state, nil, ErrSnapshotMismatch
+			}
+			match = true
+		}*/
 
 		default:
 			return nil, nil, fmt.Errorf("unexpected block type %d", log.Type)
@@ -420,9 +424,9 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	w.metadata = metadata
 
 	if w.tail() != nil {
-		if !strings.HasSuffix(w.tail().Name(), ".wal.tmp"){
+		if !strings.HasSuffix(w.tail().Name(), ".wal.tmp") {
 			f, error := w.st.GetNewFile()
-			if error != nil{
+			if error != nil {
 				err = error
 				return
 			}
@@ -439,7 +443,8 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	return metadata, ents, err
 }
 
-func (w *WAL) RemoveFiles(index uint64) error{
+// RemoveFiles remove files less than index
+func (w *WAL) RemoveFiles(index uint64) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 	var fileIndex int
@@ -448,7 +453,7 @@ func (w *WAL) RemoveFiles(index uint64) error{
 		if err != nil {
 			return err
 		}
-		if lastIndex > index{
+		if lastIndex > index {
 			if i == 0 {
 				return nil
 			}
@@ -486,7 +491,7 @@ func (w *WAL) cut() error {
 
 	var err error
 	w.files[len(w.files)-1], err = os.Open(fpath)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 
@@ -511,11 +516,11 @@ func (w *WAL) cut() error {
 	if err = w.encoder.encode(&Log{Type: LogType_metaDataType, Data: w.metadata}); err != nil {
 		return err
 	}
-/*
-	if err = w.saveState(&w.state); err != nil {
-		return err
-	}
-*/
+	/*
+		if err = w.saveState(&w.state); err != nil {
+			return err
+		}
+	*/
 	// atomically move temp wal file to wal file
 	if err = w.sync(); err != nil {
 		return err
@@ -527,31 +532,31 @@ func (w *WAL) cut() error {
 	}
 
 	/*
-	if err = os.Rename(newTail.Name(), fpath); err != nil {
-		return err
-	}
-	if err = fileutil.Fsync(w.dirFile); err != nil {
-		return err
-	}
+		if err = os.Rename(newTail.Name(), fpath); err != nil {
+			return err
+		}
+		if err = fileutil.Fsync(w.dirFile); err != nil {
+			return err
+		}
 
-	// reopen newTail with its new path so calls to Name() match the wal filename format
-	newTail.Close()
+		// reopen newTail with its new path so calls to Name() match the wal filename format
+		newTail.Close()
 
-	if newTail, err = fileutil.LockFile(fpath, os.O_WRONLY, fileutil.PrivateFileMode); err != nil {
-		return err
-	}
-	if _, err = newTail.Seek(off, io.SeekStart); err != nil {
-		return err
-	}
+		if newTail, err = fileutil.LockFile(fpath, os.O_WRONLY, fileutil.PrivateFileMode); err != nil {
+			return err
+		}
+		if _, err = newTail.Seek(off, io.SeekStart); err != nil {
+			return err
+		}
 
-	w.files[len(w.files)-1] = newTail
+		w.files[len(w.files)-1] = newTail
 
-	prevCrc = w.encoder.crc.Sum64()
-	w.encoder, err = newFileEncoder(w.tail().File, prevCrc)
-	if err != nil {
-		return err
-	}
-*/
+		prevCrc = w.encoder.crc.Sum64()
+		w.encoder, err = newFileEncoder(w.tail().File, prevCrc)
+		if err != nil {
+			return err
+		}
+	*/
 	ilog.Info("created a new WAL segment, old tail file moved to: ", fpath)
 	return nil
 }
@@ -567,7 +572,7 @@ func (w *WAL) sync() error {
 	err := w.tail().Sync()
 	took := time.Since(start)
 	if took > warnSyncDuration {
-			ilog.Warn("slow fdatasync, took", took, " , expected-duration", warnSyncDuration)
+		ilog.Warn("slow fdatasync, took", took, " , expected-duration", warnSyncDuration)
 	}
 	//walFsyncSec.Observe(took.Seconds())
 
@@ -664,6 +669,7 @@ func (w *WAL) saveEntry(e *Entry) error {
 	//w.lastEntryIndex = e.Index
 	return nil
 }
+
 /*
 func (w *WAL) saveState(s *raftpb.HardState) error {
 	if raft.IsEmptyHardState(*s) {
@@ -675,6 +681,8 @@ func (w *WAL) saveState(s *raftpb.HardState) error {
 	return w.encoder.encode(log)
 }
 */
+
+// SaveSingle save single entry
 func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
@@ -689,18 +697,19 @@ func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
 		return 0, err
 	}
 	if curOff < SegmentSizeBytes {
-		return w.lastEntryIndex,nil
+		return w.lastEntryIndex, nil
 	}
 
 	return w.lastEntryIndex, w.cut()
 }
 
+// Save save entries
 func (w *WAL) Save(ents []Entry) (uint64, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
 	if len(ents) == 0 {
-		return w.lastEntryIndex,nil
+		return w.lastEntryIndex, nil
 	}
 
 	// TODO(xiangli): no more reference operator
@@ -715,18 +724,21 @@ func (w *WAL) Save(ents []Entry) (uint64, error) {
 		return 0, err
 	}
 	if curOff < SegmentSizeBytes {
-		return w.lastEntryIndex,nil
+		return w.lastEntryIndex, nil
 	}
 
 	return w.lastEntryIndex, w.cut()
 }
+
+// HasDecoder check whether wal has decoder
 func (w *WAL) HasDecoder() bool {
-	if  w.decoder != nil && len(w.decoder.r) != 0 {
+	if w.decoder != nil && len(w.decoder.r) != 0 {
 		return true
 	}
 	return false
 
 }
+
 /*
 func (w *WAL) SaveSnapshot(e walpb.Snapshot) error {
 	b := pbutil.MustMarshal(&e)
@@ -750,6 +762,7 @@ func (w *WAL) SaveSnapshot(e walpb.Snapshot) error {
 func (w *WAL) saveCrc(prevCrc uint64) error {
 	return w.encoder.encode(&Log{Type: LogType_crcType, Data: Uint64ToBytes(prevCrc)})
 }
+
 /*
 func (w *WAL) syncThread(){
 	t := time.NewTimer(syncDuration)
@@ -772,10 +785,10 @@ func (w *WAL) tail() *os.File {
 }
 
 func (w *WAL) seq() uint64 {
-	if len(w.files) <= 1{
+	if len(w.files) <= 1 {
 		return 0
 	}
-	t := w.files[len(w.files) - 2]
+	t := w.files[len(w.files)-2]
 	if t == nil {
 		return 0
 	}
@@ -795,7 +808,8 @@ func closeAll(rcs ...io.ReadCloser) error {
 	return nil
 }
 
-func (w *WAL) CleanDir() error{
+// CleanDir clean the wal dir
+func (w *WAL) CleanDir() error {
 	if w.dirFile != nil {
 		return os.RemoveAll(w.dirFile.Name())
 	}

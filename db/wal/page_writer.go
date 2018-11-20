@@ -81,6 +81,7 @@ func (pw *PageWriter) Write(p []byte) (n int, err error) {
 	return n, werr
 }
 
+// Flush flush the page writer
 func (pw *PageWriter) Flush() error {
 	if pw.bufferedBytes == 0 {
 		return nil

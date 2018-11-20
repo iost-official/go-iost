@@ -6,14 +6,14 @@ import (
 	"strconv"
 	"sync"
 
+	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/xlab/treeprint"
-	"github.com/iost-official/go-iost/db/wal"
-	"github.com/gogo/protobuf/proto"
 	"os"
 )
 
@@ -21,7 +21,7 @@ import (
 type CacheStatus int
 
 type conAlgo interface {
-	recoverBlock(blk *block.Block, witnessList WitnessList)  error
+	recoverBlock(blk *block.Block, witnessList WitnessList) error
 }
 
 const (
@@ -38,6 +38,7 @@ const (
 	Single
 	Virtual
 )
+
 var (
 	blockCacheWALDir = "./block_cache_wal"
 )
@@ -45,9 +46,9 @@ var (
 // BlockCacheNode is the implementation of BlockCacheNode
 type BlockCacheNode struct { //nolint:golint
 	*block.Block
-	Parent       *BlockCacheNode
-	Children     map[*BlockCacheNode]bool
-	Type         BCNType
+	Parent   *BlockCacheNode
+	Children map[*BlockCacheNode]bool
+	Type     BCNType
 	walIndex uint64
 
 	ConfirmUntil int64
@@ -80,20 +81,20 @@ func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block
 	}
 }
 
-func encodeBCN(bcn *BlockCacheNode) (b []byte, err error){
+func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 	// First add block
 	blockByte, err := bcn.Block.Encode()
 	if err != nil {
 		return
 	}
 	bcRaw := BlockCacheRaw{
-		BlockBytes:blockByte,
-		WitnessList:&bcn.WitnessList,
+		BlockBytes:  blockByte,
+		WitnessList: &bcn.WitnessList,
 	}
 	b, err = bcRaw.Marshal()
 	return
 }
-func decodeBCN(b []byte) (block block.Block, witnessList WitnessList, err error){
+func decodeBCN(b []byte) (block block.Block, witnessList WitnessList, err error) {
 	var bcRaw BlockCacheRaw
 	err = proto.Unmarshal(b, &bcRaw)
 	if err != nil {
@@ -121,7 +122,8 @@ func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		bcn.Block = &block.Block{
 			Head: &block.BlockHead{
 				Number: -1,
-			}, } }
+			}}
+	}
 	bcn.setParent(parent)
 	return bcn
 }
@@ -172,9 +174,10 @@ type BlockCacheImpl struct { //nolint:golint
 	leaf         map[*BlockCacheNode]int64
 	baseVariable global.BaseVariable
 	stateDB      db.MVCCDB
-	wal 		 *wal.WAL
+	wal          *wal.WAL
 }
 
+// CleanDir used in test to clean dir
 func (bc *BlockCacheImpl) CleanDir() error {
 	if bc.wal != nil {
 		return bc.wal.CleanDir()
@@ -205,7 +208,7 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 
 // NewBlockCache return a new BlockCache instance
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
-	w, err :=wal.Create(blockCacheWALDir, []byte("block_cache_wal"))
+	w, err := wal.Create(blockCacheWALDir, []byte("block_cache_wal"))
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +219,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		leaf:         make(map[*BlockCacheNode]int64),
 		baseVariable: baseVariable,
 		stateDB:      baseVariable.StateDB().Fork(),
-		wal:		  w,
+		wal:          w,
 	}
 	bc.linkedRoot.Head.Number = -1
 	lib, err := baseVariable.BlockChain().Top()
@@ -244,8 +247,9 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	return &bc, nil
 }
 
-func (bc *BlockCacheImpl) Recover(p conAlgo) (err error){
-	if bc.wal.HasDecoder(){
+// Recover recover previews block cache
+func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
+	if bc.wal.HasDecoder() {
 		//Get All entries
 		_, entries, err := bc.wal.ReadAll()
 		if err != nil {
@@ -261,7 +265,7 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error){
 	return
 }
 
-func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error){
+func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 	var bcMessage BcMessage
 	proto.Unmarshal(entry.Data, &bcMessage)
 	switch bcMessage.Type {
@@ -279,7 +283,7 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error){
 	return
 }
 
-func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error){
+func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	block, witnessList, err := decodeBCN(b)
 	//bc.Add(&block)
 	p.recoverBlock(&block, witnessList)
@@ -287,7 +291,7 @@ func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error){
 	return
 }
 
-func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error){
+func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
 
 	return
 }
@@ -302,7 +306,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 		return
 	}
 	index, err := bc.writeAddNodeWAL(bcn)
-	if err!=nil {
+	if err != nil {
 		ilog.Error("Failed to write add node WAL!")
 	}
 	bcn.walIndex = index
@@ -345,7 +349,6 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 	return nil
 }
 
-
 func (bc *BlockCacheImpl) updateLongest() {
 	_, ok := bc.hmget(bc.head.Block.HeadHash())
 	if ok {
@@ -360,6 +363,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 	}
 }
 
+// AddWithWit add block with witnessList
 func (bc *BlockCacheImpl) AddWithWit(blk *block.Block, witnessList WitnessList) (bcn *BlockCacheNode) {
 	bcn = bc.Add(blk)
 	bcn.WitnessList = witnessList
@@ -387,7 +391,6 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	//newNode.WitnessInfo = wi
 	return newNode
 }
-
 
 // AddGenesis is add genesis block
 func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
@@ -490,11 +493,11 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) flushWAL(h *BlockCacheNode) error {
 	err := bc.writeSetHeadWAL(h)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	err = bc.cutWALFiles(h)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	return nil
@@ -593,6 +596,7 @@ func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
 	}
 }
 
+// CleanBlockCacheWAL used in test to clean dir
 func CleanBlockCacheWAL() error {
 	return os.RemoveAll(blockCacheWALDir)
 }

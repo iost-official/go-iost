@@ -1,14 +1,14 @@
 package wal
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
-	"strings"
 	"github.com/iost-official/go-iost/ilog"
+	"io"
 	"os"
 	"sort"
-	"io"
-	"encoding/binary"
+	"strings"
 )
 
 var errBadWALName = errors.New("bad wal name")
@@ -41,8 +41,12 @@ func filterDirWithExt(d, ext string) ([]string, error) {
 // exists returns whether the given file or directory exists
 func exists(path string) (bool, error) {
 	_, err := os.Stat(path)
-	if err == nil { return true, nil }
-	if os.IsNotExist(err) { return false, nil }
+	if err == nil {
+		return true, nil
+	}
+	if os.IsNotExist(err) {
+		return false, nil
+	}
 	return true, err
 }
 
@@ -50,7 +54,7 @@ func exists(path string) (bool, error) {
 func Exist(dir string) bool {
 	names, err := filterDirWithExt(dir, ".wal")
 	names2, err2 := filterDirWithExt(dir, ".wal.tmp")
-	if err != nil || err2 != nil{
+	if err != nil || err2 != nil {
 		return false
 	}
 	return len(names) != 0 || len(names2) != 0
@@ -64,7 +68,7 @@ func searchIndex(names []string, index uint64) (int, bool) {
 		name := names[i]
 		_, curIndex, err := parseWALName(name)
 		if err != nil {
-			ilog.Error("failed to parse WAL file name, path: ", name , err)
+			ilog.Error("failed to parse WAL file name, path: ", name, err)
 		}
 		if index >= curIndex {
 			return i, true
@@ -133,8 +137,10 @@ func walName(seq, index uint64) string {
 	return fmt.Sprintf("%016x-%016x.wal", seq, index)
 }
 
+// OpenDir open a dir
 func OpenDir(path string) (*os.File, error) { return os.Open(path) }
 
+// ZeroToEnd write zero to file from current to end
 func ZeroToEnd(f *os.File) error {
 	// TODO: support FALLOC_FL_ZERO_RANGE
 	off, err := f.Seek(0, io.SeekCurrent)
@@ -156,6 +162,7 @@ func ZeroToEnd(f *os.File) error {
 	return err
 }
 
+// Uint64ToBytes convert uint64 to byte array
 func Uint64ToBytes(i uint64) []byte {
 	var buf = make([]byte, 8)
 	binary.BigEndian.PutUint64(buf, i)
