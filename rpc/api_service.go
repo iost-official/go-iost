@@ -266,7 +266,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
 	t := toCoreTx(req)
-	_, topBlock := as.txpool.PendingTx()
+	topBlock := as.bc.Head()
 	blkHead := &block.BlockHead{
 		Version:    0,
 		ParentHash: topBlock.HeadHash(),
@@ -274,7 +274,9 @@ func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.Transactio
 		Time:       time.Now().UnixNano(),
 	}
 	v := verifier.Verifier{}
-	receipt, err := v.Try(blkHead, as.bv.StateDB().Fork(), t, cverifier.TxExecTimeLimit)
+	stateDB := as.bv.StateDB().Fork()
+	stateDB.Checkout(string(topBlock.HeadHash()))
+	receipt, err := v.Try(blkHead, stateDB, t, cverifier.TxExecTimeLimit)
 	if err != nil {
 		return nil, err
 	}
