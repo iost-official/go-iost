@@ -94,7 +94,7 @@ func Test_ExchangeIOST(t *testing.T) {
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("contribute", testID[6]), ShouldEqual, int64(600))
 			So(s.Visitor.TokenBalance("iost", testID[6]), ShouldEqual, int64(15789473684))
 			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(84210526316))

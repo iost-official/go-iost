@@ -336,6 +336,15 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 		return nil, fmt.Errorf("non exist user %v", key.ID)
 	}
 
+	frozenBalances := make([]*GetAccountRes_FrozenBalance, 0)
+	frozen := s.visitor.AllFreezedTokenBalanceFixed("iost", key.ID)
+	for _, item := range frozen {
+		frozenBalances = append(frozenBalances, &GetAccountRes_FrozenBalance{
+			Amount: item.Amount.ToString(),
+			Time:   time.Unix(0, item.Ftime).Format(time.RFC3339),
+		})
+	}
+
 	ram := &RAMInfo{}
 	ram.Available = s.visitor.TokenBalance("ram", key.ID)
 	balance := s.visitor.TokenBalanceFixed("iost", key.ID).ToString()
@@ -344,7 +353,6 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	var h *host.Host
 	c := host.NewContext(nil)
 	h = host.NewHost(c, s.visitor, nil, nil)
-	h.Context().Set("contract_name", "gas.iost")
 	g := host.NewGasManager(h)
 	v, _ := g.CurrentTotalGas(key.ID, s.bc.LinkedRoot().Head.Time)
 	gas.CurrentTotal = v.ToString()
@@ -353,12 +361,21 @@ func (s *GRPCServer) GetAccountInfo(ctx context.Context, key *GetAccountReq) (*G
 	v, _ = g.GasLimit(key.ID)
 	gas.Limit = v.ToString()
 	v, _ = g.GasPledge(key.ID, key.ID)
-	gas.PledgedCoin = v.ToString()
+	gas.PledgedInfo = make([]*GASInfo_PledgeInfo, 0)
+	pledgeInfo, _ := g.PledgerInfo(key.ID)
+	ilog.Errorf("pledge info %v", pledgeInfo)
+	for _, item := range pledgeInfo {
+		gas.PledgedInfo = append(gas.PledgedInfo, &GASInfo_PledgeInfo{
+			Amount:  item.Amount.ToString(),
+			Pledger: item.Pledger,
+		})
+	}
 	return &GetAccountRes{
-		Balance:     balance,
-		Gas:         gas,
-		Ram:         ram,
-		AccountJson: accStr.(string),
+		Balance:        balance,
+		FrozenBalances: frozenBalances,
+		Gas:            gas,
+		Ram:            ram,
+		AccountJson:    accStr.(string),
 	}, nil
 }
 
