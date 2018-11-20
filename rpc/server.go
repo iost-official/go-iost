@@ -5,7 +5,11 @@ import (
 	"net"
 	"net/http"
 
+	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
@@ -23,8 +27,15 @@ type Server struct {
 }
 
 // New returns a new rpc server instance.
-func New() *Server {
-	return &Server{}
+func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service) *Server {
+	s := &Server{
+		grpcAddr:    bv.Config().RPC.GRPCAddr,
+		gatewayAddr: bv.Config().RPC.GatewayAddr,
+	}
+	s.grpcServer = grpc.NewServer(grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(metricsMiddleware)))
+	apiService := NewAPIService(tp, bc, bv, p2pService)
+	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
+	return s
 }
 
 // Start starts the rpc server.
@@ -40,9 +51,6 @@ func (s *Server) startGrpc() error {
 	if err != nil {
 		return err
 	}
-	s.grpcServer = grpc.NewServer(grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(metricsMiddleware)))
-	apiService := NewAPIService(nil, nil, nil, nil)
-	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
 	go func() {
 		if err := s.grpcServer.Serve(lis); err != nil {
 			ilog.Fatalf("start grpc failed. err=%v", err)
@@ -64,7 +72,7 @@ func (s *Server) startGateway() error {
 		Handler: mux,
 	}
 	go func() {
-		if err := s.gatewayServer.ListenAndServe(); err != nil {
+		if err := s.gatewayServer.ListenAndServe(); err != http.ErrServerClosed {
 			ilog.Fatalf("start gateway failed. err=%v", err)
 		}
 	}()

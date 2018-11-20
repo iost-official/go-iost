@@ -34,7 +34,7 @@ var transactionCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		fmt.Println(txRaw.Tx)
+		fmt.Println(txRaw)
 	},
 }
 

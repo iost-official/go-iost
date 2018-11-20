@@ -6,8 +6,9 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
-	contract "github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc/pb"
 )
 
@@ -155,6 +156,46 @@ func toPbContract(c *contract.Contract) *rpcpb.Contract {
 			pbABI.AmountLimit = append(pbABI.AmountLimit, toPbAmountLimit(al))
 		}
 		ret.Abis = append(ret.Abis, pbABI)
+	}
+	return ret
+}
+
+func toCoreTx(t *rpcpb.TransactionRequest) *tx.Tx {
+	ret := &tx.Tx{
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasPrice:   int64(t.GasPrice * 100),
+		GasLimit:   int64(t.GasLimit * 100),
+		Delay:      t.Delay,
+		Signers:    t.Signers,
+		Publisher:  t.Publisher,
+	}
+	for _, a := range t.Actions {
+		ret.Actions = append(ret.Actions, &tx.Action{
+			Contract:   a.Contract,
+			ActionName: a.ActionName,
+			Data:       a.Data,
+		})
+	}
+	for _, a := range t.AmountLimit {
+		ret.AmountLimit = append(ret.AmountLimit, &contract.Amount{
+			Token: a.Token,
+			Val:   a.Value,
+		})
+	}
+	for _, s := range t.Signatures {
+		ret.Signs = append(ret.Signs, &crypto.Signature{
+			Algorithm: crypto.Algorithm(s.Algorithm),
+			Pubkey:    s.PublicKey,
+			Sig:       s.Signature,
+		})
+	}
+	for _, s := range t.PublisherSigs {
+		ret.PublishSigns = append(ret.PublishSigns, &crypto.Signature{
+			Algorithm: crypto.Algorithm(s.Algorithm),
+			Pubkey:    s.PublicKey,
+			Sig:       s.Signature,
+		})
 	}
 	return ret
 }

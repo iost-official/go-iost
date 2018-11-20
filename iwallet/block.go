@@ -19,7 +19,7 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/iost-official/go-iost/rpc"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
@@ -37,7 +37,7 @@ var blockCmd = &cobra.Command{
 			fmt.Println(`Error: block num or hash not given`)
 			return
 		}
-		var blockInfo *rpc.BlockInfo
+		var blockInfo *rpcpb.BlockResponse
 		var num int64
 		var err error
 		if method == "num" {

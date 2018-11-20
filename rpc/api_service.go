@@ -6,8 +6,10 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"time"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/consensus/pob"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -16,6 +18,7 @@ import (
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 )
@@ -163,17 +166,21 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
 	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	// pack basic account information
 	acc, _ := host.ReadAuth(dbVisitor, req.GetName())
 	if acc == nil {
 		return nil, errors.New("account not found")
 	}
 	ret := toPbAccount(acc)
+
+	// pack balance and ram information
 	balance := dbVisitor.TokenBalanceFixed("iost", req.GetName()).ToString()
 	ret.Balance = balance
 	ret.RamInfo = &rpcpb.Account_RAMInfo{
 		Available: dbVisitor.TokenBalance("ram", req.GetName()),
 	}
 
+	// pack gas information
 	var blkTime int64
 	if req.GetByLongestChain() {
 		blkTime = as.bc.Head().Head.Time
@@ -184,13 +191,28 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	totalGas, _ := gasManager.CurrentTotalGas(req.GetName(), blkTime)
 	gasLimit, _ := gasManager.GasLimit(req.GetName())
 	gasRate, _ := gasManager.GasRate(req.GetName())
+	pledgedInfo, _ := gasManager.PledgerInfo(req.GetName())
 	ret.GasInfo = &rpcpb.Account_GasInfo{
 		CurrentTotal:  totalGas.ToFloat(),
 		Limit:         gasLimit.ToFloat(),
 		IncreaseSpeed: gasRate.ToFloat(),
 	}
+	for _, p := range pledgedInfo {
+		ret.GasInfo.PledgedInfo = append(ret.GasInfo.PledgedInfo, &rpcpb.Account_PledgeInfo{
+			Amount:  p.Amount.ToFloat(),
+			Pledger: p.Pledger,
+		})
+	}
 
-	// TODO: pack pledged info and frozen balance
+	// pack frozen balance information
+	frozen := dbVisitor.AllFreezedTokenBalanceFixed("iost", req.GetName())
+	for _, f := range frozen {
+		ret.FrozenBalances = append(ret.FrozenBalances, &rpcpb.Account_FrozenBalance{
+			Amount: f.Amount.ToString(),
+			Time:   f.Ftime,
+		})
+	}
+
 	return ret, nil
 }
 
@@ -231,12 +253,32 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 
 // SendTransaction sends a transaction to iserver.
 func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.SendTransactionResponse, error) {
-	return nil, nil
+	t := toCoreTx(req)
+	err := as.txpool.AddTx(t)
+	if err != nil {
+		return nil, err
+	}
+	return &rpcpb.SendTransactionResponse{
+		Hash: common.Base58Encode(t.Hash()),
+	}, nil
 }
 
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
-	return nil, nil
+	t := toCoreTx(req)
+	_, topBlock := as.txpool.PendingTx()
+	blkHead := &block.BlockHead{
+		Version:    0,
+		ParentHash: topBlock.HeadHash(),
+		Number:     topBlock.Head.Number + 1,
+		Time:       time.Now().UnixNano(),
+	}
+	v := verifier.Verifier{}
+	receipt, err := v.Try(blkHead, as.bv.StateDB().Fork(), t, cverifier.TxExecTimeLimit)
+	if err != nil {
+		return nil, err
+	}
+	return toPbTxReceipt(receipt), nil
 }
 
 func (as *APIService) getStateDBVisitor(longestChain bool) *database.Visitor {
