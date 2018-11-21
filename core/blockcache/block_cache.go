@@ -227,7 +227,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		bc.linkedRoot = NewBCN(nil, lib)
 		bc.linkedRoot.Type = Linked
 		bc.singleRoot.Type = Virtual
-		bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
+		bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
 		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
 
 		if err := bc.updatePending(bc.linkedRoot); err != nil {
@@ -301,7 +301,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
-	fa, ok := bc.hmget(bcn.Block.Head.ParentHash)
+	fa, ok := bc.hmget(bcn.Head.ParentHash)
 	if !ok || fa.Type != Linked {
 		return
 	}
@@ -333,7 +333,7 @@ func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 
-	ok := bc.stateDB.Checkout(string(h.Block.HeadHash()))
+	ok := bc.stateDB.Checkout(string(h.HeadHash()))
 	if ok {
 		if err := h.UpdatePending(bc.stateDB); err != nil {
 			ilog.Error("failed to update pending, err:", err)
@@ -350,7 +350,7 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
-	_, ok := bc.hmget(bc.head.Block.HeadHash())
+	_, ok := bc.hmget(bc.head.HeadHash())
 	if ok {
 		return
 	}
@@ -401,7 +401,7 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 		bc.linkedRoot.LibWitnessHandle()
 	}
 	bc.head = bc.linkedRoot
-	bc.hmset(bc.linkedRoot.Block.HeadHash(), bc.linkedRoot)
+	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
 }
 
@@ -409,7 +409,7 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	fa := bcn.Parent
 	bcn.Parent = nil
 	if bcn.Block != nil {
-		bc.hmdel(bcn.Block.HeadHash())
+		bc.hmdel(bcn.HeadHash())
 	}
 	if fa != nil {
 		fa.delChild(bcn)
@@ -469,7 +469,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			return err
 		}
 		ilog.Debug("confirm: ", retain.Head.Number)
-		err = bc.baseVariable.StateDB().Flush(string(retain.Block.HeadHash()))
+		err = bc.baseVariable.StateDB().Flush(string(retain.HeadHash()))
 
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
@@ -551,6 +551,9 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 // GetBlockByNumber get a block by number
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.head
+	if num < bc.linkedRoot.Head.Number || num > it.Head.Number {
+		return nil, fmt.Errorf("block not found")
+	}
 	for it != nil {
 		if it.Head.Number == num {
 			return it.Block, nil
