@@ -121,7 +121,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 				BatchIndex: []int32{},
 			},
 			Transactions: []*rpcpb.Transaction{
-				&rpcpb.Transaction{
+				{
 					Hash:       "xxxxx",
 					Time:       999,
 					Expiration: 20,
@@ -175,7 +175,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 				BatchIndex: []int32{},
 			},
 			Transactions: []*rpcpb.Transaction{
-				&rpcpb.Transaction{
+				{
 					Hash:       "xxxxx",
 					Time:       999,
 					Expiration: 20,
@@ -224,7 +224,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 		},
 		RamInfo: &rpcpb.Account_RAMInfo{Available: 111111},
 		Permissions: map[string]*rpcpb.Account_Permission{
-			"owner": &rpcpb.Account_Permission{
+			"owner": {
 				Name:   "owner",
 				Groups: []string{"active", "owner"},
 				Items: []*rpcpb.Account_Item{
@@ -235,7 +235,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 			},
 		},
 		Groups: map[string]*rpcpb.Account_Group{
-			"group1": &rpcpb.Account_Group{
+			"group1": {
 				Name: "group1",
 
 				Items: []*rpcpb.Account_Item{
@@ -255,7 +255,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 		Language: "javascript",
 		Version:  "1.0",
 		Abis: []*rpcpb.Contract_ABI{
-			&rpcpb.Contract_ABI{Name: "echo",
+			{
+				Name: "echo",
 				Args: []string{"a1", "a2"},
 				AmountLimit: []*rpcpb.AmountLimit{
 					{Token: "iost", Value: 1212.2},
