@@ -80,7 +80,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 
 	confirmNumber = int64(len(blkcache.LinkedRoot().Active()))
 	syncNumber = confirmNumber * continuousNum
-
+	ilog.Infof("NewSynchronizer confirmNumber:%v", confirmNumber)
 	return sy, nil
 }
 
