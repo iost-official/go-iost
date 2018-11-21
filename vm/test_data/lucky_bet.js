@@ -17,10 +17,10 @@ class Contract {
     bet(account, luckyNumber, coins, nonce) {
         if (coins < 1 || coins > 5) {
             console.log(coins);
-            throw "bet coins should be >=1 and <= 5"
+            throw new Error("bet coins should be >=1 and <= 5");
         }
         if (luckyNumber < 0 || luckyNumber > 9) {
-            throw "lucky number should be >=0 and <= 9"
+            throw new Error("lucky number should be >=0 and <= 9");
         }
 
         BlockChain.deposit(account, coins, "");
@@ -34,8 +34,8 @@ class Contract {
 
         storage.mapPut('table', luckyNumber.toString(), JSON.stringify(table));
 
-        userNumber += 1
-        totalCoins += coins
+        userNumber += 1;
+        totalCoins += coins;
         storage.put("user_number", JSON.stringify(userNumber));
         storage.put("total_coins", JSON.stringify(totalCoins));
 

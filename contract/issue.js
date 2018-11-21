@@ -8,7 +8,7 @@ class IssueContract {
             DECIMAL_PLACES: 50,
             POW_PRECISION: 50,
             ROUNDING_MODE: BigNumber.ROUND_DOWN
-        })
+        });
     }
 
     init() {
@@ -96,7 +96,7 @@ class IssueContract {
 
     _call(contract, api, args) {
         const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length == 1) {
+        if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
@@ -155,7 +155,7 @@ class IssueContract {
         const currentTime = this._getBlockTime();
         const gap = Math.floor((currentTime - lastIssueTime) / 3);
         if (gap <= 0) {
-            return
+            return;
         }
 
         const foundationAcc = this._get("FoundationAccount");
