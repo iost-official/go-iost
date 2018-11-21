@@ -14,8 +14,7 @@ import (
 )
 
 var (
-	// TODO: configurable
-	confirmNumber           int64 = 8
+	confirmNumber           int64
 	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
@@ -23,7 +22,7 @@ var (
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
 	continuousNum           int64 = 10
-	syncNumber                    = 11 * continuousNum
+	syncNumber              int64
 	printInterval           int64 = 1000
 )
 
@@ -78,6 +77,9 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 
 	sy.syncHeightChan = sy.p2pService.Register("sync height", p2p.SyncHeight)
 	sy.exitSignal = make(chan struct{})
+
+	confirmNumber = int64(len(blkcache.LinkedRoot().Active()))
+	syncNumber = confirmNumber * continuousNum
 
 	return sy, nil
 }
