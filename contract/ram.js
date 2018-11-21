@@ -62,33 +62,33 @@ class RAMContract {
     }
 
     _getTokenName() {
-        return "ram"
+        return "ram";
     }
 
     initContractName(contractName) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
         this._put("contractName", contractName);
     }
     initAdmin(adminID) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
         this._put("adminID", adminID);
     }
     _getContractName() {
-        return this._get("contractName")
+        return this._get("contractName");
     }
     _getAdminID() {
-        return this._get("adminID")
+        return this._get("adminID");
     }
 
     _getLeftSpace() {
         if (this._get("leftSpace") === null) {
-            throw "no leftSpace key";
+            throw new Error("no leftSpace key");
         }
         return this._get("leftSpace");
     }
@@ -103,7 +103,7 @@ class RAMContract {
     issue(initialTotal, increaseInterval, increaseAmount) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
         var veryLarge = 100 * 64 * 1024 * 1024 * 1024;
         let data = [this._getTokenName(), this._getContractName(), veryLarge, {"decimal":0}];
@@ -126,13 +126,13 @@ class RAMContract {
                 return priceCoefficient * amount;
             }
             if (leftSpace <= amount) {
-                throw new Error("buy amount is too much. left space is not enough " + leftSpace.toString() + " is less than " + amount.toString())
+                throw new Error("buy amount is too much. left space is not enough " + leftSpace.toString() + " is less than " + amount.toString());
             }
-            return Math.ceil((1 + feeRate) * priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / (leftSpace - amount)))
+            return Math.ceil((1 + feeRate) * priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / (leftSpace - amount)));
         } else if (action === "sell") {
-            return Math.floor(priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / leftSpace))
+            return Math.floor(priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / leftSpace));
         }
-        throw new Error("invalid action")
+        throw new Error("invalid action");
 
     }
 
@@ -140,13 +140,13 @@ class RAMContract {
         const t = this._getBlockTime();
         const nextUpdateTime = this._get("lastUpdateBlockTime") + this._get("increaseInterval") * 1000 * 1000 * 1000;
         if (t < nextUpdateTime) {
-            return
+            return;
         }
         const increaseAmount = this._get("increaseAmount");
         const data = [this._getTokenName(), this._getContractName(), increaseAmount.toString()];
         BlockChain.callWithAuth("token.iost", "issue", JSON.stringify(data));
         this._put("lastUpdateBlockTime", t);
-        this._changeLeftSpace(increaseAmount)
+        this._changeLeftSpace(increaseAmount);
     }
 
     buy(payer, account, amount) {
@@ -156,7 +156,7 @@ class RAMContract {
         BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, this._getContractName(), price.toString(), ""]));
         const data = [this._getTokenName(), this._getContractName(), account, (amount).toString(), ""];
         BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
-        this._changeLeftSpace(-amount)
+        this._changeLeftSpace(-amount);
     }
 
     sell(account, receiver, amount) {
@@ -165,7 +165,7 @@ class RAMContract {
         BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
         const price = this._price("sell", amount);
         BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", this._getContractName(), receiver, price.toString(), ""]));
-        this._changeLeftSpace(amount)
+        this._changeLeftSpace(amount);
     }
 }
 

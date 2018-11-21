@@ -456,7 +456,7 @@ message Account {
     // The message defines the account's frozen balance.
     message FrozenBalance {
         // balance amount
-        string amount = 1;
+        double amount = 1;
         // free time
         int64 time = 2;
     }
