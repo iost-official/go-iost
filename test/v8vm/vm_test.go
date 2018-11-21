@@ -1,7 +1,6 @@
 package v8vm
 
 import (
-	"encoding/json"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -14,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/v8vm"
+	"encoding/json"
 )
 
 var vmPool *v8.VMPool

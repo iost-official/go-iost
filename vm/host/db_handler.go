@@ -29,7 +29,6 @@ func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contr
 }
 
 // Get get value of key from db
-<<<<<<< HEAD
 func (h *DBHandler) Get(key string) (value interface{}, cost contract.Cost) {
 	mk := h.modifyKey(key)
 	rtn := h.parseValue(h.h.db.Get(mk))
@@ -45,7 +44,6 @@ func (h *DBHandler) Del(key string) contract.Cost {
 }
 
 // Has if db has key
-<<<<<<< HEAD
 func (h *DBHandler) Has(key string) (bool, contract.Cost) {
 	mk := h.modifyKey(key)
 	return h.h.db.Has(mk), Costs["GetCost"]
@@ -62,7 +60,6 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 }
 
 // MapGet get value by kf from db
-<<<<<<< HEAD
 func (h *DBHandler) MapGet(key, field string) (value interface{}, cost contract.Cost) {
 	mk := h.modifyKey(key)
 	rtn := h.parseValue(h.h.db.MGet(mk, field))
@@ -84,7 +81,6 @@ func (h *DBHandler) MapDel(key, field string) contract.Cost {
 }
 
 // MapHas if has field
-<<<<<<< HEAD
 func (h *DBHandler) MapHas(key, field string) (bool, contract.Cost) {
 	mk := h.modifyKey(key)
 	return h.h.db.MHas(mk, field), Costs["GetCost"]

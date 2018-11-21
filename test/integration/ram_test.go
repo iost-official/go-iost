@@ -67,7 +67,8 @@ func TestRAM(t *testing.T) {
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				//var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, 969 * 1e8)
-				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM+buyAmount)
+				// todo calc ram used
+				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, 9174)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore-buyAmount)
 			})
 			Convey("when buying triggers increasing total ram", func() {

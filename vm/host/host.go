@@ -284,7 +284,7 @@ func (h *Host) IsValidAccount(name string) bool {
 	if h.Context().Value("number") == int64(0) {
 		return true
 	}
-	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().Get("auth.iost@"+name+"-auth")) != nil
+	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().MGet("auth.iost"+"-auth", name)) != nil
 }
 
 // ReadSettings read settings from db

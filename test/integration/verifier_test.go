@@ -42,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 2985)
+			So(r.GasUsage, ShouldEqual, 2886)
 		})
 
 		Convey("test of token memo", func() {
@@ -415,12 +415,12 @@ func TestAuthority(t *testing.T) {
 		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldStartWith, `s{"id":"myid",`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myid")), ShouldStartWith, `{"id":"myid",`)
 
 		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
 }

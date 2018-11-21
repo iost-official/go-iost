@@ -36,7 +36,7 @@ func Marshal(in interface{}, extras ...string) (string, error) {
 	case string:
 		return StringPrefix + in.(string) + ApplicationSeparator + extra, nil
 	case nil:
-		return NilPrefix + ApplicationSeparator + extra, nil
+		return NilPrefix, nil
 	case bool:
 		return BoolPrefix + boolToString(in.(bool)) + ApplicationSeparator + extra, nil
 	case SerializedJSON:

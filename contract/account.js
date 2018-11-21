@@ -6,10 +6,10 @@ class Account {
 
     }
     _saveAccount(account) {
-        storage.put("auth", JSON.stringify(account), account.id);
+        storage.mapPut("auth", account.id, JSON.stringify(account), account.id);
     }
     _loadAccount(id) {
-        let a = storage.get("auth", id);
+        let a = storage.mapGet("auth", id);
         return JSON.parse(a);
     }
     static _find(items, name) {
@@ -22,7 +22,7 @@ class Account {
     }
 
     _hasAccount(id) {
-        return storage.has("auth", id);
+        return storage.mapHas("auth", id);
     }
 
     _ra(id) {

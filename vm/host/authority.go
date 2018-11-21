@@ -52,7 +52,7 @@ func (h *Authority) isContract(id string) bool {
 
 // ReadAuth read auth
 func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost) {
-	sa := vi.Get("auth.iost@" + id + "-auth")
+	sa := vi.MGet("auth.iost" + "-auth", id)
 	acc := database.MustUnmarshal(sa)
 	c := contract.NewCost(0, 0, int64(len(sa)))
 	if acc == nil {

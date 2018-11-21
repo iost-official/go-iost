@@ -57,7 +57,7 @@ func TestHost_Put(t *testing.T) {
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("", nil)
 
 	host.Put("hello", "world")
-	if host.cost["contractName"].Data != 24 {
+	if host.cost["contractName"].Data != 25 {
 		t.Fatal(host.cost)
 	}
 }
@@ -77,7 +77,7 @@ func TestHost_Put2(t *testing.T) {
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa", nil)
 
 	host.Put("hello", "world")
-	if host.cost["contractName"].Data != 4 {
+	if host.cost["contractName"].Data != 5 {
 		t.Fatal(host.cost)
 	}
 }
@@ -94,15 +94,15 @@ func TestHost_PutUserSpace(t *testing.T) {
 		t.Log("put: ", a, b, c)
 	})
 
-	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa", nil)
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa@abc", nil)
 
-	host.Put("hello", "world", "abc")
-	if host.cost["abc"].Data != 4 {
+	host.Put("hello", "worldn", "abc")
+	if host.cost["abc"].Data != 5 {
 		t.Fatal(host.cost)
 	}
 
 	v, _ := host.Get("hello")
-	if v.(string) != "world" {
+	if v.(string) != "worldn" {
 		t.Fatal(v)
 	}
 }
@@ -180,7 +180,7 @@ func TestHost_MapPut(t *testing.T) {
 		t.Log("to slow")
 	}
 
-	if host.cost["contractName"].Data != 26 {
+	if host.cost["contractName"].Data != 27 {
 		t.Fatal(host.cost)
 	}
 }

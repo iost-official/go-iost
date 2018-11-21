@@ -1,6 +1,8 @@
 package database
 
-import "github.com/hashicorp/golang-lru"
+import (
+	"github.com/hashicorp/golang-lru"
+)
 
 // LRU lru cache
 type LRU struct {
@@ -35,7 +37,7 @@ func (m *LRU) Get(key string) (value string) {
 	v, ok := m.cache.Get(key)
 	if !ok {
 		value = m.db.Get(key)
-		if value != NilPrefix {
+		if value != "" && value != "n" {
 			m.cache.Add(key, value)
 		}
 		return value
