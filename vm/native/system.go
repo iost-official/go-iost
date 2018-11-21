@@ -21,6 +21,7 @@ func init() {
 	register(systemABIs, destroyCode)
 	register(systemABIs, initSetCode)
 	register(systemABIs, cancelDelaytx)
+	register(systemABIs, hostSettings)
 }
 
 // var .
@@ -156,6 +157,18 @@ var (
 
 			cost, err = h.CancelDelaytx(args[0].(string))
 			return []interface{}{}, cost, err
+		},
+	}
+
+	// hostSettings set host json
+	hostSettings = &abi{
+		name: "hostSettings",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			cost = contract.Cost0()
+
+			h.MapPut("settings", "host", args[0])
+			return nil, cost, nil
 		},
 	}
 )
