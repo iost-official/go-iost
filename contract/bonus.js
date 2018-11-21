@@ -31,7 +31,7 @@ class BonusContract {
     InitAdmin(adminID) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
         this._put("adminID", adminID);
     }
@@ -51,7 +51,7 @@ class BonusContract {
 
     _call(contract, api, args) {
         const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length == 1) {
+        if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
@@ -104,7 +104,7 @@ class BonusContract {
     // IssueContribute to witness
     IssueContribute(data) {
         if (!data || !data.parent || !Array.isArray(data.parent)
-            || data.parent.length != 2 || !data.parent[0]) {
+            || data.parent.length !== 2 || !data.parent[0]) {
             return;
         }
         // TODO: change tests to enable requireAuth
@@ -115,13 +115,13 @@ class BonusContract {
         if (lastIssueBN === undefined) {
             throw new Error("lastIssueBN not set.");
         }
-        if (bi.number == lastIssueBN) {
+        if (bi.number === lastIssueBN) {
             throw new Error("contribute issued twice in this block.");
         }
         this._put("lastIssueBN", bi.number);
 
         const witness = data.parent[0];
-        const gasUsage = new BigNumber(data.parent[1]);
+        let gasUsage = new BigNumber(data.parent[1]);
         if (!gasUsage.isFinite()) {
             gasUsage = new BigNumber(0);
         }
