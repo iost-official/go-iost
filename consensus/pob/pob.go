@@ -350,7 +350,7 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.AddWithWit(blk, witnessList)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block, true)
+		return p.addExistingBlock(blk, parent.Block, true, true)
 	}
 	return errSingle
 }
@@ -367,18 +367,18 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block, update)
+		return p.addExistingBlock(blk, parent.Block, update, false)
 	}
 	return errSingle
 }
 
-func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool) error {
+func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool, replay bool) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain)
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed. err=%v", err)
@@ -400,7 +400,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 		tmpcontinuousNum++
 	}
 	for child := range node.Children {
-		p.addExistingBlock(child.Block, node.Block, true)
+		p.addExistingBlock(child.Block, node.Block, true, replay)
 	}
 	return nil
 }

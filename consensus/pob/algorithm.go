@@ -90,13 +90,13 @@ func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain) error {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
 	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
 	}
 
-	if witnessOfNanoSec(blk.Head.Time) != blk.Head.Witness {
+	if replay == false && witnessOfNanoSec(blk.Head.Time) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
 		return errWitness
