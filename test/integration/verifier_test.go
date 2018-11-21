@@ -145,11 +145,11 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		So(s.Visitor.Contract(cname), ShouldNotBeNil)
-		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"num")), ShouldEqual, "s9")
-		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"string")), ShouldEqual, "shello")
-		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"bool")), ShouldEqual, "strue")
-		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"array")), ShouldEqual, "s[1,2,3]")
-		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"obj")), ShouldEqual, `s{"foo":"bar"}`)
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"num")), ShouldEqual, "9")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"string")), ShouldEqual, "hello")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"bool")), ShouldEqual, "true")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"array")), ShouldEqual, "[1,2,3]")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"obj")), ShouldEqual, `{"foo":"bar"}`)
 
 		r, err := s.Call(cname, "read", `[]`, kp.ID, kp)
 
