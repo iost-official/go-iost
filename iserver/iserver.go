@@ -60,19 +60,19 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
 	}
 
-	sync, err := synchronizer.NewSynchronizer(bv, blkCache, p2pService)
-	if err != nil {
-		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
-	}
-
 	txp, err := txpool.NewTxPoolImpl(bv, blkCache, p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 
+	consensus := consensus.New(consensus.Pob, acc, bv, blkCache, txp, p2pService)
+
 	rpcServer := rpc.New(txp, blkCache, bv, p2pService)
 
-	consensus := consensus.New(consensus.Pob, acc, bv, blkCache, txp, p2pService)
+	sync, err := synchronizer.NewSynchronizer(bv, blkCache, p2pService)
+	if err != nil {
+		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
+	}
 
 	debug := NewDebugServer(conf.Debug, p2pService, blkCache, bv.BlockChain())
 
