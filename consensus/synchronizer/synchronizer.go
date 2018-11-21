@@ -78,7 +78,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 	sy.syncHeightChan = sy.p2pService.Register("sync height", p2p.SyncHeight)
 	sy.exitSignal = make(chan struct{})
 
-	confirmNumber = int64(len(blkcache.LinkedRoot().Active()))
+	confirmNumber = int64(len(blkcache.LinkedRoot().Active()))*2/3 + 1
 	syncNumber = confirmNumber * continuousNum
 	ilog.Infof("NewSynchronizer confirmNumber:%v", confirmNumber)
 	return sy, nil
