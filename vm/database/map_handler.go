@@ -18,6 +18,7 @@ const ApplicationSeparator = "@"
 
 // MPut put value in kfv storage o(1)
 func (m *MapHandler) MPut(key, field, value string) {
+	//fmt.Println("map put,", key, field, value)
 	m.addField(key, field)
 	m.db.Put(MapPrefix+key+Separator+field, value)
 }
@@ -47,6 +48,7 @@ func (m *MapHandler) delField(key, field string) {
 
 // MGet get value from storage o(1)
 func (m *MapHandler) MGet(key, field string) (value string) {
+	//fmt.Println("map get,", key, field)
 	return m.db.Get(MapPrefix + key + Separator + field)
 }
 

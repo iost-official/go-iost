@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 func TestTransfer(t *testing.T) {
@@ -41,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 721)
+			So(r.GasUsage, ShouldEqual, 714)
 		})
 
 		Convey("test of token memo", func() {
@@ -144,11 +145,11 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		So(s.Visitor.Contract(cname), ShouldNotBeNil)
-		So(s.Visitor.Get(cname+"-"+"num"), ShouldEqual, "s9")
-		So(s.Visitor.Get(cname+"-"+"string"), ShouldEqual, "shello")
-		So(s.Visitor.Get(cname+"-"+"bool"), ShouldEqual, "strue")
-		So(s.Visitor.Get(cname+"-"+"array"), ShouldEqual, "s[1,2,3]")
-		So(s.Visitor.Get(cname+"-"+"obj"), ShouldEqual, `s{"foo":"bar"}`)
+		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"num")), ShouldEqual, "s9")
+		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"string")), ShouldEqual, "shello")
+		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"bool")), ShouldEqual, "strue")
+		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"array")), ShouldEqual, "s[1,2,3]")
+		So(database.MustMarshal(s.Visitor.Get(cname+"-"+"obj")), ShouldEqual, `s{"foo":"bar"}`)
 
 		r, err := s.Call(cname, "read", `[]`, kp.ID, kp)
 
@@ -364,6 +365,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 		}}, nil, 550, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, testID[0], kp)
+		t.Log(err, r, r.Status)
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)

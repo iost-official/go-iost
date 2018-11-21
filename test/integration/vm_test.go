@@ -34,16 +34,18 @@ func Test_callWithAuth(t *testing.T) {
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		s.SetContract(ca)
+		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		Convey("test of callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", "Contracttransfer", "1000")
-			r, err := s.Call("Contracttransfer", "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
+			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
+			r, err := s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", "Contracttransfer"), Decimal: s.Visitor.Decimal("iost")}
+			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", cname), Decimal: s.Visitor.Decimal("iost")}
 			So(balance.ToString(), ShouldEqual, "990")
 		})
 	})

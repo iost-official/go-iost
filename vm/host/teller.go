@@ -18,6 +18,7 @@ const (
 type Teller struct {
 	h    *Host
 	cost map[string]contract.Cost
+	negcost map[string]contract.Cost
 }
 
 // NewTeller new teller

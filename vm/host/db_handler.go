@@ -3,7 +3,6 @@ package host
 import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
-	"strings"
 )
 
 // DBHandler is an application layer abstraction of our base basic_handler and map_handler.
@@ -148,23 +147,16 @@ func (h *DBHandler) modifyValue(value interface{}, ramPayer...string) string {
 	if len(ramPayer) > 0 {
 		payer = ramPayer[0]
 	}
-	return database.MustMarshal(value) + database.ApplicationSeparator + payer
+	return database.MustMarshal(value, payer)
 }
 
 func (h *DBHandler) parseValue(value string) interface{} {
-	idx := strings.LastIndex(value, database.ApplicationSeparator)
-	if idx == -1 {
-		return value
-	}
-	return database.MustUnmarshal(value[0:idx])
+	return database.MustUnmarshal(value)
 }
 
 func (h *DBHandler) parseValuePayer(value string) string {
-	idx := strings.LastIndex(value, database.ApplicationSeparator)
-	if idx == -1 {
-		return ""
-	}
-	return value[idx + 1:]
+	_, extra := database.MustUnmarshalWithExtra(value)
+	return extra
 }
 
 func (h *DBHandler) payRAM(k, v string, who ...string) {

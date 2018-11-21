@@ -3,115 +3,90 @@ let IOSTContractStorage = (function () {
     let storage = new IOSTStorage;
 
     let simpleStorage = function () {
-        this.put = function (k, v, o) {
+        this.put = function (k, v, p) {
             if (typeof v !== 'string') {
                 throw new Error("storage put must be string");
             }
-            if (o === undefined) {
-                o = "";
+            if (p === undefined) {
+                p = "";
             }
-            return storage.put(k, v, o);
+            return storage.put(k, v, p);
         };
-        this.get = function (k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.get(k, o);
+        // payer not used
+        this.get = function (k) {
+            let p = "";
+            return storage.get(k, p);
         };
-        this.has = function (k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.has(k, o);
+        this.has = function (k) {
+            let p = "";
+            return storage.has(k, p);
         };
-        this.del = function (k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.del(k, o);
+        this.del = function (k) {
+            let p = "";
+            return storage.del(k, p);
         }
     };
     let simpleStorageObj = new simpleStorage;
 
     let mapStorage = function () {
-        this.mapPut = function (k, f, v, o) {
+        this.mapPut = function (k, f, v, p) {
             if (typeof v !== 'string') {
                 throw new Error("storage mapPut must be string");
             }
-            if (o === undefined) {
-                o = "";
+            if (p === undefined) {
+                p = "";
             }
-            return storage.mapPut(k, f, v, o);
+            return storage.mapPut(k, f, v, p);
         };
-        this.mapHas = function (k, f, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.mapHas(k, f, o);
+        // payer not used
+        this.mapHas = function (k, f) {
+            let p = "";
+            return storage.mapHas(k, f, p);
         };
-        this.mapGet = function (k, f, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.mapGet(k, f, o);
+        this.mapGet = function (k, f) {
+            let p = "";
+            return storage.mapGet(k, f, p);
         };
-        this.mapKeys = function (k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return JSON.parse(storage.mapKeys(k, o));
+        this.mapKeys = function (k) {
+            let p = "";
+            return JSON.parse(storage.mapKeys(k, p));
         };
-        this.mapLen = function (k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.mapLen(k, o);
+        this.mapLen = function (k) {
+            let p = "";
+            return storage.mapLen(k, p);
         };
-        this.mapDel = function (k, f, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.mapDel(k, f, o);
+        this.mapDel = function (k, f) {
+            let p = "";
+            return storage.mapDel(k, f, p);
         }
     };
     let mapStorageObj = new mapStorage;
 
     let globalStorage = function () {
-        this.get = function (c, k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.globalGet(c, k, o);
+        // payer not used
+        this.get = function (c, k) {
+            let p = "";
+            return storage.globalGet(c, k, p);
         }
-        this.has = function (c, k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.globalHas(c, k, o);
+        this.has = function (c, k) {
+            let p = "";
+            return storage.globalHas(c, k, p);
         }
-        this.mapHas = function (c, k, f, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.globalMapHas(c, k, f, o);
+        this.mapHas = function (c, k, f) {
+            let p = "";
+            return storage.globalMapHas(c, k, f, p);
         };
-        this.mapGet = function (c, k, f, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.globalMapGet(c, k, f, o);
+        this.mapGet = function (c, k, f) {
+            let p = "";
+            return storage.globalMapGet(c, k, f, p);
         };
-        this.mapKeys = function (c, k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return JSON.parse(storage.globalMapKeys(c, k, o));
+        this.mapKeys = function (c, k) {
+            let p = "";
+            return JSON.parse(storage.globalMapKeys(c, k, p));
         };
-        this.mapLen = function (c, k, o) {
-            if (o === undefined) {
-                o = "";
-            }
-            return storage.globalMapLen(c, k, o);
+        this.mapLen = function (c, k) {
+            let p = "";
+            return storage.globalMapLen(c, k, p);
         };
     };
     let globalStorageObj = new globalStorage;

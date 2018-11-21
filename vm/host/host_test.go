@@ -94,14 +94,14 @@ func TestHost_PutUserSpace(t *testing.T) {
 		t.Log("put: ", a, b, c)
 	})
 
-	mock.EXPECT().Get("state", "b-contractName@abc-hello").Return("sa", nil)
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa", nil)
 
 	host.Put("hello", "world", "abc")
 	if host.cost["abc"].Data != 4 {
 		t.Fatal(host.cost)
 	}
 
-	v, _ := host.Get("hello", "abc")
+	v, _ := host.Get("hello")
 	if v.(string) != "world" {
 		t.Fatal(v)
 	}
@@ -119,13 +119,13 @@ func TestHost_Del(t *testing.T) {
 	})
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld", nil)
-	mock.EXPECT().Get("state", "b-contractName@abc-hello").Return("sworld", nil)
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld", nil)
 
 	host.Del("hello")
 	if host.cost["contractName"].Data != -24 {
 		t.Fatal(host.cost)
 	}
-	host.Del("hello", "abc")
+	host.Del("hello")
 	if host.cost["contractName"].Data != -24 {
 		t.Fatal(host.cost)
 	}
@@ -193,19 +193,19 @@ func TestHost_MapPut_Owner(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Put("state", "m-contractName@abc-hello-1", Any()).Do(func(a, b, c string) {
+	mock.EXPECT().Put("state", "m-contractName-hello-1", Any()).Do(func(a, b, c string) {
 		if c != "sworld" {
 			t.Fatal(c)
 		}
 	})
-	mock.EXPECT().Put("state", "m-contractName@abc-hello", Any()).Do(func(a, b, c string) {
+	mock.EXPECT().Put("state", "m-contractName-hello", Any()).Do(func(a, b, c string) {
 		if c != "@1" {
 			t.Fatal(c)
 		}
 	})
-	mock.EXPECT().Has("state", "m-contractName@abc-hello-1").Return(false, nil)
-	mock.EXPECT().Get("state", "m-contractName@abc-hello").Return("", nil)
-	mock.EXPECT().Get("state", "m-contractName@abc-hello-1").Return("", nil)
+	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("", nil)
+	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
 		host.MapPut("hello", "1", "world", "abc")
@@ -249,13 +249,13 @@ func TestHost_MapGet_Owner(t *testing.T) {
 	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Get(Any(), Any()).DoAndReturn(func(a, b string) (string, error) {
-		if a != "state" || b != "m-contractName@abc-hello-1" {
+		if a != "state" || b != "m-contractName-hello-1" {
 			t.Fatal(a, b)
 		}
 		return "sworld", nil
 	})
 
-	ans, _ := host.MapGet("hello", "1", "abc")
+	ans, _ := host.MapGet("hello", "1")
 	if ans != "world" {
 		t.Fatal(ans)
 	}
@@ -285,9 +285,9 @@ func TestHost_MapKeys_Owner(t *testing.T) {
 
 	mock, host := myinit(t, ctx)
 
-	mock.EXPECT().Get("state", "m-contractName@abc-hello").Return("@a@b@c", nil)
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("@a@b@c", nil)
 
-	ans, _ := host.MapKeys("hello", "abc")
+	ans, _ := host.MapKeys("hello")
 	if !sliceEqual(ans, []string{"a", "b", "c"}) {
 		t.Fatal(ans)
 	}
