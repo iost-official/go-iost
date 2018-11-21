@@ -21,7 +21,7 @@ import (
 type CacheStatus int
 
 type conAlgo interface {
-	recoverBlock(blk *block.Block, witnessList WitnessList) error
+	RecoverBlock(blk *block.Block, witnessList WitnessList) error
 }
 
 const (
@@ -163,6 +163,7 @@ type BlockCache interface {
 	Head() *BlockCacheNode
 	Draw() string
 	CleanDir() error
+	Recover(p conAlgo) (err error)
 }
 
 // BlockCacheImpl is the implementation of BlockCache
@@ -286,7 +287,7 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	block, witnessList, err := decodeBCN(b)
 	//bc.Add(&block)
-	p.recoverBlock(&block, witnessList)
+	p.RecoverBlock(&block, witnessList)
 
 	return
 }
@@ -509,6 +510,9 @@ func (bc *BlockCacheImpl) writeSetHeadWAL(h *BlockCacheNode) (err error) {
 		Type: BcMessageType_SetRootType,
 	}
 	data, err := bcMessage.Marshal()
+	if err != nil {
+		return
+	}
 	ent := wal.Entry{
 		Data: data,
 	}
