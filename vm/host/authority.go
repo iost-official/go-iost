@@ -32,7 +32,7 @@ func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
 	if i, ok := h.h.ctx.Value("number").(int64); ok && i == 0 {
 		return true, contract.Cost0()
 	}
-	if h.isContract(id) {
+	if h.IsContract(id) {
 		return h.requireContractAuth(id, p)
 	}
 	authList := h.h.ctx.Value("auth_list")
@@ -42,7 +42,7 @@ func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
 	return Auth(h.h.db, id, p, authMap, reenterMap)
 }
 
-func (h *Authority) isContract(id string) bool {
+func (h *Authority) IsContract(id string) bool {
 	// todo tell apart contractid and accountid
 	if strings.HasPrefix(id, "Contract") || strings.Contains(id, ".") {
 		return true

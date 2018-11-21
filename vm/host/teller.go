@@ -18,7 +18,6 @@ const (
 type Teller struct {
 	h    *Host
 	cost map[string]contract.Cost
-	negcost map[string]contract.Cost
 }
 
 // NewTeller new teller
@@ -41,11 +40,23 @@ func (h *Teller) ClearCosts() {
 
 // PayCost ...
 func (h *Teller) PayCost(c contract.Cost, who string) {
-	if oc, ok := h.cost[who]; ok {
-		oc.AddAssign(c)
-		h.cost[who] = oc
-	} else {
-		h.cost[who] = c
+	costMap := make(map[string]contract.Cost)
+	costMap[who] = contract.Cost{CPU:c.CPU, Net:c.Net}
+	for _, item := range c.DataList {
+		if oc, ok := costMap[item.Payer]; ok {
+			oc.AddAssign(contract.Cost{Data:item.Val, DataList:[]contract.DataItem{item}})
+			costMap[item.Payer] = oc
+		} else {
+			costMap[item.Payer]	= contract.Cost{Data:item.Val, DataList:[]contract.DataItem{item}}
+		}
+	}
+	for who, c := range costMap {
+		if oc, ok := h.cost[who]; ok {
+			oc.AddAssign(c)
+			h.cost[who] = oc
+		} else {
+			h.cost[who] = c
+		}
 	}
 }
 
@@ -54,6 +65,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 	//if gasPrice < 100 {
 	//	panic("gas_price error")
 	//}
+	//fmt.Println("do pay," , h.cost)
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
 		if fee != 0 {
@@ -67,9 +79,9 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 			}
 		}
 		// contracts in "iost" domain will not pay for ram
-		if isPayRAM && c.Data > 0 && !strings.HasSuffix(k, ".iost") {
+		if isPayRAM && !strings.HasSuffix(k, ".iost") {
 			var payer string
-			if strings.HasPrefix(k, "Contract") {
+			if h.h.IsContract(k) {
 				p, _ := h.h.GlobalMapGet("system.iost", "contract_owner", k)
 				payer = p.(string)
 			} else {

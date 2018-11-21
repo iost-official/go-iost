@@ -23,9 +23,10 @@ func NewDBHandler(h *Host) DBHandler {
 func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contract.Cost {
 	mk := h.modifyKey(key)
 	sv := h.modifyValue(value, ramPayer...)
-	h.payRAM(mk, sv, ramPayer...)
+	cost := h.payRAM(mk, sv, ramPayer...)
 	h.h.db.Put(mk, sv)
-	return Costs["PutCost"]
+	cost.AddAssign(Costs["PutCost"])
+	return cost
 }
 
 // Get get value of key from db
@@ -38,9 +39,10 @@ func (h *DBHandler) Get(key string) (value interface{}, cost contract.Cost) {
 // Del delete key
 func (h *DBHandler) Del(key string) contract.Cost {
 	mk := h.modifyKey(key)
-	h.releaseRAM(mk)
+	cost := h.releaseRAM(mk)
 	h.h.db.Del(mk)
-	return Costs["DelCost"]
+	cost.AddAssign(Costs["DelCost"])
+	return cost
 }
 
 // Has if db has key
@@ -54,9 +56,10 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 	mk := h.modifyKey(key)
 	sv := h.modifyValue(value, ramPayer...)
 
-	h.payRAMForMap(mk, field, sv, ramPayer...)
+	cost := h.payRAMForMap(mk, field, sv, ramPayer...)
 	h.h.db.MPut(mk, field, sv)
-	return Costs["PutCost"]
+	cost.AddAssign(Costs["PutCost"])
+	return cost
 }
 
 // MapGet get value by kf from db
@@ -75,9 +78,10 @@ func (h *DBHandler) MapKeys(key string) (fields []string, cost contract.Cost) {
 // MapDel delete field
 func (h *DBHandler) MapDel(key, field string) contract.Cost {
 	mk := h.modifyKey(key)
-	h.releaseRAMForMap(mk, field)
+	cost := h.releaseRAMForMap(mk, field)
 	h.h.db.MDel(mk, field)
-	return Costs["DelCost"]
+	cost.AddAssign(Costs["DelCost"])
+	return cost
 }
 
 // MapHas if has field
@@ -159,21 +163,21 @@ func (h *DBHandler) parseValuePayer(value string) string {
 	return extra
 }
 
-func (h *DBHandler) payRAM(k, v string, who ...string) {
+func (h *DBHandler) payRAM(k, v string, who ...string) contract.Cost {
 	oldV := h.h.db.Get(k)
 	oLen := int64(len(oldV) + len(k))
 	nLen := int64(len(v) + len(k))
-	h.payRAMInner(oldV, oLen, nLen, who...)
+	return h.payRAMInner(oldV, oLen, nLen, who...)
 }
 
-func (h *DBHandler) payRAMForMap(k, f, v string, who ...string) {
+func (h *DBHandler) payRAMForMap(k, f, v string, who ...string) contract.Cost {
 	oldV := h.h.db.MGet(k, f)
 	oLen := int64(len(oldV) + len(k) + 2 * len(f))
 	nLen := int64(len(v) + len(k) + 2 * len(f))
-	h.payRAMInner(oldV, oLen, nLen, who...)
+	return h.payRAMInner(oldV, oLen, nLen, who...)
 }
 
-func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...string) {
+func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...string) contract.Cost {
 	var payer string
 	if len(who) > 0 {
 		payer = who[0]
@@ -181,38 +185,32 @@ func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...stri
 		payer, _ = h.h.ctx.Value("contract_name").(string)
 	}
 
+	dataList := []contract.DataItem{}
 	if oldV == "n" {
-		h.h.PayCost(contract.Cost{
-			Data:nLen,
-		}, payer)
+		dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen})
 	} else {
 		oldPayer := h.parseValuePayer(oldV)
 		if oldPayer == "" {
 			oldPayer = h.h.ctx.Value("contract_name").(string)
 		}
 		if oldPayer == payer {
-			h.h.PayCost(contract.Cost{
-				Data: nLen - oLen,
-			}, payer)
+			dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen - oLen})
 		} else {
-			h.h.PayCost(contract.Cost{
-				Data: -oLen,
-			}, oldPayer)
-			h.h.PayCost(contract.Cost{
-				Data: nLen,
-			}, payer)
+			dataList = append(dataList, contract.DataItem{Payer:oldPayer, Val:-oLen})
+			dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen})
 		}
 	}
+	return contract.Cost{Data:dataList[0].Val, DataList:dataList}
 }
 
-func (h *DBHandler) releaseRAM(k string, who ...string) {
+func (h *DBHandler) releaseRAM(k string, who ...string) contract.Cost {
 	v := h.h.db.Get(k)
 	oLen := int64(len(k) + len(v))
-	h.payRAMInner(v, oLen, 0, who...)
+	return h.payRAMInner(v, oLen, 0, who...)
 }
 
-func (h *DBHandler) releaseRAMForMap(k, f string, who ...string) {
+func (h *DBHandler) releaseRAMForMap(k, f string, who ...string) contract.Cost {
 	v := h.h.db.MGet(k, f)
 	oLen := int64(len(k) + 2 * len(f) + len(v))
-	h.payRAMInner(v, oLen, 0, who...)
+	return h.payRAMInner(v, oLen, 0, who...)
 }

@@ -56,7 +56,8 @@ func TestHost_Put(t *testing.T) {
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("", nil)
 
-	host.Put("hello", "world")
+	cost := host.Put("hello", "world")
+	host.PayCost(cost, "witness")
 	if host.cost["contractName"].Data != 25 {
 		t.Fatal(host.cost)
 	}
@@ -76,7 +77,8 @@ func TestHost_Put2(t *testing.T) {
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa", nil)
 
-	host.Put("hello", "world")
+	cost := host.Put("hello", "world")
+	host.PayCost(cost, "witness")
 	if host.cost["contractName"].Data != 5 {
 		t.Fatal(host.cost)
 	}
@@ -96,7 +98,8 @@ func TestHost_PutUserSpace(t *testing.T) {
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa@abc", nil)
 
-	host.Put("hello", "worldn", "abc")
+	cost := host.Put("hello", "worldn", "abc")
+	host.PayCost(cost, "witness")
 	if host.cost["abc"].Data != 5 {
 		t.Fatal(host.cost)
 	}
@@ -121,11 +124,13 @@ func TestHost_Del(t *testing.T) {
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld", nil)
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld", nil)
 
-	host.Del("hello")
+	cost := host.Del("hello")
+	host.PayCost(cost, "witness")
 	if host.cost["contractName"].Data != -24 {
 		t.Fatal(host.cost)
 	}
-	host.Del("hello")
+	cost = host.Del("hello")
+	host.PayCost(cost, "witness")
 	if host.cost["contractName"].Data != -24 {
 		t.Fatal(host.cost)
 	}
@@ -174,7 +179,8 @@ func TestHost_MapPut(t *testing.T) {
 	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
-		host.MapPut("hello", "1", "world")
+		cost := host.MapPut("hello", "1", "world")
+		host.PayCost(cost, "witness")
 	})
 	if tr > time.Millisecond {
 		t.Log("to slow")
@@ -208,7 +214,8 @@ func TestHost_MapPut_Owner(t *testing.T) {
 	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
-		host.MapPut("hello", "1", "world", "abc")
+		cost := host.MapPut("hello", "1", "world", "abc")
+		host.PayCost(cost, "witness")
 	})
 	if tr > time.Millisecond {
 		t.Log("to slow")

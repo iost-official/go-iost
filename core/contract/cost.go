@@ -1,10 +1,17 @@
 package contract
 
+// DataItem describe ram cost with value and payer
+type DataItem struct {
+	Payer string
+	Val  int64
+}
+
 // Cost ...
 type Cost struct {
 	Data int64
 	Net  int64
 	CPU  int64
+	DataList []DataItem
 }
 
 // ToGas convert cost to gas
@@ -17,6 +24,7 @@ func (c *Cost) AddAssign(a Cost) {
 	c.Data += a.Data
 	c.Net += a.Net
 	c.CPU += a.CPU
+	c.DataList = append(c.DataList, a.DataList...)
 }
 
 // Multiply a cost to int64, return new cost
@@ -25,6 +33,7 @@ func (c Cost) Multiply(i int64) Cost {
 	d.Data = i * c.Data
 	d.Net = i * c.Net
 	d.CPU = i * c.CPU
+	d.DataList = append(d.DataList, d.DataList...)
 	return d
 }
 
@@ -45,10 +54,11 @@ func Cost0() Cost {
 }
 
 // NewCost construct cost with specific data, net, cpu
-func NewCost(data, net, cpu int64) Cost {
+func NewCost(data, net, cpu int64, dataList ...DataItem) Cost {
 	return Cost{
 		Data: data,
 		Net:  net,
 		CPU:  cpu,
+		DataList: dataList,
 	}
 }

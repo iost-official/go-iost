@@ -76,6 +76,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(c.Encode()), ShouldEqual, 146)
 		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractEJuvctjsCVirp9g22As7KbrM71783oq4wYE1Fcy8AXns")

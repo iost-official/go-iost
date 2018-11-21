@@ -226,15 +226,16 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			return nil, err
 		}
 
-		gasLimit := i.h.Context().GValue("gas_limit").(int64)
-
 		i.tr.Status = status
+		gasLimit := i.h.Context().GValue("gas_limit").(int64)
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
-			cost = contract.NewCost(0, 0, gasLimit)
+			cost.CPU = gasLimit
+			cost.Net = 0
 		}
 		if cost.ToGas() > gasLimit {
 			i.tr.Status = &tx.Status{Code:tx.ErrorRuntime, Message:host.ErrGasLimitExceeded.Error()}
-			cost = contract.NewCost(0, 0, gasLimit)
+			cost.CPU = gasLimit
+			cost.Net = 0
 		}
 
 		i.tr.GasUsage += cost.ToGas()
