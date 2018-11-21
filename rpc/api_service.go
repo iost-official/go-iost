@@ -23,6 +23,8 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
+//go:generate mockgen -destination mock_rpc/mock_api.go -package main github.com/iost-official/go-iost/rpc/pb ApiServiceServer
+
 // APIService implements all rpc APIs.
 type APIService struct {
 	bc         blockcache.BlockCache
@@ -208,7 +210,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	frozen := dbVisitor.AllFreezedTokenBalanceFixed("iost", req.GetName())
 	for _, f := range frozen {
 		ret.FrozenBalances = append(ret.FrozenBalances, &rpcpb.Account_FrozenBalance{
-			Amount: f.Amount.ToString(),
+			Amount: f.Amount.ToFloat(),
 			Time:   f.Ftime,
 		})
 	}
