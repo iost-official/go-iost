@@ -230,6 +230,10 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
 			cost = contract.NewCost(0, 0, gasLimit)
 		}
+		if cost.ToGas() > gasLimit {
+			i.tr.Status = &tx.Status{Code:tx.ErrorRuntime, Message:host.ErrGasLimitExceeded.Error()}
+			cost = contract.NewCost(0, 0, gasLimit)
+		}
 
 		i.tr.GasUsage += cost.ToGas()
 		if status.Code == 0 {
