@@ -82,6 +82,10 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
 	}
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
+	err := p.blockCache.Recover(&p)
+	if err != nil {
+		ilog.Error("Failed to recover blockCache")
+	}
 	return &p
 }
 
@@ -332,7 +336,7 @@ func (p *PoB) scheduleLoop() {
 		}
 	}
 }
-func (p *PoB) recoverBlock(blk *block.Block, witnessList blockcache.WitnessList) error {
+func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
