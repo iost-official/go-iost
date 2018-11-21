@@ -32,8 +32,15 @@ class Base {
         BlockChain.call("bonus.iost", "IssueContribute", JSON.stringify([data]));
     }
 
+    _saveBlockInfo() {
+        let json = storage.get("current_block_info");
+        storage.mapPut("chain_info", block.parentHash, JSON.stringify(json));
+        storage.put("current_block_info", JSON.stringify(block))
+    }
+
     // The first contract executed
     Exec(data) {
+        this._saveBlockInfo();
         const bn = this._getBlockNumber();
         const execBlockNumber = this._get("execBlockNumber");
         if (bn === execBlockNumber){
