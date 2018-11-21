@@ -1,0 +1,1119 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "rpc/pb/rpc.proto",
+    "version": "version not set"
+  },
+  "schemes": [
+    "http",
+    "https"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/execTx": {
+      "post": {
+        "summary": "execute transaction",
+        "operationId": "ExecTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbTxReceipt"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbTransactionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getAccount/{name}/{by_longest_chain}": {
+      "get": {
+        "summary": "get account",
+        "operationId": "GetAccount",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbAccount"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "account name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get account by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getBlockByHash/{hash}/{complete}": {
+      "get": {
+        "summary": "get block by hash",
+        "operationId": "GetBlockByHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbBlockResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "description": "block hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "complete",
+            "description": "complete means whether including the full transactions and transaction receipts",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getBlockByNumber/{number}/{complete}": {
+      "get": {
+        "summary": "get block by number",
+        "operationId": "GetBlockByNumber",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbBlockResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "description": "block number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "complete",
+            "description": "complete means whether including the full transactions and transaction receipts",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getChainInfo": {
+      "get": {
+        "summary": "get the chain information",
+        "operationId": "GetChainInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbChainInfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getContract/{id}": {
+      "get": {
+        "summary": "get contract",
+        "operationId": "GetContract",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbContract"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "contract id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block.",
+            "in": "query",
+            "required": false,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getContractStorage": {
+      "post": {
+        "summary": "get contract storage",
+        "operationId": "GetContractStorage",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetContractStorageResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetContractStorageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getNodeInfo": {
+      "get": {
+        "summary": "get the node information",
+        "operationId": "GetNodeInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbNodeInfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getTxByHash/{hash}": {
+      "get": {
+        "summary": "get transaction by hash",
+        "operationId": "GetTxByHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbTransactionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "description": "tx hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getTxReceiptByTxHash/{hash}": {
+      "get": {
+        "summary": "get transaction receipt by transaction hash",
+        "operationId": "GetTxReceiptByTxHash",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbTxReceipt"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hash",
+            "description": "tx hash",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/sendTx": {
+      "post": {
+        "summary": "send transaction",
+        "operationId": "SendTransaction",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbSendTransactionResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbTransactionRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "AccountFrozenBalance": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "format": "double",
+          "title": "balance amount"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64",
+          "title": "free time"
+        }
+      },
+      "description": "The message defines the account's frozen balance."
+    },
+    "AccountGasInfo": {
+      "type": "object",
+      "properties": {
+        "current_total": {
+          "type": "number",
+          "format": "double",
+          "title": "current total gas amount"
+        },
+        "increase_speed": {
+          "type": "number",
+          "format": "double",
+          "title": "gas increase speed"
+        },
+        "limit": {
+          "type": "number",
+          "format": "double",
+          "title": "gas limit"
+        },
+        "pledged_info": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AccountPledgeInfo"
+          },
+          "title": "pledge information"
+        }
+      },
+      "description": "The message defines account gas information."
+    },
+    "AccountGroup": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "group name"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AccountItem"
+          },
+          "title": "permission items"
+        }
+      },
+      "description": "The message defines a permission group."
+    },
+    "AccountItem": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "permission name or key pair id"
+        },
+        "is_key_pair": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "whether it's a key pair"
+        },
+        "weight": {
+          "type": "string",
+          "format": "int64",
+          "title": "permission weight"
+        },
+        "permission": {
+          "type": "string",
+          "title": "permission"
+        }
+      },
+      "description": "The message defines permission item."
+    },
+    "AccountPermission": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "permission name"
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "permission groups"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AccountItem"
+          },
+          "title": "permission items"
+        },
+        "threshold": {
+          "type": "string",
+          "format": "int64",
+          "title": "permission threshold"
+        }
+      },
+      "description": "The message defines the permission struct."
+    },
+    "AccountPledgeInfo": {
+      "type": "object",
+      "properties": {
+        "pledger": {
+          "type": "string",
+          "title": "the account who pledges"
+        },
+        "amount": {
+          "type": "number",
+          "format": "double",
+          "title": "pledged amount"
+        }
+      },
+      "description": "The message defines account pledged coin information."
+    },
+    "AccountRAMInfo": {
+      "type": "object",
+      "properties": {
+        "available": {
+          "type": "string",
+          "format": "int64",
+          "title": "available ram bytes"
+        }
+      },
+      "description": "The message defines account ram information."
+    },
+    "BlockInfo": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "pack mode"
+        },
+        "thread": {
+          "type": "integer",
+          "format": "int32",
+          "title": "transaction execution thread number"
+        },
+        "batch_index": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": "transaction index of every batch execution"
+        }
+      },
+      "title": "The message defines block extra information"
+    },
+    "ContractABI": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "abi name"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "abi arguments"
+        },
+        "amount_limit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbAmountLimit"
+          },
+          "title": "abi amount limt"
+        }
+      },
+      "description": "The message defines the ABI struct."
+    },
+    "SignatureAlgorithm": {
+      "type": "string",
+      "enum": [
+        "UNKNOWN",
+        "SECP256K1",
+        "ED25519"
+      ],
+      "default": "UNKNOWN",
+      "description": "The enumeration defines the signature algorithm.\n\n - UNKNOWN: unknown\n - SECP256K1: secp256k1\n - ED25519: ed25519"
+    },
+    "TxReceiptReceipt": {
+      "type": "object",
+      "properties": {
+        "func_name": {
+          "type": "string",
+          "title": "function name"
+        },
+        "content": {
+          "type": "string",
+          "title": "content"
+        }
+      },
+      "description": "The message defines transaction execution receipt."
+    },
+    "TxReceiptStatusCode": {
+      "type": "string",
+      "enum": [
+        "SUCCESS",
+        "GAS_RUN_OUT",
+        "BALANCE_NOT_ENOUGH",
+        "WRONG_PARAMETER",
+        "RUNTIME_ERROR",
+        "TIMEOUT",
+        "WRONG_TX_FORMAT",
+        "DUPLICATE_SET_CODE",
+        "UNKNOWN_ERROR"
+      ],
+      "default": "SUCCESS",
+      "description": "The enumeration defines transaction receipt status code.\n\n - SUCCESS: success\n - GAS_RUN_OUT: run out of gas\n - BALANCE_NOT_ENOUGH: balance not enough\n - WRONG_PARAMETER: wrong parameter\n - RUNTIME_ERROR: runtime error\n - TIMEOUT: run out of time\n - WRONG_TX_FORMAT: wrong transaction format\n - DUPLICATE_SET_CODE: more than one set code action in a transaction\n - UNKNOWN_ERROR: unknown error"
+    },
+    "rpcpbAccount": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "account name"
+        },
+        "balance": {
+          "type": "number",
+          "format": "double",
+          "title": "account balance"
+        },
+        "create_time": {
+          "type": "string",
+          "format": "int64",
+          "title": "account create timestamp"
+        },
+        "gas_info": {
+          "$ref": "#/definitions/AccountGasInfo",
+          "title": "gas information"
+        },
+        "ram_info": {
+          "$ref": "#/definitions/AccountRAMInfo",
+          "title": "ram information"
+        },
+        "permissions": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/AccountPermission"
+          },
+          "title": "account permission"
+        },
+        "groups": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/AccountGroup"
+          },
+          "title": "account groups"
+        },
+        "frozen_balances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/AccountFrozenBalance"
+          },
+          "title": "frozen balance information"
+        }
+      },
+      "description": "The message defines account struct."
+    },
+    "rpcpbAction": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "type": "string",
+          "title": "contract name"
+        },
+        "action_name": {
+          "type": "string",
+          "title": "action name"
+        },
+        "data": {
+          "type": "string",
+          "title": "data"
+        }
+      },
+      "description": "The message defines transaction action struct."
+    },
+    "rpcpbAmountLimit": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string",
+          "title": "token name"
+        },
+        "value": {
+          "type": "number",
+          "format": "double",
+          "title": "limit value"
+        }
+      },
+      "description": "The message defines transaction amount limit struct."
+    },
+    "rpcpbBlock": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "title": "block hash"
+        },
+        "version": {
+          "type": "string",
+          "format": "int64",
+          "title": "block version"
+        },
+        "parent_hash": {
+          "type": "string",
+          "title": "parent block hash"
+        },
+        "tx_merkle_hash": {
+          "type": "string",
+          "title": "transaction merkle tree root hash"
+        },
+        "tx_receipt_merkle_hash": {
+          "type": "string",
+          "title": "transaction receipt merkle tree root hash"
+        },
+        "number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
+        },
+        "witness": {
+          "type": "string",
+          "title": "block producer witness"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64",
+          "title": "block timestamp"
+        },
+        "gas_usage": {
+          "type": "number",
+          "format": "double",
+          "title": "block gas usage"
+        },
+        "tx_count": {
+          "type": "string",
+          "format": "int64",
+          "title": "transaction count"
+        },
+        "info": {
+          "$ref": "#/definitions/BlockInfo",
+          "title": "extra information"
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbTransaction"
+          },
+          "title": "block transactions"
+        }
+      },
+      "description": "The message defines the block struct."
+    },
+    "rpcpbBlockResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/rpcpbBlockResponseStatus",
+          "title": "transaction status"
+        },
+        "block": {
+          "$ref": "#/definitions/rpcpbBlock",
+          "title": "block"
+        }
+      }
+    },
+    "rpcpbBlockResponseStatus": {
+      "type": "string",
+      "enum": [
+        "PENDIND",
+        "IRREVERSIBLE"
+      ],
+      "default": "PENDIND",
+      "description": "The enumeration defines block status.\n\n - PENDIND: pending in block cache\n - IRREVERSIBLE: irreversible"
+    },
+    "rpcpbChainInfoResponse": {
+      "type": "object",
+      "properties": {
+        "net_name": {
+          "type": "string",
+          "title": "the name of network, such mainnet or testnet"
+        },
+        "protocol_version": {
+          "type": "string",
+          "title": "the iost protocol version"
+        },
+        "head_block": {
+          "type": "string",
+          "format": "int64",
+          "title": "head block height"
+        },
+        "head_block_hash": {
+          "type": "string",
+          "title": "head block hash"
+        },
+        "lib_block": {
+          "type": "string",
+          "format": "int64",
+          "title": "last irreversible block number"
+        },
+        "lib_block_hash": {
+          "type": "string",
+          "title": "last irreversible block hash"
+        },
+        "witness_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "the current witness list"
+        }
+      },
+      "description": "The message defines chain information response."
+    },
+    "rpcpbContract": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "contract id"
+        },
+        "code": {
+          "type": "string",
+          "title": "contract code"
+        },
+        "language": {
+          "type": "string",
+          "title": "contract language"
+        },
+        "version": {
+          "type": "string",
+          "title": "contract version"
+        },
+        "abis": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContractABI"
+          },
+          "title": "contract abis"
+        }
+      },
+      "description": "The message defines the contract struct."
+    },
+    "rpcpbGetContractStorageRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "contract id"
+        },
+        "owner": {
+          "type": "string",
+          "description": "ram owner, should be the same as 'put' call. It can be empty."
+        },
+        "key": {
+          "type": "string",
+          "title": "the key in the StateDB"
+        },
+        "field": {
+          "type": "string",
+          "title": "get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)"
+        },
+        "by_longest_chain": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "get data by longest chain's head block or last irreversible block"
+        }
+      },
+      "description": "The message defines get contract storage request."
+    },
+    "rpcpbGetContractStorageResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "title": "the json string data"
+        }
+      },
+      "description": "The message defines get contract storage response."
+    },
+    "rpcpbNetworkInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "local network ID"
+        },
+        "peer_count": {
+          "type": "integer",
+          "format": "int32",
+          "title": "peer connection count"
+        },
+        "peer_info": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbPeerInfo"
+          },
+          "title": "peers' information"
+        }
+      },
+      "description": "The message defines network connection information."
+    },
+    "rpcpbNodeInfoResponse": {
+      "type": "object",
+      "properties": {
+        "build_time": {
+          "type": "string",
+          "title": "build time"
+        },
+        "git_hash": {
+          "type": "string",
+          "title": "git hash"
+        },
+        "mode": {
+          "type": "string",
+          "title": "node mode"
+        },
+        "network": {
+          "$ref": "#/definitions/rpcpbNetworkInfo",
+          "title": "network connection information"
+        }
+      },
+      "description": "The message containing the node's information."
+    },
+    "rpcpbPeerInfo": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "peer ID"
+        },
+        "addr": {
+          "type": "string",
+          "title": "peer addr"
+        }
+      },
+      "description": "The message defines peer information."
+    },
+    "rpcpbSendTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "title": "the final transaction hash"
+        }
+      },
+      "description": "The message defines send transaction response."
+    },
+    "rpcpbSignature": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "$ref": "#/definitions/SignatureAlgorithm",
+          "title": "signature algorithm"
+        },
+        "signature": {
+          "type": "string",
+          "format": "byte",
+          "title": "signature bytes"
+        },
+        "public_key": {
+          "type": "string",
+          "format": "byte",
+          "title": "public key"
+        }
+      },
+      "description": "The message defines signature struct."
+    },
+    "rpcpbTransaction": {
+      "type": "object",
+      "properties": {
+        "hash": {
+          "type": "string",
+          "title": "transaction hash"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64",
+          "title": "transaction timestamp"
+        },
+        "expiration": {
+          "type": "string",
+          "format": "int64",
+          "title": "expiration timestamp"
+        },
+        "gas_price": {
+          "type": "number",
+          "format": "double",
+          "title": "gas price"
+        },
+        "gas_limit": {
+          "type": "number",
+          "format": "double",
+          "title": "gas limit"
+        },
+        "delay": {
+          "type": "string",
+          "format": "int64",
+          "title": "delay nanoseconds"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbAction"
+          },
+          "title": "action list"
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "signer list"
+        },
+        "publisher": {
+          "type": "string",
+          "title": "publisher"
+        },
+        "referred_tx": {
+          "type": "string",
+          "title": "referred transaction hash"
+        },
+        "amount_limit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbAmountLimit"
+          },
+          "title": "amount limit"
+        },
+        "tx_receipt": {
+          "$ref": "#/definitions/rpcpbTxReceipt",
+          "title": "transaction receipt"
+        }
+      },
+      "description": "The message defines transaction struct."
+    },
+    "rpcpbTransactionRequest": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string",
+          "format": "int64",
+          "title": "transaction timestamp"
+        },
+        "expiration": {
+          "type": "string",
+          "format": "int64",
+          "title": "expiration timestamp"
+        },
+        "gas_price": {
+          "type": "number",
+          "format": "double",
+          "title": "gas price"
+        },
+        "gas_limit": {
+          "type": "number",
+          "format": "double",
+          "title": "gas limit"
+        },
+        "delay": {
+          "type": "string",
+          "format": "int64",
+          "title": "delay nanoseconds"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbAction"
+          },
+          "title": "action list"
+        },
+        "amount_limit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbAmountLimit"
+          },
+          "title": "amount limit"
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "signer list"
+        },
+        "signatures": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbSignature"
+          },
+          "title": "signatures of signers"
+        },
+        "publisher": {
+          "type": "string",
+          "title": "publisher"
+        },
+        "publisher_sigs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbSignature"
+          },
+          "title": "signatures of publisher"
+        }
+      },
+      "description": "The message defines the transaction request."
+    },
+    "rpcpbTransactionResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/rpcpbTransactionResponseStatus",
+          "title": "transaction status"
+        },
+        "transaction": {
+          "$ref": "#/definitions/rpcpbTransaction",
+          "title": "transaction"
+        }
+      },
+      "description": "The message defines transaction response."
+    },
+    "rpcpbTransactionResponseStatus": {
+      "type": "string",
+      "enum": [
+        "PENDIND",
+        "PACKED",
+        "IRREVERSIBLE"
+      ],
+      "default": "PENDIND",
+      "description": "The enumeration defines transaction status.\n\n - PENDIND: pending in transaction pool\n - PACKED: packed in a block that has not been confirmed\n - IRREVERSIBLE: packed in a block that is irreversible"
+    },
+    "rpcpbTxReceipt": {
+      "type": "object",
+      "properties": {
+        "tx_hash": {
+          "type": "string",
+          "title": "transaction hash"
+        },
+        "gas_usage": {
+          "type": "number",
+          "format": "double",
+          "title": "gas usage"
+        },
+        "ram_usage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          },
+          "title": "ram usage"
+        },
+        "status_code": {
+          "$ref": "#/definitions/TxReceiptStatusCode",
+          "title": "status code"
+        },
+        "message": {
+          "type": "string",
+          "title": "message"
+        },
+        "returns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "transaction returns"
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/TxReceiptReceipt"
+          },
+          "title": "transaction receipts"
+        }
+      },
+      "description": "The message defines the transaction receipt struct."
+    }
+  }
+}

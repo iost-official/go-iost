@@ -37,14 +37,14 @@ func TestCheckPublisher(t *testing.T) {
 		t.Fatal(err)
 	}
 	mock := database.NewMockIMultiValue(ctl)
-	mock.EXPECT().Get("state", "m-auth.iost-account-a").Return("s"+string(ax), nil)
+	mock.EXPECT().Get("state", "b-auth.iost@a-auth").Return("s"+string(ax), nil)
 
 	b := account.NewInitAccount("b", testID[2], testID[2])
 	bx, err := json.Marshal(b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	mock.EXPECT().Get("state", "m-auth.iost-account-b").Return("s"+string(bx), nil)
+	mock.EXPECT().Get("state", "b-auth.iost@b-auth").Return("s"+string(bx), nil)
 
 	err = CheckPublisher(mock, t2)
 	if err != nil {
@@ -67,14 +67,14 @@ func TestCheckSigners(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mock.EXPECT().Get("state", "m-auth.iost-account-a").AnyTimes().Return("s"+string(ax), nil)
+	mock.EXPECT().Get("state", "b-auth.iost@a-auth").AnyTimes().Return("s"+string(ax), nil)
 
 	b := account.NewInitAccount("b", testID[2], testID[2])
 	bx, err := json.Marshal(b)
 	if err != nil {
 		t.Fatal(err)
 	}
-	mock.EXPECT().Get("state", "m-auth.iost-account-b").AnyTimes().Return("s"+string(bx), nil)
+	mock.EXPECT().Get("state", "b-auth.iost@b-auth").AnyTimes().Return("s"+string(bx), nil)
 
 	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {

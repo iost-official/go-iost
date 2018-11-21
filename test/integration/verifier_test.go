@@ -42,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 714)
+			So(r.GasUsage, ShouldEqual, 2985)
 		})
 
 		Convey("test of token memo", func() {
@@ -79,7 +79,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractEJuvctjsCVirp9g22As7KbrM71783oq4wYE1Fcy8AXns")
-		So(r.GasUsage, ShouldEqual, 1583)
+		So(r.GasUsage, ShouldEqual, 1739)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -410,16 +410,17 @@ func TestAuthority(t *testing.T) {
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 100000)
+		s.SetRAM("myid", 1000)
 
 		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("auth.iost-account", "myid"), ShouldStartWith, `s{"id":"myid",`)
+		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldStartWith, `s{"id":"myid",`)
 
 		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.MGet("auth.iost-account", "myid"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
 }

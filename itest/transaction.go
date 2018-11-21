@@ -2,9 +2,13 @@ package itest
 
 import (
 	"math"
+	"strconv"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/rpc/pb"
 )
 
 // Constant of Transaction
@@ -32,7 +36,77 @@ func NewTransaction(actions []*tx.Action) *Transaction {
 		Delay,
 	)
 
-	return &Transaction{
-		Tx: t,
+	return &Transaction{t}
+}
+
+// NewTransactionFromPb returns a new transaction instance from protobuffer transaction struct.
+func NewTransactionFromPb(t *rpcpb.Transaction) *Transaction {
+	ret := &tx.Tx{
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasPrice:   int64(t.GasPrice * 100),
+		GasLimit:   int64(t.GasLimit * 100),
+		Delay:      t.Delay,
+		Signers:    t.Signers,
+		Publisher:  t.Publisher,
 	}
+	for _, a := range t.Actions {
+		ret.Actions = append(ret.Actions, &tx.Action{
+			Contract:   a.Contract,
+			ActionName: a.ActionName,
+			Data:       a.Data,
+		})
+	}
+	for _, a := range t.AmountLimit {
+		ret.AmountLimit = append(ret.AmountLimit, &contract.Amount{
+			Token: a.Token,
+			Val:   strconv.FormatFloat(a.Value, 'f', -1, 64),
+		})
+	}
+	return &Transaction{ret}
+}
+
+// ToTxRequest converts tx to rpcpb.TransactionRequest.
+func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
+	ret := &rpcpb.TransactionRequest{
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasPrice:   float64(t.GasPrice) / 100,
+		GasLimit:   float64(t.GasLimit) / 100,
+		Delay:      t.Delay,
+		Signers:    t.Signers,
+		Publisher:  t.Publisher,
+	}
+	for _, a := range t.Actions {
+		ret.Actions = append(ret.Actions, &rpcpb.Action{
+			Contract:   a.Contract,
+			ActionName: a.ActionName,
+			Data:       a.Data,
+		})
+	}
+	for _, a := range t.AmountLimit {
+		fixed, err := common.UnmarshalFixed(a.Val)
+		if err != nil {
+			continue
+		}
+		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
+			Token: a.Token,
+			Value: fixed.ToFloat(),
+		})
+	}
+	for _, s := range t.Signs {
+		ret.Signatures = append(ret.Signatures, &rpcpb.Signature{
+			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
+			PublicKey: s.Pubkey,
+			Signature: s.Sig,
+		})
+	}
+	for _, s := range t.PublishSigns {
+		ret.PublisherSigs = append(ret.PublisherSigs, &rpcpb.Signature{
+			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
+			PublicKey: s.Pubkey,
+			Signature: s.Sig,
+		})
+	}
+	return ret
 }

@@ -13,7 +13,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/rpc"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"google.golang.org/grpc"
 )
 
@@ -50,9 +50,53 @@ func transParallel(num int) {
 	wg.Wait()
 }
 
+func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
+	ret := &rpcpb.TransactionRequest{
+		Time:       t.Time,
+		Expiration: t.Expiration,
+		GasPrice:   float64(t.GasPrice) / 100,
+		GasLimit:   float64(t.GasLimit) / 100,
+		Delay:      t.Delay,
+		Signers:    t.Signers,
+		Publisher:  t.Publisher,
+	}
+	for _, a := range t.Actions {
+		ret.Actions = append(ret.Actions, &rpcpb.Action{
+			Contract:   a.Contract,
+			ActionName: a.ActionName,
+			Data:       a.Data,
+		})
+	}
+	for _, a := range t.AmountLimit {
+		fixed, err := common.UnmarshalFixed(a.Val)
+		if err != nil {
+			continue
+		}
+		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
+			Token: a.Token,
+			Value: fixed.ToFloat(),
+		})
+	}
+	for _, s := range t.Signs {
+		ret.Signatures = append(ret.Signatures, &rpcpb.Signature{
+			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
+			PublicKey: s.Pubkey,
+			Signature: s.Sig,
+		})
+	}
+	for _, s := range t.PublishSigns {
+		ret.PublisherSigs = append(ret.PublisherSigs, &rpcpb.Signature{
+			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
+			PublicKey: s.Pubkey,
+			Signature: s.Sig,
+		})
+	}
+	return ret
+}
+
 func sendTx(stx *tx.Tx, i int) (string, error) {
-	client := rpc.NewApisClient(conns[i])
-	resp, err := client.SendTx(context.Background(), &rpc.TxReq{Tx: stx.ToPb()})
+	client := rpcpb.NewApiServiceClient(conns[i])
+	resp, err := client.SendTransaction(context.Background(), toTxRequest(stx))
 	if err != nil {
 		return "", err
 	}
@@ -94,13 +138,13 @@ func publish() string {
 		panic(err)
 	}
 	time.Sleep(time.Duration(5) * time.Second)
-	client := rpc.NewApisClient(conns[0])
-	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpc.HashReq{Hash: txHash})
+	client := rpcpb.NewApiServiceClient(conns[0])
+	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHash})
 	if err != nil {
 		panic(err)
 	}
-	if tx.StatusCode(resp.TxReceipt.Status.Code) != tx.Success {
-		panic("publish contract fail " + (resp.TxReceipt.String()))
+	if tx.StatusCode(resp.StatusCode) != tx.Success {
+		panic("publish contract fail " + (resp.String()))
 	}
 	return "Contract" + txHash
 }

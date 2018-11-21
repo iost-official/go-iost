@@ -36,7 +36,7 @@ class VoteContract {
     InitProducer(proID, proPubkey) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
-            throw new Error("init out of genesis block")
+            throw new Error("init out of genesis block");
         }
 
         let pendingProducerList = this._get("pendingProducerList");
@@ -95,7 +95,7 @@ class VoteContract {
 
     _call(contract, api, args) {
         const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length == 1) {
+        if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
@@ -181,7 +181,7 @@ class VoteContract {
             this._mapDel("producerKeyToId", pro.pubkey, account);
             this._mapPut("producerKeyToId", pubkey, account);
         }
-        pro.pubkey = pubkey,
+        pro.pubkey = pubkey;
         pro.loc = loc;
         pro.url = url;
         pro.netId = netId;
@@ -194,11 +194,10 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         const voteId = this._getVoteId();
-        const voteInfo = this._call("vote.iost", "GetOption", [
+        pro["voteInfo"] = this._call("vote.iost", "GetOption", [
             voteId,
             account
         ]);
-        pro["voteInfo"] = voteInfo;
         return pro;
     }
 
@@ -343,7 +342,7 @@ class VoteContract {
         const scoreCmp = function(a, b) {
             if (!a.score.eq(b.score)) {
                 return a.score.lt(b.score) ? 1 : -1;
-            } else if (b.prior != a.prior) {
+            } else if (b.prior !== a.prior) {
                 return b.prior - a.prior;
             } else {
                 return b.key < a.key ? 1 : -1;

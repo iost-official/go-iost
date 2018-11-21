@@ -214,7 +214,9 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number = 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			r, err = s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 0

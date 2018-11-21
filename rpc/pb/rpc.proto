@@ -125,7 +125,7 @@ message AmountLimit {
     // token name
     string token = 1;
     // limit value
-    string value = 2;
+    double value = 2;
 }
 
 // The message defines transaction action struct.
@@ -238,10 +238,12 @@ message TransactionResponse {
 message Signature {
     // The enumeration defines the signature algorithm.
     enum Algorithm {
+        // unknown
+        UNKNOWN = 0;
         // secp256k1
-        SECP256K1 = 0;
+        SECP256K1 = 1;
         // ed25519
-        ED25519 = 1;
+        ED25519 = 2;
     }
 
     // signature algorithm
@@ -382,6 +384,14 @@ message Account {
     // account create timestamp
     int64 create_time = 3;
 
+    // The message defines account pledged coin information.
+    message PledgeInfo {
+        // the account who pledges
+        string pledger = 1;
+        // pledged amount
+        double amount = 2;
+    }
+
     // The message defines account gas information.
     message  GasInfo {
         // current total gas amount
@@ -390,8 +400,8 @@ message Account {
         double increase_speed = 2;
         // gas limit
         double limit = 3;
-        // pledged coin
-        double pledged_coin = 4;
+        // pledge information
+        repeated PledgeInfo pledged_info = 4;
     }
 
     // gas information
@@ -414,6 +424,8 @@ message Account {
         bool is_key_pair = 2;
         // permission weight
         int64 weight = 3;
+        // permission
+        string permission = 4;
     }
 
     // The message defines a permission group.
@@ -429,24 +441,35 @@ message Account {
         // permission name
         string name = 1;
         // permission groups
-        repeated Group groups = 2;
+        repeated string groups = 2;
         // permission items
         repeated Item items = 3;
         // permission threshold
         int64 threshold = 4;
     }
 
-    // owner permission
-    Permission owner = 6;
-    // active permission
-    Permission active = 7;
+    // account permission
+    map<string, Permission> permissions = 6;
+    // account groups
+    map<string, Group> groups = 7;
+
+    // The message defines the account's frozen balance.
+    message FrozenBalance {
+        // balance amount
+        double amount = 1;
+        // free time
+        int64 time = 2;
+    }
+
+    // frozen balance information
+    repeated FrozenBalance frozen_balances = 8;
 }
 
 // The message defines the get account request.
 message GetAccountRequest {
     // account name
     string name = 1;
-    // get account by longest chain head block or last irreversible block
+    // get account by longest chain's head block or last irreversible block
     bool by_longest_chain = 2;
 }
 
@@ -479,6 +502,8 @@ message Contract {
 message GetContractRequest {
     // contract id
     string id = 1;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 2;
 }
 
 // The message defines get contract storage request.
@@ -491,6 +516,8 @@ message GetContractStorageRequest {
     string key = 3;
     // get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
     string field = 4;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 5;
 }
 
 // The message defines get contract storage response.

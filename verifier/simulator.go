@@ -63,7 +63,7 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 	if err != nil {
 		panic(err)
 	}
-	s.Visitor.MPut("auth.iost-account", acc.ID, database.MustMarshal(string(buf)))
+	s.Visitor.Put("auth.iost@"+acc.ID+"-auth", database.MustMarshal(string(buf)))
 }
 
 // SetGas to id
@@ -155,7 +155,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, 100000, 100, s.Head.Time+10000000, 0)
+	}}, nil, 1000000, 100, s.Head.Time+10000000, 0)
 
 	trx.Time = s.Head.Time
 

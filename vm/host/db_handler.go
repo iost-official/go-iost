@@ -25,14 +25,15 @@ func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contr
 	sv := h.modifyValue(value, ramPayer...)
 	h.payRAM(mk, sv, ramPayer...)
 	h.h.db.Put(mk, sv)
-	return PutCost
+	return Costs["PutCost"]
 }
 
 // Get get value of key from db
+<<<<<<< HEAD
 func (h *DBHandler) Get(key string) (value interface{}, cost contract.Cost) {
 	mk := h.modifyKey(key)
 	rtn := h.parseValue(h.h.db.Get(mk))
-	return rtn, GetCost
+	return rtn, Costs["GetCost"]
 }
 
 // Del delete key
@@ -40,13 +41,14 @@ func (h *DBHandler) Del(key string) contract.Cost {
 	mk := h.modifyKey(key)
 	h.releaseRAM(mk)
 	h.h.db.Del(mk)
-	return DelCost
+	return Costs["DelCost"]
 }
 
 // Has if db has key
+<<<<<<< HEAD
 func (h *DBHandler) Has(key string) (bool, contract.Cost) {
 	mk := h.modifyKey(key)
-	return h.h.db.Has(mk), GetCost
+	return h.h.db.Has(mk), Costs["GetCost"]
 }
 
 // MapPut put kfv to db
@@ -56,20 +58,21 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 
 	h.payRAMForMap(mk, field, sv, ramPayer...)
 	h.h.db.MPut(mk, field, sv)
-	return PutCost
+	return Costs["PutCost"]
 }
 
 // MapGet get value by kf from db
+<<<<<<< HEAD
 func (h *DBHandler) MapGet(key, field string) (value interface{}, cost contract.Cost) {
 	mk := h.modifyKey(key)
 	rtn := h.parseValue(h.h.db.MGet(mk, field))
-	return rtn, GetCost
+	return rtn, Costs["GetCost"]
 }
 
 // MapKeys list keys
 func (h *DBHandler) MapKeys(key string) (fields []string, cost contract.Cost) {
 	mk := h.modifyKey(key)
-	return h.h.db.MKeys(mk), KeysCost
+	return h.h.db.MKeys(mk), Costs["KeysCost"]
 }
 
 // MapDel delete field
@@ -77,13 +80,14 @@ func (h *DBHandler) MapDel(key, field string) contract.Cost {
 	mk := h.modifyKey(key)
 	h.releaseRAMForMap(mk, field)
 	h.h.db.MDel(mk, field)
-	return DelCost
+	return Costs["DelCost"]
 }
 
 // MapHas if has field
+<<<<<<< HEAD
 func (h *DBHandler) MapHas(key, field string) (bool, contract.Cost) {
 	mk := h.modifyKey(key)
-	return h.h.db.MHas(mk, field), GetCost
+	return h.h.db.MHas(mk, field), Costs["GetCost"]
 }
 
 // MapLen get length of map
@@ -95,33 +99,33 @@ func (h *DBHandler) MapLen(key string) (int, contract.Cost) {
 // GlobalHas if another contract's db has key
 func (h *DBHandler) GlobalHas(con, key string) (bool, contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
-	return h.h.db.Has(mk), GetCost
+	return h.h.db.Has(mk), Costs["GetCost"]
 }
 
 // GlobalGet get another contract's data
 func (h *DBHandler) GlobalGet(con, key string) (value interface{}, cost contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
 	rtn := h.parseValue(h.h.db.Get(mk))
-	return rtn, GetCost
+	return rtn, Costs["GetCost"]
 }
 
 // GlobalMapHas if another contract's map has field
 func (h *DBHandler) GlobalMapHas(con, key, field string) (bool, contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
-	return h.h.db.MHas(mk, field), GetCost
+	return h.h.db.MHas(mk, field), Costs["GetCost"]
 }
 
 // GlobalMapGet get another contract's map data
 func (h *DBHandler) GlobalMapGet(con, key, field string) (value interface{}, cost contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
 	rtn := h.parseValue(h.h.db.MGet(mk, field))
-	return rtn, GetCost
+	return rtn, Costs["GetCost"]
 }
 
 // GlobalMapKeys get another contract's map keys
 func (h *DBHandler) GlobalMapKeys(con, key string) (keys []string, cost contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
-	return h.h.db.MKeys(mk), GetCost
+	return h.h.db.MKeys(mk), Costs["GetCost"]
 }
 
 // GlobalMapLen get another contract's map length
