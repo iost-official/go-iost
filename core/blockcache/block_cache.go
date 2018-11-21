@@ -510,6 +510,9 @@ func (bc *BlockCacheImpl) writeSetHeadWAL(h *BlockCacheNode) (err error) {
 		Type: BcMessageType_SetRootType,
 	}
 	data, err := bcMessage.Marshal()
+	if err != nil {
+		return
+	}
 	ent := wal.Entry{
 		Data: data,
 	}

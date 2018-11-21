@@ -336,6 +336,8 @@ func (p *PoB) scheduleLoop() {
 		}
 	}
 }
+
+// RecoverBlock recover block from block cache wal
 func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
