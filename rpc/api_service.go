@@ -234,9 +234,9 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 	var value interface{}
 	if req.GetField() == "" {
-		value, _ = h.GlobalGet(req.GetId(), req.GetKey(), req.GetOwner())
+		value, _ = h.GlobalGet(req.GetId(), req.GetKey())
 	} else {
-		value, _ = h.GlobalMapGet(req.GetId(), req.GetKey(), req.GetField(), req.GetOwner())
+		value, _ = h.GlobalMapGet(req.GetId(), req.GetKey(), req.GetField())
 	}
 	var data string
 	if reflect.TypeOf(value).Kind() != reflect.String {

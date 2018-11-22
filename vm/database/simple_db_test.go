@@ -26,7 +26,7 @@ func TestDB(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if v != "sabc" {
+	if v != "sabc@" {
 		t.Fatal(v)
 	}
 	os.Remove("state.json")

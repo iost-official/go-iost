@@ -16,8 +16,9 @@ const (
 
 // Teller handler of iost
 type Teller struct {
-	h    *Host
-	cost map[string]contract.Cost
+	h         *Host
+	cost      map[string]contract.Cost
+	cacheCost contract.Cost
 }
 
 // NewTeller new teller
@@ -38,13 +39,43 @@ func (h *Teller) ClearCosts() {
 	h.cost = make(map[string]contract.Cost)
 }
 
+// AddCacheCost ...
+func (h *Teller) AddCacheCost(c contract.Cost) {
+	h.cacheCost.AddAssign(c)
+}
+
+// CacheCost ...
+func (h *Teller) CacheCost() contract.Cost {
+	return h.cacheCost
+}
+
+// FlushCacheCost ...
+func (h *Teller) FlushCacheCost() {
+	h.PayCost(h.cacheCost, "")
+	h.cacheCost = contract.Cost0()
+}
+
 // PayCost ...
 func (h *Teller) PayCost(c contract.Cost, who string) {
-	if oc, ok := h.cost[who]; ok {
-		oc.AddAssign(c)
-		h.cost[who] = oc
-	} else {
-		h.cost[who] = c
+	costMap := make(map[string]contract.Cost)
+	if c.CPU > 0 || c.Net > 0 {
+		costMap[who] = contract.Cost{CPU: c.CPU, Net: c.Net}
+	}
+	for _, item := range c.DataList {
+		if oc, ok := costMap[item.Payer]; ok {
+			oc.AddAssign(contract.Cost{Data: item.Val, DataList: []contract.DataItem{item}})
+			costMap[item.Payer] = oc
+		} else {
+			costMap[item.Payer] = contract.Cost{Data: item.Val, DataList: []contract.DataItem{item}}
+		}
+	}
+	for who, c := range costMap {
+		if oc, ok := h.cost[who]; ok {
+			oc.AddAssign(c)
+			h.cost[who] = oc
+		} else {
+			h.cost[who] = c
+		}
 	}
 }
 
@@ -66,9 +97,9 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 			}
 		}
 		// contracts in "iost" domain will not pay for ram
-		if isPayRAM && c.Data > 0 && !strings.HasSuffix(k, ".iost") {
+		if isPayRAM && !strings.HasSuffix(k, ".iost") {
 			var payer string
-			if strings.HasPrefix(k, "Contract") {
+			if h.h.IsContract(k) {
 				p, _ := h.h.GlobalMapGet("system.iost", "contract_owner", k)
 				payer = p.(string)
 			} else {

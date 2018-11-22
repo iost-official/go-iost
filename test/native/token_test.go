@@ -16,9 +16,9 @@ import (
 func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db)
-	vi.Put("auth.iost@issuer0-auth", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
-	vi.Put("auth.iost@user0-auth", database.MustMarshal(`{"id":"user0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
-	vi.Put("auth.iost@user1-auth", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("auth.iost-auth", "issuer0", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("auth.iost-auth", "user0", database.MustMarshal(`{"id":"user0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
+	vi.MPut("auth.iost-auth", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
@@ -122,7 +122,7 @@ func TestToken_Create(t *testing.T) {
 			_, _, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "22.3", "")
 			So(err.Error(), ShouldEqual, "token can't transfer")
 
-			dr, _ := host.MapGet("TIiost", "defaultRate", "issuer0")
+			dr, _ := host.MapGet("TIiost", "defaultRate")
 			So(dr.(string), ShouldEqual, "1.1")
 
 			// transfer truncate

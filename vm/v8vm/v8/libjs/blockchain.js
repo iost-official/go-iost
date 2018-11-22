@@ -5,12 +5,17 @@ let BlockChain = (function () {
         let ctxInfo = JSON.parse(bc.contextInfo());
         return ctxInfo["contract_name"];
     };
+    // get publisher
+    let publisher = function () {
+        let ctxInfo = JSON.parse(bc.contextInfo());
+        return ctxInfo["publisher"];
+    };
     // transfer IOSToken
     let transfer = function (from, to, amount, memo) {
         if (!(amount instanceof Float64)) {
             amount = new Float64(amount);
         }
-        return JSON.parse(bc.call("token.iost", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\", \"" + memo.toString() + "\"]"));
+        return JSON.parse(bc.callWithAuth("token.iost", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\", \"" + memo.toString() + "\"]"));
     };
     return {
         // transfer IOSToken
@@ -37,6 +42,8 @@ let BlockChain = (function () {
         },
         // get contractName
         contractName: contractName,
+        // get publisher
+        publisher: publisher,
         // call contract's api using args
         call: function (contract, api, args) {
             return JSON.parse(bc.call(contract, api, args));

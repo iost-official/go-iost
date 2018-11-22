@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 func prepareToken(t *testing.T, s *Simulator, kp *account.KeyPair) {
@@ -77,15 +78,15 @@ func Test_NewVote(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(1999999000*1e8))
-			So(s.Visitor.Get("vote.iost-current_id"), ShouldEqual, `s"1"`)
-			So(s.Visitor.MGet("vote.iost-voteInfo", "1"), ShouldEqual, `s{"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"unvoteInterval":0,"deposit":"1000"}`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option1"), ShouldEqual, `s["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `"1"`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"unvoteInterval":0,"deposit":"1000"}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option1")), ShouldEqual, `["0",false,-1]`)
 
 			r, err = s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote-result", "1")), ShouldEqual, `[]`)
 		})
 
 	})
@@ -112,7 +113,7 @@ func Test_AddOption(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4", "option5"})
-			So(s.Visitor.MGet("vote.iost-v-1", "option5"), ShouldEqual, `s["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option5")), ShouldEqual, `["0",false,-1]`)
 
 			r, err = s.Call("vote.iost", "GetOption", `["1", "option5"]`, kp.ID, kp)
 			So(err, ShouldBeNil)
@@ -143,7 +144,7 @@ func Test_RemoveOption(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4"})
-			So(s.Visitor.MGet("vote.iost-v-1", "option2"), ShouldEqual, `s["0",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option2")), ShouldEqual, `["0",true,-1]`)
 		})
 	})
 }
@@ -168,27 +169,27 @@ func Test_Vote(t *testing.T) {
 			kp2, _ := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
 			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, testID[2]), kp2.ID, kp2)
 
-			So(s.Visitor.MGet("vote.iost-v-1", "option3"), ShouldEqual, `s["5",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option3":["5",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option3")), ShouldEqual, `["5",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option3":["5",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{})
 
 			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, testID[2]), kp2.ID, kp2)
-			So(s.Visitor.MGet("vote.iost-v-1", "option3"), ShouldEqual, `s["10",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option3":["10",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option3")), ShouldEqual, `["10",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option3":["10",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option3"})
 
 			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option1", "20"]`, testID[2]), kp2.ID, kp2)
-			So(s.Visitor.MGet("vote.iost-v-1", "option1"), ShouldEqual, `s["20",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option3":["10",0,"0"],"option1":["20",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option1")), ShouldEqual, `["20",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option3":["10",0,"0"],"option1":["20",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option3", "option1"})
 
 			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "100"]`, testID[0]), kp.ID, kp)
-			So(s.Visitor.MGet("vote.iost-v-1", "option3"), ShouldEqual, `s["110",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[0]), ShouldEqual, `s{"option3":["100",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option3")), ShouldEqual, `["110",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[0])), ShouldEqual, `{"option3":["100",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option3", "option1"})
 
 			s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
-			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[{"option":"option3","votes":"110"},{"option":"option1","votes":"20"}]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote-result", "1")), ShouldEqual, `[{"option":"option3","votes":"110"},{"option":"option1","votes":"20"}]`)
 
 			r, err := s.Call("vote.iost", "GetOption", `["1", "option3"]`, kp.ID, kp)
 			So(err, ShouldBeNil)
@@ -220,32 +221,32 @@ func Test_Vote(t *testing.T) {
 
 			// get result
 			s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
-			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[{"option":"option4","votes":"400"},{"option":"option3","votes":"300"}]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote-result", "1")), ShouldEqual, `[{"option":"option4","votes":"400"},{"option":"option3","votes":"300"}]`)
 
 			// unvote
 			s.Call("vote.iost", "Unvote", fmt.Sprintf(`["1", "%v", "option3", "100"]`, testID[0]), kp.ID, kp)
-			So(s.Visitor.MGet("vote.iost-v-1", "option3"), ShouldEqual, `s["200",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[0]), ShouldEqual, `s{"option2":["100",0,"0"],"option3":["200",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option3")), ShouldEqual, `["200",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[0])), ShouldEqual, `{"option2":["100",0,"0"],"option3":["200",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4"})
 
 			// get result
 			s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
-			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[{"option":"option4","votes":"400"},{"option":"option2","votes":"200"}]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote-result", "1")), ShouldEqual, `[{"option":"option4","votes":"400"},{"option":"option2","votes":"200"}]`)
 
 			// unvote again
 			s.Call("vote.iost", "Unvote", fmt.Sprintf(`["1", "%v", "option2", "95"]`, testID[0]), kp.ID, kp)
-			So(s.Visitor.MGet("vote.iost-v-1", "option2"), ShouldEqual, `s["105",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[0]), ShouldEqual, `s{"option2":["5",0,"0"],"option3":["200",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option2")), ShouldEqual, `["105",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[0])), ShouldEqual, `{"option2":["5",0,"0"],"option3":["200",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4"})
 
 			s.Call("vote.iost", "Unvote", fmt.Sprintf(`["1", "%v", "option2", "100"]`, testID[2]), kp2.ID, kp2)
-			So(s.Visitor.MGet("vote.iost-v-1", "option2"), ShouldEqual, `s["5",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option1":["100",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option2")), ShouldEqual, `["5",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option1":["100",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option1", "option3", "option4"})
 
 			// get result
 			s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
-			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[{"option":"option4","votes":"400"},{"option":"option3","votes":"200"}]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote-result", "1")), ShouldEqual, `[{"option":"option4","votes":"400"},{"option":"option3","votes":"200"}]`)
 		})
 	})
 }
@@ -285,7 +286,7 @@ func Test_DelVote(t *testing.T) {
 			s.Call("vote.iost", "Unvote", fmt.Sprintf(`["1", "%v", "option2", "95"]`, testID[0]), kp.ID, kp)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{})
 			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{})
-			So(s.Visitor.MGet("vote.iost-u-1", testID[0]), ShouldEqual, `s{"option2":["5",0,"0"],"option3":["300",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[0])), ShouldEqual, `{"option2":["5",0,"0"],"option3":["300",0,"0"]}`)
 
 			// unvote all
 			s.Call("vote.iost", "Unvote", fmt.Sprintf(`["1", "%v", "option2", "5"]`, testID[0]), kp.ID, kp)
@@ -327,17 +328,17 @@ func Test_MixVoteOption(t *testing.T) {
 
 			// get result
 			s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
-			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[{"option":"option4","votes":"400"},{"option":"option3","votes":"300"}]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote-result", "1")), ShouldEqual, `[{"option":"option4","votes":"400"},{"option":"option3","votes":"300"}]`)
 
 			s.Head.Number++
 			// remove option
 			s.Call("vote.iost", "RemoveOption", `["1", "option1", false]`, kp.ID, kp)
-			So(s.Visitor.MGet("vote.iost-v-1", "option1"), ShouldEqual, `s["100",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option1")), ShouldEqual, `["100",true,-1]`)
 
 			// add option
 			s.Call("vote.iost", "AddOption", `["1", "option1", false]`, kp.ID, kp)
-			So(s.Visitor.MGet("vote.iost-v-1", "option1"), ShouldEqual, `s["100",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-p-1", "option1"), ShouldEqual, `s"100"`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option1")), ShouldEqual, `["100",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-p-1", "option1")), ShouldEqual, `"100"`)
 		})
 
 		Convey("test AddOption and clear", func() {
@@ -357,36 +358,36 @@ func Test_MixVoteOption(t *testing.T) {
 			s.Call("vote.iost", "AddOption", `["1", "option1", true]`, kp.ID, kp)
 
 			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4"})
-			So(s.Visitor.MGet("vote.iost-v-1", "option1"), ShouldEqual, `s["0",false,1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option1")), ShouldEqual, `["0",false,1]`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option2", "option3", "option4"})
 
 			// vote after clear in same block
 			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option1", "100"]`, testID[2]), kp2.ID, kp2)
 			So(s.Visitor.MHas("vote.iost-p-1", "option1"), ShouldEqual, false)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option1":["200",1,"100"],"option2":["100",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option1":["200",1,"100"],"option2":["100",0,"0"]}`)
 
 			// vote after the clear block
 			s.Head.Number++
 			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option1", "100"]`, testID[2]), kp2.ID, kp2)
-			So(s.Visitor.MGet("vote.iost-p-1", "option1"), ShouldEqual, `s"100"`)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option1":["300",2,"200"],"option2":["100",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-p-1", "option1")), ShouldEqual, `"100"`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option1":["300",2,"200"],"option2":["100",0,"0"]}`)
 
 			// vote again
 			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option1", "100"]`, testID[2]), kp2.ID, kp2)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option1":["400",2,"200"],"option2":["100",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option1":["400",2,"200"],"option2":["100",0,"0"]}`)
 
 			// get result
 			s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
-			So(s.Visitor.MGet("Contractvoteresult-vote-result", "1"), ShouldEqual, `s[{"option":"option4","votes":"400"},{"option":"option2","votes":"200"}]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote-result", "1")), ShouldEqual, `[{"option":"option4","votes":"400"},{"option":"option2","votes":"200"}]`)
 
 			// unvote
 			s.Call("vote.iost", "Unvote", fmt.Sprintf(`["1", "%v", "option1", "50"]`, testID[2]), kp2.ID, kp2)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option1":["350",2,"150"],"option2":["100",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option1":["350",2,"150"],"option2":["100",0,"0"]}`)
 
 			// unvote again
 			s.Call("vote.iost", "Unvote", fmt.Sprintf(`["1", "%v", "option1", "200"]`, testID[2]), kp2.ID, kp2)
-			So(s.Visitor.MGet("vote.iost-u-1", testID[2]), ShouldEqual, `s{"option1":["150",2,"0"],"option2":["100",0,"0"]}`)
-			So(s.Visitor.MGet("vote.iost-p-1", "option1"), ShouldEqual, `s"150"`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u-1", testID[2])), ShouldEqual, `{"option1":["150",2,"0"],"option2":["100",0,"0"]}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-p-1", "option1")), ShouldEqual, `"150"`)
 		})
 
 		Convey("test RemoveOption not force", func() {
@@ -410,11 +411,11 @@ func Test_MixVoteOption(t *testing.T) {
 			// s.Call("vote.iost", "RemoveOption", `["1", "option2", false]`, kp.ID, kp) // should fail
 			s.Call("vote.iost", "RemoveOption", `["1", "option1", false]`, kp.ID, kp)
 			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4", "option5"})
-			So(s.Visitor.MGet("vote.iost-v-1", "option5"), ShouldEqual, `s["0",true,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option4"), ShouldEqual, `s["400",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option3"), ShouldEqual, `s["300",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option2"), ShouldEqual, `s["300",false,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option1"), ShouldEqual, `s["100",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option5")), ShouldEqual, `["0",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option4")), ShouldEqual, `["400",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option3")), ShouldEqual, `["300",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option2")), ShouldEqual, `["300",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option1")), ShouldEqual, `["100",true,-1]`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{"option2", "option3", "option4"})
 		})
 
@@ -439,11 +440,11 @@ func Test_MixVoteOption(t *testing.T) {
 			s.Call("vote.iost", "RemoveOption", `["1", "option2", true]`, kp.ID, kp)
 			s.Call("vote.iost", "RemoveOption", `["1", "option1", true]`, kp.ID, kp)
 			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{"option1", "option2", "option3", "option4", "option5"})
-			So(s.Visitor.MGet("vote.iost-v-1", "option5"), ShouldEqual, `s["0",true,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option4"), ShouldEqual, `s["400",true,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option3"), ShouldEqual, `s["300",true,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option2"), ShouldEqual, `s["300",true,-1]`)
-			So(s.Visitor.MGet("vote.iost-v-1", "option1"), ShouldEqual, `s["100",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option5")),ShouldEqual, `["0",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option4")),ShouldEqual, `["400",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option3")),ShouldEqual, `["300",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option2")),ShouldEqual, `["300",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", "option1")),ShouldEqual, `["100",true,-1]`)
 			So(s.Visitor.MKeys("vote.iost-p-1"), ShouldResemble, []string{})
 		})
 	})
