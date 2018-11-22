@@ -101,6 +101,14 @@ class BonusContract {
         storage.mapDel(k, f);
     }
 
+    _globalMapGet(c, k, f) {
+        const val = storage.globalMapGet(c, k, f);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
+    }
+
     // IssueContribute to witness
     IssueContribute(data) {
         if (!data || !data.parent || !Array.isArray(data.parent)
@@ -120,7 +128,7 @@ class BonusContract {
         }
         this._put("lastIssueBN", bi.number);
 
-        const witness = data.parent[0];
+        let witness = data.parent[0];
         let gasUsage = new BigNumber(data.parent[1]);
         if (!gasUsage.isFinite()) {
             gasUsage = new BigNumber(0);
@@ -130,6 +138,11 @@ class BonusContract {
             blockContrib = blockContrib.plus(gasUsage.div(1e6));
         } else {
             blockContrib = new BigNumber("1000");
+        }
+        // get account name of the witness
+        const acc = this._globalMapGet("vote_producer.iost", "producerKeyToId", witness);
+        if (acc) {
+            witness = acc;
         }
         this._call("token.iost", "issue", [
             "contribute",
