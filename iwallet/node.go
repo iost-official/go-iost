@@ -16,21 +16,28 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 )
 
 // balanceCmd represents the balance command
 var nodeCmd = &cobra.Command{
-	Use:   "net",
-	Short: "Get node info",
-	Long:  `Get node info`,
+	Use:   "state",
+	Short: "Get blockchain and node state",
+	Long:  `Get blockchain and node state`,
 	Run: func(cmd *cobra.Command, args []string) {
-		r, err := sdk.getNodeInfo()
+		n, err := sdk.getNodeInfo()
 		if err != nil {
 			fmt.Printf("cannot get node info %v\n", err)
 			return
 		}
-		fmt.Println("node info:", r.String())
+		fmt.Println("node info:", proto.MarshalTextString(n))
+		c, err := sdk.getChainInfo()
+		if err != nil {
+			fmt.Printf("cannot get chain info %v\n", err)
+			return
+		}
+		fmt.Println("chain info:", proto.MarshalTextString(c))
 	},
 }
 

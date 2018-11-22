@@ -3,6 +3,7 @@ package iwallet
 import (
 	"context"
 	"fmt"
+	"github.com/golang/protobuf/proto"
 	"os"
 	"strings"
 	"time"
@@ -134,6 +135,20 @@ func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 	return value, nil
 }
 
+func (s *SDK) getChainInfo() (*rpcpb.ChainInfoResponse, error) {
+	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpcpb.NewApiServiceClient(conn)
+	value, err := client.GetChainInfo(context.Background(), &rpcpb.EmptyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 // getAccountInfo return account info
 func (s *SDK) getAccountInfo(id string) (*rpcpb.Account, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
@@ -218,9 +233,9 @@ func (s *SDK) checkTransaction(txHash string) bool {
 		}
 		if tx.StatusCode(txReceipt.StatusCode) != tx.Success {
 			fmt.Println("exec tx failed: ", txReceipt.Message)
-			fmt.Println("full error information: ", txReceipt)
+			fmt.Println("full error information: ", proto.MarshalTextString(txReceipt))
 		} else {
-			fmt.Println("exec tx done. ", txReceipt.String())
+			fmt.Println("exec tx done. ", proto.MarshalTextString(txReceipt))
 			return true
 		}
 		break
@@ -350,7 +365,7 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 	if err != nil {
 		return err
 	}
-	fmt.Println(info)
+	fmt.Println(proto.MarshalTextString(info))
 	return nil
 }
 
