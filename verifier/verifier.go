@@ -180,12 +180,7 @@ L:
 			provider.Return(t)
 			break L
 		}
-		r, err = isolator.PayCost()
-		if err != nil {
-			ilog.Errorf("pay cost err %v", err)
-			provider.Drop(t, err)
-			continue L
-		}
+		r, _ = isolator.PayCost()
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)

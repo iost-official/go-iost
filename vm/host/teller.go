@@ -38,6 +38,15 @@ func (h *Teller) ClearCosts() {
 	h.cost = make(map[string]contract.Cost)
 }
 
+// ClearRAMCosts ...
+func (h *Teller) ClearRAMCosts() {
+	newCost := make(map[string]contract.Cost)
+	for k, c := range h.cost {
+		newCost[k] = contract.NewCost(0, c.Net, c.CPU)
+	}
+	h.cost = newCost
+}
+
 // PayCost ...
 func (h *Teller) PayCost(c contract.Cost, who string) {
 	if oc, ok := h.cost[who]; ok {
@@ -49,10 +58,7 @@ func (h *Teller) PayCost(c contract.Cost, who string) {
 }
 
 // DoPay ...
-func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
-	//if gasPrice < 100 {
-	//	panic("gas_price error")
-	//}
+func (h *Teller) DoPay(witness string, gasPrice int64) error {
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
 		if fee != 0 {
@@ -66,7 +72,7 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 			}
 		}
 		// contracts in "iost" domain will not pay for ram
-		if isPayRAM && c.Data > 0 && !strings.HasSuffix(k, ".iost") {
+		if c.Data > 0 && !strings.HasSuffix(k, ".iost") {
 			var payer string
 			if strings.HasPrefix(k, "Contract") {
 				p, _ := h.h.GlobalMapGet("system.iost", "contract_owner", k)

@@ -248,6 +248,8 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			ilog.Errorf("isolator run action %v failed, status %v, will rollback", action, status)
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
+			i.h.ClearRAMCosts()
+			i.tr.RAMUsage = make(map[string]int64)
 			break
 		} else {
 			i.tr.Receipts = append(i.tr.Receipts, receipts...)
@@ -260,16 +262,18 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 
 // PayCost as name
 func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
-	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice, true)
+	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice)
 	if err != nil {
+		ilog.Errorf("DoPay failed, rollback %v", err)
 		i.h.DB().Rollback()
+		i.h.ClearRAMCosts()
 		i.tr.RAMUsage = make(map[string]int64)
 		i.tr.Status.Code = tx.ErrorBalanceNotEnough
 		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
 
-		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice, false)
+		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 	}
 	return i.tr, nil
