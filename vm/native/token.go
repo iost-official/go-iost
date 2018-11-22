@@ -320,7 +320,7 @@ var (
 			}
 
 			// set supply, set balance
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount, issuer.(string))
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount)
 			cost.AddAssign(cost0)
 
 			balance, cost0, err := getBalance(h, tokenName, to, issuer.(string))
@@ -601,7 +601,7 @@ var (
 			cost.AddAssign(cost0)
 
 			supply -= amount
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply, issuer.(string))
+			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil

@@ -41,7 +41,7 @@ func so(actual interface{}, assert func(actual interface{}, expected ...interfac
 func convey(items ...interface{}) {
 	info := items[0].(string)
 	fmt.Println(info)
-	if runtime.GOOS == `darwin` {
+	if runtime.GOOS == `darwin` || runtime.GOOS == `linux` {
 		f := items[len(items)-1].(func())
 		f()
 	}
@@ -330,6 +330,8 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 		otherAcc := "user2"
 		pledgeAmount := toIOSTFixed(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, otherAcc, pledgeAmount.ToString())
+		h.FlushCacheCost()
+		h.ClearCosts()
 		so(err, shouldBeNil)
 		so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Value-pledgeAmount.Value)
 		so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Value)
