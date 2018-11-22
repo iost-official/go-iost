@@ -34,7 +34,7 @@ var shouldBeZeroValue = cy.ShouldBeZeroValue
 func so(actual interface{}, assert func(actual interface{}, expected ...interface{}) string, expected ...interface{}) {
 	result := assert(actual, expected...)
 	if result != "" {
-		ilog.Fatal("test fail %v" + result)
+		ilog.Fatalf("test fail %v", result)
 	}
 }
 
@@ -208,10 +208,11 @@ func TestGas_Pledge(t *testing.T) {
 			so(gas.Equals(gasEstimated), shouldBeTrue)
 		})
 		convey("Then gas will reach limit and not increase any longer", func() {
-			delta := int64(native.GasFulfillSeconds + 4000)
+			delta := int64(2 * native.GasFulfillSeconds)
 			timePass(h, delta)
 			gas, _ := h.GasManager.CurrentGas(testAcc)
 			gasEstimated := pledgeAmount.Multiply(native.GasLimit)
+			fmt.Printf("gas %v es %v\n", gas, gasEstimated)
 			so(gas.Equals(gasEstimated), shouldBeTrue)
 		})
 	})
