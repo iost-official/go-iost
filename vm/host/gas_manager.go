@@ -62,7 +62,7 @@ func (g *GasManager) putFixed(owner string, key string, value *common.Fixed) con
 		ilog.Fatalf("GasHandler putFixed %v", value)
 	}
 	//fmt.Printf("putFixed %v %v %v\n", owner, key, value.ToString())
-	return g.h.Put(key + owner, value.Marshal(), owner)
+	return g.h.Put(key+owner, value.Marshal(), owner)
 }
 
 // GasRate ...
@@ -111,7 +111,7 @@ func (g *GasManager) GasUpdateTime(name string) (int64, contract.Cost) {
 // SetGasUpdateTime ...
 func (g *GasManager) SetGasUpdateTime(name string, t int64) contract.Cost {
 	//ilog.Debugf("SetGasUpdateTime %v %v", name, t)
-	return g.h.Put(GasUpdateTimeKey + name, t, name)
+	return g.h.Put(GasUpdateTimeKey+name, t, name)
 }
 
 // GasStock `gasStock` means the gas amount at last update time.
@@ -135,7 +135,7 @@ func (g *GasManager) SetGasStock(name string, gas *common.Fixed) contract.Cost {
 // GasPledge ...
 func (g *GasManager) GasPledge(name string, pledger string) (*common.Fixed, contract.Cost) {
 	finalCost := contract.Cost0()
-	ok, cost := g.h.MapHas(GasPledgeKey + name, pledger)
+	ok, cost := g.h.MapHas(GasPledgeKey+name, pledger)
 	finalCost.AddAssign(cost)
 	if !ok {
 		return &common.Fixed{
@@ -143,7 +143,7 @@ func (g *GasManager) GasPledge(name string, pledger string) (*common.Fixed, cont
 			Decimal: 8,
 		}, finalCost
 	}
-	result, cost := g.h.MapGet(GasPledgeKey + name, pledger)
+	result, cost := g.h.MapGet(GasPledgeKey+name, pledger)
 	finalCost.AddAssign(cost)
 	value, err := common.UnmarshalFixed(result.(string))
 	if err != nil {
@@ -154,7 +154,7 @@ func (g *GasManager) GasPledge(name string, pledger string) (*common.Fixed, cont
 
 // SetGasPledge ...
 func (g *GasManager) SetGasPledge(name string, pledger string, p *common.Fixed) contract.Cost {
-	return g.h.MapPut(GasPledgeKey + name, pledger, p.Marshal(), name)
+	return g.h.MapPut(GasPledgeKey+name, pledger, p.Marshal(), name)
 }
 
 // DelGasPledge ...
@@ -162,7 +162,7 @@ func (g *GasManager) DelGasPledge(name string, pledger string) contract.Cost {
 	if name == pledger {
 		ilog.Fatalf("delGasPledge for oneself %v", name)
 	}
-	return g.h.MapDel(GasPledgeKey + name, pledger)
+	return g.h.MapDel(GasPledgeKey+name, pledger)
 }
 
 // PledgerInfo ...
@@ -181,7 +181,7 @@ func (g *GasManager) PledgerInfo(name string) ([]PledgerInfo, contract.Cost) {
 	finalCost.AddAssign(cost)
 	result := make([]PledgerInfo, 0)
 	for _, pledger := range pledgers {
-		v, cost := g.h.MapGet(GasPledgeKey + name, pledger)
+		v, cost := g.h.MapGet(GasPledgeKey+name, pledger)
 		finalCost.AddAssign(cost)
 		pledge, err := common.UnmarshalFixed(v.(string))
 		if err != nil {
