@@ -22,7 +22,6 @@ matrix:
     before_script:
     - git lfs pull
     script:
-    - make vmlib
     - make build
     - make lint
     - make test
@@ -40,7 +39,6 @@ matrix:
     before_script:
     - git lfs pull
     script:
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make vmlib
     - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make build
     - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make lint
     - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make test
