@@ -146,6 +146,38 @@ func (t *ITest) TransferN(num int, accounts []*Account) error {
 	return nil
 }
 
+// ContractTransferN will send n contract transfer transaction concurrently
+func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account) error {
+	ilog.Infof("Send %v contract transfer transaction...", num)
+
+	res := make(chan interface{})
+	for i := 0; i < num; i++ {
+		go func(res chan interface{}) {
+			A := accounts[rand.Intn(len(accounts))]
+			B := accounts[rand.Intn(len(accounts))]
+			amount := float64(rand.Int63n(10000)) / 100
+
+			A.AddBalance(-amount)
+			B.AddBalance(amount)
+			ilog.Debugf("Contract transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+
+			res <- t.ContractTransfer(cid, A, B, fmt.Sprintf("%0.8f", amount))
+		}(res)
+	}
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			return fmt.Errorf("Send contract transfer transaction failed: %v", value)
+		default:
+		}
+	}
+
+	ilog.Infof("Send %v contract transfer transaction successful!", num)
+
+	return nil
+}
+
 // CheckAccounts will check account info by getting account info
 func (t *ITest) CheckAccounts(a []*Account) error {
 	ilog.Infof("Get %v accounts info...", len(a))
@@ -203,6 +235,19 @@ func (t *ITest) CheckAccounts(a []*Account) error {
 	return nil
 }
 
+// ContractTransfer will contract transfer token from sender to recipient
+func (t *ITest) ContractTransfer(cid string, sender, recipient *Account, amount string) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.ContractTransfer(cid, sender, recipient, amount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Transfer will transfer token from sender to recipient
 func (t *ITest) Transfer(sender, recipient *Account, token, amount string) error {
 	cIndex := rand.Intn(len(t.clients))
@@ -217,16 +262,16 @@ func (t *ITest) Transfer(sender, recipient *Account, token, amount string) error
 }
 
 // SetContract will set the contract on blockchain
-func (t *ITest) SetContract(contract *Contract) error {
+func (t *ITest) SetContract(contract *Contract) (string, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	err := client.SetContract(t.bank, contract)
+	hash, err := client.SetContract(t.bank, contract)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	return nil
+	return hash, nil
 }
 
 // GetTransaction will get transaction by tx hash

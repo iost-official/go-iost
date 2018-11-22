@@ -29,4 +29,14 @@ var Flags = []cli.Flag{
 		Value: "",
 		Usage: "Load itest configuration from `FILE`",
 	},
+	cli.StringFlag{
+		Name:  "code",
+		Value: "",
+		Usage: "Load contract code from `FILE`",
+	},
+	cli.StringFlag{
+		Name:  "abi",
+		Value: "",
+		Usage: "Load contract abi from `FILE`",
+	},
 }
