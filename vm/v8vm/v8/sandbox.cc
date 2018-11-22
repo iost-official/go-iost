@@ -331,7 +331,6 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     bool isJson = false;
     bool isDone = false;
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
-    exec.detach();
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
 //    auto startTime = std::chrono::steady_clock::now();
@@ -366,6 +365,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             break;
         }
         auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
+	std::cout << "hahawa: now: " << now << " expTime: " << expireTime << std::endl;
         fflush(stdout);
         //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
         if (now > expireTime) {
@@ -376,5 +376,6 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
         }
         usleep(10);
     }
+    exec.join();
     return res;
 }
