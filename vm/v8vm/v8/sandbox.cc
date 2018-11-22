@@ -365,8 +365,6 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             break;
         }
         auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-	std::cout << "hahawa: now: " << now << " expTime: " << expireTime << std::endl;
-        fflush(stdout);
         //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
         if (now > expireTime) {
             isolate->TerminateExecution();
