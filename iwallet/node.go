@@ -16,7 +16,6 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"github.com/spf13/cobra"
 )
 
@@ -31,13 +30,13 @@ var nodeCmd = &cobra.Command{
 			fmt.Printf("cannot get node info %v\n", err)
 			return
 		}
-		fmt.Println("node info:", proto.MarshalTextString(n))
+		fmt.Println("node info:", marshalTextString(n))
 		c, err := sdk.getChainInfo()
 		if err != nil {
 			fmt.Printf("cannot get chain info %v\n", err)
 			return
 		}
-		fmt.Println("chain info:", proto.MarshalTextString(c))
+		fmt.Println("chain info:", marshalTextString(c))
 	},
 }
 

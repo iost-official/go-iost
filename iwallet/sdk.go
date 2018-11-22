@@ -3,7 +3,6 @@ package iwallet
 import (
 	"context"
 	"fmt"
-	"github.com/golang/protobuf/proto"
 	"os"
 	"strings"
 	"time"
@@ -233,9 +232,9 @@ func (s *SDK) checkTransaction(txHash string) bool {
 		}
 		if tx.StatusCode(txReceipt.StatusCode) != tx.Success {
 			fmt.Println("exec tx failed: ", txReceipt.Message)
-			fmt.Println("full error information: ", proto.MarshalTextString(txReceipt))
+			fmt.Println("full error information: ", marshalTextString(txReceipt))
 		} else {
-			fmt.Println("exec tx done. ", proto.MarshalTextString(txReceipt))
+			fmt.Println("exec tx done. ", marshalTextString(txReceipt))
 			return true
 		}
 		break
@@ -365,7 +364,7 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 	if err != nil {
 		return err
 	}
-	fmt.Println(proto.MarshalTextString(info))
+	fmt.Println(marshalTextString(info))
 	return nil
 }
 

@@ -16,8 +16,6 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/golang/protobuf/proto"
-
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +33,7 @@ var transactionCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		fmt.Println(proto.MarshalTextString(txRaw))
+		fmt.Println(marshalTextString(txRaw))
 	},
 }
 
