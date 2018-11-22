@@ -56,7 +56,7 @@ func TestRAM(t *testing.T) {
 			So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM)
 		})
 		Convey("test buy", func() {
-			var buyAmount int64 = 30
+			var buyAmount int64 = 1024
 			Convey("normal buy", func() {
 				//balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
@@ -66,7 +66,7 @@ func TestRAM(t *testing.T) {
 				balanceAfter := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
 				//var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
-				So(balanceAfter, ShouldEqual, 969 * 1e8)
+				So(balanceAfter, ShouldEqual, 968 * 1e8)
 				So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, initRAM+buyAmount)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore-buyAmount)
 			})
@@ -93,7 +93,7 @@ func TestRAM(t *testing.T) {
 				otherRAMAfter := s.Visitor.TokenBalance("ram", other)
 				myRAMAfter := s.Visitor.TokenBalance("ram", kp.ID)
 				//var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
-				So(balanceAfter, ShouldEqual, 907 * 1e8)
+				So(balanceAfter, ShouldEqual, 906 * 1e8)
 				So(myRAMAfter, ShouldEqual, myRAMBefore)
 				So(otherRAMAfter, ShouldEqual, otherRAMBefore+buyAmount)
 			})
@@ -105,7 +105,7 @@ func TestRAM(t *testing.T) {
 				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
 			})
 			Convey("normal sell", func() {
-				var sellAmount int64 = 10
+				var sellAmount int64 = 341
 				//balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
 				myRAMBefore := s.Visitor.TokenBalance("ram", kp.ID)
@@ -121,7 +121,7 @@ func TestRAM(t *testing.T) {
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+sellAmount)
 			})
 			Convey("user can sell ram for others", func() {
-				var sellAmount int64 = 10
+				var sellAmount int64 = 341
 				other := testID[4]
 				balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
 				//otherBalanceBefore := s.Visitor.TokenBalance("iost", other)
@@ -135,7 +135,7 @@ func TestRAM(t *testing.T) {
 				//var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore)
 				So(myRAMAfter, ShouldEqual, myRAMBefore-sellAmount)
-				So(otherBalanceAfter, ShouldEqual, 9 * 1e8)
+				So(otherBalanceAfter, ShouldEqual, 10 * 1e8)
 			})
 		})
 	})
