@@ -143,7 +143,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("ram.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 	acts = append(acts, tx.NewAction("ram.iost", "initContractName", fmt.Sprintf(`["%v"]`, "ram.iost")))
 	var initialTotal int64 = 128 * 1024 * 1024 * 1024        // 128GB at first
-	var increaseInterval int64 = 24 * 3600 / 3               // increase every day
+	var increaseInterval int64 = 24 * 3600               // increase every day
 	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365 // 64GB per year
 	acts = append(acts, tx.NewAction("ram.iost", "issue", fmt.Sprintf(`[%v, %v, %v]`, initialTotal, increaseInterval, increaseAmount)))
 
