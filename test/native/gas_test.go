@@ -343,6 +343,7 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			so(gas.Value, shouldBeZeroValue)
 		})
 		convey("Test unpledge for others", func() {
+			t.Skip("fix ram usage")
 			unpledgeAmount := toIOSTFixed(190)
 			_, _, err = e.LoadAndCall(h, code, "unpledge", testAcc, otherAcc, unpledgeAmount.ToString())
 			so(err, shouldBeNil)
