@@ -365,8 +365,8 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
-        fflush(stdout);
+        auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        //fflush(stdout);
         //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
         if (now > expireTime) {
             isolate->TerminateExecution();
