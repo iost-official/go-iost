@@ -85,6 +85,11 @@ func (s *Simulator) SetRAM(id string, r int64) {
 	s.Visitor.Commit()
 }
 
+// GetRAM of id
+func (s *Simulator) GetRAM(id string) int64 {
+	return s.Visitor.TokenBalance("ram", id)
+}
+
 // SetContract without run init
 func (s *Simulator) SetContract(c *contract.Contract) {
 	s.Visitor.SetContract(c)

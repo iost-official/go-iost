@@ -127,3 +127,94 @@ func Test_VMMethod(t *testing.T) {
 		})
 	})
 }
+
+func Test_RamPayer(t *testing.T) {
+	ilog.Stop()
+	Convey("test of ram payer", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		prepareContract(s)
+		createToken(t, s, kp)
+
+		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+
+		Convey("test of put and get", func() {
+			ram := s.GetRAM(testID[0])
+			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, testID[0]), testID[0], kp)
+			s.Visitor.Commit()
+			So(s.GetRAM(testID[0]), ShouldEqual, ram - 111)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			r, err = s.Call(cname, "get", fmt.Sprintf(`["k"]`, testID[0]), testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(len(r.Returns), ShouldEqual, 1)
+			So(r.Returns[0], ShouldEqual, "[\"v\"]")
+		})
+
+		Convey("test of map put and get", func() {
+			ram := s.GetRAM(testID[0])
+			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, testID[0]), testID[0], kp)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram - 113)
+
+			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`, testID[0]), testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(len(r.Returns), ShouldEqual, 1)
+			So(r.Returns[0], ShouldEqual, "[\"v\"]")
+		})
+
+		Convey("test of map put and get change payer", func() {
+			kp2, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ram := s.GetRAM(testID[0])
+			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vv", "%v"]`, testID[0]), testID[0], kp)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram - 114)
+
+			ram = s.GetRAM(testID[0])
+			ram1 := s.GetRAM(testID[2])
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvv", "%v"]`, testID[2]), testID[2], kp2)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram + 114)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1 - 115)
+
+			ram1 = s.GetRAM(testID[2])
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, testID[2]), testID[2], kp2)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1 + 2)
+
+			ram1 = s.GetRAM(testID[2])
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvvvv", "%v"]`, testID[2]), testID[2], kp2)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1 - 4)
+		})
+	})
+}

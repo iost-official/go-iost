@@ -262,6 +262,8 @@ func (g *GasManager) RefreshGas(name string) (contract.Cost, error) {
 
 // CostGas subtract gas of a user
 func (g *GasManager) CostGas(name string, gasCost *common.Fixed) (contract.Cost, error) {
+	// todo modify CostGas
+	g.h.ctx.Set("contract_name", "gas.iost")
 	finalCost := contract.Cost0()
 	cost, err := g.RefreshGas(name)
 	finalCost.AddAssign(cost)
@@ -277,5 +279,6 @@ func (g *GasManager) CostGas(name string, gasCost *common.Fixed) (contract.Cost,
 	ret := currentGas.Sub(gasCost)
 	cost = g.SetGasStock(name, ret)
 	finalCost.AddAssign(cost)
+	g.h.ctx.Set("contract_name", "")
 	return finalCost, nil
 }

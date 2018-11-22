@@ -23,10 +23,9 @@ func NewDBHandler(h *Host) DBHandler {
 func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contract.Cost {
 	mk := h.modifyKey(key)
 	sv := h.modifyValue(value, ramPayer...)
-	cost := h.payRAM(mk, sv, ramPayer...)
+	h.payRAM(mk, sv, ramPayer...)
 	h.h.db.Put(mk, sv)
-	cost.AddAssign(Costs["PutCost"])
-	return cost
+	return Costs["PutCost"]
 }
 
 // Get get value of key from db
@@ -39,10 +38,9 @@ func (h *DBHandler) Get(key string) (value interface{}, cost contract.Cost) {
 // Del delete key
 func (h *DBHandler) Del(key string) contract.Cost {
 	mk := h.modifyKey(key)
-	cost := h.releaseRAM(mk)
+	h.releaseRAM(mk)
 	h.h.db.Del(mk)
-	cost.AddAssign(Costs["DelCost"])
-	return cost
+	return Costs["DelCost"]
 }
 
 // Has if db has key
@@ -56,10 +54,9 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 	mk := h.modifyKey(key)
 	sv := h.modifyValue(value, ramPayer...)
 
-	cost := h.payRAMForMap(mk, field, sv, ramPayer...)
+	h.payRAMForMap(mk, field, sv, ramPayer...)
 	h.h.db.MPut(mk, field, sv)
-	cost.AddAssign(Costs["PutCost"])
-	return cost
+	return Costs["PutCost"]
 }
 
 // MapGet get value by kf from db
@@ -78,10 +75,9 @@ func (h *DBHandler) MapKeys(key string) (fields []string, cost contract.Cost) {
 // MapDel delete field
 func (h *DBHandler) MapDel(key, field string) contract.Cost {
 	mk := h.modifyKey(key)
-	cost := h.releaseRAMForMap(mk, field)
+	h.releaseRAMForMap(mk, field)
 	h.h.db.MDel(mk, field)
-	cost.AddAssign(Costs["DelCost"])
-	return cost
+	return Costs["DelCost"]
 }
 
 // MapHas if has field
@@ -163,21 +159,21 @@ func (h *DBHandler) parseValuePayer(value string) string {
 	return extra
 }
 
-func (h *DBHandler) payRAM(k, v string, who ...string) contract.Cost {
+func (h *DBHandler) payRAM(k, v string, who ...string) {
 	oldV := h.h.db.Get(k)
 	oLen := int64(len(oldV) + len(k))
 	nLen := int64(len(v) + len(k))
-	return h.payRAMInner(oldV, oLen, nLen, who...)
+	h.payRAMInner(oldV, oLen, nLen, who...)
 }
 
-func (h *DBHandler) payRAMForMap(k, f, v string, who ...string) contract.Cost {
+func (h *DBHandler) payRAMForMap(k, f, v string, who ...string) {
 	oldV := h.h.db.MGet(k, f)
 	oLen := int64(len(oldV) + len(k) + 2 * len(f))
 	nLen := int64(len(v) + len(k) + 2 * len(f))
-	return h.payRAMInner(oldV, oLen, nLen, who...)
+	h.payRAMInner(oldV, oLen, nLen, who...)
 }
 
-func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...string) contract.Cost {
+func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...string) {
 	var payer string
 	if len(who) > 0 {
 		payer = who[0]
@@ -200,17 +196,17 @@ func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...stri
 			dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen})
 		}
 	}
-	return contract.Cost{Data:dataList[0].Val, DataList:dataList}
+	h.h.AddCacheCost(contract.Cost{Data:dataList[0].Val, DataList:dataList})
 }
 
-func (h *DBHandler) releaseRAM(k string, who ...string) contract.Cost {
+func (h *DBHandler) releaseRAM(k string, who ...string) {
 	v := h.h.db.Get(k)
 	oLen := int64(len(k) + len(v))
-	return h.payRAMInner(v, oLen, 0, who...)
+	h.payRAMInner(v, oLen, 0, who...)
 }
 
-func (h *DBHandler) releaseRAMForMap(k, f string, who ...string) contract.Cost {
+func (h *DBHandler) releaseRAMForMap(k, f string, who ...string) {
 	v := h.h.db.MGet(k, f)
 	oLen := int64(len(k) + 2 * len(f) + len(v))
-	return h.payRAMInner(v, oLen, 0, who...)
+	h.payRAMInner(v, oLen, 0, who...)
 }

@@ -18,6 +18,7 @@ const (
 type Teller struct {
 	h    *Host
 	cost map[string]contract.Cost
+	cacheCost contract.Cost
 }
 
 // NewTeller new teller
@@ -25,6 +26,7 @@ func NewTeller(h *Host) Teller {
 	return Teller{
 		h:    h,
 		cost: make(map[string]contract.Cost),
+		cacheCost: contract.Cost0(),
 	}
 }
 
@@ -38,10 +40,27 @@ func (h *Teller) ClearCosts() {
 	h.cost = make(map[string]contract.Cost)
 }
 
+// AddCacheCost ...
+func (h *Teller) AddCacheCost(c contract.Cost) {
+	h.cacheCost.AddAssign(c)
+}
+
+// CacheCost ...
+func (h *Teller) CacheCost() contract.Cost {
+	return h.cacheCost
+}
+
+// FlushCacheCost ...
+func (h *Teller) FlushCacheCost() {
+	h.PayCost(h.cacheCost, "")
+}
+
 // PayCost ...
 func (h *Teller) PayCost(c contract.Cost, who string) {
 	costMap := make(map[string]contract.Cost)
-	costMap[who] = contract.Cost{CPU:c.CPU, Net:c.Net}
+	if c.CPU > 0 || c.Net > 0 {
+		costMap[who] = contract.Cost{CPU:c.CPU, Net:c.Net}
+	}
 	for _, item := range c.DataList {
 		if oc, ok := costMap[item.Payer]; ok {
 			oc.AddAssign(contract.Cost{Data:item.Val, DataList:[]contract.DataItem{item}})

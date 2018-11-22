@@ -155,8 +155,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 
 	// check ram auth
+	cacheCost := h.CacheCost()
+	h.FlushCacheCost()
 	payer := make(map[string]bool)
-	for _, c := range cost.DataList {
+	for _, c := range cacheCost.DataList {
 		if c.Val > 0 {
 			payer[c.Payer] = true
 		}
@@ -164,6 +166,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	for p := range payer {
 		ok, _ := h.RequireAuth(p, "active")
 		if !ok {
+			h.PopCtx()
 			return nil, cost, errors.New("pay ram failed. no permission. need " + p + "@active")
 		}
 	}
