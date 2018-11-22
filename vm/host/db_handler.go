@@ -22,8 +22,20 @@ func NewDBHandler(h *Host) DBHandler {
 // Put put kv to db
 func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contract.Cost {
 	mk := h.modifyKey(key)
-	sv := h.modifyValue(value, ramPayer...)
-	h.payRAM(mk, sv, ramPayer...)
+
+	oldV := h.h.db.Get(mk)
+	payer := ""
+	if len(ramPayer) > 0 {
+		payer = ramPayer[0]
+	} else  {
+		payer = h.parseValuePayer(oldV)
+		if payer == "" {
+			payer = h.h.ctx.Value("contract_name").(string)
+		}
+	}
+	sv := h.modifyValue(value, payer)
+
+	h.payRAM(mk, sv, oldV, payer)
 	h.h.db.Put(mk, sv)
 	return Costs["PutCost"]
 }
@@ -52,9 +64,19 @@ func (h *DBHandler) Has(key string) (bool, contract.Cost) {
 // MapPut put kfv to db
 func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...string) contract.Cost {
 	mk := h.modifyKey(key)
-	sv := h.modifyValue(value, ramPayer...)
+	oldV := h.h.db.MGet(mk, field)
+	payer := ""
+	if len(ramPayer) > 0 {
+		payer = ramPayer[0]
+	} else  {
+		payer = h.parseValuePayer(oldV)
+		if payer == "" {
+			payer = h.h.ctx.Value("contract_name").(string)
+		}
+	}
+	sv := h.modifyValue(value, payer)
 
-	h.payRAMForMap(mk, field, sv, ramPayer...)
+	h.payRAMForMap(mk, field, sv, oldV, payer)
 	h.h.db.MPut(mk, field, sv)
 	return Costs["PutCost"]
 }
@@ -159,31 +181,24 @@ func (h *DBHandler) parseValuePayer(value string) string {
 	return extra
 }
 
-func (h *DBHandler) payRAM(k, v string, who ...string) {
-	oldV := h.h.db.Get(k)
+func (h *DBHandler) payRAM(k, v, oldV string, who string) {
 	oLen := int64(len(oldV) + len(k))
 	nLen := int64(len(v) + len(k))
-	h.payRAMInner(oldV, oLen, nLen, who...)
+	h.payRAMInner(oldV, oLen, nLen, who)
 }
 
-func (h *DBHandler) payRAMForMap(k, f, v string, who ...string) {
-	oldV := h.h.db.MGet(k, f)
+func (h *DBHandler) payRAMForMap(k, f, v, oldV string, who string) {
 	oLen := int64(len(oldV) + len(k) + 2 * len(f))
 	nLen := int64(len(v) + len(k) + 2 * len(f))
-	h.payRAMInner(oldV, oLen, nLen, who...)
+	h.payRAMInner(oldV, oLen, nLen, who)
 }
 
-func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...string) {
-	var payer string
-	if len(who) > 0 {
-		payer = who[0]
-	} else {
-		payer, _ = h.h.ctx.Value("contract_name").(string)
-	}
-
+func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, payer string) {
+	data := int64(0)
 	dataList := []contract.DataItem{}
 	if oldV == "n" {
 		dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen})
+		data = nLen
 	} else {
 		oldPayer := h.parseValuePayer(oldV)
 		if oldPayer == "" {
@@ -191,22 +206,38 @@ func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, who ...stri
 		}
 		if oldPayer == payer {
 			dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen - oLen})
+			data = nLen - oLen
 		} else {
 			dataList = append(dataList, contract.DataItem{Payer:oldPayer, Val:-oLen})
 			dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen})
+			data = nLen - oLen
 		}
 	}
-	h.h.AddCacheCost(contract.Cost{Data:dataList[0].Val, DataList:dataList})
+	h.h.AddCacheCost(contract.Cost{Data:data, DataList:dataList})
 }
 
-func (h *DBHandler) releaseRAM(k string, who ...string) {
+func (h *DBHandler) releaseRAMInner(oldV string, oLen int64) {
+	data := int64(0)
+	dataList := []contract.DataItem{}
+	if oldV == "n" {
+		return
+	} else {
+		oldPayer := h.parseValuePayer(oldV)
+		if oldPayer != "" {
+			dataList = append(dataList, contract.DataItem{Payer: oldPayer, Val: -oLen})
+		}
+	}
+	h.h.AddCacheCost(contract.Cost{Data:data, DataList:dataList})
+}
+
+func (h *DBHandler) releaseRAM(k string) {
 	v := h.h.db.Get(k)
 	oLen := int64(len(k) + len(v))
-	h.payRAMInner(v, oLen, 0, who...)
+	h.releaseRAMInner(v, oLen)
 }
 
 func (h *DBHandler) releaseRAMForMap(k, f string, who ...string) {
 	v := h.h.db.MGet(k, f)
 	oLen := int64(len(k) + 2 * len(f) + len(v))
-	h.payRAMInner(v, oLen, 0, who...)
+	h.releaseRAMInner(v, oLen)
 }

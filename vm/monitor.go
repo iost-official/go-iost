@@ -164,6 +164,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 	for p := range payer {
+		if strings.HasSuffix(p, ".iost") {
+			continue
+		}
 		ok, _ := h.RequireAuth(p, "active")
 		if !ok {
 			h.PopCtx()

@@ -47,7 +47,14 @@ func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost contract.Co
 }
 
 func setBalance(h *host.Host, tokenName string, from string, balance int64, ramPayer string) (cost contract.Cost) {
-	cost = h.MapPut(TokenBalanceMapPrefix + from, tokenName, balance, ramPayer)
+	ok, cost := h.MapHas(TokenBalanceMapPrefix + from, tokenName)
+	if ok {
+		cost0 := h.MapPut(TokenBalanceMapPrefix + from, tokenName, balance)
+		cost.AddAssign(cost0)
+	} else {
+		cost0 := h.MapPut(TokenBalanceMapPrefix + from, tokenName, balance, ramPayer)
+		cost.AddAssign(cost0)
+	}
 	return cost
 }
 
@@ -105,7 +112,7 @@ func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (b
 		if err != nil {
 			return balance, cost, err
 		}
-		cost0 = h.MapPut(TokenFreezeMapPrefix + from, tokenName, database.SerializedJSON(freezeJSON.([]byte)), ramPayer)
+		cost0 = h.MapPut(TokenFreezeMapPrefix + from, tokenName, database.SerializedJSON(freezeJSON.([]byte)))
 		cost.AddAssign(cost0)
 	}
 

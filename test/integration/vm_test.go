@@ -158,7 +158,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			r, err = s.Call(cname, "get", fmt.Sprintf(`["k"]`, testID[0]), testID[0], kp)
+			r, err = s.Call(cname, "get", fmt.Sprintf(`["k"]`), testID[0], kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(len(r.Returns), ShouldEqual, 1)
@@ -173,7 +173,7 @@ func Test_RamPayer(t *testing.T) {
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.GetRAM(testID[0]), ShouldEqual, ram - 113)
 
-			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`, testID[0]), testID[0], kp)
+			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), testID[0], kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(len(r.Returns), ShouldEqual, 1)

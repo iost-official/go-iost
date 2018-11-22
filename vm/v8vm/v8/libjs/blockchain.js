@@ -5,6 +5,11 @@ let BlockChain = (function () {
         let ctxInfo = JSON.parse(bc.contextInfo());
         return ctxInfo["contract_name"];
     };
+    // get publisher
+    let publisher = function () {
+        let ctxInfo = JSON.parse(bc.contextInfo());
+        return ctxInfo["publisher"];
+    };
     // transfer IOSToken
     let transfer = function (from, to, amount, memo) {
         if (!(amount instanceof Float64)) {
@@ -37,6 +42,8 @@ let BlockChain = (function () {
         },
         // get contractName
         contractName: contractName,
+        // get publisher
+        publisher: publisher,
         // call contract's api using args
         call: function (contract, api, args) {
             return JSON.parse(bc.call(contract, api, args));

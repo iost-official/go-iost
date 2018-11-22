@@ -5,8 +5,11 @@ class Account {
     init() {
 
     }
-    _saveAccount(account) {
-        storage.mapPut("auth", account.id, JSON.stringify(account), account.id);
+    _saveAccount(account, payer) {
+        if (payer === undefined) {
+            payer = account.id
+        }
+        storage.mapPut("auth", account.id, JSON.stringify(account), payer);
     }
     _loadAccount(id) {
         let a = storage.mapGet("auth", id);
@@ -58,7 +61,7 @@ class Account {
             }],
             threshold: 1,
         };
-        this._saveAccount(account);
+        this._saveAccount(account, BlockChain.publisher());
     }
     AddPermission(id, perm, thres) {
         this._ra(id);

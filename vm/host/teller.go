@@ -26,7 +26,6 @@ func NewTeller(h *Host) Teller {
 	return Teller{
 		h:    h,
 		cost: make(map[string]contract.Cost),
-		cacheCost: contract.Cost0(),
 	}
 }
 
@@ -53,6 +52,7 @@ func (h *Teller) CacheCost() contract.Cost {
 // FlushCacheCost ...
 func (h *Teller) FlushCacheCost() {
 	h.PayCost(h.cacheCost, "")
+	h.cacheCost = contract.Cost0()
 }
 
 // PayCost ...

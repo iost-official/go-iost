@@ -28,7 +28,7 @@ func sliceEqual(a, b []string) bool {
 	return false
 }
 
-func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, Host) {
+func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, *Host) {
 	mockCtrl := NewController(t)
 	defer mockCtrl.Finish()
 	db := database.NewMockIMultiValue(mockCtrl)
@@ -37,7 +37,7 @@ func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, Host) {
 	//monitor := Monitor{}
 
 	host := NewHost(ctx, bdb, nil, nil)
-	return db, *host
+	return db, host
 }
 
 func TestHost_Put(t *testing.T) {
@@ -56,9 +56,9 @@ func TestHost_Put(t *testing.T) {
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("", nil)
 
-	cost := host.Put("hello", "world")
-	host.PayCost(cost, "witness")
-	if host.cost["contractName"].Data != 25 {
+	_ = host.Put("hello", "world")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != 37 {
 		t.Fatal(host.cost)
 	}
 }
@@ -77,9 +77,9 @@ func TestHost_Put2(t *testing.T) {
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa", nil)
 
-	cost := host.Put("hello", "world")
-	host.PayCost(cost, "witness")
-	if host.cost["contractName"].Data != 5 {
+	_ = host.Put("hello", "world")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != 17 {
 		t.Fatal(host.cost)
 	}
 }
@@ -98,8 +98,8 @@ func TestHost_PutUserSpace(t *testing.T) {
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa@abc", nil)
 
-	cost := host.Put("hello", "worldn", "abc")
-	host.PayCost(cost, "witness")
+	_ = host.Put("hello", "worldn", "abc")
+	host.FlushCacheCost()
 	if host.cost["abc"].Data != 5 {
 		t.Fatal(host.cost)
 	}
@@ -121,17 +121,17 @@ func TestHost_Del(t *testing.T) {
 		t.Log("put: ", a, b, c)
 	})
 
-	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld", nil)
-	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld", nil)
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld@contractName", nil)
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld@contractName", nil)
 
-	cost := host.Del("hello")
-	host.PayCost(cost, "witness")
-	if host.cost["contractName"].Data != -24 {
+	_ = host.Del("hello")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != -37 {
 		t.Fatal(host.cost)
 	}
-	cost = host.Del("hello")
-	host.PayCost(cost, "witness")
-	if host.cost["contractName"].Data != -24 {
+	_ = host.Del("hello")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != -37 {
 		t.Fatal(host.cost)
 	}
 }
@@ -179,14 +179,14 @@ func TestHost_MapPut(t *testing.T) {
 	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
-		cost := host.MapPut("hello", "1", "world")
-		host.PayCost(cost, "witness")
+		_ = host.MapPut("hello", "1", "world")
 	})
+	host.FlushCacheCost()
 	if tr > time.Millisecond {
 		t.Log("to slow")
 	}
 
-	if host.cost["contractName"].Data != 27 {
+	if host.cost["contractName"].Data != 39 {
 		t.Fatal(host.cost)
 	}
 }
@@ -214,9 +214,9 @@ func TestHost_MapPut_Owner(t *testing.T) {
 	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
-		cost := host.MapPut("hello", "1", "world", "abc")
-		host.PayCost(cost, "witness")
+		_ = host.MapPut("hello", "1", "world", "abc")
 	})
+	host.FlushCacheCost()
 	if tr > time.Millisecond {
 		t.Log("to slow")
 	}

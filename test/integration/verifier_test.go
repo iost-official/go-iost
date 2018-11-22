@@ -42,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 2886)
+			So(r.GasUsage, ShouldEqual, 3086)
 		})
 
 		Convey("test of token memo", func() {
@@ -140,7 +140,7 @@ func TestJS_Database(t *testing.T) {
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 100000)
-		s.SetRAM(kp.ID, 3000)
+		s.SetRAM(kp.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
@@ -152,6 +152,7 @@ func TestJS_Database(t *testing.T) {
 		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"array")), ShouldEqual, "[1,2,3]")
 		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"obj")), ShouldEqual, `{"foo":"bar"}`)
 
+		s.SetGas(kp.ID, 100000)
 		r, err := s.Call(cname, "read", `[]`, kp.ID, kp)
 
 		So(err, ShouldBeNil)
@@ -384,8 +385,8 @@ func TestDomain(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 100000)
-		s.SetRAM(kp.ID, 3000)
+		s.SetGas(kp.ID, 1e8)
+		s.SetRAM(kp.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
@@ -410,10 +411,11 @@ func TestAuthority(t *testing.T) {
 		s.Visitor.SetContract(ca)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 100000)
+		s.SetGas(kp.ID, 1e8)
+		s.SetRAM(testID[0], 1000)
 		s.SetRAM("myid", 1000)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, kp.ID}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myid")), ShouldStartWith, `{"id":"myid",`)
