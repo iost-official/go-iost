@@ -65,7 +65,6 @@ func (h *Teller) DoPay(witness string, gasPrice int64, isPayRAM bool) error {
 	//if gasPrice < 100 {
 	//	panic("gas_price error")
 	//}
-	//fmt.Println("do pay," , h.cost)
 	for k, c := range h.cost {
 		fee := gasPrice * c.ToGas()
 		if fee != 0 {

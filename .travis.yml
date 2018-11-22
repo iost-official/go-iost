@@ -49,7 +49,7 @@ matrix:
   - os: linux
     dist: trusty
     go: "1.11"
-    if: env(TRAVIS_EVENT_TYPE) = cron
+    if: type = cron
     env: JOB=e2e_test
     services:
     - docker

@@ -118,7 +118,7 @@ let IOSTContractStorage = (function () {
         // map Delete a (k, f) pair. use k + f to delete value.
         // mapDel(key, field)
         mapDel: mapStorageObj.mapDel,
-        // currently not suportted, dont't use.
+        // currently not supported, don't use.
         globalGet: globalStorageObj.get,
         globalHas: globalStorageObj.has,
         globalMapHas: globalStorageObj.mapHas,

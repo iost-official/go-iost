@@ -10,16 +10,16 @@ function NativeModule(id) {
 NativeModule._cache = {};
 
 NativeModule.require = function (id) {
-    if (id == '_native_module') {
+    if (id === '_native_module') {
         return NativeModule;
     }
 
-    var cached = NativeModule.getCached(id);
+    let cached = NativeModule.getCached(id);
     if (cached) {
         return cached.exports;
     }
 
-    var nativeModule = new NativeModule(id);
+    let nativeModule = new NativeModule(id);
     nativeModule.compile();
     nativeModule.cache();
 
@@ -44,10 +44,10 @@ NativeModule.wrapper = [
 ];
 
 NativeModule.prototype.compile = function () {
-    var source = NativeModule.getSource(this.id);
+    let source = NativeModule.getSource(this.id);
     source = NativeModule.wrap(source);
 
-    var fn = _native_run(source, this.filename);
+    let fn = _native_run(source, this.filename);
     fn(this.exports, NativeModule.require, this, this.filename);
 
     this.loaded = true;
@@ -57,8 +57,8 @@ NativeModule.prototype.cache = function() {
     NativeModule._cache[this.id] = this;
 };
 
-var require = NativeModule.require;
+let require = NativeModule.require;
 
-var injectGas = require('inject_gas');
+let injectGas = require('inject_gas');
 
-var _IOSTInstruction_counter = new IOSTInstruction;
+let _IOSTInstruction_counter = new IOSTInstruction;

@@ -38,8 +38,10 @@ itest:
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
+
 vmlib:
 	(cd vm/v8vm/v8/; make clean js_bin vm install; cd ../../..)
+
 test:
 ifeq ($(origin VERBOSE),undefined)
 	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
@@ -54,7 +56,6 @@ e2e_test: image push
 	./build/run_e2e_test.sh
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make vmlib
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
