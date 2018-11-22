@@ -38,6 +38,9 @@ class VoteContract {
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
+        if (storage.mapHas("producerKeyToId", proPubkey)) {
+            throw new Error("pubkey is used by another producer");
+        }
 
         let pendingProducerList = this._get("pendingProducerList");
         pendingProducerList.push(proPubkey);
@@ -148,6 +151,9 @@ class VoteContract {
         if (storage.mapHas("producerTable", account)) {
             throw new Error("producer exists");
         }
+        if (storage.mapHas("producerKeyToId", pubkey)) {
+            throw new Error("pubkey is used by another producer");
+        }
 
         this._call("token.iost", "transfer", ["iost", account, "vote_producer.iost", producerRegisterFee, ""]);
 
@@ -178,6 +184,10 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         if (pro.pubkey !== pubkey) {
+            if (storage.mapHas("producerKeyToId", pubkey)) {
+                throw new Error("pubkey is used by another producer");
+            }
+
             this._mapDel("producerKeyToId", pro.pubkey, account);
             this._mapPut("producerKeyToId", pubkey, account);
         }
@@ -251,11 +261,6 @@ class VoteContract {
         this._mapDel("producerKeyToId", pro.pubkey, account);
 
         this._call("token.iost", "transfer", ["iost", "vote_producer.iost", account, pro.registerFee, ""]);
-        /*
-        const ret = BlockChain.withdraw(account, pro.registerFee);
-        if (ret != 0) {
-            throw new Error("withdraw failed. ret = " + ret);
-        }*/
     }
 
     // vote, need to pledge token

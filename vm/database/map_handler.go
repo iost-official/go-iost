@@ -14,6 +14,8 @@ const MapPrefix = "m-"
 
 // Separator separator of map key
 const Separator = "-"
+
+// ApplicationSeparator separator of value
 const ApplicationSeparator = "@"
 
 // MPut put value in kfv storage o(1)

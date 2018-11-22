@@ -14,10 +14,10 @@ var token721ABIs map[string]*abi
 
 // const prefix
 const (
-	Token721InfoMapPrefix     = "T721I"
-	Token721BalanceMapPrefix  = "T721B"
-	Token721IssuerMapField    = "T721issuer"
-	Token721MetadataMapPrefix = "T721M"
+	Token721InfoMapPrefix        = "T721I"
+	Token721BalanceMapPrefix     = "T721B"
+	Token721IssuerMapField       = "T721issuer"
+	Token721MetadataMapPrefix    = "T721M"
 	Token721MetadataKeySeparator = "#"
 )
 
@@ -325,7 +325,7 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-			tokens, cost0 := h.MapKeys(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+owner)
+			tokens, cost0 := h.MapKeys(Token721MetadataMapPrefix + tokenName + Token721MetadataKeySeparator + owner)
 			cost.AddAssign(cost0)
 			if int(index) >= len(tokens) {
 				return nil, cost, errors.New("out of range")

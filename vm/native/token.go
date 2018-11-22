@@ -47,12 +47,12 @@ func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost contract.Co
 }
 
 func setBalance(h *host.Host, tokenName string, from string, balance int64, ramPayer string) (cost contract.Cost) {
-	ok, cost := h.MapHas(TokenBalanceMapPrefix + from, tokenName)
+	ok, cost := h.MapHas(TokenBalanceMapPrefix+from, tokenName)
 	if ok {
-		cost0 := h.MapPut(TokenBalanceMapPrefix + from, tokenName, balance)
+		cost0 := h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance)
 		cost.AddAssign(cost0)
 	} else {
-		cost0 := h.MapPut(TokenBalanceMapPrefix + from, tokenName, balance, ramPayer)
+		cost0 := h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance, ramPayer)
 		cost.AddAssign(cost0)
 	}
 	return cost
@@ -61,15 +61,15 @@ func setBalance(h *host.Host, tokenName string, from string, balance int64, ramP
 func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (balance int64, cost contract.Cost, err error) {
 	balance = int64(0)
 	cost = contract.Cost0()
-	ok, cost0 := h.MapHas(TokenBalanceMapPrefix + from, tokenName)
+	ok, cost0 := h.MapHas(TokenBalanceMapPrefix+from, tokenName)
 	cost.AddAssign(cost0)
 	if ok {
-		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix + from, tokenName)
+		tmp, cost0 := h.MapGet(TokenBalanceMapPrefix+from, tokenName)
 		cost.AddAssign(cost0)
 		balance = tmp.(int64)
 	}
 
-	ok, cost0 = h.MapHas(TokenFreezeMapPrefix + from, tokenName)
+	ok, cost0 = h.MapHas(TokenFreezeMapPrefix+from, tokenName)
 	cost.AddAssign(cost0)
 	if !ok {
 		return balance, cost, nil
@@ -78,7 +78,7 @@ func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (b
 	ntime, cost0 := h.BlockTime()
 	cost.AddAssign(cost0)
 
-	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix + from, tokenName)
+	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
 	cost.AddAssign(cost0)
 	freezeList := []database.FreezeItem{}
 
@@ -112,7 +112,7 @@ func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (b
 		if err != nil {
 			return balance, cost, err
 		}
-		cost0 = h.MapPut(TokenFreezeMapPrefix + from, tokenName, database.SerializedJSON(freezeJSON.([]byte)))
+		cost0 = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON.([]byte)))
 		cost.AddAssign(cost0)
 	}
 
@@ -120,10 +120,10 @@ func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (b
 }
 
 func freezeBalance(h *host.Host, tokenName string, from string, balance int64, ftime int64, ramPayer string) (cost contract.Cost, err error) {
-	ok, cost := h.MapHas(TokenFreezeMapPrefix + from, tokenName)
+	ok, cost := h.MapHas(TokenFreezeMapPrefix+from, tokenName)
 	freezeList := []database.FreezeItem{}
 	if ok {
-		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix + from, tokenName)
+		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
 		cost.AddAssign(cost0)
 		err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 		cost.AddAssign(host.CommonOpCost(1))
@@ -144,7 +144,7 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 	if err != nil {
 		return cost, nil
 	}
-	cost0 := h.MapPut(TokenFreezeMapPrefix + from, tokenName, database.SerializedJSON(freezeJSON), ramPayer)
+	cost0 := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON), ramPayer)
 	cost.AddAssign(cost0)
 
 	return cost, nil

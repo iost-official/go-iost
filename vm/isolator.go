@@ -233,7 +233,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			cost.Net = 0
 		}
 		if cost.ToGas() > gasLimit {
-			i.tr.Status = &tx.Status{Code:tx.ErrorRuntime, Message:host.ErrGasLimitExceeded.Error()}
+			i.tr.Status = &tx.Status{Code: tx.ErrorRuntime, Message: host.ErrGasLimitExceeded.Error()}
 			cost.CPU = gasLimit
 			cost.Net = 0
 		}

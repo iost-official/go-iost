@@ -151,8 +151,8 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 
 	l := len(c.Encode()) // todo multi Encode call
 	//fmt.Println("host setcode, paycost, ", owner)
-	cost.AddAssign(contract.Cost{Data: int64(l), DataList:[]contract.DataItem{
-		{Payer:owner, Val:int64(l)},
+	cost.AddAssign(contract.Cost{Data: int64(l), DataList: []contract.DataItem{
+		{Payer: owner, Val: int64(l)},
 	}})
 
 	h.db.SetContract(c)
@@ -198,8 +198,8 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
 	cost.AddAssign(co)
 	l := len(c.Encode()) // todo multi Encode call
-	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList:[]contract.DataItem{
-		{Payer:owner.(string), Val:int64(l - oldL)},
+	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
+		{Payer: owner.(string), Val: int64(l - oldL)},
 	}})
 
 	return cost, nil
@@ -232,8 +232,8 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 
 	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
 	cost.AddAssign(co)
-	cost.AddAssign(contract.Cost{Data: int64(-oldL), DataList:[]contract.DataItem{
-		{Payer:owner.(string), Val:int64(-oldL)},
+	cost.AddAssign(contract.Cost{Data: int64(-oldL), DataList: []contract.DataItem{
+		{Payer: owner.(string), Val: int64(-oldL)},
 	}})
 
 	h.db.MDel("system.iost-contract_owner", oc.ID)

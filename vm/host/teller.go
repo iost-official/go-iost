@@ -16,8 +16,8 @@ const (
 
 // Teller handler of iost
 type Teller struct {
-	h    *Host
-	cost map[string]contract.Cost
+	h         *Host
+	cost      map[string]contract.Cost
 	cacheCost contract.Cost
 }
 
@@ -59,14 +59,14 @@ func (h *Teller) FlushCacheCost() {
 func (h *Teller) PayCost(c contract.Cost, who string) {
 	costMap := make(map[string]contract.Cost)
 	if c.CPU > 0 || c.Net > 0 {
-		costMap[who] = contract.Cost{CPU:c.CPU, Net:c.Net}
+		costMap[who] = contract.Cost{CPU: c.CPU, Net: c.Net}
 	}
 	for _, item := range c.DataList {
 		if oc, ok := costMap[item.Payer]; ok {
-			oc.AddAssign(contract.Cost{Data:item.Val, DataList:[]contract.DataItem{item}})
+			oc.AddAssign(contract.Cost{Data: item.Val, DataList: []contract.DataItem{item}})
 			costMap[item.Payer] = oc
 		} else {
-			costMap[item.Payer]	= contract.Cost{Data:item.Val, DataList:[]contract.DataItem{item}}
+			costMap[item.Payer] = contract.Cost{Data: item.Val, DataList: []contract.DataItem{item}}
 		}
 	}
 	for who, c := range costMap {

@@ -40,7 +40,7 @@ lint:
 	@gometalinter --config=.gometalinter.json ./...
 
 vmlib:
-	(cd vm/v8vm/v8/; make clean js_bin vm install; cd ../../..)
+	(cd vm/v8vm/v8/; make clean js_bin vm install deploy; cd ../../..)
 
 test:
 ifeq ($(origin VERBOSE),undefined)

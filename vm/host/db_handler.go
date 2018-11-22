@@ -27,7 +27,7 @@ func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contr
 	payer := ""
 	if len(ramPayer) > 0 {
 		payer = ramPayer[0]
-	} else  {
+	} else {
 		payer = h.parseValuePayer(oldV)
 		if payer == "" {
 			payer = h.h.ctx.Value("contract_name").(string)
@@ -68,7 +68,7 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 	payer := ""
 	if len(ramPayer) > 0 {
 		payer = ramPayer[0]
-	} else  {
+	} else {
 		payer = h.parseValuePayer(oldV)
 		if payer == "" {
 			payer = h.h.ctx.Value("contract_name").(string)
@@ -164,7 +164,7 @@ func (h *DBHandler) modifyGlobalKey(contractName, key string) string {
 	return contractName + database.Separator + key
 }
 
-func (h *DBHandler) modifyValue(value interface{}, ramPayer...string) string {
+func (h *DBHandler) modifyValue(value interface{}, ramPayer ...string) string {
 	payer := ""
 	if len(ramPayer) > 0 {
 		payer = ramPayer[0]
@@ -188,16 +188,16 @@ func (h *DBHandler) payRAM(k, v, oldV string, who string) {
 }
 
 func (h *DBHandler) payRAMForMap(k, f, v, oldV string, who string) {
-	oLen := int64(len(oldV) + len(k) + 2 * len(f))
-	nLen := int64(len(v) + len(k) + 2 * len(f))
+	oLen := int64(len(oldV) + len(k) + 2*len(f))
+	nLen := int64(len(v) + len(k) + 2*len(f))
 	h.payRAMInner(oldV, oLen, nLen, who)
 }
 
 func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, payer string) {
-	data := int64(0)
+	var data int64
 	dataList := []contract.DataItem{}
 	if oldV == "n" {
-		dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen})
+		dataList = append(dataList, contract.DataItem{Payer: payer, Val: nLen})
 		data = nLen
 	} else {
 		oldPayer := h.parseValuePayer(oldV)
@@ -205,15 +205,15 @@ func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, payer strin
 			oldPayer = h.h.ctx.Value("contract_name").(string)
 		}
 		if oldPayer == payer {
-			dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen - oLen})
+			dataList = append(dataList, contract.DataItem{Payer: payer, Val: nLen - oLen})
 			data = nLen - oLen
 		} else {
-			dataList = append(dataList, contract.DataItem{Payer:oldPayer, Val:-oLen})
-			dataList = append(dataList, contract.DataItem{Payer:payer, Val:nLen})
+			dataList = append(dataList, contract.DataItem{Payer: oldPayer, Val: -oLen})
+			dataList = append(dataList, contract.DataItem{Payer: payer, Val: nLen})
 			data = nLen - oLen
 		}
 	}
-	h.h.AddCacheCost(contract.Cost{Data:data, DataList:dataList})
+	h.h.AddCacheCost(contract.Cost{Data: data, DataList: dataList})
 }
 
 func (h *DBHandler) releaseRAMInner(oldV string, oLen int64) {
@@ -221,13 +221,12 @@ func (h *DBHandler) releaseRAMInner(oldV string, oLen int64) {
 	dataList := []contract.DataItem{}
 	if oldV == "n" {
 		return
-	} else {
-		oldPayer := h.parseValuePayer(oldV)
-		if oldPayer != "" {
-			dataList = append(dataList, contract.DataItem{Payer: oldPayer, Val: -oLen})
-		}
 	}
-	h.h.AddCacheCost(contract.Cost{Data:data, DataList:dataList})
+	oldPayer := h.parseValuePayer(oldV)
+	if oldPayer != "" {
+		dataList = append(dataList, contract.DataItem{Payer: oldPayer, Val: -oLen})
+	}
+	h.h.AddCacheCost(contract.Cost{Data: data, DataList: dataList})
 }
 
 func (h *DBHandler) releaseRAM(k string) {
@@ -238,6 +237,6 @@ func (h *DBHandler) releaseRAM(k string) {
 
 func (h *DBHandler) releaseRAMForMap(k, f string, who ...string) {
 	v := h.h.db.MGet(k, f)
-	oLen := int64(len(k) + 2 * len(f) + len(v))
+	oLen := int64(len(k) + 2*len(f) + len(v))
 	h.releaseRAMInner(v, oLen)
 }
