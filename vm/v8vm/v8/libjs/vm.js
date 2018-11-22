@@ -65,7 +65,7 @@ const storage = require('storage');
 // blockchain
 const BlockChain = require('blockchain');
 
-// other helper funcitons
+// other helper functions
 // var BigNumber = require('bignumber');
 // var Int64 = require('int64');
 
@@ -74,11 +74,11 @@ const BlockChain = require('blockchain');
 const _IOSTInstruction_counter = new IOSTInstruction;
 
 // + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
-var _IOSTBinaryOp = function(left, right, op) {
+let _IOSTBinaryOp = function(left, right, op) {
     if ((typeof left === "string" || typeof right === "string") &&
         (op === "+" || op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
         _IOSTInstruction_counter.incr(left === null || left === undefined ? 0 : left.toString().length);
-        _IOSTInstruction_counter.incr(right === null || right == undefined ? 0 : right.toString().length);
+        _IOSTInstruction_counter.incr(right === null || right === undefined ? 0 : right.toString().length);
     }
     switch (op) {
         case '+':
@@ -124,5 +124,4 @@ var _IOSTBinaryOp = function(left, right, op) {
     }
 };
 
-// var Console = require('console');
 const console = new Console;
