@@ -82,13 +82,13 @@ let IOSTContractStorage = (function () {
                 o = "";
             }
             return storage.globalGet(c, k, o);
-        }
+        };
         this.has = function (c, k, o) {
             if (o === undefined) {
                 o = "";
             }
             return storage.globalHas(c, k, o);
-        }
+        };
         this.mapHas = function (c, k, f, o) {
             if (o === undefined) {
                 o = "";
@@ -143,7 +143,7 @@ let IOSTContractStorage = (function () {
         // map Delete a (k, f) pair. use k + f to delete value.
         // mapDel(key, field)
         mapDel: mapStorageObj.mapDel,
-        // currently not suportted, dont't use.
+        // currently not supported, don't use.
         globalGet: globalStorageObj.get,
         globalHas: globalStorageObj.has,
         globalMapHas: globalStorageObj.mapHas,
