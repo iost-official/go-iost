@@ -38,6 +38,8 @@ const (
 	GasDecimal = 2
 )
 
+const gasMaxInceaseSeconds = 3 * 24 * 3600
+
 // If no key exists, return 0
 func (g *GasManager) getFixed(owner string, key string) (*common.Fixed, contract.Cost) {
 	var err error
@@ -205,6 +207,9 @@ func (g *GasManager) CurrentTotalGas(name string, now int64) (result *common.Fix
 	var durationSeconds int64
 	if gasUpdateTime > 0 {
 		durationSeconds = (now - gasUpdateTime) / 1e9
+		if durationSeconds > gasMaxInceaseSeconds {
+			durationSeconds = gasMaxInceaseSeconds
+		}
 	}
 	if durationSeconds < 0 {
 		ilog.Fatalf("CurrentTotalGas durationSeconds invalid %v = %v - %v", durationSeconds, now, gasUpdateTime)

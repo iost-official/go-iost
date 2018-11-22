@@ -85,15 +85,44 @@ class RAMContract {
     _getAdminID() {
         return this._get("adminID");
     }
-
+    _changeLeftSpace(delta) {
+        this._put("leftSpace", this._getLeftSpace() + delta);
+    }
     _getLeftSpace() {
         if (this._get("leftSpace") === null) {
             throw new Error("no leftSpace key");
         }
-        return this._get("leftSpace");
+        const result = this._get("leftSpace");
+        if (result < 0) {
+            throw new Error("internal error: leftSpace is negative");
+        }
+        return result;
     }
-    _changeLeftSpace(delta) {
-        this._put("leftSpace", this._getLeftSpace() + delta);
+    _changeUsedSpace(delta) {
+        this._put("usedSpace", this._getUsedSpace() + delta);
+    }
+    _getUsedSpace() {
+        if (this._get("usedSpace") === null) {
+            throw new Error("no usedSpace key");
+        }
+        const result = this._get("usedSpace");
+        if (result < 0) {
+            throw new Error("internal error: usedSpace is negative");
+        }
+        return result;
+    }
+    _getBalance() {
+        if (this._get("balance") === null) {
+            throw new Error("no balance key");
+        }
+        const result = this._get("balance");
+        if (result < 0) {
+            throw new Error("internal error: balance is negative");
+        }
+        return result;
+    }
+    _changeBalance(delta) {
+        this._put("balance", this._getBalance() + delta);
     }
 
 
@@ -105,7 +134,7 @@ class RAMContract {
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
-        var veryLarge = 100 * 64 * 1024 * 1024 * 1024;
+        const veryLarge = 100 * 64 * 1024 * 1024 * 1024;
         let data = [this._getTokenName(), this._getContractName(), veryLarge, {"decimal":0}];
         BlockChain.callWithAuth("token.iost", "create", JSON.stringify(data));
         data = [this._getTokenName(), this._getContractName(), (initialTotal).toString()];
@@ -114,12 +143,12 @@ class RAMContract {
         this._put("increaseInterval", increaseInterval);
         this._put("increaseAmount", increaseAmount);
         this._put("leftSpace", initialTotal);
+        this._put("balance", 0);
+        this._put("usedSpace", 0);
     }
 
     _price(action, amount) {
-        //return amount * 1; // TODO not use log/exp, implement a price function
-        const priceCoefficient = 1024; // when RAM is empty, every KiB worth `priceCoefficient` IOST
-        const feeRate = 0.01;
+        const priceCoefficient = 30; // when RAM is empty, every KiB worth `priceCoefficient` IOST
         const leftSpace = this._getLeftSpace();
         if (action === "buy") {
             if (this._getBlockNumber() === 0) {
@@ -128,9 +157,12 @@ class RAMContract {
             if (leftSpace <= amount) {
                 throw new Error("buy amount is too much. left space is not enough " + leftSpace.toString() + " is less than " + amount.toString());
             }
-            return Math.ceil((1 + feeRate) * priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / (leftSpace - amount)));
+            const price = Math.ceil(priceCoefficient * 128 * 1024 * 1024 * Math.log1p(amount / (leftSpace - amount)));
+            return price;
         } else if (action === "sell") {
-            return Math.floor(priceCoefficient * 1024 * 1024 * 128 * Math.log1p(amount / leftSpace));
+            //const price = Math.floor(priceCoefficient * 128 * 1024 * 1024 * Math.log1p(amount / leftSpace));
+            const price = Math.floor(amount / this._getUsedSpace() * this._getBalance());
+            return price;
         }
         throw new Error("invalid action");
 
@@ -152,11 +184,17 @@ class RAMContract {
     buy(payer, account, amount) {
         this._requireAuth(payer, transferPermission);
         this._checkIssue();
-        const price = this._price("buy", amount);
+        const rawPrice = this._price("buy", amount);
+        const feeRate = 0.01;
+        const fee = Math.ceil(feeRate * rawPrice);
+        const price = rawPrice + fee;
         BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, this._getContractName(), price.toString(), ""]));
         const data = [this._getTokenName(), this._getContractName(), account, (amount).toString(), ""];
         BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
         this._changeLeftSpace(-amount);
+        this._changeBalance(rawPrice);
+        this._changeUsedSpace(amount);
+        return price;
     }
 
     sell(account, receiver, amount) {
@@ -166,6 +204,9 @@ class RAMContract {
         const price = this._price("sell", amount);
         BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", this._getContractName(), receiver, price.toString(), ""]));
         this._changeLeftSpace(amount);
+        this._changeBalance(-price);
+        this._changeUsedSpace(-amount);
+        return price;
     }
 }
 
