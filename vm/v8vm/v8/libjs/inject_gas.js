@@ -1,4 +1,4 @@
-'use strict'
+'use strict';
 
 const chargedExpression = {
     CallExpression: 8,
@@ -36,7 +36,7 @@ const InjectType = {
     leftBrace: 6,
     rightBrace: 7,
     str: 8
-}
+};
 
 function genInjectionStr(injectionPoint) {
     switch (injectionPoint["type"]) {
@@ -61,16 +61,16 @@ function genInjectionStr(injectionPoint) {
 
 
 function checkGasKeyword(tokens) {
-    for (var i = 0; i < tokens.length; i++) {
-        if ((tokens[i].type == "Identifier" || tokens[i].type == "Literal") &&
-            (tokens[i].value == "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp")) {
+    for (let i = 0; i < tokens.length; i++) {
+        if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
+            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp")) {
             throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
         }
     }
 }
 
 function checkOperator(tokens) {
-    for (var i = 0; i < tokens.length; i++) {
+    for (let i = 0; i < tokens.length; i++) {
         if (tokens[i].type === "Punctuator" &&
             (tokens[i].value === "*" || tokens[i].value === "*" || tokens[i].value === "*" || tokens[i].value === "/" || tokens[i].value === "%" ||
                 tokens[i].value === "+=" || tokens[i].value === "-=" || tokens[i].value === "*=" || tokens[i].value === "/=" || tokens[i].value === "%=" )) {
@@ -79,15 +79,14 @@ function checkOperator(tokens) {
     }
 }
 
-var injectionMap = new Map();
+let injectionMap = new Map();
 
 function addInjection(pos, type, value, before = false) {
-    // console.log("add injection pos = " + pos + ", type = " + type)
     if (!injectionMap.has(pos)) {
         injectionMap.set(pos, []);
     }
-    var arr = injectionMap.get(pos);
-    var index;
+    let arr = injectionMap.get(pos);
+    let index;
     if (before) {
         index = arr.length > 0 ? 0 : -1;
     }
@@ -156,7 +155,7 @@ function ensure_block(node) {
     if (!node || node === null) {
         return;
     }
-    if (node.type != "BlockStatement") {
+    if (node.type !== "BlockStatement") {
         addInjection(node.range[0], InjectType.leftBrace, 0);
         addInjection(node.range[1], InjectType.rightBrace, 0, true);
     }
@@ -171,46 +170,46 @@ function ensure_bracket(node) {
 }
 
 function processNode(node, parentNode, lastInjection) {
-    var newLastInjection = lastInjection;
+    let newLastInjection = lastInjection;
 
     if (node.type in InjectableStatement) {
         newLastInjection = addInjection(node.range[0], InjectType.gasIncrWithSemicolon, 0);
     }
-    if (node.type == "VariableDeclaration" && (parentNode === null ||  parentNode.type != "ForStatement" &&
-            parentNode.type != "ForInStatement" && parentNode.type != "ForOfStatement")) {
+    if (node.type === "VariableDeclaration" && (parentNode === null ||  parentNode.type !== "ForStatement" &&
+            parentNode.type !== "ForInStatement" && parentNode.type !== "ForOfStatement")) {
         newLastInjection = addInjection(node.range[0], InjectType.gasIncrWithSemicolon, 0);
     }
 
-    if (node.type == "IfStatement") {
+    if (node.type === "IfStatement") {
         ensure_block(node.consequent);
         ensure_block(node.alternate);
-        injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
+        let injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
         return [newLastInjection, {
             "test": injectionPoint
         }];
 
-    } else if (node.type == "ForStatement") {
+    } else if (node.type === "ForStatement") {
         ensure_block(node.body);
 
-        var body = node.body;
-        var pos = body.range[0];
+        let body = node.body;
+        let pos = body.range[0];
         if (body.type === 'BlockStatement') {
             pos = body.range[0] + 1;
         }
         addInjection(pos, InjectType.gasIncrWithSemicolon, 1);
 
-        var injectionPoint2 = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
-        var injectionPoint3 = addInjectionPoint(node.update, InjectType.gasIncrWithComma, 0);
+        let injectionPoint2 = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
+        let injectionPoint3 = addInjectionPoint(node.update, InjectType.gasIncrWithComma, 0);
         return [newLastInjection, {
             "test": injectionPoint2,
             "update": injectionPoint3
         }];
 
-    } else if (node.type == "ForInStatement" || node.type == "ForOfStatement") {
+    } else if (node.type === "ForInStatement" || node.type === "ForOfStatement") {
         ensure_block(node.body);
 
-        var body = node.body;
-        var pos = body.range[0];
+        let body = node.body;
+        let pos = body.range[0];
         if (body.type === 'BlockStatement') {
             pos = body.range[0] + 1;
         }
@@ -218,31 +217,31 @@ function processNode(node, parentNode, lastInjection) {
 
         return [newLastInjection, {}];
 
-    } else if (node.type == "WhileStatement" || node.type == "DoWhileStatement") {
+    } else if (node.type === "WhileStatement" || node.type === "DoWhileStatement") {
         ensure_block(node.body);
-        var injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 1);
+        let injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 1);
         return [newLastInjection, {
             "test": injectionPoint
         }];
 
-    } else if (node.type == "WithStatement") {
+    } else if (node.type === "WithStatement") {
         ensure_block(node.body);
         return [newLastInjection, {}];
 
-    } else if (node.type == "SwitchStatement") {
+    } else if (node.type === "SwitchStatement") {
         return [newLastInjection, {}];
 
-    } else if (node.type == "SwitchCase") {
-        var injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
+    } else if (node.type === "SwitchCase") {
+        let injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
         return [newLastInjection, {
             "test": injectionPoint
         }];
 
-    } else if (node.type == "ArrowFunctionExpression") {
+    } else if (node.type === "ArrowFunctionExpression") {
 
         if (node.body.type !== 'BlockStatement') {
             addInjection(node.body.range[0], InjectType.str, "function(){");
-            var injectionPoint = addInjectionPoint(node.body, InjectType.gasIncrWithSemicolon, 0);
+            let injectionPoint = addInjectionPoint(node.body, InjectType.gasIncrWithSemicolon, 0);
             addInjection(node.body.range[0], InjectType.str, "return ");
             addInjection(node.body.range[1], InjectType.str, "}()", true);
 
@@ -252,13 +251,13 @@ function processNode(node, parentNode, lastInjection) {
         }
         return [newLastInjection, {}];
 
-    } else if (node.type == "ConditionalExpression") {
+    } else if (node.type === "ConditionalExpression") {
         ensure_bracket(node.test);
         ensure_bracket(node.consequent);
         ensure_bracket(node.alternate);
-        var injectionPoint1 = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
-        var injectionPoint2 = addInjectionPoint(node.consequent, InjectType.gasIncrWithComma, 0);
-        var injectionPoint3 = addInjectionPoint(node.alternate, InjectType.gasIncrWithComma, 0);
+        let injectionPoint1 = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
+        let injectionPoint2 = addInjectionPoint(node.consequent, InjectType.gasIncrWithComma, 0);
+        let injectionPoint3 = addInjectionPoint(node.alternate, InjectType.gasIncrWithComma, 0);
         return [newLastInjection, {
             "test": injectionPoint1,
             "consequent": injectionPoint2,
@@ -267,7 +266,7 @@ function processNode(node, parentNode, lastInjection) {
 
     } else {
 
-        var value = chargedExpression[node.type];
+        let value = chargedExpression[node.type];
         if (!value) {
             return [newLastInjection, {}];
         }
@@ -281,18 +280,18 @@ function processNode(node, parentNode, lastInjection) {
 }
 
 function traverse(node, parentNode, lastInjection) {
-    var newLastInjection;
-    var childInjection;
+    let newLastInjection;
+    let childInjection;
     [newLastInjection, childInjection] = processNode(node, parentNode, lastInjection);
     if (childInjection === false || childInjection === null) {
         childInjection = {};
     }
-    for (var key in node) {
+    for (let key in node) {
         if (node.hasOwnProperty(key)) {
-            var child = node[key];
+            let child = node[key];
             if (typeof child === 'object' && child !== null) {
 
-                var keyInjection = newLastInjection;
+                let keyInjection = newLastInjection;
                 if (childInjection.hasOwnProperty(key)) {
                     keyInjection = childInjection[key];
                 }
@@ -304,16 +303,15 @@ function traverse(node, parentNode, lastInjection) {
 }
 
 function genNewScript(source) {
-    // console.log(injectionMap)
-    var arr = Array.from(injectionMap.keys());
+    let arr = Array.from(injectionMap.keys());
     arr.sort(function (a, b) {
         return a - b;
     });
 
-    var offset = 0,
+    let offset = 0,
     newSource = "";
     arr.forEach(function (pos) {
-        var injectionArr = injectionMap.get(pos);
+        let injectionArr = injectionMap.get(pos);
 
         newSource += source.slice(offset, pos);
         injectionArr.forEach(function (injectionPoint) {
@@ -359,9 +357,9 @@ function processOperator(node) {
 
 function traverseOperator(node) {
     node = processOperator(node);
-    for (var key in node) {
+    for (let key in node) {
         if (node.hasOwnProperty(key)) {
-            var child = node[key];
+            let child = node[key];
             if (typeof child === 'object' && child !== null) {
                 node[key] = traverseOperator(child);
             }
@@ -373,8 +371,7 @@ function traverseOperator(node) {
 function handleOperator(ast) {
     ast = traverseOperator(ast);
     // generate source from ast
-    let code = escodegen.generate(ast);
-    return code;
+    return escodegen.generate(ast);
 }
 
 function injectGas(source) {
@@ -394,8 +391,7 @@ function injectGas(source) {
     });
     traverse(ast, null, null);
 
-    var newSource = genNewScript(source);
-    return newSource;
+    return genNewScript(source);
 }
 
 module.exports = injectGas;
