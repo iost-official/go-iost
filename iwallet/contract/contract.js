@@ -1,9 +1,9 @@
 'use strict';
 
-var esprima = require('esprima/dist/esprima.js');
+let esprima = require('esprima/dist/esprima.js');
 
-var lang = "javascript";
-var version = "1.0.0";
+let lang = "javascript";
+let version = "1.0.0";
 
 function isClassDecl(stat) {
 	return !!(stat && stat.type === "ClassDeclaration");
@@ -38,14 +38,13 @@ function genAbi(def) {
 }
 
 function genAbiArr(stat) {
-	var abiArr = [];
+	let abiArr = [];
 	if (!isClassDecl(stat) || stat.body.type !== "ClassBody") {
-		console.error("invalid statment for generate abi. stat = " + stat);
+		console.error("invalid statement for generate abi. stat = " + stat);
 		return null;
 	}
-	var initFound = false;
-	for (var i in stat.body.body) {
-		var def = stat.body.body[i];
+	let initFound = false;
+	for (let def of stat.body.body) {
 		if (def.type === "MethodDefinition" && isPublicMethod(def)) {
 			if (def.key.name === "constructor") {
 			} else if (def.key.name === "init") {
@@ -63,7 +62,7 @@ function genAbiArr(stat) {
 }
 
 function checkOperator(tokens) {
-    for (var i = 0; i < tokens.length; i++) {
+    for (let i = 0; i < tokens.length; i++) {
         if (tokens[i].type === "Punctuator" &&
             (tokens[i].value === "+" || tokens[i].value === "-" || tokens[i].value === "*" || tokens[i].value === "/" || tokens[i].value === "%" ||
                 tokens[i].value === "+=" || tokens[i].value === "-=" || tokens[i].value === "*=" || tokens[i].value === "/=" || tokens[i].value === "%=" ||
@@ -74,13 +73,13 @@ function checkOperator(tokens) {
 }
 
 function processContract(source) {
-  var ast = esprima.parseModule(source, {
+  let ast = esprima.parseModule(source, {
 		range: true,
 		loc: true,
 		tokens: true
 	});
 
-	var abiArr = [];
+	let abiArr = [];
 	if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
 		console.error("invalid source! ast = " + ast);
 		return ["", ""];
@@ -88,11 +87,9 @@ function processContract(source) {
 
 	checkOperator(ast.tokens);
 
-	var validRange = [];
-	var className;
-	for (var i in ast.body) {
-		let stat = ast.body[i];
-
+	let validRange = [];
+	let className;
+	for (let stat of ast.body) {
 		if (isClassDecl(stat)) {
 			validRange.push(stat.range);
 		}
@@ -102,37 +99,34 @@ function processContract(source) {
 		}
 	}
 
-	for (var i in ast.body) {
-		let stat = ast.body[i];
-
+	for (let stat of ast.body) {
 		if (isClassDecl(stat) && stat.id.type === "Identifier" && stat.id.name === className) {
 			abiArr = genAbiArr(stat);
 		}
 	}
 
-	var newSource = 'use strict;\n';
-	for (var i in validRange) {
-		let r = validRange[i];
-    	newSource += source.slice(r[0], r[1]) + "\n";
+	let newSource = 'use strict;\n';
+	for (let r of validRange) {
+		newSource += source.slice(r[0], r[1]) + "\n";
 	}
 
-	var abi = {};
+	let abi = {};
 	abi["lang"] = lang;
 	abi["version"] = version;
 	abi["abi"] = abiArr;
-	var abiStr = JSON.stringify(abi, null, 4);
+	let abiStr = JSON.stringify(abi, null, 4);
 
 	return [newSource, abiStr]
 }
 module.exports = processContract;
 
 
-var fs = require('fs');
+let fs = require('fs');
 
-var file = process.argv[2];
+let file = process.argv[2];
 fs.readFile(file, 'utf8', function(err, contents) {
 	console.log('before calling process, len = ' + contents.length);
-	var [newSource, abi] = processContract(contents);
+	let [newSource, abi] = processContract(contents);
 	console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
 
 	fs.writeFile(file + ".after", newSource, function(err) {
