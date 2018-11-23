@@ -64,7 +64,7 @@ func DumpKeys(keys []*Key, file string) error {
 	}
 	defer f.Close()
 
-	b, err := json.Marshal(&keys)
+	b, err := json.MarshalIndent(&keys, "", "  ")
 	if err != nil {
 		return err
 	}

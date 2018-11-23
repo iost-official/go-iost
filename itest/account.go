@@ -3,6 +3,8 @@ package itest
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
 	"strconv"
 	"sync"
 
@@ -24,6 +26,7 @@ type Account struct {
 // AccountJSON is the json serialization of account
 type AccountJSON struct {
 	ID        string `json:"id"`
+	Balance   string `json:"balance`
 	Seckey    string `json:"seckey"`
 	Algorithm string `json:"algorithm"`
 }
@@ -39,6 +42,42 @@ func NewAccount(id string, seckey string, algorithm string) *Account {
 	}
 
 	return account
+}
+
+// LoadAccounts will load accounts from file
+func LoadAccounts(file string) ([]*Account, error) {
+	var data []byte
+	var err error
+	data, err = ioutil.ReadFile(file)
+	if err != nil {
+		return nil, err
+	}
+
+	accounts := []*Account{}
+	if err := json.Unmarshal(data, &accounts); err != nil {
+		return nil, err
+	}
+
+	return accounts, nil
+}
+
+// DumpAccounts will dump the accounts to file
+func DumpAccounts(accounts []*Account, file string) error {
+	f, err := os.Create(file)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	b, err := json.MarshalIndent(&accounts, "", "  ")
+	if err != nil {
+		return err
+	}
+	if _, err := f.Write(b); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Sign will sign the transaction by current account
@@ -91,6 +130,7 @@ func (a *Account) UnmarshalJSON(b []byte) error {
 	}
 
 	a.ID = aux.ID
+	a.balance = aux.Balance
 	a.key = NewKey(
 		common.Base58Decode(aux.Seckey),
 		crypto.NewAlgorithm(aux.Algorithm),
@@ -102,6 +142,7 @@ func (a *Account) UnmarshalJSON(b []byte) error {
 func (a *Account) MarshalJSON() ([]byte, error) {
 	aux := &AccountJSON{
 		ID:        a.ID,
+		Balance:   a.balance,
 		Seckey:    common.Base58Encode(a.key.Seckey),
 		Algorithm: a.key.Algorithm.String(),
 	}

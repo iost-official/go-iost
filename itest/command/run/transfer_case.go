@@ -17,21 +17,21 @@ var TransferCaseCommand = cli.Command{
 // TransferCaseFlags is the flags of transfer test case
 var TransferCaseFlags = []cli.Flag{
 	cli.IntFlag{
-		Name:  "account, a",
-		Value: 10,
-		Usage: "number of account",
-	},
-	cli.IntFlag{
-		Name:  "transaction, t",
+		Name:  "number, n",
 		Value: 1000,
 		Usage: "number of transaction",
+	},
+	cli.StringFlag{
+		Name:  "account, a",
+		Value: "accounts.json",
+		Usage: "load accounts from `FILE`",
 	},
 }
 
 // TransferCaseAction is the action of transfer test case
 var TransferCaseAction = func(c *cli.Context) error {
-	anum := c.Int("account")
-	tnum := c.Int("transaction")
+	afile := c.String("account")
+	tnum := c.Int("number")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
 
@@ -40,7 +40,7 @@ var TransferCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	accounts, err := it.CreateAccountN(anum)
+	accounts, err := itest.LoadAccounts(afile)
 	if err != nil {
 		return err
 	}

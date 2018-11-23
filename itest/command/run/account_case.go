@@ -17,15 +17,21 @@ var AccountCaseCommand = cli.Command{
 // AccountCaseFlags is the flags of account test case
 var AccountCaseFlags = []cli.Flag{
 	cli.IntFlag{
-		Name:  "account, a",
+		Name:  "number, n",
 		Value: 10,
+		Usage: "number of account",
+	},
+	cli.StringFlag{
+		Name:  "output, o",
+		Value: "accounts.json",
 		Usage: "number of account",
 	},
 }
 
 // AccountCaseAction is the action of account test case
 var AccountCaseAction = func(c *cli.Context) error {
-	anum := c.Int("account")
+	anum := c.Int("number")
+	output := c.String("output")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
 
@@ -34,7 +40,12 @@ var AccountCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := it.CreateAccountN(anum); err != nil {
+	accounts, err := it.CreateAccountN(anum)
+	if err != nil {
+		return err
+	}
+
+	if err := itest.DumpAccounts(accounts, output); err != nil {
 		return err
 	}
 
