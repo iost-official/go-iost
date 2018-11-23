@@ -147,7 +147,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	var reserveRAM = initialTotal * 3 / 10                   // reserve for foundation
 	acts = append(acts, tx.NewAction("ram.iost", "issue", fmt.Sprintf(`[%v, %v, %v, %v]`, initialTotal, increaseInterval, increaseAmount, reserveRAM)))
 
-	adminInitialRAM := 1024
+	adminInitialRAM := 100000
 	acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, adminInfo.ID, adminInfo.ID, adminInitialRAM)))
 	acts = append(acts, tx.NewAction("token.iost", "transfer", fmt.Sprintf(`["ram","ram.iost", "%v", "%v", ""]`, foundationInfo.ID, reserveRAM)))
 

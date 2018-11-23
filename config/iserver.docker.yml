@@ -14,9 +14,14 @@ p2p:
   chainid: 1024
   version: 1
   datapath: /var/lib/iserver/p2p/
+  inboundConn: 15
+  outboundConn: 15
+  blackPID:
+  blackIP:
+  adminPort: 30005
 rpc:
-  jsonport: 30001
-  grpcport: 30002
+  gatewayaddr: 0.0.0.0:30001
+  grpcaddr: 0.0.0.0:30002
 log:
   filelog:
     path: /var/lib/iserver/logs/
@@ -35,5 +40,5 @@ metrics:
 debug:
   listenaddr: 0.0.0.0:30003
 version:
-  nettype: "debugnet"
+  netname: "debugnet"
   protocolversion: "1.0"

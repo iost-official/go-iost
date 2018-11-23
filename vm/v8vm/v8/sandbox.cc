@@ -320,6 +320,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         }
     }
     isDone = true;
+    return;
 }
 
 ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
@@ -372,8 +373,10 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        usleep(10);
+        //usleep(10);
+        std::this_thread::sleep_for(std::chrono::microseconds(100));
     }
-    exec.join();
+    if (exec.joinable())
+        exec.join();
     return res;
 }
