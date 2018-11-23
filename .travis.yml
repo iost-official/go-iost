@@ -7,7 +7,7 @@ branches:
 matrix:
   fast_finish: true
   allow_failures:
-  - env: JOB=e2e_test
+  - env: JOB=k8s_test
   include:
   - os: osx
     osx_image: xcode10
