@@ -45,7 +45,6 @@ func Load(keysfile, configfile string) (*ITest, error) {
 
 	it := New(itc, keys)
 
-	ilog.Infof("Load itest from file successful!")
 	return it, nil
 }
 

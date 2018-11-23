@@ -37,6 +37,8 @@ type KeyJSON struct {
 
 // LoadKeys will load keys from file
 func LoadKeys(file string) ([]*Key, error) {
+	ilog.Infof("Load keys from file...")
+
 	var data []byte
 	if file == "" {
 		data = []byte(DefaultKeys)

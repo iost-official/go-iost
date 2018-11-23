@@ -46,6 +46,8 @@ func NewAccount(id string, seckey string, algorithm string) *Account {
 
 // LoadAccounts will load accounts from file
 func LoadAccounts(file string) ([]*Account, error) {
+	ilog.Infof("Load accounts from file...")
+
 	var data []byte
 	var err error
 	data, err = ioutil.ReadFile(file)
