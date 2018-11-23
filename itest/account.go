@@ -26,7 +26,7 @@ type Account struct {
 // AccountJSON is the json serialization of account
 type AccountJSON struct {
 	ID        string `json:"id"`
-	Balance   string `json:"balance`
+	Balance   string `json:"balance"`
 	Seckey    string `json:"seckey"`
 	Algorithm string `json:"algorithm"`
 }
