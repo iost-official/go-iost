@@ -216,5 +216,44 @@ func Test_RamPayer(t *testing.T) {
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.GetRAM(testID[2]), ShouldEqual, ram1 - 4)
 		})
+
+		Convey("test nested call check payer", func() {
+			ram0 := s.GetRAM(testID[0])
+			kp4, err := account.NewKeyPair(common.Base58Decode(testID[5]), crypto.Secp256k1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ca, err := s.Compile("", "./test_data/nest0", "./test_data/nest0")
+			if err != nil || ca == nil {
+				t.Fatal(err)
+			}
+			cname0, r, err := s.DeployContract(ca, testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			ca, err = s.Compile("", "./test_data/nest1", "./test_data/nest1")
+			if err != nil || ca == nil {
+				t.Fatal(err)
+			}
+			cname1, r, err := s.DeployContract(ca, testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 1185)
+
+			ram0 = s.GetRAM(testID[0])
+			ram4 := s.GetRAM(testID[4])
+			ram6 := s.GetRAM(testID[6])
+			s.Visitor.SetTokenBalanceFixed("iost", testID[4], "100")
+			r, err = s.Call(cname0, "call", fmt.Sprintf(`["%v", "test", "%v"]`, cname1,
+				fmt.Sprintf(`[\"%v\", \"%v\"]`, testID[4], testID[6])), testID[4], kp4)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			So(s.GetRAM(testID[6]), ShouldEqual, ram6)
+			So(s.GetRAM(testID[4]), ShouldEqual, ram4 - 139)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 6)
+		})
 	})
 }
