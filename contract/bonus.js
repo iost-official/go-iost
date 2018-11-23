@@ -81,8 +81,8 @@ class BonusContract {
         return JSON.parse(val);
     }
 
-    _put(k, v) {
-        storage.put(k, JSON.stringify(v));
+    _put(k, v, p) {
+        storage.put(k, JSON.stringify(v), p);
     }
 
     _mapGet(k, f) {
@@ -93,8 +93,8 @@ class BonusContract {
         return JSON.parse(val);
     }
 
-    _mapPut(k, f, v) {
-        storage.mapPut(k, f, JSON.stringify(v));
+    _mapPut(k, f, v, p) {
+        storage.mapPut(k, f, JSON.stringify(v), p);
     }
 
     _mapDel(k, f) {
@@ -171,7 +171,7 @@ class BonusContract {
             throw new Error("contribute not enough. left contribute = " + ownContribute);
         }
 
-        this._put(account, currentTime);
+        this._put(account, currentTime, account);
 
         this._call("issue.iost", "IssueIOST", []);
 

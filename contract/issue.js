@@ -126,8 +126,8 @@ class IssueContract {
         return JSON.parse(val);
     }
 
-    _put(k, v) {
-        storage.put(k, JSON.stringify(v));
+    _put(k, v, p) {
+        storage.put(k, JSON.stringify(v), p);
     }
 
     _mapGet(k, f) {
@@ -138,8 +138,8 @@ class IssueContract {
         return JSON.parse(val);
     }
 
-    _mapPut(k, f, v) {
-        storage.mapPut(k, f, JSON.stringify(v));
+    _mapPut(k, f, v, p) {
+        storage.mapPut(k, f, JSON.stringify(v), p);
     }
 
     _mapDel(k, f) {

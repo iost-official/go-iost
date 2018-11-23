@@ -11,8 +11,8 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
-	. "github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/go-iost/vm/database"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func prepareProducerVote(t *testing.T, s *Simulator, kp *account.KeyPair) {
@@ -93,7 +93,7 @@ func Test_RegisterProducer(t *testing.T) {
 		Convey("test register/unregister", func() {
 			kp6, _ := account.NewKeyPair(common.Base58Decode(testID[13]), crypto.Secp256k1)
 			s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12])), ShouldEqual, `{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000","score":"0"}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12])), ShouldEqual, `{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000"}`)
 			So(s.Visitor.TokenBalance("iost", kp6.ID), ShouldEqual, int64(1800000000*1e8))
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", kp6.ID)), ShouldEqual, `["0",false,-1]`)
 
@@ -128,10 +128,10 @@ func Test_LogInOut(t *testing.T) {
 			s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
 
 			s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12])), ShouldEqual, `{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":true,"registerFee":"200000000","score":"0"}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12])), ShouldEqual, `{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":true,"registerFee":"200000000"}`)
 
 			s.Call("vote_producer.iost", "LogOutProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12])), ShouldEqual, `{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000","score":"0"}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12])), ShouldEqual, `{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000"}`)
 
 			r, _ := s.Call("vote_producer.iost", "LogOutProducer", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
 			So(r.Status.Code, ShouldEqual, 4)
@@ -205,7 +205,7 @@ func Test_Vote1(t *testing.T) {
 			r, err = s.Call("vote_producer.iost", "GetProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(r.Returns[0], ShouldEqual, `["{\"pubkey\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"loc\":\"loc\",\"url\":\"url\",\"netId\":\"netId\",\"online\":true,\"registerFee\":\"200000000\",\"score\":\"0\",\"voteInfo\":{\"votes\":\"300000000\",\"deleted\":false,\"clearTime\":-1}}"]`)
+			So(r.Returns[0], ShouldEqual, `["{\"pubkey\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"loc\":\"loc\",\"url\":\"url\",\"netId\":\"netId\",\"online\":true,\"registerFee\":\"200000000\",\"voteInfo\":{\"votes\":\"300000000\",\"deleted\":false,\"clearTime\":-1}}"]`)
 
 			r, err = s.Call("vote_producer.iost", "GetVote", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
 			So(err, ShouldBeNil)
