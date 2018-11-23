@@ -69,8 +69,8 @@ class VoteCommonContract {
         return JSON.parse(val);
     }
 
-    _put(k, v) {
-        storage.put(k, JSON.stringify(v));
+    _put(k, v, p) {
+        storage.put(k, JSON.stringify(v), p);
     }
 
     _mapGet(k, f) {
@@ -81,8 +81,8 @@ class VoteCommonContract {
         return JSON.parse(val);
     }
 
-    _mapPut(k, f, v) {
-        storage.mapPut(k, f, JSON.stringify(v));
+    _mapPut(k, f, v, p) {
+        storage.mapPut(k, f, JSON.stringify(v), p);
     }
 
     _mapDel(k, f) {
@@ -108,6 +108,7 @@ class VoteCommonContract {
         }
         const owner = this._mapGet("owner", voteId);
         this._requireAuth(owner, adminPermission);
+        return owner;
     }
 
     _delVote(voteId) {
@@ -184,7 +185,7 @@ class VoteCommonContract {
             anyOption: anyOption,
             unvoteInterval: unvoteInterval,
             deposit: bn > 0 ? newVoteFee : "0"
-        });
+        }, owner);
 
         for (const option of options) {
             const initVotes = [
@@ -192,16 +193,16 @@ class VoteCommonContract {
                 false,        // deleted
                 -1,            // clearTime
             ];
-            this._mapPut(optionPrefix + voteId, option, initVotes);
+            this._mapPut(optionPrefix + voteId, option, initVotes, owner);
         }
 
-        this._mapPut("owner", voteId, owner);
+        this._mapPut("owner", voteId, owner, owner);
 
         return voteId;
     }
 
     AddOption(voteId, option, clearVote) {
-        this._requireOwner(voteId);
+        const owner = this._requireOwner(voteId);
         this._checkDel(voteId);
 
         if (option.length > resultMaxLength) {
@@ -227,7 +228,7 @@ class VoteCommonContract {
             }
         }
 
-        this._mapPut(optionPrefix + voteId, option, optionProp);
+        this._mapPut(optionPrefix + voteId, option, optionProp, owner);
 
         const info = this._mapGet("voteInfo", voteId);
         const votes = new Float64(optionProp[0]);
@@ -235,11 +236,11 @@ class VoteCommonContract {
             return;
         }
 
-        this._mapPut(preResultPrefix + voteId, option, optionProp[0]);
+        this._mapPut(preResultPrefix + voteId, option, optionProp[0], owner);
     }
 
     RemoveOption(voteId, option, force) {
-        this._requireOwner(voteId);
+        const owner = this._requireOwner(voteId);
         this._checkDel(voteId);
 
         if (!storage.mapHas(optionPrefix + voteId, option)) {
@@ -268,7 +269,7 @@ class VoteCommonContract {
         }
 
         optionProp[1] = true;
-        this._mapPut(optionPrefix + voteId, option, optionProp);
+        this._mapPut(optionPrefix + voteId, option, optionProp, owner);
 
         if (storage.mapHas(preResultPrefix + voteId, option)) {
             this._mapDel(preResultPrefix + voteId, option);
@@ -330,7 +331,7 @@ class VoteCommonContract {
         } else {
             userVotes[option] = this._clearUserVote(clearTime, [amount.toFixed(), this._getBlockNumber(), "0"]);
         }
-        this._mapPut(userVotePrefix + voteId, account, userVotes);
+        this._mapPut(userVotePrefix + voteId, account, userVotes, account);
         if (clearTime === this._getBlockNumber()) {
             // vote in clear block will do nothing.
             return;
@@ -338,14 +339,14 @@ class VoteCommonContract {
 
         const votes = new Float64(optionProp[0]).plus(amount);
         optionProp[0]  = votes.toFixed();
-        this._mapPut(optionPrefix + voteId, option, optionProp);
+        this._mapPut(optionPrefix + voteId, option, optionProp, account);
 
         const info = this._mapGet("voteInfo", voteId);
         if (votes.lt(new Float64(info.minVote))) {
             return;
         }
 
-        this._mapPut(preResultPrefix + voteId, option, optionProp[0]);
+        this._mapPut(preResultPrefix + voteId, option, optionProp[0], account);
     }
 
     Unvote(voteId, account, option, amount) {
@@ -386,7 +387,7 @@ class VoteCommonContract {
         const realUnvotes = new Float64(userVotes[option][2]).minus(amount);
         if (realUnvotes.gt(new Float64("0"))) {
             userVotes[option][2] = realUnvotes.toFixed();
-            this._mapPut(userVotePrefix + voteId, account, userVotes);
+            this._mapPut(userVotePrefix + voteId, account, userVotes, account);
             return;
         }
 
@@ -399,13 +400,13 @@ class VoteCommonContract {
         if (Object.keys(userVotes).length === 0) {
             this._mapDel(userVotePrefix + voteId, account);
         } else {
-            this._mapPut(userVotePrefix + voteId, account, userVotes);
+            this._mapPut(userVotePrefix + voteId, account, userVotes, account);
         }
 
 
         if (storage.mapHas(optionPrefix + voteId, option)) {
             optionProp[0] = new Float64(optionProp[0]).plus(realUnvotes).toFixed();
-            this._mapPut(optionPrefix + voteId, option, optionProp);
+            this._mapPut(optionPrefix + voteId, option, optionProp, account);
         }
 
         if (storage.mapHas(preResultPrefix + voteId, option)) {
@@ -416,7 +417,7 @@ class VoteCommonContract {
             if (votes.lt(new Float64(info.minVote))) {
                 this._mapDel(preResultPrefix + voteId, option);
             } else {
-                this._mapPut(preResultPrefix + voteId, option, preResultVotes);
+                this._mapPut(preResultPrefix + voteId, option, preResultVotes, account);
             }
         }
     }
