@@ -215,7 +215,7 @@ const tx = {
     hash: txInfo.hash,
     expiration: txInfo.expiration,
     gasLimit: txInfo.gas_limit,
-    gasPrice: txInfo.gas_price,
+    gasRatio: txInfo.gas_ratio,
     authList: txInfo.auth_list,
     publisher: txInfo.publisher
 };

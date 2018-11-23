@@ -101,13 +101,13 @@ type SortedTxMap struct {
 func compareTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
-	if txa.GasPrice == txb.GasPrice && txb.Time == txa.Time {
+	if txa.GasRatio == txb.GasRatio && txb.Time == txa.Time {
 		return bytes.Compare(txa.Hash(), txb.Hash())
 	}
-	if txa.GasPrice == txb.GasPrice {
+	if txa.GasRatio == txb.GasRatio {
 		return int(txb.Time - txa.Time)
 	}
-	return int(txa.GasPrice - txb.GasPrice)
+	return int(txa.GasRatio - txb.GasRatio)
 }
 
 // NewSortedTxMap returns a new SortedTxMap instance.

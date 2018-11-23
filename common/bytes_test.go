@@ -47,3 +47,11 @@ func TestInt32ToBytes(t *testing.T) {
 func TestBytesToInt32(t *testing.T) {
 	assert.Equal(t, int32(1023), BytesToInt32([]byte{0, 0, 0x3, 0xff}))
 }
+
+func TestFloat64ToBytes(t *testing.T) {
+	assert.Equal(t, []byte{0x3f, 0xf0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}, Float64ToBytes(1))
+}
+
+func TestBytesToFloat64(t *testing.T) {
+	assert.Equal(t, float64(1), BytesToFloat64([]byte{0x3f, 0xf0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}))
+}

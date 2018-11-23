@@ -5,23 +5,12 @@ import (
 
 	"os"
 
-	"fmt"
-
-	"time"
-
-	"io/ioutil"
-
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 )
 
-func benchInit() (Engine, *database.Visitor) {
+func benchInit() *database.Visitor {
 	ilog.Stop()
 	mvccdb, err := db.NewMVCCDB("mvcc")
 	if err != nil {
@@ -33,19 +22,7 @@ func benchInit() (Engine, *database.Visitor) {
 	vi.SetContract(systemContract)
 	vi.Commit()
 
-	bh := &block.BlockHead{
-		ParentHash: []byte("abc"),
-		Number:     10,
-		Witness:    "witness",
-		Time:       123456,
-	}
-
-	e := newEngine(bh, vi)
-
-	e.SetUp("js_path", jsPath)
-	e.SetUp("log_level", "fatal")
-	e.SetUp("log_enable", "")
-	return e, vi
+	return vi
 }
 
 func cleanUp() {
@@ -53,231 +30,243 @@ func cleanUp() {
 }
 
 func BenchmarkNative_Transfer(b *testing.B) { // 39851 ns/op
-	e, _ := benchInit()
+	// TODO: new benchmark
 
-	act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
-	trx, err := MakeTx(act)
-	if err != nil {
-		b.Fatal(err)
-	}
+	/*  e, _ := benchInit() */
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		e.Exec(trx, time.Second)
-	}
-	b.StopTimer()
-	cleanUp()
+	// act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
+	// trx, err := MakeTx(act)
+	// if err != nil {
+	// b.Fatal(err)
+	// }
+
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	// e.Exec(trx, time.Second)
+	// }
+	// b.StopTimer()
+	/* cleanUp() */
 }
 
 func BenchmarkNative_Transfer_LRU(b *testing.B) { // 37445 ns/op
-	ilog.Stop()
-	mvccdb, err := db.NewMVCCDB("mvcc")
-	if err != nil {
-		panic(err)
-	}
+	// TODO: new benchmark
 
-	vi := database.NewVisitor(100, mvccdb)
-	vi.SetTokenBalance("iost", testID[0], 1000000000000)
-	vi.SetContract(systemContract)
-	vi.Commit()
+	/* ilog.Stop() */
+	// mvccdb, err := db.NewMVCCDB("mvcc")
+	// if err != nil {
+	// panic(err)
+	// }
 
-	bh := &block.BlockHead{
-		ParentHash: []byte("abc"),
-		Number:     10,
-		Witness:    "witness",
-		Time:       123456,
-	}
+	// vi := database.NewVisitor(100, mvccdb)
+	// vi.SetTokenBalance("iost", testID[0], 1000000000000)
+	// vi.SetContract(systemContract)
+	// vi.Commit()
 
-	e := newEngine(bh, vi)
+	// bh := &block.BlockHead{
+	// ParentHash: []byte("abc"),
+	// Number:     10,
+	// Witness:    "witness",
+	// Time:       123456,
+	// }
 
-	e.SetUp("js_path", jsPath)
-	e.SetUp("log_level", "fatal")
-	e.SetUp("log_enable", "")
+	// e := newEngine(bh, vi)
 
-	act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
-	trx, err := MakeTx(act)
-	if err != nil {
-		b.Fatal(err)
-	}
+	// e.SetUp("js_path", jsPath)
+	// e.SetUp("log_level", "fatal")
+	// e.SetUp("log_enable", "")
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		e.Exec(trx, time.Second)
-	}
-	b.StopTimer()
-	cleanUp()
+	// act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v", 100]`, testID[0], testID[2]))
+	// trx, err := MakeTx(act)
+	// if err != nil {
+	// b.Fatal(err)
+	// }
+
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	// e.Exec(trx, time.Second)
+	// }
+	// b.StopTimer()
+	/* cleanUp() */
 }
 
 func BenchmarkNative_Receipt(b *testing.B) { // 138000 ns/op
-	e, _ := benchInit()
+	// TODO: new benchmark
 
-	act := tx.NewAction("system.iost", "Receipt", `["my receipt"]`)
-	trx, err := MakeTx(act)
-	if err != nil {
-		b.Fatal(err)
-	}
+	/*  e, _ := benchInit() */
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		e.Exec(trx, time.Second)
-	}
-	b.StopTimer()
-	cleanUp()
+	// act := tx.NewAction("system.iost", "Receipt", `["my receipt"]`)
+	// trx, err := MakeTx(act)
+	// if err != nil {
+	// b.Fatal(err)
+	// }
+
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	// e.Exec(trx, time.Second)
+	// }
+	// b.StopTimer()
+	/* cleanUp() */
 }
 
 func BenchmarkNative_SetCode(b *testing.B) { // 3.03 ms/op
-	e, _ := benchInit()
+	// TODO: new benchmark
 
-	hw := jsHelloWorld()
+	/*  e, _ := benchInit() */
 
-	act := tx.NewAction("system.iost", "SetCode", fmt.Sprintf(`["%v"]`, hw.B64Encode()))
-	trx, err := MakeTx(act)
-	if err != nil {
-		b.Fatal(err)
-	}
+	// hw := jsHelloWorld()
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		e.Exec(trx, time.Second)
-	}
-	b.StopTimer()
-	cleanUp()
+	// act := tx.NewAction("system.iost", "SetCode", fmt.Sprintf(`["%v"]`, hw.B64Encode()))
+	// trx, err := MakeTx(act)
+	// if err != nil {
+	// b.Fatal(err)
+	// }
+
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	// e.Exec(trx, time.Second)
+	// }
+	// b.StopTimer()
+	/* cleanUp() */
 }
 
 func BenchmarkJS_Gas_Once(b *testing.B) { // 443 us/op
-	ilog.Stop()
-	js := NewJSTester(b)
-	defer js.Clear()
-	f, err := ioutil.ReadFile("test_data/gas.js")
-	if err != nil {
-		b.Fatal(err)
-	}
-	js.SetJS(string(f))
-	js.SetAPI("run", "number")
-	js.DoSet()
+	// TODO: new benchmark
 
-	act2 := tx.NewAction(js.cname, "run", `[1]`)
+	/* ilog.Stop() */
+	// js := NewJSTester(b)
+	// defer js.Clear()
+	// f, err := ioutil.ReadFile("test_data/gas.js")
+	// if err != nil {
+	// b.Fatal(err)
+	// }
+	// js.SetJS(string(f))
+	// js.SetAPI("run", "number")
+	// js.DoSet()
 
-	trx2, err := MakeTx(act2)
-	if err != nil {
-		js.t.Fatal(err)
-	}
+	// act2 := tx.NewAction(js.cname, "run", `[1]`)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// r := js.TestJS("single", `[]`)
-		//if i == 0 {
-		//	b.Log("gas is : ", r.GasUsage)
-		//}
-		r, err := js.e.Exec(trx2, time.Second)
-		if r.Status.Code != 0 || err != nil {
-			b.Fatal(r.Status.Message, err)
-		}
-	}
-	b.StopTimer()
+	// trx2, err := MakeTx(act2)
+	// if err != nil {
+	// js.t.Fatal(err)
+	// }
+
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	// // r := js.TestJS("single", `[]`)
+	// //if i == 0 {
+	// //	b.Log("gas is : ", r.GasUsage)
+	// //}
+	// r, err := js.e.Exec(trx2, time.Second)
+	// if r.Status.Code != 0 || err != nil {
+	// b.Fatal(r.Status.Message, err)
+	// }
+	// }
+	/* b.StopTimer() */
 }
 
 func BenchmarkJS_Gas_100(b *testing.B) { // 483 um/op
-	ilog.Stop()
-	js := NewJSTester(b)
-	js.vi.SetTokenBalance("iost", testID[0], 10000000000)
-	defer js.Clear()
-	f, err := ioutil.ReadFile("test_data/gas.js")
-	if err != nil {
-		b.Fatal(err)
-	}
-	js.SetJS(string(f))
-	js.SetAPI("run", "number")
-	js.DoSet()
+	// TODO: new benchmark
 
-	act2 := tx.NewAction(js.cname, "run", `[100]`)
+	/*  ilog.Stop() */
+	// js := NewJSTester(b)
+	// js.vi.SetTokenBalance("iost", testID[0], 10000000000)
+	// defer js.Clear()
+	// f, err := ioutil.ReadFile("test_data/gas.js")
+	// if err != nil {
+	// b.Fatal(err)
+	// }
+	// js.SetJS(string(f))
+	// js.SetAPI("run", "number")
+	// js.DoSet()
 
-	trx2, err := MakeTx(act2)
-	if err != nil {
-		js.t.Fatal(err)
-	}
+	// act2 := tx.NewAction(js.cname, "run", `[100]`)
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// r := js.TestJS("single", `[]`)
-		//if i == 0 {
-		//	b.Log("gas is : ", r.GasUsage)
-		//}
-		r, err := js.e.Exec(trx2, time.Second)
-		if r.Status.Code != 0 || err != nil {
-			b.Fatal(r.Status.Message, err)
-		}
-	}
-	b.StopTimer()
+	// trx2, err := MakeTx(act2)
+	// if err != nil {
+	// js.t.Fatal(err)
+	// }
+
+	// b.ResetTimer()
+	// for i := 0; i < b.N; i++ {
+	// // r := js.TestJS("single", `[]`)
+	// //if i == 0 {
+	// //	b.Log("gas is : ", r.GasUsage)
+	// //}
+	// r, err := js.e.Exec(trx2, time.Second)
+	// if r.Status.Code != 0 || err != nil {
+	// b.Fatal(r.Status.Message, err)
+	// }
+	// }
+	/* b.StopTimer() */
 }
 
-func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
-	ilog.Stop()
-	js := NewJSTester(b)
-	js.vi.SetTokenBalance("iost", testID[0], 10000000000)
-	defer js.Clear()
-	f, err := ioutil.ReadFile("test_data/gas.js")
-	if err != nil {
-		b.Fatal(err)
-	}
-	js.SetJS(string(f))
-	js.SetAPI("run", "number")
-	js.DoSet()
+// func BenchmarkJS_Gas_200(b *testing.B) { // 525 um/op
+/* ilog.Stop() */
+// js := NewJSTester(b)
+// js.vi.SetTokenBalance("iost", testID[0], 10000000000)
+// defer js.Clear()
+// f, err := ioutil.ReadFile("test_data/gas.js")
+// if err != nil {
+// b.Fatal(err)
+// }
+// js.SetJS(string(f))
+// js.SetAPI("run", "number")
+// js.DoSet()
 
-	act2 := tx.NewAction(js.cname, "run", `[200]`)
+// act2 := tx.NewAction(js.cname, "run", `[200]`)
 
-	trx2, err := MakeTx(act2)
-	if err != nil {
-		js.t.Fatal(err)
-	}
+// trx2, err := MakeTx(act2)
+// if err != nil {
+// js.t.Fatal(err)
+// }
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		// r := js.TestJS("single", `[]`)
-		//if i == 0 {
-		//	b.Log("gas is : ", r.GasUsage)
-		//}
-		r, err := js.e.Exec(trx2, time.Second)
-		if r.Status.Code != 0 || err != nil {
-			b.Fatal(r.Status.Message, err)
-		}
-	}
-	b.StopTimer()
-}
+// b.ResetTimer()
+// for i := 0; i < b.N; i++ {
+// // r := js.TestJS("single", `[]`)
+// //if i == 0 {
+// //	b.Log("gas is : ", r.GasUsage)
+// //}
+// r, err := js.e.Exec(trx2, time.Second)
+// if r.Status.Code != 0 || err != nil {
+// b.Fatal(r.Status.Message, err)
+// }
+// }
+// b.StopTimer()
+// }
 
-func Benchmark_JS_Transfer(b *testing.B) { //577385ns(local) vs 1060847ns(server)
-	ilog.Stop()
-	js := NewJSTester(b)
-	defer js.Clear()
-	f, err := ioutil.ReadFile("test_data/transfer.js")
-	if err != nil {
-		b.Fatal(err)
-	}
-	js.SetJS(string(f))
-	js.SetAPI("transfer", "string", "string", "number")
-	js.DoSet()
+// func Benchmark_JS_Transfer(b *testing.B) { //577385ns(local) vs 1060847ns(server)
+// ilog.Stop()
+// js := NewJSTester(b)
+// defer js.Clear()
+// f, err := ioutil.ReadFile("test_data/transfer.js")
+// if err != nil {
+// b.Fatal(err)
+// }
+// js.SetJS(string(f))
+// js.SetAPI("transfer", "string", "string", "number")
+// js.DoSet()
 
-	js.vi.SetTokenBalance("iost", testID[0], 100000000)
+// js.vi.SetTokenBalance("iost", testID[0], 100000000)
 
-	act2 := tx.NewAction(js.cname, "transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 100))
+// act2 := tx.NewAction(js.cname, "transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], 100))
 
-	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-	if err != nil {
-		panic(err)
-	}
+// ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+// if err != nil {
+// panic(err)
+// }
 
-	trx2, err := MakeTxWithAuth(act2, ac)
-	if err != nil {
-		b.Fatal(err)
-	}
+// trx2, err := MakeTxWithAuth(act2, ac)
+// if err != nil {
+// b.Fatal(err)
+// }
 
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		js.e.Exec(trx2, time.Second)
-		r, err := js.e.Exec(trx2, time.Second)
-		if r.Status.Code != 0 || err != nil {
-			b.Fatal(r.Status.Message, err)
-		}
-	}
-	b.StopTimer()
-}
+// b.ResetTimer()
+// for i := 0; i < b.N; i++ {
+// js.e.Exec(trx2, time.Second)
+// r, err := js.e.Exec(trx2, time.Second)
+// if r.Status.Code != 0 || err != nil {
+// b.Fatal(r.Status.Message, err)
+// }
+// }
+// b.StopTimer()
+/* } */

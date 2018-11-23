@@ -12,9 +12,9 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/vm/database"
 )
 
 func TestTransfer(t *testing.T) {
@@ -42,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 3086)
+			So(r.GasUsage, ShouldEqual, 308600)
 		})
 
 		Convey("test of token memo", func() {
@@ -79,8 +79,8 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "ContractEJuvctjsCVirp9g22As7KbrM71783oq4wYE1Fcy8AXns")
-		So(r.GasUsage, ShouldEqual, 1739)
+		So(cname, ShouldEqual, "ContractBRp9qiNMLga3r67ESf9DRUSzZ4PRwFcsQRGFtDVSmCiU")
+		So(r.GasUsage, ShouldEqual, 173900)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -114,17 +114,17 @@ func TestStringGas(t *testing.T) {
 		r, err = s.Call(cname, "add9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 12, 14)
+		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 1299, 1400)
 
 		r, err = s.Call(cname, "equal9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldEqual, 14)
+		So(r.GasUsage-gas2, ShouldEqual, 1400)
 
 		r, err = s.Call(cname, "superadd9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeGreaterThan, 14)
+		So(r.GasUsage-gas2, ShouldBeGreaterThan, 1400)
 	})
 }
 
@@ -278,7 +278,7 @@ func TestTxAmountLimit(t *testing.T) {
 				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
-			}}, nil, 100000, 100, 10000000, 0)
+			}}, nil, 10000000, 100, 10000000, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, testID[0], kp)
 			s.Visitor.Commit()
@@ -296,7 +296,7 @@ func TestTxAmountLimit(t *testing.T) {
 				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
-			}}, nil, 100000, 100, 10000000, 0)
+			}}, nil, 10000000, 100, 10000000, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, testID[0], kp)
 			s.Visitor.Commit()
@@ -314,7 +314,7 @@ func TestTxAmountLimit(t *testing.T) {
 				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "110"),
-			}}, nil, 100000, 100, 10000000, 0)
+			}}, nil, 10000000, 100, 10000000, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost1", Val: "100"})
 
 			err = vm.CheckAmountLimit(s.Mvcc, trx)

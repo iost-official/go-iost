@@ -4,9 +4,10 @@ import (
 	"encoding/base64"
 
 	"encoding/json"
+	"io/ioutil"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
-	"io/ioutil"
 )
 
 //go:generate protoc --gofast_out=. contract.proto
@@ -124,4 +125,12 @@ func Compile(id, src, abi string) (*Contract, error) {
 	}
 
 	return &c, nil
+}
+
+// ToBytes converts Amount to bytes.
+func (a *Amount) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteString(a.Token, true)
+	sn.WriteString(a.Val, true)
+	return sn.Bytes()
 }

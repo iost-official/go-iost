@@ -78,7 +78,7 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 		Time:       referredTx.Time + referredTx.Delay,
 		Expiration: referredTx.Expiration + referredTx.Delay,
 		GasLimit:   referredTx.GasLimit,
-		GasPrice:   referredTx.GasPrice,
+		GasRatio:   referredTx.GasRatio,
 		Publisher:  referredTx.Publisher,
 		ReferredTx: txHash,
 	}

@@ -111,7 +111,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Contract:   "system.iost",
 		ActionName: "SetCode",
 		Data:       string(jargs),
-	}}, nil, 100000, 100, s.Head.Time+10000000, 0)
+	}}, nil, 10000000, 100, s.Head.Time+10000000, 0)
 
 	trx.Time = s.Head.Time
 
@@ -160,7 +160,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, 1000000, 100, s.Head.Time+10000000, 0)
+	}}, nil, 100000000, 100, s.Head.Time+10000000, 0)
 
 	trx.Time = s.Head.Time
 
