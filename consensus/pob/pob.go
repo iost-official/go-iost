@@ -376,16 +376,17 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
-		p.verifyDB.Checkout(string(blk.Head.ParentHash))
+		db := p.verifyDB.Fork()
+		db.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain, replay)
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, db, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed. err=%v", err)
 			p.blockCache.Del(node)
 			return err
 		}
-		p.verifyDB.Tag(string(blk.HeadHash()))
+		db.Tag(string(blk.HeadHash()))
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
