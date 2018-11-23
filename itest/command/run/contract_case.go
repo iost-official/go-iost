@@ -14,6 +14,7 @@ var ContractCaseCommand = cli.Command{
 	Action:    ContractCaseAction,
 }
 
+// ContractCaseFlags ...
 var ContractCaseFlags = []cli.Flag{
 	cli.IntFlag{
 		Name:  "account, a",
