@@ -110,7 +110,7 @@ func loadBytes(s string) []byte {
 func transfer(i int) {
 	action := tx.NewAction(contractID, "transfer", `["admin","testID",1]`)
 	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 1000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 50000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, "admin", []*account.KeyPair{acc})
 
 	if err != nil {
