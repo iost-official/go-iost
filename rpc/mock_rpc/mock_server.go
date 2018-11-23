@@ -60,7 +60,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 			Hash:       "xxxxx",
 			Time:       999,
 			Expiration: 20,
-			GasPrice:   1.01,
+			GasRatio:   1.01,
 			GasLimit:   5.05,
 			Delay:      0,
 			Actions: []*rpcpb.Action{
@@ -125,7 +125,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 					Hash:       "xxxxx",
 					Time:       999,
 					Expiration: 20,
-					GasPrice:   1.01,
+					GasRatio:   1.01,
 					GasLimit:   5.05,
 					Delay:      0,
 					Actions: []*rpcpb.Action{
@@ -179,7 +179,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 					Hash:       "xxxxx",
 					Time:       999,
 					Expiration: 20,
-					GasPrice:   1.01,
+					GasRatio:   1.01,
 					GasLimit:   5.05,
 					Delay:      0,
 					Actions: []*rpcpb.Action{

@@ -22,11 +22,21 @@ var Flags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "keys, k",
 		Value: "",
-		Usage: "Load keys configuration from `FILE`",
+		Usage: "Load keys from `FILE`",
 	},
 	cli.StringFlag{
 		Name:  "config, c",
 		Value: "",
 		Usage: "Load itest configuration from `FILE`",
+	},
+	cli.StringFlag{
+		Name:  "code",
+		Value: "",
+		Usage: "Load contract code from `FILE`",
+	},
+	cli.StringFlag{
+		Name:  "abi",
+		Value: "",
+		Usage: "Load contract abi from `FILE`",
 	},
 }

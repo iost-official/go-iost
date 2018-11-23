@@ -14,14 +14,14 @@ import (
 // Constant of key
 const (
 	DefaultKeys = `
-[
-{"seckey":"XJXxYmjY3q89J8UaXbWx96MCNQEf2dV49j3adv4Qhjtb3948ukn5o4XLE2iyFFn3wJf73bmbf1SSGxXFSfgCtL2","algorithm":"ed25519"},
-{"seckey":"474oNHzDAz3njim6M83DWq7vmre4dHT89hpoBc31Y3aemkWr6YdChzKFTZD671ZcMyVzKFsQ9898RU7yr9y5NNZ2","algorithm":"ed25519"},
-{"seckey":"124iRRFSKS2NUU1QCqnXzNyE6roMxqiC66vtf84ZN6mKG2RjdkZrLJK8WRc26Sm82wAkB2LFb7qXhz3shJSLsT4U","algorithm":"ed25519"},
-{"seckey":"5KR3weGjMX1S74U9jjbc9n2zsU5tKXA1SYbk5P72vpiBYNLHmQ6sLYnhQpScEuKRUDCqUgMTdgjG2qnw61v1TAik","algorithm":"ed25519"},
-{"seckey":"4PUdaMimqbYiPh3eeCkBY4ZaDwYTT64YT59tUGxF8eXVyEGBgavQtJnkgnrMStKptf1YJdr2rAXkU6a8YzVE5Maa","algorithm":"ed25519"}
-]
-`
+	[
+		{"seckey":"XJXxYmjY3q89J8UaXbWx96MCNQEf2dV49j3adv4Qhjtb3948ukn5o4XLE2iyFFn3wJf73bmbf1SSGxXFSfgCtL2","algorithm":"ed25519"},
+		{"seckey":"474oNHzDAz3njim6M83DWq7vmre4dHT89hpoBc31Y3aemkWr6YdChzKFTZD671ZcMyVzKFsQ9898RU7yr9y5NNZ2","algorithm":"ed25519"},
+		{"seckey":"124iRRFSKS2NUU1QCqnXzNyE6roMxqiC66vtf84ZN6mKG2RjdkZrLJK8WRc26Sm82wAkB2LFb7qXhz3shJSLsT4U","algorithm":"ed25519"},
+		{"seckey":"5KR3weGjMX1S74U9jjbc9n2zsU5tKXA1SYbk5P72vpiBYNLHmQ6sLYnhQpScEuKRUDCqUgMTdgjG2qnw61v1TAik","algorithm":"ed25519"},
+		{"seckey":"4PUdaMimqbYiPh3eeCkBY4ZaDwYTT64YT59tUGxF8eXVyEGBgavQtJnkgnrMStKptf1YJdr2rAXkU6a8YzVE5Maa","algorithm":"ed25519"}
+	]
+	`
 )
 
 // Key is the key pair
@@ -37,6 +37,8 @@ type KeyJSON struct {
 
 // LoadKeys will load keys from file
 func LoadKeys(file string) ([]*Key, error) {
+	ilog.Infof("Load keys from file...")
+
 	var data []byte
 	if file == "" {
 		data = []byte(DefaultKeys)
@@ -64,7 +66,7 @@ func DumpKeys(keys []*Key, file string) error {
 	}
 	defer f.Close()
 
-	b, err := json.Marshal(&keys)
+	b, err := json.MarshalIndent(&keys, "", "  ")
 	if err != nil {
 		return err
 	}

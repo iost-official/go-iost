@@ -94,9 +94,9 @@ func (h *Teller) PayCost(c contract.Cost, who string) {
 }
 
 // DoPay ...
-func (h *Teller) DoPay(witness string, gasPrice int64) error {
+func (h *Teller) DoPay(witness string, gasRatio int64) error {
 	for k, c := range h.cost {
-		fee := gasPrice * c.ToGas()
+		fee := gasRatio * c.ToGas()
 		if fee != 0 {
 			gas := &common.Fixed{
 				Value:   fee,

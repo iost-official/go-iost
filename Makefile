@@ -21,7 +21,7 @@ endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD)
 
-.PHONY: all build iserver iwallet itest lint test e2e_test image push devimage swagger protobuf install clean debug clear_debug_file
+.PHONY: all build iserver iwallet itest lint test e2e_test k8s_test image push devimage swagger protobuf install clean debug clear_debug_file
 
 all: build
 
@@ -49,11 +49,19 @@ else
 	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
 endif
 
-e2e_test: image push
+e2e_test: image
+	docker rm -f iserver || true
+	docker run -d --name iserver $(DOCKER_IMAGE)
+	sleep 20
+	docker exec -it iserver ./itest run a_case
+	docker exec -it iserver ./itest run t_case
+	docker exec -it iserver ./itest run c_case
+
+k8s_test: image push
 	./build/delete_cluster.sh
 	./build/create_cluster.sh
 	sleep 90
-	./build/run_e2e_test.sh
+	kubectl exec -it itest -n devnet -- ./itest -l debug run -c /etc/itest/itest.json a_case
 
 image:
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)

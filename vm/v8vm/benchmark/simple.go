@@ -28,7 +28,7 @@ func MyInit(conName string, optional ...interface{}) (*host.Host, *contract.Cont
 	vi := database.NewVisitor(100, db)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(10000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)

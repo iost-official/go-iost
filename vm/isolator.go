@@ -70,10 +70,10 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		}
 
 		gas, _ := i.h.CurrentGas(i.publisherID)
-		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
-		if gas.LessThan(price.Times(t.GasLimit)) {
-			ilog.Infof("publisher's gas less than price * limit: publisher %v current gas %v price %v limit %v\n", i.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
-			return fmt.Errorf("%v gas less than price * limit %v < %v * %v", i.publisherID, gas.ToString(), price.ToString(), t.GasLimit)
+		limit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
+		if gas.LessThan(limit) {
+			ilog.Infof("publisher's gas balance is less than gas limit: publisher %v current gas:%v, gas limit:%v\n", i.publisherID, gas.ToString(), limit.ToString())
+			return fmt.Errorf("%v gas less than price * limit %v <  %v", i.publisherID, gas.ToString(), limit.ToString())
 		}
 	}
 	loadTxInfo(i.h, t, i.publisherID)
@@ -174,7 +174,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 
 // Run actions in tx
 func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
-	i.h.Context().GSet("gas_limit", i.t.GasLimit)
+	i.h.Context().GSet("gas_limit", i.t.GasLimit/i.t.GasRatio)
 	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
 	i.tr = tx.NewTxReceipt(i.t.Hash())
@@ -238,7 +238,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			cost.Net = 0
 		}
 
-		i.tr.GasUsage += cost.ToGas()
+		i.tr.GasUsage += cost.ToGas() * i.t.GasRatio
 		if status.Code == 0 {
 			for k, v := range i.h.Costs() {
 				i.tr.RAMUsage[k] = v.Data
@@ -250,7 +250,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		i.h.PayCost(cost, i.publisherID)
 
 		if status.Code != tx.Success {
-			ilog.Errorf("isolator run action %v failed, status %v, will rollback", action, status)
+			ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
 			i.h.ClearRAMCosts()
@@ -267,7 +267,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 
 // PayCost as name
 func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
-	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice)
+	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 	if err != nil {
 		ilog.Errorf("DoPay failed, rollback %v", err)
 		i.h.DB().Rollback()
@@ -276,7 +276,7 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 		i.tr.Status.Code = tx.ErrorBalanceNotEnough
 		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
 
-		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice)
+		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 		if err != nil {
 			panic(err)
 		}
@@ -303,10 +303,10 @@ func (i *Isolator) ClearTx() {
 	i.h.DB().Rollback()
 }
 func checkTxParams(t *tx.Tx) error {
-	if t.GasPrice < 100 || t.GasPrice > 10000 {
-		return errGasPriceIllegal
+	if t.GasRatio < 100 || t.GasRatio > 10000 {
+		return errGasRatioIllegal
 	}
-	if t.GasLimit < 500 {
+	if t.GasLimit < 50000 {
 		return errGasLimitIllegal
 	}
 	return nil
@@ -329,7 +329,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.PushCtx()
 	h.Context().Set("tx_time", t.Time)
 	h.Context().Set("expiration", t.Expiration)
-	h.Context().Set("gas_price", t.GasPrice)
+	h.Context().Set("gas_ratio", t.GasRatio)
 	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
 	h.Context().Set("publisher", publisherID)
 	h.Context().Set("amount_limit", t.AmountLimit)

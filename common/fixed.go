@@ -1,6 +1,7 @@
 package common
 
 import (
+	"encoding/binary"
 	"errors"
 	"math"
 )
@@ -20,12 +21,19 @@ type Fixed struct {
 
 // Marshal ...
 func (f *Fixed) Marshal() string {
-	return f.ToStringWithDecimal()
+	b1 := make([]byte, 8)
+	binary.LittleEndian.PutUint64(b1, uint64(f.Value))
+	b2 := make([]byte, 4)
+	binary.LittleEndian.PutUint32(b2, uint32(f.Decimal))
+	return string(b1) + string(b2)
 }
 
 // UnmarshalFixed unmarshal from string
 func UnmarshalFixed(s string) (*Fixed, error) {
-	return NewFixed(s, -1)
+	if len(s) != 8+4 {
+		return &Fixed{Value: 0, Decimal: 0}, errors.New("invalid length to unmarshal fix point number")
+	}
+	return &Fixed{Value: int64(binary.LittleEndian.Uint64([]byte(s[:8]))), Decimal: int(int32(binary.LittleEndian.Uint32([]byte(s[8:]))))}, nil
 }
 
 func multiplyOverflow(a int64, b int64) bool {
