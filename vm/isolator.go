@@ -71,7 +71,7 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 
 		gas, _ := i.h.CurrentGas(i.publisherID)
 		price := &common.Fixed{Value: t.GasPrice, Decimal: 2}
-		ilog.Infof("publisher %v current gas %v\n", i.publisherID, gas.ToString())
+		ilog.Debugf("publisher %v current gas %v\n", i.publisherID, gas.ToString())
 		if gas.LessThan(price.Times(t.GasLimit)) {
 			ilog.Infof("publisher's gas less than price * limit: publisher %v current gas %v price %v limit %v\n", i.publisherID, gas.ToString(), t.GasPrice, t.GasLimit)
 			return fmt.Errorf("%v gas less than price * limit %v < %v * %v", i.publisherID, gas.ToString(), price.ToString(), t.GasLimit)
@@ -218,10 +218,10 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		hasSetCode = action.Contract == "system.iost" && action.ActionName == "SetCode"
 
 		cost, status, ret, receipts, err := i.runAction(*action)
-		//ilog.Debugf("run action : %v, result is %v", action, status.Code)
-		//ilog.Debug("used cost > ", cost)
-		//ilog.Debugf("status > \n%v\n", status)
-		//ilog.Debug("return value: ", ret)
+		ilog.Debugf("run action : %v, result is %v", action, status.Code)
+		ilog.Debug("used cost > ", cost)
+		ilog.Debugf("status > \n%v\n", status)
+		ilog.Debug("return value: ", ret)
 
 		if err != nil {
 			return nil, err
@@ -322,7 +322,7 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 	if bh.Time <= 1 {
 		panic(fmt.Sprintf("invalid blockhead time %v", bh.Time))
 	}
-	//ilog.Debugf("loadBlkInfo set time to %v", bh.Time)
+	ilog.Debugf("loadBlkInfo set time to %v", bh.Time)
 	return c
 }
 

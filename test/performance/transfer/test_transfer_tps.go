@@ -166,20 +166,19 @@ func publish() string {
 }
 
 func main() {
-
-	//var iterNum = 8000
+	var iterNum = 8000
 	var parallelNum = 100
 	initConn(parallelNum)
 
 	contractID = publish()
-	//
-	//start := time.Now()
-	//
-	//for i := 0; i < iterNum; i++ {
-	//	fmt.Println(i)
-	//	transParallel(parallelNum)
-	//}
 
-	//fmt.Println("done. timecost=", time.Since(start))
+	start := time.Now()
+
+	for i := 0; i < iterNum; i++ {
+		fmt.Println(i)
+		transParallel(parallelNum)
+	}
+
+	fmt.Println("done. timecost=", time.Since(start))
 
 }

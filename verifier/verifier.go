@@ -164,7 +164,7 @@ L:
 		}
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
-			//ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
+			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
 			provider.Drop(t, err)
 			continue L
 		}
