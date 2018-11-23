@@ -9,6 +9,7 @@ package v8
 import "C"
 import (
 	"sync"
+	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
@@ -25,6 +26,7 @@ type VM struct {
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
+	refCount             int
 	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
@@ -130,4 +132,12 @@ func (e *VM) release() {
 		C.releaseIsolate(e.isolate)
 	}
 	e.isolate = nil
+}
+
+func (e *VM) memoryNotification() {
+	ticker := time.NewTicker(time.Minute)
+	for _ = range ticker.C {
+		e.refCount = 0
+		C.lowMemoryNotification(e.isolate)
+	}
 }
