@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"testing"
 
@@ -31,20 +30,27 @@ var shouldBeNil = cy.ShouldBeNil
 var shouldNotBeNil = cy.ShouldNotBeNil
 var shouldBeZeroValue = cy.ShouldBeZeroValue
 
+var useConvey = true
+
 func so(actual interface{}, assert func(actual interface{}, expected ...interface{}) string, expected ...interface{}) {
-	result := assert(actual, expected...)
-	if result != "" {
-		ilog.Fatalf("test fail %v", result)
+	if useConvey {
+		cy.So(actual, assert, expected...)
+	} else {
+		result := assert(actual, expected...)
+		if result != "" {
+			ilog.Fatalf("test fail %v", result)
+		}
 	}
 }
 
 func convey(items ...interface{}) {
-	info := items[0].(string)
-	fmt.Println(info)
-	if runtime.GOOS == `darwin` {
-		f := items[len(items)-1].(func())
-		f()
+	if useConvey {
+		cy.Convey(items...)
+	} else {
+		fmt.Println(items[0].(string))
+		items[len(items)-1].(func())()
 	}
+
 }
 
 func toString(n int64) string {
@@ -343,7 +349,6 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			so(gas.Value, shouldBeZeroValue)
 		})
 		convey("Test unpledge for others", func() {
-			t.Skip("fix ram usage")
 			unpledgeAmount := toIOSTFixed(190)
 			_, _, err = e.LoadAndCall(h, code, "unpledge", testAcc, otherAcc, unpledgeAmount.ToString())
 			so(err, shouldBeNil)
