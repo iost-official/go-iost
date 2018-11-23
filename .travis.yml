@@ -47,8 +47,22 @@ matrix:
   - os: linux
     dist: trusty
     go: "1.11"
-    if: type = cron
     env: JOB=e2e_test
+    services:
+    - docker
+    before_install:
+    - docker pull iostio/iost-dev:1.0.0
+    - git lfs install
+    before_script:
+    - git lfs pull
+    script:
+    - make image
+    - make e2e_test
+  - os: linux
+    dist: trusty
+    go: "1.11"
+    if: type = cron
+    env: JOB=k8s_test
     services:
     - docker
     before_install:
