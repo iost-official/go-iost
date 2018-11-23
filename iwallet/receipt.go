@@ -16,7 +16,6 @@ package iwallet
 
 import (
 	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -35,7 +34,7 @@ var receiptCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		fmt.Println(txReceipt)
+		fmt.Println(marshalTextString(txReceipt))
 	},
 }
 
