@@ -53,7 +53,7 @@ e2e_test: image
 	docker rm -f iserver || true
 	docker run -d --name iserver $(DOCKER_IMAGE)
 	sleep 20
-	docker exec -it iserver ./itest run t_case
+	docker exec -it iserver ./itest run c_case
 
 k8s_test: image push
 	./build/delete_cluster.sh
