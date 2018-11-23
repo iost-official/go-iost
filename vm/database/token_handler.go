@@ -28,20 +28,15 @@ type FreezeItemFixed struct {
 }
 
 func (m *TokenHandler) balanceKey(tokenName, acc string) string {
-	return "m-" + TokenContractName + "@" + acc + "-" + "TB" + "-" + tokenName
+	return "m-" + TokenContractName + "-" + "TB" + acc + "-" + tokenName
 }
 
 func (m *TokenHandler) freezedBalanceKey(tokenName, acc string) string {
-	return "m-" + TokenContractName + "@" + acc + "-" + "TF" + "-" + tokenName
+	return "m-" + TokenContractName + "-" + "TF" + acc + "-" + tokenName
 }
 
 func (m *TokenHandler) decimalKey(tokenName string) string {
-	issuerKey := "m-" + TokenContractName + "-" + "TI" + tokenName + "-" + "issuer"
-	issuer := Unmarshal(m.db.Get(issuerKey))
-	if issuer == nil {
-		return ""
-	}
-	key := "m-" + TokenContractName + "@" + issuer.(string) + "-" + "TI" + tokenName + "-" + "decimal"
+	key := "m-" + TokenContractName + "-" + "TI" + tokenName + "-" + "decimal"
 	return key
 }
 

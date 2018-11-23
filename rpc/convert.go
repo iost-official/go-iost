@@ -31,7 +31,7 @@ func toPbTxReceipt(tr *tx.TxReceipt) *rpcpb.TxReceipt {
 	}
 	ret := &rpcpb.TxReceipt{
 		TxHash:     common.Base58Encode(tr.TxHash),
-		GasUsage:   gasConvert(tr.GasUsage),
+		GasUsage:   float64(tr.GasUsage),
 		RamUsage:   tr.RAMUsage,
 		StatusCode: rpcpb.TxReceipt_StatusCode(tr.Status.Code),
 		Message:    tr.Status.Message,
@@ -63,7 +63,7 @@ func toPbTx(t *tx.Tx, tr *tx.TxReceipt) *rpcpb.Transaction {
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasPrice:   gasConvert(t.GasPrice),
-		GasLimit:   gasConvert(t.GasLimit),
+		GasLimit:   float64(t.GasLimit),
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
@@ -89,7 +89,7 @@ func toPbBlock(blk *block.Block, complete bool) *rpcpb.Block {
 		Number:              blk.Head.Number,
 		Witness:             blk.Head.Witness,
 		Time:                blk.Head.Time,
-		GasUsage:            gasConvert(blk.CalculateGasUsage()),
+		GasUsage:            float64(blk.CalculateGasUsage()),
 		TxCount:             int64(len(blk.Txs)),
 	}
 	json.Unmarshal(blk.Head.Info, ret.Info)
@@ -170,7 +170,7 @@ func toCoreTx(t *rpcpb.TransactionRequest) *tx.Tx {
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasPrice:   int64(t.GasPrice * 100),
-		GasLimit:   int64(t.GasLimit * 100),
+		GasLimit:   int64(t.GasLimit),
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,

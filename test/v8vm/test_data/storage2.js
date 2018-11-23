@@ -35,13 +35,13 @@ class Storage2 {
         storage.put(k, v, "myowner");
     }
     mseto(k, f, v) {
-        storage.mapPut(k, f, v, "myowner");
+        storage.mapPut(k, f, v);
     }
     ggeto(c, k) {
-        return storage.globalGet(c, k, "myowner");
+        return storage.globalGet(c, k);
     }
     gmgeto(c, k, f) {
-        return storage.globalMapGet(c, k, f, "myowner");
+        return storage.globalMapGet(c, k, f);
     }
 }
 

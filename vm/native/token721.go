@@ -14,10 +14,11 @@ var token721ABIs map[string]*abi
 
 // const prefix
 const (
-	Token721InfoMapPrefix     = "T721I"
-	Token721BalanceMapPrefix  = "T721B"
-	Token721IssuerMapField    = "T721issuer"
-	Token721MetadataMapPrefix = "T721M"
+	Token721InfoMapPrefix        = "T721I"
+	Token721BalanceMapPrefix     = "T721B"
+	Token721IssuerMapField       = "T721issuer"
+	Token721MetadataMapPrefix    = "T721M"
+	Token721MetadataKeySeparator = "#"
 )
 
 func init() {
@@ -40,18 +41,18 @@ func checkToken721Exists(h *host.Host, tokenName string) (ok bool, cost contract
 func getToken721Balance(h *host.Host, tokenName string, from string) (balance int64, cost contract.Cost, err error) {
 	balance = int64(0)
 	cost = contract.Cost0()
-	ok, cost0 := h.MapHas(Token721BalanceMapPrefix+from, tokenName, from)
+	ok, cost0 := h.MapHas(Token721BalanceMapPrefix+from, tokenName)
 	cost.AddAssign(cost0)
 	if ok {
-		tmp, cost0 := h.MapGet(Token721BalanceMapPrefix+from, tokenName, from)
+		tmp, cost0 := h.MapGet(Token721BalanceMapPrefix+from, tokenName)
 		cost.AddAssign(cost0)
 		balance = tmp.(int64)
 	}
 	return balance, cost, nil
 }
 
-func setToken721Balance(h *host.Host, tokenName string, from string, balance int64) (cost contract.Cost) {
-	cost = h.MapPut(Token721BalanceMapPrefix+from, tokenName, balance, from)
+func setToken721Balance(h *host.Host, tokenName string, from string, balance int64, ramPayer string) (cost contract.Cost) {
+	cost = h.MapPut(Token721BalanceMapPrefix+from, tokenName, balance, ramPayer)
 	return cost
 
 }
@@ -97,7 +98,7 @@ var (
 			}
 
 			// put info
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, Token721IssuerMapField, issuer)
+			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, Token721IssuerMapField, issuer, issuer)
 			cost.AddAssign(cost0)
 			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply, issuer)
 			cost.AddAssign(cost0)
@@ -133,9 +134,9 @@ var (
 			}
 			issuer, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, Token721IssuerMapField)
 			cost.AddAssign(cost0)
-			supply, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, SupplyMapField, issuer.(string))
+			supply, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, SupplyMapField)
 			cost.AddAssign(cost0)
-			totalSupply, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, TotalSupplyMapField, issuer.(string))
+			totalSupply, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, TotalSupplyMapField)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrGasLimitExceeded
@@ -161,7 +162,7 @@ var (
 			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+1, issuer.(string))
 			cost.AddAssign(cost0)
 
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to)
+			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, issuer.(string))
 			cost.AddAssign(cost0)
 
 			tbalance, cost0, err := getToken721Balance(h, tokenName, to)
@@ -170,10 +171,10 @@ var (
 				return nil, cost, err
 			}
 			tbalance++
-			cost0 = setToken721Balance(h, tokenName, to, tbalance)
+			cost0 = setToken721Balance(h, tokenName, to, tbalance, issuer.(string))
 			cost.AddAssign(cost0)
 
-			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName, tokenID, metaDateJSON, to)
+			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, issuer.(string))
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -203,7 +204,6 @@ var (
 			}
 
 			// check auth
-			// todo handle from is contract
 			ok, cost0 = h.RequireAuth(from, "transfer")
 			cost.AddAssign(cost0)
 			if !ok {
@@ -223,7 +223,7 @@ var (
 				return nil, cost, host.ErrInvalidData
 			}
 
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to)
+			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, from)
 			cost.AddAssign(cost0)
 
 			fbalance, cost0, err := getToken721Balance(h, tokenName, from)
@@ -240,16 +240,16 @@ var (
 			fbalance--
 			tbalance++
 
-			cost0 = setToken721Balance(h, tokenName, from, fbalance)
+			cost0 = setToken721Balance(h, tokenName, from, fbalance, from)
 			cost.AddAssign(cost0)
-			cost0 = setToken721Balance(h, tokenName, to, tbalance)
+			cost0 = setToken721Balance(h, tokenName, to, tbalance, from)
 			cost.AddAssign(cost0)
 
-			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName, tokenID, from)
+			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
-			cost0 = h.MapDel(Token721MetadataMapPrefix+tokenName, tokenID, from)
+			cost0 = h.MapDel(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName, tokenID, metaDateJSON, to)
+			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, from)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -305,9 +305,9 @@ var (
 			}
 			tmp, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, tokenID)
 			cost.AddAssign(cost0)
-			onwer := tmp.(string)
+			owner := tmp.(string)
 
-			return []interface{}{onwer}, cost, nil
+			return []interface{}{owner}, cost, nil
 		},
 	}
 
@@ -325,7 +325,7 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-			tokens, cost0 := h.MapKeys(Token721MetadataMapPrefix+tokenName, owner)
+			tokens, cost0 := h.MapKeys(Token721MetadataMapPrefix + tokenName + Token721MetadataKeySeparator + owner)
 			cost.AddAssign(cost0)
 			if int(index) >= len(tokens) {
 				return nil, cost, errors.New("out of range")
@@ -355,15 +355,15 @@ var (
 			}
 			tmp, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, tokenID)
 			cost.AddAssign(cost0)
-			onwer := tmp.(string)
+			owner := tmp.(string)
 
-			ok, cost0 = h.MapHas(Token721MetadataMapPrefix+tokenName, tokenID, onwer)
+			ok, cost0 = h.MapHas(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+owner, tokenID)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrTokenExists
 			}
 
-			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName, tokenID, onwer)
+			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+owner, tokenID)
 			cost.AddAssign(cost0)
 			return []interface{}{metaDateJSON.(string)}, cost, nil
 		},

@@ -2,11 +2,10 @@ package iwallet
 
 import (
 	"fmt"
-	"os"
-
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
 )
 
 var cfgFile string
@@ -24,6 +23,7 @@ var rootCmd = &cobra.Command{
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
+
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
@@ -44,7 +44,7 @@ func init() {
 	rootCmd.PersistentFlags().Float32VarP(&sdk.checkResultDelay, "checkResultDelay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
 	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "checkResultMaxRetry", "", 10, "Max times to call grpc to check tx status")
 	rootCmd.PersistentFlags().StringVarP(&sdk.signAlgo, "signAlgo", "", "ed25519", "Sign algorithm")
-	rootCmd.PersistentFlags().Int64VarP(&sdk.gasLimit, "gaslimit", "l", 10000, "gasLimit for a transaction")
+	rootCmd.PersistentFlags().Int64VarP(&sdk.gasLimit, "gaslimit", "l", 50000, "gasLimit for a transaction")
 	rootCmd.PersistentFlags().Int64VarP(&sdk.gasPrice, "gasprice", "p", 100, "gasPrice for a transaction")
 	rootCmd.PersistentFlags().StringVarP(&sdk.amountLimit, "amountLimit", "", "", "amount limit for one transaction, eg iost:300.00|ram:2000")
 	rootCmd.PersistentFlags().Int64VarP(&sdk.expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")

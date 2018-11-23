@@ -129,7 +129,7 @@ class RAMContract {
     // initialTotal: 128 * 1024 * 1024 * 1024
     // increaseInterval: 24 * 3600 / 3
     // increaseAmount: 188272539 = Math.round(64 * 1024 * 1024 * 1024 / 365)
-    issue(initialTotal, increaseInterval, increaseAmount) {
+    issue(initialTotal, increaseInterval, increaseAmount, reserve) {
         const bn = this._getBlockNumber();
         if(bn !== 0) {
             throw new Error("init out of genesis block");
@@ -142,9 +142,9 @@ class RAMContract {
         this._put("lastUpdateBlockTime", this._getBlockTime());
         this._put("increaseInterval", increaseInterval);
         this._put("increaseAmount", increaseAmount);
-        this._put("leftSpace", initialTotal);
+        this._put("leftSpace", initialTotal - reserve);
         this._put("balance", 0);
-        this._put("usedSpace", 0);
+        this._put("usedSpace", reserve);
     }
 
     _price(action, amount) {

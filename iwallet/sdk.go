@@ -134,6 +134,20 @@ func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 	return value, nil
 }
 
+func (s *SDK) getChainInfo() (*rpcpb.ChainInfoResponse, error) {
+	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpcpb.NewApiServiceClient(conn)
+	value, err := client.GetChainInfo(context.Background(), &rpcpb.EmptyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 // getAccountInfo return account info
 func (s *SDK) getAccountInfo(id string) (*rpcpb.Account, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
@@ -218,9 +232,9 @@ func (s *SDK) checkTransaction(txHash string) bool {
 		}
 		if tx.StatusCode(txReceipt.StatusCode) != tx.Success {
 			fmt.Println("exec tx failed: ", txReceipt.Message)
-			fmt.Println("full error information: ", txReceipt)
+			fmt.Println("full error information: ", marshalTextString(txReceipt))
 		} else {
-			fmt.Println("exec tx done. ", txReceipt.String())
+			fmt.Println("exec tx done. ", marshalTextString(txReceipt))
 			return true
 		}
 		break
@@ -350,7 +364,7 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 	if err != nil {
 		return err
 	}
-	fmt.Println(info)
+	fmt.Println(marshalTextString(info))
 	return nil
 }
 
@@ -411,7 +425,7 @@ func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasPrice:   float64(t.GasPrice) / 100,
-		GasLimit:   float64(t.GasLimit) / 100,
+		GasLimit:   float64(t.GasLimit),
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,

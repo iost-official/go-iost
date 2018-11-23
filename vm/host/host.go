@@ -150,10 +150,12 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	c.Info.Abi = append(c.Info.Abi, &initABI)
 
 	l := len(c.Encode()) // todo multi Encode call
-	h.PayCost(contract.NewCost(int64(l), 0, 0), owner)
+	//fmt.Println("host setcode, paycost, ", owner)
+	cost.AddAssign(contract.Cost{Data: int64(l), DataList: []contract.DataItem{
+		{Payer: owner, Val: int64(l)},
+	}})
 
 	h.db.SetContract(c)
-
 	_, cost0, err := h.Call(c.ID, "init", "[]")
 	cost.AddAssign(cost0)
 
@@ -196,7 +198,9 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
 	cost.AddAssign(co)
 	l := len(c.Encode()) // todo multi Encode call
-	h.PayCost(contract.NewCost(int64(l-oldL), 0, 0), owner.(string))
+	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
+		{Payer: owner.(string), Val: int64(l - oldL)},
+	}})
 
 	return cost, nil
 }
@@ -228,7 +232,9 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 
 	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
 	cost.AddAssign(co)
-	h.PayCost(contract.NewCost(int64(-oldL), 0, 0), owner.(string))
+	cost.AddAssign(contract.Cost{Data: int64(-oldL), DataList: []contract.DataItem{
+		{Payer: owner.(string), Val: int64(-oldL)},
+	}})
 
 	h.db.MDel("system.iost-contract_owner", oc.ID)
 
@@ -284,7 +290,7 @@ func (h *Host) IsValidAccount(name string) bool {
 	if h.Context().Value("number") == int64(0) {
 		return true
 	}
-	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().Get("auth.iost@"+name+"-auth")) != nil
+	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().MGet("auth.iost"+"-auth", name)) != nil
 }
 
 // ReadSettings read settings from db

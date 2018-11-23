@@ -1,6 +1,8 @@
 package iwallet
 
 import (
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"io/ioutil"
 	"os"
@@ -47,4 +49,15 @@ func readFile(src string) ([]byte, error) {
 		return nil, err
 	}
 	return fd, nil
+}
+
+func marshalTextString(pb proto.Message) string {
+	m := jsonpb.Marshaler{}
+	m.EmitDefaults = true
+	m.Indent = "    "
+	r, err := m.MarshalToString(pb)
+	if err != nil {
+		return err.Error()
+	}
+	return r
 }

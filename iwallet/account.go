@@ -48,7 +48,7 @@ var accountCmd = &cobra.Command{
 			fmt.Printf("load account failed. Is ~/.iwallet/<accountName>_ed25519 exists?\n")
 			return
 		}
-		err = sdk.CreateNewAccount(newName, newKp, 10, 300, 0)
+		err = sdk.CreateNewAccount(newName, newKp, 10, 600, 0)
 		if err != nil {
 			fmt.Printf("create new account error %v\n", err)
 			return

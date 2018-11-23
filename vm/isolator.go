@@ -226,11 +226,16 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			return nil, err
 		}
 
-		gasLimit := i.h.Context().GValue("gas_limit").(int64)
-
 		i.tr.Status = status
+		gasLimit := i.h.Context().GValue("gas_limit").(int64)
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
-			cost = contract.NewCost(0, 0, gasLimit)
+			cost.CPU = gasLimit
+			cost.Net = 0
+		}
+		if cost.ToGas() > gasLimit {
+			i.tr.Status = &tx.Status{Code: tx.ErrorRuntime, Message: host.ErrGasLimitExceeded.Error()}
+			cost.CPU = gasLimit
+			cost.Net = 0
 		}
 
 		i.tr.GasUsage += cost.ToGas()
@@ -248,6 +253,8 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			ilog.Errorf("isolator run action %v failed, status %v, will rollback", action, status)
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
+			i.h.ClearRAMCosts()
+			i.tr.RAMUsage = make(map[string]int64)
 			break
 		} else {
 			i.tr.Receipts = append(i.tr.Receipts, receipts...)
@@ -260,16 +267,18 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 
 // PayCost as name
 func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
-	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice, true)
+	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice)
 	if err != nil {
+		ilog.Errorf("DoPay failed, rollback %v", err)
 		i.h.DB().Rollback()
+		i.h.ClearRAMCosts()
 		i.tr.RAMUsage = make(map[string]int64)
 		i.tr.Status.Code = tx.ErrorBalanceNotEnough
 		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
 
-		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice, false)
+		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasPrice)
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 	}
 	return i.tr, nil

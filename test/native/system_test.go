@@ -51,6 +51,7 @@ func TestEngine_SetCode(t *testing.T) {
 	e, host, code := InitVMWithMonitor(t, "setcode")
 	host.Context().Set("tx_hash", "iamhash")
 	host.Context().Set("contract_name", "system.iost")
+	host.Context().Set("auth_contract_list", make(map[string]int))
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"
 

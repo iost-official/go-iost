@@ -143,13 +143,14 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("ram.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 	acts = append(acts, tx.NewAction("ram.iost", "initContractName", fmt.Sprintf(`["%v"]`, "ram.iost")))
 	var initialTotal int64 = 128 * 1024 * 1024 * 1024        // 128GB at first
-	var increaseInterval int64 = 24 * 3600 / 3               // increase every day
+	var increaseInterval int64 = 24 * 3600                   // increase every day
 	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365 // 64GB per year
-	acts = append(acts, tx.NewAction("ram.iost", "issue", fmt.Sprintf(`[%v, %v, %v]`, initialTotal, increaseInterval, increaseAmount)))
+	var reserveRAM = initialTotal * 3 / 10                   // reserve for foundation
+	acts = append(acts, tx.NewAction("ram.iost", "issue", fmt.Sprintf(`[%v, %v, %v, %v]`, initialTotal, increaseInterval, increaseAmount, reserveRAM)))
 
 	adminInitialRAM := 1024
 	acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, adminInfo.ID, adminInfo.ID, adminInitialRAM)))
-	acts = append(acts, tx.NewAction("token.iost", "transfer", fmt.Sprintf(`["ram","ram.iost", "%v", "%v", ""]`, foundationInfo.ID, initialTotal*3/10)))
+	acts = append(acts, tx.NewAction("token.iost", "transfer", fmt.Sprintf(`["ram","ram.iost", "%v", "%v", ""]`, foundationInfo.ID, reserveRAM)))
 
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, adminInfo.ID, v.ID, adminInitialRAM)))
