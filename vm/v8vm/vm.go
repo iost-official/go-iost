@@ -51,6 +51,9 @@ func NewVM(vmType vmPoolType, jsPath string) *VM {
 		jsPath:  jsPath,
 	}
 	e.sandbox = NewSandbox(e)
+
+	go e.memoryNotification()
+
 	return e
 }
 
@@ -137,7 +140,9 @@ func (e *VM) release() {
 func (e *VM) memoryNotification() {
 	ticker := time.NewTicker(time.Minute)
 	for _ = range ticker.C {
-		e.refCount = 0
-		C.lowMemoryNotification(e.isolate)
+		if e.refCount > 0 {
+			e.refCount = 0
+			C.lowMemoryNotification(e.isolate)
+		}
 	}
 }
