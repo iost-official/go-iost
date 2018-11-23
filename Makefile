@@ -53,13 +53,15 @@ e2e_test: image
 	docker rm -f iserver || true
 	docker run -d --name iserver $(DOCKER_IMAGE)
 	sleep 20
+	docker exec -it iserver ./itest run a_case
 	docker exec -it iserver ./itest run t_case
+	docker exec -it iserver ./itest run c_case
 
 k8s_test: image push
 	./build/delete_cluster.sh
 	./build/create_cluster.sh
 	sleep 90
-	./build/run_k8s_test.sh
+	kubectl exec -it itest -n devnet -- ./itest -l debug run -c /etc/itest/itest.json a_case
 
 image:
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)

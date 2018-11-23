@@ -45,7 +45,6 @@ func Load(keysfile, configfile string) (*ITest, error) {
 
 	it := New(itc, keys)
 
-	ilog.Infof("Load itest from file successful!")
 	return it, nil
 }
 
@@ -263,6 +262,7 @@ func (t *ITest) Transfer(sender, recipient *Account, token, amount string) error
 
 // SetContract will set the contract on blockchain
 func (t *ITest) SetContract(contract *Contract) (string, error) {
+	ilog.Infof("Set transfer contract...")
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
@@ -270,6 +270,7 @@ func (t *ITest) SetContract(contract *Contract) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	ilog.Infof("Set transfer contract successful!")
 
 	return hash, nil
 }
