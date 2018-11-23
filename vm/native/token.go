@@ -553,8 +553,6 @@ var (
 			if !ok {
 				return nil, cost, host.ErrTokenNotExists
 			}
-			issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, IssuerMapField)
-			cost.AddAssign(cost0)
 
 			// check auth
 			ok, cost0 = h.RequireAuth(from, "transfer")

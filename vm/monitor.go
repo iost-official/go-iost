@@ -70,6 +70,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 
 	h.PushCtx()
+	defer func() {
+		h.PopCtx()
+	}()
 
 	h.Context().Set("contract_name", c.ID)
 	h.Context().Set("abi_name", api)
@@ -126,10 +129,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 
+	oldCacheCost := h.CacheCost()
+	h.ClearCacheCost()
+
 	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
 	cost.AddAssign(cost0)
 	if err != nil {
-		h.PopCtx()
 		return
 	}
 
@@ -147,7 +152,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 						limit.Token,
 						fixedAmountLimit[i].Val.ToString(),
 						delta.ToString()))
-					h.PopCtx()
 					return nil, cost, err
 				}
 			}
@@ -169,12 +173,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 		ok, _ := h.RequireAuth(p, "active")
 		if !ok {
-			h.PopCtx()
 			return nil, cost, errors.New("pay ram failed. no permission. need " + p + "@active")
 		}
 	}
-
-	h.PopCtx()
+	h.AddCacheCost(oldCacheCost)
 	return
 }
 

@@ -55,6 +55,11 @@ func (h *Teller) FlushCacheCost() {
 	h.cacheCost = contract.Cost0()
 }
 
+// ClearCacheCost ...
+func (h *Teller) ClearCacheCost() {
+	h.cacheCost = contract.Cost0()
+}
+
 // PayCost ...
 func (h *Teller) PayCost(c contract.Cost, who string) {
 	costMap := make(map[string]contract.Cost)
