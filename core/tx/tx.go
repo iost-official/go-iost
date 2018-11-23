@@ -17,7 +17,7 @@ import (
 const (
 	minGasRatio = 100
 	maxGasRatio = 10000
-	minGasLimit = 500
+	minGasLimit = 50000
 )
 
 // values

@@ -306,7 +306,7 @@ func checkTxParams(t *tx.Tx) error {
 	if t.GasRatio < 100 || t.GasRatio > 10000 {
 		return errGasRatioIllegal
 	}
-	if t.GasLimit < 500 {
+	if t.GasLimit < 50000 {
 		return errGasLimitIllegal
 	}
 	return nil
