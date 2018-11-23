@@ -87,7 +87,10 @@ func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, co
 
 	key := "stack" + strconv.Itoa(height)
 
-	h.ctx = NewContext(h.ctx)
+	h.PushCtx()
+	defer func() {
+		h.PopCtx()
+	}()
 
 	// handle withAuth
 	if len(withAuth) > 0 && withAuth[0] {
@@ -100,8 +103,6 @@ func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, co
 	h.ctx.Set(key, record)
 	rtn, cost, err := h.monitor.Call(h, cont, api, jarg)
 	cost.AddAssign(CommonOpCost(height))
-
-	h.ctx = h.ctx.Base()
 
 	return rtn, cost, err
 }
