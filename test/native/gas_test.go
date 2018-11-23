@@ -336,6 +336,8 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 		otherAcc := "user2"
 		pledgeAmount := toIOSTFixed(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, otherAcc, pledgeAmount.ToString())
+		h.FlushCacheCost()
+		h.ClearCosts()
 		so(err, shouldBeNil)
 		so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Value-pledgeAmount.Value)
 		so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Value)
