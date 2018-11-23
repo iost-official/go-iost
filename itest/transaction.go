@@ -13,7 +13,7 @@ import (
 
 // Constant of Transaction
 var (
-	GasLimit   = int64(10000)           // about 2000~10000 gas per tx
+	GasLimit   = int64(50000)           // about 2000~10000 gas per tx
 	GasPrice   = int64(100)             // 1 mutiple gas
 	Expiration = int64(math.MaxInt64)   // Max expired time is 90 seconds
 	Delay      = int64(0 * time.Second) // No delay
@@ -45,7 +45,7 @@ func NewTransactionFromPb(t *rpcpb.Transaction) *Transaction {
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasPrice:   int64(t.GasPrice * 100),
-		GasLimit:   int64(t.GasLimit * 100),
+		GasLimit:   int64(t.GasLimit),
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
@@ -72,7 +72,7 @@ func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasPrice:   float64(t.GasPrice) / 100,
-		GasLimit:   float64(t.GasLimit) / 100,
+		GasLimit:   float64(t.GasLimit),
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,

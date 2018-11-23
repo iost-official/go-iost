@@ -7,7 +7,7 @@ branches:
 matrix:
   fast_finish: true
   allow_failures:
-  - env: JOB=e2e_test
+  - env: JOB=k8s_test
   include:
   - os: osx
     osx_image: xcode10
@@ -22,7 +22,6 @@ matrix:
     before_script:
     - git lfs pull
     script:
-    - make vmlib
     - make build
     - make lint
     - make test
@@ -40,7 +39,6 @@ matrix:
     before_script:
     - git lfs pull
     script:
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make vmlib
     - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make build
     - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make lint
     - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.0.0 make test
@@ -49,8 +47,21 @@ matrix:
   - os: linux
     dist: trusty
     go: "1.11"
-    if: type = cron
     env: JOB=e2e_test
+    services:
+    - docker
+    before_install:
+    - docker pull iostio/iost-dev:1.0.0
+    - git lfs install
+    before_script:
+    - git lfs pull
+    script:
+    - make e2e_test
+  - os: linux
+    dist: trusty
+    go: "1.11"
+    if: type = cron
+    env: JOB=k8s_test
     services:
     - docker
     before_install:

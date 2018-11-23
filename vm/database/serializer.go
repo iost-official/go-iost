@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/binary"
 	"errors"
+	"github.com/iost-official/go-iost/common"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ const (
 	BoolPrefix      = "b"
 	JSONPrefix      = "j"
 	MapHolderPrefix = "@"
+	FixPointPrefix  = "f"
 )
 
 var (
@@ -25,33 +27,39 @@ var (
 type SerializedJSON []byte
 
 // Marshal marshal go types to value string
-func Marshal(in interface{}) (string, error) {
+func Marshal(in interface{}, extras ...string) (string, error) {
+	extra := ""
+	if len(extras) > 0 {
+		extra = extras[0]
+	}
 	switch in.(type) {
 	case int64:
-		return IntPrefix + int64ToRaw(in.(int64)), nil
+		return IntPrefix + int64ToRaw(in.(int64)) + ApplicationSeparator + extra, nil
 	case string:
-		return StringPrefix + in.(string), nil
+		return StringPrefix + in.(string) + ApplicationSeparator + extra, nil
 	case nil:
 		return NilPrefix, nil
 	case bool:
-		return BoolPrefix + boolToString(in.(bool)), nil
+		return BoolPrefix + boolToString(in.(bool)) + ApplicationSeparator + extra, nil
 	case SerializedJSON:
-		return JSONPrefix + string(in.(SerializedJSON)), nil
+		return JSONPrefix + string(in.(SerializedJSON)) + ApplicationSeparator + extra, nil
+	case common.Fixed:
+		return FixPointPrefix + in.(*common.Fixed).Marshal(), nil
 	}
 	return "", errTypeNotSupport
 }
 
 // MustMarshal marshal go types to value string, panic on error
-func MustMarshal(in interface{}) string {
-	s, err := Marshal(in)
+func MustMarshal(in interface{}, extra ...string) string {
+	s, err := Marshal(in, extra...)
 	if err != nil {
 		panic(err)
 	}
 	return s
 }
 
-// Unmarshal unmarshal value string to go types
-func Unmarshal(o string) interface{} {
+// unmarshalInner unmarshal value string to go types
+func unmarshalInner(o string) interface{} {
 	if len(o) < 1 {
 		return errInvalidData
 	}
@@ -68,9 +76,32 @@ func Unmarshal(o string) interface{} {
 		return SerializedJSON(o[1:])
 	case MapHolderPrefix:
 		return strings.Split(o, "@")[1:]
+	case FixPointPrefix:
+		ret, err := common.UnmarshalFixed(o[1:])
+		if err != nil {
+			return err
+		}
+		return ret
 	}
 	return errInvalidData
+}
 
+// Unmarshal unmarshal value string to go types
+func Unmarshal(o string) interface{} {
+	idx := strings.LastIndex(o, ApplicationSeparator)
+	if idx == -1 {
+		return unmarshalInner(o)
+	}
+	return unmarshalInner(o[0:idx])
+}
+
+// UnmarshalWithExtra unmarshal value string to go types
+func UnmarshalWithExtra(o string) (interface{}, string) {
+	idx := strings.LastIndex(o, ApplicationSeparator)
+	if idx == -1 {
+		return unmarshalInner(o), ""
+	}
+	return unmarshalInner(o[0:idx]), o[idx+1:]
 }
 
 // MustUnmarshal  unmarshal value string to go types, panic on error
@@ -80,6 +111,15 @@ func MustUnmarshal(o string) interface{} {
 		panic(err.Error() + ":" + o)
 	}
 	return rtn
+}
+
+// MustUnmarshalWithExtra  unmarshal value string to go types, panic on error
+func MustUnmarshalWithExtra(o string) (interface{}, string) {
+	rtn, extra := UnmarshalWithExtra(o)
+	if err, ok := rtn.(error); ok {
+		panic(err.Error() + ":" + o)
+	}
+	return rtn, extra
 }
 
 func int64ToRaw(i int64) string {

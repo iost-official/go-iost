@@ -34,16 +34,18 @@ func Test_callWithAuth(t *testing.T) {
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		s.SetContract(ca)
+		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		Convey("test of callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", "Contracttransfer", "1000")
-			r, err := s.Call("Contracttransfer", "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
+			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
+			r, err := s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", "Contracttransfer"), Decimal: s.Visitor.Decimal("iost")}
+			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", cname), Decimal: s.Visitor.Decimal("iost")}
 			So(balance.ToString(), ShouldEqual, "990")
 		})
 	})
@@ -122,6 +124,136 @@ func Test_VMMethod(t *testing.T) {
 			e = <- sub2.ReadChan()
 			So(e.Data, ShouldEqual, "receipteventdata")
 			So(e.Topic, ShouldEqual, event.Event_ContractReceipt)
+		})
+	})
+}
+
+func Test_RamPayer(t *testing.T) {
+	ilog.Stop()
+	Convey("test of ram payer", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		prepareContract(s)
+		createToken(t, s, kp)
+
+		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+
+		Convey("test of put and get", func() {
+			ram := s.GetRAM(testID[0])
+			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, testID[0]), testID[0], kp)
+			s.Visitor.Commit()
+			So(s.GetRAM(testID[0]), ShouldEqual, ram - 111)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			r, err = s.Call(cname, "get", fmt.Sprintf(`["k"]`), testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(len(r.Returns), ShouldEqual, 1)
+			So(r.Returns[0], ShouldEqual, "[\"v\"]")
+		})
+
+		Convey("test of map put and get", func() {
+			ram := s.GetRAM(testID[0])
+			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, testID[0]), testID[0], kp)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram - 113)
+
+			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(len(r.Returns), ShouldEqual, 1)
+			So(r.Returns[0], ShouldEqual, "[\"v\"]")
+		})
+
+		Convey("test of map put and get change payer", func() {
+			kp2, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			ram := s.GetRAM(testID[0])
+			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vv", "%v"]`, testID[0]), testID[0], kp)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram - 114)
+
+			ram = s.GetRAM(testID[0])
+			ram1 := s.GetRAM(testID[2])
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvv", "%v"]`, testID[2]), testID[2], kp2)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram + 114)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1 - 115)
+
+			ram1 = s.GetRAM(testID[2])
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, testID[2]), testID[2], kp2)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1 + 2)
+
+			ram1 = s.GetRAM(testID[2])
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvvvv", "%v"]`, testID[2]), testID[2], kp2)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1 - 4)
+		})
+
+		Convey("test nested call check payer", func() {
+			ram0 := s.GetRAM(testID[0])
+			kp4, err := account.NewKeyPair(common.Base58Decode(testID[5]), crypto.Secp256k1)
+			if err != nil {
+				t.Fatal(err)
+			}
+			ca, err := s.Compile("", "./test_data/nest0", "./test_data/nest0")
+			if err != nil || ca == nil {
+				t.Fatal(err)
+			}
+			cname0, r, err := s.DeployContract(ca, testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			ca, err = s.Compile("", "./test_data/nest1", "./test_data/nest1")
+			if err != nil || ca == nil {
+				t.Fatal(err)
+			}
+			cname1, r, err := s.DeployContract(ca, testID[0], kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 1185)
+
+			ram0 = s.GetRAM(testID[0])
+			ram4 := s.GetRAM(testID[4])
+			ram6 := s.GetRAM(testID[6])
+			s.Visitor.SetTokenBalanceFixed("iost", testID[4], "100")
+			r, err = s.Call(cname0, "call", fmt.Sprintf(`["%v", "test", "%v"]`, cname1,
+				fmt.Sprintf(`[\"%v\", \"%v\"]`, testID[4], testID[6])), testID[4], kp4)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			So(s.GetRAM(testID[6]), ShouldEqual, ram6)
+			So(s.GetRAM(testID[4]), ShouldEqual, ram4 - 139)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 6)
 		})
 	})
 }

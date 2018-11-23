@@ -15,8 +15,12 @@ const MapPrefix = "m-"
 // Separator separator of map key
 const Separator = "-"
 
+// ApplicationSeparator separator of value
+const ApplicationSeparator = "@"
+
 // MPut put value in kfv storage o(1)
 func (m *MapHandler) MPut(key, field, value string) {
+	//fmt.Println("map put,", key, field, value)
 	m.addField(key, field)
 	m.db.Put(MapPrefix+key+Separator+field, value)
 }
@@ -27,16 +31,16 @@ func (m *MapHandler) addField(key, field string) {
 	}
 	s := m.db.Get(MapPrefix + key)
 	if s == "n" {
-		m.db.Put(MapPrefix+key, "@"+field)
+		m.db.Put(MapPrefix+key, ApplicationSeparator+field)
 		return
 	}
-	s = s + "@" + field
+	s = s + ApplicationSeparator + field
 	m.db.Put(MapPrefix+key, s)
 }
 
 func (m *MapHandler) delField(key, field string) {
 	s := m.db.Get(MapPrefix + key)
-	s2 := strings.Replace(s, "@"+field, "", 1)
+	s2 := strings.Replace(s, ApplicationSeparator+field, "", 1)
 	if s2 == "" {
 		m.db.Del(MapPrefix + key)
 		return
@@ -46,6 +50,7 @@ func (m *MapHandler) delField(key, field string) {
 
 // MGet get value from storage o(1)
 func (m *MapHandler) MGet(key, field string) (value string) {
+	//fmt.Println("map get,", key, field)
 	return m.db.Get(MapPrefix + key + Separator + field)
 }
 
@@ -57,7 +62,7 @@ func (m *MapHandler) MHas(key, field string) bool {
 // MKeys list fields of map o(1)
 func (m *MapHandler) MKeys(key string) (fields []string) {
 	s := m.db.Get(MapPrefix + key)
-	return strings.Split(s, "@")[1:]
+	return strings.Split(s, ApplicationSeparator)[1:]
 }
 
 // MDel delete field of map o(1)

@@ -71,6 +71,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 
 	h.PushCtx()
+	defer func() {
+		h.PopCtx()
+	}()
 
 	h.Context().Set("contract_name", c.ID)
 	h.Context().Set("abi_name", api)
@@ -130,24 +133,15 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	currentDeadline := h.Deadline()
 	h.SetDeadline(currentDeadline.Add(time.Duration(-100*time.Microsecond)))
 
+
+	oldCacheCost := h.CacheCost()
+	h.ClearCacheCost()
+
 	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
 	cost.AddAssign(cost0)
-
-	//payment, ok := h.Context().GValue("abi_payment").(int)
-	//if !ok {
-	//	payment = int(abi.Payment)
-	//}
-	//var gasPrice = h.Context().Value("gas_price").(int64)
-
-	//if payment == 1 &&
-	//	abi.GasPrice > gasPrice &&
-	//	!{
-	//	b := h.DB().TokenBalance("iost",host.ContractGasPrefix + contractName)
-	//	if b > gasPriceCost.ToGas() {
-	//		h.PayCost(cost, host.ContractGasPrefix+contractName)
-	//		cost = contract.Cost0()
-	//	}
-	//}
+	if err != nil {
+		return
+	}
 
 	// check amount limit
 	if h.Context().Value("stack_height") == 1 {
@@ -169,8 +163,25 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 
-	h.PopCtx()
-
+	// check ram auth
+	cacheCost := h.CacheCost()
+	h.FlushCacheCost()
+	payer := make(map[string]bool)
+	for _, c := range cacheCost.DataList {
+		if c.Val > 0 {
+			payer[c.Payer] = true
+		}
+	}
+	for p := range payer {
+		if strings.HasSuffix(p, ".iost") {
+			continue
+		}
+		ok, _ := h.RequireAuth(p, "active")
+		if !ok {
+			return nil, cost, errors.New("pay ram failed. no permission. need " + p + "@active")
+		}
+	}
+	h.AddCacheCost(oldCacheCost)
 	return
 }
 

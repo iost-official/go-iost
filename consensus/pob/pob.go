@@ -292,7 +292,7 @@ func (p *PoB) scheduleLoop() {
 					if num < continuousNum-2 {
 						limitTime = time.Millisecond * 250
 					} else {
-						limitTime = time.Millisecond * 100
+						limitTime = time.Millisecond * 40
 					}
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
 					ilog.Infof("Gen block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%v",
