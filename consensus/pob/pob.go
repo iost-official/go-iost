@@ -42,6 +42,8 @@ var (
 
 type verifyBlockMessage struct {
 	blk     *block.Block
+	gen     bool
+	update  bool
 	p2pType p2p.MessageType
 }
 
@@ -209,6 +211,14 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.blk
+	if vbm.gen {
+		ilog.Debug("block from myself, block number: ", blk.Head.Number)
+		err := p.handleRecvBlock(blk, vbm.update)
+		if err != nil {
+			ilog.Errorf("received block from myself, error, err:%v", err)
+		}
+		return
+	}
 	switch vbm.p2pType {
 	case p2p.NewBlock:
 		t1 := calculateTime(blk)
@@ -267,7 +277,7 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
-			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type()}
+			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, gen: false, p2pType: incomingMessage.Type()}
 		case <-p.exitSignal:
 			return
 		}
@@ -313,11 +323,7 @@ func (p *PoB) scheduleLoop() {
 					if num == continuousNum-1 {
 						update = true
 					}
-					err = p.handleRecvBlock(blk, update)
-					if err != nil {
-						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
-						continue
-					}
+					p.chVerifyBlock <- &verifyBlockMessage{blk: blk, gen: true, update: update}
 					num++
 					if num >= continuousNum {
 						break
