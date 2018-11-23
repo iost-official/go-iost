@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	minGasPrice = 100
-	maxGasPrice = 10000
-	minGasLimit = 500
+	minGasRatio = 100
+	maxGasRatio = 10000
+	minGasLimit = 50000
 )
 
 // values
@@ -42,7 +42,7 @@ type Tx struct {
 	hash         []byte
 	Time         int64               `json:"time"`
 	Expiration   int64               `json:"expiration"`
-	GasPrice     int64               `json:"gas_price"`
+	GasRatio     int64               `json:"gas_ratio"`
 	GasLimit     int64               `json:"gas_limit"`
 	Delay        int64               `json:"delay"`
 	Actions      []*Action           `json:"-"`
@@ -55,13 +55,13 @@ type Tx struct {
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers []string, gasLimit, gasPrice, expiration, delay int64) *Tx {
+func NewTx(actions []*Action, signers []string, gasLimit, gasRatio, expiration, delay int64) *Tx {
 	return &Tx{
 		Time:         time.Now().UnixNano(),
 		Actions:      actions,
 		Signers:      signers,
 		GasLimit:     gasLimit,
-		GasPrice:     gasPrice,
+		GasRatio:     gasRatio,
 		Expiration:   expiration,
 		hash:         nil,
 		PublishSigns: []*crypto.Signature{},
@@ -116,7 +116,7 @@ func (t *Tx) ToPb() *txpb.Tx {
 		Time:        t.Time,
 		Expiration:  t.Expiration,
 		GasLimit:    t.GasLimit,
-		GasPrice:    t.GasPrice,
+		GasRatio:    t.GasRatio,
 		Signers:     t.Signers,
 		Delay:       t.Delay,
 		ReferredTx:  t.ReferredTx,
@@ -151,7 +151,7 @@ func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 	t.Time = tr.Time
 	t.Expiration = tr.Expiration
 	t.GasLimit = tr.GasLimit
-	t.GasPrice = tr.GasPrice
+	t.GasRatio = tr.GasRatio
 	t.Actions = []*Action{}
 	t.Delay = tr.Delay
 	t.ReferredTx = tr.ReferredTx
@@ -301,11 +301,11 @@ func (t *Tx) IsTimeValid(ct int64) bool {
 
 // CheckGas checks whether the transaction's gas is valid.
 func (t *Tx) CheckGas() error {
-	if t.GasPrice < minGasPrice || t.GasPrice > maxGasPrice {
-		return fmt.Errorf("gas price illegal, should in [%d, %d]", minGasLimit, maxGasPrice)
+	if t.GasRatio < minGasRatio || t.GasRatio > maxGasRatio {
+		return fmt.Errorf("gas ratio illegal, should in [%v, %v]", minGasRatio, maxGasRatio)
 	}
 	if t.GasLimit < minGasLimit {
-		return fmt.Errorf("gas limit illegal, should >= %d", minGasLimit)
+		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit)
 	}
 	return nil
 }
@@ -315,16 +315,22 @@ func (t *Tx) ToBytes(l ToBytesLevel) []byte {
 	sn := common.NewSimpleNotation()
 	sn.WriteInt64(t.Time, true)
 	sn.WriteInt64(t.Expiration, true)
-	sn.WriteInt64(t.GasPrice, true)
+	sn.WriteInt64(t.GasRatio, true)
 	sn.WriteInt64(t.GasLimit, true)
 	sn.WriteInt64(t.Delay, true)
-
 	sn.WriteStringSlice(t.Signers, true)
+
 	actionBytes := make([][]byte, 0, len(t.Actions))
 	for _, a := range t.Actions {
 		actionBytes = append(actionBytes, a.ToBytes())
 	}
 	sn.WriteBytesSlice(actionBytes, false)
+
+	amountBytes := make([][]byte, 0, len(t.AmountLimit))
+	for _, a := range t.AmountLimit {
+		amountBytes = append(amountBytes, a.ToBytes())
+	}
+	sn.WriteBytesSlice(amountBytes, false)
 
 	if l > Base {
 		signBytes := make([][]byte, 0, len(t.Signs))

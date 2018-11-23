@@ -196,8 +196,8 @@ message Transaction {
     int64 time = 2;
     // expiration timestamp
     int64 expiration = 3;
-    // gas price
-    double gas_price = 4;
+    // gas gas_ratio
+    double gas_ratio = 4;
     // gas limit
     double gas_limit = 5;
     // delay nanoseconds
@@ -261,7 +261,7 @@ message TransactionRequest {
     // expiration timestamp
     int64 expiration = 2;
     // gas price
-    double gas_price = 3;
+    double gas_ratio = 3;
     // gas limit
     double gas_limit = 4;
     // delay nanoseconds

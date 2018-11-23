@@ -64,6 +64,11 @@ func (sn *SimpleNotation) WriteInt32(i int32, escape bool) {
 	sn.WriteBytes(Int32ToBytes(i), escape)
 }
 
+// WriteFloat64 writes a float64 to buffer.
+func (sn *SimpleNotation) WriteFloat64(f float64, escape bool) {
+	sn.WriteBytes(Float64ToBytes(f), escape)
+}
+
 // WriteBytesSlice writes a bytes slice to buffer.
 func (sn *SimpleNotation) WriteBytesSlice(p [][]byte, escape bool) {
 	var buf bytes.Buffer

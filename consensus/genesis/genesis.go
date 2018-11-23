@@ -17,7 +17,6 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
-	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
 )
 
@@ -161,7 +160,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 		acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, v.ID, gasPledgeAmount)))
 	}
 
-	trx := tx.NewTx(acts, nil, 100000000, 0, 0, 0)
+	trx := tx.NewTx(acts, nil, 100000000, 100, 0, 0)
 	trx.Time = 0
 	trx, err = tx.SignTx(trx, "inituser", []*account.KeyPair{keyPair})
 	if err != nil {
@@ -215,8 +214,6 @@ func FakeBv(bv global.BaseVariable) error {
 	config := common.Config{}
 	config.VM = &common.VMConfig{}
 	config.VM.JsPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/vm/v8vm/v8/libjs/"
-
-	vm.SetUp(config.VM)
 
 	blk, err := GenGenesis(
 		bv.StateDB(),
