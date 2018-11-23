@@ -73,9 +73,8 @@ class VoteContract {
             "netId": "",
             "online": true,
             "registerFee": producerRegisterFee,
-            "score": "0"
-        });
-        this._mapPut("producerKeyToId", proPubkey, proID);
+        }, proID);
+        this._mapPut("producerKeyToId", proPubkey, proID, proID);
     }
 
     InitAdmin(adminID) {
@@ -120,8 +119,8 @@ class VoteContract {
         return JSON.parse(val);
     }
 
-	_put(k, v) {
-        storage.put(k, JSON.stringify(v));
+	_put(k, v, p) {
+        storage.put(k, JSON.stringify(v), p);
     }
 
     _mapGet(k, f) {
@@ -132,8 +131,8 @@ class VoteContract {
         return JSON.parse(val);
     }
 
-    _mapPut(k, f, v) {
-        storage.mapPut(k, f, JSON.stringify(v));
+    _mapPut(k, f, v, p) {
+        storage.mapPut(k, f, JSON.stringify(v), p);
     }
 
     _mapDel(k, f) {
@@ -171,9 +170,8 @@ class VoteContract {
             "netId": netId,
             "online": false,
             "registerFee": producerRegisterFee,
-            "score": "0"
-        });
-        this._mapPut("producerKeyToId", pubkey, account);
+        }, account);
+        this._mapPut("producerKeyToId", pubkey, account, account);
     }
 
     // update the information of a producer
@@ -189,13 +187,13 @@ class VoteContract {
             }
 
             this._mapDel("producerKeyToId", pro.pubkey, account);
-            this._mapPut("producerKeyToId", pubkey, account);
+            this._mapPut("producerKeyToId", pubkey, account, account);
         }
         pro.pubkey = pubkey;
         pro.loc = loc;
         pro.url = url;
         pro.netId = netId;
-        this._mapPut("producerTable", account, pro);
+        this._mapPut("producerTable", account, pro, account);
     }
 
     GetProducer(account) {
@@ -219,7 +217,7 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         pro.online = true;
-        this._mapPut("producerTable", account, pro);
+        this._mapPut("producerTable", account, pro, account);
     }
 
     // producer log out as offline state
@@ -234,7 +232,7 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         pro.online = false;
-        this._mapPut("producerTable", account, pro);
+        this._mapPut("producerTable", account, pro, account);
     }
 
     // remove account from producer list
@@ -300,6 +298,19 @@ class VoteContract {
         ]);
     }
 
+
+    _getScores() {
+        const scores = this._get("producerScores");
+        if (!scores) {
+            return {};
+        }
+        return scores;
+    }
+
+    _putScores(scores) {
+        this._put("producerScores", scores);
+    }
+
     // calculate the vote result, modify pendingProducerList
     Stat() {
         // controll auth
@@ -312,6 +323,7 @@ class VoteContract {
         const voteId = this._getVoteId();
         const voteRes = this._call("vote.iost", "GetResult", [voteId]);
         const preList = [];    // list of producers whose vote > threshold
+        let scores = this._getScores();
 
         const pendingProducerList = this._get("pendingProducerList");
 
@@ -329,18 +341,16 @@ class VoteContract {
                     "key": pro.pubkey,
                     "prior": 0,
                     "votes": votes,
-                    "score": pro.score
+                    "score": scores[id] ? scores[id] : "0",
                 });
             }
         }
         for (let i = 0; i < preList.length; i++) {
             const id = preList[i].id;
             const delta = preList[i].votes.minus(ppThreshold);
-            const proRes = this._mapGet("producerTable", id);
-            preList[i].score = delta.plus(new Float64(proRes.score));
-
-            proRes.score = preList[i].score.toFixed();
-            this._mapPut("producerTable", id, proRes);
+            const origScore = scores[id] ? scores[id] : "0";
+            preList[i].score = delta.plus(origScore);
+            scores[id] = preList[i].score.toFixed();
         }
 
         // sort according to score in reversed order
@@ -363,7 +373,7 @@ class VoteContract {
         let minScore = new Float64(MaxFloat64);
         for (const key of pendingProducerList) {
             const account = this._mapGet("producerKeyToId", key);
-            const score = new Float64(this._mapGet("producerTable", account).score);
+            const score = new Float64(scores[account] ? scores[account] : "0");
             oldPreList.push({
                 "key": key,
                 "prior": 1,
@@ -401,18 +411,16 @@ class VoteContract {
         for (const key of currentList) {
             if (!pendingList.includes(key)) {
                 const account = this._mapGet("producerKeyToId", key);
-                const proRes = this._mapGet("producerTable", account);
-                proRes.score = "0";
-                this._mapPut("producerTable", account, proRes);
+                scores[account] = "0";
             }
         }
 
         for (const key of pendingList) {
             const account = this._mapGet("producerKeyToId", key);
-            const proRes = this._mapGet("producerTable", account);
-            proRes.score = new Float64(proRes.score).multi(scoreDecreaseRate).toFixed(iostDecimal);
-            this._mapPut("producerTable", account, proRes);
+            const origScore = scores[account] ? scores[account] : "0";
+            scores[account] = new Float64(origScore).multi(scoreDecreaseRate).toFixed(iostDecimal);
         }
+        this._putScores(scores);
     }
 }
 
