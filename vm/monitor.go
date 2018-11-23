@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/iost-official/go-iost/vm/v8vm"
+	"time"
 )
 
 var (
@@ -125,6 +126,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			}
 		}
 	}
+
+	currentDeadline := h.Deadline()
+	h.SetDeadline(currentDeadline.Add(time.Duration(-100*time.Microsecond)))
 
 	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
 	cost.AddAssign(cost0)
