@@ -32,7 +32,6 @@ func initConn(num int) {
 		}
 		conns[i] = conn
 	}
-
 }
 
 func transParallel(num int) {
@@ -52,7 +51,7 @@ func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 		Time:       t.Time,
 		Expiration: t.Expiration,
 		GasPrice:   float64(t.GasPrice) / 100,
-		GasLimit:   float64(t.GasLimit) / 100,
+		GasLimit:   float64(t.GasLimit),
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
@@ -132,7 +131,7 @@ func publish() string {
 	abiPath := codePath + ".abi"
 	sdk.SetAccount("admin", acc)
 	sdk.SetServer("54.95.152.91:30002")
-	sdk.SetTxInfo(10000, 100, 90, 0)
+	sdk.SetTxInfo(50000, 100, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
 	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
