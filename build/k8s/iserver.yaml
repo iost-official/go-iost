@@ -51,11 +51,11 @@ spec:
               subPath: ""
           resources:
             limits:
-              cpu: 500m
+              cpu: 1000m
               memory: 2000Mi
             requests:
               cpu: 100m
-              memory: 500Mi
+              memory: 200Mi
       volumes:
         - name: config-volume
           configMap:
