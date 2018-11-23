@@ -52,6 +52,7 @@ endif
 e2e_test: image
 	docker rm -f iserver
 	docker run -d --name iserver $(DOCKER_IMAGE)
+	sleep 20
 	docker exec -it iserver ./itest run a_case
 
 k8s_test: image push
