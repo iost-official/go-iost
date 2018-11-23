@@ -123,7 +123,7 @@ func (t *ITest) TransferN(num int, accounts []*Account) error {
 		go func(res chan interface{}) {
 			A := accounts[rand.Intn(len(accounts))]
 			B := accounts[rand.Intn(len(accounts))]
-			amount := float64(rand.Int63n(10000)) / 100
+			amount := float64(rand.Int63n(10000)+1) / 100
 
 			A.AddBalance(-amount)
 			B.AddBalance(amount)
