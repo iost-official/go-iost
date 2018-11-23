@@ -24,7 +24,7 @@ var AccountCaseFlags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "output, o",
 		Value: "accounts.json",
-		Usage: "number of account",
+		Usage: "output of account information",
 	},
 }
 

@@ -26,11 +26,17 @@ var ContractCaseFlags = []cli.Flag{
 		Value: "accounts.json",
 		Usage: "load accounts from `FILE`",
 	},
+	cli.StringFlag{
+		Name:  "output, o",
+		Value: "accounts.json",
+		Usage: "output of account information",
+	},
 }
 
 // ContractCaseAction is the action of contract test case
 var ContractCaseAction = func(c *cli.Context) error {
 	afile := c.String("account")
+	output := c.String("output")
 	tnum := c.Int("number")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
@@ -62,6 +68,10 @@ var ContractCaseAction = func(c *cli.Context) error {
 	}
 
 	if err := it.CheckAccounts(accounts); err != nil {
+		return err
+	}
+
+	if err := itest.DumpAccounts(accounts, output); err != nil {
 		return err
 	}
 
