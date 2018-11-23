@@ -17,21 +17,27 @@ var ContractCaseCommand = cli.Command{
 // ContractCaseFlags ...
 var ContractCaseFlags = []cli.Flag{
 	cli.IntFlag{
-		Name:  "account, a",
-		Value: 10,
-		Usage: "number of account",
-	},
-	cli.IntFlag{
-		Name:  "transaction, t",
+		Name:  "number, n",
 		Value: 1000,
 		Usage: "number of transaction",
+	},
+	cli.StringFlag{
+		Name:  "account, a",
+		Value: "accounts.json",
+		Usage: "load accounts from `FILE`",
+	},
+	cli.StringFlag{
+		Name:  "output, o",
+		Value: "accounts.json",
+		Usage: "output of account information",
 	},
 }
 
 // ContractCaseAction is the action of contract test case
 var ContractCaseAction = func(c *cli.Context) error {
-	anum := c.Int("account")
-	tnum := c.Int("transaction")
+	afile := c.String("account")
+	output := c.String("output")
+	tnum := c.Int("number")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
 	codefile := c.GlobalString("code")
@@ -47,7 +53,7 @@ var ContractCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	accounts, err := it.CreateAccountN(anum)
+	accounts, err := itest.LoadAccounts(afile)
 	if err != nil {
 		return err
 	}
@@ -62,6 +68,10 @@ var ContractCaseAction = func(c *cli.Context) error {
 	}
 
 	if err := it.CheckAccounts(accounts); err != nil {
+		return err
+	}
+
+	if err := itest.DumpAccounts(accounts, output); err != nil {
 		return err
 	}
 
