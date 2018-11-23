@@ -3,6 +3,7 @@ package common
 import (
 	"encoding/binary"
 	"encoding/hex"
+	"math"
 )
 
 // FromHex string to bytes
@@ -57,4 +58,18 @@ func Int32ToBytes(n int32) []byte {
 // BytesToInt32 converts byte slice to int32.
 func BytesToInt32(b []byte) int32 {
 	return int32(binary.BigEndian.Uint32(b))
+}
+
+// Float64ToBytes converts float64 to byte slice.
+func Float64ToBytes(f float64) []byte {
+	bits := math.Float64bits(f)
+	b := make([]byte, 8)
+	binary.BigEndian.PutUint64(b, bits)
+	return b
+}
+
+// BytesToFloat64 converts byte slice to float64.
+func BytesToFloat64(b []byte) float64 {
+	bits := binary.BigEndian.Uint64(b)
+	return math.Float64frombits(bits)
 }

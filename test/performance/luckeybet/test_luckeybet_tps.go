@@ -54,7 +54,7 @@ func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 	ret := &rpcpb.TransactionRequest{
 		Time:       t.Time,
 		Expiration: t.Expiration,
-		GasPrice:   float64(t.GasPrice) / 100,
+		GasRatio:   float64(t.GasRatio) / 100,
 		GasLimit:   float64(t.GasLimit) / 100,
 		Delay:      t.Delay,
 		Signers:    t.Signers,

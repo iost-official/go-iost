@@ -14,7 +14,7 @@ message Tx {
     int64 time = 1;
     int64 expiration = 2;
     int64 gasLimit = 3;
-    int64 gasPrice = 4;
+    int64 gasRatio = 4;
     repeated Action actions = 5;
     repeated string signers = 6;
     repeated sigpb.Signature signs = 7;

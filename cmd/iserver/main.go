@@ -25,7 +25,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/iserver"
 	"github.com/iost-official/go-iost/metrics"
-	"github.com/iost-official/go-iost/vm"
 	flag "github.com/spf13/pflag"
 )
 
@@ -83,8 +82,6 @@ func main() {
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
-
-	vm.SetUp(conf.VM)
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {

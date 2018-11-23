@@ -17,7 +17,7 @@ import (
 )
 
 var (
-	errGasPriceIllegal = errors.New("gas price illegal")
+	errGasRatioIllegal = errors.New("gas ratio illegal")
 	errGasLimitIllegal = errors.New("gas limit illegal")
 )
 
