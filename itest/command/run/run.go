@@ -22,7 +22,7 @@ var Flags = []cli.Flag{
 	cli.StringFlag{
 		Name:  "keys, k",
 		Value: "",
-		Usage: "Load keys configuration from `FILE`",
+		Usage: "Load keys from `FILE`",
 	},
 	cli.StringFlag{
 		Name:  "config, c",

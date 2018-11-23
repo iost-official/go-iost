@@ -20,7 +20,7 @@ const (
 
 		transfer(from, to, amount) {
 			//Function called by other
-			BlockChain.transfer(from, to, amount)
+			BlockChain.transfer(from, to, amount, "")
 		}
 
 	};
@@ -41,7 +41,7 @@ const (
 				"amountLimit": [
 					{
 						"token": "iost",
-						"val": "0"
+						"val": "100"
 					}
 				]
 			}
