@@ -50,7 +50,7 @@ else
 endif
 
 e2e_test: image
-	docker rm -f iserver
+	docker rm -f iserver || true
 	docker run -d --name iserver $(DOCKER_IMAGE)
 	sleep 20
 	docker exec -it iserver ./itest run t_case
