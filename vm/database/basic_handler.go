@@ -10,11 +10,13 @@ type BasicHandler struct {
 
 // Put put to k-v
 func (m *BasicHandler) Put(key, value string) {
+	//fmt.Println("basic put,", key, value)
 	m.db.Put(BasicPrefix+key, value)
 }
 
 // Get get v from k
 func (m *BasicHandler) Get(key string) (value string) {
+	//fmt.Println("basic get,", key)
 	return m.db.Get(BasicPrefix + key)
 }
 

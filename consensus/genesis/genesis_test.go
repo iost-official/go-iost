@@ -33,7 +33,7 @@ func TestGenGenesis(t *testing.T) {
 			{"a7", "IOSTCJqjtLBntuWRGaZumevYgBEZsU8AaAdUpEMnpGieKV676B9St", "IOSTCJqjtLBntuWRGaZumevYgBEZsU8AaAdUpEMnpGieKV676B9St", 3 * 1e8},
 		},
 		TokenInfo: &common.TokenInfo{
-			FoundationAccount: "a8",
+			FoundationAccount: "f8",
 			IOSTTotalSupply:   90000000000,
 			IOSTDecimal:       8,
 			RAMTotalSupply:    9000000000000000000,

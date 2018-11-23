@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/go-iost/vm/database"
 )
 
 func TestTransfer(t *testing.T) {
@@ -41,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 2985)
+			So(r.GasUsage, ShouldEqual, 3086)
 		})
 
 		Convey("test of token memo", func() {
@@ -75,6 +76,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(len(c.Encode()), ShouldEqual, 146)
 		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractEJuvctjsCVirp9g22As7KbrM71783oq4wYE1Fcy8AXns")
@@ -138,18 +140,19 @@ func TestJS_Database(t *testing.T) {
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 100000)
-		s.SetRAM(kp.ID, 3000)
+		s.SetRAM(kp.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
 
 		So(s.Visitor.Contract(cname), ShouldNotBeNil)
-		So(s.Visitor.Get(cname+"-"+"num"), ShouldEqual, "s9")
-		So(s.Visitor.Get(cname+"-"+"string"), ShouldEqual, "shello")
-		So(s.Visitor.Get(cname+"-"+"bool"), ShouldEqual, "strue")
-		So(s.Visitor.Get(cname+"-"+"array"), ShouldEqual, "s[1,2,3]")
-		So(s.Visitor.Get(cname+"-"+"obj"), ShouldEqual, `s{"foo":"bar"}`)
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"num")), ShouldEqual, "9")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"string")), ShouldEqual, "hello")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"bool")), ShouldEqual, "true")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"array")), ShouldEqual, "[1,2,3]")
+		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"obj")), ShouldEqual, `{"foo":"bar"}`)
 
+		s.SetGas(kp.ID, 100000)
 		r, err := s.Call(cname, "read", `[]`, kp.ID, kp)
 
 		So(err, ShouldBeNil)
@@ -364,6 +367,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 		}}, nil, 550, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, testID[0], kp)
+		t.Log(err, r, r.Status)
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
@@ -381,8 +385,8 @@ func TestDomain(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 100000)
-		s.SetRAM(kp.ID, 3000)
+		s.SetGas(kp.ID, 1e8)
+		s.SetRAM(kp.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
@@ -407,18 +411,19 @@ func TestAuthority(t *testing.T) {
 		s.Visitor.SetContract(ca)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 100000)
+		s.SetGas(kp.ID, 1e8)
+		s.SetRAM(testID[0], 1000)
 		s.SetRAM("myid", 1000)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, "akey"}), kp.ID, kp)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, kp.ID}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldStartWith, `s{"id":"myid",`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myid")), ShouldStartWith, `{"id":"myid",`)
 
 		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.Get("auth.iost@myid-auth"), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
 
 }

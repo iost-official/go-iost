@@ -63,19 +63,19 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 	if err != nil {
 		panic(err)
 	}
-	s.Visitor.Put("auth.iost@"+acc.ID+"-auth", database.MustMarshal(string(buf)))
+	s.Visitor.MPut("auth.iost"+"-auth", acc.ID, database.MustMarshal(string(buf)))
 }
 
 // SetGas to id
 func (s *Simulator) SetGas(id string, i int64) {
-	prefix := "gas.iost@" + id + database.Separator
+	prefix := "gas.iost" + database.Separator
 	value := &common.Fixed{
 		Value:   i * 10e2,
 		Decimal: 2,
 	}
 	valueStr := database.MustMarshal(value.Marshal())
-	s.Visitor.Put(prefix+host.GasStockKey, valueStr)
-	s.Visitor.Put(prefix+host.GasLimitKey, valueStr)
+	s.Visitor.Put(prefix+host.GasStockKey+id, valueStr)
+	s.Visitor.Put(prefix+host.GasLimitKey+id, valueStr)
 	s.Visitor.Commit()
 }
 
@@ -83,6 +83,11 @@ func (s *Simulator) SetGas(id string, i int64) {
 func (s *Simulator) SetRAM(id string, r int64) {
 	s.Visitor.SetTokenBalance("ram", id, r)
 	s.Visitor.Commit()
+}
+
+// GetRAM of id
+func (s *Simulator) GetRAM(id string) int64 {
+	return s.Visitor.TokenBalance("ram", id)
 }
 
 // SetContract without run init

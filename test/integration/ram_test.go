@@ -9,12 +9,14 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 
 func TestRAM(t *testing.T) {
 	s := NewSimulator()
 	defer s.Clear()
+	ilog.Stop()
 
 	prepareContract(s)
 	contractName := "ram.iost"
@@ -60,6 +62,7 @@ func TestRAM(t *testing.T) {
 			Convey("normal buy", func() {
 				//balanceBefore := s.Visitor.TokenBalance("iost", kp.ID)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
+				s.Visitor.SetTokenBalance("iost", contractName, 0)
 				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, kp.ID, buyAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
