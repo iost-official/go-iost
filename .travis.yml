@@ -56,7 +56,6 @@ matrix:
     before_script:
     - git lfs pull
     script:
-    - make image
     - make e2e_test
   - os: linux
     dist: trusty

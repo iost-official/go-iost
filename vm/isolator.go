@@ -250,7 +250,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		i.h.PayCost(cost, i.publisherID)
 
 		if status.Code != tx.Success {
-			ilog.Errorf("isolator run action %v failed, status %v, will rollback", action, status)
+			ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
 			i.h.ClearRAMCosts()
