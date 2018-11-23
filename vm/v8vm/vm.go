@@ -138,7 +138,7 @@ func (e *VM) release() {
 }
 
 func (e *VM) memoryNotification() {
-	ticker := time.NewTicker(time.Minute)
+	ticker := time.NewTicker(time.Second * 30)
 	for _ = range ticker.C {
 		if e.refCount > 0 {
 			e.refCount = 0
