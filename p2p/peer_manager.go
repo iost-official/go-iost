@@ -506,7 +506,7 @@ func (pm *PeerManager) parseSeeds() {
 		if madns.Matches(addr) {
 			err = pm.dnsResolve(peerID, addr)
 			if err != nil {
-				time.AfterFunc(5*time.Second, func() {
+				time.AfterFunc(60*time.Second, func() {
 					ilog.Info("retry resolve dns")
 					pm.dnsResolve(peerID, addr)
 				})
