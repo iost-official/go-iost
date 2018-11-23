@@ -13,10 +13,6 @@ import (
 	"github.com/iost-official/go-iost/rpc/pb"
 )
 
-func gasConvert(a int64) float64 {
-	return float64(a) / 100
-}
-
 func toPbAction(a *tx.Action) *rpcpb.Action {
 	return &rpcpb.Action{
 		Contract:   a.Contract,
@@ -31,7 +27,7 @@ func toPbTxReceipt(tr *tx.TxReceipt) *rpcpb.TxReceipt {
 	}
 	ret := &rpcpb.TxReceipt{
 		TxHash:     common.Base58Encode(tr.TxHash),
-		GasUsage:   float64(tr.GasUsage),
+		GasUsage:   float64(tr.GasUsage) / 100,
 		RamUsage:   tr.RAMUsage,
 		StatusCode: rpcpb.TxReceipt_StatusCode(tr.Status.Code),
 		Message:    tr.Status.Message,
@@ -62,8 +58,8 @@ func toPbTx(t *tx.Tx, tr *tx.TxReceipt) *rpcpb.Transaction {
 		Hash:       common.Base58Encode(t.Hash()),
 		Time:       t.Time,
 		Expiration: t.Expiration,
-		GasPrice:   gasConvert(t.GasPrice),
-		GasLimit:   float64(t.GasLimit),
+		GasRatio:   float64(t.GasRatio) / 100,
+		GasLimit:   float64(t.GasLimit) / 100,
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
@@ -89,7 +85,7 @@ func toPbBlock(blk *block.Block, complete bool) *rpcpb.Block {
 		Number:              blk.Head.Number,
 		Witness:             blk.Head.Witness,
 		Time:                blk.Head.Time,
-		GasUsage:            float64(blk.CalculateGasUsage()),
+		GasUsage:            float64(blk.CalculateGasUsage()) / 100,
 		TxCount:             int64(len(blk.Txs)),
 	}
 	json.Unmarshal(blk.Head.Info, ret.Info)
@@ -169,8 +165,8 @@ func toCoreTx(t *rpcpb.TransactionRequest) *tx.Tx {
 	ret := &tx.Tx{
 		Time:       t.Time,
 		Expiration: t.Expiration,
-		GasPrice:   int64(t.GasPrice * 100),
-		GasLimit:   int64(t.GasLimit),
+		GasRatio:   int64(t.GasRatio * 100),
+		GasLimit:   int64(t.GasLimit * 100),
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,

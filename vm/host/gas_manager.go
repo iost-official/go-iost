@@ -275,7 +275,7 @@ func (g *GasManager) CostGas(name string, gasCost *common.Fixed) (contract.Cost,
 	finalCost.AddAssign(cost)
 	b := currentGas.LessThan(gasCost)
 	if b {
-		return finalCost, fmt.Errorf("gas not enough! Now: %d, Need %d", currentGas, gasCost)
+		return finalCost, fmt.Errorf("gas not enough! Now: %s, Need %s", currentGas.ToString(), gasCost.ToString())
 	}
 	ret := currentGas.Sub(gasCost)
 	cost = g.SetGasStock(name, ret)

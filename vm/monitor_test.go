@@ -26,7 +26,7 @@ func TestMonitor_Call(t *testing.T) {
 	monitor, vm, db, vi := Init(t)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
 
@@ -66,7 +66,7 @@ func TestMonitor_Call(t *testing.T) {
 func TestMonitor_Context(t *testing.T) {
 	monitor, vm, db, vi := Init(t)
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
 
@@ -120,7 +120,7 @@ func TestMonitor_HostCall(t *testing.T) {
 
 	ctx := host.NewContext(nil)
 
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	ctx.Set("stack_height", 1)
 	ctx.Set("stack0", "test")
 
@@ -179,7 +179,7 @@ func TestJSM(t *testing.T) {
 	monitor, _, db, vi := Init(t)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	ctx.GSet("gas_limit", int64(10000))
 
 	h := host.NewHost(ctx, vi, monitor, nil)
@@ -190,7 +190,7 @@ func TestJSM(t *testing.T) {
 		Code: `
 class Contract {
  init() {
-  
+
  }
  hello() {
   return "world";

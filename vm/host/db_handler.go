@@ -24,7 +24,7 @@ func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contr
 	mk := h.modifyKey(key)
 
 	oldV := h.h.db.Get(mk)
-	payer := ""
+	var payer string
 	if len(ramPayer) > 0 {
 		payer = ramPayer[0]
 	} else {
@@ -65,7 +65,7 @@ func (h *DBHandler) Has(key string) (bool, contract.Cost) {
 func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...string) contract.Cost {
 	mk := h.modifyKey(key)
 	oldV := h.h.db.MGet(mk, field)
-	payer := ""
+	var payer string
 	if len(ramPayer) > 0 {
 		payer = ramPayer[0]
 	} else {
