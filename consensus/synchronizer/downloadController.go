@@ -243,7 +243,7 @@ func (dc *DownloadControllerImpl) freePeer(hash string, peerID interface{}) {
 				if timer, ok := pState[hash]; ok {
 					timer.Stop()
 					delete(pState, hash)
-					ilog.Debugf("free peer, peerID:%s", peerID.(p2p.PeerID).Pretty())
+					//ilog.Debugf("free peer, peerID:%s", peerID.(p2p.PeerID).Pretty())
 					select {
 					case dc.chDownload <- struct{}{}:
 					default:
@@ -261,7 +261,7 @@ func (dc *DownloadControllerImpl) freePeer(hash string, peerID interface{}) {
 }
 
 func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
-	ilog.Debugf("free peer begin")
+	//ilog.Debugf("free peer begin")
 	dc.peerState.Range(func(peerID, v interface{}) bool {
 		ps, ok := v.(timerMap)
 		if !ok {
@@ -303,7 +303,7 @@ func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
 		}
 		return true
 	})
-	ilog.Debugf("free peer end")
+	//ilog.Debugf("free peer end")
 }
 
 // FreePeerLoop is the Loop to free the peer.
@@ -322,7 +322,7 @@ func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
 
 func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sync.Map, ps timerMap, pmMutex *sync.Mutex, psMutex *sync.Mutex, mFunc MissionFunc) bool {
 	psMutex.Lock()
-	ilog.Debugf("peerNum: %v", len(ps))
+	//ilog.Debugf("peerNum: %v", len(ps))
 	psLen := len(ps)
 	psMutex.Unlock()
 	if psLen >= peerConNum {
@@ -354,7 +354,7 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 				dc.hashState.Store(hash, peerID)
 				psMutex.Lock()
 				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
-					ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.(p2p.PeerID).Pretty())
+					//ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.(p2p.PeerID).Pretty())
 					dc.freePeer(hash, peerID)
 				})
 				psLen := len(ps)
@@ -384,13 +384,13 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 			default:
 			}
 		case <-dc.chDownload:
-			ilog.Debugf("Download Begin")
+			//ilog.Debugf("Download Begin")
 			dc.peerState.Range(func(peerID, v interface{}) bool {
 				select {
 				case <-dc.exitSignal:
 					return false
 				default:
-					ilog.Debugf("peerID: %s", peerID.(p2p.PeerID).Pretty())
+					//ilog.Debugf("peerID: %s", peerID.(p2p.PeerID).Pretty())
 					ps, ok := v.(timerMap)
 					if !ok {
 						ilog.Errorf("get peerstate error: %s", peerID.(p2p.PeerID).Pretty())
@@ -407,7 +407,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 					return true
 				}
 			})
-			ilog.Debugf("Download End")
+			//ilog.Debugf("Download End")
 		case <-dc.exitSignal:
 			return
 		}

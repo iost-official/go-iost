@@ -331,6 +331,36 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	return nil
 }
 
+func (s *SDK) PledgeForGas(gasPledged int64) error {
+	var acts []*tx.Action
+	acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, s.accountName, gasPledged)))
+	trx, err := s.createTx(acts)
+	if err != nil {
+		return err
+	}
+	stx, err := s.signTx(trx)
+	if err != nil {
+		return err
+	}
+	var txHash string
+	fmt.Printf("sending tx\n %v \n", stx.String())
+	txHash, err = s.sendTx(stx)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("send tx done\n")
+	if s.checkResult {
+		s.checkTransaction(txHash)
+	}
+	fmt.Printf("\nbalance of %v\n", s.accountName)
+	info, err := s.getAccountInfo(s.accountName)
+	if err != nil {
+		return err
+	}
+	fmt.Println(marshalTextString(info))
+	return nil
+}
+
 // CreateNewAccount ...
 func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*tx.Action
