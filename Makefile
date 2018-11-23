@@ -61,9 +61,9 @@ k8s_test: image push
 	./build/delete_cluster.sh devnet
 	./build/create_cluster.sh devnet
 	sleep 90
-	kubectl exec -it itest -n devnet -- ./itest -l debug run -c /etc/itest/itest.json a_case
-	kubectl exec -it itest -n devnet -- ./itest -l debug run -c /etc/itest/itest.json t_case
-	kubectl exec -it itest -n devnet -- ./itest -l debug run -c /etc/itest/itest.json c_case
+	kubectl exec -it itest -n devnet -- ./itest run -c /etc/itest/itest.json a_case
+	kubectl exec -it itest -n devnet -- ./itest run -c /etc/itest/itest.json t_case
+	kubectl exec -it itest -n devnet -- ./itest run -c /etc/itest/itest.json c_case
 
 image:
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)

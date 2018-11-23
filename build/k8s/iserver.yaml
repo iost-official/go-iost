@@ -37,7 +37,7 @@ spec:
           command:
             - /bin/bash
             - -c
-            - ./iserver -f /var/lib/iserver/iserver-${HOSTNAME##*-}.yml
+            - ./iserver -f /var/lib/iserver/iserver-${HOSTNAME##*-}.yml 2>&1
           ports:
             - containerPort: 30000
             - containerPort: 30001
