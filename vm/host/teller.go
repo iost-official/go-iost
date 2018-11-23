@@ -48,7 +48,6 @@ func (h *Teller) ClearRAMCosts() {
 	h.cost = newCost
 }
 
-
 // AddCacheCost ...
 func (h *Teller) AddCacheCost(c contract.Cost) {
 	h.cacheCost.AddAssign(c)
