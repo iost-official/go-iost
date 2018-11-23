@@ -131,8 +131,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 
 	currentDeadline := h.Deadline()
-	h.SetDeadline(currentDeadline.Add(time.Duration(-100*time.Microsecond)))
-
+	h.SetDeadline(currentDeadline.Add(time.Duration(-100 * time.Microsecond)))
 
 	oldCacheCost := h.CacheCost()
 	h.ClearCacheCost()
