@@ -267,18 +267,15 @@ size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
 }
 
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
-    std::cout << "[hahawa]: 2! " << std::endl;
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
 
-    std::cout << "[hahawa]: 3! " << std::endl;
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
-    std::cout << "[hahawa]: 4! " << std::endl;
 
     TryCatch tryCatch(isolate);
     tryCatch.SetVerbose(true);
@@ -286,7 +283,6 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
-    std::cout << "[hahawa]: 5! " << std::endl;
 
     if (script.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
@@ -294,22 +290,18 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         return;
     }
 
-    std::cout << "[hahawa]: 6! " << std::endl;
     Local<Value> ret = script->Run();
-    std::cout << "[hahawa]: 7! " << std::endl;
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
         isDone = true;
         return;
     }
-    std::cout << "[hahawa]: 8! " << std::endl;
 
     if (ret.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
     }
-    std::cout << "[hahawa]: 9! " << std::endl;
 
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
@@ -318,7 +310,6 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         return;
     }
 
-    std::cout << "[hahawa]: 10! " << std::endl;
     Local<Object> obj = ret.As<Object>();
     if (!obj->IsUndefined()) {
         MaybeLocal<String> jsonRet = JSON::Stringify(context, obj);
@@ -329,7 +320,6 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         }
     }
     isDone = true;
-    std::cout << "[hahawa]: 11! isDone " << isDone << std::endl;
     return;
 }
 
@@ -341,68 +331,52 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     std::string error;
     bool isJson = false;
     bool isDone = false;
-    std::cout << "[hahawa]: 1! " << std::endl;
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
 //    auto startTime = std::chrono::steady_clock::now();
-    std::cout << "[wakaka]: start while()! " << std::endl;
     while(true) {
         if (error.length() > 0) {
-            std::cout << "[ohoho]: 1!"<< std::endl;
             res.Err = copyString(error);
             res.gasUsed = sbx->gasUsed;
-            std::cout << "[yixixi]: 1!"<< std::endl;
             break;
         }
         if (result.length() > 0) {
-            std::cout << "[ohoho]: 2!"<< std::endl;
             res.Value = copyString(result);
             res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
-            std::cout << "[yixixi]: 2!"<< std::endl;
             break;
         }
         if (isDone) {
-            std::cout << "[ohoho]: 3!"<< std::endl;
             res.Value = copyString(result);
             res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
-            std::cout << "[yixixi]: 3!"<< std::endl;
             break;
         }
         if (MemoryUsage(isolate, sbx->allocator) > sbx->memLimit) {
-            std::cout << "[ohoho]: 4!"<< std::endl;
             isolate->TerminateExecution();
             res.Err = strdup("out of memory");
             res.gasUsed = sbx->gasLimit;
-            std::cout << "[yixixi]: 4!"<< std::endl;
             break;
         }
         if (sbx->gasUsed > sbx->gasLimit) {
-            std::cout << "[ohoho]: 5!"<< std::endl;
             isolate->TerminateExecution();
             res.Err = strdup("out of gas");
             res.gasUsed = sbx->gasUsed;
-            std::cout << "[yixixi]: 5!"<< std::endl;
             break;
         }
         auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
         if (now > expireTime) {
-            std::cout << "[ohoho]: 6 ! IsDone: "<< isDone << std::endl;
             isolate->TerminateExecution();
             res.Err = strdup(("execution killed, current time : " + std::to_string(now) + " , expireTime: " + std::to_string(expireTime)).c_str());
             res.gasUsed = sbx->gasUsed;
-            std::cout << "[yixixi]: 6!"<< std::endl;
             break;
         }
         //usleep(10);
         std::this_thread::sleep_for(std::chrono::microseconds(100));
-        std::cout <<  "[wakaka] 1!" << std::endl;
     }
     if (exec.joinable())
         exec.join();
-    std::cout << "[hahawa]: 12! " << std::endl;
     return res;
 }
