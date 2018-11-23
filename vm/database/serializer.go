@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/binary"
 	"errors"
+	"github.com/iost-official/go-iost/common"
 	"strings"
 )
 
@@ -14,6 +15,7 @@ const (
 	BoolPrefix      = "b"
 	JSONPrefix      = "j"
 	MapHolderPrefix = "@"
+	FixPointPrefix  = "f"
 )
 
 var (
@@ -41,6 +43,8 @@ func Marshal(in interface{}, extras ...string) (string, error) {
 		return BoolPrefix + boolToString(in.(bool)) + ApplicationSeparator + extra, nil
 	case SerializedJSON:
 		return JSONPrefix + string(in.(SerializedJSON)) + ApplicationSeparator + extra, nil
+	case common.Fixed:
+		return FixPointPrefix + in.(*common.Fixed).Marshal(), nil
 	}
 	return "", errTypeNotSupport
 }
@@ -72,6 +76,12 @@ func unmarshalInner(o string) interface{} {
 		return SerializedJSON(o[1:])
 	case MapHolderPrefix:
 		return strings.Split(o, "@")[1:]
+	case FixPointPrefix:
+		ret, err := common.UnmarshalFixed(o[1:])
+		if err != nil {
+			return err
+		}
+		return ret
 	}
 	return errInvalidData
 }

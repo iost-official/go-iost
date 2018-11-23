@@ -215,6 +215,29 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	return account, nil
 }
 
+// ContractTransfer will contract transfer token by sending transaction
+func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount string) error {
+	action := tx.NewAction(
+		cid,
+		"transfer",
+		fmt.Sprintf(`["%v", "%v", "%v"]`, sender.ID, recipient.ID, amount),
+	)
+
+	actions := []*tx.Action{action}
+	transaction := NewTransaction(actions)
+
+	st, err := sender.Sign(transaction)
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.SendTransaction(st); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Transfer will transfer token by sending transaction
 func (c *Client) Transfer(sender, recipient *Account, token, amount string) error {
 	action := tx.NewAction(
@@ -239,7 +262,7 @@ func (c *Client) Transfer(sender, recipient *Account, token, amount string) erro
 }
 
 // SetContract will set the contract by sending transaction
-func (c *Client) SetContract(creator *Account, contract *Contract) error {
+func (c *Client) SetContract(creator *Account, contract *Contract) (string, error) {
 	action := tx.NewAction(
 		"system.iost",
 		"SetCode",
@@ -251,12 +274,13 @@ func (c *Client) SetContract(creator *Account, contract *Contract) error {
 
 	st, err := creator.Sign(transaction)
 	if err != nil {
-		return err
+		return "", err
 	}
 
-	if _, err := c.SendTransaction(st); err != nil {
-		return err
+	hash, err := c.SendTransaction(st)
+	if err != nil {
+		return "", err
 	}
 
-	return nil
+	return fmt.Sprintf("Contract%v", hash), nil
 }

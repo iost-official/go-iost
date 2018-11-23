@@ -41,11 +41,9 @@ func TestFixed_Times(t *testing.T) {
 }
 
 func TestFixed_Marshal(t *testing.T) {
-	f := Fixed{1230, 2, nil}
-	assert.Equal(t, "12.30", f.Marshal())
-	f2, err := UnmarshalFixed("12.30")
+	f, err := UnmarshalFixed((&Fixed{1230, 2, nil}).Marshal())
 	assert.Equal(t, nil, err)
-	assert.Equal(t, 2, f2.Decimal)
-	assert.Equal(t, nil, f2.Err)
-	assert.Equal(t, int64(1230), f2.Value)
+	assert.Equal(t, 2, f.Decimal)
+	assert.Equal(t, nil, f.Err)
+	assert.Equal(t, int64(1230), f.Value)
 }
