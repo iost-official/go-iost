@@ -14,7 +14,6 @@ matrix:
     go: "1.11"
     env: JOB=osx_test
     before_install:
-    - brew install rocksdb
     - brew install git-lfs
     - git lfs install
     - brew tap alecthomas/homebrew-tap
