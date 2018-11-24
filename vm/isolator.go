@@ -303,11 +303,9 @@ func (i *Isolator) ClearTx() {
 	i.h.DB().Rollback()
 }
 func checkTxParams(t *tx.Tx) error {
-	if t.GasRatio < 100 || t.GasRatio > 10000 {
-		return errGasRatioIllegal
-	}
-	if t.GasLimit < 50000 {
-		return errGasLimitIllegal
+	err := t.CheckGas()
+	if err != nil {
+		return err
 	}
 	return nil
 }
