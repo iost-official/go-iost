@@ -16,11 +16,6 @@ import (
 	"time"
 )
 
-var (
-	errGasRatioIllegal = errors.New("gas ratio illegal")
-	errGasLimitIllegal = errors.New("gas limit illegal")
-)
-
 // Monitor ...
 type Monitor struct {
 	vms map[string]VM
