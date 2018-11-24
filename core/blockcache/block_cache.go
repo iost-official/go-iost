@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"sync"
 
+	"os"
+
 	"github.com/gogo/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -14,7 +16,6 @@ import (
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/xlab/treeprint"
-	"os"
 )
 
 // CacheStatus ...
@@ -46,13 +47,28 @@ var (
 // BlockCacheNode is the implementation of BlockCacheNode
 type BlockCacheNode struct { //nolint:golint
 	*block.Block
-	Parent   *BlockCacheNode
+	rw       sync.RWMutex
+	parent   *BlockCacheNode
 	Children map[*BlockCacheNode]bool
 	Type     BCNType
 	walIndex uint64
 
 	ConfirmUntil int64
 	WitnessList
+}
+
+// GetParent returns the node's parent node.
+func (bcn *BlockCacheNode) GetParent() *BlockCacheNode {
+	bcn.rw.RLock()
+	bcn.rw.RUnlock()
+	return bcn.parent
+}
+
+// SetParent sets the node's parent.
+func (bcn *BlockCacheNode) SetParent(p *BlockCacheNode) {
+	bcn.rw.Lock()
+	bcn.parent = p
+	bcn.rw.Unlock()
 }
 
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
@@ -67,7 +83,7 @@ func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
 
 func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 	if parent != nil {
-		bcn.Parent = parent
+		bcn.SetParent(parent)
 		bcn.Type = Single
 
 		parent.addChild(bcn)
@@ -112,7 +128,7 @@ func decodeBCN(b []byte) (block block.Block, witnessList WitnessList, err error)
 func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	bcn := &BlockCacheNode{
 		Block:    blk,
-		Parent:   nil,
+		parent:   nil,
 		Children: make(map[*BlockCacheNode]bool),
 		WitnessList: WitnessList{
 			WitnessInfo: make(map[string]*WitnessInfo),
@@ -134,7 +150,7 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		Block: &block.Block{
 			Head: &block.BlockHead{},
 		},
-		Parent:   nil,
+		parent:   nil,
 		Children: make(map[*BlockCacheNode]bool),
 		WitnessList: WitnessList{
 			WitnessInfo: make(map[string]*WitnessInfo),
@@ -168,8 +184,10 @@ type BlockCache interface {
 
 // BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct { //nolint:golint
+	linkRW       sync.RWMutex
 	linkedRoot   *BlockCacheNode
 	singleRoot   *BlockCacheNode
+	headRW       sync.RWMutex
 	head         *BlockCacheNode
 	hash2node    *sync.Map // map[string]*BlockCacheNode
 	leaf         map[*BlockCacheNode]int64
@@ -312,17 +330,17 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	}
 	bcn.walIndex = index
 	bcn.Type = Linked
-	delete(bc.leaf, bcn.Parent)
+	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
 	bc.setHead(bcn)
-	if bcn.Head.Number > bc.head.Head.Number {
-		bc.head = bcn
+	if bcn.Head.Number > bc.Head().Head.Number {
+		bc.SetHead(bcn)
 	}
 }
 
 func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 	if h.PendingWitnessNumber == 0 && h.Active() == nil && h.Pending() == nil {
-		h.CopyWitness(h.Parent)
+		h.CopyWitness(h.GetParent())
 	}
 	if h.Head.Number%common.VoteInterval == 0 {
 		if err := bc.updatePending(h); err != nil {
@@ -351,15 +369,15 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) updateLongest() {
-	_, ok := bc.hmget(bc.head.HeadHash())
+	_, ok := bc.hmget(bc.Head().HeadHash())
 	if ok {
 		return
 	}
-	cur := bc.linkedRoot.Head.Number
+	cur := bc.LinkedRoot().Head.Number
 	for key, val := range bc.leaf {
 		if val > cur {
 			cur = val
-			bc.head = key
+			bc.SetHead(key)
 		}
 	}
 }
@@ -395,20 +413,21 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 
 // AddGenesis is add genesis block
 func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
-	bc.linkedRoot = NewBCN(nil, blk)
-	bc.linkedRoot.Type = Linked
+	l := NewBCN(nil, blk)
+	l.Type = Linked
+	bc.SetLinkedRoot(l)
 
-	if err := bc.updatePending(bc.linkedRoot); err == nil {
-		bc.linkedRoot.LibWitnessHandle()
+	if err := bc.updatePending(bc.LinkedRoot()); err == nil {
+		bc.LinkedRoot().LibWitnessHandle()
 	}
-	bc.head = bc.linkedRoot
-	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
-	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
+	bc.SetHead(bc.LinkedRoot())
+	bc.hmset(bc.LinkedRoot().HeadHash(), bc.LinkedRoot())
+	bc.leaf[bc.LinkedRoot()] = bc.LinkedRoot().Head.Number
 }
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
-	fa := bcn.Parent
-	bcn.Parent = nil
+	fa := bcn.GetParent()
+	bcn.SetParent(nil)
 	if bcn.Block != nil {
 		bc.hmdel(bcn.HeadHash())
 	}
@@ -430,8 +449,8 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if len(bcn.Children) == 0 {
 		delete(bc.leaf, bcn)
 	}
-	if bcn.Parent != nil && len(bcn.Parent.Children) == 1 && bcn.Parent.Type == Linked {
-		bc.leaf[bcn.Parent] = bcn.Parent.Head.Number
+	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
+		bc.leaf[bcn.GetParent()] = bcn.GetParent().Head.Number
 	}
 	for ch := range bcn.Children {
 		bc.del(ch)
@@ -440,7 +459,7 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) delSingle() {
-	height := bc.linkedRoot.Head.Number
+	height := bc.LinkedRoot().Head.Number
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
@@ -452,8 +471,8 @@ func (bc *BlockCacheImpl) delSingle() {
 }
 
 func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
-	cur := retain.Parent
-	if cur != bc.linkedRoot {
+	cur := retain.GetParent()
+	if cur != bc.LinkedRoot() {
 		bc.flush(cur)
 	}
 	for child := range cur.Children {
@@ -477,9 +496,9 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			return err
 		}
 		bc.delNode(cur)
-		retain.Parent = nil
+		retain.SetParent(nil)
 		retain.LibWitnessHandle()
-		bc.linkedRoot = retain
+		bc.SetLinkedRoot(retain)
 	}
 	return nil
 }
@@ -554,15 +573,15 @@ func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 
 // GetBlockByNumber get a block by number
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
-	it := bc.head
-	if num < bc.linkedRoot.Head.Number || num > it.Head.Number {
+	it := bc.Head()
+	if num < bc.LinkedRoot().Head.Number || num > it.Head.Number {
 		return nil, fmt.Errorf("block not found")
 	}
 	for it != nil {
 		if it.Head.Number == num {
 			return it.Block, nil
 		}
-		it = it.Parent
+		it = it.GetParent()
 	}
 	return nil, fmt.Errorf("block not found")
 }
@@ -578,18 +597,36 @@ func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
 
 // LinkedRoot return the root node
 func (bc *BlockCacheImpl) LinkedRoot() *BlockCacheNode {
+	bc.linkRW.RLock()
+	defer bc.linkRW.RUnlock()
 	return bc.linkedRoot
+}
+
+// SetLinkedRoot sets linked blockcache node.
+func (bc *BlockCacheImpl) SetLinkedRoot(n *BlockCacheNode) {
+	bc.linkRW.Lock()
+	bc.linkedRoot = n
+	bc.linkRW.Unlock()
 }
 
 // Head return head of block cache
 func (bc *BlockCacheImpl) Head() *BlockCacheNode {
+	bc.headRW.RLock()
+	defer bc.headRW.RUnlock()
 	return bc.head
+}
+
+// SetHead sets head blockcache node.
+func (bc *BlockCacheImpl) SetHead(n *BlockCacheNode) {
+	bc.headRW.Lock()
+	bc.head = n
+	bc.headRW.Unlock()
 }
 
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
 	linkedTree := treeprint.New()
-	bc.linkedRoot.drawChildren(linkedTree)
+	bc.LinkedRoot().drawChildren(linkedTree)
 	singleTree := treeprint.New()
 	bc.singleRoot.drawChildren(singleTree)
 	return linkedTree.String()

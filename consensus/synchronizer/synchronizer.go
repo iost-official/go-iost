@@ -209,7 +209,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	}
 	bcn := sy.blockCache.Head()
 	for bcn != nil && bcn.Block.Head.Witness == sy.baseVariable.Config().ACC.ID {
-		bcn = bcn.Parent
+		bcn = bcn.GetParent()
 	}
 	if bcn == nil {
 		return false
@@ -226,7 +226,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 			if witness == bcn.Block.Head.Witness {
 				num++
 			}
-			bcn = bcn.Parent
+			bcn = bcn.GetParent()
 		}
 	}
 	if num > continuousNum {
@@ -327,7 +327,7 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashRespo
 		var err error
 
 		for node != nil && i < node.Head.Number {
-			node = node.Parent
+			node = node.GetParent()
 		}
 
 		if node != nil {

@@ -13,6 +13,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
+	"github.com/uber-go/atomic"
 )
 
 // CVMInitOnce vm init once
@@ -26,7 +27,7 @@ type VM struct {
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
-	refCount             int
+	refCount             atomic.Int64
 	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
@@ -140,8 +141,8 @@ func (e *VM) release() {
 func (e *VM) memoryNotification() {
 	ticker := time.NewTicker(time.Second * 30)
 	for range ticker.C {
-		if e.refCount > 0 {
-			e.refCount = 0
+		if e.refCount.Load() > 0 {
+			e.refCount.Store(0)
 			C.lowMemoryNotification(e.isolate)
 		}
 	}
