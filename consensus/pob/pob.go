@@ -83,6 +83,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chVerifyBlock:    make(chan *verifyBlockMessage, 1024),
+		mu:               new(sync.RWMutex),
 	}
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	err := p.blockCache.Recover(&p)
