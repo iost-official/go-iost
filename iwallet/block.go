@@ -61,12 +61,13 @@ var blockCmd = &cobra.Command{
 			fmt.Println("please enter correct method arg")
 			return
 		}
-		blockInfoJSON, err := json.Marshal(blockInfo)
+		ret, err := json.MarshalIndent(blockInfo, "", "    ")
 		if err != nil {
 			fmt.Printf("error %v\n", err)
 			return
 		}
-		fmt.Println(string(blockInfoJSON))
+
+		fmt.Println(string(ret))
 	},
 }
 
