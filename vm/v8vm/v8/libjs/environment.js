@@ -1,6 +1,12 @@
 'use strict';
 
 (function () {
+    function isRegExp(regStr) {
+        if (typeof regStr === 'object') {
+            throw new Error('regExp is not allowed!');
+        }
+    }
+
     // String
     const stringAllowedMethods = [
         'charAt',
@@ -92,19 +98,19 @@
     const Stringreplace = String.prototype.replace;
     String.prototype.replace = function() {
         _IOSTInstruction_counter.incr(this.toString().length);
-        return Stringreplace.call(this, ...arguments);
+        return isRegExp(arguments[0]) || Stringreplace.call(this, ...arguments);
     };
 
     const Stringsearch = String.prototype.search;
     String.prototype.search = function() {
         _IOSTInstruction_counter.incr(this.toString().length);
-        return Stringsearch.call(this, ...arguments);
+        return isRegExp(arguments[0]) || Stringsearch.call(this, ...arguments);
     };
 
     const Stringsplit = String.prototype.split;
     String.prototype.split = function() {
         _IOSTInstruction_counter.incr(this.toString().length);
-        return Stringsplit.call(this, ...arguments);
+        return isRegExp(arguments[0]) || Stringsplit.call(this, ...arguments);
     };
 
     const StringstartsWith = String.prototype.startsWith;
