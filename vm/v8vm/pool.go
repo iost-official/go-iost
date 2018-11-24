@@ -35,13 +35,13 @@ func NewVMPool(compilePoolSize, runPoolSize int) *VMPool {
 
 func (vmp *VMPool) getCompileVM() *VM {
 	vm := <-vmp.compilePoolBuff
-	vm.refCount++
+	vm.refCount.Inc()
 	return vm
 }
 
 func (vmp *VMPool) getRunVM() *VM {
 	vm := <-vmp.runPoolBuff
-	vm.refCount++
+	vm.refCount.Inc()
 	return vm
 }
 
