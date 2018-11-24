@@ -326,6 +326,9 @@ func (p *PoB) scheduleLoop() {
 						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 						continue
 					}
+					if num == continuousNum-1 {
+						break
+					}
 					select {
 					case <-generateBlockTicker.C:
 					}
