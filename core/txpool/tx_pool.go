@@ -43,7 +43,7 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 		quitGenerateMode: make(chan struct{}),
 		quitCh:           make(chan struct{}),
 	}
-	p.forkChain.NewHead = blockCache.Head()
+	p.forkChain.SetNewHead(blockCache.Head())
 	deferServer, err := NewDeferServer(p)
 	if err != nil {
 		return nil, err
@@ -130,7 +130,6 @@ func (pool *TxPImpl) Lock() {
 // PendingTx is return pendingTx
 func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 	return pool.pendingTx, pool.forkChain.NewHead
-
 }
 
 // Release release the txpool
@@ -367,7 +366,7 @@ func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
 	if pool.existTxInPending(t.Hash()) {
 		return ErrDupPendingTx
 	}
-	if pool.existTxInChain(t.Hash(), pool.forkChain.NewHead.Block) {
+	if pool.existTxInChain(t.Hash(), pool.forkChain.GetNewHead().Block) {
 		return ErrDupChainTx
 	}
 	return nil
@@ -389,23 +388,24 @@ func (pool *TxPImpl) clearTimeoutTx() {
 }
 
 func (pool *TxPImpl) updateForkChain(newHead *blockcache.BlockCacheNode) tFork {
-	if pool.forkChain.NewHead == newHead {
+	if pool.forkChain.GetNewHead() == newHead {
 		return sameHead
 	}
-	pool.forkChain.OldHead, pool.forkChain.NewHead = pool.forkChain.NewHead, newHead
-	bcn, ok := pool.findForkBCN(pool.forkChain.NewHead, pool.forkChain.OldHead)
+	pool.forkChain.SetOldHead(pool.forkChain.GetNewHead())
+	pool.forkChain.SetNewHead(newHead)
+	bcn, ok := pool.findForkBCN(pool.forkChain.GetNewHead(), pool.forkChain.GetOldHead())
 	if ok {
-		pool.forkChain.ForkBCN = bcn
+		pool.forkChain.SetForkBCN(bcn)
 		return forkBCN
 	}
-	pool.forkChain.ForkBCN = nil
+	pool.forkChain.SetForkBCN(nil)
 	return noForkBCN
 }
 
 func (pool *TxPImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *blockcache.BlockCacheNode) (*blockcache.BlockCacheNode, bool) {
 	for {
 		for oldHead != nil && oldHead.Head.Number > newHead.Head.Number {
-			oldHead = oldHead.Parent
+			oldHead = oldHead.GetParent()
 		}
 		if oldHead == nil {
 			return nil, false
@@ -413,7 +413,7 @@ func (pool *TxPImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *bl
 		if oldHead == newHead {
 			return oldHead, true
 		}
-		newHead = newHead.Parent
+		newHead = newHead.GetParent()
 		if newHead == nil {
 			return nil, false
 		}
@@ -421,9 +421,9 @@ func (pool *TxPImpl) findForkBCN(newHead *blockcache.BlockCacheNode, oldHead *bl
 }
 
 func (pool *TxPImpl) doChainChangeByForkBCN() {
-	newHead := pool.forkChain.NewHead
-	oldHead := pool.forkChain.OldHead
-	forkBCN := pool.forkChain.ForkBCN
+	newHead := pool.forkChain.GetNewHead()
+	oldHead := pool.forkChain.GetOldHead()
+	forkBCN := pool.forkChain.GetForkBCN()
 	//add txs
 	filterLimit := time.Now().UnixNano() - filterTime
 	for {
@@ -433,7 +433,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 		for _, t := range oldHead.Block.Txs {
 			pool.pendingTx.Add(t)
 		}
-		oldHead = oldHead.Parent
+		oldHead = oldHead.GetParent()
 	}
 
 	//del txs
@@ -444,13 +444,13 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 		for _, t := range newHead.Block.Txs {
 			pool.DelTx(t.Hash())
 		}
-		newHead = newHead.Parent
+		newHead = newHead.GetParent()
 	}
 }
 
 func (pool *TxPImpl) doChainChangeByTimeout() {
-	newHead := pool.forkChain.NewHead
-	oldHead := pool.forkChain.OldHead
+	newHead := pool.forkChain.GetNewHead()
+	oldHead := pool.forkChain.GetOldHead()
 	filterLimit := time.Now().UnixNano() - filterTime
 	ob, ok := pool.findBlock(oldHead.Block.HeadHash())
 	if ok {
@@ -497,7 +497,7 @@ func (pool *TxPImpl) GetFromPending(hash []byte) (*tx.Tx, error) {
 
 // GetFromChain gets transaction from longest chain.
 func (pool *TxPImpl) GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error) {
-	t, tr := pool.getTxAndReceiptInChain(hash, pool.forkChain.NewHead.Block)
+	t, tr := pool.getTxAndReceiptInChain(hash, pool.forkChain.GetNewHead().Block)
 	if t == nil {
 		return nil, nil, ErrTxNotFound
 	}

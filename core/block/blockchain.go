@@ -3,6 +3,7 @@ package block
 import (
 	"errors"
 	"fmt"
+	"sync"
 
 	"strconv"
 
@@ -14,6 +15,7 @@ import (
 // BlockChain is the implementation of chain
 type BlockChain struct { //nolint:golint
 	blockChainDB *kv.Storage
+	rw           sync.RWMutex
 	length       int64
 }
 
@@ -53,13 +55,22 @@ func NewBlockChain(path string) (Chain, error) {
 			err = errors.New("fail to put blocklength")
 		}
 	}
-	BC := &BlockChain{levelDB, length}
+	BC := &BlockChain{blockChainDB: levelDB, length: length}
 	BC.CheckLength()
 	return BC, err
 }
 
+// SetLength sets blockchain's length.
+func (bc *BlockChain) SetLength(i int64) {
+	bc.rw.Lock()
+	bc.length = i
+	bc.rw.Unlock()
+}
+
 // Length return length of block chain
 func (bc *BlockChain) Length() int64 {
+	bc.rw.RLock()
+	defer bc.rw.RUnlock()
 	return bc.length
 }
 
@@ -101,19 +112,19 @@ func (bc *BlockChain) Push(block *Block) error {
 	if err != nil {
 		return fmt.Errorf("fail to put block, err:%s", err)
 	}
-	bc.length = number + 1
+	bc.SetLength(number + 1)
 	return nil
 }
 
 // CheckLength is check length of block in database
 func (bc *BlockChain) CheckLength() {
-	for i := bc.length; i > 0; i-- {
+	for i := bc.Length(); i > 0; i-- {
 		_, err := bc.GetBlockByNumber(i - 1)
 		if err != nil {
 			fmt.Println("fail to get the block")
 		} else {
 			bc.blockChainDB.Put(blockLength, common.Int64ToBytes(i))
-			bc.length = i
+			bc.SetLength(i)
 			break
 		}
 	}
@@ -121,10 +132,10 @@ func (bc *BlockChain) CheckLength() {
 
 // Top return the block
 func (bc *BlockChain) Top() (*Block, error) {
-	if bc.length == 0 {
+	if bc.Length() == 0 {
 		return nil, errors.New("no block in blockChaindb")
 	}
-	return bc.GetBlockByNumber(bc.length - 1)
+	return bc.GetBlockByNumber(bc.Length() - 1)
 }
 
 // GetHashByNumber is get hash by number

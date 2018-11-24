@@ -174,7 +174,7 @@ func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCac
 			return node
 		}
 		confirmNum -= confirmUntilMap[node.Head.Number]
-		node = node.Parent
+		node = node.GetParent()
 	}
 	return nil
 }

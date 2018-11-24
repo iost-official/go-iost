@@ -409,9 +409,9 @@ func addNode(parent *blockcache.BlockCacheNode, number int64, confirm int64, wit
 				Witness: witness,
 			},
 		},
-		Parent:       parent,
 		ConfirmUntil: confirm,
 	}
+	node.SetParent(parent)
 	return node
 }
 
