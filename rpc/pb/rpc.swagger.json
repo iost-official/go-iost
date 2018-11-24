@@ -925,10 +925,10 @@
           "format": "int64",
           "title": "expiration timestamp"
         },
-        "gas_price": {
+        "gas_ratio": {
           "type": "number",
           "format": "double",
-          "title": "gas price"
+          "title": "gas gas_ratio"
         },
         "gas_limit": {
           "type": "number",
@@ -989,7 +989,7 @@
           "format": "int64",
           "title": "expiration timestamp"
         },
-        "gas_price": {
+        "gas_ratio": {
           "type": "number",
           "format": "double",
           "title": "gas price"

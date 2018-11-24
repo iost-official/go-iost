@@ -20,8 +20,8 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	}
 	tx := &tx.Tx{
 		Publisher: "_Block_Base",
-		GasLimit:  1000000,
-		GasPrice:  100,
+		GasLimit:  100000000,
+		GasRatio:  100,
 		Actions:   acts,
 	}
 	return tx, nil

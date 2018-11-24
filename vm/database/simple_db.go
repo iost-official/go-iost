@@ -188,7 +188,7 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.GasPrice, err = json.Get("gas_price").Int64()
+	t.GasRatio, err = json.Get("gas_ratio").Int64()
 	if err != nil {
 		return nil, err
 	}

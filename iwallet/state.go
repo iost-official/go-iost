@@ -15,8 +15,10 @@
 package iwallet
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
+	"strings"
 )
 
 // balanceCmd represents the balance command
@@ -27,16 +29,28 @@ var nodeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		n, err := sdk.getNodeInfo()
 		if err != nil {
-			fmt.Printf("cannot get node info %v\n", err)
+			fmt.Printf("cannot get node info %v\nn", err)
 			return
 		}
-		fmt.Println("node info:", marshalTextString(n))
+		ret, err := json.MarshalIndent(n, "", "    ")
+		if err != nil {
+			fmt.Printf("error %v\n", err)
+			return
+		}
+		fmt.Print(strings.TrimRight(string(ret), "}"))
 		c, err := sdk.getChainInfo()
 		if err != nil {
 			fmt.Printf("cannot get chain info %v\n", err)
 			return
 		}
-		fmt.Println("chain info:", marshalTextString(c))
+		ret, err = json.MarshalIndent(c, "", "    ")
+		if err != nil {
+			fmt.Printf("error %v\n", err)
+			return
+		}
+
+		fmt.Println(strings.Replace(string(ret), "{\n", "", 1))
+
 	},
 }
 

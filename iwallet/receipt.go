@@ -15,6 +15,7 @@
 package iwallet
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -34,7 +35,12 @@ var receiptCmd = &cobra.Command{
 			fmt.Println(err.Error())
 			return
 		}
-		fmt.Println(marshalTextString(txReceipt))
+		ret, err := json.MarshalIndent(txReceipt, "", "    ")
+		if err != nil {
+			fmt.Printf("error %v\n", err)
+			return
+		}
+		fmt.Println(string(ret))
 	},
 }
 
