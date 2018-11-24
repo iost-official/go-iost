@@ -5,6 +5,22 @@
     {
       "name": "test",
       "args": ["string", "string"]
+    },
+    {
+      "name": "sh1",
+      "args": ["string"]
+    },
+    {
+      "name": "sh3",
+      "args": ["string"]
+    },
+    {
+      "name": "sh5",
+      "args": ["string"]
+    },
+    {
+      "name": "sh7",
+      "args": ["string"]
     }
   ]
 }

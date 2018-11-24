@@ -69,6 +69,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	defer func() {
 		h.PopCtx()
 	}()
+	cost = contract.Cost0()
+
+	stackHeight := h.Context().Value("stack_height").(int)
+	if stackHeight > 5 {
+		return nil, cost, fmt.Errorf("stack height exceed. actual %v", stackHeight)
+	}
 
 	h.Context().Set("contract_name", c.ID)
 	h.Context().Set("abi_name", api)
@@ -97,7 +103,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 	var fixedAmountLimit []contract.FixedAmount
 	beforeBalance := make(map[string][]int64)
-	cost = contract.Cost0()
 
 	// only check amount limit when executing action, not system call
 	if h.Context().Value("stack_height") == 1 {

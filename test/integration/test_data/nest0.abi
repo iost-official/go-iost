@@ -5,6 +5,22 @@
     {
       "name": "call",
       "args": ["string", "string", "json"]
+    },
+    {
+      "name": "sh0",
+      "args": ["string"]
+    },
+    {
+      "name": "sh2",
+      "args": ["string"]
+    },
+    {
+      "name": "sh4",
+      "args": ["string"]
+    },
+    {
+      "name": "sh6",
+      "args": ["string"]
     }
   ]
 }
