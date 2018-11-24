@@ -24,7 +24,7 @@ var sdk = iwallet.SDK{}
 
 func initConn(num int) {
 	conns = make([]*grpc.ClientConn, num)
-	allServers := []string{"18.182.146.155:30002", "54.64.205.127:30002"}
+	allServers := []string{"127.0.0.1:30002"} //, "54.64.205.127:30002"}
 	for i := 0; i < num; i++ {
 		conn, err := grpc.Dial(allServers[i%len(allServers)], grpc.WithInsecure())
 		if err != nil {
@@ -32,7 +32,6 @@ func initConn(num int) {
 		}
 		conns[i] = conn
 	}
-
 }
 
 func transParallel(num int) {
@@ -111,7 +110,7 @@ func loadBytes(s string) []byte {
 func transfer(i int) {
 	action := tx.NewAction(contractID, "transfer", `["admin","testID",1]`)
 	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 1000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 5000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, "admin", []*account.KeyPair{acc})
 
 	if err != nil {
@@ -131,25 +130,29 @@ func publish() string {
 	codePath := "transfer.js"
 	abiPath := codePath + ".abi"
 	sdk.SetAccount("admin", acc)
-	sdk.SetServer("54.95.152.91:30002")
-	sdk.SetTxInfo(10000, 100, 90, 0)
+	//sdk.SetServer("54.95.152.91:30002")
+	sdk.SetServer("127.0.0.1:30002")
+	sdk.SetTxInfo(5000000, 100, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
 	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		panic(err)
 	}
 	testID := "testID"
-	err = sdk.CreateNewAccount(testID, testKp, 100000, 10000, 100000)
+	err = sdk.CreateNewAccount(testID, testKp, 1000000, 10000, 100000)
+	if err != nil {
+		panic(err)
+	}
+	err = sdk.PledgeForGas(1500000)
 	if err != nil {
 		panic(err)
 	}
 	sdk.SetAccount(testID, testKp)
-
 	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		panic(err)
 	}
-	time.Sleep(time.Duration(50) * time.Second)
+	time.Sleep(time.Duration(30) * time.Second)
 	client := rpcpb.NewApiServiceClient(conns[0])
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHash})
 	if err != nil {
@@ -158,11 +161,11 @@ func publish() string {
 	if tx.StatusCode(resp.StatusCode) != tx.Success {
 		panic("publish contract fail " + (resp.String()))
 	}
+
 	return "Contract" + txHash
 }
 
 func main() {
-
 	var iterNum = 8000
 	var parallelNum = 100
 	initConn(parallelNum)
