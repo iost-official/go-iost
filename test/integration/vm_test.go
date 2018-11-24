@@ -239,7 +239,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 1185)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 2465)
 
 			ram0 = s.GetRAM(testID[0])
 			ram4 := s.GetRAM(testID[4])
@@ -254,6 +254,45 @@ func Test_RamPayer(t *testing.T) {
 			So(s.GetRAM(testID[6]), ShouldEqual, ram6)
 			So(s.GetRAM(testID[4]), ShouldEqual, ram4 - 139)
 			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 6)
+		})
+	})
+}
+
+func Test_StackHeight(t *testing.T) {
+	ilog.Stop()
+	Convey("test of stack height", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		prepareContract(s)
+		createToken(t, s, kp)
+
+		ca, err := s.Compile("", "./test_data/nest0", "./test_data/nest0")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		cname0, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+
+		ca, err = s.Compile("", "./test_data/nest1", "./test_data/nest1")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		cname1, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+
+		Convey("test of out of stack height", func() {
+			r, err := s.Call(cname0, "sh0", fmt.Sprintf(`["%v"]`, cname1), testID[0], kp)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "stack height exceed.")
 		})
 	})
 }

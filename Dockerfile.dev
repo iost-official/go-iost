@@ -20,12 +20,6 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 # Install Gometalinter
 RUN curl -L https://git.io/vp6lP | sh
 
-# Install Rocksdb
-RUN apt install -y libgflags-dev libsnappy-dev zlib1g-dev libbz2-dev liblz4-dev libzstd-dev
-RUN git clone -b "v5.14.3" https://github.com/facebook/rocksdb.git && \
-cd rocksdb && make static_lib && cp librocksdb.a /lib/x86_64-linux-gnu/
-RUN rm -r rocksdb/
-
 WORKDIR $GOPATH/src/github.com/iost-official/go-iost
 
 CMD ["make"]

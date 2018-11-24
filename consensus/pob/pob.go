@@ -303,13 +303,13 @@ func (p *PoB) scheduleLoop() {
 						limitTime = time.Millisecond * 30
 					}
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
-					ilog.Infof("Gen block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%v",
-						num, p.account.ID[:10], blk.Head.Number, blk.Head.Time, len(blk.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(blk))
 					p.txPool.Release()
 					if err != nil {
 						ilog.Error(err)
 						continue
 					}
+					ilog.Infof("Gen block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%v",
+						num, p.account.ID[:10], blk.Head.Number, blk.Head.Time, len(blk.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(blk))
 					blkByte, err := blk.Encode()
 					if err != nil {
 						ilog.Error(err.Error())
@@ -325,6 +325,9 @@ func (p *PoB) scheduleLoop() {
 					if err != nil {
 						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 						continue
+					}
+					if num == continuousNum-1 {
+						break
 					}
 					select {
 					case <-generateBlockTicker.C:

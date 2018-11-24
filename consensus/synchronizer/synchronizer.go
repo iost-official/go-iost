@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
+	"github.com/uber-go/atomic"
 )
 
 var (
@@ -44,7 +45,7 @@ type SyncImpl struct {
 	dc              DownloadController
 	reqMap          *sync.Map
 	heightMap       *sync.Map
-	syncEnd         int64
+	syncEnd         atomic.Int64
 	lastPrintHeight int64
 
 	messageChan    chan p2p.IncomingMessage
@@ -61,7 +62,6 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		reqMap:       new(sync.Map),
 		heightMap:    new(sync.Map),
 		lastBcn:      nil,
-		syncEnd:      0,
 	}
 	var err error
 	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
@@ -209,7 +209,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	}
 	bcn := sy.blockCache.Head()
 	for bcn != nil && bcn.Block.Head.Witness == sy.baseVariable.Config().ACC.ID {
-		bcn = bcn.Parent
+		bcn = bcn.GetParent()
 	}
 	if bcn == nil {
 		return false
@@ -226,7 +226,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 			if witness == bcn.Block.Head.Witness {
 				num++
 			}
-			bcn = bcn.Parent
+			bcn = bcn.GetParent()
 		}
 	}
 	if num > continuousNum {
@@ -249,7 +249,7 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
-	sy.syncEnd = endNumber
+	sy.syncEnd.Store(endNumber)
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Head.Number+3 < startNumber {
 			time.Sleep(500 * time.Millisecond)
@@ -271,8 +271,8 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
-	ilog.Debugf("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd)
-	if sy.syncEnd <= sy.blockCache.Head().Head.Number {
+	ilog.Debugf("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd.Load())
+	if sy.syncEnd.Load() <= sy.blockCache.Head().Head.Number {
 		sy.baseVariable.SetMode(global.ModeNormal)
 		sy.dc.ReStart()
 	}
@@ -327,7 +327,7 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashRespo
 		var err error
 
 		for node != nil && i < node.Head.Number {
-			node = node.Parent
+			node = node.GetParent()
 		}
 
 		if node != nil {
