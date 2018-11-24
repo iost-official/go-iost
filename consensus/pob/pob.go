@@ -293,8 +293,8 @@ func (p *PoB) scheduleLoop() {
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 				num := 0
 				generateTxsNum = 0
+				p.quitGenerateMode = make(chan struct{})
 				for {
-					p.quitGenerateMode = make(chan struct{})
 					p.txPool.Lock()
 					var limitTime time.Duration
 					if num < continuousNum-2 {
@@ -322,7 +322,6 @@ func (p *PoB) scheduleLoop() {
 						update = true
 					}
 					err = p.handleRecvBlock(blk, update)
-					close(p.quitGenerateMode)
 					if err != nil {
 						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 						continue
@@ -335,13 +334,14 @@ func (p *PoB) scheduleLoop() {
 					case <-generateBlockTicker.C:
 					}
 				}
+				close(p.quitGenerateMode)
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
-			return
+			break
 		}
 	}
 }
