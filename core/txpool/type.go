@@ -50,9 +50,53 @@ const (
 )
 
 type forkChain struct {
+	nrw     sync.RWMutex
 	NewHead *blockcache.BlockCacheNode
+	orw     sync.RWMutex
 	OldHead *blockcache.BlockCacheNode
+	frw     sync.RWMutex
 	ForkBCN *blockcache.BlockCacheNode
+}
+
+// GetNewHead returns forkChain's new head.
+func (f *forkChain) GetNewHead() *blockcache.BlockCacheNode {
+	f.nrw.RLock()
+	defer f.nrw.RUnlock()
+	return f.NewHead
+}
+
+// SetNewHead sets forkChain's new head.
+func (f *forkChain) SetNewHead(n *blockcache.BlockCacheNode) {
+	f.nrw.Lock()
+	f.NewHead = n
+	f.nrw.Unlock()
+}
+
+// GetOldHead returns forkChain's old head.
+func (f *forkChain) GetOldHead() *blockcache.BlockCacheNode {
+	f.orw.RLock()
+	defer f.orw.RUnlock()
+	return f.OldHead
+}
+
+// SetOldHead sets forkChain's old head.
+func (f *forkChain) SetOldHead(n *blockcache.BlockCacheNode) {
+	f.orw.Lock()
+	f.OldHead = n
+	f.orw.Unlock()
+}
+
+// GetForkBCN returns forkChain's fork bcn.
+func (f *forkChain) GetForkBCN() *blockcache.BlockCacheNode {
+	f.frw.RLock()
+	defer f.frw.RUnlock()
+	return f.ForkBCN
+}
+
+func (f *forkChain) SetForkBCN(n *blockcache.BlockCacheNode) {
+	f.frw.Lock()
+	f.ForkBCN = n
+	f.frw.RUnlock()
 }
 
 type blockTx struct {

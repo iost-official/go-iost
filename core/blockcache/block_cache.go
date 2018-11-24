@@ -60,7 +60,7 @@ type BlockCacheNode struct { //nolint:golint
 // GetParent returns the node's parent node.
 func (bcn *BlockCacheNode) GetParent() *BlockCacheNode {
 	bcn.rw.RLock()
-	bcn.rw.RUnlock()
+	defer bcn.rw.RUnlock()
 	return bcn.parent
 }
 
