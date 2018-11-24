@@ -33,6 +33,9 @@ extern void init();
 extern IsolateWrapperPtr newIsolate(CustomStartupData);
 extern void releaseIsolate(IsolateWrapperPtr ptr);
 
+// free memory
+extern void lowMemoryNotification(IsolateWrapperPtr ptr);
+
 extern SandboxPtr newSandbox(IsolateWrapperPtr ptr);
 extern void loadVM(SandboxPtr ptr, int vmType);
 extern void releaseSandbox(SandboxPtr ptr);

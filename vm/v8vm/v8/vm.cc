@@ -59,6 +59,16 @@ void releaseIsolate(IsolateWrapperPtr ptr) {
     return;
 }
 
+void lowMemoryNotification(IsolateWrapperPtr ptr) {
+    if (ptr == nullptr) {
+        return;
+    }
+
+    Isolate *isolate = static_cast<Isolate*>((static_cast<IsolateWrapper*>(ptr))->isolate);
+    isolate->LowMemoryNotification();
+    return;
+}
+
 ValueTuple Execute(SandboxPtr ptr, const char *code, long long int expireTime) {
     ValueTuple ret = Execution(ptr, code, expireTime);
     return ret;
