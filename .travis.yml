@@ -79,4 +79,4 @@ matrix:
     - pyenv global 3.6
     - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
     - aws eks update-kubeconfig --region us-west-2 --name devnet
-    - make e2e_test
+    - make k8s_test
