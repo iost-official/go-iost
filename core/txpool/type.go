@@ -96,7 +96,7 @@ func (f *forkChain) GetForkBCN() *blockcache.BlockCacheNode {
 func (f *forkChain) SetForkBCN(n *blockcache.BlockCacheNode) {
 	f.frw.Lock()
 	f.ForkBCN = n
-	f.frw.RUnlock()
+	f.frw.Unlock()
 }
 
 type blockTx struct {
