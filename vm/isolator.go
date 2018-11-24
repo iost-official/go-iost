@@ -68,8 +68,8 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
-
 		gas, _ := i.h.CurrentGas(i.publisherID)
+		ilog.Debugf("publisher %v current gas %v\n", i.publisherID, gas.ToString())
 		limit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
 		if gas.LessThan(limit) {
 			ilog.Infof("publisher's gas balance is less than gas limit: publisher %v current gas:%v, gas limit:%v\n", i.publisherID, gas.ToString(), limit.ToString())

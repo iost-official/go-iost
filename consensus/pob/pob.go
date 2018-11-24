@@ -47,45 +47,50 @@ type verifyBlockMessage struct {
 
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
-	account         *account.KeyPair
-	baseVariable    global.BaseVariable
-	blockChain      block.Chain
-	blockCache      blockcache.BlockCache
-	txPool          txpool.TxPool
-	p2pService      p2p.Service
-	verifyDB        db.MVCCDB
-	produceDB       db.MVCCDB
-	blockReqMap     *sync.Map
-	exitSignal      chan struct{}
-	chRecvBlock     chan p2p.IncomingMessage
-	chRecvBlockHash chan p2p.IncomingMessage
-	chQueryBlock    chan p2p.IncomingMessage
-	chVerifyBlock   chan *verifyBlockMessage
+	account          *account.KeyPair
+	baseVariable     global.BaseVariable
+	blockChain       block.Chain
+	blockCache       blockcache.BlockCache
+	txPool           txpool.TxPool
+	p2pService       p2p.Service
+	verifyDB         db.MVCCDB
+	produceDB        db.MVCCDB
+	blockReqMap      *sync.Map
+	exitSignal       chan struct{}
+	quitGenerateMode chan struct{}
+	chRecvBlock      chan p2p.IncomingMessage
+	chRecvBlockHash  chan p2p.IncomingMessage
+	chQueryBlock     chan p2p.IncomingMessage
+	chVerifyBlock    chan *verifyBlockMessage
+	mu               *sync.RWMutex
 }
 
 // New init a new PoB.
 func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
 	p := PoB{
-		account:         account,
-		baseVariable:    baseVariable,
-		blockChain:      baseVariable.BlockChain(),
-		blockCache:      blockCache,
-		txPool:          txPool,
-		p2pService:      p2pService,
-		verifyDB:        baseVariable.StateDB(),
-		produceDB:       baseVariable.StateDB().Fork(),
-		blockReqMap:     new(sync.Map),
-		exitSignal:      make(chan struct{}),
-		chRecvBlock:     p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
-		chRecvBlockHash: p2pService.Register("consensus block head", p2p.NewBlockHash),
-		chQueryBlock:    p2pService.Register("consensus query block", p2p.NewBlockRequest),
-		chVerifyBlock:   make(chan *verifyBlockMessage, 1024),
+		account:          account,
+		baseVariable:     baseVariable,
+		blockChain:       baseVariable.BlockChain(),
+		blockCache:       blockCache,
+		txPool:           txPool,
+		p2pService:       p2pService,
+		verifyDB:         baseVariable.StateDB(),
+		produceDB:        baseVariable.StateDB().Fork(),
+		blockReqMap:      new(sync.Map),
+		exitSignal:       make(chan struct{}),
+		quitGenerateMode: make(chan struct{}),
+		chRecvBlock:      p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
+		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
+		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
+		chVerifyBlock:    make(chan *verifyBlockMessage, 1024),
+		mu:               new(sync.RWMutex),
 	}
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	err := p.blockCache.Recover(&p)
 	if err != nil {
 		ilog.Error("Failed to recover blockCache")
 	}
+	close(p.quitGenerateMode)
 	return &p
 }
 
@@ -245,6 +250,9 @@ func (p *PoB) verifyLoop() {
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
+			select {
+			case <-p.quitGenerateMode:
+			}
 			p.doVerifyBlock(vbm)
 		case <-p.exitSignal:
 			return
@@ -284,15 +292,15 @@ func (p *PoB) scheduleLoop() {
 			if !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(time.Now().UnixNano()+int64(time.Millisecond)) == p.account.ID {
 				staticProperty.SlotUsed[time.Now().Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
-				num := 0
 				generateTxsNum = 0
-				for {
+				p.quitGenerateMode = make(chan struct{})
+				for num := 0; num < continuousNum; num++ {
 					p.txPool.Lock()
 					var limitTime time.Duration
 					if num < continuousNum-2 {
 						limitTime = time.Millisecond * 250
 					} else {
-						limitTime = time.Millisecond * 40
+						limitTime = time.Millisecond * 30
 					}
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
 					ilog.Infof("Gen block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%v",
@@ -318,21 +326,18 @@ func (p *PoB) scheduleLoop() {
 						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 						continue
 					}
-					num++
-					if num >= continuousNum {
-						break
-					}
 					select {
 					case <-generateBlockTicker.C:
 					}
 				}
+				close(p.quitGenerateMode)
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
-			return
+			break
 		}
 	}
 }
@@ -356,6 +361,8 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 }
 
 func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
