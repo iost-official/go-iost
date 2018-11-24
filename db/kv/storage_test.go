@@ -214,11 +214,10 @@ func (suite *StorageTestSuite) TearDownTest() {
 
 func TestStorageTestSuite(t *testing.T) {
 	suite.Run(t, &StorageTestSuite{t: LevelDBStorage})
-	suite.Run(t, &StorageTestSuite{t: RocksDBStorage})
 }
 
 func BenchmarkStorage(b *testing.B) {
-	for _, t := range []StorageType{LevelDBStorage, RocksDBStorage} {
+	for _, t := range []StorageType{LevelDBStorage} {
 		storage, err := NewStorage(DBPATH, t)
 		if err != nil {
 			b.Fatalf("Failed to new storage: %v", err)
@@ -270,7 +269,7 @@ func BenchmarkStorage(b *testing.B) {
 }
 
 func BenchmarkKeys(b *testing.B) {
-	for _, t := range []StorageType{LevelDBStorage, RocksDBStorage} {
+	for _, t := range []StorageType{LevelDBStorage} {
 		storage, err := NewStorage(DBPATH, t)
 		if err != nil {
 			b.Fatalf("Failed to new storage: %v", err)

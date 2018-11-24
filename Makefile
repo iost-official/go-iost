@@ -1,6 +1,6 @@
 GO = go
 
-VERSION = 1.0.0
+VERSION = 1.1.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -74,6 +74,9 @@ push:
 
 devimage:
 	docker build -f Dockerfile.dev -t $(DOCKER_DEVIMAGE) .
+
+devpush:
+	docker push $(DOCKER_DEVIMAGE)
 
 swagger:
 	./script/gen_swagger.sh
