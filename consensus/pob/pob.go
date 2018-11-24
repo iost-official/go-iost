@@ -292,10 +292,9 @@ func (p *PoB) scheduleLoop() {
 			if !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(time.Now().UnixNano()+int64(time.Millisecond)) == p.account.ID {
 				staticProperty.SlotUsed[time.Now().Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
-				num := 0
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
-				for {
+				for num := 0; num < continuousNum; num++ {
 					p.txPool.Lock()
 					var limitTime time.Duration
 					if num < continuousNum-2 {
@@ -326,10 +325,6 @@ func (p *PoB) scheduleLoop() {
 					if err != nil {
 						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 						continue
-					}
-					num++
-					if num >= continuousNum {
-						break
 					}
 					select {
 					case <-generateBlockTicker.C:
