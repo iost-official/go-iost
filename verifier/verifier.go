@@ -104,11 +104,13 @@ func (v *Verifier) Gen(blk *block.Block, parent *block.Block, db database.IMulti
 	case 0:
 		err = baseGen(blk, db, pi, isolator, c)
 		droplist, errs = pi.List()
+		pi.Close()
 		return
 	case 1:
 		batcher := NewBatcher()
 		err = batchGen(blk, db, pi, batcher, c)
 		droplist, errs = pi.List()
+		pi.Close()
 		return
 	}
 	pi.Close()

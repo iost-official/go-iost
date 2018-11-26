@@ -189,6 +189,9 @@ func (t *Tx) Decode(b []byte) error {
 
 // String return human-readable tx
 func (t *Tx) String() string {
+	if t == nil {
+		return "<nil *tx.Tx>"
+	}
 	str := "Tx{\n"
 	str += "	Time: " + strconv.FormatInt(t.Time, 10) + ",\n"
 	str += "	Publisher: " + t.Publisher + ",\n"
