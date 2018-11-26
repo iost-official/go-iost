@@ -374,7 +374,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             break;
         }
         //usleep(10);
-        std::this_thread::sleep_for(std::chrono::microseconds(100));
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
     if (exec.joinable())
         exec.join();
