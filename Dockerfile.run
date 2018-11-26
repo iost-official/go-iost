@@ -13,4 +13,4 @@ COPY contract/* /workdir/contract/
 
 WORKDIR /workdir
 
-CMD ["./iserver", "-f", "/var/lib/iserver/iserver.yml"]
+CMD ["./iserver", "-f", "/var/lib/iserver/iserver.yml", "2>&1"]
