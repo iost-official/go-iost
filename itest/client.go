@@ -30,23 +30,21 @@ var (
 
 // Client is a grpc client for iserver
 type Client struct {
-	grpc  rpcpb.ApiServiceClient
-	mutex sync.Mutex
-	Name  string
-	Addr  string
+	grpc rpcpb.ApiServiceClient
+	o    sync.Once
+	Name string
+	Addr string
 }
 
 func (c *Client) getGRPC() (rpcpb.ApiServiceClient, error) {
-	c.mutex.Lock()
-	defer c.mutex.Unlock()
-	if c.grpc == nil {
+	c.o.Do(func() {
 		conn, err := grpc.Dial(c.Addr, grpc.WithInsecure())
 		if err != nil {
-			return nil, err
+			panic(err)
 		}
 		c.grpc = rpcpb.NewApiServiceClient(conn)
 		ilog.Infof("Create grpc connection with %v successful", c.Addr)
-	}
+	})
 	return c.grpc, nil
 }
 
