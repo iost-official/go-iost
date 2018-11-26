@@ -110,7 +110,7 @@ func (h *Teller) DoPay(witness string, gasRatio int64) error {
 			}
 		}
 		// contracts in "iost" domain will not pay for ram
-		if c.Data > 0 && !strings.HasSuffix(k, ".iost") {
+		if !strings.HasSuffix(k, ".iost") {
 			var payer string
 			if h.h.IsContract(k) {
 				p, _ := h.h.GlobalMapGet("system.iost", "contract_owner", k)
