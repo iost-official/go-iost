@@ -27,6 +27,7 @@ var (
 	dbPath1 = "TXDB"
 	dbPath2 = "StateDB"
 	dbPath3 = "BlockChainDB"
+	walPath = "block_cache_wal"
 )
 
 func (pool *TxPImpl) testPendingTxsNum() int64 {
@@ -109,6 +110,7 @@ func TestNewTxPImpl(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 
 		So(err, ShouldBeNil)
+		blockcache.CleanBlockCacheWAL()
 		BlockCache, err := blockcache.NewBlockCache(gbl)
 		So(err, ShouldBeNil)
 
@@ -268,6 +270,7 @@ func TestNewTxPImplB(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 
 		So(err, ShouldBeNil)
+		blockcache.CleanBlockCacheWAL()
 		BlockCache, err := blockcache.NewBlockCache(gbl)
 		So(err, ShouldBeNil)
 
@@ -628,6 +631,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 	//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
 	//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
+	blockcache.CleanBlockCacheWAL()
 	BlockCache, _ := blockcache.NewBlockCache(gl)
 
 	txPool, _ := NewTxPoolImpl(gl, BlockCache, node)
@@ -644,6 +648,7 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(dbPath1)
 	os.RemoveAll(dbPath2)
 	os.RemoveAll(dbPath3)
+	os.RemoveAll(walPath)
 }
 
 func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
