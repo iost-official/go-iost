@@ -9,7 +9,6 @@ package v8
 import "C"
 import (
 	"sync"
-	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
@@ -34,26 +33,24 @@ type VM struct {
 }
 
 // NewVM return new vm with isolate and sandbox
-func NewVM(vmType vmPoolType, jsPath string) *VM {
+func NewVM(poolType vmPoolType, jsPath string) *VM {
 	CVMInitOnce.Do(func() {
 		C.init()
 		customStartupData = C.createStartupData()
 		customCompileStartupData = C.createCompileStartupData()
 	})
 	var isolateWrapperPtr C.IsolateWrapperPtr
-	if vmType == CompileVMPool {
+	if poolType == CompileVMPool {
 		isolateWrapperPtr = C.newIsolate(customCompileStartupData)
 	} else {
 		isolateWrapperPtr = C.newIsolate(customStartupData)
 	}
 	e := &VM{
 		isolate: isolateWrapperPtr,
-		vmType:  vmType,
+		vmType:  poolType,
 		jsPath:  jsPath,
 	}
 	e.sandbox = NewSandbox(e)
-
-	go e.memoryNotification()
 
 	return e
 }
@@ -111,12 +108,23 @@ func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
 	e.releaseChannel = releaseChannel
 }
 
-func (e *VM) recycle() {
+func (e *VM) recycle(poolType vmPoolType) {
 	// first release sandbox
 	if e.sandbox != nil {
 		e.sandbox.Release()
 	}
-	// then gen new sandbox
+	// second release isolate
+	if e.isolate != nil {
+		C.releaseIsolate(e.isolate)
+	}
+
+	// regen isolate
+	if poolType == CompileVMPool {
+		e.isolate = C.newIsolate(customCompileStartupData)
+	} else {
+		e.isolate = C.newIsolate(customStartupData)
+	}
+	// then regen new sandbox
 	e.sandbox = NewSandbox(e)
 	if e.releaseChannel != nil {
 		e.releaseChannel <- e
@@ -136,14 +144,4 @@ func (e *VM) release() {
 		C.releaseIsolate(e.isolate)
 	}
 	e.isolate = nil
-}
-
-func (e *VM) memoryNotification() {
-	ticker := time.NewTicker(time.Second * 30)
-	for range ticker.C {
-		if e.refCount.Load() > 0 {
-			e.refCount.Store(0)
-			C.lowMemoryNotification(e.isolate)
-		}
-	}
 }
