@@ -15,7 +15,6 @@
 package iwallet
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 	"strings"
@@ -26,31 +25,20 @@ var nodeCmd = &cobra.Command{
 	Use:   "state",
 	Short: "Get blockchain and node state",
 	Long:  `Get blockchain and node state`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		n, err := sdk.getNodeInfo()
 		if err != nil {
 			fmt.Printf("cannot get node info %v\nn", err)
 			return
 		}
-		ret, err := json.MarshalIndent(n, "", "    ")
-		if err != nil {
-			fmt.Printf("error %v\n", err)
-			return
-		}
-		fmt.Print(strings.TrimRight(string(ret), "}"))
+		fmt.Print(strings.TrimRight(marshalTextString(n), "}"))
 		c, err := sdk.getChainInfo()
 		if err != nil {
 			fmt.Printf("cannot get chain info %v\n", err)
 			return
 		}
-		ret, err = json.MarshalIndent(c, "", "    ")
-		if err != nil {
-			fmt.Printf("error %v\n", err)
-			return
-		}
-
-		fmt.Println(strings.Replace(string(ret), "{\n", "", 1))
-
+		fmt.Println(strings.Replace(marshalTextString(c), "{\n", "", 1))
+		return nil
 	},
 }
 
