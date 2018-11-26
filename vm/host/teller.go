@@ -43,7 +43,9 @@ func (h *Teller) ClearCosts() {
 func (h *Teller) ClearRAMCosts() {
 	newCost := make(map[string]contract.Cost)
 	for k, c := range h.cost {
-		newCost[k] = contract.NewCost(0, c.Net, c.CPU)
+		if c.Net != 0 || c.CPU != 0 {
+			newCost[k] = contract.NewCost(0, c.Net, c.CPU)
+		}
 	}
 	h.cost = newCost
 }
@@ -112,7 +114,11 @@ func (h *Teller) DoPay(witness string, gasRatio int64) error {
 			var payer string
 			if h.h.IsContract(k) {
 				p, _ := h.h.GlobalMapGet("system.iost", "contract_owner", k)
-				payer = p.(string)
+				var ok bool
+				payer, ok = p.(string)
+				if !ok {
+					return fmt.Errorf("DoPay failed: contract %v has no owner", k)
+				}
 			} else {
 				payer = k
 			}

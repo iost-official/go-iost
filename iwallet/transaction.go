@@ -15,7 +15,6 @@
 package iwallet
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +24,7 @@ var transactionCmd = &cobra.Command{
 	Use:   "transaction",
 	Short: "find transactions",
 	Long:  `find transaction by transaction hash`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
 			fmt.Println(`Error: transaction hash not given`)
 			return
@@ -34,12 +33,8 @@ var transactionCmd = &cobra.Command{
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		ret, err := json.MarshalIndent(txRaw, "", "    ")
-		if err != nil {
-			fmt.Printf("error %v\n", err)
-			return
-		}
-		fmt.Println(string(ret))
+		fmt.Println(marshalTextString(txRaw))
+		return nil
 	},
 }
 

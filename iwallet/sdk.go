@@ -388,7 +388,9 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 	fmt.Printf("send tx done\n")
 	fmt.Println("the create user transaction hash is:", txHash)
 	if s.checkResult {
-		s.checkTransaction(txHash)
+		if !s.checkTransaction(txHash) {
+			return fmt.Errorf("create new account %v transaction failed", newID)
+		}
 	}
 	fmt.Printf("\nbalance of %v\n", newID)
 	info, err := s.getAccountInfo(newID)

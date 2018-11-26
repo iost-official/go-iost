@@ -57,7 +57,7 @@ func marshalTextString(pb proto.Message) string {
 	m.Indent = "    "
 	r, err := m.MarshalToString(pb)
 	if err != nil {
-		return err.Error()
+		return "json.Marshal error: " + err.Error()
 	}
 	return r
 }

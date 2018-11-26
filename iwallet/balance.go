@@ -15,7 +15,6 @@
 package iwallet
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/spf13/cobra"
 )
@@ -25,7 +24,7 @@ var accountInfoCmd = &cobra.Command{
 	Use:   "balance",
 	Short: "check information of specified account",
 	Long:  `check information of specified account`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
 			fmt.Println("please enter the account ID")
 			return
@@ -37,12 +36,8 @@ var accountInfoCmd = &cobra.Command{
 			fmt.Println(err)
 			return
 		}
-		ret, err := json.MarshalIndent(info, "", "    ")
-		if err != nil {
-			fmt.Printf("error %v\n", err)
-			return
-		}
-		fmt.Println(string(ret))
+		fmt.Println(marshalTextString(info))
+		return nil
 	},
 }
 
