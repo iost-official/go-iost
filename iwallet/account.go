@@ -26,10 +26,11 @@ import (
 )
 
 var (
-	createName   string
-	viewAccounts string
-	deleteMethod string
-	cryptoName   = []string{"ed25519", "secp256k1"}
+	createName    string
+	viewAccounts  string
+	importAccount string
+	deleteMethod  string
+	cryptoName    = []string{"ed25519", "secp256k1"}
 )
 
 type acc struct {
@@ -57,6 +58,8 @@ var accountCmd = &cobra.Command{
 			viewAccount(viewAccounts)
 		case len(deleteMethod) != 0:
 			delAccount(deleteMethod)
+		case len(importAccount) != 0:
+			importAcc(importAccount, args)
 		}
 
 	},
@@ -66,6 +69,7 @@ func init() {
 	rootCmd.AddCommand(accountCmd)
 	accountCmd.Flags().StringVarP(&createName, "create", "c", "", "create an account on blockchain")
 	accountCmd.Flags().StringVarP(&viewAccounts, "accounts", "a", "", "view account by name or All")
+	accountCmd.Flags().StringVarP(&importAccount, "import", "i", "", "import an account, args[account_name account_private_key]")
 	accountCmd.Flags().StringVarP(&deleteMethod, "delete", "", "", "delete an account")
 }
 
@@ -145,7 +149,7 @@ func viewAccount(name string) {
 		}
 	} else {
 		for _, v := range cryptoName {
-			n := dir + "/" + name + "_" + v
+			n := fmt.Sprintf("%s/%s_%s", dir, name, v)
 			fsk, err := readFile(n)
 			if err != nil {
 				continue
@@ -167,13 +171,29 @@ func viewAccount(name string) {
 	}
 }
 
+func importAcc(name string, args []string) {
+	if len(args) == 0 {
+		fmt.Println("Error: private key not given")
+		return
+	}
+	keyPair, err := account.NewKeyPair(loadBytes(args[0]), sdk.getSignAlgo())
+	if err != nil {
+		fmt.Println("private key error: ", err)
+		return
+	}
+	err = sdk.saveAccount(name, keyPair)
+	if err != nil {
+		fmt.Printf("saveAccount failed %v\n", err)
+	}
+}
+
 func delAccount(name string) error {
 	dir, err := sdk.getAccountDir()
 	if err != nil {
 		return fmt.Errorf("getAccountDir error: %v", err)
 	}
 	for _, v := range cryptoName {
-		n := dir + "/" + name + "_" + v
+		n := fmt.Sprintf("%s/%s_%s", dir, name, v)
 		os.Remove(n)
 		os.Remove(n + ".id")
 		os.Remove(n + ".pub")
