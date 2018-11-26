@@ -3,7 +3,8 @@
 (function () {
     function isRegExp(regStr) {
         if (typeof regStr === 'object') {
-            throw new Error('regExp is not allowed!');
+            const throwErr = 'regExp is not allowed: ' + regStr.toString();
+            throw new Error(throwErr);
         }
     }
 
