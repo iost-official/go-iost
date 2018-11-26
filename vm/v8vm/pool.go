@@ -68,7 +68,7 @@ func (vmp *VMPool) SetJSPath(path string) {
 func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 	vm := vmp.getCompileVM()
 	defer func() {
-		go vm.recycle()
+		go vm.recycle(CompileVMPool)
 	}()
 
 	return vm.compile(contract)
@@ -78,7 +78,7 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 	vm := vmp.getRunVM()
 	defer func() {
-		go vm.recycle()
+		go vm.recycle(RunVMPool)
 	}()
 
 	vm.setHost(host)
