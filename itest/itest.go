@@ -11,7 +11,7 @@ import (
 // Constant of itest
 const (
 	Zero          = 1e-6
-	concurrentNum = 200
+	concurrentNum = 500
 )
 
 type semaphore chan struct{}
