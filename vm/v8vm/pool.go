@@ -34,15 +34,11 @@ func NewVMPool(compilePoolSize, runPoolSize int) *VMPool {
 }
 
 func (vmp *VMPool) getCompileVM() *VM {
-	vm := <-vmp.compilePoolBuff
-	vm.refCount.Inc()
-	return vm
+	return <-vmp.compilePoolBuff
 }
 
 func (vmp *VMPool) getRunVM() *VM {
-	vm := <-vmp.runPoolBuff
-	vm.refCount.Inc()
-	return vm
+	return <-vmp.runPoolBuff
 }
 
 // Init init VMPool.
@@ -68,7 +64,7 @@ func (vmp *VMPool) SetJSPath(path string) {
 func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 	vm := vmp.getCompileVM()
 	defer func() {
-		go vm.recycle(CompileVMPool)
+		go vm.recycle()
 	}()
 
 	return vm.compile(contract)
@@ -78,7 +74,7 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 	vm := vmp.getRunVM()
 	defer func() {
-		go vm.recycle(RunVMPool)
+		go vm.recycle()
 	}()
 
 	vm.setHost(host)

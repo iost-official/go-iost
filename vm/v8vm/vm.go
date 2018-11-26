@@ -12,7 +12,6 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
-	"github.com/uber-go/atomic"
 )
 
 // CVMInitOnce vm init once
@@ -26,7 +25,6 @@ type VM struct {
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
-	refCount             atomic.Int64
 	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
@@ -51,6 +49,8 @@ func NewVM(poolType vmPoolType, jsPath string) *VM {
 		jsPath:  jsPath,
 	}
 	e.sandbox = NewSandbox(e)
+
+	//go e.memoryNotification()
 
 	return e
 }
@@ -108,24 +108,15 @@ func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
 	e.releaseChannel = releaseChannel
 }
 
-func (e *VM) recycle(poolType vmPoolType) {
+func (e *VM) recycle() {
 	// first release sandbox
 	if e.sandbox != nil {
 		e.sandbox.Release()
 	}
-	// second release isolate
-	if e.isolate != nil {
-		C.releaseIsolate(e.isolate)
-	}
 
-	// regen isolate
-	if poolType == CompileVMPool {
-		e.isolate = C.newIsolate(customCompileStartupData)
-	} else {
-		e.isolate = C.newIsolate(customStartupData)
-	}
-	// then regen new sandbox
+	// then gen new sandbox
 	e.sandbox = NewSandbox(e)
+	C.lowMemoryNotification(e.isolate)
 	if e.releaseChannel != nil {
 		e.releaseChannel <- e
 	}
