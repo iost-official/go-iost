@@ -15,7 +15,6 @@
 package iwallet
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -32,14 +31,13 @@ var blockCmd = &cobra.Command{
 	Short: "print block info, default find by block number",
 	Long:  `print block info, default find by block number`,
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
 			fmt.Println(`Error: block num or hash not given`)
 			return
 		}
 		var blockInfo *rpcpb.BlockResponse
 		var num int64
-		var err error
 		if method == "num" {
 			num, err = strconv.ParseInt(args[0], 10, 64)
 			if err != nil {
@@ -61,13 +59,8 @@ var blockCmd = &cobra.Command{
 			fmt.Println("please enter correct method arg")
 			return
 		}
-		ret, err := json.MarshalIndent(blockInfo, "", "    ")
-		if err != nil {
-			fmt.Printf("error %v\n", err)
-			return
-		}
-
-		fmt.Println(string(ret))
+		fmt.Println(marshalTextString(blockInfo))
+		return nil
 	},
 }
 

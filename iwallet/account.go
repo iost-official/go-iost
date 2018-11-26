@@ -26,11 +26,14 @@ import (
 )
 
 var (
-	createName    string
-	viewAccounts  string
-	importAccount string
-	deleteMethod  string
-	cryptoName    = []string{"ed25519", "secp256k1"}
+	createName       string
+	viewAccounts     string
+	importAccount    string
+	deleteMethod     string
+	cryptoName       = []string{"ed25519", "secp256k1"}
+	initialRAM       int64
+	initialBalance   int64
+	initialGasPledge int64
 )
 
 type acc struct {
@@ -47,13 +50,10 @@ var accountCmd = &cobra.Command{
 	Use:   "account",
 	Short: "KeyPair manage",
 	Long:  `Manage account of local storage`,
-	Run: func(cmd *cobra.Command, args []string) {
-		//if len(createName) != 0 {
-		//
-		//}
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		switch {
 		case len(createName) != 0:
-			createAccount(createName)
+			return createAccount(createName)
 		case len(viewAccounts) != 0:
 			viewAccount(viewAccounts)
 		case len(deleteMethod) != 0:
@@ -61,6 +61,7 @@ var accountCmd = &cobra.Command{
 		case len(importAccount) != 0:
 			importAcc(importAccount, args)
 		}
+		return nil
 
 	},
 }
@@ -71,34 +72,35 @@ func init() {
 	accountCmd.Flags().StringVarP(&viewAccounts, "accounts", "a", "", "view account by name or All")
 	accountCmd.Flags().StringVarP(&importAccount, "import", "i", "", "import an account, args[account_name account_private_key]")
 	accountCmd.Flags().StringVarP(&deleteMethod, "delete", "", "", "delete an account")
+	accountCmd.Flags().Int64VarP(&initialRAM, "initial_ram", "", 1024, "buy $initial_ram bytes ram for the new account")
+	accountCmd.Flags().Int64VarP(&initialGasPledge, "initial_gas_pledge", "", 10, "pledge $initial_gas_pledge IOSTs for the new account")
+	accountCmd.Flags().Int64VarP(&initialBalance, "initial_balance", "", 0, "transfer $initial_balance IOSTs to the new account")
+
 }
 
-func createAccount(name string) {
+func createAccount(name string) (err error) {
 	newName := name
 	if strings.ContainsAny(newName, `?*:|/\"`) || len(newName) > 16 {
-		fmt.Printf("invalid account name\n")
-		return
+		return fmt.Errorf("invalid account name")
 	}
 	algo := sdk.getSignAlgo()
 	newKp, err := account.NewKeyPair(nil, algo)
 	if err != nil {
-		fmt.Printf("create key pair failed %v\n", err)
-		return
+		return fmt.Errorf("create key pair failed %v", err)
 	}
 	err = sdk.loadAccount()
 	if err != nil {
-		fmt.Printf("load account failed. Is ~/.iwallet/<accountName>_ed25519 exists?\n")
-		return
+		return fmt.Errorf("load account failed. Is ~/.iwallet/<accountName>_ed25519 exists")
 	}
-	err = sdk.CreateNewAccount(newName, newKp, 10, 600, 0)
+	err = sdk.CreateNewAccount(newName, newKp, initialGasPledge, initialRAM, initialBalance)
 	if err != nil {
-		fmt.Printf("create new account error %v\n", err)
-		return
+		return fmt.Errorf("create new account error %v", err)
 	}
 	err = sdk.saveAccount(newName, newKp)
 	if err != nil {
-		fmt.Printf("saveAccount failed %v\n", err)
+		return fmt.Errorf("saveAccount failed %v", err)
 	}
+	return nil
 }
 
 func viewAccount(name string) {

@@ -26,7 +26,7 @@ var keyCmd = &cobra.Command{
 	Use:   "key",
 	Short: "create a keyPair",
 	Long:  `create a keyPair`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		n, err := account.NewKeyPair(nil, sdk.getSignAlgo())
 		if err != nil {
 			fmt.Printf("NewKeyPair error %v\nn", err)
@@ -38,6 +38,7 @@ var keyCmd = &cobra.Command{
 			return
 		}
 		fmt.Println(string(ret))
+		return nil
 	},
 }
 

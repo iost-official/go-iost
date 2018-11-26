@@ -239,14 +239,14 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 		value, _ = h.GlobalMapGet(req.GetId(), req.GetKey(), req.GetField())
 	}
 	var data string
-	if reflect.TypeOf(value).Kind() != reflect.String {
+	if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
+		data = value.(string)
+	} else {
 		bytes, err := json.Marshal(value)
 		if err != nil {
 			return nil, fmt.Errorf("cannot unmarshal %v", value)
 		}
 		data = string(bytes)
-	} else {
-		data = value.(string)
 	}
 	return &rpcpb.GetContractStorageResponse{
 		Data: data,

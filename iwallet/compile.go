@@ -56,22 +56,20 @@ var compileCmd = &cobra.Command{
 	example:iwallet compile ./example.js ./example.js.abi
 	`,
 
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
 			fmt.Println(`Error: source code file not given`)
 			return
 		}
 		codePath := args[0]
 		var abiPath string
-		var err error
 		if genABI {
 			abiPath, err := generateABI(codePath)
 			if err != nil {
-				fmt.Printf("failed to gen abi %v\n", err)
-			} else {
-				fmt.Printf("gen abi done. abi: %v\n", abiPath)
+				return fmt.Errorf("failed to gen abi %v", err)
 			}
-			return
+			fmt.Printf("gen abi done. abi: %v\n", abiPath)
+			return nil
 		}
 
 		if len(args) < 2 {
@@ -108,8 +106,11 @@ var compileCmd = &cobra.Command{
 			succ := sdk.checkTransaction(txHash)
 			if succ {
 				fmt.Println("The contract id is Contract" + txHash)
+			} else {
+				return fmt.Errorf("check transaction failed")
 			}
 		}
+		return nil
 	},
 }
 
