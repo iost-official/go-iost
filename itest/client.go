@@ -146,9 +146,7 @@ func (c *Client) checkTransaction(hash string) error {
 		select {
 		case <-afterTimeout:
 			return ErrTimeout
-		default:
-			<-ticker.C
-
+		case <-ticker.C:
 			ilog.Debugf("Get receipt for %v...", hash)
 			r, err := c.GetReceipt(hash)
 			if err != nil {
