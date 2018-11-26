@@ -96,5 +96,6 @@ func TestSynchronizer(t *testing.T) {
 		err = sy.syncBlocks(1, 15)
 		So(err, ShouldBeNil)
 		time.Sleep(200 * time.Millisecond)
+		blockcache.CleanBlockCacheWAL()
 	})
 }
