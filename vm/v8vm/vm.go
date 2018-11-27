@@ -14,7 +14,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
-const VMRefLimit = 200
+const vmRefLimit = 200
 
 // CVMInitOnce vm init once
 var CVMInitOnce = sync.Once{}
@@ -115,7 +115,7 @@ func (e *VM) recycle(poolType vmPoolType) {
 		e.sandbox.Release()
 	}
 
-	if e.refCount == VMRefLimit {
+	if e.refCount == vmRefLimit {
 		// release isolate
 		if e.isolate != nil {
 			e.refCount = 0
