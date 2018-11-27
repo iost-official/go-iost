@@ -62,6 +62,7 @@ type PoB struct {
 	chRecvBlockHash  chan p2p.IncomingMessage
 	chQueryBlock     chan p2p.IncomingMessage
 	chVerifyBlock    chan *verifyBlockMessage
+	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
 }
 
@@ -83,6 +84,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chVerifyBlock:    make(chan *verifyBlockMessage, 1024),
+		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 	}
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
@@ -96,6 +98,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
+	p.wg.Add(4)
 	go p.messageLoop()
 	go p.blockLoop()
 	go p.verifyLoop()
@@ -106,9 +109,11 @@ func (p *PoB) Start() error {
 //Stop make the PoB stop
 func (p *PoB) Stop() {
 	close(p.exitSignal)
+	p.wg.Wait()
 }
 
 func (p *PoB) messageLoop() {
+	defer p.wg.Done()
 	for {
 		if p.baseVariable.Mode() != global.ModeInit {
 			break
@@ -247,6 +252,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 }
 
 func (p *PoB) verifyLoop() {
+	defer p.wg.Done()
 	for {
 		select {
 		case vbm := <-p.chVerifyBlock:
@@ -262,6 +268,7 @@ func (p *PoB) verifyLoop() {
 
 func (p *PoB) blockLoop() {
 	ilog.Infof("start blockloop")
+	defer p.wg.Done()
 	for {
 		select {
 		case incomingMessage, ok := <-p.chRecvBlock:
@@ -283,6 +290,7 @@ func (p *PoB) blockLoop() {
 }
 
 func (p *PoB) scheduleLoop() {
+	defer p.wg.Done()
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
 	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 	for {
@@ -340,7 +348,7 @@ func (p *PoB) scheduleLoop() {
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
-			break
+			return
 		}
 	}
 }
