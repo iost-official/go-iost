@@ -85,8 +85,7 @@ func main() {
 			log.Fatal("error: ", err)
 		}
 	}
-	timeUsed := time.Since(a).Nanoseconds()
-	tps := int(1000 / (float64(timeUsed) / 1000000 / float64(times)))
+	tps := float64(times) / time.Since(a).Seconds()
 	fmt.Println("time used: ", time.Since(a))
 	fmt.Println("each: ", tps)
 }

@@ -230,7 +230,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 		s.Conn().Close()
 		return
 	}
-	ilog.Debugf("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+	//ilog.Debugf("handle new stream. pid=%s, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer != nil {
@@ -279,7 +279,7 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 		case <-pm.quitCh:
 			return
 		case <-time.After(syncRoutingTableInterval):
-			ilog.Debugf("start sync routing table.")
+			//ilog.Debugf("start sync routing table.")
 			pm.routingQuery([]string{pm.host.ID().Pretty()})
 		}
 	}
@@ -617,7 +617,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 
 // handleRoutingTableQuery picks the nearest peers of the given peerIDs and sends the result to it.
 func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) {
-	ilog.Debug("handling routing table query.")
+	//ilog.Debug("handling routing table query.")
 	data, _ := msg.data()
 
 	query := &p2pb.RoutingQuery{}
@@ -636,7 +636,7 @@ func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) 
 
 // handleRoutingTableResponse stores the peer information received.
 func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
-	ilog.Debug("handling routing table response.")
+	//ilog.Debug("handling routing table response.")
 
 	data, _ := msg.data()
 
@@ -646,7 +646,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 		ilog.Errorf("pb decode failed. err=%v, str=%s", err, data)
 		return
 	}
-	ilog.Debugf("receiving peer infos: %v", resp)
+	//ilog.Debugf("receiving peer infos: %v", resp)
 	for _, peerInfo := range resp.Peers {
 		if len(peerInfo.Addrs) > 0 {
 			pid, err := peer.IDB58Decode(peerInfo.Id)
