@@ -7,13 +7,14 @@ import (
 
 	"time"
 
+	"encoding/json"
+
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/v8vm"
-	"encoding/json"
 )
 
 var vmPool *v8.VMPool
