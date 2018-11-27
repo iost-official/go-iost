@@ -35,7 +35,7 @@ var callCmd = &cobra.Command{
 	the parameters is a string whose format is: ["arg0","arg1",...]
 	example:./iwallet call "token.iost" "Transfer" '["iost","user0001","user0002","123.45",""]'
 	`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		argc := len(args)
 		if argc%3 != 0 {
 			fmt.Println(`Error: number of args should be a multiplier of 3`)
@@ -71,8 +71,11 @@ var callCmd = &cobra.Command{
 		fmt.Println("send tx done")
 		fmt.Println("the transaction hash is:", txHash)
 		if sdk.checkResult {
-			sdk.checkTransaction(txHash)
+			if !sdk.checkTransaction(txHash) {
+				return fmt.Errorf("check transaction failed")
+			}
 		}
+		return nil
 	},
 }
 
