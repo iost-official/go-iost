@@ -10,8 +10,19 @@ import (
 
 // Constant of itest
 const (
-	Zero = 1e-6
+	Zero          = 1e-6
+	concurrentNum = 500
 )
+
+type semaphore chan struct{}
+
+func (s semaphore) acquire() {
+	s <- struct{}{}
+}
+
+func (s semaphore) release() {
+	<-s
+}
 
 // ITest is the test controller
 type ITest struct {
@@ -53,17 +64,22 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 	ilog.Infof("Create %v account...", num)
 
 	res := make(chan interface{})
-	for i := 0; i < num; i++ {
-		go func(n int, res chan interface{}) {
-			name := fmt.Sprintf("account%04d", n)
-			account, err := t.CreateAccount(name)
-			if err != nil {
-				res <- err
-			} else {
-				res <- account
-			}
-		}(i, res)
-	}
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(n int, res chan interface{}) {
+				defer sem.release()
+				name := fmt.Sprintf("account%04d", n)
+				account, err := t.CreateAccount(name)
+				if err != nil {
+					res <- err
+				} else {
+					res <- account
+				}
+			}(i, res)
+		}
+	}()
 
 	accounts := []*Account{}
 	for i := 0; i < num; i++ {
@@ -118,19 +134,24 @@ func (t *ITest) TransferN(num int, accounts []*Account) error {
 	ilog.Infof("Send %v transfer transaction...", num)
 
 	res := make(chan interface{})
-	for i := 0; i < num; i++ {
-		go func(res chan interface{}) {
-			A := accounts[rand.Intn(len(accounts))]
-			B := accounts[rand.Intn(len(accounts))]
-			amount := float64(rand.Int63n(10000)+1) / 100
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				B := accounts[rand.Intn(len(accounts))]
+				amount := float64(rand.Int63n(10000)+1) / 100
 
-			A.AddBalance(-amount)
-			B.AddBalance(amount)
-			ilog.Debugf("Transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+				A.AddBalance(-amount)
+				B.AddBalance(amount)
+				ilog.Debugf("Transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
 
-			res <- t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
-		}(res)
-	}
+				res <- t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
+			}(res)
+		}
+	}()
 
 	for i := 0; i < num; i++ {
 		switch value := (<-res).(type) {
@@ -150,19 +171,24 @@ func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account) erro
 	ilog.Infof("Send %v contract transfer transaction...", num)
 
 	res := make(chan interface{})
-	for i := 0; i < num; i++ {
-		go func(res chan interface{}) {
-			A := accounts[rand.Intn(len(accounts))]
-			B := accounts[rand.Intn(len(accounts))]
-			amount := float64(rand.Int63n(10000)+1) / 100
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				B := accounts[rand.Intn(len(accounts))]
+				amount := float64(rand.Int63n(10000)+1) / 100
 
-			A.AddBalance(-amount)
-			B.AddBalance(amount)
-			ilog.Debugf("Contract transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+				A.AddBalance(-amount)
+				B.AddBalance(amount)
+				ilog.Debugf("Contract transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
 
-			res <- t.ContractTransfer(cid, A, B, fmt.Sprintf("%0.8f", amount))
-		}(res)
-	}
+				res <- t.ContractTransfer(cid, A, B, fmt.Sprintf("%0.8f", amount))
+			}(res)
+		}
+	}()
 
 	for i := 0; i < num; i++ {
 		switch value := (<-res).(type) {
