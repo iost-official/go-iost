@@ -152,7 +152,7 @@ func (p *PoB) messageLoop() {
 func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 	_, ok := p.blockReqMap.Load(string(blkInfo.Hash))
 	if ok {
-		ilog.Debug("block in block request map, block number: ", blkInfo.Number)
+		//ilog.Debug("block in block request map, block number: ", blkInfo.Number)
 		return
 	}
 	_, err := p.blockCache.Find(blkInfo.Hash)
@@ -289,8 +289,9 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
-			if !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(time.Now().UnixNano()+int64(time.Millisecond)) == p.account.ID {
-				staticProperty.SlotUsed[time.Now().Unix()] = true
+			t := time.Now()
+			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()+int64(time.Millisecond)) == p.account.ID {
+				staticProperty.SlotUsed[t.Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
@@ -302,7 +303,7 @@ func (p *PoB) scheduleLoop() {
 					} else {
 						limitTime = time.Millisecond * 30
 					}
-					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
+					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime, t)
 					p.txPool.Release()
 					if err != nil {
 						ilog.Error(err)

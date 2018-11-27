@@ -17,7 +17,7 @@ import (
 var vmPool *v8.VMPool
 
 func init() {
-	vmPool = v8.NewVMPool(3, 100)
+	vmPool = v8.NewVMPool(3, 1000)
 	vmPool.SetJSPath("../v8/libjs/")
 	vmPool.Init()
 }
@@ -78,13 +78,14 @@ func main() {
 
 	var i = 0
 	for ; i < times; i++ {
+		expTime := time.Now().Add(time.Second)
+		host.SetDeadline(expTime)
 		_, _, err := vmPool.LoadAndCall(host, code, "show")
 		if err != nil {
 			log.Fatal("error: ", err)
 		}
 	}
-	timeUsed := time.Since(a).Nanoseconds()
-	tps := int(1000 / (float64(timeUsed) / 1000000 / float64(times)))
+	tps := float64(times) / time.Since(a).Seconds()
 	fmt.Println("time used: ", time.Since(a))
 	fmt.Println("each: ", tps)
 }

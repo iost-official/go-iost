@@ -319,7 +319,7 @@ func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {
 	if bh.Time <= 1 {
 		panic(fmt.Sprintf("invalid blockhead time %v", bh.Time))
 	}
-	ilog.Debugf("loadBlkInfooadBlkInfo set time to %v", bh.Time)
+	//ilog.Debugf("loadBlkInfooadBlkInfo set time to %v", bh.Time)
 	return c
 }
 
