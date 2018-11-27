@@ -193,8 +193,8 @@ func (st *SortedTxMap) Del(hash []byte) {
 
 // Size returns the size of SortedTxMap.
 func (st *SortedTxMap) Size() int {
-	st.rw.Lock()
-	defer st.rw.Unlock()
+	st.rw.RLock()
+	defer st.rw.RUnlock()
 
 	return len(st.txMap)
 }
@@ -226,8 +226,9 @@ type iterRes struct {
 
 func (iter *Iterator) getNext() {
 	iter.rw.RLock()
+	defer iter.rw.RUnlock()
+
 	ok := iter.iter.Prev()
-	iter.rw.RUnlock()
 	if !ok {
 		iter.res <- &iterRes{nil, false}
 		return

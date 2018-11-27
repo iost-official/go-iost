@@ -11,10 +11,16 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
+	"golang.org/x/net/netutil"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
+)
+
+const (
+	maxConcurrentStreams = 200
+	connectionLimit      = 128
 )
 
 // Server is the rpc server including grpc server and json gateway server.
@@ -32,7 +38,9 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 		grpcAddr:    bv.Config().RPC.GRPCAddr,
 		gatewayAddr: bv.Config().RPC.GatewayAddr,
 	}
-	s.grpcServer = grpc.NewServer(grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(metricsMiddleware)))
+	s.grpcServer = grpc.NewServer(
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(metricsMiddleware)),
+		grpc.MaxConcurrentStreams(maxConcurrentStreams))
 	apiService := NewAPIService(tp, bc, bv, p2pService)
 	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
 	return s
@@ -51,6 +59,7 @@ func (s *Server) startGrpc() error {
 	if err != nil {
 		return err
 	}
+	lis = netutil.LimitListener(lis, connectionLimit)
 	go func() {
 		if err := s.grpcServer.Serve(lis); err != nil {
 			ilog.Fatalf("start grpc failed. err=%v", err)
