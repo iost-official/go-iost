@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 )
@@ -131,7 +132,10 @@ func (c *Client) startPush() {
 	for {
 		select {
 		case <-timer.C:
-			c.pusher.Push()
+			err := c.pusher.Push()
+			if err != nil {
+				ilog.Info("push failed: ", err)
+			}
 			timer.Reset(pushInterval)
 		case <-c.exitCh:
 			timer.Stop()

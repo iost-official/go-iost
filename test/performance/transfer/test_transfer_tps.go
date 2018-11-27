@@ -24,7 +24,7 @@ var sdk = iwallet.SDK{}
 
 func initConn(num int) {
 	conns = make([]*grpc.ClientConn, num)
-	allServers := []string{"127.0.0.1:30002"} //, "54.64.205.127:30002"}
+	allServers := []string{"18.182.146.155:30002", "54.64.205.127:30002"}
 	for i := 0; i < num; i++ {
 		conn, err := grpc.Dial(allServers[i%len(allServers)], grpc.WithInsecure())
 		if err != nil {
@@ -130,8 +130,8 @@ func publish() string {
 	codePath := "transfer.js"
 	abiPath := codePath + ".abi"
 	sdk.SetAccount("admin", acc)
-	//sdk.SetServer("54.95.152.91:30002")
-	sdk.SetServer("127.0.0.1:30002")
+	sdk.SetServer("54.95.152.91:30002")
+	//sdk.SetServer("127.0.0.1:30002")
 	sdk.SetTxInfo(5000000, 100, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
 	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
