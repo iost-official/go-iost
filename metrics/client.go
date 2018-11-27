@@ -134,7 +134,7 @@ func (c *Client) startPush() {
 		case <-timer.C:
 			err := c.pusher.Push()
 			if err != nil {
-				ilog.Info("push failed: %v", err)
+				ilog.Info("push failed: ", err)
 			}
 			timer.Reset(pushInterval)
 		case <-c.exitCh:
