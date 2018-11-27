@@ -17,7 +17,7 @@ import (
 var vmPool *v8.VMPool
 
 func init() {
-	vmPool = v8.NewVMPool(3, 1000)
+	vmPool = v8.NewVMPool(3, 100)
 	vmPool.SetJSPath("../v8/libjs/")
 	vmPool.Init()
 }
