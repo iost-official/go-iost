@@ -7,6 +7,18 @@
             "args": [
                 "json"
             ]
+        },
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "InitAdmin",
+            "args": [
+                "string"
+            ]
         }
     ]
 }
