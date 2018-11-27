@@ -34,10 +34,10 @@ var (
 )
 
 var (
-	blockReqTimeout  = 3 * time.Second
-	continuousNum    = 10
-	tmpWitness       = ""
-	tmpcontinuousNum = 0
+	blockReqTimeout = 3 * time.Second
+	continuousNum   = 10
+	tWitness        = ""
+	tContinuousNum  = 0
 )
 
 type verifyBlockMessage struct {
@@ -309,7 +309,7 @@ func (p *PoB) scheduleLoop() {
 						ilog.Error(err)
 						continue
 					}
-					ilog.Infof("Gen block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%v",
+					ilog.Infof("Gen block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
 						num, p.account.ID[:10], blk.Head.Number, blk.Head.Time, len(blk.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(blk))
 					blkByte, err := blk.Encode()
 					if err != nil {
@@ -402,13 +402,13 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	p.blockCache.Link(node)
 	p.updateInfo(node, update)
 	if node.Head.Witness != p.account.ID {
-		if tmpWitness != node.Head.Witness {
-			tmpWitness = node.Head.Witness
-			tmpcontinuousNum = 0
+		if tWitness != node.Head.Witness {
+			tWitness = node.Head.Witness
+			tContinuousNum = 0
 		}
-		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%v",
-			tmpcontinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
-		tmpcontinuousNum++
+		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
+			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
+		tContinuousNum++
 	}
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, true, replay)
