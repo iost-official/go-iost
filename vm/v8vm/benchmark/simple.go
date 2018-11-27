@@ -78,7 +78,7 @@ func main() {
 
 	var i = 0
 	for ; i < times; i++ {
-		expTime := time.Now().Add(time.Second)
+		expTime := time.Now().Add(time.Second * 10)
 		host.SetDeadline(expTime)
 		_, _, err := vmPool.LoadAndCall(host, code, "show")
 		if err != nil {
