@@ -128,6 +128,7 @@ func (pm *PeerManager) Start() {
 	pm.LoadRoutingTable()
 	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
+	pm.wg.Add(4)
 	go pm.dumpRoutingTableLoop()
 	go pm.syncRoutingTableLoop()
 	go pm.metricsStatLoop()
@@ -176,11 +177,10 @@ func (pm *PeerManager) getBPs() []peer.ID {
 }
 
 func (pm *PeerManager) findBPLoop() {
-	pm.wg.Add(1)
+	defer pm.wg.Done()
 	for {
 		select {
 		case <-pm.quitCh:
-			pm.wg.Done()
 			return
 		case <-time.After(findBPInterval):
 			unknownBPs := make([]string, 0)
@@ -257,12 +257,11 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 }
 
 func (pm *PeerManager) dumpRoutingTableLoop() {
-	pm.wg.Add(1)
+	defer pm.wg.Done()
 	var lastSaveTime int64
 	for {
 		select {
 		case <-pm.quitCh:
-			pm.wg.Done()
 			return
 		case <-time.After(dumpRoutingTableInterval):
 			if lastSaveTime < pm.lastUpdateTime.Load() {
@@ -274,11 +273,10 @@ func (pm *PeerManager) dumpRoutingTableLoop() {
 }
 
 func (pm *PeerManager) syncRoutingTableLoop() {
-	pm.wg.Add(1)
+	defer pm.wg.Done()
 	for {
 		select {
 		case <-pm.quitCh:
-			pm.wg.Done()
 			return
 		case <-time.After(syncRoutingTableInterval):
 			ilog.Debugf("start sync routing table.")
@@ -288,11 +286,10 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 }
 
 func (pm *PeerManager) metricsStatLoop() {
-	pm.wg.Add(1)
+	defer pm.wg.Done()
 	for {
 		select {
 		case <-pm.quitCh:
-			pm.wg.Done()
 			return
 		case <-time.After(metricsStatInterval):
 			neighborCountGauge.Set(float64(pm.AllNeighborCount()), nil)
