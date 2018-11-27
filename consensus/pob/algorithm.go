@@ -28,9 +28,8 @@ var (
 	generateTxsNum = 0
 )
 
-func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration, genTime time.Time) (*block.Block, error) { // TODO 应传入account
+func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
 	ilog.Debug("generate Block start")
-
 	st := time.Now()
 	pTx, head := txPool.PendingTx()
 	topBlock := head.Block
@@ -41,7 +40,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 			Info:       make([]byte, 0),
 			Number:     topBlock.Head.Number + 1,
 			Witness:    acc.ID,
-			Time:       genTime.UnixNano(),
+			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},

@@ -290,7 +290,7 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			t := time.Now()
-			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()+int64(time.Millisecond)) == p.account.ID {
+			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()+int64(time.Millisecond)) == p.account.ID && witnessOfNanoSec(t.UnixNano()-int64(time.Millisecond)) == p.account.ID {
 				staticProperty.SlotUsed[t.Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 				generateTxsNum = 0
@@ -303,7 +303,7 @@ func (p *PoB) scheduleLoop() {
 					} else {
 						limitTime = time.Millisecond * 30
 					}
-					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime, t)
+					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
 					p.txPool.Release()
 					if err != nil {
 						ilog.Error(err)
