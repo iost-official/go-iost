@@ -297,6 +297,10 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 	if r.Status.Code != tx.Success {
 		return fmt.Errorf("block base tx receipt error: %v", r.Status.Message)
 	}
+	err = checkReceiptEqual(r, blk.Receipts[0])
+	if err != nil {
+		return err
+	}
 
 	return nil
 }
@@ -350,6 +354,9 @@ func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
 			return fmt.Errorf("receipt not match, ram usage not same: %v != %v \n%v\n%v", v, receipt.RAMUsage[k], r, receipt)
 		}
 	}
+	if len(r.Receipts) != len(receipt.Receipts) {
+		return fmt.Errorf("receipt not match, receipts length not same: %v != %v \n%v\n%v", len(r.Receipts), len(receipt.Receipts), r, receipt)
+	}
 	for i, br := range r.Receipts {
 		if br.FuncName != receipt.Receipts[i].FuncName {
 			return fmt.Errorf("receipt not match, funcname not same: %v != %v \n%v\n%v", br.FuncName, receipt.Receipts[i].FuncName, r, receipt)
@@ -357,6 +364,9 @@ func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
 		if br.Content != receipt.Receipts[i].Content {
 			return fmt.Errorf("receipt not match, content not same: %v != %v \n%v\n%v", br.Content, receipt.Receipts[i].Content, r, receipt)
 		}
+	}
+	if len(r.Returns) != len(receipt.Returns) {
+		return fmt.Errorf("receipt not match, returns length not same: %v != %v \n%v\n%v", len(r.Returns), len(receipt.Returns), r, receipt)
 	}
 	for i, br := range r.Returns {
 		if br != receipt.Returns[i] {
