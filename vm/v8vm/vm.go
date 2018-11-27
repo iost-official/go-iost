@@ -12,8 +12,9 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
-	"github.com/uber-go/atomic"
 )
+
+const vmRefLimit = 200
 
 // CVMInitOnce vm init once
 var CVMInitOnce = sync.Once{}
@@ -26,7 +27,7 @@ type VM struct {
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
-	refCount             atomic.Int64
+	refCount             int
 	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
@@ -113,17 +114,21 @@ func (e *VM) recycle(poolType vmPoolType) {
 	if e.sandbox != nil {
 		e.sandbox.Release()
 	}
-	// second release isolate
-	if e.isolate != nil {
-		C.releaseIsolate(e.isolate)
+
+	if e.refCount == vmRefLimit {
+		// release isolate
+		if e.isolate != nil {
+			e.refCount = 0
+			C.releaseIsolate(e.isolate)
+		}
+		// regen isolate
+		if poolType == CompileVMPool {
+			e.isolate = C.newIsolate(customCompileStartupData)
+		} else {
+			e.isolate = C.newIsolate(customStartupData)
+		}
 	}
 
-	// regen isolate
-	if poolType == CompileVMPool {
-		e.isolate = C.newIsolate(customCompileStartupData)
-	} else {
-		e.isolate = C.newIsolate(customStartupData)
-	}
 	// then regen new sandbox
 	e.sandbox = NewSandbox(e)
 	if e.releaseChannel != nil {
