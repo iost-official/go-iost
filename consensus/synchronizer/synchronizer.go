@@ -51,6 +51,7 @@ type SyncImpl struct {
 	messageChan    chan p2p.IncomingMessage
 	syncHeightChan chan p2p.IncomingMessage
 	exitSignal     chan struct{}
+	wg             *sync.WaitGroup
 }
 
 // NewSynchronizer returns a SyncImpl instance.
@@ -62,6 +63,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		reqMap:       new(sync.Map),
 		heightMap:    new(sync.Map),
 		lastBcn:      nil,
+		wg:           new(sync.WaitGroup),
 	}
 	var err error
 	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
@@ -87,6 +89,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 // Start starts the synchronizer module.
 func (sy *SyncImpl) Start() error {
 	sy.dc.Start()
+	sy.wg.Add(4)
 	go sy.syncHeightLoop()
 	go sy.messageLoop()
 	go sy.retryDownloadLoop()
@@ -98,9 +101,11 @@ func (sy *SyncImpl) Start() error {
 func (sy *SyncImpl) Stop() {
 	sy.dc.Stop()
 	close(sy.exitSignal)
+	sy.wg.Wait()
 }
 
 func (sy *SyncImpl) initializer() {
+	defer sy.wg.Done()
 	if sy.baseVariable.Mode() != global.ModeInit {
 		return
 	}
@@ -121,6 +126,7 @@ func (sy *SyncImpl) initializer() {
 }
 
 func (sy *SyncImpl) syncHeightLoop() {
+	defer sy.wg.Done()
 	syncHeightTicker := time.NewTicker(syncHeightTime)
 	checkTicker := time.NewTicker(checkTime)
 	for {
@@ -279,6 +285,7 @@ func (sy *SyncImpl) CheckSyncProcess() {
 }
 
 func (sy *SyncImpl) messageLoop() {
+	defer sy.wg.Done()
 	for {
 		select {
 		case req := <-sy.messageChan:
@@ -415,6 +422,7 @@ func (sy *SyncImpl) handleHashResp(rh *msgpb.BlockHashResponse, peerID p2p.PeerI
 }
 
 func (sy *SyncImpl) retryDownloadLoop() {
+	defer sy.wg.Done()
 	for {
 		select {
 		case <-time.After(retryTime):

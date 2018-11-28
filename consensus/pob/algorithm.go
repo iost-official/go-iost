@@ -30,7 +30,6 @@ var (
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
 	ilog.Debug("generate Block start")
-
 	st := time.Now()
 	pTx, head := txPool.PendingTx()
 	topBlock := head.Block
