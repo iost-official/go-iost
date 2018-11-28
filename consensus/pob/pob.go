@@ -157,7 +157,7 @@ func (p *PoB) messageLoop() {
 func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 	_, ok := p.blockReqMap.Load(string(blkInfo.Hash))
 	if ok {
-		ilog.Debug("block in block request map, block number: ", blkInfo.Number)
+		//ilog.Debug("block in block request map, block number: ", blkInfo.Number)
 		return
 	}
 	_, err := p.blockCache.Find(blkInfo.Hash)
@@ -232,7 +232,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		} else {
 			p.blockReqMap.Store(string(blk.HeadHash()), nil)
 		}
-		err := p.handleRecvBlock(blk, true)
+		err := p.handleRecvBlock(blk)
 		t2 := calculateTime(blk)
 		metricsTimeCost.Set(t2, nil)
 		go p.broadcastBlockHash(blk)
@@ -242,7 +242,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 			return
 		}
 	case p2p.SyncBlockResponse:
-		err := p.handleRecvBlock(blk, true)
+		err := p.handleRecvBlock(blk)
 		if err != nil {
 			ilog.Errorf("received sync block error, err:%v", err)
 			return
@@ -296,9 +296,11 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
+			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
-			if !staticProperty.SlotUsed[time.Now().Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(time.Now().UnixNano()+int64(time.Millisecond)) == p.account.ID {
-				staticProperty.SlotUsed[time.Now().Unix()] = true
+			t := time.Now()
+			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == p.account.ID {
+				staticProperty.SlotUsed[t.Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
@@ -325,11 +327,7 @@ func (p *PoB) scheduleLoop() {
 					}
 					p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
 					metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
-					update := false
-					if num == continuousNum-1 {
-						update = true
-					}
-					err = p.handleRecvBlock(blk, update)
+					err = p.handleRecvBlock(blk)
 					if err != nil {
 						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
 						continue
@@ -366,12 +364,12 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.AddWithWit(blk, witnessList)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block, true, true)
+		return p.addExistingBlock(blk, parent.Block, true)
 	}
 	return errSingle
 }
 
-func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
+func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 	_, err := p.blockCache.Find(blk.HeadHash())
@@ -385,12 +383,12 @@ func (p *PoB) handleRecvBlock(blk *block.Block, update bool) error {
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block, update, false)
+		return p.addExistingBlock(blk, parent.Block, false)
 	}
 	return errSingle
 }
 
-func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, update bool, replay bool) error {
+func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, replay bool) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
@@ -407,7 +405,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
-	p.updateInfo(node, update)
+	p.updateInfo(node)
 	if node.Head.Witness != p.account.ID {
 		if tWitness != node.Head.Witness {
 			tWitness = node.Head.Witness
@@ -418,16 +416,14 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, updat
 		tContinuousNum++
 	}
 	for child := range node.Children {
-		p.addExistingBlock(child.Block, node.Block, true, replay)
+		p.addExistingBlock(child.Block, node.Block, replay)
 	}
 	return nil
 }
 
-func (p *PoB) updateInfo(node *blockcache.BlockCacheNode, update bool) {
+func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
-	if update {
-		updateLib(node, p.blockCache)
-	}
+	updateLib(node, p.blockCache)
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ID) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
