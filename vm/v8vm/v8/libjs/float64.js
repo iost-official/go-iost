@@ -58,7 +58,7 @@ class Float64 {
     // Div n
     div(n) {
         let arg = this._checkArgument(n);
-        let rs = this.number.idiv(arg.number);
+        let rs = this.number.div(arg.number);
         return new this.constructor(rs);
     }
 
