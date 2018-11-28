@@ -27,7 +27,6 @@ type VM struct {
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
-	refCount             int
 	jsPath               string
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
@@ -98,20 +97,6 @@ func (e *VM) recycle(poolType vmPoolType) {
 	// first release sandbox
 	if e.sandbox != nil {
 		e.sandbox.Release()
-	}
-
-	if e.refCount == vmRefLimit {
-		// release isolate
-		if e.isolate != nil {
-			e.refCount = 0
-			C.releaseIsolate(e.isolate)
-		}
-		// regen isolate
-		if poolType == CompileVMPool {
-			e.isolate = C.newIsolate(customCompileStartupData)
-		} else {
-			e.isolate = C.newIsolate(customStartupData)
-		}
 	}
 
 	// then regen new sandbox
