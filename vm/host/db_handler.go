@@ -1,9 +1,9 @@
 package host
 
 import (
+	"fmt"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
-	"fmt"
 )
 
 // DBHandler is an application layer abstraction of our base basic_handler and map_handler.
@@ -20,6 +20,7 @@ func NewDBHandler(h *Host) DBHandler {
 	}
 }
 
+// IsValidKey return error if the key is invalid as state db key or field
 func IsValidKey(key string) error {
 	if len(key) <= 0 || len(key) > 64 {
 		return fmt.Errorf("key or field length invalid. expected [1, 64], actual %v", len(key))

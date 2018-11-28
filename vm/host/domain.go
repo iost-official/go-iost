@@ -1,8 +1,8 @@
 package host
 
 import (
-	"strings"
 	"github.com/iost-official/go-iost/ilog"
+	"strings"
 )
 
 // const table name
@@ -72,7 +72,7 @@ func (d *DNS) WriteLink(url, cid, owner string) {
 	_, err0 := d.h.MapPut(DNSTable, url, cid)
 	_, err1 := d.h.MapPut(DNSRTable, cid, url)
 	_, err2 := d.h.MapPut(DNSOwnerTable, url, owner)
-	if err0 != nil|| err1 != nil || err2 != nil {
+	if err0 != nil || err1 != nil || err2 != nil {
 		ilog.Errorf("write link mapPut failed. err = %v %v %v", err0, err1, err2)
 	}
 }
@@ -82,7 +82,7 @@ func (d *DNS) RemoveLink(url, cid string) {
 	_, err0 := d.h.MapDel(DNSRTable, cid)
 	_, err1 := d.h.MapDel(DNSTable, url)
 	_, err2 := d.h.MapDel(DNSOwnerTable, url)
-	if err0 != nil|| err1 != nil || err2 != nil {
+	if err0 != nil || err1 != nil || err2 != nil {
 		ilog.Errorf("remove link mapPut failed. err = %v %v %v", err0, err1, err2)
 	}
 }
