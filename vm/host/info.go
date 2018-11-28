@@ -97,4 +97,3 @@ func (h *Info) ABIConfig(key, value string) {
 func (h *Info) GasLimitValue() int64 {
 	return h.h.ctx.GValue("gas_limit").(int64)
 }
-
