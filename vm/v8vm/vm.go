@@ -28,6 +28,7 @@ type VM struct {
 	releaseChannel       chan *VM
 	vmType               vmPoolType
 	jsPath               string
+	refCount             int
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
@@ -97,6 +98,10 @@ func (e *VM) recycle(poolType vmPoolType) {
 	// first release sandbox
 	if e.sandbox != nil {
 		e.sandbox.Release()
+	}
+
+	if e.refCount == vmRefLimit {
+		C.lowMemoryNotification(e.isolate)
 	}
 
 	// then regen new sandbox
