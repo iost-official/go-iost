@@ -296,9 +296,10 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
+			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			t := time.Now()
-			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()+int64(time.Millisecond)) == p.account.ID && witnessOfNanoSec(t.UnixNano()-int64(time.Millisecond)) == p.account.ID {
+			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == p.account.ID {
 				staticProperty.SlotUsed[t.Unix()] = true
 				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
 				generateTxsNum = 0
