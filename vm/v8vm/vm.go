@@ -67,7 +67,6 @@ func (e *VM) init() error {
 	return nil
 }
 
-
 func (e *VM) compile(contract *contract.Contract) (string, error) {
 	return e.sandbox.Compile(contract)
 }
