@@ -391,12 +391,16 @@ func TestDomain(t *testing.T) {
 		cname, _, err := s.DeployContract(c, kp.ID, kp)
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(native.ABI("domain.iost", native.DomainABIs))
-		r1, err := s.Call("domain.iost", "Link", fmt.Sprintf(`["abcde","%v"]`, cname), kp.ID, kp)
+		r1, err := s.Call("domain.iost", "Link", fmt.Sprintf(`["abc_0_de.io","%v"]`, cname), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldEqual, "")
-		r2, err := s.Call("abcde", "read", "[]", kp.ID, kp)
+		r2, err := s.Call("abc_0_de.io", "read", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r2.Status.Message, ShouldEqual, "")
+
+		r1, err = s.Call("domain.iost", "Link", fmt.Sprintf(`["abcde#A","%v"]`, cname), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r1.Status.Message, ShouldContainSubstring, "url contains invalid character")
 	})
 }
 
@@ -413,17 +417,22 @@ func TestAuthority(t *testing.T) {
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 1e8)
 		s.SetRAM(testID[0], 1000)
-		s.SetRAM("myid", 1000)
+		s.SetRAM("myidid", 1000)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myid", kp.ID, kp.ID}), kp.ID, kp)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", kp.ID, kp.ID}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myid")), ShouldStartWith, `{"id":"myid",`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
 
-		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myid", "perm1", 1}), kp.ID, kp)
+		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myidid", "perm1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+
+		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", kp.ID, kp.ID}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
 	})
 
 }
+

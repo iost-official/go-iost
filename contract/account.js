@@ -33,11 +33,34 @@ class Account {
             throw new Error("require auth failed");
         }
     }
+    _getBlockNumber() {
+        const bi = JSON.parse(BlockChain.blockInfo());
+        if (!bi || bi === undefined || bi.number === undefined) {
+            throw new Error("get block number failed. bi = " + bi);
+        }
+        return bi.number;
+    }
+
+    _checkIdValid(id) {
+        if (this._getBlockNumber() === 0) {
+            return
+        }
+        if (id.length < 6 || id.length > 32) {
+            throw new Error("id invalid. id length should be between 6,32 > " + id)
+        }
+        for (let i in id) {
+            let ch = id[i];
+            if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
+                throw new Error("id invalid. id contains invalid character > " + ch);
+            }
+        }
+    }
 
     SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
         }
+        this._checkIdValid(id);
         let account = {};
         account.id = id;
         account.permissions = {};

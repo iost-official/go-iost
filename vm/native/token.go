@@ -174,6 +174,18 @@ func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, 
 	return amountNumber.ToString(), cost
 }
 
+func checkTokenNameValid(name string) error {
+	if len(name) <= 0 || len(name) > 32 {
+		return fmt.Errorf("token name invalid. token name length should be between 1,32  got %v", name)
+	}
+	for _, ch := range name {
+		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_') {
+			return fmt.Errorf("token name invalid. token name contains invalid character %v", ch)
+		}	
+	}
+	return nil
+}
+
 var (
 	initTokenABI = &abi{
 		name: "init",
@@ -193,6 +205,12 @@ var (
 			issuer := args[1].(string)
 			totalSupply := args[2].(int64)
 			configJSON := args[3].([]byte)
+
+			cost.AddAssign(host.CommonOpCost(1))
+			err = checkTokenNameValid(tokenName)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			// config
 			config := make(map[string]interface{})
