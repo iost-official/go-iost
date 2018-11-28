@@ -661,5 +661,38 @@ func TestEngine_Float64(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
-	t.Log(rs)
+	if len(rs) > 0 && rs[0] != "11.11" {
+		t.Fatalf("LoadAndCall number except: 11.11, got: %v", rs[0])
+	}
+	rs, _, err = vmPool.LoadAndCall(host, code, "getMinus")
+	if err != nil {
+		t.Fatalf("LoadAndCall getMinus error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "11665.6789" {
+		t.Fatalf("LoadAndCall getMinus except: 11665.6789, got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getMulti", 3)
+	if err != nil {
+		t.Fatalf("LoadAndCall getMulti error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "148148.1468" {
+		t.Fatalf("LoadAndCall getMulti except: 148148.1468, got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getDiv", 3)
+	if err != nil {
+		t.Fatalf("LoadAndCall getDiv error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "1028.806575" {
+		t.Fatalf("LoadAndCall getDiv except: 1028.806575, got: %v", rs[0])
+	}
+
+	rs, _, err = vmPool.LoadAndCall(host, code, "getPow", 3)
+	if err != nil {
+		t.Fatalf("LoadAndCall getPow error: %v", err)
+	}
+	if len(rs) > 0 && rs[0] != "1881676371789.154860897069" {
+		t.Fatalf("LoadAndCall getPow except: 1881676371789.154860897069, got: %v", rs[0])
+	}
 }
