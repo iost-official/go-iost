@@ -27,8 +27,8 @@ type VM struct {
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
-	refCount             int
 	jsPath               string
+	refCount             int
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
@@ -67,22 +67,6 @@ func (e *VM) init() error {
 	return nil
 }
 
-// Run load contract from code and invoke api function
-func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
-	contr := &contract.Contract{
-		ID:   "run_id",
-		Code: code,
-	}
-
-	preparedCode, err := e.sandbox.Prepare(contr, api, args)
-	if err != nil {
-		return "", err
-	}
-
-	rs, _, err := e.sandbox.Execute(preparedCode)
-	return rs, err
-}
-
 func (e *VM) compile(contract *contract.Contract) (string, error) {
 	return e.sandbox.Compile(contract)
 }
@@ -116,17 +100,7 @@ func (e *VM) recycle(poolType vmPoolType) {
 	}
 
 	if e.refCount == vmRefLimit {
-		// release isolate
-		if e.isolate != nil {
-			e.refCount = 0
-			C.releaseIsolate(e.isolate)
-		}
-		// regen isolate
-		if poolType == CompileVMPool {
-			e.isolate = C.newIsolate(customCompileStartupData)
-		} else {
-			e.isolate = C.newIsolate(customStartupData)
-		}
+		C.lowMemoryNotification(e.isolate)
 	}
 
 	// then regen new sandbox
