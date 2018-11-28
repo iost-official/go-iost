@@ -67,21 +67,6 @@ func (e *VM) init() error {
 	return nil
 }
 
-// Run load contract from code and invoke api function
-func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
-	contr := &contract.Contract{
-		ID:   "run_id",
-		Code: code,
-	}
-
-	preparedCode, err := e.sandbox.Prepare(contr, api, args)
-	if err != nil {
-		return "", err
-	}
-
-	rs, _, err := e.sandbox.Execute(preparedCode)
-	return rs, err
-}
 
 func (e *VM) compile(contract *contract.Contract) (string, error) {
 	return e.sandbox.Compile(contract)
