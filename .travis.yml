@@ -6,8 +6,6 @@ branches:
   - "/^sprint.*$/"
 matrix:
   fast_finish: true
-  allow_failures:
-  - env: JOB=k8s_test
   include:
   - os: osx
     osx_image: xcode10
