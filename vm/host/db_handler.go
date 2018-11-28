@@ -3,6 +3,7 @@ package host
 import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
+	"fmt"
 )
 
 // DBHandler is an application layer abstraction of our base basic_handler and map_handler.
@@ -19,8 +20,25 @@ func NewDBHandler(h *Host) DBHandler {
 	}
 }
 
+func IsValidKey(key string) error {
+	if len(key) <= 0 || len(key) > 64 {
+		return fmt.Errorf("key or field length invalid. expected [1, 64], actual %v", len(key))
+	}
+	for _, c := range key {
+		if c < 32 || c > 126 || c == '-' || c == '@' {
+			return fmt.Errorf("key or field has invalid char, %v", c)
+		}
+	}
+	return nil
+}
+
 // Put put kv to db
-func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contract.Cost {
+func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) (contract.Cost, error) {
+	err := IsValidKey(key)
+	if err != nil {
+		return CommonErrorCost(1), err
+	}
+
 	mk := h.modifyKey(key)
 
 	oldV := h.h.db.Get(mk)
@@ -37,7 +55,7 @@ func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) contr
 
 	h.payRAM(mk, sv, oldV, payer)
 	h.h.db.Put(mk, sv)
-	return Costs["PutCost"]
+	return Costs["PutCost"], nil
 }
 
 // Get get value of key from db
@@ -48,11 +66,15 @@ func (h *DBHandler) Get(key string) (value interface{}, cost contract.Cost) {
 }
 
 // Del delete key
-func (h *DBHandler) Del(key string) contract.Cost {
+func (h *DBHandler) Del(key string) (contract.Cost, error) {
+	err := IsValidKey(key)
+	if err != nil {
+		return CommonErrorCost(1), err
+	}
 	mk := h.modifyKey(key)
 	h.releaseRAM(mk)
 	h.h.db.Del(mk)
-	return Costs["DelCost"]
+	return Costs["DelCost"], nil
 }
 
 // Has if db has key
@@ -62,7 +84,16 @@ func (h *DBHandler) Has(key string) (bool, contract.Cost) {
 }
 
 // MapPut put kfv to db
-func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...string) contract.Cost {
+func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...string) (contract.Cost, error) {
+	err := IsValidKey(key)
+	if err != nil {
+		return CommonErrorCost(1), err
+	}
+	err = IsValidKey(field)
+	if err != nil {
+		return CommonErrorCost(1), err
+	}
+
 	mk := h.modifyKey(key)
 	oldV := h.h.db.MGet(mk, field)
 	var payer string
@@ -78,7 +109,7 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 
 	h.payRAMForMap(mk, field, sv, oldV, payer)
 	h.h.db.MPut(mk, field, sv)
-	return Costs["PutCost"]
+	return Costs["PutCost"], nil
 }
 
 // MapGet get value by kf from db
@@ -95,11 +126,19 @@ func (h *DBHandler) MapKeys(key string) (fields []string, cost contract.Cost) {
 }
 
 // MapDel delete field
-func (h *DBHandler) MapDel(key, field string) contract.Cost {
+func (h *DBHandler) MapDel(key, field string) (contract.Cost, error) {
+	err := IsValidKey(key)
+	if err != nil {
+		return CommonErrorCost(1), err
+	}
+	err = IsValidKey(field)
+	if err != nil {
+		return CommonErrorCost(1), err
+	}
 	mk := h.modifyKey(key)
 	h.releaseRAMForMap(mk, field)
 	h.h.db.MDel(mk, field)
-	return Costs["DelCost"]
+	return Costs["DelCost"], nil
 }
 
 // MapHas if has field
