@@ -3,10 +3,10 @@ package native
 import (
 	"errors"
 
+	"fmt"
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
-	"fmt"
 )
 
 // DomainABIs list of domain abi

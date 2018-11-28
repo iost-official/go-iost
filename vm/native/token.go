@@ -181,7 +181,7 @@ func checkTokenNameValid(name string) error {
 	for _, ch := range name {
 		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_') {
 			return fmt.Errorf("token name invalid. token name contains invalid character %v", ch)
-		}	
+		}
 	}
 	return nil
 }
