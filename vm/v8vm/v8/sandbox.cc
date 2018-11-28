@@ -24,6 +24,7 @@
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
 char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
 char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
+const int sandboxMemLimit = 100000000; // 100mb
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
     std::strcpy(cstr, str.c_str());
@@ -130,6 +131,7 @@ SandboxPtr newSandbox(IsolateWrapperPtr ptr) {
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
+    sbx->memLimit = sandboxMemLimit;
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -263,7 +265,7 @@ size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
     /*fields[1] = v8_heap_stats.total_heap_size();
     fields[2] = v8_heap_stats.used_heap_size();
     fields[3] = v8_heap_stats.external_memory();*/
-    return v8_heap_stats.total_heap_size();
+    return v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
 }
 
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
@@ -353,12 +355,12 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        if (MemoryUsage(isolate, sbx->allocator) > sbx->memLimit) {
+  /*      if (MemoryUsage(isolate, sbx->allocator) > sbx->memLimit) {
             isolate->TerminateExecution();
             res.Err = strdup("out of memory");
             res.gasUsed = sbx->gasLimit;
             break;
-        }
+        } */
         if (sbx->gasUsed > sbx->gasLimit) {
             isolate->TerminateExecution();
             res.Err = strdup("out of gas");

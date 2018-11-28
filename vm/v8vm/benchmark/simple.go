@@ -78,13 +78,14 @@ func main() {
 
 	var i = 0
 	for ; i < times; i++ {
+		expTime := time.Now().Add(time.Second * 10)
+		host.SetDeadline(expTime)
 		_, _, err := vmPool.LoadAndCall(host, code, "show")
 		if err != nil {
 			log.Fatal("error: ", err)
 		}
 	}
-	timeUsed := time.Since(a).Nanoseconds()
-	tps := int(1000 / (float64(timeUsed) / 1000000 / float64(times)))
+	tps := float64(times) / time.Since(a).Seconds()
 	fmt.Println("time used: ", time.Since(a))
 	fmt.Println("each: ", tps)
 }
