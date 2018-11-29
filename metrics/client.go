@@ -40,9 +40,6 @@ func NewClient() *Client {
 
 // SetPusher sets the pusher with the given addr.
 func (c *Client) SetPusher(addr, username, password string) error {
-	if !isAddrAvailable(addr) {
-		return ErrPusherUnavailable
-	}
 	c.pusher = push.New(addr, "iost")
 	c.pusher.BasicAuth(username, password)
 	for _, colloctor := range c.collectorCache {
@@ -134,7 +131,7 @@ func (c *Client) startPush() {
 		case <-timer.C:
 			err := c.pusher.Push()
 			if err != nil {
-				ilog.Info("push failed: ", err)
+				ilog.Warnf("push metrics failed:%v", err)
 			}
 			timer.Reset(pushInterval)
 		case <-c.exitCh:
