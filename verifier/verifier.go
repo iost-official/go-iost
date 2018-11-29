@@ -18,7 +18,8 @@ import (
 
 // values
 var (
-	ErrExpiredTx = errors.New("Expired tx")
+	ErrExpiredTx    = errors.New("Expired tx")
+	ErrNotArrivedTx = errors.New("Not arrived tx")
 )
 
 // Verifier ..
@@ -326,8 +327,11 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 }
 
 func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool, blk *block.Block) error { // nolint
-	if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
-		return ErrInvalidTimeTx
+	if !t.IsArrived(blk.Head.Time) {
+		return ErrNotArrivedTx
+	}
+	if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
+		return ErrExpiredTx
 	}
 	isolator.ClearTx()
 	if isBlockBase {
