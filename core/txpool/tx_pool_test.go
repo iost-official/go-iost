@@ -132,18 +132,18 @@ func TestNewTxPImpl(t *testing.T) {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 
-			b := t.IsTimeValidNow()
-			So(b, ShouldBeTrue)
-
-			t.Time -= int64(tx.MaxExpiration + int64(1*time.Second))
-			b = t.IsTimeValidNow()
+			b := t.IsExpired(time.Now().UnixNano())
 			So(b, ShouldBeFalse)
+
+			t.Time -= int64(tx.MaxExpiration)
+			b = t.IsExpired(time.Now().UnixNano())
+			So(b, ShouldBeTrue)
 
 			t = genTx(accountList[0], tx.MaxExpiration)
 
 			t.Expiration -= int64(tx.MaxExpiration * 3)
-			b = t.IsTimeValidNow()
-			So(b, ShouldBeFalse)
+			b = t.IsExpired(time.Now().UnixNano())
+			So(b, ShouldBeTrue)
 		})
 		Convey("delTimeOutTx", func() {
 
