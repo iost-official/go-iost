@@ -161,6 +161,7 @@ L:
 			break L
 		}
 		if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
+			ilog.Errorf("TimeValid failed. tx %v time is %v, blk time is %v", t.String(), t.Time, blk.Head.Time)
 			provider.Drop(t, ErrInvalidTimeTx)
 			continue L
 		}
