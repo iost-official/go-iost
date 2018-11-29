@@ -96,35 +96,57 @@ func Test_VMMethod(t *testing.T) {
 			So(r.Receipts[0].FuncName, ShouldEqual, cname + "/receiptf")
 		})
 
-		Convey("test of event", func() {
-			eve := event.GetEventCollectorInstance()
-			// contract event
-			sub1 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractEvent})
-			eve.Subscribe(sub1)
-			sub2 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractReceipt})
-			eve.Subscribe(sub2)
+	})
+}
 
-			r, err := s.Call(cname, "event", fmt.Sprintf(`["%v"]`, "eventdata"), testID[0], kp)
-			s.Visitor.Commit()
+func Test_VMMethod_Event(t *testing.T) {
+	ilog.Stop()
+	Convey("test of vm method event", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
 
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldEqual, "")
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
 
-			e := <- sub1.ReadChan()
-			So(e.Data, ShouldEqual, "eventdata")
-			So(e.Topic, ShouldEqual, event.Event_ContractEvent)
+		prepareContract(s)
 
-			// receipt event
-			r, err = s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receipteventdata"), testID[0], kp)
-			s.Visitor.Commit()
+		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldEqual, "")
+		eve := event.GetEventCollectorInstance()
+		// contract event
+		sub1 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractEvent})
+		eve.Subscribe(sub1)
+		sub2 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractReceipt})
+		eve.Subscribe(sub2)
 
-			e = <- sub2.ReadChan()
-			So(e.Data, ShouldEqual, "receipteventdata")
-			So(e.Topic, ShouldEqual, event.Event_ContractReceipt)
-		})
+		r, err = s.Call(cname, "event", fmt.Sprintf(`["%v"]`, "eventdata"), testID[0], kp)
+		s.Visitor.Commit()
+
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		e := <-sub1.ReadChan()
+		So(e.Data, ShouldEqual, "eventdata")
+		So(e.Topic, ShouldEqual, event.Event_ContractEvent)
+
+		// receipt event
+		r, err = s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receipteventdata"), testID[0], kp)
+		s.Visitor.Commit()
+
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		e = <-sub2.ReadChan()
+		So(e.Data, ShouldEqual, "receipteventdata")
+		So(e.Topic, ShouldEqual, event.Event_ContractReceipt)
 	})
 }
 
