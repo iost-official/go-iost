@@ -1,6 +1,7 @@
 package host
 
 import (
+	"github.com/iost-official/go-iost/ilog"
 	"strings"
 )
 
@@ -43,7 +44,10 @@ func (d *DNS) URLOwner(url string) string {
 
 // URLTransfer give url to another id
 func (d *DNS) URLTransfer(url, to string) {
-	d.h.MapPut(DNSOwnerTable, url, to)
+	_, err := d.h.MapPut(DNSOwnerTable, url, to)
+	if err != nil {
+		ilog.Errorf("url transfer mapPut failed. err = %v", err)
+	}
 }
 
 // URL git url of cid
@@ -65,14 +69,20 @@ func (d *DNS) IsDomain(s string) bool {
 
 // WriteLink add url and url owner to contract
 func (d *DNS) WriteLink(url, cid, owner string) {
-	d.h.MapPut(DNSTable, url, cid)
-	d.h.MapPut(DNSRTable, cid, url)
-	d.h.MapPut(DNSOwnerTable, url, owner)
+	_, err0 := d.h.MapPut(DNSTable, url, cid)
+	_, err1 := d.h.MapPut(DNSRTable, cid, url)
+	_, err2 := d.h.MapPut(DNSOwnerTable, url, owner)
+	if err0 != nil || err1 != nil || err2 != nil {
+		ilog.Errorf("write link mapPut failed. err = %v %v %v", err0, err1, err2)
+	}
 }
 
 // RemoveLink remove a url
 func (d *DNS) RemoveLink(url, cid string) {
-	d.h.MapDel(DNSRTable, cid)
-	d.h.MapDel(DNSTable, url)
-	d.h.MapDel(DNSOwnerTable, url)
+	_, err0 := d.h.MapDel(DNSRTable, cid)
+	_, err1 := d.h.MapDel(DNSTable, url)
+	_, err2 := d.h.MapDel(DNSOwnerTable, url)
+	if err0 != nil || err1 != nil || err2 != nil {
+		ilog.Errorf("remove link mapPut failed. err = %v %v %v", err0, err1, err2)
+	}
 }
