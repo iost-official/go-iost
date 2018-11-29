@@ -46,7 +46,7 @@ type SyncImpl struct {
 	reqMap          *sync.Map
 	heightMap       *sync.Map
 	syncEnd         atomic.Int64
-	lastPrintHeight int64
+	lastPrintHeight atomic.Int64
 
 	messageChan    chan p2p.IncomingMessage
 	syncHeightChan chan p2p.IncomingMessage
@@ -196,9 +196,9 @@ func (sy *SyncImpl) checkSync() bool {
 	})
 	netHeight := heights[len(heights)/2]
 	ilog.Debugf("check sync, heights: %+v", heights)
-	if netHeight-sy.lastPrintHeight > printInterval {
+	if netHeight-sy.lastPrintHeight.Load() > printInterval {
 		ilog.Infof("sync heights: %+v", heights)
-		sy.lastPrintHeight = netHeight
+		sy.lastPrintHeight.Store(netHeight)
 	}
 	if netHeight > height+syncNumber {
 		sy.baseVariable.SetMode(global.ModeSync)
