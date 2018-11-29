@@ -293,13 +293,10 @@ func (t *Tx) IsExpired(ct int64) bool {
 	return false
 }
 
-// IsTimeValid checks whether the transaction time is valid compared to the given time ct.
+// IsArrived checks whether the transaction time is valid compared to the given time ct.
 // ct may be time.Now().UnixNano() or block head time.
-func (t *Tx) IsTimeValid(ct int64) bool {
-	if t.Time > ct {
-		return false
-	}
-	return !t.IsExpired(ct)
+func (t *Tx) IsArrived(ct int64) bool {
+	return t.Time <= ct
 }
 
 // CheckGas checks whether the transaction's gas is valid.

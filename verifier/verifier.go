@@ -18,7 +18,7 @@ import (
 
 // values
 var (
-	ErrInvalidTimeTx = errors.New("invalid time tx")
+	ErrExpiredTx = errors.New("Expired tx")
 )
 
 // Verifier ..
@@ -160,9 +160,24 @@ L:
 		if t == nil {
 			break L
 		}
-		if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
-			ilog.Errorf("TimeValid failed. tx %v time is %v, blk time is %v", t.String(), t.Time, blk.Head.Time)
-			provider.Drop(t, ErrInvalidTimeTx)
+		if !t.IsArrived(blk.Head.Time) {
+			ilog.Warnf(
+				"Tx time has not arrived. tx %v time is %v, blk time is %v",
+				t.String(),
+				t.Time,
+				blk.Head.Time,
+			)
+			provider.Return(t)
+			continue L
+		}
+		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
+			ilog.Errorf(
+				"Tx is expired, tx %v time is %v, blk time is %v",
+				t.String(),
+				t.Time,
+				blk.Head.Time,
+			)
+			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
 		err := isolator.PrepareTx(t, limit)
@@ -179,7 +194,11 @@ L:
 			continue L
 		}
 		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
-			ilog.Errorf("isolator run time out")
+			ilog.Warnf(
+				"isolator run time out, but time limit %v less than std time limit %v",
+				limit,
+				c.TxTimeLimit,
+			)
 			provider.Return(t)
 			break L
 		}
