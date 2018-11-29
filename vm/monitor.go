@@ -80,6 +80,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	h.Context().Set("contract_name", c.ID)
 	h.Context().Set("abi_name", api)
 
+	// flag-down fare
+	switch c.Info.Lang {
+	case "javascript":
+		h.PayCost(host.Costs["JSCost"], h.Context().Value("publisher").(string))
+	}
+
 	vm, ok := m.vms[c.Info.Lang]
 	if !ok {
 		vm = Factory(c.Info.Lang)
