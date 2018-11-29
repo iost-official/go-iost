@@ -39,7 +39,7 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 		gatewayAddr: bv.Config().RPC.GatewayAddr,
 	}
 	s.grpcServer = grpc.NewServer(
-		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(metricsMiddleware)),
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(metricsMiddleware)),
 		grpc.MaxConcurrentStreams(maxConcurrentStreams))
 	apiService := NewAPIService(tp, bc, bv, p2pService)
 	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
