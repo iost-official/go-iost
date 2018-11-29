@@ -293,9 +293,9 @@ func (t *Tx) IsExpired(ct int64) bool {
 	return false
 }
 
-// IsArrived checks whether the transaction time is valid compared to the given time ct.
+// IsCreatedBefore checks whether the transaction time is valid compared to the given time ct.
 // ct may be time.Now().UnixNano() or block head time.
-func (t *Tx) IsArrived(ct int64) bool {
+func (t *Tx) IsCreatedBefore(ct int64) bool {
 	return t.Time <= ct
 }
 

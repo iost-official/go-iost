@@ -72,13 +72,14 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 		if t == nil {
 			break
 		}
-		if !t.IsArrived(bh.Time) {
+		if !t.IsCreatedBefore(bh.Time) {
 			ilog.Warnf(
 				"Tx time has not arrived. tx %v time is %v, blk time is %v",
 				t.String(),
 				t.Time,
 				bh.Time,
 			)
+			i--
 			provider.Return(t)
 			continue
 		}

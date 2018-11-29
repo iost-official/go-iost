@@ -1,15 +1,12 @@
 package verifier
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/common"
-
-	"encoding/json"
-
-	"fmt"
-
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
@@ -163,7 +160,7 @@ L:
 		if t == nil {
 			break L
 		}
-		if !t.IsArrived(blk.Head.Time) {
+		if !t.IsCreatedBefore(blk.Head.Time) {
 			ilog.Warnf(
 				"Tx %v has not arrived. tx time is %v, blk time is %v",
 				common.Base58Encode(t.Hash()),
@@ -330,7 +327,7 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 }
 
 func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool, blk *block.Block) error { // nolint
-	if !t.IsArrived(blk.Head.Time) {
+	if !t.IsCreatedBefore(blk.Head.Time) {
 		return ErrNotArrivedTx
 	}
 	if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
