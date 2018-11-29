@@ -111,7 +111,6 @@ func Test_VMMethod_Event(t *testing.T) {
 		}
 
 		prepareContract(s)
-		createToken(t, s, kp)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
 		if err != nil || ca == nil {
