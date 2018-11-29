@@ -299,6 +299,17 @@ func (t *Tx) IsArrived(ct int64) bool {
 	return t.Time <= ct
 }
 
+// IsTimeValidNow checks whether the transaction time is valid now
+func (t *Tx) IsTimeValidNow() bool {
+	now := time.Now().UnixNano()
+	// Considering clock precision, tolerate 1 second
+	delta := (time.Second).Nanoseconds()
+	if t.Time > now+delta {
+		return false
+	}
+	return !t.IsExpired(now)
+}
+
 // CheckGas checks whether the transaction's gas is valid.
 func (t *Tx) CheckGas() error {
 	if t.GasRatio < minGasRatio || t.GasRatio > maxGasRatio {

@@ -72,6 +72,7 @@ type P2PConfig struct {
 type RPCConfig struct {
 	GatewayAddr string
 	GRPCAddr    string
+	TryTx       bool
 }
 
 // FileLogConfig is the config for filewriter of ilog.

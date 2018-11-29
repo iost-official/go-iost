@@ -4,6 +4,8 @@ import (
 	"errors"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
+
 	"encoding/json"
 
 	"fmt"
@@ -163,8 +165,8 @@ L:
 		}
 		if !t.IsArrived(blk.Head.Time) {
 			ilog.Warnf(
-				"Tx time has not arrived. tx %v time is %v, blk time is %v",
-				t.String(),
+				"Tx %v has not arrived. tx time is %v, blk time is %v",
+				common.Base58Encode(t.Hash()),
 				t.Time,
 				blk.Head.Time,
 			)
@@ -173,8 +175,8 @@ L:
 		}
 		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
 			ilog.Errorf(
-				"Tx is expired, tx %v time is %v, blk time is %v",
-				t.String(),
+				"Tx %v is expired, tx time is %v, blk time is %v",
+				common.Base58Encode(t.Hash()),
 				t.Time,
 				blk.Head.Time,
 			)
@@ -203,6 +205,7 @@ L:
 			provider.Return(t)
 			break L
 		}
+		//ilog.Debugf("exec tx %v success", common.Base58Encode(t.Hash()))
 		r, _ = isolator.PayCost()
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)

@@ -8,12 +8,6 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 )
 
-// const prefixs
-const (
-	ContractAccountPrefix = "CA"
-	ContractGasPrefix     = "CG"
-)
-
 // Teller handler of iost
 type Teller struct {
 	h         *Host
@@ -104,7 +98,7 @@ func (h *Teller) DoPay(witness string, gasRatio int64) error {
 				Value:   fee,
 				Decimal: 2,
 			}
-			_, err := h.h.CostGas(k, gas)
+			err := h.h.CostGas(k, gas)
 			if err != nil {
 				return fmt.Errorf("pay cost failed: %v, %v", k, err)
 			}

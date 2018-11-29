@@ -189,11 +189,10 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	} else {
 		blkTime = as.bc.LinkedRoot().Head.Time
 	}
-	gasManager := host.NewGasManager(host.NewHost(host.NewContext(nil), dbVisitor, nil, nil))
-	totalGas, _ := gasManager.CurrentTotalGas(req.GetName(), blkTime)
-	gasLimit, _ := gasManager.GasLimit(req.GetName())
-	gasRate, _ := gasManager.GasRate(req.GetName())
-	pledgedInfo, _ := gasManager.PledgerInfo(req.GetName())
+	totalGas := dbVisitor.CurrentTotalGas(req.GetName(), blkTime)
+	gasLimit := dbVisitor.GasLimit(req.GetName())
+	gasRate := dbVisitor.GasRate(req.GetName())
+	pledgedInfo := dbVisitor.PledgerInfo(req.GetName())
 	ret.GasInfo = &rpcpb.Account_GasInfo{
 		CurrentTotal:  totalGas.ToFloat(),
 		Limit:         gasLimit.ToFloat(),
@@ -253,9 +252,29 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 	}, nil
 }
 
+func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
+	topBlock := as.bc.Head()
+	blkHead := &block.BlockHead{
+		Version:    0,
+		ParentHash: topBlock.HeadHash(),
+		Number:     topBlock.Head.Number + 1,
+		Time:       time.Now().UnixNano(),
+	}
+	v := verifier.Verifier{}
+	stateDB := as.bv.StateDB().Fork()
+	stateDB.Checkout(string(topBlock.HeadHash()))
+	return v.Try(blkHead, stateDB, t, cverifier.TxExecTimeLimit)
+}
+
 // SendTransaction sends a transaction to iserver.
 func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.SendTransactionResponse, error) {
 	t := toCoreTx(req)
+	if as.bv.Config().RPC.TryTx {
+		_, err := as.tryTransaction(t)
+		if err != nil {
+			return nil, fmt.Errorf("try transaction failed: %v", err)
+		}
+	}
 	err := as.txpool.AddTx(t)
 	if err != nil {
 		return nil, err
@@ -268,17 +287,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
 	t := toCoreTx(req)
-	topBlock := as.bc.Head()
-	blkHead := &block.BlockHead{
-		Version:    0,
-		ParentHash: topBlock.HeadHash(),
-		Number:     topBlock.Head.Number + 1,
-		Time:       time.Now().UnixNano(),
-	}
-	v := verifier.Verifier{}
-	stateDB := as.bv.StateDB().Fork()
-	stateDB.Checkout(string(topBlock.HeadHash()))
-	receipt, err := v.Try(blkHead, stateDB, t, cverifier.TxExecTimeLimit)
+	receipt, err := as.tryTransaction(t)
 	if err != nil {
 		return nil, err
 	}

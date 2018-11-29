@@ -278,7 +278,8 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if err := t.CheckGas(); err != nil {
 		return err
 	}
-	if !t.IsArrived(time.Now().UnixNano()) || t.IsExpired(time.Now().UnixNano()) {
+	// Add one second delay for arrive check
+	if !t.IsArrived(time.Now().UnixNano()+(time.Second).Nanoseconds()) || t.IsExpired(time.Now().UnixNano()) {
 		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
