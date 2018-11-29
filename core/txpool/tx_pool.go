@@ -271,7 +271,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if err := t.CheckGas(); err != nil {
 		return err
 	}
-	if !t.IsTimeValid(time.Now().UnixNano()) {
+	if !t.IsTimeValidNow() {
 		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
@@ -380,7 +380,7 @@ func (pool *TxPImpl) clearTimeoutTx() {
 	iter := pool.pendingTx.Iter()
 	t, ok := iter.Next()
 	for ok {
-		if !t.IsTimeValid(time.Now().UnixNano()) && !t.IsDefer() {
+		if !t.IsTimeValidNow() && !t.IsDefer() {
 			pool.pendingTx.Del(t.Hash())
 		}
 		t, ok = iter.Next()
