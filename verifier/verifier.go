@@ -2,6 +2,7 @@ package verifier
 
 import (
 	"errors"
+	"github.com/iost-official/go-iost/common"
 	"time"
 
 	"encoding/json"
@@ -160,7 +161,9 @@ L:
 		if t == nil {
 			break L
 		}
+		//ilog.Debugf("get tx %v from provider", common.Base58Encode(t.Hash()))
 		if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
+			ilog.Errorf("Drop tx %v due to invalid time", common.Base58Encode(t.Hash()))
 			provider.Drop(t, ErrInvalidTimeTx)
 			continue L
 		}
@@ -182,6 +185,7 @@ L:
 			provider.Return(t)
 			break L
 		}
+		//ilog.Debugf("exec tx %v success", common.Base58Encode(t.Hash()))
 		r, _ = isolator.PayCost()
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)

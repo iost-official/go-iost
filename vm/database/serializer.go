@@ -43,8 +43,8 @@ func Marshal(in interface{}, extras ...string) (string, error) {
 		return BoolPrefix + boolToString(in.(bool)) + ApplicationSeparator + extra, nil
 	case SerializedJSON:
 		return JSONPrefix + string(in.(SerializedJSON)) + ApplicationSeparator + extra, nil
-	case common.Fixed:
-		return FixPointPrefix + in.(*common.Fixed).Marshal(), nil
+	case *common.Fixed:
+		return FixPointPrefix + in.(*common.Fixed).Marshal() + ApplicationSeparator + extra, nil
 	}
 	return "", errTypeNotSupport
 }
