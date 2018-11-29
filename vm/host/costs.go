@@ -5,6 +5,7 @@ import "github.com/iost-official/go-iost/core/contract"
 // var costs
 var (
 	Costs = map[string]contract.Cost{
+		"JSCost":              contract.NewCost(0, 0, 2000),
 		"PutCost":             contract.NewCost(0, 0, 150),
 		"GetCost":             contract.NewCost(0, 0, 100),
 		"DelCost":             contract.NewCost(0, 0, 100),

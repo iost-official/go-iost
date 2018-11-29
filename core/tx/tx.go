@@ -294,12 +294,23 @@ func (t *Tx) IsExpired(ct int64) bool {
 }
 
 // IsTimeValid checks whether the transaction time is valid compared to the given time ct.
-// ct may be time.Now().UnixNano() or block head time.
+// ct should be block head time.
 func (t *Tx) IsTimeValid(ct int64) bool {
 	if t.Time > ct {
 		return false
 	}
 	return !t.IsExpired(ct)
+}
+
+// IsTimeValidNow checks whether the transaction time is valid now
+func (t *Tx) IsTimeValidNow() bool {
+	now := time.Now().UnixNano()
+	// Considering clock precision, tolerate 1 second
+	delta := (time.Second).Nanoseconds()
+	if t.Time > now+delta {
+		return false
+	}
+	return !t.IsExpired(now)
 }
 
 // CheckGas checks whether the transaction's gas is valid.
