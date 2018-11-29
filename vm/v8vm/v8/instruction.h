@@ -16,18 +16,21 @@ class IOSTContractInstruction {
 private:
     Sandbox* sbxPtr;
     Isolate* isolate;
+    int count;
 public:
     IOSTContractInstruction(SandboxPtr ptr){
         sbxPtr = static_cast<Sandbox*>(ptr);
         isolate = sbxPtr->isolate;
+        count = 0;
     }
 
     size_t Incr(size_t num) {
         sbxPtr->gasUsed += num;
+        count ++;
         return sbxPtr->gasUsed;
     }
     size_t Count() {
-        return sbxPtr->gasUsed;
+        return count;
     }
     void MemUsageCheck(){
         size_t usedMem = MemoryUsage(isolate, sbxPtr->allocator);
