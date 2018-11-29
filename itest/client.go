@@ -23,11 +23,6 @@ var (
 	InitRAM    = "1000000"
 )
 
-// Error of Client
-var (
-	ErrTimeout = fmt.Errorf("Transaction be on chain timeout")
-)
-
 // Client is a grpc client for iserver
 type Client struct {
 	grpc rpcpb.ApiServiceClient
@@ -145,7 +140,7 @@ func (c *Client) checkTransaction(hash string) error {
 	for {
 		select {
 		case <-afterTimeout:
-			return ErrTimeout
+			return fmt.Errorf("Transaction be on chain timeout: %v", hash)
 		case <-ticker.C:
 			ilog.Debugf("Get receipt for %v...", hash)
 			r, err := c.GetReceipt(hash)

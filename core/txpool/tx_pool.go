@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -218,6 +219,8 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 		return err
 	}
 	pool.pendingTx.Add(t)
+	ilog.Debugf("Added a tx to pendingTx: %v", common.Base58Encode(t.Hash()))
+
 	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil
