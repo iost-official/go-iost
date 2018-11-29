@@ -140,7 +140,7 @@ func TestGas_NoPledge(t *testing.T) {
 		tmpDB.Close()
 		os.RemoveAll("mvcc")
 	}()
-	gas, _ := h.GasManager.CurrentGas(testAcc)
+	gas := h.GasManager.CurrentGas(testAcc)
 	so(gas.Value, shouldEqual, 0)
 
 }
@@ -186,23 +186,22 @@ func TestGas_Pledge(t *testing.T) {
 	so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Value-pledgeAmount.Value)
 	so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Value)
 	ilog.Info("After pledge, you will get some gas immediately")
-	gas, _ := h.GasManager.CurrentGas(testAcc)
+	gas := h.GasManager.CurrentGas(testAcc)
 	gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward)
 	so(gas.Equals(gasEstimated), shouldBeTrue)
 
 	ilog.Info("Then gas increases at a predefined rate")
 	delta := int64(5)
 	timePass(h, delta)
-	gas, _ = h.GasManager.CurrentGas(testAcc)
+	gas = h.GasManager.CurrentGas(testAcc)
 	gasEstimated = pledgeAmount.Multiply(native.GasImmediateReward).Add(pledgeAmount.Multiply(native.GasIncreaseRate).Times(delta))
 	so(gas.Equals(gasEstimated), shouldBeTrue)
 
 	ilog.Info("Then gas will reach limit and not increase any longer")
 	delta = int64(2 * native.GasFulfillSeconds)
 	timePass(h, delta)
-	gas, _ = h.GasManager.CurrentGas(testAcc)
+	gas = h.GasManager.CurrentGas(testAcc)
 	gasEstimated = pledgeAmount.Multiply(native.GasLimit)
-	fmt.Printf("gas %v es %v\n", gas, gasEstimated)
 	so(gas.Equals(gasEstimated), shouldBeTrue)
 
 }
@@ -219,16 +218,19 @@ func TestGas_PledgeMore(t *testing.T) {
 	so(err, shouldBeNil)
 	delta1 := int64(5)
 	timePass(h, delta1)
-	gasBeforeSecondPledge, _ := h.GasManager.CurrentGas(testAcc)
+
+	gasBeforeSecondPledge := h.GasManager.CurrentGas(testAcc)
 	secondTimePledgeAmount := toIOSTFixed(300)
 	_, _, err = e.LoadAndCall(h, code, "pledge", testAcc, testAcc, secondTimePledgeAmount.ToString())
 	so(err, shouldBeNil)
 	delta2 := int64(10)
+
 	timePass(h, delta2)
-	gasAfterSecondPledge, _ := h.GasManager.CurrentGas(testAcc)
+	gasAfterSecondPledge := h.GasManager.CurrentGas(testAcc)
 	gasEstimated := gasBeforeSecondPledge.Add(secondTimePledgeAmount.Multiply(native.GasImmediateReward).Add(
 		secondTimePledgeAmount.Add(firstTimePledgeAmount).Multiply(native.GasIncreaseRate).Times(delta2)))
 	so(gasAfterSecondPledge.Equals(gasEstimated), shouldBeTrue)
+
 	so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Sub(firstTimePledgeAmount).Sub(secondTimePledgeAmount).Value)
 	so(h.DB().TokenBalance("iost", contractName), shouldEqual, firstTimePledgeAmount.Add(secondTimePledgeAmount).Value)
 
@@ -246,11 +248,11 @@ func TestGas_UseGas(t *testing.T) {
 	so(err, shouldBeNil)
 	delta1 := int64(5)
 	timePass(h, delta1)
-	gasBeforeUse, _ := h.GasManager.CurrentGas(testAcc)
+	gasBeforeUse := h.GasManager.CurrentGas(testAcc)
 	gasCost := toIOSTFixed(100)
-	_, err = h.GasManager.CostGas(testAcc, gasCost)
+	err = h.GasManager.CostGas(testAcc, gasCost)
 	so(err, shouldBeNil)
-	gasAfterUse, _ := h.GasManager.CurrentGas(testAcc)
+	gasAfterUse := h.GasManager.CurrentGas(testAcc)
 	gasEstimated := gasBeforeUse.Sub(gasCost)
 	so(gasAfterUse.Equals(gasEstimated), shouldBeTrue)
 
@@ -274,7 +276,7 @@ func TestGas_unpledge(t *testing.T) {
 	so(err, shouldBeNil)
 	so(h.DB().TokenBalance("iost", testAcc), shouldEqual, balanceBeforeunpledge)
 	so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Sub(unpledgeAmount).Value)
-	gas, _ := h.GasManager.CurrentGas(testAcc)
+	gas := h.GasManager.CurrentGas(testAcc)
 	ilog.Info("After unpledging, the gas limit will decrease. If current gas is more than the new limit, it will be decrease.")
 	gasEstimated := pledgeAmount.Sub(unpledgeAmount).Multiply(native.GasLimit)
 	so(gas.Equals(gasEstimated), shouldBeTrue)
@@ -324,12 +326,12 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 	so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Value-pledgeAmount.Value)
 	so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Value)
 	ilog.Info("After pledge, you will get some gas immediately")
-	gas, _ := h.GasManager.CurrentGas(otherAcc)
+	gas := h.GasManager.CurrentGas(otherAcc)
 	gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward)
 	so(gas.Equals(gasEstimated), shouldBeTrue)
 
 	ilog.Info("If one pledge for others, he will get no gas himself")
-	gas, _ = h.GasManager.CurrentGas(testAcc)
+	gas = h.GasManager.CurrentGas(testAcc)
 	so(gas.Value, shouldBeZeroValue)
 
 	ilog.Info("Test unpledge for others")

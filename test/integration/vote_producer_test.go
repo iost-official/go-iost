@@ -59,14 +59,16 @@ func Test_InitProducer(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-voteId")), ShouldEqual, `"1"`)
 		Convey("test init producer", func() {
 			for i := 0; i < 12; i += 2 {
-				s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
+				r, err := s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
+				So(err, ShouldBeNil)
+				So(r.Status.Message, ShouldEqual, "")
 			}
 			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual,
 				`["IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn","IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd"`+
 					`,"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY","IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh"`+
 					`,"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN","IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs"]`)
 
-			So(s.Visitor.MKeys("vote.iost-v-1"), ShouldResemble, []string{testID[0], testID[2], testID[4], testID[6], testID[8], testID[10]})
+			So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{testID[0], testID[2], testID[4], testID[6], testID[8], testID[10]})
 		})
 	})
 }
@@ -95,11 +97,11 @@ func Test_RegisterProducer(t *testing.T) {
 			s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
 			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", testID[12])), ShouldEqual, `{"pubkey":"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000"}`)
 			So(s.Visitor.TokenBalance("iost", kp6.ID), ShouldEqual, int64(1800000000*1e8))
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", kp6.ID)), ShouldEqual, `["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp6.ID)), ShouldEqual, `["0",false,-1]`)
 
 			s.Call("vote_producer.iost", "UnregisterProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
 			So(s.Visitor.MHas("vote_producer.iost-producerTable", kp6.ID), ShouldEqual, false)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", kp6.ID)), ShouldEqual, `["0",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp6.ID)), ShouldEqual, `["0",true,-1]`)
 		})
 	})
 }
@@ -184,20 +186,20 @@ func Test_Vote1(t *testing.T) {
 			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp8.ID), kp8.ID, kp8)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", kp6.ID)), ShouldEqual, `["0",false,-1]`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", kp7.ID)), ShouldEqual, `["0",false,-1]`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", kp8.ID)), ShouldEqual, `["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp6.ID)), ShouldEqual, `["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp7.ID)), ShouldEqual, `["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp8.ID)), ShouldEqual, `["0",false,-1]`)
 
 			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp6.ID, "100000000"), kp.ID, kp)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", testID[12])), ShouldEqual, `["100000000",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", testID[12])), ShouldEqual, `["100000000",false,-1]`)
 
 			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp7.ID, kp6.ID, "100000000"), kp7.ID, kp7)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", testID[12])), ShouldEqual, `["200000000",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", testID[12])), ShouldEqual, `["200000000",false,-1]`)
 			So(s.Visitor.MHas("vote.iost-p-1", testID[12]), ShouldEqual, false)
 
 			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp8.ID, kp6.ID, "100000000"), kp8.ID, kp8)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v-1", testID[12])), ShouldEqual, `["300000000",false,-1]`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-p-1", testID[12])), ShouldEqual, `"300000000"`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", testID[12])), ShouldEqual, `["300000000",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-p_1", testID[12])), ShouldEqual, `"300000000"`)
 
 			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp7.ID, "215000000"), kp.ID, kp)
 			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp8.ID, "220000000"), kp.ID, kp)

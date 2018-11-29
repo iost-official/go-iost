@@ -17,7 +17,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/host"
 )
 
 // Simulator of txs and contract
@@ -68,14 +67,14 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 
 // SetGas to id
 func (s *Simulator) SetGas(id string, i int64) {
-	prefix := "gas.iost" + database.Separator
+	prefix := database.GasContractName + database.Separator
 	value := &common.Fixed{
 		Value:   i * 10e2,
 		Decimal: 2,
 	}
-	valueStr := database.MustMarshal(value.Marshal())
-	s.Visitor.Put(prefix+host.GasStockKey+id, valueStr)
-	s.Visitor.Put(prefix+host.GasLimitKey+id, valueStr)
+	valueStr := database.MustMarshal(value)
+	s.Visitor.Put(prefix+database.GasStockKey+id, valueStr)
+	s.Visitor.Put(prefix+database.GasLimitKey+id, valueStr)
 	s.Visitor.Commit()
 }
 

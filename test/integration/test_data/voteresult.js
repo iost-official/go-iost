@@ -12,7 +12,7 @@ class voteresult {
 
     GetResult(voteId) {
         let ret = this._call("vote.iost", "GetResult",  [voteId]);
-        storage.mapPut("vote-result", voteId, JSON.stringify(ret));
+        storage.mapPut("vote_result", voteId, JSON.stringify(ret));
     }
 }
 

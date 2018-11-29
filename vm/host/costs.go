@@ -5,6 +5,7 @@ import "github.com/iost-official/go-iost/core/contract"
 // var costs
 var (
 	Costs = map[string]contract.Cost{
+		"JSCost":              contract.NewCost(0, 0, 2000),
 		"PutCost":             contract.NewCost(0, 0, 150),
 		"GetCost":             contract.NewCost(0, 0, 100),
 		"DelCost":             contract.NewCost(0, 0, 100),
@@ -37,10 +38,10 @@ func CodeSavageCost(size int) contract.Cost {
 
 // CommonErrorCost returns cost increased by stack layer
 func CommonErrorCost(layer int) contract.Cost {
-	return Costs["OpPrice"].Multiply(int64(layer))
+	return Costs["ErrPrice"].Multiply(int64(layer * 10))
 }
 
 // CommonOpCost returns cost increased by stack layer
 func CommonOpCost(layer int) contract.Cost {
-	return Costs["ErrPrice"].Multiply(int64(layer))
+	return Costs["OpPrice"].Multiply(int64(layer * 10))
 }
