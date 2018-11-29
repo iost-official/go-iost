@@ -1,14 +1,12 @@
 package verifier
 
 import (
+	"encoding/json"
 	"errors"
-	"github.com/iost-official/go-iost/common"
+	"fmt"
 	"time"
 
-	"encoding/json"
-
-	"fmt"
-
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
@@ -19,7 +17,8 @@ import (
 
 // values
 var (
-	ErrInvalidTimeTx = errors.New("invalid time tx")
+	ErrExpiredTx    = errors.New("Expired tx")
+	ErrNotArrivedTx = errors.New("Not arrived tx")
 )
 
 // Verifier ..
@@ -161,10 +160,24 @@ L:
 		if t == nil {
 			break L
 		}
-		//ilog.Debugf("get tx %v from provider", common.Base58Encode(t.Hash()))
-		if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
-			ilog.Errorf("Drop tx %v due to invalid time", common.Base58Encode(t.Hash()))
-			provider.Drop(t, ErrInvalidTimeTx)
+		if !t.IsCreatedBefore(blk.Head.Time) {
+			ilog.Warnf(
+				"Tx %v has not arrived. tx time is %v, blk time is %v",
+				common.Base58Encode(t.Hash()),
+				t.Time,
+				blk.Head.Time,
+			)
+			provider.Return(t)
+			continue L
+		}
+		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
+			ilog.Errorf(
+				"Tx %v is expired, tx time is %v, blk time is %v",
+				common.Base58Encode(t.Hash()),
+				t.Time,
+				blk.Head.Time,
+			)
+			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
 		err := isolator.PrepareTx(t, limit)
@@ -181,7 +194,11 @@ L:
 			continue L
 		}
 		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
-			ilog.Errorf("isolator run time out")
+			ilog.Warnf(
+				"isolator run time out, but time limit %v less than std time limit %v",
+				limit,
+				c.TxTimeLimit,
+			)
 			provider.Return(t)
 			break L
 		}
@@ -310,8 +327,11 @@ func verifyBlockBase(blk *block.Block, parent *block.Block, db database.IMultiVa
 }
 
 func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Duration, isBlockBase bool, blk *block.Block) error { // nolint
-	if !t.IsTimeValid(blk.Head.Time) && !t.IsDefer() {
-		return ErrInvalidTimeTx
+	if !t.IsCreatedBefore(blk.Head.Time) {
+		return ErrNotArrivedTx
+	}
+	if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
+		return ErrExpiredTx
 	}
 	isolator.ClearTx()
 	if isBlockBase {
