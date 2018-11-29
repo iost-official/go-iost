@@ -28,13 +28,17 @@ func goPut(cSbx C.SandboxPtr, key, val, ramPayer *C.char, gasUsed *C.size_t) *C.
 
 	var cost contract.Cost
 
+	var err error
 	if ramPayer == nil || C.GoString(ramPayer) == "" {
-		cost = sbx.host.Put(k, v)
+		cost, err = sbx.host.Put(k, v)
 	} else {
 		o := C.GoString(ramPayer)
-		cost = sbx.host.Put(k, v, o)
+		cost, err = sbx.host.Put(k, v, o)
 	}
 	*gasUsed = C.size_t(cost.CPU)
+	if err != nil {
+		return C.CString(err.Error())
+	}
 
 	return nil
 }
@@ -96,8 +100,12 @@ func goDel(cSbx C.SandboxPtr, key, ramPayer *C.char, gasUsed *C.size_t) *C.char 
 	k := C.GoString(key)
 	var cost contract.Cost
 
-	cost = sbx.host.Del(k)
+	cost, err := sbx.host.Del(k)
 	*gasUsed = C.size_t(cost.CPU)
+
+	if err != nil {
+		return C.CString(err.Error())
+	}
 
 	return nil
 }
@@ -114,13 +122,17 @@ func goMapPut(cSbx C.SandboxPtr, key, field, val, ramPayer *C.char, gasUsed *C.s
 	v := C.GoString(val)
 
 	var cost contract.Cost
+	var err error
 	if ramPayer == nil || C.GoString(ramPayer) == "" {
-		cost = sbx.host.MapPut(k, f, v)
+		cost, err = sbx.host.MapPut(k, f, v)
 	} else {
 		o := C.GoString(ramPayer)
-		cost = sbx.host.MapPut(k, f, v, o)
+		cost, err = sbx.host.MapPut(k, f, v, o)
 	}
 	*gasUsed = C.size_t(cost.CPU)
+	if err != nil {
+		return C.CString(err.Error())
+	}
 
 	return nil
 }
@@ -180,9 +192,12 @@ func goMapDel(cSbx C.SandboxPtr, key, field, ramPayer *C.char, gasUsed *C.size_t
 	f := C.GoString(field)
 
 	var cost contract.Cost
-	cost = sbx.host.MapDel(k, f)
+	cost, err := sbx.host.MapDel(k, f)
 
 	*gasUsed = C.size_t(cost.CPU)
+	if err != nil {
+		return C.CString(err.Error())
+	}
 
 	return nil
 }

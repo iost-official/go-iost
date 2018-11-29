@@ -52,7 +52,7 @@ func getToken721Balance(h *host.Host, tokenName string, from string) (balance in
 }
 
 func setToken721Balance(h *host.Host, tokenName string, from string, balance int64, ramPayer string) (cost contract.Cost) {
-	cost = h.MapPut(Token721BalanceMapPrefix+from, tokenName, balance, ramPayer)
+	cost, _ = h.MapPut(Token721BalanceMapPrefix+from, tokenName, balance, ramPayer)
 	return cost
 
 }
@@ -98,11 +98,11 @@ var (
 			}
 
 			// put info
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, Token721IssuerMapField, issuer, issuer)
+			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenName, Token721IssuerMapField, issuer, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply, issuer)
+			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, SupplyMapField, int64(0), issuer)
+			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenName, SupplyMapField, int64(0), issuer)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -159,11 +159,17 @@ var (
 			}
 
 			// set supply, set balance
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+1, issuer.(string))
+			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+1, issuer.(string))
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, issuer.(string))
+			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, issuer.(string))
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			tbalance, cost0, err := getToken721Balance(h, tokenName, to)
 			cost.AddAssign(cost0)
@@ -174,10 +180,10 @@ var (
 			cost0 = setToken721Balance(h, tokenName, to, tbalance, issuer.(string))
 			cost.AddAssign(cost0)
 
-			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, issuer.(string))
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, issuer.(string))
 			cost.AddAssign(cost0)
 
-			return []interface{}{}, cost, nil
+			return []interface{}{}, cost, err
 		},
 	}
 
@@ -223,8 +229,11 @@ var (
 				return nil, cost, host.ErrInvalidData
 			}
 
-			cost0 = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, from)
+			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, from)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			fbalance, cost0, err := getToken721Balance(h, tokenName, from)
 			cost.AddAssign(cost0)
@@ -247,12 +256,15 @@ var (
 
 			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
-			cost0 = h.MapDel(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
+			cost0, err = h.MapDel(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, from)
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, from)
 			cost.AddAssign(cost0)
 
-			return []interface{}{}, cost, nil
+			return []interface{}{}, cost, err
 		},
 	}
 

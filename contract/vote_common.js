@@ -7,9 +7,9 @@ const iostDecimal = 8;
 const adminPermission = "active";
 const votePermission = "vote";
 
-const preResultPrefix = "p-";
-const optionPrefix = "v-";
-const userVotePrefix = "u-";
+const preResultPrefix = "p_";
+const optionPrefix = "v_";
+const userVotePrefix = "u_";
 
 class VoteCommonContract {
     constructor() {

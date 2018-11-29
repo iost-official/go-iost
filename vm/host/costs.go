@@ -38,10 +38,10 @@ func CodeSavageCost(size int) contract.Cost {
 
 // CommonErrorCost returns cost increased by stack layer
 func CommonErrorCost(layer int) contract.Cost {
-	return Costs["OpPrice"].Multiply(int64(layer))
+	return Costs["ErrPrice"].Multiply(int64(layer * 10))
 }
 
 // CommonOpCost returns cost increased by stack layer
 func CommonOpCost(layer int) contract.Cost {
-	return Costs["ErrPrice"].Multiply(int64(layer))
+	return Costs["OpPrice"].Multiply(int64(layer * 10))
 }

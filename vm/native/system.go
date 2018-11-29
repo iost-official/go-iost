@@ -87,8 +87,11 @@ var (
 			publisher := h.Context().Value("publisher").(string)
 			cost2, err := h.SetCode(con, publisher)
 			cost.AddAssign(cost2)
+			if err != nil {
+				return nil, cost, err
+			}
 
-			cost2 = h.MapPut("contract_owner", actID, publisher)
+			cost2, err = h.MapPut("contract_owner", actID, publisher)
 			cost.AddAssign(cost2)
 
 			return []interface{}{actID}, cost, err
@@ -165,9 +168,7 @@ var (
 		name: "hostSettings",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			cost = contract.Cost0()
-
-			h.MapPut("settings", "host", args[0])
+			cost, _ = h.MapPut("settings", "host", args[0])
 			return nil, cost, nil
 		},
 	}
