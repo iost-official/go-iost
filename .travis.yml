@@ -6,8 +6,6 @@ branches:
   - "/^sprint.*$/"
 matrix:
   fast_finish: true
-  allow_failures:
-  - env: JOB=k8s_test
   include:
   - os: osx
     osx_image: xcode10
@@ -79,3 +77,10 @@ matrix:
     - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
     - aws eks update-kubeconfig --region us-west-2 --name devnet
     - make k8s_test
+notifications:
+  slack:
+    rooms:
+      - secure: "N1Z77CrXsokHH+L4ToF0uzUPL5/FmnyuMzjFWJrPkfP//mSOH+cy2xm8FPYl+LNxtEdHNzy8c+/ATxtBUXGPFjnAKZbnWAVhYlfaL8Pv7Fd/otzvFJoMPGAU1HqedF7PCv36vLgnOg3s1XVtuCmTvmq3IWGQlfeZ2V2QRz8eXiZ+ZibhyHolJq3UubGi/1TJcOKXb8rRqTDQ2Frn2cJP+h+FdqgIFeDi0Hbb7v8sULEs0NW3F5nqXTVG9QaTgTTypppwme2r2oCVvE8W4gpeHOqG0betPH4QNWRumiLQ+OCIoFoQVEIdNfFpF9wQccc7e0a1MAF4dBHrujit/8frcllO1AWl/cnVXt2ppgfKrHqVaLEUlKwaORIbizCRKpjbX4jyIXoWNAiJW9hET7sjWkEyhEfqDyey+QTZBh5laexAbuwsbdD293YSuDEZv3btYG9JJKBWIMINsyBgWFpwFD7e+KDAimujBxzE+YEFAGlTJyggS+ss0OzItMlC0QSJB2Z3jYz8k7K8mmrSIYAZUbVKVY9I/+gEVp1OFWe6+YwBLlGbjWEKX7r5i6089zmUjeUnLUKIiwQdV1O9sCyz+TgmnmmLQugcKLrNYpP788c+O5Ox+Ln/EG6I1OntKr45YcWOuS3mdmPVFRETnuHOxA/8mH9rxYnk3L1LLtchFxM="
+    on_success: change
+    on_failure: always
+    on_pull_requests: false
