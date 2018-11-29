@@ -42,7 +42,11 @@ func (g *GasManager) putFixed(owner string, key string, value *common.Fixed) con
 		ilog.Fatalf("GasHandler putFixed %v", value)
 	}
 	//fmt.Printf("putFixed %v %v %v\n", owner, key, value.ToString())
-	return g.h.Put(key+owner, value)
+	cost, err := g.h.Put(key+owner, value)
+	if err != nil {
+		panic(fmt.Errorf("GasHandler putFixed  err %v", err))
+	}
+	return cost
 }
 
 // GasRate ...
@@ -91,7 +95,11 @@ func (g *GasManager) GasUpdateTime(name string) (int64, contract.Cost) {
 // SetGasUpdateTime ...
 func (g *GasManager) SetGasUpdateTime(name string, t int64) contract.Cost {
 	//ilog.Debugf("SetGasUpdateTime %v %v", name, t)
-	return g.h.Put(database.GasUpdateTimeKey+name, t)
+	cost, err := g.h.Put(database.GasUpdateTimeKey+name, t)
+	if err != nil {
+		panic(fmt.Errorf("gas manager set gas update time err, %v", err))
+	}
+	return cost
 }
 
 // GasStock `gasStock` means the gas amount at last update time.
@@ -134,7 +142,11 @@ func (g *GasManager) GasPledge(name string, pledger string) (*common.Fixed, cont
 
 // SetGasPledge ...
 func (g *GasManager) SetGasPledge(name string, pledger string, p *common.Fixed) contract.Cost {
-	return g.h.MapPut(database.GasPledgeKey+name, pledger, p)
+	cost, err := g.h.MapPut(database.GasPledgeKey+name, pledger, p)
+	if err != nil {
+		panic(fmt.Errorf("gas manager set gas pledge err %v", err))
+	}
+	return cost
 }
 
 // DelGasPledge ...
@@ -142,7 +154,11 @@ func (g *GasManager) DelGasPledge(name string, pledger string) contract.Cost {
 	if name == pledger {
 		ilog.Fatalf("delGasPledge for oneself %v", name)
 	}
-	return g.h.MapDel(database.GasPledgeKey+name, pledger)
+	cost, err := g.h.MapDel(database.GasPledgeKey+name, pledger)
+	if err != nil {
+		panic(fmt.Errorf("gas manager del gas pledge err %v", err))
+	}
+	return cost
 }
 
 func (g *GasManager) refreshGasWithValue(name string, value *common.Fixed) (contract.Cost, error) {

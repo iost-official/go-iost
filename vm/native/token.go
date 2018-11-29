@@ -49,10 +49,10 @@ func checkTokenExists(h *host.Host, tokenName string) (ok bool, cost contract.Co
 func setBalance(h *host.Host, tokenName string, from string, balance int64, ramPayer string) (cost contract.Cost) {
 	ok, cost := h.MapHas(TokenBalanceMapPrefix+from, tokenName)
 	if ok {
-		cost0 := h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance)
+		cost0, _ := h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance)
 		cost.AddAssign(cost0)
 	} else {
-		cost0 := h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance, ramPayer)
+		cost0, _ := h.MapPut(TokenBalanceMapPrefix+from, tokenName, balance, ramPayer)
 		cost.AddAssign(cost0)
 	}
 	return cost
@@ -112,8 +112,11 @@ func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (b
 		if err != nil {
 			return balance, cost, err
 		}
-		cost0 = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON.([]byte)))
+		cost0, err = h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON.([]byte)))
 		cost.AddAssign(cost0)
+		if err != nil {
+			return balance, cost, err
+		}
 	}
 
 	return balance, cost, nil
@@ -144,8 +147,11 @@ func freezeBalance(h *host.Host, tokenName string, from string, balance int64, f
 	if err != nil {
 		return cost, nil
 	}
-	cost0 := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON), ramPayer)
+	cost0, err := h.MapPut(TokenFreezeMapPrefix+from, tokenName, database.SerializedJSON(freezeJSON), ramPayer)
 	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
+	}
 
 	return cost, nil
 }
@@ -168,6 +174,18 @@ func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, 
 	return amountNumber.ToString(), cost
 }
 
+func checkTokenNameValid(name string) error {
+	if len(name) <= 0 || len(name) > 32 {
+		return fmt.Errorf("token name invalid. token name length should be between 1,32  got %v", name)
+	}
+	for _, ch := range name {
+		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_') {
+			return fmt.Errorf("token name invalid. token name contains invalid character %v", ch)
+		}
+	}
+	return nil
+}
+
 var (
 	initTokenABI = &abi{
 		name: "init",
@@ -187,6 +205,12 @@ var (
 			issuer := args[1].(string)
 			totalSupply := args[2].(int64)
 			configJSON := args[3].([]byte)
+
+			cost.AddAssign(host.CommonOpCost(1))
+			err = checkTokenNameValid(tokenName)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			// config
 			config := make(map[string]interface{})
@@ -248,17 +272,17 @@ var (
 			totalSupply *= int64(math.Pow10(decimal))
 
 			// put info
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, IssuerMapField, issuer, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenName, IssuerMapField, issuer, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenName, TotalSupplyMapField, totalSupply, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, int64(0), issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, int64(0), issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, CanTransferMapField, canTransfer, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenName, CanTransferMapField, canTransfer, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DefaultRateMapField, defaultRate, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenName, DefaultRateMapField, defaultRate, issuer)
 			cost.AddAssign(cost0)
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, DecimalMapField, int64(decimal), issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenName, DecimalMapField, int64(decimal), issuer)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -320,8 +344,11 @@ var (
 			}
 
 			// set supply, set balance
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount)
+			cost0, err = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply.(int64)+amount)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			balance, cost0, err := getBalance(h, tokenName, to, issuer.(string))
 			cost.AddAssign(cost0)
@@ -599,8 +626,11 @@ var (
 			cost.AddAssign(cost0)
 
 			supply -= amount
-			cost0 = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply)
+			cost0, err = h.MapPut(TokenInfoMapPrefix+tokenName, SupplyMapField, supply)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			return []interface{}{}, cost, nil
 		},
