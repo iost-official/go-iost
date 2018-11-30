@@ -60,11 +60,14 @@ function genInjectionStr(injectionPoint) {
 }
 
 
-function checkGasKeyword(tokens) {
+function checkInvalidKeyword(tokens) {
     for (let i = 0; i < tokens.length; i++) {
         if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
             (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp")) {
             throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
+        }
+        if (tokens[i].type === "RegularExpression") {
+            throw new Error("use of RegularExpression is not allowed." + tokens[i].val)
         }
     }
 }
@@ -380,7 +383,7 @@ function injectGas(source) {
         tokens: true
     });
 
-    checkGasKeyword(ast.tokens);
+    checkInvalidKeyword(ast.tokens);
     // checkOperator(ast.tokens);
 
     // replace operator with function
