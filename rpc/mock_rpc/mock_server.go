@@ -244,7 +244,14 @@ func newMockAPI() rpcpb.ApiServiceServer {
 				},
 			},
 		},
-		FrozenBalances: []*rpcpb.Account_FrozenBalance{
+		FrozenBalances: []*rpcpb.FrozenBalance{
+			{Amount: 111.2, Time: 2343242},
+		},
+	}, nil)
+
+	api.EXPECT().GetTokenBalance(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetTokenBalanceResponse{
+		Balance: 20000.3,
+		FrozenBalances: []*rpcpb.FrozenBalance{
 			{Amount: 111.2, Time: 2343242},
 		},
 	}, nil)

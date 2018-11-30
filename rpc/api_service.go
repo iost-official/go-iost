@@ -208,13 +208,37 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	// pack frozen balance information
 	frozen := dbVisitor.AllFreezedTokenBalanceFixed("iost", req.GetName())
 	for _, f := range frozen {
-		ret.FrozenBalances = append(ret.FrozenBalances, &rpcpb.Account_FrozenBalance{
+		ret.FrozenBalances = append(ret.FrozenBalances, &rpcpb.FrozenBalance{
 			Amount: f.Amount.ToFloat(),
 			Time:   f.Ftime,
 		})
 	}
 
 	return ret, nil
+}
+
+// GetTokenBalance returns contract information corresponding to the given contract ID.
+func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetTokenBalanceResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	// pack basic account information
+	acc, _ := host.ReadAuth(dbVisitor, req.GetAccount())
+	if acc == nil {
+		return nil, errors.New("account not found")
+	}
+	balance := dbVisitor.TokenBalanceFixed(req.GetToken(), req.GetAccount()).ToFloat()
+	// pack frozen balance information
+	frozen := dbVisitor.AllFreezedTokenBalanceFixed(req.GetToken(), req.GetAccount())
+	frozenBalances := make([]*rpcpb.FrozenBalance, 0)
+	for _, f := range frozen {
+		frozenBalances = append(frozenBalances, &rpcpb.FrozenBalance{
+			Amount: f.Amount.ToFloat(),
+			Time:   f.Ftime,
+		})
+	}
+	return &rpcpb.GetTokenBalanceResponse{
+		Balance:        balance,
+		FrozenBalances: frozenBalances,
+	}, nil
 }
 
 // GetContract returns contract information corresponding to the given contract ID.

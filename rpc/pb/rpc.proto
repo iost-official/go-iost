@@ -54,6 +54,13 @@ service ApiService {
         };
     }
 
+    // get token balance
+    rpc GetTokenBalance (GetTokenBalanceRequest) returns (GetTokenBalanceResponse) {
+        option (google.api.http) = {
+            get: "/getTokenBalance/{account}/{token}/{by_longest_chain}"
+        };
+    }
+
     // get contract
     rpc GetContract (GetContractRequest) returns (Contract) {
         option (google.api.http) = {
@@ -375,6 +382,14 @@ message GetBlockByNumberRequest {
     bool complete = 2;
 }
 
+// The message defines the account's frozen balance.
+message FrozenBalance {
+    // balance amount
+    double amount = 1;
+    // free time
+    int64 time = 2;
+}
+
 // The message defines account struct.
 message Account {
     // account name
@@ -453,14 +468,6 @@ message Account {
     // account groups
     map<string, Group> groups = 7;
 
-    // The message defines the account's frozen balance.
-    message FrozenBalance {
-        // balance amount
-        double amount = 1;
-        // free time
-        int64 time = 2;
-    }
-
     // frozen balance information
     repeated FrozenBalance frozen_balances = 8;
 }
@@ -510,14 +517,12 @@ message GetContractRequest {
 message GetContractStorageRequest {
     // contract id
     string id = 1;
-    // ram owner, should be the same as 'put' call. It can be empty.
-    string owner = 2;
     // the key in the StateDB
-    string key = 3;
+    string key = 2;
     // get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
-    string field = 4;
+    string field = 3;
     // get data by longest chain's head block or last irreversible block
-    bool by_longest_chain = 5;
+    bool by_longest_chain = 4;
 }
 
 // The message defines get contract storage response.
@@ -530,5 +535,23 @@ message GetContractStorageResponse {
 message SendTransactionResponse {
     // the final transaction hash
     string hash = 1;
+}
+
+// The message defines get token balance response.
+message GetTokenBalanceResponse {
+    // token balance
+    double balance = 1;
+    // frozen balance information
+    repeated FrozenBalance frozen_balances = 2;
+}
+
+// The message defines get token balance request.
+message GetTokenBalanceRequest {
+    // account name
+    string account = 1;
+    // the token name
+    string token = 2;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 3;
 }
 
