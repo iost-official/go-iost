@@ -101,14 +101,14 @@ func (g *GasHandler) GasStock(name string) *common.Fixed {
 
 // GasPledge ...
 func (g *GasHandler) GasPledge(name string, pledger string) *common.Fixed {
-	ok := g.MapHandler.MHas(GasPledgeKey+name, pledger)
+	ok := g.MapHandler.MHas(GasContractName+Separator+GasPledgeKey+name, pledger)
 	if !ok {
 		return &common.Fixed{
 			Value:   0,
 			Decimal: 8,
 		}
 	}
-	result := MustUnmarshal(g.MapHandler.MGet(GasPledgeKey+name, pledger))
+	result := MustUnmarshal(g.MapHandler.MGet(GasContractName+Separator+GasPledgeKey+name, pledger))
 	value, ok := result.(*common.Fixed)
 	if !ok {
 		return nil
@@ -118,11 +118,11 @@ func (g *GasHandler) GasPledge(name string, pledger string) *common.Fixed {
 
 // PledgerInfo get who pledged how much coins for me
 func (g *GasHandler) PledgerInfo(name string) []PledgerInfo {
-	pledgers := g.MapHandler.MKeys(GasPledgeKey + name)
-	//ilog.Errorf("pledge keys %v %v", pledgers, name)
+	pledgers := g.MapHandler.MKeys(GasContractName + Separator + GasPledgeKey + name)
 	result := make([]PledgerInfo, 0)
 	for _, pledger := range pledgers {
-		v := MustUnmarshal(g.MapHandler.MGet(GasPledgeKey+name, pledger))
+		s := g.MapHandler.MGet(GasContractName+Separator+GasPledgeKey+name, pledger)
+		v := MustUnmarshal(s)
 		pledge, ok := v.(*common.Fixed)
 		if !ok {
 			return make([]PledgerInfo, 0)
