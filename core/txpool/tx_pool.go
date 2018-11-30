@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -218,6 +219,12 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 		return err
 	}
 	pool.pendingTx.Add(t)
+	ilog.Debugf(
+		"Added %v to pendingTx, now size is %v.",
+		common.Base58Encode(t.Hash()),
+		pool.pendingTx.Size(),
+	)
+
 	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil
@@ -271,7 +278,8 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if err := t.CheckGas(); err != nil {
 		return err
 	}
-	if !t.IsTimeValidNow() {
+	// Add one second delay for tx created time check
+	if !t.IsCreatedBefore(time.Now().UnixNano()+(time.Second).Nanoseconds()) || t.IsExpired(time.Now().UnixNano()) {
 		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
@@ -380,7 +388,7 @@ func (pool *TxPImpl) clearTimeoutTx() {
 	iter := pool.pendingTx.Iter()
 	t, ok := iter.Next()
 	for ok {
-		if !t.IsTimeValidNow() && !t.IsDefer() {
+		if t.IsExpired(time.Now().UnixNano()) && !t.IsDefer() {
 			pool.pendingTx.Del(t.Hash())
 		}
 		t, ok = iter.Next()

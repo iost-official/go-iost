@@ -62,7 +62,9 @@ void IOSTContractInstruction_Incr(const FunctionCallbackInfo<Value> &args) {
 
     args.GetReturnValue().Set(Number::New(isolate, (double)ret));
 
-    ici->MemUsageCheck();
+    if (ici->Count() % 10 ==0) {
+        ici->MemUsageCheck();
+    }
     return;
 }
 

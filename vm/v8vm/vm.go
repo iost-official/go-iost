@@ -14,7 +14,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
-const vmRefLimit = 200
+const vmRefLimit = 100
 
 // CVMInitOnce vm init once
 var CVMInitOnce = sync.Once{}
@@ -99,8 +99,18 @@ func (e *VM) recycle(poolType vmPoolType) {
 		e.sandbox.Release()
 	}
 
-	if e.refCount == vmRefLimit {
-		C.lowMemoryNotification(e.isolate)
+	if e.refCount >= vmRefLimit {
+		// release isolate
+		if e.isolate != nil {
+			e.refCount = 0
+			C.releaseIsolate(e.isolate)
+		}
+		// regen isolate
+		if poolType == CompileVMPool {
+			e.isolate = C.newIsolate(customCompileStartupData)
+		} else {
+			e.isolate = C.newIsolate(customStartupData)
+		}
 	}
 
 	// then regen new sandbox

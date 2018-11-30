@@ -313,13 +313,25 @@ func (p *PoB) scheduleLoop() {
 						limitTime = time.Millisecond * 30
 					}
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
-					p.txPool.Release()
 					if err != nil {
 						ilog.Error(err)
+						p.txPool.Release()
 						continue
 					}
-					ilog.Infof("Gen block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
-						num, p.account.ID[:10], blk.Head.Number, blk.Head.Time, len(blk.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(blk))
+
+					ptx, _ := p.txPool.PendingTx()
+					ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
+						num,
+						p.account.ID[:10],
+						blk.Head.Time,
+						blk.Head.Number,
+						p.blockCache.LinkedRoot().Head.Number,
+						len(blk.Txs),
+						ptx.Size(),
+						calculateTime(blk),
+					)
+					p.txPool.Release()
+
 					blkByte, err := blk.Encode()
 					if err != nil {
 						ilog.Error(err.Error())

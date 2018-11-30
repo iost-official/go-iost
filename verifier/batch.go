@@ -72,9 +72,26 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 		if t == nil {
 			break
 		}
-		if !t.IsTimeValid(bh.Time) && !t.IsDefer() {
+		if !t.IsCreatedBefore(bh.Time) {
+			ilog.Warnf(
+				"Tx time has not arrived. tx %v time is %v, blk time is %v",
+				t.String(),
+				t.Time,
+				bh.Time,
+			)
 			i--
-			provider.Drop(t, ErrInvalidTimeTx)
+			provider.Return(t)
+			continue
+		}
+		if t.IsExpired(bh.Time) && !t.IsDefer() {
+			ilog.Errorf(
+				"Tx is expired, tx %v time is %v, blk time is %v",
+				t.String(),
+				t.Time,
+				bh.Time,
+			)
+			i--
+			provider.Drop(t, ErrExpiredTx)
 			continue
 		}
 		go func() {

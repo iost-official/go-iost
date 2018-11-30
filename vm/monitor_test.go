@@ -184,6 +184,7 @@ func TestJSM(t *testing.T) {
 	ctx.Set("gas_ratio", int64(100))
 	ctx.GSet("gas_limit", int64(10000))
 	ctx.Set("stack_height", 1)
+	ctx.Set("publisher", "abc")
 
 	h := host.NewHost(ctx, vi, monitor, nil)
 	h.SetDeadline(time.Now().Add(time.Second))
