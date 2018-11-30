@@ -11,9 +11,19 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/common"
 	. "github.com/smartystreets/goconvey/convey"
 )
+
+var letterRunes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+// RandHash ...
+func RandHash(n int) []byte {
+	b := make([]rune, n)
+	for i := range b {
+		b[i] = letterRunes[rand.Intn(len(letterRunes))]
+	}
+	return []byte(string(b))
+}
 
 func TestMerkleTree(t *testing.T) {
 	Convey("Test of MT", t, func() {
@@ -60,7 +70,7 @@ func BenchmarkBuild(b *testing.B) { // 646503ns = 0.6ms，vs 117729ns = 0.1ms
 	var data [][]byte
 	for i := 0; i < 2; i++ {
 		fmt.Println(i)
-		data = append(data, common.RandHash(32))
+		data = append(data, RandHash(32))
 	}
 	m := MerkleTree{}
 	b.ResetTimer()
@@ -73,7 +83,7 @@ func BenchmarkMerklePath(b *testing.B) { // 183ns
 	rand.Seed(time.Now().UnixNano())
 	var data [][]byte
 	for i := 0; i < 1000; i++ {
-		data = append(data, common.RandHash(32))
+		data = append(data, RandHash(32))
 	}
 	m := MerkleTree{}
 	m.Build(data)
