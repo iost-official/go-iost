@@ -72,9 +72,15 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.ChainInfoResponse, error) {
 	headBlock := as.bc.Head().Block
 	libBlock := as.bc.LinkedRoot().Block
+	netName := "unknown"
+	version := "unknown"
+	if as.bv.Config().Version != nil {
+		netName = as.bv.Config().Version.NetName
+		version = as.bv.Config().Version.ProtocolVersion
+	}
 	return &rpcpb.ChainInfoResponse{
-		NetName:         as.bv.Config().Version.NetName,
-		ProtocolVersion: as.bv.Config().Version.ProtocolVersion,
+		NetName:         netName,
+		ProtocolVersion: version,
 		WitnessList:     pob.GetStaticProperty().WitnessList,
 		HeadBlock:       headBlock.Head.Number,
 		HeadBlockHash:   common.Base58Encode(headBlock.HeadHash()),
