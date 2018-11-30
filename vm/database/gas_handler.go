@@ -124,7 +124,6 @@ func (g *GasHandler) PledgerInfo(name string) []PledgerInfo {
 	for _, pledger := range pledgers {
 		s := g.MapHandler.MGet(GasContractName+Separator+GasPledgeKey+name, pledger)
 		v := MustUnmarshal(s)
-		ilog.Errorf("pledger %v %v", s, v)
 		pledge, ok := v.(*common.Fixed)
 		if !ok {
 			return make([]PledgerInfo, 0)
