@@ -61,6 +61,18 @@ function genAbiArr(stat) {
 	return abiArr;
 }
 
+function checkInvalidKeyword(tokens) {
+    for (let i = 0; i < tokens.length; i++) {
+        if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
+            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp")) {
+            throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
+        }
+        if (tokens[i].type === "RegularExpression") {
+            throw new Error("use of RegularExpression is not allowed. " + tokens[i].value)
+        }
+    }
+}
+
 function checkOperator(tokens) {
     for (let i = 0; i < tokens.length; i++) {
         if (tokens[i].type === "Punctuator" &&
@@ -85,7 +97,8 @@ function processContract(source) {
 		return ["", ""];
 	}
 
-	checkOperator(ast.tokens);
+    checkInvalidKeyword(ast.tokens);
+	// checkOperator(ast.tokens);
 
 	let validRange = [];
 	let className;
