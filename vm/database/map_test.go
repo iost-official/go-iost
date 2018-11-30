@@ -18,7 +18,7 @@ func watchTimeout(t *testing.T, f func()) {
 	ta := time.Now()
 	f()
 	tb := time.Now().Sub(ta)
-	if tb > 2*time.Millisecond {
+	if tb > 3*time.Millisecond {
 		t.Error("time overflow")
 	}
 }
