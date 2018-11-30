@@ -119,7 +119,6 @@ func (g *GasHandler) GasPledge(name string, pledger string) *common.Fixed {
 // PledgerInfo get who pledged how much coins for me
 func (g *GasHandler) PledgerInfo(name string) []PledgerInfo {
 	pledgers := g.MapHandler.MKeys(GasContractName + Separator + GasPledgeKey + name)
-	ilog.Errorf("pledge keys %v %v", pledgers, name)
 	result := make([]PledgerInfo, 0)
 	for _, pledger := range pledgers {
 		s := g.MapHandler.MGet(GasContractName+Separator+GasPledgeKey+name, pledger)
