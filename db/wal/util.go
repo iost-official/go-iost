@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"io"
 	"os"
+	"path/filepath"
 	"sort"
 	"strings"
 )
@@ -130,7 +131,8 @@ func parseWALName(str string) (seq, index uint64, err error) {
 	if !strings.HasSuffix(str, ".wal") {
 		return 0, 0, errBadWALName
 	}
-	_, err = fmt.Sscanf(str, "%016x-%016x.wal", &seq, &index)
+	nameBase := filepath.Base(str)
+	_, err = fmt.Sscanf(nameBase, "%016x-%016x.wal", &seq, &index)
 	return seq, index, err
 }
 
@@ -168,4 +170,10 @@ func Uint64ToBytes(i uint64) []byte {
 	var buf = make([]byte, 8)
 	binary.BigEndian.PutUint64(buf, i)
 	return buf
+}
+
+// BytesToUint64 convert byte array to uint64
+func BytesToUint64(p []byte) uint64 {
+	res := binary.BigEndian.Uint64(p)
+	return res
 }
