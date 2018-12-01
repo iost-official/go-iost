@@ -26,6 +26,7 @@ var (
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
 	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
+	metricsDelayedBlock          = metrics.NewCounter("iost_delayed_block", nil)
 )
 
 var (
@@ -34,10 +35,13 @@ var (
 )
 
 var (
-	blockReqTimeout = 3 * time.Second
-	continuousNum   = 10
-	tWitness        = ""
-	tContinuousNum  = 0
+	blockReqTimeout   = 3 * time.Second
+	continuousNum     = 10
+	subSlotTime       = 300 * time.Millisecond
+	genBlockTime      = 250 * time.Millisecond
+	last2GenBlockTime = 20 * time.Millisecond
+	tWitness          = ""
+	tContinuousNum    = 0
 )
 
 type verifyBlockMessage struct {
@@ -301,16 +305,16 @@ func (p *PoB) scheduleLoop() {
 			t := time.Now()
 			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == p.account.ID {
 				staticProperty.SlotUsed[t.Unix()] = true
-				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
+				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
 				for num := 0; num < continuousNum; num++ {
 					p.txPool.Lock()
 					var limitTime time.Duration
 					if num < continuousNum-2 {
-						limitTime = time.Millisecond * 250
+						limitTime = genBlockTime
 					} else {
-						limitTime = time.Millisecond * 30
+						limitTime = last2GenBlockTime
 					}
 					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
 					if err != nil {
@@ -426,6 +430,10 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
 			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
 		tContinuousNum++
+	}
+	if witnessOfNanoSec(time.Now().UnixNano()) != node.Head.Witness {
+		ilog.Debugf("hasn't process the block in the slot belonging to the witness")
+		metricsDelayedBlock.Add(1, nil)
 	}
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, replay)
