@@ -309,50 +309,12 @@ func (p *PoB) scheduleLoop() {
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
 				for num := 0; num < continuousNum; num++ {
-					p.txPool.Lock()
-					var limitTime time.Duration
-					if num < continuousNum-2 {
-						limitTime = genBlockTime
-					} else {
-						limitTime = last2GenBlockTime
-					}
-					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
-					if err != nil {
-						ilog.Error(err)
-						p.txPool.Release()
-						continue
-					}
-
-					ptx, _ := p.txPool.PendingTx()
-					ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
-						num,
-						p.account.ID[:10],
-						blk.Head.Time,
-						blk.Head.Number,
-						p.blockCache.LinkedRoot().Head.Number,
-						len(blk.Txs),
-						ptx.Size(),
-						calculateTime(blk),
-					)
-					p.txPool.Release()
-
-					blkByte, err := blk.Encode()
-					if err != nil {
-						ilog.Error(err.Error())
-						continue
-					}
-					p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
-					metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
-					err = p.handleRecvBlock(blk)
-					if err != nil {
-						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
-						continue
-					}
-					if num == continuousNum-1 {
-						break
-					}
+					p.gen(num)
 					select {
 					case <-generateBlockTicker.C:
+					}
+					if witnessOfNanoSec(t.UnixNano()) != p.account.ID {
+						break
 					}
 				}
 				close(p.quitGenerateMode)
@@ -365,6 +327,47 @@ func (p *PoB) scheduleLoop() {
 			return
 		}
 	}
+}
+
+func (p *PoB) gen(num int) {
+	limitTime := genBlockTime
+	if num >= continuousNum-2 {
+		limitTime = last2GenBlockTime
+	}
+	p.txPool.Lock()
+	blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
+	p.txPool.Release()
+	if err != nil {
+		ilog.Error(err)
+		return
+	}
+	p.printStatistics(num, blk)
+	blkByte, err := blk.Encode()
+	if err != nil {
+		ilog.Error(err)
+		return
+	}
+	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
+	metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+	err = p.handleRecvBlock(blk)
+	if err != nil {
+		ilog.Errorf("[pob] handle block from myself, err:%v", err)
+		return
+	}
+}
+
+func (p *PoB) printStatistics(num int, blk *block.Block) {
+	ptx, _ := p.txPool.PendingTx()
+	ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
+		num,
+		p.account.ID[:10],
+		blk.Head.Time,
+		blk.Head.Number,
+		p.blockCache.LinkedRoot().Head.Number,
+		len(blk.Txs),
+		ptx.Size(),
+		calculateTime(blk),
+	)
 }
 
 // RecoverBlock recover block from block cache wal
