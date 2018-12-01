@@ -155,6 +155,111 @@
         return Stringrepeat.call(this, ...arguments);
     };
 
+    // Math
+    const mathAllowedMethods = [
+        'abs',
+        'cbrt',
+        'ceil',
+        'floor',
+        'log',
+        'log10',
+        'log1p',
+        'max',
+        'min',
+        'pow',
+        'round',
+        'sqrt',
+    ];
+    const mathIgnoreMethods = [
+        'E',
+        'LN10',
+        'LN2',
+        'LOG10E',
+        'LOG2E',
+        'PI',
+        'SQRT1_2',
+        'SQRT2'
+    ];
+
+    const mathMethods = Object.getOwnPropertyNames(Math);
+    mathMethods.forEach((method) => {
+        if (!mathAllowedMethods.includes(method) && !mathIgnoreMethods.includes(method)) {
+            Math[method] = null;
+        }
+    });
+
+    const Mathabs = Math.abs;
+    Math.abs = function() {
+        _IOSTInstruction_counter.incr(5);
+        return Mathabs.call(this, ...arguments);
+    };
+
+    const Mathcbrt = Math.cbrt;
+    Math.cbrt = function() {
+        _IOSTInstruction_counter.incr(40);
+        return Mathcbrt.call(this, ...arguments);
+    };
+
+    const Mathceil = Math.ceil;
+    Math.ceil = function() {
+        _IOSTInstruction_counter.incr(5);
+        return Mathceil.call(this, ...arguments);
+    };
+
+    const Mathfloor = Math.floor;
+    Math.floor = function() {
+        _IOSTInstruction_counter.incr(5);
+        return Mathfloor.call(this, ...arguments);
+    };
+
+    const Mathlog = Math.log;
+    Math.log = function() {
+        _IOSTInstruction_counter.incr(40);
+        return Mathlog.call(this, ...arguments);
+    };
+
+    const Mathlog10 = Math.log10;
+    Math.log10 = function() {
+        _IOSTInstruction_counter.incr(40);
+        return Mathlog10.call(this, ...arguments);
+    };
+
+    const Mathlog1p = Math.log1p;
+    Math.log1p = function() {
+        _IOSTInstruction_counter.incr(40);
+        return Mathlog1p.call(this, ...arguments);
+    };
+
+    const Mathmax = Math.max;
+    Math.max = function() {
+        _IOSTInstruction_counter.incr(20);
+        return Mathmax.call(this, ...arguments);
+    };
+
+    const Mathmin = Math.min;
+    Math.min = function() {
+        _IOSTInstruction_counter.incr(20);
+        return Mathmin.call(this, ...arguments);
+    };
+
+    const Mathpow = Math.pow;
+    Math.pow = function() {
+        _IOSTInstruction_counter.incr(40);
+        return Mathpow.call(this, ...arguments);
+    };
+
+    const Mathround = Math.round;
+    Math.round = function() {
+        _IOSTInstruction_counter.incr(5);
+        return Mathround.call(this, ...arguments);
+    };
+
+    const Mathsqrt = Math.sqrt;
+    Math.sqrt = function() {
+        _IOSTInstruction_counter.incr(40);
+        return Mathsqrt.call(this, ...arguments);
+    };
+
     // Array
     const arrayAllowedMethods = [
         'constructor',
@@ -318,111 +423,6 @@
     Array.prototype.unshift = function() {
         _IOSTInstruction_counter.incr(1);
         return Arrayunshift.call(this, ...arguments);
-    };
-
-    // Math
-    const mathAllowedMethods = [
-        'abs',
-        'cbrt',
-        'ceil',
-        'floor',
-        'log',
-        'log10',
-        'log1p',
-        'max',
-        'min',
-        'pow',
-        'round',
-        'sqrt',
-    ];
-    const mathIgnoreMethods = [
-        'E',
-        'LN10',
-        'LN2',
-        'LOG10E',
-        'LOG2E',
-        'PI',
-        'SQRT1_2',
-        'SQRT2'
-    ];
-
-    const mathMethods = Object.getOwnPropertyNames(Math);
-    mathMethods.forEach((method) => {
-        if (!mathAllowedMethods.includes(method) && !mathIgnoreMethods.includes(method)) {
-            Math[method] = null;
-        }
-    });
-
-    const Mathabs = Math.abs;
-    Math.abs = function() {
-        _IOSTInstruction_counter.incr(5);
-        return Mathabs.call(this, ...arguments);
-    };
-
-    const Mathcbrt = Math.cbrt;
-    Math.cbrt = function() {
-        _IOSTInstruction_counter.incr(40);
-        return Mathcbrt.call(this, ...arguments);
-    };
-
-    const Mathceil = Math.ceil;
-    Math.ceil = function() {
-        _IOSTInstruction_counter.incr(5);
-        return Mathceil.call(this, ...arguments);
-    };
-
-    const Mathfloor = Math.floor;
-    Math.floor = function() {
-        _IOSTInstruction_counter.incr(5);
-        return Mathfloor.call(this, ...arguments);
-    };
-
-    const Mathlog = Math.log;
-    Math.log = function() {
-        _IOSTInstruction_counter.incr(40);
-        return Mathlog.call(this, ...arguments);
-    };
-
-    const Mathlog10 = Math.log10;
-    Math.log10 = function() {
-        _IOSTInstruction_counter.incr(40);
-        return Mathlog10.call(this, ...arguments);
-    };
-
-    const Mathlog1p = Math.log1p;
-    Math.log1p = function() {
-        _IOSTInstruction_counter.incr(40);
-        return Mathlog1p.call(this, ...arguments);
-    };
-
-    const Mathmax = Math.max;
-    Math.max = function() {
-        _IOSTInstruction_counter.incr(20);
-        return Mathmax.call(this, ...arguments);
-    };
-
-    const Mathmin = Math.min;
-    Math.min = function() {
-        _IOSTInstruction_counter.incr(20);
-        return Mathmin.call(this, ...arguments);
-    };
-
-    const Mathpow = Math.pow;
-    Math.pow = function() {
-        _IOSTInstruction_counter.incr(40);
-        return Mathpow.call(this, ...arguments);
-    };
-
-    const Mathround = Math.round;
-    Math.round = function() {
-        _IOSTInstruction_counter.incr(5);
-        return Mathround.call(this, ...arguments);
-    };
-
-    const Mathsqrt = Math.sqrt;
-    Math.sqrt = function() {
-        _IOSTInstruction_counter.incr(40);
-        return Mathsqrt.call(this, ...arguments);
     };
 
     // JSON
