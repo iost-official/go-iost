@@ -138,6 +138,48 @@ func TestSave(t *testing.T) {
 	}
 }
 
+func TestSaveSingle(t *testing.T) {
+	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(p)
+
+	w, err := Create(p, []byte("somedata"))
+	if err != nil {
+		t.Fatalf("err = %v, want nil", err)
+	}
+	if g := filepath.Base(w.tail().Name()); !strings.HasSuffix(g, ".wal.tmp") {
+		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
+	}
+
+	entry1 := Entry{
+		Data: []byte("Entry1"),
+	}
+	w.SaveSingle(entry1)
+	w.Close()
+	newW, err := Create(p, []byte("somedata"))
+	if !newW.HasDecoder() {
+		t.Fatal("Decoder has no reader!")
+	}
+	metad, entries, err := newW.ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(metad) != "somedata" {
+		t.Fatal("metadata not consistent! Got: ", string(metad), " expect: somedata")
+	}
+
+	if len(entries) != 1 {
+		t.Fatal("Entry length not match, should be 4, got: ", len(entries))
+	}
+
+	if entries[0].Index != 0 {
+		t.Fatal("Entry Index miss match, should be 0, got: ", entries[0].Index)
+	}
+
+}
+
 func TestSave10000(t *testing.T) {
 	p, err := ioutil.TempDir(os.TempDir(), "waltest")
 	if err != nil {

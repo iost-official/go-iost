@@ -326,7 +326,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	}
 	index, err := bc.writeAddNodeWAL(bcn)
 	if err != nil {
-		ilog.Error("Failed to write add node WAL!")
+		ilog.Error("Failed to write add node WAL!", err)
 	}
 	bcn.walIndex = index
 	bcn.Type = Linked
@@ -557,6 +557,7 @@ func (bc *BlockCacheImpl) writeAddNodeWAL(h *BlockCacheNode) (uint64, error) {
 	}
 	return bc.wal.SaveSingle(ent)
 }
+
 func (bc *BlockCacheImpl) cutWALFiles(h *BlockCacheNode) error {
 	bc.wal.RemoveFiles(h.walIndex)
 	return nil
