@@ -431,7 +431,7 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 func (w *WAL) RemoveFiles(index uint64) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	var fileIndex int
+	fileIndex := -1
 	for i, file := range w.files {
 		fileName := file.Name()
 		if strings.HasSuffix(fileName, ".wal.tmp") {
