@@ -171,7 +171,7 @@ L:
 			continue L
 		}
 		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
-			ilog.Debugf(
+			ilog.Errorf(
 				"Tx %v is expired, tx time is %v, blk time is %v",
 				common.Base58Encode(t.Hash()),
 				t.Time,
