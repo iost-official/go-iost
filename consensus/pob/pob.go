@@ -39,7 +39,7 @@ var (
 	continuousNum     = 10
 	subSlotTime       = 300 * time.Millisecond
 	genBlockTime      = 250 * time.Millisecond
-	last2GenBlockTime = 20 * time.Millisecond
+	last2GenBlockTime = 30 * time.Millisecond
 	tWitness          = ""
 	tContinuousNum    = 0
 )
