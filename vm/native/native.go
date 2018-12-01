@@ -51,10 +51,19 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		a, ok = DomainABIs[api]
 	case "gas.iost":
 		a, ok = gasABIs[api]
+		if !ok {
+			a, ok = gasInnerABIs[api]
+		}
 	case "token.iost":
 		a, ok = tokenABIs[api]
+		if !ok {
+			a, ok = tokenInnerABIs[api]
+		}
 	case "token721.iost":
 		a, ok = token721ABIs[api]
+		if !ok {
+			a, ok = token721InnerABIs[api]
+		}
 	}
 	if !ok {
 		ilog.Fatal("error", con.ID, api, systemABIs)

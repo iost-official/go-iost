@@ -2,6 +2,7 @@ package native
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
@@ -41,13 +42,16 @@ var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillSeconds)
 var UnpledgeFreezeSeconds int64 = 3 * 24 * 3600
 
 var gasABIs map[string]*abi
+var gasInnerABIs map[string]*abi
 
 func init() {
 	gasABIs = make(map[string]*abi)
 	register(gasABIs, constructor)
-	register(gasABIs, initFunc)
 	register(gasABIs, pledgeGas)
 	register(gasABIs, unpledgeGas)
+
+	gasInnerABIs = make(map[string]*abi)
+	register(gasInnerABIs, initFunc)
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.

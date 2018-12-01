@@ -11,6 +11,7 @@ import (
 )
 
 var token721ABIs map[string]*abi
+var token721InnerABIs map[string]*abi
 
 // const prefix
 const (
@@ -23,7 +24,6 @@ const (
 
 func init() {
 	token721ABIs = make(map[string]*abi)
-	register(token721ABIs, initToken721ABI)
 	register(token721ABIs, createToken721ABI)
 	register(token721ABIs, issueToken721ABI)
 	register(token721ABIs, transferToken721ABI)
@@ -31,6 +31,9 @@ func init() {
 	register(token721ABIs, ownerOfToken721ABI)
 	register(token721ABIs, tokenOfOwnerByIndexToken721ABI)
 	register(token721ABIs, tokenMetadataToken721ABI)
+
+	token721InnerABIs = make(map[string]*abi)
+	register(token721InnerABIs, initToken721ABI)
 }
 
 func checkToken721Exists(h *host.Host, tokenName string) (ok bool, cost contract.Cost) {
