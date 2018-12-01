@@ -1,5 +1,6 @@
 'use strict';
 
+// expression to be charged for some instruction, used to calculate inject value
 const chargedExpression = {
     CallExpression: 8,
     NewExpression: 8,
@@ -14,6 +15,7 @@ const chargedExpression = {
     LogicalExpression: 3,
     ConditionalExpression: 3
 };
+// statement before which can inject gas, used to find inject location
 const InjectableStatement = {
     ExpressionStatement: 1,
     ReturnStatement: 1,
