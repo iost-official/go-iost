@@ -93,15 +93,3 @@ func (m *MockBaseVariable) StateDB() db.MVCCDB {
 func (mr *MockBaseVariableMockRecorder) StateDB() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateDB", reflect.TypeOf((*MockBaseVariable)(nil).StateDB))
 }
-
-// WitnessList mocks base method
-func (m *MockBaseVariable) WitnessList() []string {
-	ret := m.ctrl.Call(m, "WitnessList")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// WitnessList indicates an expected call of WitnessList
-func (mr *MockBaseVariableMockRecorder) WitnessList() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WitnessList", reflect.TypeOf((*MockBaseVariable)(nil).WitnessList))
-}
