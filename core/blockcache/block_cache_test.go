@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/iost-official/go-iost/common"
 )
 
 func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
@@ -73,6 +74,12 @@ func TestBlockCache(t *testing.T) {
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
+	config := common.Config{
+		DB: &common.DBConfig{
+			LdbPath: "./",
+		},
+	}
+	global.EXPECT().Config().AnyTimes().Return(&config)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
 			CleanBlockCacheWAL()
@@ -201,6 +208,12 @@ func TestVote(t *testing.T) {
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
+	config := common.Config{
+		DB: &common.DBConfig{
+			LdbPath: "./",
+		},
+	}
+	global.EXPECT().Config().AnyTimes().Return(&config)
 
 	Convey("test api", t, func() {
 		var wl WitnessList
