@@ -2,6 +2,7 @@ package native
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
@@ -40,14 +41,14 @@ var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillSeconds)
 // UnpledgeFreezeSeconds coins will be frozen for 3 days after being unpledged
 var UnpledgeFreezeSeconds int64 = 3 * 24 * 3600
 
-var gasABIs map[string]*abi
+var gasABIs *abiSet
 
 func init() {
-	gasABIs = make(map[string]*abi)
-	register(gasABIs, constructor)
-	register(gasABIs, initFunc)
-	register(gasABIs, pledgeGas)
-	register(gasABIs, unpledgeGas)
+	gasABIs = newAbiSet()
+	gasABIs.Register(initFunc, true)
+	gasABIs.Register(constructor)
+	gasABIs.Register(pledgeGas)
+	gasABIs.Register(unpledgeGas)
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
