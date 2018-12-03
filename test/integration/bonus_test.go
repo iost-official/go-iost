@@ -26,6 +26,7 @@ func Test_IssueBonus(t *testing.T) {
 		}
 
 		prepareContract(s)
+		prepareFakeBase(t, s)
 
 		// deploy issue.iost
 		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
@@ -39,7 +40,7 @@ func Test_IssueBonus(t *testing.T) {
 				t.Fatal(err)
 			}
 
-			r, err := s.Call("bonus.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","12345678"]}]`, wkp.ID), wkp.ID, wkp)
+			r, err := s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","12345678"]}]`, wkp.ID), wkp.ID, wkp)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
@@ -62,6 +63,7 @@ func Test_ExchangeIOST(t *testing.T) {
 
 		prepareContract(s)
 		prepareIssue(s, kp)
+		prepareFakeBase(t, s)
 
 		// deploy bonus.iost
 		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
@@ -77,7 +79,7 @@ func Test_ExchangeIOST(t *testing.T) {
 			s.Head.Witness = testID[6]
 			s.Head.Number = 1
 			wkp, _ := account.NewKeyPair(common.Base58Decode(testID[7]), crypto.Secp256k1)
-			s.Call("bonus.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, wkp.ID, 1), wkp.ID, wkp)
+			s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, wkp.ID, 1), wkp.ID, wkp)
 			s.Visitor.Commit()
 
 			So(s.Visitor.TokenBalance("contribute", testID[6]), ShouldEqual, int64(900))
@@ -85,7 +87,7 @@ func Test_ExchangeIOST(t *testing.T) {
 			s.Head.Witness = testID[8]
 			s.Head.Number = 2
 			wkp2, _ := account.NewKeyPair(common.Base58Decode(testID[9]), crypto.Secp256k1)
-			s.Call("bonus.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, wkp2.ID, 123456789), wkp2.ID, wkp2)
+			s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, wkp2.ID, 123456789), wkp2.ID, wkp2)
 			s.Visitor.Commit()
 
 			So(s.Visitor.TokenBalance("contribute", testID[8]), ShouldEqual, int64(1000))
