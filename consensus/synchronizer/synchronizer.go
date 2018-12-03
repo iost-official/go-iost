@@ -16,13 +16,13 @@ import (
 
 var (
 	confirmNumber           int64
-	maxBlockHashQueryNumber int64 = 100
+	maxBlockHashQueryNumber int64 = 50
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
-	continuousNum           int64 = 10
+	continuousNum           int64 = 5
 	syncNumber              int64
 	printInterval           int64 = 1000
 )
@@ -413,9 +413,7 @@ func (sy *SyncImpl) handleHashResp(rh *msgpb.BlockHashResponse, peerID p2p.PeerI
 	ilog.Debugf("receive block hashes: len=%v", len(rh.BlockInfos))
 	for _, blkInfo := range rh.BlockInfos {
 		if blkInfo.Number > sy.blockCache.LinkedRoot().Head.Number {
-			if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
-				sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
-			}
+			sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
 		}
 		sy.reqMap.Delete(blkInfo.Number)
 	}
@@ -489,18 +487,18 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		ilog.Errorf("get p failed.")
 		return false, false
 	}
-	//ilog.Infof("callback try sync block, num:%v", bn)
+	ilog.Debugf("callback try sync block, num:%v", bn)
 	if bn <= sy.blockCache.LinkedRoot().Head.Number {
-		//ilog.Infof("callback block confirmed, num:%v", bn)
+		ilog.Debugf("callback block confirmed, num:%v", bn)
 		return false, true
 	}
 	bHash := []byte(hash)
 	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
-			//ilog.Infof("callback block linked, num:%v", bn)
+			ilog.Debugf("callback block linked, num:%v", bn)
 			return false, true
 		}
-		//ilog.Infof("callback block is a single block, num:%v", bn)
+		ilog.Debugf("callback block is a single block, num:%v", bn)
 		return false, false
 	}
 	bi := msgpb.BlockInfo{Number: bn, Hash: bHash}
