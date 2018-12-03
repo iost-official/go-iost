@@ -16,13 +16,13 @@ import (
 
 var (
 	confirmNumber           int64
-	maxBlockHashQueryNumber int64 = 50
+	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
-	continuousNum           int64 = 5
+	continuousNum           int64 = 10
 	syncNumber              int64
 	printInterval           int64 = 1000
 )
