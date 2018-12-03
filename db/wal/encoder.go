@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"sync"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // walPageBytes is the alignment for flushing logs to the backing Writer.
@@ -35,6 +36,7 @@ func newEncoder(w io.Writer, prevCrc uint64, pageOffset int) *encoder {
 
 // newFileEncoder creates a new encoder with current file offset for the page writer.
 func newFileEncoder(f *os.File, prevCrc uint64) (*encoder, error) {
+	ilog.Info("Encoder Name: ", f.Name())
 	offset, err := f.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return nil, err
@@ -79,6 +81,7 @@ func (e *encoder) encode(log *Log) error {
 		data = append(data, make([]byte, padByteLength)...)
 	}
 	_, err = e.w.Write(data)
+	ilog.Info("Encoder Write: ", len(data))
 	return err
 }
 

@@ -114,15 +114,19 @@ func checkWalNames(names []string) []string {
 	for _, name := range names {
 		if _, _, err := parseWALName(name); err != nil {
 			// don't complain about left over tmp files
-			if !strings.HasSuffix(name, ".wal.tmp") && len(tmpWal) == 0 {
-				ilog.Warn("ignored file in WAL directory, path: ", name, " error: ", err)
-			} else {
+			if !strings.HasSuffix(name, ".wal.tmp") {
+				continue
+			}
+			if strings.HasSuffix(name, ".wal.tmp") && len(tmpWal) == 0 {
 				tmpWal = name
+			} else {
+				ilog.Warn("ignore file in WAL directory, path: ", name, " error: ", err)
 			}
 			continue
 		}
 		wnames = append(wnames, name)
 	}
+	ilog.Info("TmpWAL: ", tmpWal)
 	wnames = append(wnames, tmpWal)
 	return wnames
 }

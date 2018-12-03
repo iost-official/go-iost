@@ -243,6 +243,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc.linkedRoot.Head.Number = -1
 	lib, err := baseVariable.BlockChain().Top()
 	if err == nil {
+		ilog.Info("Got LIB: ", lib.Head.Number)
 		bc.linkedRoot = NewBCN(nil, lib)
 		bc.linkedRoot.Type = Linked
 		bc.singleRoot.Type = Virtual
@@ -268,14 +269,18 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 
 // Recover recover previews block cache
 func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
+	ilog.Info("BCImpl Start Recover: ", bc.wal.HasDecoder())
 	if bc.wal.HasDecoder() {
 		//Get All entries
 		_, entries, err := bc.wal.ReadAll()
+		ilog.Info("BCImpl Entries: ", len(entries))
 		if err != nil {
 			return err
 		}
 		for _, entry := range entries {
 			err := bc.apply(entry, p)
+			ilog.Info("Finish Apply!")
+			ilog.Flush()
 			if err != nil {
 				return err
 			}
@@ -286,18 +291,25 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 
 func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 	var bcMessage BcMessage
+	ilog.Info("Start Apply!")
+	ilog.Flush()
 	proto.Unmarshal(entry.Data, &bcMessage)
+	ilog.Info("Finish Unmarshal!")
 	switch bcMessage.Type {
 	case BcMessageType_LinkType:
 		err = bc.applyLink(bcMessage.Data, p)
+		ilog.Info("Finish ApplyLInk!")
+		ilog.Flush()
 		if err != nil {
 			return
 		}
-	case BcMessageType_SetRootType:
+	/*case BcMessageType_SetRootType:
 		err = bc.applySetRoot(bcMessage.Data)
+		ilog.Info("Finish ApplySetRoot!")
+		ilog.Flush()
 		if err != nil {
 			return
-		}
+		}*/
 	}
 	return
 }
@@ -305,13 +317,30 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	block, witnessList, err := decodeBCN(b)
 	//bc.Add(&block)
+	ilog.Info("Start Recover Block!")
+	ilog.Flush()
 	p.RecoverBlock(&block, witnessList)
 
-	return
+	return err
 }
 
 func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
-
+	ilog.Info("Start ApplySetRoot!")
+	ilog.Flush()
+	bcn, bo := bc.hmget(b)
+	ilog.Info("Finish GetBlockNode!, ", bo)
+	ilog.Flush()
+	if bo {
+		bc.flush(bcn)
+		ilog.Info("Finish flush!, ", bo)
+		ilog.Flush()
+		bc.delSingle()
+		ilog.Info("Finish delSingle!, ", bo)
+		ilog.Flush()
+		bc.updateLongest()
+		ilog.Info("Finish updateLongest!, ", bo)
+		ilog.Flush()
+	}
 	return
 }
 
@@ -384,6 +413,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 
 // AddWithWit add block with witnessList
 func (bc *BlockCacheImpl) AddWithWit(blk *block.Block, witnessList WitnessList) (bcn *BlockCacheNode) {
+	ilog.Info("add with wit: ", blk.Head.Number)
 	bcn = bc.Add(blk)
 	bcn.WitnessList = witnessList
 	return
