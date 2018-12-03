@@ -221,6 +221,18 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 		return cost, ErrUpdateRefused
 	}
 
+	cost0, err := h.checkAbiValid(c)
+	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
+	}
+
+	cost0, err = h.checkAmountLimitValid(c)
+	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
+	}
+
 	// set code  without invoking init
 	code, err := h.monitor.Compile(c)
 	cost.AddAssign(Costs["CompileCost"])
