@@ -55,7 +55,7 @@ class Base {
 
     _saveBlockInfo() {
         let json = storage.get("current_block_info");
-        storage.mapPut("chain_info", block.parentHash, JSON.stringify(json));
+        storage.put("chain_info_" + block.parentHash, JSON.stringify(json));
         storage.put("current_block_info", JSON.stringify(block))
     }
 

@@ -112,6 +112,32 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract
 	return h.Call(contract, api, jarg, true)
 }
 
+func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
+	cost := contract.Cost0()
+	for _, abi := range c.Info.Abi {
+		cost.AddAssign(CommonOpCost(1))
+		if err := h.checkAbiNameValid(abi.Name); err != nil {
+			return cost, err
+		}
+		if abi.Name == "init" {
+			return cost, ErrAbiHasInternalFunc
+		}
+	}
+	return cost, nil
+}
+
+func (h *Host) checkAbiNameValid(name string) error {
+	if len(name) <= 0 || len(name) > 32 {
+		return fmt.Errorf("abi name invalid. abi name length should be between 1,32  got %v", name)
+	}
+	for _, ch := range name {
+		if !(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch == '_') {
+			return fmt.Errorf("abi name invalid. abi name contains invalid character %v", ch)
+		}
+	}
+	return nil
+}
+
 func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error) {
 	cost := contract.Cost0()
 	for _, abi := range c.Info.Abi {
@@ -138,7 +164,13 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	}
 	c.Code = code
 
-	cost, err := h.checkAmountLimitValid(c)
+	cost, err := h.checkAbiValid(c)
+	if err != nil {
+		return cost, err
+	}
+
+	cost0, err := h.checkAmountLimitValid(c)
+	cost.AddAssign(cost0)
 	if err != nil {
 		return cost, err
 	}
@@ -156,8 +188,11 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 		{Payer: owner, Val: int64(l)},
 	}})
 
+	if h.db.HasContract(c.ID) {
+		return cost, ErrContractExists
+	}
 	h.db.SetContract(c)
-	_, cost0, err := h.Call(c.ID, "init", "[]")
+	_, cost0, err = h.Call(c.ID, "init", "[]")
 	cost.AddAssign(cost0)
 
 	return cost, err
@@ -184,6 +219,18 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrUpdateRefused
+	}
+
+	cost0, err := h.checkAbiValid(c)
+	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
+	}
+
+	cost0, err = h.checkAmountLimitValid(c)
+	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
 	}
 
 	// set code  without invoking init
