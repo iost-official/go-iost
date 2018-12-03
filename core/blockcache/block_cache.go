@@ -227,7 +227,7 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 
 // NewBlockCache return a new BlockCache instance
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
-	w, err := wal.Create(baseVariable.Config().DB.LdbPath + blockCacheWALDir, []byte("block_cache_wal"))
+	w, err := wal.Create(baseVariable.Config().DB.LdbPath+blockCacheWALDir, []byte("block_cache_wal"))
 	if err != nil {
 		return nil, err
 	}
