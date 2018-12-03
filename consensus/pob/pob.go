@@ -310,6 +310,9 @@ func (p *PoB) scheduleLoop() {
 				p.quitGenerateMode = make(chan struct{})
 				for num := 0; num < continuousNum; num++ {
 					p.gen(num)
+					if num == continuousNum-1 {
+						break
+					}
 					select {
 					case <-generateBlockTicker.C:
 					}
