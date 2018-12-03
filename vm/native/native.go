@@ -14,12 +14,45 @@ type abi struct {
 	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error)
 }
 
-// Impl .
-type Impl struct {
+type abiSet struct {
+	abi        map[string]*abi
+	privateMap map[string]bool
 }
 
-func register(m map[string]*abi, a *abi) {
-	m[a.name] = a
+func newAbiSet() *abiSet {
+	return &abiSet{
+		abi:        make(map[string]*abi),
+		privateMap: make(map[string]bool),
+	}
+}
+
+// Register is register an abi to abiSet
+func (as *abiSet) Register(a *abi, isPrivate ...bool) {
+	as.abi[a.name] = a
+	if len(isPrivate) > 0 && isPrivate[0] {
+		as.privateMap[a.name] = true
+	}
+}
+
+// Get is get abi from an abiSet
+func (as *abiSet) Get(name string) (a *abi, ok bool) {
+	a, ok = as.abi[name]
+	return
+}
+
+// PublicAbis is get public abis from an abiSet
+func (as *abiSet) PublicAbis() map[string]*abi {
+	abis := make(map[string]*abi)
+	for name, a := range as.abi {
+		if _, ok := as.privateMap[name]; !ok {
+			abis[name] = a
+		}
+	}
+	return abis
+}
+
+// Impl .
+type Impl struct {
 }
 
 // Init .
@@ -46,24 +79,15 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 
 	switch con.ID {
 	case "system.iost":
-		a, ok = systemABIs[api]
+		a, ok = systemABIs.Get(api)
 	case "domain.iost":
-		a, ok = DomainABIs[api]
+		a, ok = DomainABIs.Get(api)
 	case "gas.iost":
-		a, ok = gasABIs[api]
-		if !ok {
-			a, ok = gasInnerABIs[api]
-		}
+		a, ok = gasABIs.Get(api)
 	case "token.iost":
-		a, ok = tokenABIs[api]
-		if !ok {
-			a, ok = tokenInnerABIs[api]
-		}
+		a, ok = tokenABIs.Get(api)
 	case "token721.iost":
-		a, ok = token721ABIs[api]
-		if !ok {
-			a, ok = token721InnerABIs[api]
-		}
+		a, ok = token721ABIs.Get(api)
 	}
 	if !ok {
 		ilog.Fatal("error", con.ID, api, systemABIs)

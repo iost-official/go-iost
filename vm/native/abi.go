@@ -22,7 +22,7 @@ func TokenABI() *contract.Contract {
 }
 
 // ABI generate native abis
-func ABI(id string, abi map[string]*abi) *contract.Contract {
+func ABI(id string, abiSet *abiSet) *contract.Contract {
 	c := &contract.Contract{
 		ID:   id,
 		Code: "codes",
@@ -33,7 +33,7 @@ func ABI(id string, abi map[string]*abi) *contract.Contract {
 		},
 	}
 
-	for _, v := range abi {
+	for _, v := range abiSet.PublicAbis() {
 		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
 			Name: v.name,
 			Args: v.args,

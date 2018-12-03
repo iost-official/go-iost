@@ -10,8 +10,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
-var token721ABIs map[string]*abi
-var token721InnerABIs map[string]*abi
+var token721ABIs *abiSet
 
 // const prefix
 const (
@@ -23,17 +22,15 @@ const (
 )
 
 func init() {
-	token721ABIs = make(map[string]*abi)
-	register(token721ABIs, createToken721ABI)
-	register(token721ABIs, issueToken721ABI)
-	register(token721ABIs, transferToken721ABI)
-	register(token721ABIs, balanceOfToken721ABI)
-	register(token721ABIs, ownerOfToken721ABI)
-	register(token721ABIs, tokenOfOwnerByIndexToken721ABI)
-	register(token721ABIs, tokenMetadataToken721ABI)
-
-	token721InnerABIs = make(map[string]*abi)
-	register(token721InnerABIs, initToken721ABI)
+	token721ABIs = newAbiSet()
+	token721ABIs.Register(initToken721ABI, true)
+	token721ABIs.Register(createToken721ABI)
+	token721ABIs.Register(issueToken721ABI)
+	token721ABIs.Register(transferToken721ABI)
+	token721ABIs.Register(balanceOfToken721ABI)
+	token721ABIs.Register(ownerOfToken721ABI)
+	token721ABIs.Register(tokenOfOwnerByIndexToken721ABI)
+	token721ABIs.Register(tokenMetadataToken721ABI)
 }
 
 func checkToken721Exists(h *host.Host, tokenName string) (ok bool, cost contract.Cost) {
