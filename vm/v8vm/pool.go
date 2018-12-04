@@ -64,6 +64,16 @@ func (vmp *VMPool) SetJSPath(path string) {
 	vmp.jsPath = path
 }
 
+// Validate js code and abi.
+func (vmp *VMPool) Validate(contract *contract.Contract) error {
+	vm := vmp.getCompileVM()
+	defer func() {
+		go vm.recycle(CompileVMPool)
+	}()
+
+	return vm.validate(contract)
+}
+
 // Compile compile js code to binary.
 func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 	vm := vmp.getCompileVM()

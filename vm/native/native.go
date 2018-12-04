@@ -65,6 +65,11 @@ func (i *Impl) Release() {
 
 }
 
+// Validate ...
+func (i *Impl) Validate(c *contract.Contract) error {
+	return nil
+}
+
 // Compile ...
 func (i *Impl) Compile(contract *contract.Contract) (string, error) {
 	return "", nil
