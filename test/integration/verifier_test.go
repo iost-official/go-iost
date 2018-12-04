@@ -42,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 313100)
+			So(r.GasUsage, ShouldEqual, 314500)
 		})
 
 		Convey("test of token memo", func() {
@@ -413,6 +413,7 @@ func TestAuthority(t *testing.T) {
 		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
+		s.Visitor.SetContract(native.GasABI())
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 1e8)

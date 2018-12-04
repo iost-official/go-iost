@@ -73,8 +73,8 @@ func (s *Simulator) SetGas(id string, i int64) {
 		Decimal: 2,
 	}
 	valueStr := database.MustMarshal(value)
-	s.Visitor.Put(prefix+database.GasStockKey+id, valueStr)
-	s.Visitor.Put(prefix+database.GasLimitKey+id, valueStr)
+	s.Visitor.Put(prefix+id+database.GasStockKey, valueStr)
+	s.Visitor.Put(prefix+id+database.GasLimitKey, valueStr)
 	s.Visitor.Commit()
 }
 

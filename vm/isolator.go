@@ -68,11 +68,11 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
-		gas := i.h.CurrentGas(i.publisherID)
+		gas := i.h.AllGas(i.publisherID)
 		limit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
 		if gas.LessThan(limit) {
 			ilog.Infof("publisher's gas balance is less than gas limit: publisher %v current gas:%v, gas limit:%v\n", i.publisherID, gas.ToString(), limit.ToString())
-			return fmt.Errorf("%v gas less than price * limit %v <  %v", i.publisherID, gas.ToString(), limit.ToString())
+			return fmt.Errorf("%v gas less than limit %v <  %v", i.publisherID, gas.ToString(), limit.ToString())
 		}
 	}
 	loadTxInfo(i.h, t, i.publisherID)

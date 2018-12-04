@@ -3,6 +3,7 @@ package account
 // Account type of a permission tree
 type Account struct {
 	ID          string                 `json:"id"`
+	Referrer    string                 `json:"referrer"`
 	Groups      map[string]*Group      `json:"groups"`
 	Permissions map[string]*Permission `json:"permissions"`
 }
