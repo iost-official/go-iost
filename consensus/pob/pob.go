@@ -94,7 +94,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	err := p.blockCache.Recover(&p)
 	if err != nil {
-		ilog.Error("Failed to recover blockCache")
+		ilog.Error("Failed to recover blockCache, err: ", err)
 	}
 	close(p.quitGenerateMode)
 	return &p
