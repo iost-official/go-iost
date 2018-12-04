@@ -71,6 +71,9 @@ const BlockChain = require('blockchain');
 
 // var injectGas = require('inject_gas');
 
+// crypto
+const IOSTCrypto = new _IOSTCrypto;
+
 const _IOSTInstruction_counter = new IOSTInstruction;
 
 // + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in

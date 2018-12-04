@@ -67,10 +67,7 @@ void IOSTCrypto_sha3(const FunctionCallbackInfo<Value> &args) {
     IOSTCrypto *ic = static_cast<IOSTCrypto *>(extVal->Value());
     char* ret = ic->sha3(*msgStr);
     if (ret != nullptr) {
-        Local<Value> err = Exception::Error(
-            String::NewFromUtf8(isolate, ret)
-        );
-        isolate->ThrowException(err);
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, ret));
         free(ret);
         return;
     }
@@ -80,7 +77,7 @@ void IOSTCrypto_sha3(const FunctionCallbackInfo<Value> &args) {
 void InitCrypto(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     Local<FunctionTemplate> cryptoClass =
         FunctionTemplate::New(isolate, NewCrypto);
-    Local<String> cryptoClassName = String::NewFromUtf8(isolate, "IOSTCrypto");
+    Local<String> cryptoClassName = String::NewFromUtf8(isolate, "_IOSTCrypto");
     cryptoClass->SetClassName(cryptoClassName);
 
     Local<ObjectTemplate> cryptoTpl = cryptoClass->InstanceTemplate();
