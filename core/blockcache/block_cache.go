@@ -294,7 +294,7 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 		if err != nil {
 			return
 		}
-	/*case BcMessageType_SetRootType:
+		/*case BcMessageType_SetRootType:
 		err = bc.applySetRoot(bcMessage.Data)
 		ilog.Info("Finish ApplySetRoot!")
 		ilog.Flush()

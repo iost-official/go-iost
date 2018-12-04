@@ -29,7 +29,7 @@ type IServer struct {
 	rpcServer *rpc.Server
 	consensus consensus.Consensus
 	debug     *DebugServer
-	blkCache *blockcache.BlockCacheImpl
+	blkCache  *blockcache.BlockCacheImpl
 }
 
 // New returns a iserver application
@@ -85,7 +85,7 @@ func New(conf *common.Config) *IServer {
 		rpcServer: rpcServer,
 		consensus: consensus,
 		debug:     debug,
-		blkCache: blkCache,
+		blkCache:  blkCache,
 	}
 }
 

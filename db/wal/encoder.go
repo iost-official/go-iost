@@ -3,11 +3,11 @@ package wal
 import (
 	"encoding/binary"
 	"github.com/iost-official/go-iost/db/wal/pcrc"
+	"github.com/iost-official/go-iost/ilog"
 	"hash"
 	"io"
 	"os"
 	"sync"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // walPageBytes is the alignment for flushing logs to the backing Writer.
