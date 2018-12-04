@@ -9,7 +9,7 @@ class Base {
     }
 
     InitAdmin(adminID) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
         }
@@ -23,16 +23,12 @@ class Base {
     }
 
     _requireAuth(account, permission) {
-        BlockChain.requireAuth(account, permission);
+        const ret = BlockChain.requireAuth(account, permission);
+        if (ret !== true) {
+            throw new Error("require auth failed. ret = " + ret);
+        }
     }
 
-    _getBlockNumber() {
-        const bi = JSON.parse(BlockChain.blockInfo());
-        if (!bi || bi === undefined || bi.number === undefined) {
-            throw new Error("get block number failed. bi = " + bi);
-        }
-        return bi.number;
-    }
     _get(k) {
         const val = storage.get(k);
         if (val === "") {
@@ -46,11 +42,11 @@ class Base {
     }
 
     _vote() {
-        BlockChain.call("vote_producer.iost", "Stat", `[]`);
+        BlockChain.callWithAuth("vote_producer.iost", "Stat", `[]`);
     }
 
     _bonus(data) {
-        BlockChain.call("bonus.iost", "IssueContribute", JSON.stringify([data]));
+        BlockChain.callWithAuth("bonus.iost", "IssueContribute", JSON.stringify([data]));
     }
 
     _saveBlockInfo() {
@@ -62,7 +58,7 @@ class Base {
     // The first contract executed
     Exec(data) {
         this._saveBlockInfo();
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         const execBlockNumber = this._get("execBlockNumber");
         if (bn === execBlockNumber){
             return true

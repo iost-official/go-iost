@@ -129,6 +129,50 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	return account, nil
 }
 
+// VoteN will send n vote transaction concurrently
+func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
+	ilog.Infof("Send %v vote transaction...", num)
+
+	res := make(chan interface{})
+	producers := []string{}
+	if pnum == 1 {
+		producers = append(producers, "producer00001")
+	} else {
+		for i := 0; i < pnum; i++ {
+			producers = append(producers, fmt.Sprintf("producer%05d", i))
+		}
+	}
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				amount := float64(rand.Int63n(10000)+1) / 100
+				B := producers[rand.Intn(len(producers))]
+
+				A.AddBalance(-amount)
+				ilog.Debugf("Vote %v -> %v, amount: %v", A.ID, B, fmt.Sprintf("%0.8f", amount))
+
+				res <- t.Vote(A, B, fmt.Sprintf("%0.8f", amount))
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			return fmt.Errorf("Send vote transaction failed: %v", value)
+		default:
+		}
+	}
+
+	ilog.Infof("Send %v vote transaction successful!", num)
+
+	return nil
+}
+
 // TransferN will send n transfer transaction concurrently
 func (t *ITest) TransferN(num int, accounts []*Account) error {
 	ilog.Infof("Send %v transfer transaction...", num)
@@ -266,6 +310,19 @@ func (t *ITest) ContractTransfer(cid string, sender, recipient *Account, amount 
 	client := t.clients[cIndex]
 
 	err := client.ContractTransfer(cid, sender, recipient, amount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Vote will vote producer from sender to recipient
+func (t *ITest) Vote(sender *Account, recipient, amount string) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.Vote(sender, recipient, amount)
 	if err != nil {
 		return err
 	}
