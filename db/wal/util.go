@@ -126,7 +126,6 @@ func checkWalNames(names []string) []string {
 		}
 		wnames = append(wnames, name)
 	}
-	ilog.Info("TmpWAL: ", tmpWal)
 	wnames = append(wnames, tmpWal)
 	return wnames
 }

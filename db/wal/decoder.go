@@ -63,7 +63,6 @@ func (d *decoder) decodeRecord(log *Log) error {
 
 	//Now we know how many bytes we used for this record.
 	recBytes, padBytes := decodeFrameSize(l)
-	ilog.Info("recBytes: ", recBytes, " padBytes: ", padBytes)
 
 	data := make([]byte, recBytes+padBytes)
 	if _, err = io.ReadFull(d.r[0], data); err != nil {

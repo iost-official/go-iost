@@ -368,7 +368,6 @@ func (p *PoB) printStatistics(num int, blk *block.Block) {
 		ptx.Size(),
 		calculateTime(blk),
 	)
-	ilog.Info(p.blockCache.Draw())
 }
 
 // RecoverBlock recover block from block cache wal

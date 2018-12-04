@@ -281,7 +281,6 @@ func openAtIndex(dirpath string) (*WAL, error) {
 	for _, name := range names {
 		p := filepath.Join(dirpath, name)
 		l, err := os.OpenFile(p, os.O_RDWR, 0666)
-		ilog.Info("AppendFile: ", l.Name())
 		if err != nil {
 			closeAll(rcs...)
 			return nil, err
@@ -349,7 +348,6 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	for err = decoder.decode(log); err == nil; err = decoder.decode(log) {
 		switch log.Type {
 		case LogType_entryType:
-			ilog.Info("Got One Entry! ")
 			e := mustUnmarshalEntry(log.Data)
 			ents = append(ents, e)
 			w.lastEntryIndex = e.Index
@@ -358,14 +356,12 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 					state = mustUnmarshalState(log.Data)
 			*/
 		case LogType_metaDataType:
-			ilog.Info("Got One MetaData! ")
 			if metadata != nil && !bytes.Equal(metadata, log.Data) {
 				return nil, nil, ErrMetadataConflict
 			}
 			metadata = log.Data
 
 		case LogType_crcType:
-			ilog.Info("Got One Crc! ")
 			crc := decoder.crc.Sum64()
 			// current crc of decoder must match the crc of the record.
 			// do no need to match 0 crc, since the decoder is a new one at this case.

@@ -81,7 +81,6 @@ func (e *encoder) encode(log *Log) error {
 		data = append(data, make([]byte, padByteLength)...)
 	}
 	_, err = e.w.Write(data)
-	ilog.Info("Encoder Write: ", len(data))
 	return err
 }
 

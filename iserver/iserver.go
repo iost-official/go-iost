@@ -68,8 +68,6 @@ func New(conf *common.Config) *IServer {
 
 	consensus := consensus.New(consensus.Pob, acc, bv, blkCache, txp, p2pService)
 
-	ilog.Info(blkCache.Draw())
-
 	rpcServer := rpc.New(txp, blkCache, bv, p2pService)
 
 	sync, err := synchronizer.NewSynchronizer(bv, blkCache, p2pService)
@@ -132,5 +130,4 @@ func (s *IServer) Stop() {
 	}
 	s.bv.BlockChain().Close()
 	s.bv.StateDB().Close()
-	ilog.Info(s.blkCache.Draw())
 }
