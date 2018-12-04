@@ -31,6 +31,8 @@ char* goGlobalMapKeys(SandboxPtr, const char *,  const char *, const char *, cha
 char* goGlobalMapLen(SandboxPtr, const char *, const char *, const char *, size_t *, size_t *);
 
 char* goConsoleLog(SandboxPtr, const char *, const char *);
+
+char* goSha3(SandboxPtr, const char *, size_t *);
 */
 import "C"
 import (
