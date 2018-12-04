@@ -33,16 +33,9 @@ class Account {
             throw new Error("require auth failed");
         }
     }
-    _getBlockNumber() {
-        const bi = JSON.parse(BlockChain.blockInfo());
-        if (!bi || bi === undefined || bi.number === undefined) {
-            throw new Error("get block number failed. bi = " + bi);
-        }
-        return bi.number;
-    }
 
     _checkIdValid(id) {
-        if (this._getBlockNumber() === 0) {
+        if (block.number === 0) {
             return
         }
         if (id.length < 6 || id.length > 32) {

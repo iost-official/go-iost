@@ -229,6 +229,29 @@ func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount
 	return nil
 }
 
+// Vote will vote producer by sending transaction
+func (c *Client) Vote(sender *Account, recipient, amount string) error {
+	action := tx.NewAction(
+		"vote_producer.iost",
+		"Vote",
+		fmt.Sprintf(`["%v", "%v", "%v"]`, sender.ID, recipient, amount),
+	)
+
+	actions := []*tx.Action{action}
+	transaction := NewTransaction(actions)
+
+	st, err := sender.Sign(transaction)
+	if err != nil {
+		return err
+	}
+
+	if _, err := c.SendTransaction(st); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // Transfer will transfer token by sending transaction
 func (c *Client) Transfer(sender, recipient *Account, token, amount string) error {
 	action := tx.NewAction(

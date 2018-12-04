@@ -5,7 +5,8 @@ const voteStatInterval = 200;
 const iostDecimal = 8;
 const scoreDecreaseRate = new Float64("0.999995");
 const producerPermission = "active";
-const votePermission = "vote";
+const votePermission = "active";
+const statPermission = "active";
 
 class VoteContract {
     constructor() {
@@ -34,7 +35,7 @@ class VoteContract {
     }
 
     InitProducer(proID, proPubkey) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
@@ -78,7 +79,7 @@ class VoteContract {
     }
 
     InitAdmin(adminID) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
         }
@@ -101,14 +102,6 @@ class VoteContract {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
-    }
-
-    _getBlockNumber() {
-        const bi = JSON.parse(BlockChain.blockInfo());
-        if (!bi || bi === undefined || bi.number === undefined) {
-            throw new Error("get block number failed. bi = " + bi);
-        }
-        return bi.number;
     }
 
     _get(k) {
@@ -145,7 +138,6 @@ class VoteContract {
 
     // register account as a producer, need to pledge token
     RegisterProducer(account, pubkey, loc, url, netId) {
-
         this._requireAuth(account, producerPermission);
         if (storage.mapHas("producerTable", account)) {
             throw new Error("producer exists");
@@ -313,8 +305,8 @@ class VoteContract {
 
     // calculate the vote result, modify pendingProducerList
     Stat() {
-        // controll auth
-        const bn = this._getBlockNumber();
+        this._requireAuth("base.iost", statPermission);
+        const bn = block.number;
         const pendingBlockNumber = this._get("pendingBlockNumber");
         if (bn % voteStatInterval !== 0 || bn <= pendingBlockNumber) {
             return;
@@ -406,7 +398,7 @@ class VoteContract {
         const pendingList = newList.map(x => x.key);
         this._put("currentProducerList", currentList);
         this._put("pendingProducerList", pendingList);
-        this._put("pendingBlockNumber", this._getBlockNumber());
+        this._put("pendingBlockNumber", block.number);
 
         for (const key of currentList) {
             if (!pendingList.includes(key)) {
