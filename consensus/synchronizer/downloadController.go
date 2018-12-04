@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -173,7 +174,7 @@ func (dc *DownloadControllerImpl) getMapEntry(hashMap *sync.Map, key interface{}
 
 // CreateMission adds a mission.
 func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peerID p2p.PeerID) {
-	//ilog.Debugf("peer: %s, hash: %s", peerID, hash)
+	ilog.Debugf("create mission peer: %s, hash: %s, num: %v", peerID, common.Base58Encode([]byte(hash)), p.(int64))
 
 	dc.newPeerMutex.Lock()
 	if _, ok := dc.peerState.Load(peerID); !ok {
@@ -201,25 +202,25 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 			if !ok {
 				return
 			}
+			pmMutex.Lock()
 			if _, ok = hashMap.Load(hash); !ok {
 				tail, ok := dc.getMapEntry(hashMap, Tail)
-				if !ok {
-					return
+				if ok {
+					node := &mapEntry{val: hash, p: p, prev: tail.prev, next: tail}
+					node.prev.next = node
+					node.next.prev = node
+					hashMap.Store(node.val, node)
+
+					hState, _ := dc.hashState.LoadOrStore(hash, Wait)
+					if hState == Wait {
+						select {
+						case dc.chDownload <- struct{}{}:
+						default:
+						}
+					}
 				}
-				pmMutex.Lock()
-				node := &mapEntry{val: hash, p: p, prev: tail.prev, next: tail}
-				node.prev.next = node
-				node.next.prev = node
-				hashMap.Store(node.val, node)
-				pmMutex.Unlock()
 			}
-		}
-	}
-	hState, _ := dc.hashState.LoadOrStore(hash, Wait)
-	if hState == Wait {
-		select {
-		case dc.chDownload <- struct{}{}:
-		default:
+			pmMutex.Unlock()
 		}
 	}
 }
@@ -243,7 +244,7 @@ func (dc *DownloadControllerImpl) freePeer(hash string, peerID interface{}) {
 				if timer, ok := pState[hash]; ok {
 					timer.Stop()
 					delete(pState, hash)
-					//ilog.Debugf("free peer, peerID:%s", peerID.(p2p.PeerID).Pretty())
+					ilog.Debugf("free peer, peerID:%s", peerID.(p2p.PeerID).Pretty())
 					select {
 					case dc.chDownload <- struct{}{}:
 					default:
@@ -261,7 +262,7 @@ func (dc *DownloadControllerImpl) freePeer(hash string, peerID interface{}) {
 }
 
 func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
-	//ilog.Debugf("free peer begin")
+	ilog.Debugf("free peer begin")
 	dc.peerState.Range(func(peerID, v interface{}) bool {
 		ps, ok := v.(timerMap)
 		if !ok {
@@ -303,7 +304,7 @@ func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
 		}
 		return true
 	})
-	//ilog.Debugf("free peer end")
+	ilog.Debugf("free peer end")
 }
 
 // FreePeerLoop is the Loop to free the peer.
@@ -322,7 +323,7 @@ func (dc *DownloadControllerImpl) FreePeerLoop(fpFunc FreePeerFunc) {
 
 func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sync.Map, ps timerMap, pmMutex *sync.Mutex, psMutex *sync.Mutex, mFunc MissionFunc) bool {
 	psMutex.Lock()
-	//ilog.Debugf("peerNum: %v", len(ps))
+	ilog.Debugf("peerNum: %v", len(ps))
 	psLen := len(ps)
 	psMutex.Unlock()
 	if psLen >= peerConNum {
@@ -354,7 +355,7 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 				dc.hashState.Store(hash, peerID)
 				psMutex.Lock()
 				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
-					//ilog.Debugf("sync timout, hash=%v, peerID=%s", []byte(hash), peerID.(p2p.PeerID).Pretty())
+					ilog.Debugf("sync timout, hash=%v, peerID=%s", common.Base58Encode([]byte(hash)), peerID.(p2p.PeerID).Pretty())
 					dc.freePeer(hash, peerID)
 				})
 				psLen := len(ps)
@@ -384,13 +385,13 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 			default:
 			}
 		case <-dc.chDownload:
-			//ilog.Debugf("Download Begin")
+			ilog.Debugf("Download Begin")
 			dc.peerState.Range(func(peerID, v interface{}) bool {
 				select {
 				case <-dc.exitSignal:
 					return false
 				default:
-					//ilog.Debugf("peerID: %s", peerID.(p2p.PeerID).Pretty())
+					ilog.Debugf("peerID: %s", peerID.(p2p.PeerID).Pretty())
 					ps, ok := v.(timerMap)
 					if !ok {
 						ilog.Errorf("get peerstate error: %s", peerID.(p2p.PeerID).Pretty())
@@ -407,7 +408,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 					return true
 				}
 			})
-			//ilog.Debugf("Download End")
+			ilog.Debugf("Download End")
 		case <-dc.exitSignal:
 			return
 		}
