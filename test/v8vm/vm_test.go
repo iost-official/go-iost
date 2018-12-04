@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 
 	. "github.com/golang/mock/gomock"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
@@ -694,5 +695,17 @@ func TestEngine_Float64(t *testing.T) {
 	}
 	if len(rs) > 0 && rs[0] != "1881676371789.154860897069" {
 		t.Fatalf("LoadAndCall getPow except: 1881676371789.154860897069, got: %v", rs[0])
+	}
+}
+
+func TestEngine_Sha3(t *testing.T) {
+	host, code := MyInit(t, "crypto1")
+	testStr := "hello world"
+	rs, _, err := vmPool.LoadAndCall(host, code, "sha3", testStr)
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	if rs[0] != common.Base58Encode(common.Sha3([]byte(testStr))) {
+		t.Fatalf("LoadAndCall sha3 invalid result")
 	}
 }
