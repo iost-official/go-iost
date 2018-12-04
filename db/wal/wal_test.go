@@ -138,6 +138,48 @@ func TestSave(t *testing.T) {
 	}
 }
 
+func TestSaveSingle(t *testing.T) {
+	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(p)
+
+	w, err := Create(p, []byte("somedata"))
+	if err != nil {
+		t.Fatalf("err = %v, want nil", err)
+	}
+	if g := filepath.Base(w.tail().Name()); !strings.HasSuffix(g, ".wal.tmp") {
+		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
+	}
+
+	entry1 := Entry{
+		Data: []byte("Entry1"),
+	}
+	w.SaveSingle(entry1)
+	w.Close()
+	newW, err := Create(p, []byte("somedata"))
+	if !newW.HasDecoder() {
+		t.Fatal("Decoder has no reader!")
+	}
+	metad, entries, err := newW.ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(metad) != "somedata" {
+		t.Fatal("metadata not consistent! Got: ", string(metad), " expect: somedata")
+	}
+
+	if len(entries) != 1 {
+		t.Fatal("Entry length not match, should be 4, got: ", len(entries))
+	}
+
+	if entries[0].Index != 0 {
+		t.Fatal("Entry Index miss match, should be 0, got: ", entries[0].Index)
+	}
+
+}
+
 func TestSave10000(t *testing.T) {
 	p, err := ioutil.TempDir(os.TempDir(), "waltest")
 	if err != nil {
@@ -244,12 +286,66 @@ func TestSaveWithCut(t *testing.T) {
 		t.Fatal("Entry Index miss match, should be 0, got: ", entries[0].Index)
 	}
 	if entries[1].Index != 1 {
-		t.Fatal("Entry Index miss match, should be 1, got: ", entries[0].Index)
+		t.Fatal("Entry Index miss match, should be 1, got: ", entries[1].Index)
 	}
 	if entries[2].Index != 2 {
-		t.Fatal("Entry Index miss match, should be 2, got: ", entries[0].Index)
+		t.Fatal("Entry Index miss match, should be 2, got: ", entries[2].Index)
 	}
 	if entries[3].Index != 3 {
-		t.Fatal("Entry Index miss match, should be 3, got: ", entries[0].Index)
+		t.Fatal("Entry Index miss match, should be 3, got: ", entries[3].Index)
+	}
+}
+
+
+func TestRemoveFiles(t *testing.T) {
+	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer os.RemoveAll(p)
+
+	w, err := Create(p, []byte("somedata"))
+	if err != nil {
+		t.Fatalf("err = %v, want nil", err)
+	}
+	if g := filepath.Base(w.tail().Name()); !strings.HasSuffix(g, ".wal.tmp") {
+		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
+	}
+
+	ents := make([]Entry, 0)
+	entry1 := Entry{
+		Data: []byte("Entry1"),
+	}
+	entry2 := Entry{
+		Data: []byte("Entry2"),
+	}
+	ents = append(ents, entry1)
+	ents = append(ents, entry2)
+	w.Save(ents)
+	w.cut()
+	w.Save(ents)
+	w.RemoveFiles(ents[0].Index)
+	w.Close()
+	newW, err := Create(p, []byte("somedata"))
+	if !newW.HasDecoder() {
+		t.Fatal("Decoder has no reader!")
+	}
+	metad, entries, err := newW.ReadAll()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(metad) != "somedata" {
+		t.Fatal("metadata not consistent! Got: ", string(metad), " expect: somedata")
+	}
+
+	if len(entries) != 2 {
+		t.Fatal("Entry length not match, should be 2 got: ", len(entries))
+	}
+
+	if entries[0].Index != 2 {
+		t.Fatal("Entry Index miss match, should be 2, got: ", entries[0].Index)
+	}
+	if entries[1].Index != 3 {
+		t.Fatal("Entry Index miss match, should be 3, got: ", entries[1].Index)
 	}
 }

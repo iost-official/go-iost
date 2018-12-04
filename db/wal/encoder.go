@@ -3,6 +3,7 @@ package wal
 import (
 	"encoding/binary"
 	"github.com/iost-official/go-iost/db/wal/pcrc"
+	"github.com/iost-official/go-iost/ilog"
 	"hash"
 	"io"
 	"os"
@@ -35,6 +36,7 @@ func newEncoder(w io.Writer, prevCrc uint64, pageOffset int) *encoder {
 
 // newFileEncoder creates a new encoder with current file offset for the page writer.
 func newFileEncoder(f *os.File, prevCrc uint64) (*encoder, error) {
+	ilog.Info("Encoder Name: ", f.Name())
 	offset, err := f.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return nil, err

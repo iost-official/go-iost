@@ -183,6 +183,7 @@ func Create(dirpath string, metadata []byte) (*WAL, error) {
 }
 
 func recoverFromDir(dirpath string, metadata []byte) (*WAL, error) {
+	ilog.Info("RecoverFromDir")
 	w, err := Open(dirpath)
 	if err != nil {
 		return nil, err
@@ -338,6 +339,10 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	defer w.mu.Unlock()
 
 	log := &Log{}
+	if w.decoder == nil {
+		return nil, nil, errors.New("Wal Has No Decoder!")
+
+	}
 	decoder := w.decoder
 
 	for err = decoder.decode(log); err == nil; err = decoder.decode(log) {
@@ -431,21 +436,30 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 func (w *WAL) RemoveFiles(index uint64) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
-	var fileIndex int
+	fileIndex := -1
 	for i, file := range w.files {
-		_, lastIndex, err := parseWALName(file.Name())
+		fileName := file.Name()
+		if strings.HasSuffix(fileName, ".wal.tmp") {
+			continue
+		}
+		_, lastIndex, err := parseWALName(fileName)
 		if err != nil {
 			return err
 		}
-		if lastIndex > index {
-			if i == 0 {
-				return nil
+		if lastIndex <= index {
+			if i == len(w.files)-1 {
+				continue
 			}
-			fileIndex = i - 1
-			break
+			fileIndex = i
+			file.Close()
+			err = os.Remove(fileName)
+			if err != nil {
+				return err
+			}
+			continue
 		}
 	}
-	w.files = w.files[fileIndex:]
+	w.files = w.files[fileIndex+1:]
 	return nil
 }
 
@@ -673,6 +687,10 @@ func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
 
 	// TODO(xiangli): no more reference operator
 	if err := w.saveEntry(&ent); err != nil {
+		return 0, err
+	}
+
+	if err := w.encoder.flush(); err != nil {
 		return 0, err
 	}
 

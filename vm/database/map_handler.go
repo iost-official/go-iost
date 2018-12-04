@@ -34,6 +34,11 @@ func (m *MapHandler) addField(key, field string) {
 		m.db.Put(MapPrefix+key, ApplicationSeparator+field)
 		return
 	}
+
+	if strings.Count(s, ApplicationSeparator) > 256 {
+		return
+	}
+
 	s = s + ApplicationSeparator + field
 	m.db.Put(MapPrefix+key, s)
 }
