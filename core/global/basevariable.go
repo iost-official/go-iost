@@ -89,7 +89,7 @@ func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
 }
 
-// Config return the number of continue blocks
+// Continuous return the number of continue blocks
 func (g *BaseVariableImpl) Continuous() int {
 	return g.continuousNum
 }
