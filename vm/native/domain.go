@@ -4,19 +4,19 @@ import (
 	"errors"
 
 	"fmt"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 )
 
 // DomainABIs list of domain abi
-var DomainABIs map[string]*abi
+var DomainABIs *abiSet
 
 func init() {
-	DomainABIs = make(map[string]*abi)
-	register(DomainABIs, link)
-	register(DomainABIs, transferURL)
-
+	DomainABIs = newAbiSet()
+	DomainABIs.Register(link)
+	DomainABIs.Register(transferURL)
 }
 
 func checkURLValid(name string) error {

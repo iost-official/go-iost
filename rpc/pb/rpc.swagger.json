@@ -240,6 +240,47 @@
         ]
       }
     },
+    "/getTokenBalance/{account}/{token}/{by_longest_chain}": {
+      "get": {
+        "summary": "get token balance",
+        "operationId": "GetTokenBalance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetTokenBalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account",
+            "description": "account name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "token",
+            "description": "the token name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getTxByHash/{hash}": {
       "get": {
         "summary": "get transaction by hash",
@@ -321,22 +362,6 @@
     }
   },
   "definitions": {
-    "AccountFrozenBalance": {
-      "type": "object",
-      "properties": {
-        "amount": {
-          "type": "number",
-          "format": "double",
-          "title": "balance amount"
-        },
-        "time": {
-          "type": "string",
-          "format": "int64",
-          "title": "free time"
-        }
-      },
-      "description": "The message defines the account's frozen balance."
-    },
     "AccountGasInfo": {
       "type": "object",
       "properties": {
@@ -591,7 +616,7 @@
         "frozen_balances": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/AccountFrozenBalance"
+            "$ref": "#/definitions/rpcpbFrozenBalance"
           },
           "title": "frozen balance information"
         }
@@ -783,16 +808,28 @@
       },
       "description": "The message defines the contract struct."
     },
+    "rpcpbFrozenBalance": {
+      "type": "object",
+      "properties": {
+        "amount": {
+          "type": "number",
+          "format": "double",
+          "title": "balance amount"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64",
+          "title": "free time"
+        }
+      },
+      "description": "The message defines the account's frozen balance."
+    },
     "rpcpbGetContractStorageRequest": {
       "type": "object",
       "properties": {
         "id": {
           "type": "string",
           "title": "contract id"
-        },
-        "owner": {
-          "type": "string",
-          "description": "ram owner, should be the same as 'put' call. It can be empty."
         },
         "key": {
           "type": "string",
@@ -819,6 +856,24 @@
         }
       },
       "description": "The message defines get contract storage response."
+    },
+    "rpcpbGetTokenBalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "number",
+          "format": "double",
+          "title": "token balance"
+        },
+        "frozen_balances": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbFrozenBalance"
+          },
+          "title": "frozen balance information"
+        }
+      },
+      "description": "The message defines get token balance response."
     },
     "rpcpbNetworkInfo": {
       "type": "object",

@@ -25,7 +25,7 @@ class VoteCommonContract {
     }
 
     InitAdmin(adminID) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
@@ -51,14 +51,6 @@ class VoteCommonContract {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
-    }
-
-    _getBlockNumber() {
-        const bi = JSON.parse(BlockChain.blockInfo());
-        if (!bi || bi === undefined || bi.number === undefined) {
-            throw new Error("get block number failed. bi = " + bi);
-        }
-        return bi.number;
     }
 
     _get(k) {
@@ -170,7 +162,7 @@ class VoteCommonContract {
             throw new Error("unvoteInterval not valid.");
         }
 
-        const bn = this._getBlockNumber();
+        const bn = block.number;
 
         if (bn > 0) {
             this._call("token.iost", "transfer", ["iost", owner, "vote.iost", newVoteFee, ""]);
@@ -190,8 +182,8 @@ class VoteCommonContract {
         for (const option of options) {
             const initVotes = [
                 "0",        // votes
-                false,        // deleted
-                -1,            // clearTime
+                false,      // deleted
+                -1,         // clearTime
             ];
             this._mapPut(optionPrefix + voteId, option, initVotes, owner);
         }
@@ -222,7 +214,7 @@ class VoteCommonContract {
                 throw new Error("option already exist.");
             }
             if (clearVote === true) {
-                optionProp = ["0", false, this._getBlockNumber()];
+                optionProp = ["0", false, block.number];
             } else {
                 optionProp[1] = false;
             }
@@ -232,7 +224,7 @@ class VoteCommonContract {
 
         const info = this._mapGet("voteInfo", voteId);
         const votes = new Float64(optionProp[0]);
-        if (votes.lt(new Float64(info.minVote))) {
+        if (votes.lt(info.minVote)) {
             return;
         }
 
@@ -256,7 +248,7 @@ class VoteCommonContract {
             const preResultKeys = storage.mapKeys(preResultPrefix + voteId);
             for (const key of preResultKeys) {
                 const preVotes = this._mapGet(preResultPrefix + voteId, key);
-                if (votes.lt(new Float64(preVotes))) {
+                if (votes.lt(preVotes)) {
                     order++;
                 }
                 if (order >= info.resultNumber) {
@@ -327,12 +319,12 @@ class VoteCommonContract {
         if (userVotes.hasOwnProperty(option)) {
             userVotes[option] = this._clearUserVote(clearTime, userVotes[option]);
             userVotes[option][0] = new Float64(userVotes[option][0]).plus(amount).toFixed();
-            userVotes[option][1] = this._getBlockNumber();
+            userVotes[option][1] = block.number;
         } else {
-            userVotes[option] = this._clearUserVote(clearTime, [amount.toFixed(), this._getBlockNumber(), "0"]);
+            userVotes[option] = this._clearUserVote(clearTime, [amount.toFixed(), block.number, "0"]);
         }
         this._mapPut(userVotePrefix + voteId, account, userVotes, account);
-        if (clearTime === this._getBlockNumber()) {
+        if (clearTime === block.number) {
             // vote in clear block will do nothing.
             return;
         }
@@ -342,7 +334,7 @@ class VoteCommonContract {
         this._mapPut(optionPrefix + voteId, option, optionProp, account);
 
         const info = this._mapGet("voteInfo", voteId);
-        if (votes.lt(new Float64(info.minVote))) {
+        if (votes.lt(info.minVote)) {
             return;
         }
 
@@ -374,7 +366,7 @@ class VoteCommonContract {
             throw new Error("amount too large. max amount = " + votes);
         }
         const info = this._mapGet("voteInfo", voteId);
-        if (info && userVotes[option][1] + info.unvoteInterval > this._getBlockNumber()) {
+        if (info && userVotes[option][1] + info.unvoteInterval > block.number) {
             throw new Error("unvoteInterval not reached.");
         }
 
@@ -385,7 +377,7 @@ class VoteCommonContract {
         userVotes[option][0] = leftVoteNum.toFixed();
 
         const realUnvotes = new Float64(userVotes[option][2]).minus(amount);
-        if (realUnvotes.gt(new Float64("0"))) {
+        if (realUnvotes.gt("0")) {
             userVotes[option][2] = realUnvotes.toFixed();
             this._mapPut(userVotePrefix + voteId, account, userVotes, account);
             return;
@@ -414,7 +406,7 @@ class VoteCommonContract {
             const votes = new Float64(preResultVotes).plus(realUnvotes);
             preResultVotes = votes.toFixed();
 
-            if (votes.lt(new Float64(info.minVote))) {
+            if (votes.lt(info.minVote)) {
                 this._mapDel(preResultPrefix + voteId, option);
             } else {
                 this._mapPut(preResultPrefix + voteId, option, preResultVotes, account);
@@ -436,7 +428,7 @@ class VoteCommonContract {
             }
             votes.push({
                 option: k,
-                votes: new Float64(userVotes[k][0]).minus(new Float64(userVotes[k][2])).toFixed(),
+                votes: new Float64(userVotes[k][0]).minus(userVotes[k][2]).toFixed(),
                 voteTime: userVotes[k][1],
                 clearedVotes: userVotes[k][2]
             });
@@ -456,7 +448,7 @@ class VoteCommonContract {
         }
         // sort according to votes in reversed order
         const voteCmp = function(a, b) {
-            return new Float64(a.votes).lt(new Float64(b.votes));
+            return new Float64(a.votes).lt(b.votes);
         };
         preResult.sort(voteCmp);
         const info = this._mapGet("voteInfo", voteId);

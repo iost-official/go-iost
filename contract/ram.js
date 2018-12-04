@@ -21,22 +21,6 @@ class RAMContract {
         return true;
     }
 
-    _getBlockNumber() {
-        const bi = JSON.parse(BlockChain.blockInfo());
-        if (!bi || bi === undefined || bi.number === undefined) {
-            throw new Error("get block number failed. bi = " + bi);
-        }
-        return bi.number;
-    }
-
-    _getBlockTime() {
-        const bi = JSON.parse(BlockChain.blockInfo());
-        if (!bi || bi === undefined || bi.number === undefined) {
-            throw new Error("get block time failed. bi = " + bi);
-        }
-        return bi.time;
-    }
-
     _get(k) {
         var raw = storage.get(k);
         if (raw === null || raw === "") {
@@ -66,14 +50,14 @@ class RAMContract {
     }
 
     initContractName(contractName) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
         this._put("contractName", contractName);
     }
     initAdmin(adminID) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
@@ -130,7 +114,7 @@ class RAMContract {
     // increaseInterval: 24 * 3600 / 3
     // increaseAmount: 188272539 = Math.round(64 * 1024 * 1024 * 1024 / 365)
     issue(initialTotal, increaseInterval, increaseAmount, reserve) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
@@ -139,7 +123,7 @@ class RAMContract {
         BlockChain.callWithAuth("token.iost", "create", JSON.stringify(data));
         data = [this._getTokenName(), this._getContractName(), (initialTotal).toString()];
         BlockChain.callWithAuth("token.iost", "issue", JSON.stringify(data));
-        this._put("lastUpdateBlockTime", this._getBlockTime());
+        this._put("lastUpdateBlockTime", block.time);
         this._put("increaseInterval", increaseInterval);
         this._put("increaseAmount", increaseAmount);
         this._put("leftSpace", initialTotal - reserve);
@@ -151,7 +135,7 @@ class RAMContract {
         const priceCoefficient = 30; // when RAM is empty, every KiB worth `priceCoefficient` IOST
         const leftSpace = this._getLeftSpace();
         if (action === "buy") {
-            if (this._getBlockNumber() === 0) {
+            if (block.number === 0) {
                 return priceCoefficient * amount;
             }
             if (leftSpace <= amount) {
@@ -169,7 +153,7 @@ class RAMContract {
     }
 
     _checkIssue() {
-        const t = this._getBlockTime();
+        const t = block.time;
         const nextUpdateTime = this._get("lastUpdateBlockTime") + this._get("increaseInterval") * 1000 * 1000 * 1000;
         if (t < nextUpdateTime) {
             return;
