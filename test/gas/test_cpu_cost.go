@@ -41,6 +41,46 @@ var (
 			"StringToString",
 			"StringValueOf",
 			"StringConcat",
+			"StringIncludes",
+			"StringEndsWith",
+			"StringIndexOf",
+			"StringLastIndexOf",
+			"StringReplace",
+			"StringSearch",
+			"StringSplit",
+			"StringStartsWith",
+			"StringSlice",
+			"StringToLowerCase",
+			"StringToUpperCase",
+			"StringTrim",
+			"StringTrimLeft",
+			"StringTrimRight",
+			"StringRepeat",
+			"ArrayIsArray",
+			"ArrayOf",
+			"ArrayConcat",
+			"ArrayEvery",
+			"ArrayFilter",
+			"ArrayFind",
+			"ArrayFindIndex",
+			"ArrayForEach",
+			"ArrayIncludes",
+			"ArrayIndexOf",
+			"ArrayJoin",
+			"ArrayKeys",
+			"ArrayLastIndexOf",
+			"ArrayMap",
+			"ArrayPop",
+			"ArrayPush",
+			"ArrayReverse",
+			"ArrayShift",
+			"ArraySlice",
+			"ArraySort",
+			"ArraySplice",
+			"ArrayToString",
+			"ArrayUnshift",
+			"JSONParse",
+			"JSONStringify",
 		},
 	}
 )
@@ -49,14 +89,7 @@ var vmPool *v8.VMPool
 var testDataPath = "./test_data/"
 var BaseCPUCost = int64(2000)
 
-func RunOp(name string, api string, num int) {
-
-	mvccdb, err := db.NewMVCCDB("mvccdb")
-	if err != nil {
-		log.Fatalf("New MVCC DB failed: %v", err)
-	}
-	vi := database.NewVisitor(100, mvccdb)
-
+func RunOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
 	b, err := ioutil.ReadFile(path.Join(testDataPath, name))
 	if err != nil {
 		log.Fatalf("Read file failed: %v", err)
@@ -90,9 +123,7 @@ func RunOp(name string, api string, num int) {
 		log.Fatalf("LoadAndCall %v.%v %v failed: %v", contract, api, num, err)
 	}
 
-	fmt.Printf("Time: %0.3fs\n", time.Now().Sub(now).Seconds())
-	fmt.Printf("CPU Cost: %vgas\n", BaseCPUCost+cost.CPU)
-	os.RemoveAll("mvccdb")
+	return time.Now().Sub(now).Seconds(), BaseCPUCost + cost.CPU
 }
 
 func init() {
@@ -102,14 +133,25 @@ func init() {
 }
 
 func main() {
+	mvccdb, err := db.NewMVCCDB("mvccdb")
+	if err != nil {
+		log.Fatalf("New MVCC DB failed: %v", err)
+	}
+	vi := database.NewVisitor(100, mvccdb)
+
 	for _, opType := range []string{"base", "lib"} {
 		for _, op := range OpList[opType] {
 			fmt.Printf("========================%v========================\n", op)
-			RunOp(
+			tcost, ccost := RunOp(
+				vi,
 				fmt.Sprintf("%v_op.js", opType),
 				fmt.Sprintf("do%v", op),
-				10000,
+				0,
 			)
+			fmt.Printf("Time: %0.3fs\n", tcost)
+			fmt.Printf("CPU Cost: %vgas\n", ccost)
 		}
 	}
+
+	os.RemoveAll("mvccdb")
 }
