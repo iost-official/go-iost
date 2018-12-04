@@ -67,6 +67,10 @@ func (e *VM) init() error {
 	return nil
 }
 
+func (e *VM) validate(c *contract.Contract) error {
+	return e.sandbox.Validate(c)
+}
+
 func (e *VM) compile(contract *contract.Contract) (string, error) {
 	return e.sandbox.Compile(contract)
 }

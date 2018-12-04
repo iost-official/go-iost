@@ -42,6 +42,9 @@ lint:
 vmlib:
 	(cd vm/v8vm/v8/; make clean js_bin vm install deploy; cd ../../..)
 
+vmlib_linux:
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
+
 test:
 ifeq ($(origin VERBOSE),undefined)
 	go test -race -coverprofile=coverage.txt -covermode=atomic ./...

@@ -4,6 +4,7 @@
 #include "sandbox.h"
 
 int compile(SandboxPtr, const char *code, const char **compiledCode);
+int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result);
 CustomStartupData createStartupData();
 CustomStartupData createCompileStartupData();
 

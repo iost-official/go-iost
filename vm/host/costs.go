@@ -10,6 +10,7 @@ var (
 		"GetCost":             contract.NewCost(0, 0, 100),
 		"DelCost":             contract.NewCost(0, 0, 100),
 		"KeysCost":            contract.NewCost(0, 0, 100),
+		"ValidateCost":        contract.NewCost(0, 0, 10),
 		"CompileCost":         contract.NewCost(0, 0, 10),
 		"ContextCost":         contract.NewCost(0, 0, 10),
 		"DelDelaytxCost":      contract.NewCost(0, 0, 10),

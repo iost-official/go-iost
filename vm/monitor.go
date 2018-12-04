@@ -203,6 +203,18 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 	return "", errors.New("vm unsupported")
 }
 
+// Validate ...
+func (m *Monitor) Validate(con *contract.Contract) error {
+	switch con.Info.Lang {
+	case "native":
+		return nil
+	case "javascript":
+		jsvm, _ := m.vms["javascript"]
+		return jsvm.Validate(con)
+	}
+	return errors.New("vm unsupported")
+}
+
 // Factory ...
 func Factory(lang string) VM {
 	switch lang {
