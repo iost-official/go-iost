@@ -70,7 +70,7 @@ class IssueContract {
      * }]
      */
     InitGenesis(adminID, genesisConfig, witnessInfo) {
-        const bn = this._getBlockNumber();
+        const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
         }
@@ -102,20 +102,8 @@ class IssueContract {
         return ret;
     }
 
-    _getBlockInfo() {
-        const bi = JSON.parse(BlockChain.blockInfo());
-        if (!bi || bi === undefined) {
-            throw new Error("get block info failed. bi = " + bi);
-        }
-        return bi;
-    }
-
-    _getBlockNumber() {
-        return this._getBlockInfo().number;
-    }
-
     _getBlockTime() {
-        return Math.floor(this._getBlockInfo().time / secondToNano);
+        return Math.floor(block.time / secondToNano);
     }
 
     _get(k) {

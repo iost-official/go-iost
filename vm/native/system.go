@@ -10,18 +10,18 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
-var systemABIs map[string]*abi
+var systemABIs *abiSet
 
 func init() {
-	systemABIs = make(map[string]*abi)
-	register(systemABIs, requireAuth)
-	register(systemABIs, receipt)
-	register(systemABIs, setCode)
-	register(systemABIs, updateCode)
-	register(systemABIs, destroyCode)
-	register(systemABIs, initSetCode)
-	register(systemABIs, cancelDelaytx)
-	register(systemABIs, hostSettings)
+	systemABIs = newAbiSet()
+	systemABIs.Register(requireAuth)
+	systemABIs.Register(receipt)
+	systemABIs.Register(setCode)
+	systemABIs.Register(updateCode)
+	systemABIs.Register(destroyCode)
+	systemABIs.Register(initSetCode)
+	systemABIs.Register(cancelDelaytx)
+	systemABIs.Register(hostSettings)
 }
 
 // var .

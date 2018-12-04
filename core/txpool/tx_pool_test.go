@@ -27,7 +27,7 @@ var (
 	dbPath1 = "TXDB"
 	dbPath2 = "StateDB"
 	dbPath3 = "BlockChainDB"
-	walPath = "block_cache_wal"
+	walPath = "BlockCacheWAl"
 )
 
 func (pool *TxPImpl) testPendingTxsNum() int64 {
@@ -108,6 +108,12 @@ func TestNewTxPImpl(t *testing.T) {
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
 		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
+		config := common.Config{
+			DB: &common.DBConfig{
+				LdbPath: "./",
+			},
+		}
+		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
@@ -268,6 +274,12 @@ func TestNewTxPImplB(t *testing.T) {
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
 		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
+		config := common.Config{
+			DB: &common.DBConfig{
+				LdbPath: "./",
+			},
+		}
+		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
