@@ -40,6 +40,19 @@ class LibOp {
         }
     }
 
+    doStringLastIndexOf(num) {
+        for (let i in Array.apply(null, { length: num })) {
+            ("redbluegreen").lastIndexOf("red")
+        }
+    }
+
+    doStringReplace(num) {
+        for (let i in Array.apply(null, { length: num })) {
+            ("redbluegreen").replace("red", "blue")
+        }
+    }
+
+    // Array
     doArrayToString(num) {
         for (let i in Array.apply(null, { length: num })) {
             (["red", "blue", "green"]).toString()
