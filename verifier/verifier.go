@@ -167,7 +167,6 @@ L:
 				t.Time,
 				blk.Head.Time,
 			)
-			provider.Return(t)
 			continue L
 		}
 		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
