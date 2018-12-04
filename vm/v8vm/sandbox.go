@@ -153,6 +153,29 @@ func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
 	C.loadVM(sbx.context, C.int(vmType))
 }
 
+// Validate contract before save, return err if invalid
+func (sbx *Sandbox) Validate(contract *contract.Contract) error {
+	code := moduleReplacer.Replace(contract.Code)
+	cCode := C.CString(code)
+	defer C.free(unsafe.Pointer(cCode))
+
+	abi, _ := json.Marshal(contract.Info.Abi)
+	cAbi := C.CString(string(abi))
+	defer C.free(unsafe.Pointer(cAbi))
+
+	var cResult *C.char
+	ret := C.validate(sbx.context, cCode, cAbi, &cResult)
+
+	result := C.GoString(cResult)
+	C.free(unsafe.Pointer(cResult))
+
+	if ret == 1 || result != "success" {
+		return fmt.Errorf("validate code error: %v", result)
+	}
+
+	return nil
+}
+
 // Compile contract before execution, return compiled code
 func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	code := moduleReplacer.Replace(contract.Code)

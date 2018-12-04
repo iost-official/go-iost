@@ -5,11 +5,10 @@
 package vm
 
 import (
-	reflect "reflect"
-
 	gomock "github.com/golang/mock/gomock"
 	contract "github.com/iost-official/go-iost/core/contract"
 	host "github.com/iost-official/go-iost/vm/host"
+	reflect "reflect"
 )
 
 // MockVM is a mock of VM interface
@@ -87,4 +86,16 @@ func (m *MockVM) Release() {
 // Release indicates an expected call of Release
 func (mr *MockVMMockRecorder) Release() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Release", reflect.TypeOf((*MockVM)(nil).Release))
+}
+
+// Validate mocks base method
+func (m *MockVM) Validate(arg0 *contract.Contract) error {
+	ret := m.ctrl.Call(m, "Validate", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Validate indicates an expected call of Validate
+func (mr *MockVMMockRecorder) Validate(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockVM)(nil).Validate), arg0)
 }
