@@ -9,31 +9,6 @@ func TestInjectGas(t *testing.T) {
 	host, code := MyInit(t, "gas1")
 	vmPool.LoadAndCall(host, code, "constructor")
 
-	Convey("test assignment4", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-		rs, cost, err = vmPool.LoadAndCall(host, code, "assignment4", 10000)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
-	Convey("test assignment44", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment44", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
-	Convey("test assignment444", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment444", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
-	Convey("test assignment4444", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4444", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
-
-	/*
 	Convey("test assignment0", t, func(){
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment0")
 		So(err.Error(), ShouldContainSubstring, "is not iterable")
@@ -68,6 +43,30 @@ func TestInjectGas(t *testing.T) {
 	Convey("test assignment3", t, func(){
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment3", 10)
 		So(err.Error(), ShouldContainSubstring, "Arrayconcat is not defined")
+		t.Log(rs, cost)
+	})
+
+	Convey("test assignment4", t, func(){
+		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4", 10)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost)
+		rs, cost, err = vmPool.LoadAndCall(host, code, "assignment4", 10000)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost)
+	})
+	Convey("test assignment44", t, func(){
+		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment44", 10)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost)
+	})
+	Convey("test assignment444", t, func(){
+		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment444", 10)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost)
+	})
+	Convey("test assignment4444", t, func(){
+		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4444", 10)
+		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
 
@@ -148,5 +147,4 @@ func TestInjectGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		t.Log(rs, cost0)
 	})
-	*/
 }
