@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/rs/cors"
 	"golang.org/x/net/netutil"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware"
@@ -30,13 +31,15 @@ type Server struct {
 
 	gatewayAddr   string
 	gatewayServer *http.Server
+	allowOrigins  []string
 }
 
 // New returns a new rpc server instance.
 func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service) *Server {
 	s := &Server{
-		grpcAddr:    bv.Config().RPC.GRPCAddr,
-		gatewayAddr: bv.Config().RPC.GatewayAddr,
+		grpcAddr:     bv.Config().RPC.GRPCAddr,
+		gatewayAddr:  bv.Config().RPC.GatewayAddr,
+		allowOrigins: bv.Config().RPC.AllowOrigins,
 	}
 	s.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(metricsMiddleware)),
@@ -76,9 +79,14 @@ func (s *Server) startGateway() error {
 	if err != nil {
 		return err
 	}
+	c := cors.New(cors.Options{
+		AllowedHeaders: []string{"Content-Type", "Accept"},
+		AllowedMethods: []string{"GET", "HEAD", "POST", "PUT", "DELETE"},
+		AllowedOrigins: s.allowOrigins,
+	})
 	s.gatewayServer = &http.Server{
 		Addr:    s.gatewayAddr,
-		Handler: mux,
+		Handler: c.Handler(mux),
 	}
 	go func() {
 		if err := s.gatewayServer.ListenAndServe(); err != http.ErrServerClosed {
