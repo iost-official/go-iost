@@ -11,7 +11,6 @@
 #include "environment.js.h"
 #include <assert.h>
 #include <cstring>
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <thread>
