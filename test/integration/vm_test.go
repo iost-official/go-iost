@@ -93,7 +93,7 @@ func Test_VMMethod(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(len(r.Receipts), ShouldEqual, 1)
 			So(r.Receipts[0].Content, ShouldEqual, "receiptdata")
-			So(r.Receipts[0].FuncName, ShouldEqual, cname + "/receiptf")
+			So(r.Receipts[0].FuncName, ShouldEqual, cname+"/receiptf")
 		})
 
 	})
@@ -176,7 +176,7 @@ func Test_RamPayer(t *testing.T) {
 			ram := s.GetRAM(testID[0])
 			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, testID[0]), testID[0], kp)
 			s.Visitor.Commit()
-			So(s.GetRAM(testID[0]), ShouldEqual, ram - 111)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram-111)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -193,7 +193,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram - 113)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram-113)
 
 			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), testID[0], kp)
 			So(err, ShouldBeNil)
@@ -213,7 +213,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram - 114)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram-114)
 
 			ram = s.GetRAM(testID[0])
 			ram1 := s.GetRAM(testID[2])
@@ -221,22 +221,22 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram + 114)
-			So(s.GetRAM(testID[2]), ShouldEqual, ram1 - 115)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram+114)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1-115)
 
 			ram1 = s.GetRAM(testID[2])
 			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, testID[2]), testID[2], kp2)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[2]), ShouldEqual, ram1 + 2)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1+2)
 
 			ram1 = s.GetRAM(testID[2])
 			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvvvv", "%v"]`, testID[2]), testID[2], kp2)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[2]), ShouldEqual, ram1 - 4)
+			So(s.GetRAM(testID[2]), ShouldEqual, ram1-4)
 		})
 
 		Convey("test nested call check payer", func() {
@@ -261,7 +261,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 2465)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2465)
 
 			ram0 = s.GetRAM(testID[0])
 			ram4 := s.GetRAM(testID[4])
@@ -274,8 +274,8 @@ func Test_RamPayer(t *testing.T) {
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
 			So(s.GetRAM(testID[6]), ShouldEqual, ram6)
-			So(s.GetRAM(testID[4]), ShouldEqual, ram4 - 139)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0 - 6)
+			So(s.GetRAM(testID[4]), ShouldEqual, ram4-139)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0-6)
 		})
 	})
 }
@@ -316,5 +316,25 @@ func Test_StackHeight(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldContainSubstring, "stack height exceed.")
 		})
+	})
+}
+
+func Test_Validate(t *testing.T) {
+	ilog.SetLevel(ilog.LevelInfo)
+	Convey("test validate", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 1000000)
+		s.SetRAM(kp.ID, 300)
+
+		c, err := s.Compile("validate", "test_data/validate", "test_data/validate")
+		So(err, ShouldBeNil)
+		So(len(c.Encode()), ShouldEqual, 133)
+		_, r, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
+		So(r.Status.Message, ShouldEqual, "validate code error: Error: abi not defined in source code: c")
 	})
 }
