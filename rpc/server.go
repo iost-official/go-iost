@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"context"
+	"fmt"
 	"net"
 	"net/http"
 
@@ -72,8 +73,9 @@ func (s *Server) startGrpc() error {
 }
 
 func (s *Server) startGateway() error {
-	mux := runtime.NewServeMux(runtime.WithMarshalerOption(runtime.MIMEWildcard,
-		&runtime.JSONPb{OrigName: true, EmitDefaults: true}))
+	mux := runtime.NewServeMux(
+		runtime.WithMarshalerOption(runtime.MIMEWildcard, &runtime.JSONPb{OrigName: true, EmitDefaults: true}),
+		runtime.WithProtoErrorHandler(errorHandler))
 	opts := []grpc.DialOption{grpc.WithInsecure()}
 	err := rpcpb.RegisterApiServiceHandlerFromEndpoint(context.Background(), mux, s.grpcAddr, opts)
 	if err != nil {
@@ -94,6 +96,11 @@ func (s *Server) startGateway() error {
 		}
 	}()
 	return nil
+}
+
+func errorHandler(_ context.Context, _ *runtime.ServeMux, _ runtime.Marshaler, w http.ResponseWriter, _ *http.Request, err error) {
+	w.WriteHeader(400)
+	w.Write([]byte(fmt.Sprint(err)))
 }
 
 // Stop stops the rpc server.
