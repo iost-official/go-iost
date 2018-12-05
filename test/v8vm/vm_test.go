@@ -709,3 +709,15 @@ func TestEngine_Sha3(t *testing.T) {
 		t.Fatalf("LoadAndCall sha3 invalid result")
 	}
 }
+
+func TestEngine_ArrayOfFrom(t *testing.T) {
+	host, code := MyInit(t, "arrayfunc")
+	_, _, err := vmPool.LoadAndCall(host, code, "from")
+	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+		t.Fatalf("LoadAndCall array from error: %v", err)
+	}
+	_, _, err = vmPool.LoadAndCall(host, code, "to")
+	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+		t.Fatalf("LoadAndCall array from error: %v", err)
+	}
+}
