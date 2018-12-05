@@ -385,7 +385,7 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 		}
 	default:
 		// We must read all of the entries if WAL is opened in write mode.
-		if err != io.EOF {
+		if err != io.EOF && err != io.ErrUnexpectedEOF {
 			return nil, nil, err
 		}
 		// decodeRecord() will return io.EOF if it detects a zero record,
