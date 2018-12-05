@@ -60,6 +60,18 @@ func (mr *MockBaseVariableMockRecorder) Config() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockBaseVariable)(nil).Config))
 }
 
+// Continuous mocks base method
+func (m *MockBaseVariable) Continuous() int {
+	ret := m.ctrl.Call(m, "Continuous")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Continuous indicates an expected call of Continuous
+func (mr *MockBaseVariableMockRecorder) Continuous() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continuous", reflect.TypeOf((*MockBaseVariable)(nil).Continuous))
+}
+
 // Mode mocks base method
 func (m *MockBaseVariable) Mode() global.TMode {
 	ret := m.ctrl.Call(m, "Mode")
