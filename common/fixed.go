@@ -165,7 +165,7 @@ func (f *Fixed) TimesF(v float64) *Fixed {
 		f.Err = errOverflow
 		return nil
 	}
-	return &Fixed{Value: f.Value * int64(v), Decimal: f.Decimal}
+	return &Fixed{Value: int64(float64(f.Value) * v), Decimal: f.Decimal}
 }
 
 // Div divide by a scalar

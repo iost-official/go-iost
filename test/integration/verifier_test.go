@@ -42,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 314500)
+			So(r.GasUsage, ShouldEqual, 710000)
 		})
 
 		Convey("test of token memo", func() {
@@ -80,7 +80,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractBRp9qiNMLga3r67ESf9DRUSzZ4PRwFcsQRGFtDVSmCiU")
-		So(r.GasUsage, ShouldEqual, 20700)
+		So(r.GasUsage, ShouldEqual, 737200)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -106,22 +106,22 @@ func TestStringGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
-		r, err = s.Call(cname, "add2", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f1", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
 		gas2 := r.GasUsage
 
-		r, err = s.Call(cname, "add9", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f2", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 1200, 1400)
+		So(r.GasUsage-gas2, ShouldEqual,1400)
 
-		r, err = s.Call(cname, "equal9", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f3", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(r.GasUsage-gas2, ShouldEqual, 1400)
 
-		r, err = s.Call(cname, "superadd9", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f4", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(r.GasUsage-gas2, ShouldBeGreaterThan, 1400)
@@ -348,7 +348,7 @@ func TestTokenMemo(t *testing.T) {
 
 func TestNativeVM_GasLimit(t *testing.T) {
 	ilog.Stop()
-	Convey("test of amount limit", t, func() {
+	Convey("test native vm gas limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 		prepareContract(s)
@@ -364,15 +364,14 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			Contract:   "token.iost",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
-		}}, nil, 55000, 100, 10000000, 0)
+		}}, nil, 550000, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, testID[0], kp)
 		t.Log(err, r, r.Status)
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 		So(r.Status.Message, ShouldContainSubstring, "gas limit exceeded")
-
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 	})
 }
 

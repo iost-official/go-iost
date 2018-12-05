@@ -49,14 +49,14 @@ class Account {
         }
     }
 
-    SignUp(id, owner, active, referrer) {
+    SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
         }
         this._checkIdValid(id);
         let account = {};
         account.id = id;
-        account.referrer = referrer;
+        account.referrer = BlockChain.publisher();
         account.permissions = {};
         account.permissions.active = {
             name: "active",
@@ -79,7 +79,7 @@ class Account {
             threshold: 1,
         };
         this._saveAccount(account, BlockChain.publisher());
-        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([tx.publisher, "30000"]))
+        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([tx.publisher, "30000"]));
     }
     AddPermission(id, perm, thres) {
         this._ra(id);

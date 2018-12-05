@@ -41,6 +41,14 @@ type GasHandler struct {
 	MapHandler
 }
 
+// EmptyGas ...
+func EmptyGas() *common.Fixed {
+	return &common.Fixed{
+		Value:   0,
+		Decimal: GasDecimal,
+	}
+}
+
 // If no key exists, return 0
 func (g *GasHandler) getFixed(key string) *common.Fixed {
 	result := MustUnmarshal(g.BasicHandler.Get(GasContractName + Separator + key))
@@ -69,10 +77,7 @@ func (g *GasHandler) putFixed(key string, value *common.Fixed) {
 func (g *GasHandler) GasRate(name string) *common.Fixed {
 	f := g.getFixed(name + GasRateKey)
 	if f == nil {
-		return &common.Fixed{
-			Value:   0,
-			Decimal: GasDecimal,
-		}
+		return EmptyGas()
 	}
 	return f
 }
@@ -81,10 +86,7 @@ func (g *GasHandler) GasRate(name string) *common.Fixed {
 func (g *GasHandler) GasLimit(name string) *common.Fixed {
 	f := g.getFixed(name + GasLimitKey)
 	if f == nil {
-		return &common.Fixed{
-			Value:   0,
-			Decimal: GasDecimal,
-		}
+		return EmptyGas()
 	}
 	return f
 }
@@ -102,10 +104,7 @@ func (g *GasHandler) GasUpdateTime(name string) int64 {
 func (g *GasHandler) GasStock(name string) *common.Fixed {
 	f := g.getFixed(name + GasStockKey)
 	if f == nil {
-		return &common.Fixed{
-			Value:   0,
-			Decimal: GasDecimal,
-		}
+		return EmptyGas()
 	}
 	return f
 }
@@ -114,17 +113,16 @@ func (g *GasHandler) GasStock(name string) *common.Fixed {
 func (g *GasHandler) TGas(name string) *common.Fixed {
 	f := g.getFixed(name + TransferableGasKey)
 	if f == nil {
-		return &common.Fixed{
-			Value:   0,
-			Decimal: GasDecimal,
-		}
+		return EmptyGas()
 	}
 	return f
 }
 
 // ChangeTGas ...
 func (g *GasHandler) ChangeTGas(name string, delta *common.Fixed) {
-	g.putFixed(name+TransferableGasKey, g.TGas(name).Add(delta))
+	oldValue := g.TGas(name)
+	newValue := oldValue.Add(delta)
+	g.putFixed(name+TransferableGasKey, newValue)
 }
 
 // GasPledge ...

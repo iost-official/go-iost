@@ -1,4 +1,4 @@
-package native
+package integration
 
 import (
 	"encoding/json"
@@ -8,9 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/iost-official/go-iost/ilog"
-
-	cy "github.com/smartystreets/goconvey/convey"
+	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -22,36 +20,6 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 )
-
-// zzhang: convey sucks. adhoc fix
-var shouldEqual = cy.ShouldEqual
-var shouldBeTrue = cy.ShouldBeTrue
-var shouldBeNil = cy.ShouldBeNil
-var shouldNotBeNil = cy.ShouldNotBeNil
-var shouldBeZeroValue = cy.ShouldBeZeroValue
-
-var useConvey = true
-
-func so(actual interface{}, assert func(actual interface{}, expected ...interface{}) string, expected ...interface{}) {
-	if useConvey {
-		cy.So(actual, assert, expected...)
-	} else {
-		result := assert(actual, expected...)
-		if result != "" {
-			ilog.Fatalf("test fail %v", result)
-		}
-	}
-}
-
-func convey(items ...interface{}) {
-	if useConvey {
-		cy.Convey(items...)
-	} else {
-		fmt.Println(items[0].(string))
-		items[len(items)-1].(func())()
-	}
-
-}
 
 func toString(n int64) string {
 	return strconv.FormatInt(n, 10)
@@ -150,19 +118,19 @@ func getAccount(name string, k string) *account.Account {
 }
 
 func TestGas_NoPledge(t *testing.T) {
-	convey("test an account who did not pledge has 0 gas", t, func() {
+	Convey("test an account who did not pledge has 0 gas", t, func() {
 		_, h, _, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
 			os.RemoveAll("mvcc")
 		}()
 		gas := h.GasManager.PGas(testAcc)
-		so(gas.Value, shouldEqual, 0)
+		So(gas.Value, ShouldEqual, 0)
 	})
 }
 
 func TestGas_PledgeAuth(t *testing.T) {
-	convey("test pledging requires auth", t, func() {
+	Convey("test pledging requires auth", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -172,12 +140,12 @@ func TestGas_PledgeAuth(t *testing.T) {
 		authList := make(map[string]int)
 		h.Context().Set("auth_list", authList)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, pledgeAmount.ToString())
-		so(err, shouldNotBeNil)
+		So(err, ShouldNotBeNil)
 	})
 }
 
 func TestGas_NotEnoughMoney(t *testing.T) {
-	convey("test pledging with not enough money", t, func() {
+	Convey("test pledging with not enough money", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -185,12 +153,12 @@ func TestGas_NotEnoughMoney(t *testing.T) {
 		}()
 		pledgeAmount := toIOSTFixed(20000)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, pledgeAmount.ToString())
-		so(err, shouldNotBeNil)
+		So(err, ShouldNotBeNil)
 	})
 }
 
 func TestGas_Pledge(t *testing.T) {
-	convey("test pledge", t, func() {
+	Convey("test pledge", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -198,34 +166,34 @@ func TestGas_Pledge(t *testing.T) {
 		}()
 		pledgeAmount := toIOSTFixed(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, pledgeAmount.ToString())
-		so(err, shouldBeNil)
-		so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Value-pledgeAmount.Value)
-		so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Value)
-		convey("After pledge, you will get some gas immediately", func() {
+		So(err, ShouldBeNil)
+		So(h.DB().TokenBalance("iost", testAcc), ShouldEqual, initCoinFN.Value-pledgeAmount.Value)
+		So(h.DB().TokenBalance("iost", contractName), ShouldEqual, pledgeAmount.Value)
+		Convey("After pledge, you will get some gas immediately", func() {
 			gas := h.GasManager.PGas(testAcc)
 			gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward)
-			so(gas.Equals(gasEstimated), shouldBeTrue)
+			So(gas.Equals(gasEstimated), ShouldBeTrue)
 		})
-		convey("Then gas increases at a predefined rate", func() {
+		Convey("Then gas increases at a predefined rate", func() {
 			delta := int64(5)
 			timePass(h, delta)
 			gas := h.GasManager.PGas(testAcc)
 			gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward).Add(pledgeAmount.Multiply(native.GasIncreaseRate).Times(delta))
-			so(gas.Equals(gasEstimated), shouldBeTrue)
+			So(gas.Equals(gasEstimated), ShouldBeTrue)
 		})
-		convey("Then gas will reach limit and not increase any longer", func() {
+		Convey("Then gas will reach limit and not increase any longer", func() {
 			delta := int64(2 * native.GasFulfillSeconds)
 			timePass(h, delta)
 			gas := h.GasManager.PGas(testAcc)
 			gasEstimated := pledgeAmount.Multiply(native.GasLimit)
 			fmt.Printf("gas %v es %v\n", gas, gasEstimated)
-			so(gas.Equals(gasEstimated), shouldBeTrue)
+			So(gas.Equals(gasEstimated), ShouldBeTrue)
 		})
 	})
 }
 
 func TestGas_PledgeMore(t *testing.T) {
-	convey("test you can pledge more after first time pledge", t, func() {
+	Convey("test you can pledge more after first time pledge", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -233,26 +201,26 @@ func TestGas_PledgeMore(t *testing.T) {
 		}()
 		firstTimePledgeAmount := toIOSTFixed(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, firstTimePledgeAmount.ToString())
-		so(err, shouldBeNil)
+		So(err, ShouldBeNil)
 		delta1 := int64(5)
 		timePass(h, delta1)
 		gasBeforeSecondPledge := h.GasManager.PGas(testAcc)
 		secondTimePledgeAmount := toIOSTFixed(300)
 		_, _, err = e.LoadAndCall(h, code, "pledge", testAcc, testAcc, secondTimePledgeAmount.ToString())
-		so(err, shouldBeNil)
+		So(err, ShouldBeNil)
 		delta2 := int64(10)
 		timePass(h, delta2)
 		gasAfterSecondPledge := h.GasManager.PGas(testAcc)
 		gasEstimated := gasBeforeSecondPledge.Add(secondTimePledgeAmount.Multiply(native.GasImmediateReward).Add(
 			secondTimePledgeAmount.Add(firstTimePledgeAmount).Multiply(native.GasIncreaseRate).Times(delta2)))
-		so(gasAfterSecondPledge.Equals(gasEstimated), shouldBeTrue)
-		so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Sub(firstTimePledgeAmount).Sub(secondTimePledgeAmount).Value)
-		so(h.DB().TokenBalance("iost", contractName), shouldEqual, firstTimePledgeAmount.Add(secondTimePledgeAmount).Value)
+		So(gasAfterSecondPledge.Equals(gasEstimated), ShouldBeTrue)
+		So(h.DB().TokenBalance("iost", testAcc), ShouldEqual, initCoinFN.Sub(firstTimePledgeAmount).Sub(secondTimePledgeAmount).Value)
+		So(h.DB().TokenBalance("iost", contractName), ShouldEqual, firstTimePledgeAmount.Add(secondTimePledgeAmount).Value)
 	})
 }
 
 func TestGas_UseGas(t *testing.T) {
-	convey("test using gas", t, func() {
+	Convey("test using gas", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -260,21 +228,21 @@ func TestGas_UseGas(t *testing.T) {
 		}()
 		pledgeAmount := int64(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, toString(pledgeAmount))
-		so(err, shouldBeNil)
+		So(err, ShouldBeNil)
 		delta1 := int64(5)
 		timePass(h, delta1)
 		gasBeforeUse := h.GasManager.PGas(testAcc)
 		gasCost := toIOSTFixed(100)
 		err = h.GasManager.CostGas(testAcc, gasCost)
-		so(err, shouldBeNil)
+		So(err, ShouldBeNil)
 		gasAfterUse := h.GasManager.PGas(testAcc)
 		gasEstimated := gasBeforeUse.Sub(gasCost)
-		so(gasAfterUse.Equals(gasEstimated), shouldBeTrue)
+		So(gasAfterUse.Equals(gasEstimated), ShouldBeTrue)
 	})
 }
 
 func TestGas_unpledge(t *testing.T) {
-	convey("test unpledge", t, func() {
+	Convey("test unpledge", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -282,34 +250,34 @@ func TestGas_unpledge(t *testing.T) {
 		}()
 		pledgeAmount := toIOSTFixed(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, pledgeAmount.ToString())
-		so(err, shouldBeNil)
+		So(err, ShouldBeNil)
 		delta1 := int64(10)
 		timePass(h, delta1)
 		unpledgeAmount := toIOSTFixed(190)
 		balanceBeforeunpledge := h.DB().TokenBalance("iost", testAcc)
 		_, _, err = e.LoadAndCall(h, code, "unpledge", testAcc, testAcc, unpledgeAmount.ToString())
-		so(err, shouldBeNil)
-		so(h.DB().TokenBalance("iost", testAcc), shouldEqual, balanceBeforeunpledge)
-		so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Sub(unpledgeAmount).Value)
+		So(err, ShouldBeNil)
+		So(h.DB().TokenBalance("iost", testAcc), ShouldEqual, balanceBeforeunpledge)
+		So(h.DB().TokenBalance("iost", contractName), ShouldEqual, pledgeAmount.Sub(unpledgeAmount).Value)
 		gas := h.GasManager.PGas(testAcc)
-		convey("After unpledging, the gas limit will decrease. If current gas is more than the new limit, it will be decrease.", func() {
+		Convey("After unpledging, the gas limit will decrease. If current gas is more than the new limit, it will be decrease.", func() {
 			gasEstimated := pledgeAmount.Sub(unpledgeAmount).Multiply(native.GasLimit)
-			so(gas.Equals(gasEstimated), shouldBeTrue)
+			So(gas.Equals(gasEstimated), ShouldBeTrue)
 		})
-		convey("after 3 days, the frozen money is available", func() {
+		Convey("after 3 days, the frozen money is available", func() {
 			timePass(h, native.UnpledgeFreezeSeconds)
 			h.Context().Set("contract_name", "token.iost")
 			rs, _, err := e.LoadAndCall(h, native.TokenABI(), "balanceOf", "iost", testAcc)
-			so(err, shouldBeNil)
+			So(err, ShouldBeNil)
 			expected := initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount)
-			so(rs[0], shouldEqual, expected.ToString())
-			so(h.DB().TokenBalance("iost", testAcc), shouldEqual, expected.Value)
+			So(rs[0], ShouldEqual, expected.ToString())
+			So(h.DB().TokenBalance("iost", testAcc), ShouldEqual, expected.Value)
 		})
 	})
 }
 
 func TestGas_unpledgeTooMuch(t *testing.T) {
-	convey("test unpledge too much: each account has a minimum pledge", t, func() {
+	Convey("test unpledge too much: each account has a minimum pledge", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -317,17 +285,17 @@ func TestGas_unpledgeTooMuch(t *testing.T) {
 		}()
 		pledgeAmount := int64(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, toString(pledgeAmount))
-		so(err, shouldBeNil)
+		So(err, ShouldBeNil)
 		delta1 := int64(1)
 		timePass(h, delta1)
 		unpledgeAmount := (pledgeAmount - native.GasMinPledgeInIOST) + int64(1)
 		_, _, err = e.LoadAndCall(h, code, "unpledge", testAcc, testAcc, toString(unpledgeAmount))
-		so(err, shouldNotBeNil)
+		So(err, ShouldNotBeNil)
 	})
 }
 
 func TestGas_PledgeunpledgeForOther(t *testing.T) {
-	convey("test pledge for others", t, func() {
+	Convey("test pledge for others", t, func() {
 		e, h, code, testAcc, tmpDB := gasTestInit()
 		defer func() {
 			tmpDB.Close()
@@ -338,28 +306,28 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, otherAcc, pledgeAmount.ToString())
 		h.FlushCacheCost()
 		h.ClearCosts()
-		so(err, shouldBeNil)
-		so(h.DB().TokenBalance("iost", testAcc), shouldEqual, initCoinFN.Value-pledgeAmount.Value)
-		so(h.DB().TokenBalance("iost", contractName), shouldEqual, pledgeAmount.Value)
-		convey("After pledge, you will get some gas immediately", func() {
+		So(err, ShouldBeNil)
+		So(h.DB().TokenBalance("iost", testAcc), ShouldEqual, initCoinFN.Value-pledgeAmount.Value)
+		So(h.DB().TokenBalance("iost", contractName), ShouldEqual, pledgeAmount.Value)
+		Convey("After pledge, you will get some gas immediately", func() {
 			gas := h.GasManager.PGas(otherAcc)
 			gasEstimated := pledgeAmount.Multiply(native.GasImmediateReward)
-			so(gas.Equals(gasEstimated), shouldBeTrue)
+			So(gas.Equals(gasEstimated), ShouldBeTrue)
 		})
-		convey("If one pledge for others, he will get no gas himself", func() {
+		Convey("If one pledge for others, he will get no gas himself", func() {
 			gas := h.GasManager.PGas(testAcc)
-			so(gas.Value, shouldBeZeroValue)
+			So(gas.Value, ShouldBeZeroValue)
 		})
-		convey("Test unpledge for others", func() {
+		Convey("Test unpledge for others", func() {
 			unpledgeAmount := toIOSTFixed(190)
 			_, _, err = e.LoadAndCall(h, code, "unpledge", testAcc, otherAcc, unpledgeAmount.ToString())
-			so(err, shouldBeNil)
+			So(err, ShouldBeNil)
 			timePass(h, native.UnpledgeFreezeSeconds)
 			h.Context().Set("contract_name", "token.iost")
 			rs, _, err := e.LoadAndCall(h, native.TokenABI(), "balanceOf", "iost", testAcc)
-			so(err, shouldBeNil)
+			So(err, ShouldBeNil)
 			expected := initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount)
-			so(rs[0], shouldEqual, expected.ToString())
+			So(rs[0], ShouldEqual, expected.ToString())
 		})
 	})
 }

@@ -41,7 +41,7 @@ func (g *GasManager) putFixed(key string, value *common.Fixed) contract.Cost {
 	if value.Err != nil {
 		ilog.Fatalf("GasHandler putFixed %v", value)
 	}
-	//fmt.Printf("putFixed %v %v\n", key, value.ToString())
+	//fmt.Printf("putFixed %v %v\n", key, value)
 	cost, err := g.h.Put(key, value)
 	if err != nil {
 		panic(fmt.Errorf("GasHandler putFixed err %v", err))

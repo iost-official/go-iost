@@ -3,6 +3,7 @@ package host
 import (
 	"fmt"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
 	"strings"
 
 	"github.com/iost-official/go-iost/common"
@@ -27,6 +28,21 @@ func NewTeller(h *Host) Teller {
 // Costs ...
 func (t *Teller) Costs() map[string]contract.Cost {
 	return t.cost
+}
+
+// GasPayed ...
+func (t *Teller) GasPayed(publishers ...string) int64 {
+	var publisher string
+	if len(publishers) > 0 {
+		publisher = publishers[0]
+	} else {
+		publisher = t.h.Context().Value("publisher").(string)
+	}
+	v, ok := t.cost[publisher]
+	if !ok {
+		return 0
+	}
+	return v.ToGas()
 }
 
 // ClearCosts ...
@@ -68,6 +84,7 @@ func (t *Teller) ClearCacheCost() {
 
 // PayCost ...
 func (t *Teller) PayCost(c contract.Cost, who string) {
+	//fmt.Printf("paycost [%v] %v(%v)\n", who, c, c.ToGas())
 	costMap := make(map[string]contract.Cost)
 	if c.CPU > 0 || c.Net > 0 {
 		costMap[who] = contract.Cost{CPU: c.CPU, Net: c.Net}
@@ -91,53 +108,56 @@ func (t *Teller) PayCost(c contract.Cost, who string) {
 }
 
 // DoPay ...
-func (t *Teller) DoPay(witness string, gasRatio int64) error {
-	for k, c := range t.cost {
-		fee := gasRatio * c.ToGas()
-		if fee != 0 {
-			gas := &common.Fixed{
-				Value:   fee,
-				Decimal: 2,
-			}
-			err := t.h.CostGas(k, gas)
+func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, err error) {
+	for payer, costOfPayer := range t.cost {
+		gas := &common.Fixed{
+			Value:   gasRatio * costOfPayer.ToGas(),
+			Decimal: database.GasDecimal,
+		}
+		if !gas.IsZero() {
+			err := t.h.CostGas(payer, gas)
 			if err != nil {
-				return fmt.Errorf("pay cost failed: %v, %v", k, err)
+				ilog.Fatalf("pay gas cost failed: %v %v %v", err, payer, gas)
 			}
 			// reward 15% gas to account referrer
-			if !t.h.IsContract(k) {
-				acc, _ := ReadAuth(t.h.DB(), k)
+			if !t.h.IsContract(payer) {
+				acc, _ := ReadAuth(t.h.DB(), payer)
 				if acc == nil {
-					ilog.Fatalf("invalid account %v", k)
+					ilog.Fatalf("invalid account %v", payer)
 				}
 				if acc.Referrer != "" {
 					reward := gas.TimesF(0.15)
-					t.h.ChangeTGas(acc.Referrer, reward)
+					t.h.DB().ChangeTGas(acc.Referrer, reward)
 				}
 			}
+		}
+		if payer == t.h.Context().Value("publisher").(string) {
+			payedGas = gas
 		}
 		// contracts in "iost" domain will not pay for ram
-		if !strings.HasSuffix(k, ".iost") {
-			var payer string
-			if t.h.IsContract(k) {
-				p, _ := t.h.GlobalMapGet("system.iost", "contract_owner", k)
+		if !strings.HasSuffix(payer, ".iost") {
+			var ramPayer string
+			if t.h.IsContract(payer) {
+				p, _ := t.h.GlobalMapGet("system.iost", "contract_owner", payer)
 				var ok bool
-				payer, ok = p.(string)
+				ramPayer, ok = p.(string)
 				if !ok {
-					return fmt.Errorf("DoPay failed: contract %v has no owner", k)
+					ilog.Fatalf("DoPay failed: contract %v has no owner", payer)
 				}
 			} else {
-				payer = k
+				ramPayer = payer
 			}
 
-			ram := c.Data
-			currentRAM := t.h.db.TokenBalance("ram", payer)
-			if currentRAM-ram < 0 {
-				return fmt.Errorf("pay ram failed. id: %v need %v, actual %v", payer, ram, currentRAM)
+			ram := costOfPayer.Data
+			currentRAM := t.h.db.TokenBalance("ram", ramPayer)
+			if currentRAM < ram {
+				err = fmt.Errorf("pay ram failed. id: %v need %v, actual %v", ramPayer, ram, currentRAM)
+				return
 			}
-			t.h.db.SetTokenBalance("ram", payer, currentRAM-ram)
+			t.h.db.SetTokenBalance("ram", ramPayer, currentRAM-ram)
 		}
 	}
-	return nil
+	return
 }
 
 // Privilege ...

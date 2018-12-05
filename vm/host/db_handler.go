@@ -235,7 +235,7 @@ func (h *DBHandler) payRAMForMap(k, f, v, oldV string, who string) {
 
 func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, payer string) {
 	var data int64
-	dataList := []contract.DataItem{}
+	dataList := make([]contract.DataItem, 0)
 	if oldV == "n" {
 		dataList = append(dataList, contract.DataItem{Payer: payer, Val: nLen})
 		data = nLen
@@ -258,7 +258,7 @@ func (h *DBHandler) payRAMInner(oldV string, oLen int64, nLen int64, payer strin
 
 func (h *DBHandler) releaseRAMInner(oldV string, oLen int64) {
 	data := int64(0)
-	dataList := []contract.DataItem{}
+	dataList := make([]contract.DataItem, 0)
 	if oldV == "n" {
 		return
 	}

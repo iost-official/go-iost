@@ -2,22 +2,22 @@ class Contract {
     init() {
 
     }
-    add2() {
+    f1() {
         let a = "22";
         let b = "22";
         let c = a + b;
     }
-    add9() {
+    f2() {
         let a = "999999999";
         let b = "999999999";
         let c = a + b;
     }
-    equal9() {
+    f3() {
         let a = "999999999";
         let b = "999999999";
         let c = a === b;
     }
-    superadd9() {
+    f4() {
         let a = "999999999";
         let b = "999999999";
         let c = a += b;
