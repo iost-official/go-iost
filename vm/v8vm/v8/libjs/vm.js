@@ -74,12 +74,13 @@ const BlockChain = require('blockchain');
 const _IOSTInstruction_counter = new IOSTInstruction;
 
 // + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
-let _IOSTBinaryOp = function(left, right, op) {
+const _IOSTBinaryOp = function(left, right, op) {
     if ((typeof left === "string" || typeof right === "string") &&
         (op === "+" || op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
         _IOSTInstruction_counter.incr(left === null || left === undefined ? 0 : left.toString().length);
         _IOSTInstruction_counter.incr(right === null || right === undefined ? 0 : right.toString().length);
     }
+    _IOSTInstruction_counter.incr(3);
     switch (op) {
         case '+':
             return left + right;
