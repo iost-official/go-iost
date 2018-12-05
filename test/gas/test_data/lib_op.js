@@ -170,7 +170,7 @@ class LibOp {
 
     doArrayIndexOf(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).IndexOf("red")
+            (["red", "blue", "green"]).indexOf("red")
         }
     }
 

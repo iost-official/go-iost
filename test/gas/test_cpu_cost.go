@@ -10,11 +10,11 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/db"
-
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	v8 "github.com/iost-official/go-iost/vm/v8vm"
+	"github.com/wcharczuk/go-chart"
 )
 
 var (
@@ -141,15 +141,60 @@ func main() {
 
 	for _, opType := range []string{"base", "lib"} {
 		for _, op := range OpList[opType] {
-			fmt.Printf("========================%v========================\n", op)
-			tcost, ccost := RunOp(
-				vi,
-				fmt.Sprintf("%v_op.js", opType),
-				fmt.Sprintf("do%v", op),
-				0,
-			)
-			fmt.Printf("Time: %0.3fs\n", tcost)
-			fmt.Printf("CPU Cost: %vgas\n", ccost)
+			//fmt.Printf("========================%v========================\n", op)
+			x := make([]float64, 0)
+			yt := make([]float64, 0)
+			yc := make([]float64, 0)
+			for i := 0; i < 500000; i = i + 10000 {
+				tcost, ccost := RunOp(
+					vi,
+					fmt.Sprintf("%v_op.js", opType),
+					fmt.Sprintf("do%v", op),
+					i,
+				)
+
+				x = append(x, float64(i))
+				yt = append(yt, tcost*1000)
+				yc = append(yc, float64(ccost))
+			}
+
+			graph := chart.Chart{
+				YAxis: chart.YAxis{
+					Style: chart.StyleShow(),
+					Range: &chart.ContinuousRange{
+						Min: 0.0,
+						Max: 200.0,
+					},
+				},
+				YAxisSecondary: chart.YAxis{
+					Style: chart.StyleShow(),
+					Range: &chart.ContinuousRange{
+						Min: 0.0,
+						Max: 20000000.0,
+					},
+				},
+				Series: []chart.Series{
+					chart.ContinuousSeries{
+						XValues: x,
+						YValues: yt,
+					},
+					chart.ContinuousSeries{
+						YAxis:   chart.YAxisSecondary,
+						XValues: x,
+						YValues: yc,
+					},
+				},
+			}
+
+			f, err := os.Create(fmt.Sprintf("%s/%s.png", opType, op))
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := graph.Render(chart.PNG, f); err != nil {
+				log.Fatal(err)
+			}
+			//fmt.Printf("Time: %0.3fs\n", tcost)
+			//fmt.Printf("CPU Cost: %vgas\n", ccost)
 		}
 	}
 
