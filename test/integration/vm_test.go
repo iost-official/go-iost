@@ -335,6 +335,6 @@ func Test_Validate(t *testing.T) {
 		_, r, err := s.DeployContract(c, kp.ID, kp)
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
-		So(r.Status.Message, ShouldEqual, "validate code error: Error: abi not defined in source code: c")
+		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
 	})
 }

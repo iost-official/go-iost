@@ -70,9 +70,10 @@ type P2PConfig struct {
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
-	GatewayAddr string
-	GRPCAddr    string
-	TryTx       bool
+	GatewayAddr  string
+	GRPCAddr     string
+	AllowOrigins []string
+	TryTx        bool
 }
 
 // FileLogConfig is the config for filewriter of ilog.
