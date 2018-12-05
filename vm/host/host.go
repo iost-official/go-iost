@@ -125,7 +125,7 @@ func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 		}
 	}
 	err := h.monitor.Validate(c)
-	cost.AddAssign(Costs["ValidateCost"])
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	return cost, err
 }
 
@@ -173,7 +173,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	}
 
 	code, err := h.monitor.Compile(c)
-	cost.AddAssign(Costs["CompileCost"])
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err
 	}
@@ -238,7 +238,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	}
 
 	code, err := h.monitor.Compile(c)
-	cost.AddAssign(Costs["CompileCost"])
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err
 	}
