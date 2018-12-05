@@ -22,7 +22,7 @@ var (
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
-	continuousNum           int64 = 10
+	continuousNum           int
 	syncNumber              int64
 	printInterval           int64 = 1000
 )
@@ -80,8 +80,9 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 	sy.syncHeightChan = sy.p2pService.Register("sync height", p2p.SyncHeight)
 	sy.exitSignal = make(chan struct{})
 
+	continuousNum = basevariable.Continuous()
 	confirmNumber = int64(len(blkcache.LinkedRoot().Active()))*2/3 + 1
-	syncNumber = confirmNumber * continuousNum
+	syncNumber = confirmNumber * int64(continuousNum)
 	ilog.Infof("NewSynchronizer confirmNumber:%v", confirmNumber)
 	return sy, nil
 }
@@ -225,7 +226,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	if bcn != sy.lastBcn {
 		sy.lastBcn = bcn
 		witness := bcn.Block.Head.Witness
-		for i := int64(0); i < confirmNumber*continuousNum; i++ {
+		for i := int64(0); i < confirmNumber*int64(continuousNum); i++ {
 			if bcn == nil {
 				break
 			}
@@ -235,7 +236,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 			bcn = bcn.GetParent()
 		}
 	}
-	if num > continuousNum {
+	if num > int64(continuousNum) {
 		ilog.Debugf("num: %v, continuousNum: %v", num, continuousNum)
 		go sy.syncBlocks(height+1, sy.blockCache.Head().Head.Number)
 		return true
