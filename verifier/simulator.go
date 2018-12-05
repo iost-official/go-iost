@@ -69,7 +69,7 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 func (s *Simulator) SetGas(id string, i int64) {
 	prefix := database.GasContractName + database.Separator
 	value := &common.Fixed{
-		Value:   i * 10e2,
+		Value:   i * 100,
 		Decimal: 2,
 	}
 	valueStr := database.MustMarshal(value)

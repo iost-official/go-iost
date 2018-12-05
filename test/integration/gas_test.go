@@ -3,6 +3,7 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm"
 	"os"
 	"strconv"
@@ -330,4 +331,61 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			So(rs[0], ShouldEqual, expected.ToString())
 		})
 	})
+}
+
+func TestGas_TGas(t *testing.T) {
+	s := verifier.NewSimulator()
+	defer s.Clear()
+	createAccountsWithResource(s)
+	ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
+	if err != nil {
+		panic(err)
+	}
+	s.SetContract(ca)
+	s.SetContract(native.GasABI())
+	kp := prepareAuth(t, s)
+	err = createToken(t, s, kp)
+	if err != nil {
+		panic(err)
+	}
+	other, err := account.NewKeyPair(nil, crypto.Secp256k1)
+	otherID := "lispc0"
+	Convey("test tgas", t, func(){
+		Convey("account referrer should got 30000 tgas", func(){
+			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, other.ID, other.ID}), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(s.Visitor.TGas(kp.ID).ToString(), ShouldEqual, "30000")
+			r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{kp.ID, otherID, "199"}), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldBeEmpty)
+		})
+		Convey("tgas can be transferred", func(){
+			r, err := s.Call("gas.iost", "transfer", array2json([]interface{}{kp.ID, otherID, "10000"}), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(s.Visitor.TGas(kp.ID).ToString(), ShouldEqual, "20000")
+			So(s.Visitor.TGas(otherID).ToString(), ShouldEqual, "10000")
+		})
+		Convey("referrer get 15% reward", func(){
+			r, err := s.Call("token.iost", "transfer", array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}), otherID, other)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldNotBeEmpty)
+			So(s.Visitor.TGas(kp.ID).ToFloat(), ShouldAlmostEqual, 20000 + float64(r.GasUsage) / 100 * 0.15)
+		})
+		Convey("when pgas is used up, tgas will be used", func(){
+			s.SetGas(otherID, 123)
+			trx := tx.NewTx([]*tx.Action{{
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}),
+			}}, nil, 1000000, 100, s.Head.Time+10000000, 0)
+			trx.Time = s.Head.Time
+			r, err := s.CallTx(trx, otherID, other)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldNotBeEmpty)
+			So(s.Visitor.TGas(otherID).ToFloat(), ShouldAlmostEqual, 10000 - (r.GasUsage / 100 - 123))
+		})
+	})
+
 }

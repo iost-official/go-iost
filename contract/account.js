@@ -79,7 +79,7 @@ class Account {
             threshold: 1,
         };
         this._saveAccount(account, BlockChain.publisher());
-        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([tx.publisher, "30000"]));
+        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([BlockChain.publisher(), "30000"]));
     }
     AddPermission(id, perm, thres) {
         this._ra(id);

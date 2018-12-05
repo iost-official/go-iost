@@ -26,7 +26,7 @@ func TestTransfer(t *testing.T) {
 		kp := prepareAuth(t, s)
 
 		s.SetGas(kp.ID, 100000)
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		Reset(func() {
@@ -69,7 +69,7 @@ func TestSetCode(t *testing.T) {
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 300)
 
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
@@ -96,7 +96,7 @@ func TestStringGas(t *testing.T) {
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 1000)
 
 		c, err := s.Compile("so", "test_data/stringop", "test_data/stringop")
@@ -152,7 +152,7 @@ func TestJS_Database(t *testing.T) {
 		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"array")), ShouldEqual, "[1,2,3]")
 		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"obj")), ShouldEqual, `{"foo":"bar"}`)
 
-		s.SetGas(kp.ID, 100000)
+		s.SetGas(kp.ID, 1000000)
 		r, err := s.Call(cname, "read", `[]`, kp.ID, kp)
 
 		So(err, ShouldBeNil)
@@ -168,7 +168,7 @@ func TestAmountLimit(t *testing.T) {
 	Convey("test of amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		So(err, ShouldBeNil)
@@ -210,7 +210,7 @@ func TestAmountLimit(t *testing.T) {
 		Convey("test out of amount limit, use signers ID", func() {
 			s.SetAccount(account.NewInitAccount("test0", testID[0], testID[0]))
 			s.Visitor.SetTokenBalanceFixed("iost", "test0", "1000")
-			s.SetGas("test0", 100000)
+			s.SetGas("test0", 1000000)
 			s.SetRAM("test0", 10000)
 
 			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, "test0", testID[2], "200"), "test0", kp)
@@ -258,7 +258,7 @@ func TestTxAmountLimit(t *testing.T) {
 	Convey("test of tx amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		So(err, ShouldBeNil)
@@ -328,7 +328,7 @@ func TestTokenMemo(t *testing.T) {
 	Convey("test of token memo", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		So(err, ShouldBeNil)
@@ -351,7 +351,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 	Convey("test native vm gas limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
