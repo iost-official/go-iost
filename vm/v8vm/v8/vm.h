@@ -92,8 +92,8 @@ typedef char* (*sha3Func)(SandboxPtr, const char *, size_t *);
 
 void InitGoCrypto(sha3Func);
 
-extern int compile(SandboxPtr, const char *code, const char **compiledCode);
-extern int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result);
+extern int compile(SandboxPtr, const char *code, const char **compiledCode, const char **errMsg);
+extern int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result, const char **errMsg);
 extern CustomStartupData createStartupData();
 extern CustomStartupData createCompileStartupData();
 
