@@ -163,14 +163,19 @@ func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 	cAbi := C.CString(string(abi))
 	defer C.free(unsafe.Pointer(cAbi))
 
-	var cResult *C.char
-	ret := C.validate(sbx.context, cCode, cAbi, &cResult)
+	var (
+		cResult *C.char
+		cErrMsg *C.char
+	)
+	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg)
 
 	result := C.GoString(cResult)
 	C.free(unsafe.Pointer(cResult))
 
 	if ret == 1 || result != "success" {
-		return fmt.Errorf("validate code error: %v", result)
+		errMsg := C.GoString(cErrMsg)
+		C.free(unsafe.Pointer(cErrMsg))
+		return fmt.Errorf("validate code error: %v, result: %v", errMsg, result)
 	}
 
 	return nil
@@ -182,10 +187,15 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	cCode := C.CString(code)
 	defer C.free(unsafe.Pointer(cCode))
 
-	var cCompiledCode *C.char
-	ret := C.compile(sbx.context, cCode, &cCompiledCode)
+	var (
+		cCompiledCode *C.char
+		cErrMsg       *C.char
+	)
+	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg)
 	if ret == 1 {
-		return "", errors.New("compile code error")
+		errMsg := C.GoString(cErrMsg)
+		C.free(unsafe.Pointer(cErrMsg))
+		return "", errors.New(errMsg)
 	}
 
 	compiledCode := C.GoString(cCompiledCode)

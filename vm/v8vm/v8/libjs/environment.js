@@ -425,6 +425,9 @@
         return Arrayunshift.call(this, ...arguments);
     };
 
+    Array.from = null;
+    Array.of = null;
+
     // JSON
     const JSONparse = JSON.parse;
     JSON.parse = function () {

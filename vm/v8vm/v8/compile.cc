@@ -52,7 +52,7 @@ static char compileCodeFormat[] =
     "%s\n"  // load validate
     "%s\n"; // load inject_gas
 
-int compileInternal(SandboxPtr ptr, const char *code, const char *extra, char *format, const char *file, const char **ret) {
+int compileInternal(SandboxPtr ptr, const char *code, const char *extra, char *format, const char *file, const char **ret, const char **errMsg) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -62,6 +62,9 @@ int compileInternal(SandboxPtr ptr, const char *code, const char *extra, char *f
 
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
+
+    TryCatch tryCatch(isolate);
+    tryCatch.SetVerbose(true);
 
     char *formatedCode = nullptr;
     if (extra == nullptr) {
@@ -86,16 +89,23 @@ int compileInternal(SandboxPtr ptr, const char *code, const char *extra, char *f
             *ret = strdup(*retStr);
             return 0;
         }
+
+        if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+            std::string exception = reportException(isolate, context, tryCatch);
+            *errMsg = strdup(exception.c_str());
+            return 1;
+        }
     }
+    *errMsg = strdup("script is empty");
     return 1;
 }
 
-int compile(SandboxPtr ptr, const char *code, const char **compiledCode) {
-    return compileInternal(ptr, code, nullptr, injectGasFormat, "__inject_gas.js", compiledCode);
+int compile(SandboxPtr ptr, const char *code, const char **compiledCode, const char **errMsg) {
+    return compileInternal(ptr, code, nullptr, injectGasFormat, "__inject_gas.js", compiledCode, errMsg);
 }
 
-int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result) {
-    return compileInternal(ptr, code, abi, validateFormat, "__validate.js", result);
+int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result, const char **errMsg) {
+    return compileInternal(ptr, code, abi, validateFormat, "__validate.js", result, errMsg);
 }
 
 CustomStartupData createStartupData() {

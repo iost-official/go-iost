@@ -5,6 +5,7 @@
 #include "vm.h"
 #include "ThreadPool.h"
 #include "allocator.h"
+#include <string>
 
 using namespace v8;
 
@@ -22,5 +23,7 @@ typedef struct {
 extern ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime);
 
 size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator);
+
+std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch);
 
 #endif // IOST_V8_SANDBOX_H
