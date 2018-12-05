@@ -82,6 +82,18 @@ var (
 			"JSONParse",
 			"JSONStringify",
 		},
+		"storage": []string{
+			"Put",
+			"Get",
+			"Has",
+			"Del",
+			"MapPut",
+			"MapGet",
+			"MapHas",
+			"MapDel",
+			"MapKeys",
+			"MapLen",
+		},
 	}
 )
 
@@ -139,13 +151,13 @@ func main() {
 	}
 	vi := database.NewVisitor(100, mvccdb)
 
-	for _, opType := range []string{"base", "lib"} {
+	for _, opType := range []string{"base", "lib", "storage"} {
 		for _, op := range OpList[opType] {
 			//fmt.Printf("========================%v========================\n", op)
 			x := make([]float64, 0)
 			yt := make([]float64, 0)
 			yc := make([]float64, 0)
-			for i := 0; i < 500000; i = i + 10000 {
+			for i := 0; ; i = i + 10000 {
 				tcost, ccost := RunOp(
 					vi,
 					fmt.Sprintf("%v_op.js", opType),
@@ -156,9 +168,19 @@ func main() {
 				x = append(x, float64(i))
 				yt = append(yt, tcost*1000)
 				yc = append(yc, float64(ccost))
+				if tcost > 0.2 {
+					break
+				}
 			}
 
 			graph := chart.Chart{
+				XAxis: chart.XAxis{
+					Style: chart.StyleShow(),
+					Range: &chart.ContinuousRange{
+						Min: 0.0,
+						Max: 1000000.0,
+					},
+				},
 				YAxis: chart.YAxis{
 					Style: chart.StyleShow(),
 					Range: &chart.ContinuousRange{
