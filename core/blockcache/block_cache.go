@@ -410,6 +410,9 @@ func (bc *BlockCacheImpl) AddWithWit(blk *block.Block, witnessList WitnessList) 
 
 // Add is add a block
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
+	if bc.LinkedRoot().Head.Number >= blk.Head.Number {
+		return nil
+	}
 	newNode, nok := bc.hmget(blk.HeadHash())
 	if nok && newNode.Type != Virtual {
 		return newNode
