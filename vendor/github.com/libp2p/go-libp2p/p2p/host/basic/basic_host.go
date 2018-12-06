@@ -14,6 +14,7 @@ import (
 	pstore "github.com/libp2p/go-libp2p-peerstore"
 	protocol "github.com/libp2p/go-libp2p-protocol"
 	identify "github.com/libp2p/go-libp2p/p2p/protocol/identify"
+	ping "github.com/libp2p/go-libp2p/p2p/protocol/ping"
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
 	msmux "github.com/multiformats/go-multistream"
@@ -56,10 +57,12 @@ type BasicHost struct {
 	network    inet.Network
 	mux        *msmux.MultistreamMuxer
 	ids        *identify.IDService
+	pings      *ping.PingService
 	natmgr     NATManager
-	addrs      AddrsFactory
 	maResolver *madns.Resolver
 	cmgr       ifconnmgr.ConnManager
+
+	AddrsFactory AddrsFactory
 
 	negtimeout time.Duration
 
@@ -96,16 +99,19 @@ type HostOpts struct {
 
 	// ConnManager is a libp2p connection manager
 	ConnManager ifconnmgr.ConnManager
+
+	// EnablePing indicates whether to instantiate the ping service
+	EnablePing bool
 }
 
 // NewHost constructs a new *BasicHost and activates it by attaching its stream and connection handlers to the given inet.Network.
 func NewHost(ctx context.Context, net inet.Network, opts *HostOpts) (*BasicHost, error) {
 	h := &BasicHost{
-		network:    net,
-		mux:        msmux.NewMultistreamMuxer(),
-		negtimeout: DefaultNegotiationTimeout,
-		addrs:      DefaultAddrsFactory,
-		maResolver: madns.DefaultResolver,
+		network:      net,
+		mux:          msmux.NewMultistreamMuxer(),
+		negtimeout:   DefaultNegotiationTimeout,
+		AddrsFactory: DefaultAddrsFactory,
+		maResolver:   madns.DefaultResolver,
 	}
 
 	h.proc = goprocessctx.WithContextAndTeardown(ctx, func() error {
@@ -131,7 +137,7 @@ func NewHost(ctx context.Context, net inet.Network, opts *HostOpts) (*BasicHost,
 	}
 
 	if opts.AddrsFactory != nil {
-		h.addrs = opts.AddrsFactory
+		h.AddrsFactory = opts.AddrsFactory
 	}
 
 	if opts.NATManager != nil {
@@ -147,6 +153,10 @@ func NewHost(ctx context.Context, net inet.Network, opts *HostOpts) (*BasicHost,
 	} else {
 		h.cmgr = opts.ConnManager
 		net.Notify(h.cmgr.Notifee())
+	}
+
+	if opts.EnablePing {
+		h.pings = ping.NewPingService(h)
 	}
 
 	net.SetConnHandler(h.newConnHandler)
@@ -245,6 +255,12 @@ func (h *BasicHost) newStreamHandler(s inet.Stream) {
 	log.Debugf("protocol negotiation took %s", took)
 
 	go handle(protoID, s)
+}
+
+// PushIdentify pushes an identify update through the identify push protocol
+// Warning: this interface is unstable and may disappear in the future.
+func (h *BasicHost) PushIdentify() {
+	h.ids.Push()
 }
 
 // ID returns the (local) peer.ID associated with this Host
@@ -465,7 +481,7 @@ func (h *BasicHost) ConnManager() ifconnmgr.ConnManager {
 // Addrs returns listening addresses that are safe to announce to the network.
 // The output is the same as AllAddrs, but processed by AddrsFactory.
 func (h *BasicHost) Addrs() []ma.Multiaddr {
-	return h.addrs(h.AllAddrs())
+	return h.AddrsFactory(h.AllAddrs())
 }
 
 // mergeAddrs merges input address lists, leave only unique addresses
