@@ -554,8 +554,9 @@ func TestEngine_Func(t *testing.T) {
 
 	host, code = MyInit(t, "func", int64(100000000000))
 	_, _, err = vmPool.LoadAndCall(host, code, "func1")
-	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
+	if err == nil ||
+		!strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") && !strings.Contains(err.Error(), "illegal instruction") {
+		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded || illegal instruction, but got %v\n", err)
 	}
 
 	host, code = MyInit(t, "func")
