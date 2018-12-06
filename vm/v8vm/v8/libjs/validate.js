@@ -4,8 +4,8 @@ function checkExports(ast) {
     if (ast.type !== "Program" || ast.body.length <= 1) {
         throw new Error("empty source code.");
     }
-    last = ast.body[ast.body.length - 1];
-    exp = last.expression;
+    let last = ast.body[ast.body.length - 1];
+    let exp = last.expression;
     if (last.type !== "ExpressionStatement" || exp.type !== "AssignmentExpression" || exp.operator !== "="
     || exp.left.type !== "MemberExpression" || exp.left.object.type !== "Identifier" || exp.left.property.type !== "Identifier"
     || exp.left.object.name !== "module" || exp.left.property.name !== "exports" || exp.right.type !== "Identifier") {
@@ -22,6 +22,12 @@ function checkOneAbi(a, methodMap) {
     const args = a.args || [];
     if (args.length !== params.length) {
         throw new Error("args length not match: " + a.name);
+    }
+    for (let i in args) {
+        let arg = args[i];
+        if (!(arg in ["string", "bool", "number", "json"])) {
+            throw new Error(`args should be one of ["string", "bool", "number", "json"]`)
+        }
     }
 }
 
