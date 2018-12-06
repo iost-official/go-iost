@@ -6,6 +6,10 @@ function* range(N) {
     }
 }
 
+function raw(strings, ...keys) {
+    return strings.join(',') + keys.join(',');
+}
+
 class Gas {
     constructor() {
     }
@@ -141,5 +145,12 @@ class Gas {
         // return '\x1'
     }
 
+    templateString(N, data) {
+        for (let i = 0; i < N; i += 2) {
+            data = raw`${data}456`;
+            data = `${data}123${data}`;
+        }
+        return data;
+    }
 };
 module.exports = Gas;

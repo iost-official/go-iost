@@ -143,4 +143,13 @@ func TestInjectGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		t.Log(rs, cost0)
 	})
+
+	Convey("test template string", t, func() {
+		rs, cost0, err := vmPool.LoadAndCall(host, code, "templateString", 1, "input")
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+		rs, cost0, err = vmPool.LoadAndCall(host, code, "templateString", 10, "input")
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+	})
 }
