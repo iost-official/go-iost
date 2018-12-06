@@ -376,7 +376,7 @@ func Test_SpecialChar(t *testing.T) {
 		"class Test {" +
 		"	init() {}" +
 		"	transfer(from, to, amountJson) {" +
-		"		BlockChain.transfer(from, to, amountJson.amount, '');" +
+		"		blockchain.transfer(from, to, amountJson.amount, '');" +
 		"	}" +
 		"};" +
 		"module.exports = Test;"

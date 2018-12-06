@@ -3,7 +3,7 @@ class transfer {
     }
     transfer(from, to, amount) {
         const a = new Int64(amount);
-        BlockChain.transfer(from, to, a)
+        blockchain.transfer(from, to, a)
     }
 }
 

@@ -5,23 +5,23 @@ class Contract {
 
     test(from, to) {
         storage.mapPut("nest1", "f", "11111")
-        BlockChain.transfer(from, to, "100", "memo")
+        blockchain.transfer(from, to, "100", "memo")
     }
 
     sh1(conName) {
-        BlockChain.call(conName, "sh2", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh2", JSON.stringify([blockchain.contractName()]));
     }
 
     sh3(conName) {
-        BlockChain.call(conName, "sh4", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh4", JSON.stringify([blockchain.contractName()]));
     }
 
     sh5(conName) {
-        BlockChain.call(conName, "sh6", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh6", JSON.stringify([blockchain.contractName()]));
     }
 
     sh7(conName) {
-        BlockChain.call(conName, "sh8", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh8", JSON.stringify([blockchain.contractName()]));
     }
 }
 
