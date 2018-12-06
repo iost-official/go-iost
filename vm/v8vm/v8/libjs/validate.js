@@ -25,7 +25,7 @@ function checkOneAbi(a, methodMap) {
     }
     for (let i in args) {
         let arg = args[i];
-        if (!(arg in ["string", "bool", "number", "json"])) {
+        if (!["string", "bool", "number", "json"].includes(arg)) {
             throw new Error(`args should be one of ["string", "bool", "number", "json"]`)
         }
     }
