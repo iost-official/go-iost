@@ -1,5 +1,6 @@
 'use strict';
 
+// expression to be charged for some instruction, used to calculate inject value
 const chargedExpression = {
     CallExpression: 8,
     NewExpression: 8,
@@ -14,6 +15,7 @@ const chargedExpression = {
     LogicalExpression: 3,
     ConditionalExpression: 3
 };
+// statement before which can inject gas, used to find inject location
 const InjectableStatement = {
     ExpressionStatement: 1,
     ReturnStatement: 1,
@@ -63,7 +65,7 @@ function genInjectionStr(injectionPoint) {
 function checkInvalidKeyword(tokens) {
     for (let i = 0; i < tokens.length; i++) {
         if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
-            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp")) {
+            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp" || tokens[i].value === "IOSTInstruction")) {
             throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
         }
         if (tokens[i].type === "RegularExpression") {
@@ -329,7 +331,10 @@ function genNewScript(source) {
     return newSource;
 }
 
-function processOperator(node) {
+function processOperator(node, pnode) {
+    if (node.type === "ArrayPattern" || node.type === "ObjectPattern") {
+        throw new Error("use of ArrayPattern or ObjectPattern is not allowed." + JSON.stringify(node));
+    }
     let ops = ['+', '-', '*', '/', '%', '**', '|', '&', '^', '>>', '>>>', '<<', '==', '!=', '===', '!==', '>', '>=', '<', '<='];
 
     if (node.type === "AssignmentExpression" && node.operator !== '=') {
@@ -354,17 +359,26 @@ function processOperator(node) {
         opNode.raw = '\'' + node.operator + '\'';
         newnode.arguments = [node.left, node.right, opNode];
         node = newnode;
+    } else if (node.type === "TemplateLiteral" && (pnode === undefined || pnode.type !== "TaggedTemplateExpression")) {
+        let newnode = {};
+        newnode.type = "TaggedTemplateExpression";
+        let tagNode = {};
+        tagNode.type = 'Identifier';
+        tagNode.name = '_IOSTTemplateTag';
+        newnode.tag = tagNode;
+        newnode.quasi = node;
+        node = newnode;
     }
     return node;
 }
 
-function traverseOperator(node) {
-    node = processOperator(node);
+function traverseOperator(node, pnode) {
+    node = processOperator(node, pnode);
     for (let key in node) {
         if (node.hasOwnProperty(key)) {
             let child = node[key];
             if (typeof child === 'object' && child !== null) {
-                node[key] = traverseOperator(child);
+                node[key] = traverseOperator(child, node);
             }
         }
     }
@@ -380,7 +394,8 @@ function handleOperator(ast) {
 function injectGas(source) {
     let ast = esprima.parseScript(source, {
         comment: true,
-        tokens: true
+        tokens: true,
+        loc: true
     });
 
     checkInvalidKeyword(ast.tokens);

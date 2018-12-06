@@ -45,6 +45,10 @@
     {
       "name": "RevokePermissionInGroup",
       "args": ["string", "string", "string"]
+    },
+    {
+      "name": "UpdateReferrer",
+      "args": ["string", "string"]
     }
   ]
 }

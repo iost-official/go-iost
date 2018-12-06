@@ -20,8 +20,8 @@ func init() {
 }
 
 func checkURLValid(name string) error {
-	if len(name) <= 0 || len(name) > 32 {
-		return fmt.Errorf("url invalid. url length should be between 1,32  got %v", name)
+	if len(name) < 5 || len(name) > 16 {
+		return fmt.Errorf("url invalid. url length should be between 5,16 got %v", name)
 	}
 	for _, ch := range name {
 		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_' || ch == '.') {

@@ -59,7 +59,7 @@ func Test_InitProducer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 
@@ -93,7 +93,7 @@ func Test_RegisterProducer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
@@ -126,7 +126,7 @@ func Test_LogInOut(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
@@ -162,7 +162,7 @@ func Test_Vote1(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareFakeBase(t, s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)

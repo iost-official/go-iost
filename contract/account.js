@@ -38,12 +38,12 @@ class Account {
         if (block.number === 0) {
             return
         }
-        if (id.length < 6 || id.length > 32) {
-            throw new Error("id invalid. id length should be between 6,32 > " + id)
+        if (id.length < 5 || id.length > 11) {
+            throw new Error("id invalid. id length should be between 5,11 > " + id)
         }
         for (let i in id) {
             let ch = id[i];
-            if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
+            if (!(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch === '_')) {
                 throw new Error("id invalid. id contains invalid character > " + ch);
             }
         }
@@ -56,6 +56,8 @@ class Account {
         this._checkIdValid(id);
         let account = {};
         account.id = id;
+        account.referrer = BlockChain.publisher();
+        account.referrer_update_time = block.time;
         account.permissions = {};
         account.permissions.active = {
             name: "active",
@@ -78,6 +80,21 @@ class Account {
             threshold: 1,
         };
         this._saveAccount(account, BlockChain.publisher());
+        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([BlockChain.publisher(), "30000"]));
+    }
+
+    UpdateReferrer(id, referrer) {
+        this._ra(id);
+        if (referrer === id) {
+            throw new Error("referrer cannot be oneself");
+        }
+        let acc = this._loadAccount(id);
+        const one_month = 30 * 24 * 3600 * 1e9;
+        if (acc.referrer !== null && block.time < acc.referrer_update_time + one_month) {
+            throw new Error("referrer can only be updated one time per 30 days");
+        }
+        acc.referrer = referrer;
+        this._saveAccount(acc);
     }
     AddPermission(id, perm, thres) {
         this._ra(id);
