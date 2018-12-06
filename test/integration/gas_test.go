@@ -368,6 +368,8 @@ func TestGas_TGas(t *testing.T) {
 			So(s.Visitor.TGas(otherID).ToString(), ShouldEqual, "10000")
 		})
 		Convey("referrer get 15% reward", func(){
+			s.Visitor.MPut("vote_producer.iost-producerTable", kp.ID, "dummy")
+			s.Visitor.Commit()
 			r, err := s.Call("token.iost", "transfer", array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}), otherID, other)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldNotBeEmpty)

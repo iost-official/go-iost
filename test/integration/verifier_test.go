@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/vm/host"
 	"testing"
 
 	"github.com/iost-official/go-iost/account"
@@ -42,7 +43,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 710000)
+			So(r.GasUsage, ShouldEqual, 715000)
 		})
 
 		Convey("test of token memo", func() {
@@ -80,7 +81,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractBRp9qiNMLga3r67ESf9DRUSzZ4PRwFcsQRGFtDVSmCiU")
-		So(r.GasUsage, ShouldEqual, 757200)
+		So(r.GasUsage, ShouldEqual, 759700)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -432,6 +433,22 @@ func TestAuthority(t *testing.T) {
 		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", kp.ID, kp.ID}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
+
+		Convey("referrer can be updated 1 time per 30 days", func(){
+			acc, _ := host.ReadAuth(s.Visitor, "myidid")
+			So(acc.Referrer, ShouldEqual, kp.ID)
+			So(acc.ReferrerUpdateTime, ShouldEqual, s.Head.Time)
+			s.SetGas("myidid", 10000000)
+			r, err = s.Call("auth.iost", "UpdateReferrer", array2json([]interface{}{"myidid", "hahaha"}), "myidid", kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "referrer can only be updated one time per 30 days")
+			s.Head.Time += 30 * 24 * 3600 * 1e9
+			r, err = s.Call("auth.iost", "UpdateReferrer", array2json([]interface{}{"myidid", "hahaha"}), "myidid", kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			acc, _ = host.ReadAuth(s.Visitor, "myidid")
+			So(acc.Referrer, ShouldEqual, "hahaha")
+		})
 	})
 
 }

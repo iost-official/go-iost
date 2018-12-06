@@ -107,6 +107,12 @@ func (t *Teller) PayCost(c contract.Cost, who string) {
 	}
 }
 
+// IsProducer check account is producer
+func (t *Teller) IsProducer(acc string) bool {
+	//fmt.Printf("producerTable %v\n ", t.h.DB().MKeys("vote_producer.iost-producerTable"))
+	return t.h.DB().MHas("vote_producer.iost-producerTable", acc)
+}
+
 // DoPay ...
 func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, err error) {
 	for payer, costOfPayer := range t.cost {
@@ -125,7 +131,7 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, 
 				if acc == nil {
 					ilog.Fatalf("invalid account %v", payer)
 				}
-				if acc.Referrer != "" {
+				if acc.Referrer != "" && t.IsProducer(acc.Referrer) {
 					reward := gas.TimesF(0.15)
 					t.h.DB().ChangeTGas(acc.Referrer, reward)
 				}

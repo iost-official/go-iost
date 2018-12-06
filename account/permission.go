@@ -2,10 +2,11 @@ package account
 
 // Account type of a permission tree
 type Account struct {
-	ID          string                 `json:"id"`
-	Referrer    string                 `json:"referrer"`
-	Groups      map[string]*Group      `json:"groups"`
-	Permissions map[string]*Permission `json:"permissions"`
+	ID                 string                 `json:"id"`
+	Referrer           string                 `json:"referrer"`
+	ReferrerUpdateTime int64                  `json:"referrer_update_time"`
+	Groups             map[string]*Group      `json:"groups"`
+	Permissions        map[string]*Permission `json:"permissions"`
 }
 
 // Item identity of a permission owner
