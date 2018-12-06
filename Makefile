@@ -6,6 +6,7 @@ PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
 DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)
 TARGET_DIR = target
+CLUSTER = devnet
 
 ifeq ($(shell uname),Darwin)
 	export CGO_LDFLAGS=-L$(shell pwd)/vm/v8vm/v8/libv8/_darwin_amd64
@@ -61,12 +62,12 @@ e2e_test: image
 	docker exec -it iserver ./itest run c_case
 
 k8s_test: image push
-	./build/delete_cluster.sh devnet
-	./build/create_cluster.sh devnet
+	./build/delete_cluster.sh $(CLUSTER)
+	./build/create_cluster.sh $(CLUSTER)
 	sleep 90
-	kubectl exec -it itest -n devnet -- ./itest run -c /etc/itest/itest.json a_case
-	kubectl exec -it itest -n devnet -- ./itest run -c /etc/itest/itest.json t_case
-	kubectl exec -it itest -n devnet -- ./itest run -c /etc/itest/itest.json c_case
+	kubectl exec -it itest -n $(CLUSTER) -- ./itest run -c /etc/itest/itest.json a_case
+	kubectl exec -it itest -n $(CLUSTER) -- ./itest run -c /etc/itest/itest.json t_case
+	kubectl exec -it itest -n $(CLUSTER) -- ./itest run -c /etc/itest/itest.json c_case
 
 image:
 	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
