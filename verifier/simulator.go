@@ -47,7 +47,7 @@ func NewSimulator() *Simulator {
 			Witness:    "witness",
 			Time:       int64(1541541540 * 1000 * 1000 * 1000),
 		},
-		Logger: ilog.DefaultLogger(),
+		Logger:   ilog.DefaultLogger(),
 		GasLimit: 100000000,
 	}
 	return s
