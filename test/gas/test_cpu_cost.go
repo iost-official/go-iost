@@ -18,11 +18,12 @@ import (
 )
 
 var (
+	// OpList is the list of all operation
 	OpList = map[string][]string{
-		"empty": []string{
+		"empty": {
 			"Empty",
 		},
-		"base": []string{
+		"base": {
 			"Call",
 			"New",
 			"Throw",
@@ -39,7 +40,7 @@ var (
 			"And",
 			"Conditional",
 		},
-		"lib": []string{
+		"lib": {
 			"StringToString",
 			"StringValueOf",
 			"StringConcat",
@@ -84,7 +85,7 @@ var (
 			"JSONParse",
 			"JSONStringify",
 		},
-		"storage": []string{
+		"storage": {
 			"Put",
 			"Get",
 			"Has",
@@ -101,9 +102,9 @@ var (
 
 var vmPool *v8.VMPool
 var testDataPath = "./test_data/"
-var BaseCPUCost = int64(2000)
+var baseCPUCost = int64(2000)
 
-func RunOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
+func runOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
 	b, err := ioutil.ReadFile(path.Join(testDataPath, name))
 	if err != nil {
 		log.Fatalf("Read file failed: %v", err)
@@ -137,7 +138,7 @@ func RunOp(vi *database.Visitor, name string, api string, num int) (float64, int
 		log.Fatalf("LoadAndCall %v.%v %v failed: %v", contract, api, num, err)
 	}
 
-	return time.Now().Sub(now).Seconds(), BaseCPUCost + cost.CPU
+	return time.Now().Sub(now).Seconds(), baseCPUCost + cost.CPU
 }
 
 func init() {
@@ -160,7 +161,7 @@ func getOpDetail() {
 			yt := make([]float64, 0)
 			yc := make([]float64, 0)
 			for i := 0; ; i = i + 10000 {
-				tcost, ccost := RunOp(
+				tcost, ccost := runOp(
 					vi,
 					fmt.Sprintf("%v_op.js", opType),
 					fmt.Sprintf("do%v", op),
@@ -221,6 +222,7 @@ func getOpDetail() {
 	os.RemoveAll("mvccdb")
 }
 
+// OpInfo is the information of operation for overview test
 type OpInfo struct {
 	Name string
 	Time float64
@@ -240,7 +242,7 @@ func getOverview() {
 		for _, op := range OpList[opType] {
 			fmt.Printf("Start %v:%v...\n", opType, op)
 			for i := 0; ; i = i + 10000 {
-				tcost, ccost := RunOp(
+				tcost, ccost := runOp(
 					vi,
 					fmt.Sprintf("%v_op.js", opType),
 					fmt.Sprintf("do%v", op),
@@ -248,7 +250,7 @@ func getOverview() {
 				)
 
 				if tcost > 0.2 {
-					emptyT, emptyC := RunOp(
+					emptyT, emptyC := runOp(
 						vi,
 						fmt.Sprintf("%v_op.js", "empty"),
 						fmt.Sprintf("do%v", "Empty"),
@@ -349,6 +351,6 @@ func getOverview() {
 }
 
 func main() {
+	getOverview()
 	getOpDetail()
-	//getOverview()
 }
