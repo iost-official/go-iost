@@ -180,6 +180,7 @@ type BlockCache interface {
 	Draw() string
 	CleanDir() error
 	Recover(p conAlgo) (err error)
+	NewWAL(config *common.Config) (err error)
 }
 
 // BlockCacheImpl is the implementation of BlockCache
@@ -265,6 +266,16 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc.head = bc.linkedRoot
 
 	return &bc, nil
+}
+
+// NewWAL New wal when old one is not recoverable. Move Old File into Corrupted for later analysis.
+func (bc *BlockCacheImpl) NewWAL(config *common.Config) (err error) {
+	walPath := config.DB.LdbPath + blockCacheWALDir
+	corruptWalPath := config.DB.LdbPath + blockCacheWALDir + "Corrupted"
+	os.Rename(walPath, corruptWalPath)
+	bc.wal, err = wal.Create(walPath, []byte("block_cache_wal"))
+	return
+
 }
 
 // Recover recover previews block cache
