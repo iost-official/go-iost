@@ -12,7 +12,15 @@ type Module struct {
 	code string
 }
 
-var moduleReplacer = strings.NewReplacer("\\", "\\\\", "\n", "\\n", "\r", "\\r", "\"", "\\\"")
+var moduleReplacer = strings.NewReplacer(
+	"\\", "\\\\",
+	"\n", "\\n",
+	"\r", "\\r",
+	"\"", "\\\"",
+	"\x00", "\\\\x00", // C string ending, escape twice
+	"\u2028", "\\u2028", // Unicode Line Separator
+	"\u2029", "\\u2029", // Unicode Paragraph Separator
+)
 
 // NewModule create new Module.
 func NewModule(id, code string) *Module {

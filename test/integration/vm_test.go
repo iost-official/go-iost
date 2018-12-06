@@ -9,6 +9,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
@@ -320,7 +321,7 @@ func Test_StackHeight(t *testing.T) {
 }
 
 func Test_Validate(t *testing.T) {
-	ilog.SetLevel(ilog.LevelInfo)
+	ilog.Stop()
 	Convey("test validate", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
@@ -336,5 +337,98 @@ func Test_Validate(t *testing.T) {
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
 		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
+	})
+}
+
+func Test_SpecialChar(t *testing.T) {
+	ilog.Start()
+	spStr := ""
+	for i := 0x00; i <= 0x1F; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0x7F, string(rune(0x7F)))
+	for i := 0x80; i <= 0x9F; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0x2028, string(rune(0x2028)))
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0x2029, string(rune(0x2029)))
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0xE0001, string(rune(0xE0001)))
+	for i := 0xE0020; i <= 0xE007F; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	lst := []int64{0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069}
+	for _, i := range lst {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0xE0100; i <= 0xE01EF; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0x180B; i <= 0x180E; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0x200C; i <= 0x200D; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0xFFF0; i <= 0xFFFF; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	code := spStr +
+		"class Test {" +
+		"	init() {}" +
+		"	transfer(from, to, amountJson) {" +
+		"		BlockChain.transfer(from, to, amountJson.amount, '');" +
+		"	}" +
+		"};" +
+		"module.exports = Test;"
+
+	abi := `
+	{
+		"lang": "javascript",
+		"version": "1.0.0",
+		"abi": [
+			{
+				"name": "transfer",
+				"args": [
+					"string",
+					"string",
+					"json"
+				]
+			}
+		]
+	}
+	`
+	Convey("test validate", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		prepareContract(s)
+		createToken(t, s, kp)
+		s.SetGas(kp.ID, 1000000)
+		s.SetRAM(kp.ID, 100000)
+
+		c, err := (&contract.Compiler{}).Parse("", code, abi)
+		So(err, ShouldBeNil)
+
+		cname, _, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+
+		kp2, _ := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
+		s.Visitor.SetTokenBalanceFixed("iost", kp.ID, "1000")
+		s.Visitor.SetTokenBalanceFixed("iost", kp2.ID, "1000")
+		params := []interface{}{
+			kp.ID,
+			kp2.ID,
+			map[string]string{
+				"amount": "1000",
+				"hack":   "\u2028\u2029\u0000",
+			},
+		}
+		paramsByte, err := json.Marshal(params)
+		So(err, ShouldBeNil)
+		r, err := s.Call(cname, "transfer", string(paramsByte), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(s.Visitor.TokenBalanceFixed("iost", kp2.ID).ToString(), ShouldEqual, "2000")
 	})
 }
