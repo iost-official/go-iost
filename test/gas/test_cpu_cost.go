@@ -238,12 +238,11 @@ func getOverview() {
 	}
 	vi := database.NewVisitor(100, mvccdb)
 
+	OpInfos := make([]*OpInfo, 0)
+
 	for _, opType := range []string{"base", "lib", "storage"} {
 		for _, op := range OpList[opType] {
-			//fmt.Printf("========================%v========================\n", op)
-			x := make([]float64, 0)
-			yt := make([]float64, 0)
-			yc := make([]float64, 0)
+			fmt.Printf("Start %v:%v...\n", opType, op)
 			for i := 0; ; i = i + 10000 {
 				tcost, ccost := RunOp(
 					vi,
@@ -252,64 +251,108 @@ func getOverview() {
 					i,
 				)
 
-				x = append(x, float64(i))
-				yt = append(yt, tcost*1000)
-				yc = append(yc, float64(ccost))
 				if tcost > 0.2 {
+					emptyT, emptyC := RunOp(
+						vi,
+						fmt.Sprintf("%v_op.js", "empty"),
+						fmt.Sprintf("do%v", "Empty"),
+						i,
+					)
+					OpInfos = append(OpInfos,
+						&OpInfo{
+							Name: fmt.Sprintf("%v:%v", opType, op),
+							Time: (tcost - emptyT) * 1e9 / float64(i),
+							Gas:  float64(ccost-emptyC) / float64(i),
+						},
+					)
 					break
 				}
 			}
-
-			graph := chart.Chart{
-				XAxis: chart.XAxis{
-					Style: chart.StyleShow(),
-					Range: &chart.ContinuousRange{
-						Min: 0.0,
-						Max: 1000000.0,
-					},
-				},
-				YAxis: chart.YAxis{
-					Style: chart.StyleShow(),
-					Range: &chart.ContinuousRange{
-						Min: 0.0,
-						Max: 200.0,
-					},
-				},
-				YAxisSecondary: chart.YAxis{
-					Style: chart.StyleShow(),
-					Range: &chart.ContinuousRange{
-						Min: 0.0,
-						Max: 20000000.0,
-					},
-				},
-				Series: []chart.Series{
-					chart.ContinuousSeries{
-						XValues: x,
-						YValues: yt,
-					},
-					chart.ContinuousSeries{
-						YAxis:   chart.YAxisSecondary,
-						XValues: x,
-						YValues: yc,
-					},
-				},
-			}
-
-			f, err := os.Create(fmt.Sprintf("%s/%s.png", opType, op))
-			if err != nil {
-				log.Fatal(err)
-			}
-			if err := graph.Render(chart.PNG, f); err != nil {
-				log.Fatal(err)
-			}
-			//fmt.Printf("Time: %0.3fs\n", tcost)
-			//fmt.Printf("CPU Cost: %vgas\n", ccost)
 		}
 	}
 
+	barsT := make([]chart.Value, 0)
+	barsG := make([]chart.Value, 0)
+	barsC := make([]chart.Value, 0)
+	for _, opInfo := range OpInfos {
+		barsT = append(barsT,
+			chart.Value{
+				Value: opInfo.Time,
+				Label: opInfo.Name,
+			},
+		)
+		barsG = append(barsG,
+			chart.Value{
+				Value: opInfo.Gas,
+				Label: opInfo.Name,
+			},
+		)
+		barsC = append(barsC,
+			chart.Value{
+				Value: opInfo.Gas / opInfo.Time * 1000,
+				Label: opInfo.Name,
+			},
+		)
+	}
+
+	graph := chart.BarChart{
+		Title:      "Time (ns)",
+		TitleStyle: chart.StyleShow(),
+		Background: chart.Style{
+			Padding: chart.Box{
+				Top: 40,
+			},
+		},
+		Height:     2048,
+		Width:      8192,
+		BarWidth:   100,
+		BarSpacing: 10,
+		XAxis: chart.Style{
+			Show:     true,
+			FontSize: 6,
+		},
+		YAxis: chart.YAxis{
+			Style: chart.Style{
+				Show: true,
+			},
+		},
+		Bars: barsT,
+	}
+
+	ft, err := os.Create("overview_time.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if err := graph.Render(chart.PNG, ft); err != nil {
+		log.Fatal(err)
+	}
+
+	fg, err := os.Create("overview_gas.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	graph.Title = "Gas (gas)"
+	graph.Bars = barsG
+	if err := graph.Render(chart.PNG, fg); err != nil {
+		log.Fatal(err)
+	}
+
+	fc, err := os.Create("overview_cost.png")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	graph.Title = "Cost (gas/us)"
+	graph.Bars = barsC
+	if err := graph.Render(chart.PNG, fc); err != nil {
+		log.Fatal(err)
+	}
 	os.RemoveAll("mvccdb")
 }
 
 func main() {
 	//getOpDetail()
+	getOverview()
 }
