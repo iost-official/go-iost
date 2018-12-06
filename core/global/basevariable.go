@@ -43,11 +43,12 @@ func (m TMode) String() string {
 
 // BaseVariableImpl is the implementation of BaseVariable
 type BaseVariableImpl struct {
-	blockChain block.Chain
-	stateDB    db.MVCCDB
-	mode       TMode
-	modeMutex  *sync.RWMutex
-	config     *common.Config
+	blockChain    block.Chain
+	stateDB       db.MVCCDB
+	mode          TMode
+	modeMutex     *sync.RWMutex
+	continuousNum int
+	config        *common.Config
 }
 
 // New return a BaseVariable instance
@@ -64,11 +65,12 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	}
 
 	return &BaseVariableImpl{
-		blockChain: blockChain,
-		stateDB:    stateDB,
-		mode:       ModeInit,
-		modeMutex:  new(sync.RWMutex),
-		config:     conf,
+		blockChain:    blockChain,
+		stateDB:       stateDB,
+		mode:          ModeInit,
+		modeMutex:     new(sync.RWMutex),
+		continuousNum: 10,
+		config:        conf,
 	}, nil
 }
 
@@ -85,6 +87,11 @@ func (g *BaseVariableImpl) BlockChain() block.Chain {
 // Config return the config
 func (g *BaseVariableImpl) Config() *common.Config {
 	return g.config
+}
+
+// Continuous return the number of continue blocks
+func (g *BaseVariableImpl) Continuous() int {
+	return g.continuousNum
 }
 
 // Mode return the mode

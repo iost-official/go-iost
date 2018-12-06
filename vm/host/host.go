@@ -17,6 +17,7 @@ import (
 // Monitor monitor interface
 type Monitor interface {
 	Call(host *Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error)
+	Validate(con *contract.Contract) error
 	Compile(con *contract.Contract) (string, error)
 }
 
@@ -123,7 +124,9 @@ func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 			return cost, ErrAbiHasInternalFunc
 		}
 	}
-	return cost, nil
+	err := h.monitor.Validate(c)
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
+	return cost, err
 }
 
 func (h *Host) checkAbiNameValid(name string) error {
@@ -158,12 +161,6 @@ func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error
 
 // SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
-	code, err := h.monitor.Compile(c)
-	if err != nil {
-		return Costs["CompileCost"], err
-	}
-	c.Code = code
-
 	cost, err := h.checkAbiValid(c)
 	if err != nil {
 		return cost, err
@@ -174,6 +171,13 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	if err != nil {
 		return cost, err
 	}
+
+	code, err := h.monitor.Compile(c)
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
+	if err != nil {
+		return cost, err
+	}
+	c.Code = code
 
 	initABI := contract.ABI{
 		Name: "init",
@@ -233,14 +237,14 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 		return cost, err
 	}
 
-	// set code  without invoking init
 	code, err := h.monitor.Compile(c)
-	cost.AddAssign(Costs["CompileCost"])
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err
 	}
 	c.Code = code
 
+	// set code  without invoking init
 	h.db.SetContract(c)
 
 	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)

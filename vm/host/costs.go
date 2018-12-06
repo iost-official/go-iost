@@ -10,12 +10,12 @@ var (
 		"GetCost":             contract.NewCost(0, 0, 100),
 		"DelCost":             contract.NewCost(0, 0, 100),
 		"KeysCost":            contract.NewCost(0, 0, 100),
-		"CompileCost":         contract.NewCost(0, 0, 10),
 		"ContextCost":         contract.NewCost(0, 0, 10),
 		"DelDelaytxCost":      contract.NewCost(0, 0, 10),
 		"DelaytxNotFoundCost": contract.NewCost(0, 0, 10),
 		"EventPrice":          contract.NewCost(0, 0, 1),
 		"ReceiptPrice":        contract.NewCost(0, 1, 0),
+		"CodePrice":           contract.NewCost(0, 0, 1),
 		"OpPrice":             contract.NewCost(0, 0, 1),
 		"ErrPrice":            contract.NewCost(0, 0, 1),
 	}
@@ -33,7 +33,7 @@ func ReceiptCost(size int) contract.Cost {
 
 // CodeSavageCost cost in deploy contract based on code size
 func CodeSavageCost(size int) contract.Cost {
-	return EventCost(size)
+	return Costs["CodePrice"].Multiply(int64(size))
 }
 
 // CommonErrorCost returns cost increased by stack layer

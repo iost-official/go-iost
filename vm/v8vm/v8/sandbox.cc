@@ -4,13 +4,13 @@
 #include "storage.h"
 #include "blockchain.h"
 #include "instruction.h"
+#include "crypto.h"
 
 #include "vm.js.h"
 #include "compile_vm.js.h"
 #include "environment.js.h"
 #include <assert.h>
 #include <cstring>
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <thread>
@@ -113,6 +113,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
+    InitCrypto(isolate, global);
 
     global->Set(
               String::NewFromUtf8(isolate, "_native_log", NewStringType::kNormal)
