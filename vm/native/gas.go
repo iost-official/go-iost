@@ -302,6 +302,11 @@ var (
 			if !h.IsValidAccount(to) {
 				return nil, cost, fmt.Errorf("invalid user name %v", to)
 			}
+			auth, cost0 := h.RequireAuth(from, "transfer")
+			cost.AddAssign(cost0)
+			if !auth {
+				return nil, cost, host.ErrPermissionLost
+			}
 			f, err := common.NewFixed(args[2].(string), database.GasDecimal)
 			if err != nil {
 				return nil, cost, fmt.Errorf("invalid gas amount %v", err)
