@@ -19,8 +19,10 @@ import (
 
 var (
 	OpList = map[string][]string{
-		"base": []string{
+		"empty": []string{
 			"Empty",
+		},
+		"base": []string{
 			"Call",
 			"New",
 			"Throw",
@@ -144,7 +146,92 @@ func init() {
 	vmPool.Init()
 }
 
-func main() {
+func getOpDetail() {
+	mvccdb, err := db.NewMVCCDB("mvccdb")
+	if err != nil {
+		log.Fatalf("New MVCC DB failed: %v", err)
+	}
+	vi := database.NewVisitor(100, mvccdb)
+
+	for _, opType := range []string{"empty", "base", "lib", "storage"} {
+		for _, op := range OpList[opType] {
+			//fmt.Printf("========================%v========================\n", op)
+			x := make([]float64, 0)
+			yt := make([]float64, 0)
+			yc := make([]float64, 0)
+			for i := 0; ; i = i + 10000 {
+				tcost, ccost := RunOp(
+					vi,
+					fmt.Sprintf("%v_op.js", opType),
+					fmt.Sprintf("do%v", op),
+					i,
+				)
+
+				x = append(x, float64(i))
+				yt = append(yt, tcost*1000)
+				yc = append(yc, float64(ccost))
+				if tcost > 0.2 {
+					break
+				}
+			}
+
+			graph := chart.Chart{
+				XAxis: chart.XAxis{
+					Style: chart.StyleShow(),
+					Range: &chart.ContinuousRange{
+						Min: 0.0,
+						Max: 1000000.0,
+					},
+				},
+				YAxis: chart.YAxis{
+					Style: chart.StyleShow(),
+					Range: &chart.ContinuousRange{
+						Min: 0.0,
+						Max: 200.0,
+					},
+				},
+				YAxisSecondary: chart.YAxis{
+					Style: chart.StyleShow(),
+					Range: &chart.ContinuousRange{
+						Min: 0.0,
+						Max: 20000000.0,
+					},
+				},
+				Series: []chart.Series{
+					chart.ContinuousSeries{
+						XValues: x,
+						YValues: yt,
+					},
+					chart.ContinuousSeries{
+						YAxis:   chart.YAxisSecondary,
+						XValues: x,
+						YValues: yc,
+					},
+				},
+			}
+
+			f, err := os.Create(fmt.Sprintf("%s/%s.png", opType, op))
+			if err != nil {
+				log.Fatal(err)
+			}
+			if err := graph.Render(chart.PNG, f); err != nil {
+				log.Fatal(err)
+			}
+			//fmt.Printf("Time: %0.3fs\n", tcost)
+			//fmt.Printf("CPU Cost: %vgas\n", ccost)
+		}
+	}
+
+	os.RemoveAll("mvccdb")
+}
+
+type OpInfo struct {
+	Name string
+	Time float64
+	Gas  float64
+}
+
+func getOverview() {
 	mvccdb, err := db.NewMVCCDB("mvccdb")
 	if err != nil {
 		log.Fatalf("New MVCC DB failed: %v", err)
@@ -221,4 +308,8 @@ func main() {
 	}
 
 	os.RemoveAll("mvccdb")
+}
+
+func main() {
+	//getOpDetail()
 }

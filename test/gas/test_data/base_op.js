@@ -4,11 +4,6 @@ class BaseOp {
     constructor() {
     }
 
-    doEmpty(num) {
-        for (let i = 0; i < num; i++) {
-        }
-    }
-
     doCall(num) {
         function F(a) {
             return F
