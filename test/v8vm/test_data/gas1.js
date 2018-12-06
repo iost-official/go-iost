@@ -9,8 +9,10 @@ function* range(N) {
 class Gas {
     constructor() {
     }
+    init() {
+    }
     assignment0() {
-        [[[[[[[[[[[[[[[[[[[{a=b[0]}]]]]]]]]]]]]]]]]]]]=[0];
+        //[[[[[[[[[[[[[[[[[[[{a=b[0]}]]]]]]]]]]]]]]]]]]]=[0];
     }
     assignment1() {
         let a = "testabcddddddddd";
@@ -45,11 +47,12 @@ class Gas {
         };
         a = a.concat(a);
     }
-    // deconstruct assignment
+    // deconstruct assignment is not allowed now
+    /*
     assignment4(N) {
         let a = new Array();
         a[N] = 1;
-        // todo should handle array assignment
+        // should handle array deconstruct assignment
         let [c,d,,...e] = a;
         a[4] = 9;
         return e;
@@ -67,10 +70,11 @@ class Gas {
     }
     assignment4444(N) {
         let a = [0, 1, [2, 3, 4]];
-        let [c,d,e] = a;
+        //let [c,d,e] = a;
         a[2][0] = 5;
-        return e;
+        return a;
     }
+    */
     counter0(N) {
         let names = Object.getOwnPropertyNames("_IOSTInstruction" + "_counter");
         let methods = new Array();
@@ -138,5 +142,4 @@ class Gas {
     }
 
 };
-module.exports = 3 * 8 / 9;
 module.exports = Gas;

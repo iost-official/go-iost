@@ -11,7 +11,8 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test assignment0", t, func(){
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment0")
-		So(err.Error(), ShouldContainSubstring, "is not iterable")
+		//So(err.Error(), ShouldContainSubstring, "is not iterable")
+		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
 
@@ -46,6 +47,8 @@ func TestInjectGas(t *testing.T) {
 		t.Log(rs, cost)
 	})
 
+	// deconstruct assignment is not allowed now
+	/*
 	Convey("test assignment4", t, func(){
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4", 10)
 		So(err, ShouldBeNil)
@@ -54,6 +57,7 @@ func TestInjectGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
+
 	Convey("test assignment44", t, func(){
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment44", 10)
 		So(err, ShouldBeNil)
@@ -69,18 +73,10 @@ func TestInjectGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
+	*/
 
 	Convey("test instruction counter0", t, func(){
 		rs, cost, err := vmPool.LoadAndCall(host, code, "counter0", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
-
-	Convey("test assignment4", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-		rs, cost, err = vmPool.LoadAndCall(host, code, "assignment4", 10000)
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
