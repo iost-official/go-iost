@@ -80,7 +80,7 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "ContractBRp9qiNMLga3r67ESf9DRUSzZ4PRwFcsQRGFtDVSmCiU")
+		So(cname, ShouldEqual, "ContractB16fmmc427BBhHyUCGzchFTosGZb5diVu88dNkaiKTFN")
 		So(r.GasUsage, ShouldEqual, 759700)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
@@ -140,7 +140,7 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 100000)
+		s.SetGas(kp.ID, 1000000)
 		s.SetRAM(kp.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, kp.ID, kp)

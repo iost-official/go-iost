@@ -401,9 +401,9 @@ func Test_SpecialChar(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 		kp := prepareAuth(t, s)
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 100000)
 
 		c, err := (&contract.Compiler{}).Parse("", code, abi)
