@@ -155,7 +155,7 @@ func getOpDetail() {
 
 	for _, opType := range []string{"empty", "base", "lib", "storage"} {
 		for _, op := range OpList[opType] {
-			//fmt.Printf("========================%v========================\n", op)
+			fmt.Printf("Start %v:%v...\n", opType, op)
 			x := make([]float64, 0)
 			yt := make([]float64, 0)
 			yc := make([]float64, 0)
@@ -178,10 +178,6 @@ func getOpDetail() {
 			graph := chart.Chart{
 				XAxis: chart.XAxis{
 					Style: chart.StyleShow(),
-					Range: &chart.ContinuousRange{
-						Min: 0.0,
-						Max: 1000000.0,
-					},
 				},
 				YAxis: chart.YAxis{
 					Style: chart.StyleShow(),
@@ -353,6 +349,6 @@ func getOverview() {
 }
 
 func main() {
-	//getOpDetail()
-	getOverview()
+	getOpDetail()
+	//getOverview()
 }
