@@ -15,4 +15,5 @@ type BaseVariable interface {
 	BlockChain() block.Chain
 	Mode() TMode
 	SetMode(m TMode)
+	Continuous() int
 }

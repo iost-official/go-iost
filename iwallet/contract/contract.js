@@ -1,6 +1,7 @@
 'use strict';
 
 let esprima = require('esprima/dist/esprima.js');
+let escodegen = require('escodegen/escodegen.js');
 
 let lang = "javascript";
 let version = "1.0.0";
@@ -61,6 +62,18 @@ function genAbiArr(stat) {
 	return abiArr;
 }
 
+function checkInvalidKeyword(tokens) {
+    for (let i = 0; i < tokens.length; i++) {
+        if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
+            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp" || tokens[i].value === "IOSTInstruction")) {
+            throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
+        }
+        if (tokens[i].type === "RegularExpression") {
+            throw new Error("use of RegularExpression is not allowed." + tokens[i].val)
+        }
+    }
+}
+
 function checkOperator(tokens) {
     for (let i = 0; i < tokens.length; i++) {
         if (tokens[i].type === "Punctuator" &&
@@ -70,6 +83,66 @@ function checkOperator(tokens) {
             throw new Error("use of +-*/% operators is not allowed");
         }
     }
+}
+
+function processOperator(node, pnode) {
+    if (node.type === "ArrayPattern" || node.type === "ObjectPattern") {
+        throw new Error("use of ArrayPattern or ObjectPattern is not allowed." + JSON.stringify(node));
+    }
+    let ops = ['+', '-', '*', '/', '%', '**', '|', '&', '^', '>>', '>>>', '<<', '==', '!=', '===', '!==', '>', '>=', '<', '<='];
+
+    if (node.type === "AssignmentExpression" && node.operator !== '=') {
+        let subnode = {};
+        subnode.operator = node.operator.substr(0, node.operator.length - 1);
+        subnode.type = 'BinaryExpression';
+        subnode.left = Object.assign({}, node.left);
+        subnode.right = node.right;
+        node.operator = '=';
+        node.right = subnode;
+
+    } else if (node.type === "BinaryExpression" && ops.includes(node.operator)) {
+        let newnode = {};
+        newnode.type = "CallExpression";
+        let calleeNode = {};
+        calleeNode.type = 'Identifier';
+        calleeNode.name = '_IOSTBinaryOp';
+        newnode.callee = calleeNode;
+        let opNode = {};
+        opNode.type = 'Literal';
+        opNode.value = node.operator;
+        opNode.raw = '\'' + node.operator + '\'';
+        newnode.arguments = [node.left, node.right, opNode];
+        node = newnode;
+    } else if (node.type === "TemplateLiteral" && (pnode === undefined || pnode.type !== "TaggedTemplateExpression")) {
+        let newnode = {};
+        newnode.type = "TaggedTemplateExpression";
+        let tagNode = {};
+        tagNode.type = 'Identifier';
+        tagNode.name = '_IOSTTemplateTag';
+        newnode.tag = tagNode;
+        newnode.quasi = node;
+        node = newnode;
+    }
+    return node;
+}
+
+function traverseOperator(node, pnode) {
+    node = processOperator(node, pnode);
+    for (let key in node) {
+        if (node.hasOwnProperty(key)) {
+            let child = node[key];
+            if (typeof child === 'object' && child !== null) {
+                node[key] = traverseOperator(child, node);
+            }
+        }
+    }
+    return node;
+}
+
+function handleOperator(ast) {
+    ast = traverseOperator(ast);
+    // generate source from ast
+    return escodegen.generate(ast);
 }
 
 function processContract(source) {
@@ -85,29 +158,25 @@ function processContract(source) {
 		return ["", ""];
 	}
 
-	checkOperator(ast.tokens);
+    checkInvalidKeyword(ast.tokens);
+	// checkOperator(ast.tokens);
+    let newSource = "use strict;\n" + handleOperator(ast);
 
-	let validRange = [];
+	//let validRange = [];
 	let className;
 	for (let stat of ast.body) {
 		if (isClassDecl(stat)) {
-			validRange.push(stat.range);
+			//validRange.push(stat.range);
 		}
 		else if (stat.type === "ExpressionStatement" && isExport(stat.expression)) {
-			validRange.push(stat.range);
+			//validRange.push(stat.range);
 			className = getExportName(stat.expression);
 		}
 	}
-
 	for (let stat of ast.body) {
 		if (isClassDecl(stat) && stat.id.type === "Identifier" && stat.id.name === className) {
 			abiArr = genAbiArr(stat);
 		}
-	}
-
-	let newSource = 'use strict;\n';
-	for (let r of validRange) {
-		newSource += source.slice(r[0], r[1]) + "\n";
 	}
 
 	let abi = {};

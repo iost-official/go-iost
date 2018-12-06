@@ -4,13 +4,13 @@
 #include "storage.h"
 #include "blockchain.h"
 #include "instruction.h"
+#include "crypto.h"
 
 #include "vm.js.h"
 #include "compile_vm.js.h"
 #include "environment.js.h"
 #include <assert.h>
 #include <cstring>
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <thread>
@@ -24,6 +24,29 @@
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
 char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
 char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
+
+const char *preloadBlockCode = R"(
+// load Block
+const blockInfo = JSON.parse(BlockChain.blockInfo());
+const block = {
+   number: blockInfo.number,
+   parentHash: blockInfo.parent_hash,
+   witness: blockInfo.witness,
+   time: blockInfo.time
+};
+
+// load tx
+const txInfo = JSON.parse(BlockChain.txInfo());
+const tx = {
+   time: txInfo.time,
+   hash: txInfo.hash,
+   expiration: txInfo.expiration,
+   gasLimit: txInfo.gas_limit,
+   gasRatio: txInfo.gas_ratio,
+   authList: txInfo.auth_list,
+   publisher: txInfo.publisher
+};)";
+
 const int sandboxMemLimit = 100000000; // 100mb
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
@@ -90,6 +113,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
+    InitCrypto(isolate, global);
 
     global->Set(
               String::NewFromUtf8(isolate, "_native_log", NewStringType::kNormal)
@@ -282,9 +306,24 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     TryCatch tryCatch(isolate);
     tryCatch.SetVerbose(true);
 
-    Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
-    Local<String> fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
+    // preload block info.
+    Local<String> source = String::NewFromUtf8(isolate, preloadBlockCode, NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, "_preload_block.js", NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
+
+    Local<Value> ret = script->Run();
+    if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+        std::string exception = reportException(isolate, context, tryCatch);
+        error = exception;
+        return;
+    }
+
+    // reset gas count
+    sbx->gasUsed = 0;
+
+    source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
+    fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
+    script = Script::Compile(source, fileName);
 
     if (script.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
@@ -292,7 +331,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         return;
     }
 
-    Local<Value> ret = script->Run();
+    ret = script->Run();
 
     if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
         isDone = true;

@@ -87,7 +87,13 @@ void InitGoStorage(putFunc, hasFunc, getFunc, delFunc,
     mapPutFunc, mapHasFunc, mapGetFunc, mapDelFunc, mapKeysFunc, mapLenFunc,
     globalHasFunc, globalGetFunc, globalMapHasFunc, globalMapGetFunc, globalMapKeysFunc, globalMapLenFunc);
 
-extern int compile(SandboxPtr, const char *code, const char **compiledCode);
+// crypto
+typedef char* (*sha3Func)(SandboxPtr, const char *, size_t *);
+
+void InitGoCrypto(sha3Func);
+
+extern int compile(SandboxPtr, const char *code, const char **compiledCode, const char **errMsg);
+extern int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result, const char **errMsg);
 extern CustomStartupData createStartupData();
 extern CustomStartupData createCompileStartupData();
 

@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 
 	. "github.com/golang/mock/gomock"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
@@ -34,6 +35,7 @@ func Init(t *testing.T) *database.Visitor {
 	vi := database.NewVisitor(100, db)
 	return vi
 }
+
 
 func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
@@ -543,18 +545,21 @@ func TestEngine_Loop(t *testing.T) {
 
 func TestEngine_Func(t *testing.T) {
 	// Please @shiqi fix it
-	t.SkipNow()
+	//t.SkipNow()
 	host, code := MyInit(t, "func")
 	_, _, err := vmPool.LoadAndCall(host, code, "func1")
 	if err == nil || err.Error() != "out of gas" {
 		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
-	//host, code = MyInit(t, "func", int64(100000000000))
-	//_, _, err = vmPool.LoadAndCall(host, code, "func1")
-	//if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
-	//	t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
-	//}
+	// illegal instruction on mac
+	/*
+	host, code = MyInit(t, "func", int64(100000000000))
+	_, _, err = vmPool.LoadAndCall(host, code, "func1")
+	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
+		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
+	}
+	*/
 
 	host, code = MyInit(t, "func")
 	rs, _, err := vmPool.LoadAndCall(host, code, "func3", 4)
@@ -577,14 +582,12 @@ func TestEngine_Func(t *testing.T) {
 
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger")
-	/*
-		_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
-		if err != nil {
-			t.Fatal("LoadAndCall for should return no error, got %s", err.Error())
-		}
-	*/
+	_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
+	if err != nil {
+		t.Fatalf("LoadAndCall for should return no error, got %s", err.Error())
+	}
 
-	_, _, err := vmPool.LoadAndCall(host, code, "visitUndefined")
+	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: TypeError: Cannot set property 'c' of undefined") {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
 	}
@@ -694,5 +697,29 @@ func TestEngine_Float64(t *testing.T) {
 	}
 	if len(rs) > 0 && rs[0] != "1881676371789.154860897069" {
 		t.Fatalf("LoadAndCall getPow except: 1881676371789.154860897069, got: %v", rs[0])
+	}
+}
+
+func TestEngine_Sha3(t *testing.T) {
+	host, code := MyInit(t, "crypto1")
+	testStr := "hello world"
+	rs, _, err := vmPool.LoadAndCall(host, code, "sha3", testStr)
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	if rs[0] != common.Base58Encode(common.Sha3([]byte(testStr))) {
+		t.Fatalf("LoadAndCall sha3 invalid result")
+	}
+}
+
+func TestEngine_ArrayOfFrom(t *testing.T) {
+	host, code := MyInit(t, "arrayfunc")
+	_, _, err := vmPool.LoadAndCall(host, code, "from")
+	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+		t.Fatalf("LoadAndCall array from error: %v", err)
+	}
+	_, _, err = vmPool.LoadAndCall(host, code, "to")
+	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
 }

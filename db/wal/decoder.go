@@ -73,22 +73,23 @@ func (d *decoder) decodeRecord(log *Log) error {
 	}
 	//Decode the record.
 	if err := log.Unmarshal(data[:recBytes]); err != nil {
-		if !d.isTornWrite(data) {
+		if d.isTornWrite(data) {
 			return io.ErrUnexpectedEOF
 		}
+		ilog.Error("Failed to unmarshal Log: ", data)
 		return err
 	}
 
 	// skip pcrc checking if the record type is crcType
-	//if log.Type != LogType_crcType {
-	d.crc.Write(log.Data)
-	if err := log.Check(d.crc.Sum64()); err != nil {
-		if !d.isTornWrite(data) {
-			return io.ErrUnexpectedEOF
+	if log.Type != LogType_crcType {
+		d.crc.Write(log.Data)
+		if err := log.Check(d.crc.Sum64()); err != nil {
+			if d.isTornWrite(data) {
+				return io.ErrUnexpectedEOF
+			}
+			return err
 		}
-		return err
 	}
-	//}
 	// Got a record, update last offset
 	d.lastOffset += frameSizeLength + recBytes + padBytes
 	return nil
@@ -108,7 +109,7 @@ func decodeFrameSize(lenField int64) (recBytes int64, padBytes int64) {
 func (d *decoder) isTornWrite(data []byte) bool {
 	//if there are more files, this one must be intact
 	if len(d.r) != 1 {
-		return true
+		return false
 	}
 
 	fileOff := d.lastOffset + frameSizeLength
@@ -138,7 +139,7 @@ func (d *decoder) isTornWrite(data []byte) bool {
 			}
 		}
 		if isZero {
-			return false
+			return true
 		}
 	}
 	return false

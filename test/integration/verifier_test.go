@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/vm/host"
 	"testing"
 
 	"github.com/iost-official/go-iost/account"
@@ -26,7 +27,7 @@ func TestTransfer(t *testing.T) {
 		kp := prepareAuth(t, s)
 
 		s.SetGas(kp.ID, 100000)
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		Reset(func() {
@@ -42,7 +43,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 313100)
+			So(r.GasUsage, ShouldEqual, 715000)
 		})
 
 		Convey("test of token memo", func() {
@@ -69,7 +70,7 @@ func TestSetCode(t *testing.T) {
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 300)
 
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
@@ -79,8 +80,8 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "ContractBRp9qiNMLga3r67ESf9DRUSzZ4PRwFcsQRGFtDVSmCiU")
-		So(r.GasUsage, ShouldEqual, 174800)
+		So(cname, ShouldEqual, "ContractB16fmmc427BBhHyUCGzchFTosGZb5diVu88dNkaiKTFN")
+		So(r.GasUsage, ShouldEqual, 759700)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
@@ -96,7 +97,7 @@ func TestStringGas(t *testing.T) {
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 1000)
 
 		c, err := s.Compile("so", "test_data/stringop", "test_data/stringop")
@@ -106,22 +107,22 @@ func TestStringGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
-		r, err = s.Call(cname, "add2", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f1", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
 		gas2 := r.GasUsage
 
-		r, err = s.Call(cname, "add9", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f2", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 1200, 1400)
+		So(r.GasUsage-gas2, ShouldEqual,1400)
 
-		r, err = s.Call(cname, "equal9", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f3", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(r.GasUsage-gas2, ShouldEqual, 1400)
 
-		r, err = s.Call(cname, "superadd9", "[]", kp.ID, kp)
+		r, err = s.Call(cname, "f4", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
 		So(r.GasUsage-gas2, ShouldBeGreaterThan, 1400)
@@ -139,7 +140,7 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		kp := prepareAuth(t, s)
-		s.SetGas(kp.ID, 100000)
+		s.SetGas(kp.ID, 1000000)
 		s.SetRAM(kp.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, kp.ID, kp)
@@ -152,7 +153,7 @@ func TestJS_Database(t *testing.T) {
 		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"array")), ShouldEqual, "[1,2,3]")
 		So(database.Unmarshal(s.Visitor.Get(cname+"-"+"obj")), ShouldEqual, `{"foo":"bar"}`)
 
-		s.SetGas(kp.ID, 100000)
+		s.SetGas(kp.ID, 1000000)
 		r, err := s.Call(cname, "read", `[]`, kp.ID, kp)
 
 		So(err, ShouldBeNil)
@@ -168,7 +169,7 @@ func TestAmountLimit(t *testing.T) {
 	Convey("test of amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		So(err, ShouldBeNil)
@@ -210,7 +211,7 @@ func TestAmountLimit(t *testing.T) {
 		Convey("test out of amount limit, use signers ID", func() {
 			s.SetAccount(account.NewInitAccount("test0", testID[0], testID[0]))
 			s.Visitor.SetTokenBalanceFixed("iost", "test0", "1000")
-			s.SetGas("test0", 100000)
+			s.SetGas("test0", 1000000)
 			s.SetRAM("test0", 10000)
 
 			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, "test0", testID[2], "200"), "test0", kp)
@@ -258,7 +259,7 @@ func TestTxAmountLimit(t *testing.T) {
 	Convey("test of tx amount limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		So(err, ShouldBeNil)
@@ -328,7 +329,7 @@ func TestTokenMemo(t *testing.T) {
 	Convey("test of token memo", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		So(err, ShouldBeNil)
@@ -348,10 +349,10 @@ func TestTokenMemo(t *testing.T) {
 
 func TestNativeVM_GasLimit(t *testing.T) {
 	ilog.Stop()
-	Convey("test of amount limit", t, func() {
+	Convey("test native vm gas limit", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 		if err != nil {
@@ -364,15 +365,14 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			Contract:   "token.iost",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], "10"),
-		}}, nil, 55000, 100, 10000000, 0)
+		}}, nil, 550000, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, testID[0], kp)
 		t.Log(err, r, r.Status)
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 		So(r.Status.Message, ShouldContainSubstring, "gas limit exceeded")
-
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 	})
 }
 
@@ -413,6 +413,7 @@ func TestAuthority(t *testing.T) {
 		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
+		s.Visitor.SetContract(native.GasABI())
 
 		kp := prepareAuth(t, s)
 		s.SetGas(kp.ID, 1e8)
@@ -432,7 +433,22 @@ func TestAuthority(t *testing.T) {
 		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", kp.ID, kp.ID}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
+
+		Convey("referrer can be updated 1 time per 30 days", func(){
+			acc, _ := host.ReadAuth(s.Visitor, "myidid")
+			So(acc.Referrer, ShouldEqual, kp.ID)
+			So(acc.ReferrerUpdateTime, ShouldEqual, s.Head.Time)
+			s.SetGas("myidid", 10000000)
+			r, err = s.Call("auth.iost", "UpdateReferrer", array2json([]interface{}{"myidid", "hahaha"}), "myidid", kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "referrer can only be updated one time per 30 days")
+			s.Head.Time += 30 * 24 * 3600 * 1e9
+			r, err = s.Call("auth.iost", "UpdateReferrer", array2json([]interface{}{"myidid", "hahaha"}), "myidid", kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			acc, _ = host.ReadAuth(s.Visitor, "myidid")
+			So(acc.Referrer, ShouldEqual, "hahaha")
+		})
 	})
 
 }
-

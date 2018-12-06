@@ -31,6 +31,8 @@ char* goGlobalMapKeys(SandboxPtr, const char *,  const char *, const char *, cha
 char* goGlobalMapLen(SandboxPtr, const char *, const char *, const char *, size_t *, size_t *);
 
 char* goConsoleLog(SandboxPtr, const char *, const char *);
+
+char* goSha3(SandboxPtr, const char *, size_t *);
 */
 import "C"
 import (
@@ -128,6 +130,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.globalMapKeysFunc)(C.goGlobalMapKeys),
 		(C.globalMapLenFunc)(C.goGlobalMapLen),
 	)
+	C.InitGoCrypto((C.sha3Func)(C.goSha3))
 	C.loadVM(sbx.context, C.int(vmType))
 }
 
@@ -150,16 +153,49 @@ func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
 	C.loadVM(sbx.context, C.int(vmType))
 }
 
+// Validate contract before save, return err if invalid
+func (sbx *Sandbox) Validate(contract *contract.Contract) error {
+	code := moduleReplacer.Replace(contract.Code)
+	cCode := C.CString(code)
+	defer C.free(unsafe.Pointer(cCode))
+
+	abi, _ := json.Marshal(contract.Info.Abi)
+	cAbi := C.CString(string(abi))
+	defer C.free(unsafe.Pointer(cAbi))
+
+	var (
+		cResult *C.char
+		cErrMsg *C.char
+	)
+	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg)
+
+	result := C.GoString(cResult)
+	C.free(unsafe.Pointer(cResult))
+
+	if ret == 1 || result != "success" {
+		errMsg := C.GoString(cErrMsg)
+		C.free(unsafe.Pointer(cErrMsg))
+		return fmt.Errorf("validate code error: %v, result: %v", errMsg, result)
+	}
+
+	return nil
+}
+
 // Compile contract before execution, return compiled code
 func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	code := moduleReplacer.Replace(contract.Code)
 	cCode := C.CString(code)
 	defer C.free(unsafe.Pointer(cCode))
 
-	var cCompiledCode *C.char
-	ret := C.compile(sbx.context, cCode, &cCompiledCode)
+	var (
+		cCompiledCode *C.char
+		cErrMsg       *C.char
+	)
+	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg)
 	if ret == 1 {
-		return "", errors.New("compile code error")
+		errMsg := C.GoString(cErrMsg)
+		C.free(unsafe.Pointer(cErrMsg))
+		return "", errors.New(errMsg)
 	}
 
 	compiledCode := C.GoString(cCompiledCode)
@@ -193,27 +229,6 @@ ret;
 	}
 
 	return fmt.Sprintf(`
-// load Block
-const blockInfo = JSON.parse(BlockChain.blockInfo());
-const block = {
-    number: blockInfo.number,
-    parentHash: blockInfo.parent_hash,
-    witness: blockInfo.witness,
-    time: blockInfo.time
-};
-
-// load tx
-const txInfo = JSON.parse(BlockChain.txInfo());
-const tx = {
-    time: txInfo.time,
-    hash: txInfo.hash,
-    expiration: txInfo.expiration,
-    gasLimit: txInfo.gas_limit,
-    gasRatio: txInfo.gas_ratio,
-    authList: txInfo.auth_list,
-    publisher: txInfo.publisher
-};
-
 %s;
 var obj = new module.exports;
 

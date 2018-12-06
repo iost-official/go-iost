@@ -26,6 +26,7 @@ var (
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
 	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
+	metricsDelayedBlock          = metrics.NewCounter("iost_delayed_block", nil)
 )
 
 var (
@@ -34,10 +35,13 @@ var (
 )
 
 var (
-	blockReqTimeout = 3 * time.Second
-	continuousNum   = 10
-	tWitness        = ""
-	tContinuousNum  = 0
+	blockReqTimeout   = 3 * time.Second
+	continuousNum     int
+	subSlotTime       = 300 * time.Millisecond
+	genBlockTime      = 250 * time.Millisecond
+	last2GenBlockTime = 30 * time.Millisecond
+	tWitness          = ""
+	tContinuousNum    = 0
 )
 
 type verifyBlockMessage struct {
@@ -87,10 +91,16 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 	}
+	continuousNum = baseVariable.Continuous()
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	err := p.blockCache.Recover(&p)
 	if err != nil {
-		ilog.Error("Failed to recover blockCache")
+		ilog.Error("Failed to recover blockCache, err: ", err)
+		ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
+		err = p.blockCache.NewWAL(baseVariable.Config())
+		if err != nil {
+			ilog.Error(" Failed to NewWAL, err: ", err)
+		}
 	}
 	close(p.quitGenerateMode)
 	return &p
@@ -301,54 +311,19 @@ func (p *PoB) scheduleLoop() {
 			t := time.Now()
 			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == p.account.ID {
 				staticProperty.SlotUsed[t.Unix()] = true
-				generateBlockTicker := time.NewTicker(time.Millisecond * 300)
+				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
 				for num := 0; num < continuousNum; num++ {
-					p.txPool.Lock()
-					var limitTime time.Duration
-					if num < continuousNum-2 {
-						limitTime = time.Millisecond * 250
-					} else {
-						limitTime = time.Millisecond * 30
-					}
-					blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
-					if err != nil {
-						ilog.Error(err)
-						p.txPool.Release()
-						continue
-					}
-
-					ptx, _ := p.txPool.PendingTx()
-					ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
-						num,
-						p.account.ID[:10],
-						blk.Head.Time,
-						blk.Head.Number,
-						p.blockCache.LinkedRoot().Head.Number,
-						len(blk.Txs),
-						ptx.Size(),
-						calculateTime(blk),
-					)
-					p.txPool.Release()
-
-					blkByte, err := blk.Encode()
-					if err != nil {
-						ilog.Error(err.Error())
-						continue
-					}
-					p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
-					metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
-					err = p.handleRecvBlock(blk)
-					if err != nil {
-						ilog.Errorf("[pob] handle block from myself, error, err:%v", err)
-						continue
-					}
+					p.gen(num)
 					if num == continuousNum-1 {
 						break
 					}
 					select {
 					case <-generateBlockTicker.C:
+					}
+					if witnessOfNanoSec(t.UnixNano()) != p.account.ID {
+						break
 					}
 				}
 				close(p.quitGenerateMode)
@@ -361,6 +336,47 @@ func (p *PoB) scheduleLoop() {
 			return
 		}
 	}
+}
+
+func (p *PoB) gen(num int) {
+	limitTime := genBlockTime
+	if num >= continuousNum-2 {
+		limitTime = last2GenBlockTime
+	}
+	p.txPool.Lock()
+	blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
+	p.txPool.Release()
+	if err != nil {
+		ilog.Error(err)
+		return
+	}
+	p.printStatistics(num, blk)
+	blkByte, err := blk.Encode()
+	if err != nil {
+		ilog.Error(err)
+		return
+	}
+	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
+	metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+	err = p.handleRecvBlock(blk)
+	if err != nil {
+		ilog.Errorf("[pob] handle block from myself, err:%v", err)
+		return
+	}
+}
+
+func (p *PoB) printStatistics(num int, blk *block.Block) {
+	ptx, _ := p.txPool.PendingTx()
+	ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
+		num,
+		p.account.ID[:10],
+		blk.Head.Time,
+		blk.Head.Number,
+		p.blockCache.LinkedRoot().Head.Number,
+		len(blk.Txs),
+		ptx.Size(),
+		calculateTime(blk),
+	)
 }
 
 // RecoverBlock recover block from block cache wal
@@ -426,6 +442,10 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
 			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
 		tContinuousNum++
+	}
+	if witnessOfNanoSec(time.Now().UnixNano()) != node.Head.Witness {
+		ilog.Debugf("hasn't process the block in the slot belonging to the witness")
+		metricsDelayedBlock.Add(1, nil)
 	}
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, replay)

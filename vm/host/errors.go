@@ -12,9 +12,11 @@ var (
 	ErrInvalidAmount    = errors.New("invalid amount")
 	ErrGasLimitExceeded = errors.New("gas limit exceeded")
 
-	ErrContractNotFound = errors.New("contract not exists")
-	ErrUpdateRefused    = errors.New("update refused")
-	ErrDestroyRefused   = errors.New("destroy refused")
+	ErrContractNotFound   = errors.New("contract not exists")
+	ErrContractExists     = errors.New("contract exists")
+	ErrAbiHasInternalFunc = errors.New("abi has internal function")
+	ErrUpdateRefused      = errors.New("update refused")
+	ErrDestroyRefused     = errors.New("destroy refused")
 
 	ErrCoinExists         = errors.New("coin exists")
 	ErrCoinNotExists      = errors.New("coin not exists")

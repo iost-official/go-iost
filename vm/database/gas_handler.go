@@ -16,6 +16,8 @@ const (
 	GasStockKey = "gs"
 	// GasPledgeKey : who pledge how much coins for me
 	GasPledgeKey = "gp"
+	// TransferableGasKey :
+	TransferableGasKey = "tg"
 )
 
 // decimals of gas
@@ -39,48 +41,59 @@ type GasHandler struct {
 	MapHandler
 }
 
+// EmptyGas ...
+func EmptyGas() *common.Fixed {
+	return &common.Fixed{
+		Value:   0,
+		Decimal: GasDecimal,
+	}
+}
+
 // If no key exists, return 0
-func (g *GasHandler) getFixed(owner string, key string) *common.Fixed {
-	result := MustUnmarshal(g.BasicHandler.Get(GasContractName + Separator + key + owner))
+func (g *GasHandler) getFixed(key string) *common.Fixed {
+	result := MustUnmarshal(g.BasicHandler.Get(GasContractName + Separator + key))
 	if result == nil {
-		//ilog.Errorf("GasHandler failed %v %v", owner, key)
+		//ilog.Errorf("GasHandler failed %v", key)
 		return nil
 	}
 	value, ok := result.(*common.Fixed)
 	if !ok {
-		ilog.Errorf("GasHandler failed %v %v %v", owner, key, result)
+		ilog.Errorf("GasHandler failed %v %v", key, result)
 		return nil
 	}
 	return value
 }
 
+// putFixed ...
+func (g *GasHandler) putFixed(key string, value *common.Fixed) {
+	if value.Err != nil {
+		ilog.Fatalf("GasHandler putFixed %v", value)
+	}
+	//fmt.Printf("putFixed %v %v\n", key, value)
+	g.BasicHandler.Put(GasContractName+Separator+key, MustMarshal(value))
+}
+
 // GasRate ...
 func (g *GasHandler) GasRate(name string) *common.Fixed {
-	f := g.getFixed(name, GasRateKey)
+	f := g.getFixed(name + GasRateKey)
 	if f == nil {
-		return &common.Fixed{
-			Value:   0,
-			Decimal: GasDecimal,
-		}
+		return EmptyGas()
 	}
 	return f
 }
 
 // GasLimit ...
 func (g *GasHandler) GasLimit(name string) *common.Fixed {
-	f := g.getFixed(name, GasLimitKey)
+	f := g.getFixed(name + GasLimitKey)
 	if f == nil {
-		return &common.Fixed{
-			Value:   0,
-			Decimal: GasDecimal,
-		}
+		return EmptyGas()
 	}
 	return f
 }
 
 // GasUpdateTime ...
 func (g *GasHandler) GasUpdateTime(name string) int64 {
-	value := MustUnmarshal(g.BasicHandler.Get(GasContractName + Separator + GasUpdateTimeKey + name))
+	value := MustUnmarshal(g.BasicHandler.Get(GasContractName + Separator + name + GasUpdateTimeKey))
 	if value == nil {
 		return 0
 	}
@@ -89,26 +102,39 @@ func (g *GasHandler) GasUpdateTime(name string) int64 {
 
 // GasStock `gasStock` means the gas amount at last update time.
 func (g *GasHandler) GasStock(name string) *common.Fixed {
-	f := g.getFixed(name, GasStockKey)
+	f := g.getFixed(name + GasStockKey)
 	if f == nil {
-		return &common.Fixed{
-			Value:   0,
-			Decimal: GasDecimal,
-		}
+		return EmptyGas()
 	}
 	return f
 }
 
+// TGas ...
+func (g *GasHandler) TGas(name string) *common.Fixed {
+	f := g.getFixed(name + TransferableGasKey)
+	if f == nil {
+		return EmptyGas()
+	}
+	return f
+}
+
+// ChangeTGas ...
+func (g *GasHandler) ChangeTGas(name string, delta *common.Fixed) {
+	oldValue := g.TGas(name)
+	newValue := oldValue.Add(delta)
+	g.putFixed(name+TransferableGasKey, newValue)
+}
+
 // GasPledge ...
 func (g *GasHandler) GasPledge(name string, pledger string) *common.Fixed {
-	ok := g.MapHandler.MHas(GasPledgeKey+name, pledger)
+	ok := g.MapHandler.MHas(GasContractName+Separator+name+GasPledgeKey, pledger)
 	if !ok {
 		return &common.Fixed{
 			Value:   0,
 			Decimal: 8,
 		}
 	}
-	result := MustUnmarshal(g.MapHandler.MGet(GasPledgeKey+name, pledger))
+	result := MustUnmarshal(g.MapHandler.MGet(GasContractName+Separator+name+GasPledgeKey, pledger))
 	value, ok := result.(*common.Fixed)
 	if !ok {
 		return nil
@@ -118,11 +144,11 @@ func (g *GasHandler) GasPledge(name string, pledger string) *common.Fixed {
 
 // PledgerInfo get who pledged how much coins for me
 func (g *GasHandler) PledgerInfo(name string) []PledgerInfo {
-	pledgers := g.MapHandler.MKeys(GasPledgeKey + name)
-	//ilog.Errorf("pledge keys %v %v", pledgers, name)
+	pledgers := g.MapHandler.MKeys(GasContractName + Separator + name + GasPledgeKey)
 	result := make([]PledgerInfo, 0)
 	for _, pledger := range pledgers {
-		v := MustUnmarshal(g.MapHandler.MGet(GasPledgeKey+name, pledger))
+		s := g.MapHandler.MGet(GasContractName+Separator+name+GasPledgeKey, pledger)
+		v := MustUnmarshal(s)
 		pledge, ok := v.(*common.Fixed)
 		if !ok {
 			return make([]PledgerInfo, 0)
@@ -132,29 +158,29 @@ func (g *GasHandler) PledgerInfo(name string) []PledgerInfo {
 	return result
 }
 
-// CurrentTotalGas return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
-func (g *GasHandler) CurrentTotalGas(name string, now int64) (result *common.Fixed) {
-	if now <= 0 {
-		ilog.Fatalf("CurrentTotalGas failed. invalid now time %v", now)
+// PGasAtTime return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
+func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
+	if t <= 0 {
+		ilog.Fatalf("PGasAtTime failed. invalid t time %v", t)
 	}
 	result = g.GasStock(name)
 	gasUpdateTime := g.GasUpdateTime(name)
 	var durationSeconds int64
 	if gasUpdateTime > 0 {
-		durationSeconds = (now - gasUpdateTime) / 1e9
+		durationSeconds = (t - gasUpdateTime) / 1e9
 		if durationSeconds > gasMaxIncreaseSeconds {
 			durationSeconds = gasMaxIncreaseSeconds
 		}
 	}
 	if durationSeconds < 0 {
-		ilog.Fatalf("CurrentTotalGas durationSeconds invalid %v = %v - %v", durationSeconds, now, gasUpdateTime)
+		ilog.Fatalf("PGasAtTime durationSeconds invalid %v = %v - %v", durationSeconds, t, gasUpdateTime)
 	}
 	rate := g.GasRate(name)
 	limit := g.GasLimit(name)
-	//fmt.Printf("CurrentTotalGas user %v stock %v rate %v limit %v\n", name, result, rate, limit)
+	//fmt.Printf("PGasAtTime user %v stock %v rate %v limit %v\n", name, result, rate, limit)
 	delta := rate.Times(durationSeconds)
 	if delta == nil {
-		ilog.Errorf("CurrentTotalGas may overflow rate %v durationSeconds %v", rate, durationSeconds)
+		ilog.Errorf("PGasAtTime may overflow rate %v durationSeconds %v", rate, durationSeconds)
 		return
 	}
 	result = result.Add(delta)

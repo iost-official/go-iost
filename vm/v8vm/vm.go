@@ -14,7 +14,7 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
-const vmRefLimit = 100
+const vmRefLimit = 30
 
 // CVMInitOnce vm init once
 var CVMInitOnce = sync.Once{}
@@ -65,6 +65,10 @@ func NewVMWithChannel(vmType vmPoolType, jsPath string, releaseChannel chan *VM)
 
 func (e *VM) init() error {
 	return nil
+}
+
+func (e *VM) validate(c *contract.Contract) error {
+	return e.sandbox.Validate(c)
 }
 
 func (e *VM) compile(contract *contract.Contract) (string, error) {

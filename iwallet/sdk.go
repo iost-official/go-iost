@@ -35,6 +35,8 @@ type SDK struct {
 	checkResultDelay    float32
 	checkResultMaxRetry int32
 	useLongestChain     bool
+
+	verbose bool
 }
 
 var sdk = &SDK{}
@@ -204,6 +206,10 @@ func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 }
 
 func (s *SDK) sendTx(stx *tx.Tx) (string, error) {
+	fmt.Println("sending tx")
+	if sdk.verbose {
+		fmt.Println(stx.String())
+	}
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return "", err
@@ -234,7 +240,10 @@ func (s *SDK) checkTransaction(txHash string) bool {
 			fmt.Println("exec tx failed: ", txReceipt.Message)
 			fmt.Println("full error information: ", marshalTextString(txReceipt))
 		} else {
-			fmt.Println("exec tx done. ", marshalTextString(txReceipt))
+			fmt.Println("exec tx done")
+			if s.verbose {
+				fmt.Println(marshalTextString(txReceipt))
+			}
 			return true
 		}
 		break
@@ -344,7 +353,6 @@ func (s *SDK) PledgeForGas(gasPledged int64) error {
 		return err
 	}
 	var txHash string
-	fmt.Printf("sending tx\n %v \n", stx.String())
 	txHash, err = s.sendTx(stx)
 	if err != nil {
 		return err
@@ -366,9 +374,11 @@ func (s *SDK) PledgeForGas(gasPledged int64) error {
 func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*tx.Action
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
-	acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
+	if initialRAM > 0 {
+		acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
+	}
 	acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
-	if initialCoins != 0 {
+	if initialCoins > 0 {
 		acts = append(acts, tx.NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
 	}
 	trx, err := s.createTx(acts)
@@ -380,19 +390,18 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 		return err
 	}
 	var txHash string
-	fmt.Printf("sending tx\n %v \n", stx.String())
 	txHash, err = s.sendTx(stx)
 	if err != nil {
 		return err
 	}
-	fmt.Printf("send tx done\n")
+	fmt.Println("send tx done")
 	fmt.Println("the create user transaction hash is:", txHash)
 	if s.checkResult {
 		if !s.checkTransaction(txHash) {
 			return fmt.Errorf("create new account %v transaction failed", newID)
 		}
 	}
-	fmt.Printf("\nbalance of %v\n", newID)
+	fmt.Printf("balance of %v\n", newID)
 	info, err := s.getAccountInfo(newID)
 	if err != nil {
 		return err

@@ -150,13 +150,22 @@ func (f *Fixed) Multiply(other *Fixed) *Fixed {
 	return &Fixed{Value: fpnNew.Value * otherNew.Value, Decimal: fpnNew.Decimal + otherNew.Decimal}
 }
 
-// Times multiply a scalar
+// Times multiply a int scalar
 func (f *Fixed) Times(i int64) *Fixed {
 	if multiplyOverflow(f.Value, i) {
 		f.Err = errOverflow
 		return nil
 	}
 	return &Fixed{Value: f.Value * i, Decimal: f.Decimal}
+}
+
+// TimesF multiply a float scalar
+func (f *Fixed) TimesF(v float64) *Fixed {
+	if multiplyOverflow(f.Value, int64(math.Floor(v))) || multiplyOverflow(f.Value, int64(math.Ceil(v))) {
+		f.Err = errOverflow
+		return nil
+	}
+	return &Fixed{Value: int64(float64(f.Value) * v), Decimal: f.Decimal}
 }
 
 // Div divide by a scalar
@@ -173,6 +182,13 @@ func (f *Fixed) LessThan(other *Fixed) bool {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
 	f.Err = err
 	return fpnNew.Value < otherNew.Value
+}
+
+// BiggerThan ...
+func (f *Fixed) BiggerThan(other *Fixed) bool {
+	fpnNew, otherNew, err := UnifyDecimal(f, other)
+	f.Err = err
+	return fpnNew.Value > otherNew.Value
 }
 
 // NewFixed generate Fixed from string and decimal, will truncate if decimal is smaller. Decimal < 0 means auto detecting decimal

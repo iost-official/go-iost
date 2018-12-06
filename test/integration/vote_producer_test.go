@@ -15,6 +15,14 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
+func prepareFakeBase(t *testing.T, s *Simulator) {
+	// deploy fake base.iost
+	err := setNonNativeContract(s, "base.iost", "base.js", "./test_data/")
+	if err != nil {
+		t.Fatal(err)
+	}
+}
+
 func prepareProducerVote(t *testing.T, s *Simulator, kp *account.KeyPair) {
 	// deploy vote.iost
 	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
@@ -51,7 +59,7 @@ func Test_InitProducer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 
@@ -85,7 +93,7 @@ func Test_RegisterProducer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
@@ -118,7 +126,7 @@ func Test_LogInOut(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
@@ -154,7 +162,8 @@ func Test_Vote1(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
 		prepareToken(t, s, kp)
 		prepareProducerVote(t, s, kp)
 		for i := 0; i < 12; i += 2 {
@@ -216,7 +225,7 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number = 200
-			r, err = s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			r, err = s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			// acc	: score			, votes
@@ -242,7 +251,7 @@ func Test_Vote1(t *testing.T) {
 			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[6], "260000000"), kp.ID, kp)
 			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[8], "250000000"), kp.ID, kp)
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 240000000
@@ -263,7 +272,7 @@ func Test_Vote1(t *testing.T) {
 			// do stat
 			s.Call("vote_producer.iost", "Unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[16], testID[12], "60000000"), kp8.ID, kp8)
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 240000000
@@ -283,7 +292,7 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: 0				, 240000000
@@ -303,7 +312,7 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^1*30000000	, 240000000
@@ -323,7 +332,7 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^2*30000000	, 240000000
@@ -343,7 +352,7 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^3*30000000	, 240000000
@@ -363,7 +372,7 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^4*30000000	, 240000000
@@ -383,7 +392,7 @@ func Test_Vote1(t *testing.T) {
 
 			// do stat
 			s.Head.Number += 200
-			s.Call("vote_producer.iost", "Stat", `[]`, kp.ID, kp)
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
 			// 0	: 0				, 0
 			// 1	: q^5*30000000	, 240000000

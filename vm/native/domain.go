@@ -4,24 +4,24 @@ import (
 	"errors"
 
 	"fmt"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 )
 
 // DomainABIs list of domain abi
-var DomainABIs map[string]*abi
+var DomainABIs *abiSet
 
 func init() {
-	DomainABIs = make(map[string]*abi)
-	register(DomainABIs, link)
-	register(DomainABIs, transferURL)
-
+	DomainABIs = newAbiSet()
+	DomainABIs.Register(link)
+	DomainABIs.Register(transferURL)
 }
 
 func checkURLValid(name string) error {
-	if len(name) <= 0 || len(name) > 32 {
-		return fmt.Errorf("url invalid. url length should be between 1,32  got %v", name)
+	if len(name) < 5 || len(name) > 16 {
+		return fmt.Errorf("url invalid. url length should be between 5,16 got %v", name)
 	}
 	for _, ch := range name {
 		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_' || ch == '.') {
