@@ -40,8 +40,8 @@ class Gas {
     }
 
     assignment2(N) {
-        // todo should forbid Array.from
-        Array.from({length: N}, (val, index) => index);
+        // should forbid Array.from
+        //Array.from({length: N}, (val, index) => index);
     }
     assignment3(N) {
         // can't reach Arrayconcat to get back original prototype
@@ -110,7 +110,7 @@ class Gas {
     }
     library1(N) {
         let a = require("inject_gas");
-        console.log(Object.getOwnPropertyNames(a));
+        console.log(Object.getOwnPropertyNames(a).toString());
         console.log(a.toString());
         console.log(a("123"));
         console.log(new a("123"));
