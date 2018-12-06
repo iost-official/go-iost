@@ -9,15 +9,15 @@
   "gxDependencies": [
     {
       "author": "whyrusleeping",
-      "hash": "QmZChCsSt8DctjceaL56Eibc29CVQq4dGKRXC5JRZ6Ppae",
+      "hash": "QmcuXC5cxs79ro2cUuHs4HQ2bkDLJUYokwL8aivcX6HW3C",
       "name": "go-log",
-      "version": "1.5.7"
+      "version": "1.5.8"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7",
+      "hash": "QmRKLtwMw131aK7ugC3G7ybpumMz78YrJe5dzneyindvG1",
       "name": "go-multiaddr",
-      "version": "1.3.0"
+      "version": "1.3.6"
     },
     {
       "author": "whyrusleeping",
@@ -27,44 +27,44 @@
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n",
+      "hash": "QmNiJiXwWE3kRhZrC5ej3kSjWHm337pYfhjLGSCDNKJP2s",
       "name": "go-libp2p-crypto",
-      "version": "2.0.1"
+      "version": "2.0.4"
     },
     {
       "author": "jbenet",
-      "hash": "QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai",
+      "hash": "QmQVUtnrNGtCRkCMpXgpApfzQjc8FDaDVxHqWH8cnZQeh5",
       "name": "go-multiaddr-net",
-      "version": "1.6.3"
+      "version": "1.6.6"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmQscWDtDBDsWAM58aY6gU2KtxyFFmvvZgdfJExYPLgtXA",
+      "hash": "QmXZVrmSiWPyuET6BMbGK3PjzVnQBrcnYc4GkHKhK2KXLp",
       "name": "mafmt",
-      "version": "1.2.7"
+      "version": "1.2.9"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmbNepETomvmXfz1X5pHNFD2QuPqnqi47dTd94QJWSorQ3",
+      "hash": "QmcqU6QUDSXprb1518vYDGczrTJTyGwLG9eUa5iNX4xUtS",
       "name": "go-libp2p-peer",
-      "version": "2.3.8"
+      "version": "2.4.3"
     },
     {
       "author": "multiformats",
-      "hash": "QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8",
+      "hash": "QmerPMzPk1mJVowm8KgmoknWa4yCYvvugMPsgWmDNUvDLW",
       "name": "go-multihash",
-      "version": "1.0.8"
+      "version": "1.0.9"
     },
     {
       "author": "magik6k",
-      "hash": "QmaixNkKwtinV3umL5VD1VDD5CQjnZhXY31awM2YHTzbui",
+      "hash": "QmVoK2ivqzp5ZgWiEdBNFbKH7nzf9C4wPYr8cH7CGPMHtC",
       "name": "go-ds-badger",
-      "version": "1.10.0"
+      "version": "1.11.1"
     },
     {
-      "hash": "QmaRb5yNXKonhbkpNxNawoydk4N6es6b4fPj19sjEKsh5D",
+      "hash": "Qmf4xQhNomPNhrtZc67qSnfJSjxjXs9LWvknJtSXwimPrM",
       "name": "go-datastore",
-      "version": "3.4.0"
+      "version": "3.4.1"
     },
     {
       "hash": "QmQjMHF8ptRgx4E57UFMiT4YM6kqaJeYxZ1MCDX23aw4rK",
@@ -85,9 +85,9 @@
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmccqjKZUTqp4ikWNyAbjBuP5HEdqSqRuAr9mcEhYab54a",
+      "hash": "QmUhiHo586S2XpAFvkL1xDxeNwVHVQg7sDTxzS8ituQawr",
       "name": "go-ds-leveldb",
-      "version": "1.2.1"
+      "version": "1.2.2"
     }
   ],
   "gxVersion": "0.4.0",
@@ -95,6 +95,6 @@
   "license": "MIT",
   "name": "go-libp2p-peerstore",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "2.0.4"
+  "version": "2.0.11"
 }
 

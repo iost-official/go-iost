@@ -31,7 +31,10 @@ var _ pstore.AddrBook = (*memoryAddrBook)(nil)
 // memoryAddrBook manages addresses.
 type memoryAddrBook struct {
 	addrmu sync.Mutex
-	addrs  map[peer.ID]map[string]expiringAddr
+	// Use pointers to save memory. Maps always leave some fraction of their
+	// space unused. storing the *values* directly in the map will
+	// drastically increase the space waste. In our case, by 6x.
+	addrs map[peer.ID]map[string]*expiringAddr
 
 	nextGC time.Time
 
@@ -40,7 +43,7 @@ type memoryAddrBook struct {
 
 func NewAddrBook() pstore.AddrBook {
 	return &memoryAddrBook{
-		addrs:      make(map[peer.ID]map[string]expiringAddr),
+		addrs:      make(map[peer.ID]map[string]*expiringAddr),
 		subManager: NewAddrSubManager(),
 	}
 }
@@ -94,7 +97,7 @@ func (mab *memoryAddrBook) AddAddrs(p peer.ID, addrs []ma.Multiaddr, ttl time.Du
 
 	amap := mab.addrs[p]
 	if amap == nil {
-		amap = make(map[string]expiringAddr, len(addrs))
+		amap = make(map[string]*expiringAddr, len(addrs))
 		mab.addrs[p] = amap
 	}
 	exp := time.Now().Add(ttl)
@@ -106,7 +109,7 @@ func (mab *memoryAddrBook) AddAddrs(p peer.ID, addrs []ma.Multiaddr, ttl time.Du
 		addrstr := string(addr.Bytes())
 		a, found := amap[addrstr]
 		if !found || exp.After(a.Expires) {
-			amap[addrstr] = expiringAddr{Addr: addr, Expires: exp, TTL: ttl}
+			amap[addrstr] = &expiringAddr{Addr: addr, Expires: exp, TTL: ttl}
 
 			mab.subManager.BroadcastAddr(p, addr)
 		}
@@ -127,7 +130,7 @@ func (mab *memoryAddrBook) SetAddrs(p peer.ID, addrs []ma.Multiaddr, ttl time.Du
 
 	amap := mab.addrs[p]
 	if amap == nil {
-		amap = make(map[string]expiringAddr, len(addrs))
+		amap = make(map[string]*expiringAddr, len(addrs))
 		mab.addrs[p] = amap
 	}
 
@@ -141,7 +144,7 @@ func (mab *memoryAddrBook) SetAddrs(p peer.ID, addrs []ma.Multiaddr, ttl time.Du
 		addrstr := string(addr.Bytes())
 
 		if ttl > 0 {
-			amap[addrstr] = expiringAddr{Addr: addr, Expires: exp, TTL: ttl}
+			amap[addrstr] = &expiringAddr{Addr: addr, Expires: exp, TTL: ttl}
 
 			mab.subManager.BroadcastAddr(p, addr)
 		} else {

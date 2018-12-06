@@ -14,9 +14,9 @@
       "version": "1.0.0"
     },
     {
-      "hash": "QmZChCsSt8DctjceaL56Eibc29CVQq4dGKRXC5JRZ6Ppae",
+      "hash": "QmcuXC5cxs79ro2cUuHs4HQ2bkDLJUYokwL8aivcX6HW3C",
       "name": "go-log",
-      "version": "1.5.7"
+      "version": "1.5.8"
     },
     {
       "author": "whyrusleeping",
@@ -26,9 +26,9 @@
     },
     {
       "author": "multiformats",
-      "hash": "QmV6FjemM1K8oXjrvuq3wuVWWoU2TLDPmNnKrxHzY3v6Ai",
+      "hash": "QmQVUtnrNGtCRkCMpXgpApfzQjc8FDaDVxHqWH8cnZQeh5",
       "name": "go-multiaddr-net",
-      "version": "1.6.3"
+      "version": "1.6.6"
     },
     {
       "author": "whyrusleeping",
@@ -38,9 +38,9 @@
     },
     {
       "author": "multiformats",
-      "hash": "QmYmsdtJ3HsodkePE3eU3TsCaP2YvPZJ4LoXnNkDE5Tpt7",
+      "hash": "QmRKLtwMw131aK7ugC3G7ybpumMz78YrJe5dzneyindvG1",
       "name": "go-multiaddr",
-      "version": "1.3.0"
+      "version": "1.3.6"
     }
   ],
   "gxVersion": "0.10.0",
@@ -48,6 +48,6 @@
   "license": "",
   "name": "go-libp2p-nat",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "0.8.7"
+  "version": "0.8.9"
 }
 

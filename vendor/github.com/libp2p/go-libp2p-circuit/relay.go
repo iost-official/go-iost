@@ -33,8 +33,9 @@ type Relay struct {
 	ctx      context.Context
 	self     peer.ID
 
-	active bool
-	hop    bool
+	active    bool
+	hop       bool
+	discovery bool
 
 	incoming chan *Conn
 
@@ -49,8 +50,9 @@ type Relay struct {
 type RelayOpt int
 
 var (
-	OptActive = RelayOpt(0)
-	OptHop    = RelayOpt(1)
+	OptActive    = RelayOpt(0)
+	OptHop       = RelayOpt(1)
+	OptDiscovery = RelayOpt(2)
 )
 
 type RelayError struct {
@@ -78,13 +80,18 @@ func NewRelay(ctx context.Context, h host.Host, upgrader *tptu.Upgrader, opts ..
 			r.active = true
 		case OptHop:
 			r.hop = true
+		case OptDiscovery:
+			r.discovery = true
 		default:
 			return nil, fmt.Errorf("unrecognized option: %d", opt)
 		}
 	}
 
 	h.SetStreamHandler(ProtoID, r.handleNewStream)
-	h.Network().Notify(r.Notifiee())
+
+	if r.discovery {
+		h.Network().Notify(r.Notifiee())
+	}
 
 	return r, nil
 }

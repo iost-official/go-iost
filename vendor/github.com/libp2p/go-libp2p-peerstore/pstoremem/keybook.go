@@ -49,7 +49,7 @@ func (mkb *memoryKeyBook) PubKey(p peer.ID) ic.PubKey {
 		return pk
 	}
 	pk, err := p.ExtractPublicKey()
-	if err == nil && pk != nil {
+	if err == nil {
 		mkb.Lock()
 		mkb.pks[p] = pk
 		mkb.Unlock()

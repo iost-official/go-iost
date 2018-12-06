@@ -63,7 +63,10 @@
     ["libp2p/go-libp2p-raft", "go-libp2p-raft", "consensus implementation over raft"],
 
     "Pubsub",
-    ["libp2p/go-floodsub", "go-floodsub", "basic implementation of pubsub driven by flooding"],
+    ["libp2p/go-libp2p-pubsub", "go-libp2p-pubsub", "multiple pubsub over libp2p implementations"],
+
+    "RPC",
+    ["libp2p/go-libp2p-gorpc", "go-libp2p-gorpc", "a simple RPC library for libp2p"],
 
     "Metrics",
     ["libp2p/go-libp2p-metrics", "go-libp2p-metrics", "libp2p metrics interfaces/collectors"],
@@ -73,7 +76,7 @@
     ["libp2p/go-libp2p-crypto", "go-libp2p-crypto", "libp2p key types"],
     ["libp2p/go-libp2p-protocol", "go-libp2p-protocol", "libp2p protocol datatype"],
     ["libp2p/go-libp2p-kbucket", "go-libp2p-kbucket", "Kademlia routing table helper types"],
-    
+
     "Utilities/miscellaneous",
     ["libp2p/go-libp2p-loggables", "go-libp2p-loggables", "logging helpers"],
     ["libp2p/go-maddr-filter", "go-maddr-filter", "multiaddr filtering helpers"],

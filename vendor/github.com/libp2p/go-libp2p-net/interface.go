@@ -204,7 +204,7 @@ const (
 // notifications from a Network.
 type Notifiee interface {
 	Listen(Network, ma.Multiaddr)      // called when network starts listening on an addr
-	ListenClose(Network, ma.Multiaddr) // called when network starts listening on an addr
+	ListenClose(Network, ma.Multiaddr) // called when network stops listening on an addr
 	Connected(Network, Conn)           // called when a connection opened
 	Disconnected(Network, Conn)        // called when a connection closed
 	OpenedStream(Network, Stream)      // called when a stream opened

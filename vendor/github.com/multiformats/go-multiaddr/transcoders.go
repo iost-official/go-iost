@@ -73,6 +73,9 @@ func ip6zoneBtS(b []byte) (string, error) {
 }
 
 func ip6zoneVal(b []byte) error {
+	if len(b) == 0 {
+		return fmt.Errorf("invalid length (should be > 0)")
+	}
 	// Not supported as this would break multiaddrs.
 	if bytes.IndexByte(b, '/') >= 0 {
 		return fmt.Errorf("IPv6 zone ID contains '/': %s", string(b))
