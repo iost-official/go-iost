@@ -73,9 +73,10 @@ func (d *decoder) decodeRecord(log *Log) error {
 	}
 	//Decode the record.
 	if err := log.Unmarshal(data[:recBytes]); err != nil {
-		if !d.isTornWrite(data) {
+		if d.isTornWrite(data) {
 			return io.ErrUnexpectedEOF
 		}
+		ilog.Error("Failed to unmarshal Log: ", data)
 		return err
 	}
 
