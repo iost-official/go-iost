@@ -69,7 +69,7 @@ func Test_NewVote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 
 		Convey("test NewVote", func() {
@@ -103,7 +103,7 @@ func Test_AddOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -134,7 +134,7 @@ func Test_RemoveOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -161,7 +161,7 @@ func Test_Vote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -263,7 +263,7 @@ func Test_DelVote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -308,7 +308,7 @@ func Test_MixVoteOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 

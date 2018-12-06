@@ -195,14 +195,18 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	} else {
 		blkTime = as.bc.LinkedRoot().Head.Time
 	}
-	totalGas := dbVisitor.CurrentTotalGas(req.GetName(), blkTime)
+	pGas := dbVisitor.PGasAtTime(req.GetName(), blkTime)
+	tGas := dbVisitor.TGas(req.GetName())
+	totalGas := pGas.Add(tGas)
 	gasLimit := dbVisitor.GasLimit(req.GetName())
 	gasRate := dbVisitor.GasRate(req.GetName())
 	pledgedInfo := dbVisitor.PledgerInfo(req.GetName())
 	ret.GasInfo = &rpcpb.Account_GasInfo{
-		CurrentTotal:  totalGas.ToFloat(),
-		Limit:         gasLimit.ToFloat(),
-		IncreaseSpeed: gasRate.ToFloat(),
+		CurrentTotal:    totalGas.ToFloat(),
+		PledgeGas:       pGas.ToFloat(),
+		TransferableGas: tGas.ToFloat(),
+		Limit:           gasLimit.ToFloat(),
+		IncreaseSpeed:   gasRate.ToFloat(),
 	}
 	for _, p := range pledgedInfo {
 		ret.GasInfo.PledgedInfo = append(ret.GasInfo.PledgedInfo, &rpcpb.Account_PledgeInfo{

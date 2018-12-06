@@ -56,6 +56,8 @@ class Account {
         this._checkIdValid(id);
         let account = {};
         account.id = id;
+        account.referrer = BlockChain.publisher();
+        account.referrer_update_time = block.time;
         account.permissions = {};
         account.permissions.active = {
             name: "active",
@@ -78,6 +80,21 @@ class Account {
             threshold: 1,
         };
         this._saveAccount(account, BlockChain.publisher());
+        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([BlockChain.publisher(), "30000"]));
+    }
+
+    UpdateReferrer(id, referrer) {
+        this._ra(id);
+        if (referrer === id) {
+            throw new Error("referrer cannot be oneself");
+        }
+        let acc = this._loadAccount(id);
+        const one_month = 30 * 24 * 3600 * 1e9;
+        if (acc.referrer !== null && block.time < acc.referrer_update_time + one_month) {
+            throw new Error("referrer can only be updated one time per 30 days");
+        }
+        acc.referrer = referrer;
+        this._saveAccount(acc);
     }
     AddPermission(id, perm, thres) {
         this._ra(id);

@@ -191,6 +191,7 @@ func (m *CacheMVCCDB) isValidTable(table string) bool {
 
 // Get returns the value of specify key and table
 func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
+	//fmt.Printf("Get %v %v\n", table, key)
 	if !m.isValidTable(table) {
 		return "", ErrTableNotValid
 	}
@@ -215,6 +216,7 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 
 // Put will insert the key-value pair into the table
 func (m *CacheMVCCDB) Put(table string, key string, value string) error {
+	//fmt.Printf("Put %v %v %v\n", table, key, value)
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
 	}

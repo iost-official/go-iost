@@ -25,7 +25,7 @@ func Test_IssueBonus(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareFakeBase(t, s)
 
 		// deploy issue.iost
@@ -61,7 +61,7 @@ func Test_ExchangeIOST(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareIssue(s, kp)
 		prepareFakeBase(t, s)
 

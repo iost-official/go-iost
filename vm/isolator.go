@@ -68,11 +68,14 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
-		gas := i.h.CurrentGas(i.publisherID)
-		limit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
-		if gas.LessThan(limit) {
-			ilog.Infof("publisher's gas balance is less than gas limit: publisher %v current gas:%v, gas limit:%v\n", i.publisherID, gas.ToString(), limit.ToString())
-			return fmt.Errorf("%v gas less than price * limit %v <  %v", i.publisherID, gas.ToString(), limit.ToString())
+		if i.h.GasPayed(t.Publisher)*t.GasRatio >= t.GasLimit {
+			return fmt.Errorf("gas limit should be larger")
+		}
+		gas := i.h.AllGas(i.publisherID)
+		gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
+		if gas.LessThan(gasLimit) {
+			ilog.Infof("publisher's gas balance is less than gas limit: publisher %v current gas:%v, gas limit:%v\n", i.publisherID, gas.ToString(), gasLimit.ToString())
+			return fmt.Errorf("%v gas less than limit %v < %v", i.publisherID, gas.ToString(), gasLimit.ToString())
 		}
 	}
 	loadTxInfo(i.h, t, i.publisherID)
@@ -173,7 +176,11 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 
 // Run actions in tx
 func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
-	i.h.Context().GSet("gas_limit", i.t.GasLimit/i.t.GasRatio)
+	vmGasLimit := i.t.GasLimit/i.t.GasRatio - i.h.GasPayed()
+	if vmGasLimit <= 0 {
+		ilog.Fatalf("vmGasLimit < 0. It should not happen. %v / %v < %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPayed())
+	}
+	i.h.Context().GSet("gas_limit", vmGasLimit)
 	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
 
 	i.tr = tx.NewTxReceipt(i.t.Hash())
@@ -205,38 +212,36 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 	}
 
 	for _, action := range i.t.Actions {
-		cost, status, ret, receipts, err := i.runAction(*action)
-		ilog.Debugf("run action : %v, result is %v", action, status.Code)
-		ilog.Debug("used cost > ", cost)
-		ilog.Debugf("status > \n%v\n", status)
-		ilog.Debug("return value: ", ret)
+		actionCost, status, ret, receipts, err := i.runAction(*action)
+		ilog.Debugf("run action : %v, result is %v\n", action, status.Code)
+		ilog.Debugf("used cost %v\n", actionCost)
+		ilog.Debugf("status %v\n", status)
+		ilog.Debugf("return value: %v\n", ret)
 
 		if err != nil {
 			return nil, err
 		}
 
 		i.tr.Status = status
-		gasLimit := i.h.Context().GValue("gas_limit").(int64)
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
-			cost.CPU = gasLimit
-			cost.Net = 0
+			actionCost.CPU = vmGasLimit
+			actionCost.Net = 0
 		}
-		if cost.ToGas() > gasLimit {
+		if actionCost.ToGas() > vmGasLimit {
+			//ilog.Errorf("vm limit gas exceed %v(%v) > %v", actionCost.ToGas(), actionCost, vmGasLimit)
 			i.tr.Status = &tx.Status{Code: tx.ErrorRuntime, Message: host.ErrGasLimitExceeded.Error()}
-			cost.CPU = gasLimit
-			cost.Net = 0
+			actionCost.CPU = vmGasLimit
+			actionCost.Net = 0
 		}
 
-		i.tr.GasUsage += cost.ToGas() * i.t.GasRatio
 		if status.Code == 0 {
 			for k, v := range i.h.Costs() {
 				i.tr.RAMUsage[k] = v.Data
 			}
 		}
 
-		i.h.Context().GSet("gas_limit", gasLimit-cost.ToGas())
-
-		i.h.PayCost(cost, i.publisherID)
+		i.h.Context().GSet("gas_limit", vmGasLimit-actionCost.ToGas())
+		i.h.PayCost(actionCost, i.publisherID)
 
 		if status.Code != tx.Success {
 			ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
@@ -256,7 +261,10 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 
 // PayCost as name
 func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
-	err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
+	if i.t.GasLimit < i.h.GasPayed()*i.t.GasRatio {
+		ilog.Fatalf("total gas cost is above limit %v < %v * %v", i.t.GasLimit, i.h.GasPayed(), i.t.GasRatio)
+	}
+	payedGas, err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 	if err != nil {
 		ilog.Errorf("DoPay failed, rollback %v", err)
 		i.h.DB().Rollback()
@@ -264,12 +272,12 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 		i.tr.RAMUsage = make(map[string]int64)
 		i.tr.Status.Code = tx.ErrorBalanceNotEnough
 		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
-
-		err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
+		payedGas, err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 		if err != nil {
 			panic(err)
 		}
 	}
+	i.tr.GasUsage = payedGas.Value
 	return i.tr, nil
 }
 
