@@ -77,12 +77,13 @@ const IOSTCrypto = new _IOSTCrypto;
 const _IOSTInstruction_counter = new IOSTInstruction;
 
 // + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
-let _IOSTBinaryOp = function(left, right, op) {
+const _IOSTBinaryOp = function(left, right, op) {
     if ((typeof left === "string" || typeof right === "string") &&
         (op === "+" || op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
         _IOSTInstruction_counter.incr(left === null || left === undefined ? 0 : left.toString().length);
         _IOSTInstruction_counter.incr(right === null || right === undefined ? 0 : right.toString().length);
     }
+    _IOSTInstruction_counter.incr(3);
     switch (op) {
         case '+':
             return left + right;
@@ -125,6 +126,18 @@ let _IOSTBinaryOp = function(left, right, op) {
         case '<=':
             return left <= right;
     }
+};
+
+const _IOSTTemplateTag = function(strings, ...keys) {
+    _IOSTInstruction_counter.incr(8);
+    let res = new String("");
+    for (let i = 0; _IOSTInstruction_counter.incr(6),i < strings.length - 1; _IOSTInstruction_counter.incr(3),i++) {
+        _IOSTInstruction_counter.incr(23);
+        res = res.concat(strings[i], keys[i]);
+    }
+    _IOSTInstruction_counter.incr(26);
+    res = res.concat(strings[strings.length - 1]);
+    return res.toString();
 };
 
 const console = new Console;

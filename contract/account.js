@@ -38,12 +38,12 @@ class Account {
         if (block.number === 0) {
             return
         }
-        if (id.length < 6 || id.length > 32) {
-            throw new Error("id invalid. id length should be between 6,32 > " + id)
+        if (id.length < 5 || id.length > 11) {
+            throw new Error("id invalid. id length should be between 5,11 > " + id)
         }
         for (let i in id) {
             let ch = id[i];
-            if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
+            if (!(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch === '_')) {
                 throw new Error("id invalid. id contains invalid character > " + ch);
             }
         }

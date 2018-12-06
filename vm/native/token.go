@@ -175,8 +175,8 @@ func genAmount(h *host.Host, tokenName string, amount int64) (amountStr string, 
 }
 
 func checkTokenNameValid(name string) error {
-	if len(name) <= 0 || len(name) > 32 {
-		return fmt.Errorf("token name invalid. token name length should be between 1,32  got %v", name)
+	if len(name) < 2 || len(name) > 16 {
+		return fmt.Errorf("token name invalid. token name length should be between 2,16 got %v", name)
 	}
 	for _, ch := range name {
 		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_') {
