@@ -2,9 +2,11 @@
 
 // expression to be charged for some instruction, used to calculate inject value
 const chargedExpression = {
+    ThrowStatement: 24,
+    // expression
     CallExpression: 8,
+    TaggedTemplateExpression: 8,
     NewExpression: 8,
-    ThrowStatement: 6,
     YieldExpression: 6,
     MemberExpression: 4,
     MetaProperty: 4,
@@ -13,7 +15,20 @@ const chargedExpression = {
     BinaryExpression: 3,
     UnaryExpression: 3,
     LogicalExpression: 3,
-    ConditionalExpression: 3
+    ConditionalExpression: 3,
+
+    ObjectExpression: 3,
+    ArrayExpression: 1,
+    FunctionExpression: 3,
+    ArrowFunctionExpression: 3,
+    // declaration
+    ClassDeclaration: 3,
+    FunctionDeclaration: 3,
+    VariableDeclarator: 3,
+    VariableDeclaratorWithoutInit: 1,
+    MethodDefinition: 3,
+    // literal
+    StringLiteral: 1
 };
 // statement before which can inject gas, used to find inject location
 const InjectableStatement = {
@@ -279,8 +294,21 @@ function processNode(node, parentNode, lastInjection) {
     } else {
 
         let value = chargedExpression[node.type];
-        if (!value) {
-            return [newLastInjection, {}];
+        if (value === null || value === undefined) {
+            if (node.type === "Literal" && typeof node.value === "string") {
+                value = chargedExpression["StringLiteral"] * node.value.length;
+            } else {
+                return [newLastInjection, {}];
+            }
+        }
+        if (node.type === "VariableDeclarator" && (node.init === null || node.init === undefined)) {
+            value = chargedExpression["VariableDeclaratorWithoutInit"]
+        }
+        if (node.type === "ObjectExpression" && node.properties !== undefined && node.properties.length > 0) {
+            value = value * node.properties.length;
+        }
+        if (node.type === "ArrayExpression" && node.elements !== undefined && node.elements.length > 0) {
+            value = value * node.elements.length;
         }
         if (newLastInjection === null) {
             newLastInjection = addInjection(node.range[0], InjectType.gasIncrWithSemicolon, 0);
@@ -288,7 +316,6 @@ function processNode(node, parentNode, lastInjection) {
         injectionMap.get(newLastInjection.pos)[newLastInjection.index].value += value;
         return [newLastInjection, {}];
     }
-
 }
 
 function traverse(node, parentNode, lastInjection) {
@@ -375,6 +402,15 @@ function processOperator(node, pnode) {
         newnode.tag = tagNode;
         newnode.quasi = node;
         node = newnode;
+    } else if (node.type === "SpreadElement") {
+        let newnode = {};
+        newnode.type = "CallExpression";
+        let calleeNode = {};
+        calleeNode.type = 'Identifier';
+        calleeNode.name = '_IOSTSpreadElement';
+        newnode.callee = calleeNode;
+        newnode.arguments = [node.argument];
+        node.argument = newnode;
     }
     return node;
 }
