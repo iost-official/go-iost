@@ -131,7 +131,7 @@ const _IOSTBinaryOp = function(left, right, op) {
 const _IOSTTemplateTag = function(strings, ...keys) {
     _IOSTInstruction_counter.incr(8);
     let res = new String("");
-    for (let i = 0; _IOSTInstruction_counter.incr(6),i < strings.length - 1; _IOSTInstruction_counter.incr(3),i++) {
+    for (let i = 0; i < strings.length - 1; i++) {
         _IOSTInstruction_counter.incr(23);
         res = res.concat(strings[i], keys[i]);
     }
@@ -141,7 +141,7 @@ const _IOSTTemplateTag = function(strings, ...keys) {
 };
 
 const _IOSTSpreadElement = function (args) {
-    if (args !== undefined && args != null && args.length > 0) {
+    if (args !== undefined && args !== null && args.length > 0) {
         _IOSTInstruction_counter.incr(args.length);
     }
     return args;

@@ -80,7 +80,8 @@ function genInjectionStr(injectionPoint) {
 function checkInvalidKeyword(tokens) {
     for (let i = 0; i < tokens.length; i++) {
         if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
-            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp" || tokens[i].value === "IOSTInstruction")) {
+            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp" || tokens[i].value === "IOSTInstruction" ||
+             tokens[i].value === "_IOSTTemplateTag" || tokens[i].value === "_IOSTSpreadElement")) {
             throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
         }
         if (tokens[i].type === "RegularExpression") {
