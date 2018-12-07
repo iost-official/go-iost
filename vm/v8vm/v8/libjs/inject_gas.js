@@ -263,6 +263,13 @@ function processNode(node, parentNode, lastInjection) {
         let injectionPoint1 = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
         let injectionPoint2 = addInjectionPoint(node.consequent, InjectType.gasIncrWithComma, 0);
         let injectionPoint3 = addInjectionPoint(node.alternate, InjectType.gasIncrWithComma, 0);
+
+        let value = chargedExpression[node.type];
+        if (newLastInjection === null) {
+            newLastInjection = addInjection(node.range[0], InjectType.gasIncrWithSemicolon, 0);
+        }
+        injectionMap.get(newLastInjection.pos)[newLastInjection.index].value += value;
+
         return [newLastInjection, {
             "test": injectionPoint1,
             "consequent": injectionPoint2,
