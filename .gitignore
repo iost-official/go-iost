@@ -204,13 +204,8 @@ core/block/txDB/
 bak/
 blockDB/
 
-p2p/priv.key
-storage/
-iserver/iserver
-iserver/blockDB/
-iserver/netpath2/
-iserver/netpath3/
-iserver/txDB/
+/p2p/priv.key
+/storage/
 
 iwallet/sc/
 iwallet/testTX.py
