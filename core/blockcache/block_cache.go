@@ -404,12 +404,18 @@ func (bc *BlockCacheImpl) updateLongest() {
 // AddWithWit add block with witnessList
 func (bc *BlockCacheImpl) AddWithWit(blk *block.Block, witnessList WitnessList) (bcn *BlockCacheNode) {
 	bcn = bc.Add(blk)
+	if bcn == nil {
+		return nil
+	}
 	bcn.WitnessList = witnessList
-	return
+	return bcn
 }
 
 // Add is add a block
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
+	if bc.LinkedRoot().Head.Number >= blk.Head.Number {
+		return nil
+	}
 	newNode, nok := bc.hmget(blk.HeadHash())
 	if nok && newNode.Type != Virtual {
 		return newNode

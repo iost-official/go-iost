@@ -5,8 +5,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"github.com/gogo/protobuf/proto"
-	"github.com/iost-official/go-iost/ilog"
 	"hash/crc64"
 	"io"
 	"os"
@@ -14,6 +12,9 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/gogo/protobuf/proto"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 var (
@@ -21,7 +22,7 @@ var (
 	// The actual size might be larger than this. In general, the default
 	// value should be used, but this is defined as an exported variable
 	// so that tests can set a different segment size.
-	SegmentSizeBytes int64 = 16 * 1000 * 1000 // 16MB
+	SegmentSizeBytes int64 = 8 * 1000 * 1000 // 8MB
 
 	// ErrMetadataConflict metadata not consist
 	ErrMetadataConflict = errors.New("wal: conflicting metadata found")
