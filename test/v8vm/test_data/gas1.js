@@ -152,5 +152,12 @@ class Gas {
         }
         return data;
     }
+
+    length0(a) {
+        String.prototype.toString = function () {
+            return {length: -100};
+        };
+        a.concat("a");
+    }
 };
 module.exports = Gas;
