@@ -26,6 +26,7 @@ type Simulator struct {
 	Head     *block.BlockHead
 	Logger   *ilog.Logger
 	Mvcc     db.MVCCDB
+	GasLimit int64
 }
 
 // NewSimulator get a simulator with default settings
@@ -46,7 +47,8 @@ func NewSimulator() *Simulator {
 			Witness:    "witness",
 			Time:       int64(1541541540 * 1000 * 1000 * 1000),
 		},
-		Logger: ilog.DefaultLogger(),
+		Logger:   ilog.DefaultLogger(),
+		GasLimit: 100000000,
 	}
 	return s
 }
@@ -69,12 +71,12 @@ func (s *Simulator) SetAccount(acc *account.Account) {
 func (s *Simulator) SetGas(id string, i int64) {
 	prefix := database.GasContractName + database.Separator
 	value := &common.Fixed{
-		Value:   i * 10e2,
+		Value:   i * 100,
 		Decimal: 2,
 	}
 	valueStr := database.MustMarshal(value)
-	s.Visitor.Put(prefix+database.GasStockKey+id, valueStr)
-	s.Visitor.Put(prefix+database.GasLimitKey+id, valueStr)
+	s.Visitor.Put(prefix+id+database.GasStockKey, valueStr)
+	s.Visitor.Put(prefix+id+database.GasLimitKey, valueStr)
 	s.Visitor.Commit()
 }
 
@@ -110,7 +112,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Contract:   "system.iost",
 		ActionName: "SetCode",
 		Data:       string(jargs),
-	}}, nil, 10000000, 100, s.Head.Time+10000000, 0)
+	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0)
 
 	trx.Time = s.Head.Time
 
@@ -159,7 +161,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, 100000000, 100, s.Head.Time+10000000, 0)
+	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0)
 
 	trx.Time = s.Head.Time
 

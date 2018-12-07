@@ -44,7 +44,7 @@ func array2json(ss []interface{}) string {
 	return string(x)
 }
 
-func prepareContract(s *Simulator) {
+func createAccountsWithResource(s *Simulator) {
 	for i := 0; i < 18; i += 2 {
 		s.SetAccount(account.NewInitAccount(testID[i], testID[i], testID[i]))
 		s.SetGas(testID[i], 100000000)

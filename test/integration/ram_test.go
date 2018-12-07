@@ -7,9 +7,9 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 
@@ -18,7 +18,7 @@ func TestRAM(t *testing.T) {
 	defer s.Clear()
 	ilog.Stop()
 
-	prepareContract(s)
+	createAccountsWithResource(s)
 	contractName := "ram.iost"
 	err := setNonNativeContract(s, contractName, "ram.js", ContractPath)
 	if err != nil {
@@ -31,7 +31,7 @@ func TestRAM(t *testing.T) {
 	}
 	kp := prepareAuth(t, s)
 	createToken(t, s, kp)
-	s.SetGas(kp.ID, 1000000)
+	s.SetGas(kp.ID, 10000000)
 
 	s.Head.Number = 0
 	r, err := s.Call(contractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin)

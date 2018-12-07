@@ -370,6 +370,14 @@
           "format": "double",
           "title": "current total gas amount"
         },
+        "transferable_gas": {
+          "type": "number",
+          "format": "double"
+        },
+        "pledge_gas": {
+          "type": "number",
+          "format": "double"
+        },
         "increase_speed": {
           "type": "number",
           "format": "double",

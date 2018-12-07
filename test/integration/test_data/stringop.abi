@@ -3,19 +3,19 @@
   "version": "1.0.0",
   "abi": [
     {
-      "name": "add2",
+      "name": "f1",
       "args": []
     },
     {
-      "name": "add9",
+      "name": "f2",
       "args": []
     },
     {
-      "name": "equal9",
+      "name": "f3",
       "args": []
     },
     {
-      "name": "superadd9",
+      "name": "f4",
       "args": []
     }
   ]

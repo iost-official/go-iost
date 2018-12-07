@@ -2,6 +2,7 @@ package native
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/vm/database"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
@@ -49,6 +50,8 @@ func init() {
 	gasABIs.Register(constructor)
 	gasABIs.Register(pledgeGas)
 	gasABIs.Register(unpledgeGas)
+	gasABIs.Register(rewardTGas)
+	gasABIs.Register(transferTGas)
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
@@ -103,7 +106,7 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 		finalCost.AddAssign(cost)
 		return finalCost, nil
 	}
-	cost, _ = h.GasManager.RefreshGas(name)
+	cost, _ = h.GasManager.RefreshPGas(name)
 	finalCost.AddAssign(cost)
 	rateOld, cost := h.GasManager.GasRate(name)
 	finalCost.AddAssign(cost)
@@ -257,6 +260,66 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+			return []interface{}{}, cost, nil
+		},
+	}
+	rewardTGas = &abi{
+		name: "reward",
+		args: []string{"string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			cost = contract.Cost0()
+			//fmt.Println("context:" + h.Context().String())
+			ok, cost0 := h.RequireAuth("auth.iost", "active")
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, fmt.Errorf("reward can only be called within auth.iost")
+			}
+			user := args[0].(string)
+			if !h.IsValidAccount(user) {
+				return nil, cost, fmt.Errorf("invalid user name %v", args[1])
+			}
+			f, err := common.NewFixed(args[1].(string), database.GasDecimal)
+			if err != nil {
+				return nil, cost, fmt.Errorf("invalid reward amount %v", err)
+			}
+			cost0 = h.ChangeTGas(user, f)
+			cost.AddAssign(cost0)
+			tgas, cost := h.TGas(user)
+			cost.AddAssign(cost)
+			return []interface{}{tgas.ToString()}, cost, nil
+		},
+	}
+	transferTGas = &abi{
+		name: "transfer",
+		args: []string{"string", "string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			cost = contract.Cost0()
+			from := args[0].(string)
+			if !h.IsValidAccount(from) {
+				return nil, cost, fmt.Errorf("invalid user name %v", from)
+			}
+			to := args[1].(string)
+			if !h.IsValidAccount(to) {
+				return nil, cost, fmt.Errorf("invalid user name %v", to)
+			}
+			auth, cost0 := h.RequireAuth(from, "transfer")
+			cost.AddAssign(cost0)
+			if !auth {
+				return nil, cost, host.ErrPermissionLost
+			}
+			f, err := common.NewFixed(args[2].(string), database.GasDecimal)
+			if err != nil {
+				return nil, cost, fmt.Errorf("invalid gas amount %v", err)
+			}
+			tGas, cost0 := h.TGas(from)
+			cost.AddAssign(cost0)
+			if tGas.LessThan(f) {
+				return nil, cost, fmt.Errorf("transferable gas not enough %v < %v", tGas.ToString(), f.ToString())
+			}
+			cost0 = h.ChangeTGas(from, f.Neg())
+			cost.AddAssign(cost0)
+			cost0 = h.ChangeTGas(to, f)
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
