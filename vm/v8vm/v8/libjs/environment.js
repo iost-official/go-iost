@@ -418,8 +418,8 @@
     const Arraysplice = Array.prototype.splice;
     Array.prototype.splice = function() {
         _IOSTInstruction_counter.incr(this.length);
-        if (arguments.length === 3 && arguments[2] !== undefined && arguments[2] != null && arguments[2].length > 0) {
-            _IOSTInstruction_counter.incr(arguments[2].length);
+        if (arguments.length >= 3) {
+            _IOSTInstruction_counter.incr(arguments.length - 2);
         }
         return Arraysplice.call(this, ...arguments);
     };
