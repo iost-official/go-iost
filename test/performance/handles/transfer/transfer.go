@@ -22,7 +22,7 @@ var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgy
 var contractID string
 var sdk = iwallet.SDK{}
 
-var testID = "testID" + strconv.FormatInt(time.Now().Unix(), 10)
+var testID = "I" + strconv.FormatInt(time.Now().Unix(), 10)
 
 type transferHandle struct{}
 
