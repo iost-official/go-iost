@@ -70,11 +70,6 @@ var DefaultListenAddrs = func(cfg *Config) error {
 	))
 }
 
-// DefaultEnableRelay enables relay dialing and listening by default
-var DefaultEnableRelay = func(cfg *Config) error {
-	return cfg.Apply(EnableRelay())
-}
-
 // Complete list of default options and when to fallback on them.
 //
 // Please *DON'T* specify default options any other way. Putting this all here
@@ -106,10 +101,6 @@ var defaults = []struct {
 	{
 		fallback: func(cfg *Config) bool { return cfg.Peerstore == nil },
 		opt:      DefaultPeerstore,
-	},
-	{
-		fallback: func(cfg *Config) bool { return !cfg.RelayCustom },
-		opt:      DefaultEnableRelay,
 	},
 }
 

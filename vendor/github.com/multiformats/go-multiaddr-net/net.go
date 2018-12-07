@@ -167,7 +167,7 @@ func (d *Dialer) DialContext(ctx context.Context, remote ma.Multiaddr) (Conn, er
 	// ok, Dial!
 	var nconn net.Conn
 	switch rnet {
-	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6", "unix":
+	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
 		nconn, err = d.Dialer.DialContext(ctx, rnet, rnaddr)
 		if err != nil {
 			return nil, err
@@ -178,9 +178,7 @@ func (d *Dialer) DialContext(ctx context.Context, remote ma.Multiaddr) (Conn, er
 
 	// get local address (pre-specified or assigned within net.Conn)
 	local := d.LocalAddr
-	// This block helps us avoid parsing addresses in transports (such as unix
-	// sockets) that don't have local addresses when dialing out.
-	if local == nil && nconn.LocalAddr().String() != "" {
+	if local == nil {
 		local, err = FromNetAddr(nconn.LocalAddr())
 		if err != nil {
 			return nil, err
@@ -245,14 +243,9 @@ func (l *maListener) Accept() (Conn, error) {
 		return nil, err
 	}
 
-	var raddr ma.Multiaddr
-	// This block protects us in transports (i.e. unix sockets) that don't have
-	// remote addresses for inbound connections.
-	if nconn.RemoteAddr().String() != "" {
-		raddr, err = FromNetAddr(nconn.RemoteAddr())
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert conn.RemoteAddr: %s", err)
-		}
+	raddr, err := FromNetAddr(nconn.RemoteAddr())
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert connn.RemoteAddr: %s", err)
 	}
 
 	return wrap(nconn, l.laddr, raddr), nil

@@ -1,7 +1,7 @@
 package manet
 
 import (
-	"net"
+	"bytes"
 
 	ma "github.com/multiformats/go-multiaddr"
 )
@@ -24,13 +24,17 @@ var (
 	IP6Unspecified = ma.StringCast("/ip6/::")
 )
 
+// Loopback multiaddr prefixes. Any multiaddr beginning with one of the
+// following byte sequences is considered a loopback multiaddr.
+var loopbackPrefixes = [][]byte{
+	{ma.P_IP4, 127}, // 127.*
+	{ma.P_IP6, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0xff, 0xff, 127}, // ::ffff:127.*
+	IP6Loopback.Bytes(), // ::1
+}
+
 // IsThinWaist returns whether a Multiaddr starts with "Thin Waist" Protocols.
 // This means: /{IP4, IP6}[/{TCP, UDP}]
 func IsThinWaist(m ma.Multiaddr) bool {
-	m = zoneless(m)
-	if m == nil {
-		return false
-	}
 	p := m.Protocols()
 
 	// nothing? not even a waist.
@@ -55,64 +59,29 @@ func IsThinWaist(m ma.Multiaddr) bool {
 	}
 }
 
-// IsIPLoopback returns whether a Multiaddr starts with a "Loopback" IP address
-// This means either /ip4/127.*.*.*/*, /ip6/::1/*, or /ip6/::ffff:127.*.*.*.*/*,
-// or /ip6zone/<any value>/ip6/<one of the preceding ip6 values>/*
+// IsIPLoopback returns whether a Multiaddr is a "Loopback" IP address
+// This means either /ip4/127.*.*.*, /ip6/::1, or /ip6/::ffff:127.*.*.*.*
 func IsIPLoopback(m ma.Multiaddr) bool {
-	m = zoneless(m)
-	c, _ := ma.SplitFirst(m)
-	if c == nil {
-		return false
-	}
-	switch c.Protocol().Code {
-	case ma.P_IP4, ma.P_IP6:
-		return net.IP(c.RawValue()).IsLoopback()
+	b := m.Bytes()
+	for _, prefix := range loopbackPrefixes {
+		if bytes.HasPrefix(b, prefix) {
+			return true
+		}
 	}
 	return false
 }
 
-// IsIP6LinkLocal returns whether a Multiaddr starts with an IPv6 link-local
-// multiaddress (with zero or one leading zone). These addresses are non
-// routable.
+// IsIP6LinkLocal returns if a multiaddress is an IPv6 local link. These
+// addresses are non routable. The prefix is technically
+// fe80::/10, but we test fe80::/16 for simplicity (no need to mask).
+// So far, no hardware interfaces exist long enough to use those 2 bits.
+// Send a PR if there is.
 func IsIP6LinkLocal(m ma.Multiaddr) bool {
-	m = zoneless(m)
-	c, _ := ma.SplitFirst(m)
-	if c == nil || c.Protocol().Code != ma.P_IP6 {
-		return false
-	}
-	ip := net.IP(c.RawValue())
-	return ip.IsLinkLocalMulticast() || ip.IsLinkLocalUnicast()
+	return bytes.HasPrefix(m.Bytes(), []byte{ma.P_IP6, 0xfe, 0x80})
 }
 
-// IsIPUnspecified returns whether a Multiaddr starts with an Unspecified IP address
-// This means either /ip4/0.0.0.0/* or /ip6/::/*
+// IsIPUnspecified returns whether a Multiaddr is am Unspecified IP address
+// This means either /ip4/0.0.0.0 or /ip6/::
 func IsIPUnspecified(m ma.Multiaddr) bool {
-	m = zoneless(m)
-	if m == nil {
-		return false
-	}
-	c, _ := ma.SplitFirst(m)
-	return net.IP(c.RawValue()).IsUnspecified()
-}
-
-// If m matches [zone,ip6,...], return [ip6,...]
-// else if m matches [], [zone], or [zone,...], return nil
-// else return m
-func zoneless(m ma.Multiaddr) ma.Multiaddr {
-	head, tail := ma.SplitFirst(m)
-	if head == nil {
-		return nil
-	}
-	if head.Protocol().Code == ma.P_IP6ZONE {
-		if tail == nil {
-			return nil
-		}
-		tailhead, _ := ma.SplitFirst(tail)
-		if tailhead.Protocol().Code != ma.P_IP6 {
-			return nil
-		}
-		return tail
-	} else {
-		return m
-	}
+	return IP4Unspecified.Equal(m) || IP6Unspecified.Equal(m)
 }

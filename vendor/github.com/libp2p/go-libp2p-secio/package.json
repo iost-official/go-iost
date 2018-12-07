@@ -15,21 +15,21 @@
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmcuXC5cxs79ro2cUuHs4HQ2bkDLJUYokwL8aivcX6HW3C",
+      "hash": "QmZChCsSt8DctjceaL56Eibc29CVQq4dGKRXC5JRZ6Ppae",
       "name": "go-log",
-      "version": "1.5.8"
+      "version": "1.5.7"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmNiJiXwWE3kRhZrC5ej3kSjWHm337pYfhjLGSCDNKJP2s",
+      "hash": "QmPvyPwuCgJ7pDmrKDxRtsScJgBaM5h4EpRL2qQJsmXf4n",
       "name": "go-libp2p-crypto",
-      "version": "2.0.4"
+      "version": "2.0.1"
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmcqU6QUDSXprb1518vYDGczrTJTyGwLG9eUa5iNX4xUtS",
+      "hash": "QmbNepETomvmXfz1X5pHNFD2QuPqnqi47dTd94QJWSorQ3",
       "name": "go-libp2p-peer",
-      "version": "2.4.3"
+      "version": "2.3.8"
     },
     {
       "author": "whyrusleeping",
@@ -39,21 +39,21 @@
     },
     {
       "author": "multiformats",
-      "hash": "QmerPMzPk1mJVowm8KgmoknWa4yCYvvugMPsgWmDNUvDLW",
+      "hash": "QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8",
       "name": "go-multihash",
-      "version": "1.0.9"
+      "version": "1.0.8"
     },
     {
       "author": "minio",
-      "hash": "QmcTzQXRcU2vf8yX5EEboz1BSvWC7wWmeYAKVQmhp8WZYU",
+      "hash": "QmXTpwq2AkzQsPjKqFQDNY2bMdsAT53hUBETeyj8QRHTZU",
       "name": "sha256-simd",
-      "version": "0.1.2"
+      "version": "0.1.1"
     },
     {
       "author": "Stebalien",
-      "hash": "QmbyjEKtxXmZdiByBiNhfayzEuEPPBvuD2dLpHky8cHUvy",
+      "hash": "QmSjwssnWNJvzwD77yWruH2ebqwMNR6PCn49hbDURYH9d8",
       "name": "go-conn-security",
-      "version": "0.1.20"
+      "version": "0.1.13"
     },
     {
       "author": "whyrusleeping",
@@ -73,6 +73,6 @@
   "license": "MIT",
   "name": "go-libp2p-secio",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "2.0.22"
+  "version": "2.0.15"
 }
 

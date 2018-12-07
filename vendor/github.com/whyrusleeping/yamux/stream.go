@@ -123,20 +123,20 @@ START:
 
 WAIT:
 	var timeout <-chan time.Time
-	returnTimer := func() {}
+	var timer *time.Timer
 	readDeadline := s.readDeadline.Load().(time.Time)
 	if !readDeadline.IsZero() {
 		delay := readDeadline.Sub(time.Now())
-		timer, cancelFunc := pooledTimer(delay)
+		timer = time.NewTimer(delay)
 		timeout = timer.C
-		returnTimer = cancelFunc
 	}
 	select {
 	case <-s.recvNotifyCh:
-		returnTimer()
+		if timer != nil {
+			timer.Stop()
+		}
 		goto START
 	case <-timeout:
-		returnTimer()
 		return 0, ErrTimeout
 	}
 }
@@ -146,17 +146,8 @@ func (s *Stream) Write(b []byte) (n int, err error) {
 	s.sendLock.Lock()
 	defer s.sendLock.Unlock()
 	total := 0
-
-	var timeout <-chan time.Time
-	writeDeadline := s.writeDeadline.Load().(time.Time)
-	if !writeDeadline.IsZero() {
-		delay := writeDeadline.Sub(time.Now())
-		timer, cancelFunc := pooledTimer(delay)
-		defer cancelFunc()
-		timeout = timer.C
-	}
 	for total < len(b) {
-		n, err := s.write(b[total:], timeout)
+		n, err := s.write(b[total:])
 		total += n
 		if err != nil {
 			return total, err
@@ -167,10 +158,17 @@ func (s *Stream) Write(b []byte) (n int, err error) {
 
 // write is used to write to the stream, may return on
 // a short write.
-func (s *Stream) write(b []byte, timeout <-chan time.Time) (n int, err error) {
+func (s *Stream) write(b []byte) (n int, err error) {
 	var flags uint16
 	var max uint32
 	var body io.Reader
+	var timeout <-chan time.Time
+
+	writeDeadline := s.writeDeadline.Load().(time.Time)
+	if !writeDeadline.IsZero() {
+		delay := writeDeadline.Sub(time.Now())
+		timeout = time.After(delay)
+	}
 
 START:
 	s.stateLock.Lock()
@@ -293,11 +291,6 @@ func (s *Stream) sendReset() error {
 func (s *Stream) Reset() error {
 	s.stateLock.Lock()
 	switch s.state {
-	case streamInit:
-		// No need to send anything.
-		s.state = streamReset
-		s.stateLock.Unlock()
-		return nil
 	case streamClosed, streamReset:
 		s.stateLock.Unlock()
 		return nil
@@ -321,7 +314,12 @@ func (s *Stream) Close() error {
 	closeStream := false
 	s.stateLock.Lock()
 	switch s.state {
-	case streamInit, streamSYNSent, streamSYNReceived, streamEstablished:
+	// Opened means we need to signal a close
+	case streamSYNSent:
+		fallthrough
+	case streamSYNReceived:
+		fallthrough
+	case streamEstablished:
 		s.state = streamLocalClose
 		goto SEND_CLOSE
 

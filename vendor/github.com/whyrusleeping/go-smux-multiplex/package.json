@@ -15,9 +15,9 @@
     },
     {
       "author": "whyrusleeping",
-      "hash": "QmepcK13D1utrmryTQWaBPeipsVXW7sdStWfa6fWtYCoTE",
+      "hash": "QmP5tygNbeAH5Z8sGdrnE9rqqkAVYotam3UAgRWWfL2zur",
       "name": "go-mplex",
-      "version": "0.2.31"
+      "version": "0.2.30"
     }
   ],
   "gxVersion": "0.7.0",
@@ -25,6 +25,6 @@
   "license": "MIT",
   "name": "go-smux-multiplex",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "3.0.17"
+  "version": "3.0.16"
 }
 

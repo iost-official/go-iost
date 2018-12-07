@@ -21,9 +21,8 @@ func init() {
 	defaultCodecs.RegisterFromNetAddr(parseUDPNetAddr, "udp", "udp4", "udp6")
 	defaultCodecs.RegisterFromNetAddr(parseIPNetAddr, "ip", "ip4", "ip6")
 	defaultCodecs.RegisterFromNetAddr(parseIPPlusNetAddr, "ip+net")
-	defaultCodecs.RegisterFromNetAddr(parseUnixNetAddr, "unix")
 
-	defaultCodecs.RegisterToNetAddr(parseBasicNetMaddr, "tcp", "udp", "ip6", "ip4", "unix")
+	defaultCodecs.RegisterToNetAddr(parseBasicNetMaddr, "tcp", "udp", "ip6", "ip4")
 }
 
 // CodecMap holds a map of NetCodecs indexed by their Protocol ID

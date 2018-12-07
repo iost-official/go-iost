@@ -8,9 +8,9 @@
   },
   "gxDependencies": [
     {
-      "hash": "QmerPMzPk1mJVowm8KgmoknWa4yCYvvugMPsgWmDNUvDLW",
+      "hash": "QmPnFwZ2JXKnXgMw8CdBPxn7FWh6LLdjUjxV1fKHuJnkr8",
       "name": "go-multihash",
-      "version": "1.0.9"
+      "version": "1.0.8"
     }
   ],
   "gxVersion": "0.9.0",
@@ -18,6 +18,6 @@
   "license": "MIT",
   "name": "go-multiaddr",
   "releaseCmd": "git commit -a -m \"gx publish $VERSION\"",
-  "version": "1.4.0"
+  "version": "1.3.2"
 }
 

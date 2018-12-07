@@ -201,30 +201,11 @@ func AddrsFactory(factory config.AddrsFactory) Option {
 	}
 }
 
-// EnableRelay configures libp2p to enable the relay transport with configuration options.
+// EnableRelay configures libp2p to enable the relay transport.
 func EnableRelay(options ...circuit.RelayOpt) Option {
 	return func(cfg *Config) error {
-		cfg.RelayCustom = true
 		cfg.Relay = true
 		cfg.RelayOpts = options
-		return nil
-	}
-}
-
-// DisableRelay configures libp2p to disable the relay transport
-func DisableRelay() Option {
-	return func(cfg *Config) error {
-		cfg.RelayCustom = true
-		cfg.Relay = false
-		return nil
-	}
-}
-
-// EnableAutoRelay configures libp2p to enable autorelay advertising; requires relay to
-// be enabled and the Routing option to provide an instance of ContentRouting.
-func EnableAutoRelay() Option {
-	return func(cfg *Config) error {
-		cfg.EnableAutoRelay = true
 		return nil
 	}
 }
@@ -261,37 +242,12 @@ func NATManager(nm config.NATManagerC) Option {
 	}
 }
 
-// Ping will configure libp2p to support the ping service; enable by default.
-func Ping(enable bool) Option {
-	return func(cfg *Config) error {
-		cfg.DisablePing = !enable
-		return nil
-	}
-}
-
-// Routing will configure libp2p to use routing.
-func Routing(rt config.RoutingC) Option {
-	return func(cfg *Config) error {
-		if cfg.Routing != nil {
-			return fmt.Errorf("cannot specify multiple routing options")
-		}
-		cfg.Routing = rt
-		return nil
-	}
-}
-
 // NoListenAddrs will configure libp2p to not listen by default.
 //
 // This will both clear any configured listen addrs and prevent libp2p from
-// applying the default listen address option. It also disables relay, unless the
-// user explicitly specifies with an option, as the transport creates an implicit
-// listen address that would make the node dialable through any relay it was connected to.
+// applying the default listen address option.
 var NoListenAddrs = func(cfg *Config) error {
 	cfg.ListenAddrs = []ma.Multiaddr{}
-	if !cfg.RelayCustom {
-		cfg.RelayCustom = true
-		cfg.Relay = false
-	}
 	return nil
 }
 

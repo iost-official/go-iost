@@ -8,18 +8,12 @@ import (
 
 // VarintSize returns the size (in bytes) of `num` encoded as a varint.
 func VarintSize(num int) int {
-	bits := bits.Len(uint(num))
-	q, r := bits/7, bits%7
-	size := q
-	if r > 0 || size == 0 {
-		size++
-	}
-	return size
+	return bits.Len(uint(num))/7 + 1
 }
 
 // CodeToVarint converts an integer to a varint-encoded []byte
 func CodeToVarint(num int) []byte {
-	buf := make([]byte, VarintSize(num))
+	buf := make([]byte, bits.Len(uint(num))/7+1)
 	n := binary.PutUvarint(buf, uint64(num))
 	return buf[:n]
 }

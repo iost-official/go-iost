@@ -9,9 +9,9 @@
   "gxDependencies": [
     {
       "author": "whyrusleeping",
-      "hash": "QmW7VUmSvhvSGbYbdsh7uRjhGmsYkc9fL8aJ5CorxxrU5N",
+      "hash": "QmaPHkZLbQQbvcyavn8q1GFHg6o6yeceyHFSJ3Pjf3p3TQ",
       "name": "go-crypto",
-      "version": "0.2.1"
+      "version": "0.0.0"
     },
     {
       "author": "mr-tron",
@@ -33,9 +33,9 @@
     },
     {
       "author": "minio",
-      "hash": "QmcTzQXRcU2vf8yX5EEboz1BSvWC7wWmeYAKVQmhp8WZYU",
+      "hash": "QmXTpwq2AkzQsPjKqFQDNY2bMdsAT53hUBETeyj8QRHTZU",
       "name": "sha256-simd",
-      "version": "0.1.2"
+      "version": "0.1.1"
     },
     {
       "author": "minio",
@@ -49,6 +49,6 @@
   "license": "MIT",
   "name": "go-multihash",
   "releaseCmd": "git commit -a -m \"gx release $VERSION\"",
-  "version": "1.0.9"
+  "version": "1.0.7"
 }
 
