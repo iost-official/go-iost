@@ -30,6 +30,9 @@ var (
 	syncRoutingTableInterval = 30 * time.Second
 	metricsStatInterval      = 3 * time.Second
 	findBPInterval           = 2 * time.Second
+
+	dialTimeout        = 2 * time.Second
+	deadPeerRetryTimes = 5
 )
 
 type connDirection int
@@ -82,6 +85,9 @@ type PeerManager struct {
 	blackPIDs  map[string]bool
 	blackIPs   map[string]bool
 	blackMutex sync.RWMutex
+
+	retryTimes map[string]int
+	rtMutex    sync.RWMutex
 }
 
 // NewPeerManager returns a new instance of PeerManager struct.
@@ -100,6 +106,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 		wg:            new(sync.WaitGroup),
 		blackPIDs:     make(map[string]bool),
 		blackIPs:      make(map[string]bool),
+		retryTimes:    make(map[string]int),
 	}
 	if config.InboundConn <= 0 {
 		pm.neighborCap[inbound] = defaultOutboundConn
@@ -195,10 +202,15 @@ func (pm *PeerManager) findBPLoop() {
 	}
 }
 
+func (pm *PeerManager) newStream(pid peer.ID) (libnet.Stream, error) {
+	ctx, _ := context.WithTimeout(context.Background(), dialTimeout)
+	return pm.host.NewStream(ctx, pid, protocolID)
+}
+
 func (pm *PeerManager) connectBPs() {
 	for _, bpID := range pm.getBPs() {
 		if pm.GetNeighbor(bpID) == nil && bpID != pm.host.ID() && len(pm.peerStore.Addrs(bpID)) > 0 {
-			stream, err := pm.host.NewStream(context.Background(), bpID, protocolID)
+			stream, err := pm.newStream(bpID)
 			if err != nil {
 				ilog.Errorf("create stream to bp failed. pid=%s, err=%v", bpID.Pretty(), err)
 				continue
@@ -480,10 +492,13 @@ func (pm *PeerManager) routingQuery(ids []string) {
 			continue
 		}
 		ilog.Debugf("dial peer: pid=%v", peerID.Pretty())
-		stream, err := pm.host.NewStream(context.Background(), peerID, protocolID)
+		stream, err := pm.newStream(peerID)
 		if err != nil {
 			ilog.Errorf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
-			pm.deletePeerInfo(peerID)
+			pm.recordDialFail(peerID)
+			if pm.isDead(peerID) {
+				pm.deletePeerInfo(peerID)
+			}
 			continue
 		}
 		pm.HandleStream(stream, outbound)
@@ -591,7 +606,9 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 		}
 		peerIDs := pm.routingTable.NearestPeers(kbucket.ConvertPeerID(pid), peerResponseCount)
 		for _, id := range peerIDs {
-			pidSet[id] = struct{}{}
+			if !pm.isDead(id) {
+				pidSet[id] = struct{}{}
+			}
 		}
 	}
 
@@ -643,7 +660,6 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 	//ilog.Debug("handling routing table response.")
 
 	data, _ := msg.data()
-
 	resp := &p2pb.RoutingResponse{}
 	err := resp.Unmarshal(data)
 	if err != nil {
@@ -656,6 +672,9 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 			pid, err := peer.IDB58Decode(peerInfo.Id)
 			if err != nil {
 				ilog.Warnf("decode peerID failed. err=%v, id=%v", err, peerInfo.Id)
+				continue
+			}
+			if pm.isDead(pid) {
 				continue
 			}
 			maddrs := make([]multiaddr.Multiaddr, 0, len(peerInfo.Addrs))
@@ -708,13 +727,13 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 	blackIPs := make([]string, 0)
 	blackPIDs := make([]string, 0)
 	pm.blackMutex.RLock()
-	defer pm.blackMutex.RUnlock()
 	for ip := range pm.blackIPs {
 		blackIPs = append(blackIPs, ip)
 	}
 	for id := range pm.blackPIDs {
 		blackPIDs = append(blackPIDs, id)
 	}
+	pm.blackMutex.RUnlock()
 	ret["black_ips"] = blackIPs
 	ret["black_pids"] = blackPIDs
 
@@ -790,4 +809,25 @@ func (pm *PeerManager) isStreamBlack(s libnet.Stream) bool {
 	ma := s.Conn().RemoteMultiaddr().String()
 	ip := getIPFromMa(ma)
 	return pm.blackIPs[ip]
+}
+
+func (pm *PeerManager) recordDialFail(pid peer.ID) {
+	pm.rtMutex.Lock()
+	defer pm.rtMutex.Unlock()
+
+	pm.retryTimes[pid.Pretty()]++
+}
+
+func (pm *PeerManager) freshPeer(pid peer.ID) {
+	pm.rtMutex.Lock()
+	defer pm.rtMutex.Unlock()
+
+	delete(pm.retryTimes, pid.Pretty())
+}
+
+func (pm *PeerManager) isDead(pid peer.ID) bool {
+	pm.rtMutex.RLock()
+	defer pm.rtMutex.RUnlock()
+
+	return pm.retryTimes[pid.Pretty()] > deadPeerRetryTimes
 }
