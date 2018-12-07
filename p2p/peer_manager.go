@@ -203,7 +203,7 @@ func (pm *PeerManager) findBPLoop() {
 }
 
 func (pm *PeerManager) newStream(pid peer.ID) (libnet.Stream, error) {
-	ctx, _ := context.WithTimeout(context.Background(), dialTimeout)
+	ctx, _ := context.WithTimeout(context.Background(), dialTimeout) // nolint
 	return pm.host.NewStream(ctx, pid, protocolID)
 }
 

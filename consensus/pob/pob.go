@@ -93,6 +93,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 	}
 	continuousNum = baseVariable.Continuous()
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
+	p.recoverBlockcache()
 	close(p.quitGenerateMode)
 	return &p
 }
@@ -112,7 +113,6 @@ func (p *PoB) recoverBlockcache() error {
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
-	p.recoverBlockcache()
 
 	p.wg.Add(4)
 	go p.messageLoop()
