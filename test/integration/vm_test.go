@@ -262,7 +262,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2465)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2533)
 
 			ram0 = s.GetRAM(testID[0])
 			ram4 := s.GetRAM(testID[4])

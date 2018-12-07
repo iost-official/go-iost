@@ -28,7 +28,6 @@
         'repeat'
     ];
 
-    const stringToString = String.prototype.toString();
     const stringMethods = Object.getOwnPropertyNames(String.prototype);
     stringMethods.forEach((method) => {
         if (!stringAllowedMethods.includes(method)) {

@@ -158,6 +158,10 @@ class Gas {
             return {length: -100};
         };
         a.concat("a");
+        /*
+        a.length = -100;
+        return a.concat("a");
+        */
     }
 };
 module.exports = Gas;

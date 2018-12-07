@@ -155,7 +155,7 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test length0", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "length0", "input")
-		So(err.Error(), ShouldContainSubstring, "IOSTContractInstruction_Incr invalid gas")
+		So(err, ShouldBeNil)
 		t.Log(rs, cost0)
 	})
 }

@@ -70,7 +70,7 @@ func TestSetCode(t *testing.T) {
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
 		s.SetGas(kp.ID, 1000000)
-		s.SetRAM(kp.ID, 300)
+		s.SetRAM(kp.ID, 3000)
 
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
 		So(err, ShouldBeNil)
@@ -80,8 +80,8 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractBRp9qiNMLga3r67ESf9DRUSzZ4PRwFcsQRGFtDVSmCiU")
-		So(r.GasUsage, ShouldEqual, 39700)
-		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(64))
+		So(r.GasUsage, ShouldEqual, 41200)
+		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(2697))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
@@ -97,7 +97,7 @@ func TestStringGas(t *testing.T) {
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
 		s.SetGas(kp.ID, 1000000)
-		s.SetRAM(kp.ID, 1000)
+		s.SetRAM(kp.ID, 3000)
 
 		c, err := s.Compile("so", "test_data/stringop", "test_data/stringop")
 		So(err, ShouldBeNil)
@@ -114,17 +114,17 @@ func TestStringGas(t *testing.T) {
 		r, err = s.Call(cname, "add9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 1200, 1400)
+		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 2700, 2900)
 
 		r, err = s.Call(cname, "equal9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldEqual, 1400)
+		So(r.GasUsage-gas2, ShouldEqual, 3000)
 
 		r, err = s.Call(cname, "superadd9", "[]", kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeGreaterThan, 1400)
+		So(r.GasUsage-gas2, ShouldBeGreaterThan, 3000)
 	})
 }
 
