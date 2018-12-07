@@ -80,7 +80,7 @@ func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (b
 
 	freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
 	cost.AddAssign(cost0)
-	freezeList := []database.FreezeItem{}
+	freezeList := make([]database.FreezeItem, 0)
 
 	err = json.Unmarshal([]byte(freezeJSON.(database.SerializedJSON)), &freezeList)
 	cost.AddAssign(host.CommonOpCost(1))
@@ -124,7 +124,7 @@ func getBalance(h *host.Host, tokenName string, from string, ramPayer string) (b
 
 func freezeBalance(h *host.Host, tokenName string, from string, balance int64, ftime int64, ramPayer string) (cost contract.Cost, err error) {
 	ok, cost := h.MapHas(TokenFreezeMapPrefix+from, tokenName)
-	freezeList := []database.FreezeItem{}
+	freezeList := make([]database.FreezeItem, 0)
 	if ok {
 		freezeJSON, cost0 := h.MapGet(TokenFreezeMapPrefix+from, tokenName)
 		cost.AddAssign(cost0)
@@ -449,7 +449,12 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
+				d, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
+				decimal := int(d.(int64))
+				cost.AddAssign(cost0)
+				fBalanceFixed := &common.Fixed{Value: fbalance, Decimal: decimal}
+				amountFixed := &common.Fixed{Value: amount, Decimal: decimal}
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrGasLimitExceeded
@@ -536,7 +541,12 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
+				d, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
+				decimal := int(d.(int64))
+				cost.AddAssign(cost0)
+				fBalanceFixed := &common.Fixed{Value: fbalance, Decimal: decimal}
+				amountFixed := &common.Fixed{Value: amount, Decimal: decimal}
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
 
 			fbalance -= amount
@@ -611,7 +621,12 @@ var (
 				return nil, cost, err
 			}
 			if fbalance < amount {
-				return nil, cost, fmt.Errorf("balance not enough %v < %v", fbalance, amount)
+				d, cost0 := h.MapGet(TokenInfoMapPrefix+tokenName, DecimalMapField)
+				decimal := int(d.(int64))
+				cost.AddAssign(cost0)
+				fBalanceFixed := &common.Fixed{Value: fbalance, Decimal: decimal}
+				amountFixed := &common.Fixed{Value: amount, Decimal: decimal}
+				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
 			fbalance -= amount
 			cost0 = setBalance(h, tokenName, from, fbalance, from)

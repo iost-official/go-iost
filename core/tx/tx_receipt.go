@@ -29,6 +29,9 @@ type Status struct {
 
 // ToPb convert Status to proto buf data structure.
 func (s *Status) ToPb() *txpb.Status {
+	if s == nil {
+		return nil
+	}
 	return &txpb.Status{
 		Code:    int32(s.Code),
 		Message: s.Message,

@@ -21,7 +21,6 @@ func TestGenGenesis(t *testing.T) {
 		d.Close()
 		os.RemoveAll("mvcc")
 	}()
-
 	blk, err := GenGenesis(d, &common.GenesisConfig{
 		WitnessInfo: []*common.Witness{
 			{"a1", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", "IOSTjBxx7sUJvmxrMiyjEQnz9h5bfNrXwLinkoL9YvWjnrGdbKnBP", 3 * 1e8},

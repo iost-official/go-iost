@@ -56,7 +56,7 @@ func Test_IOSTIssue(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		r, err := prepareIssue(s, kp)
 
 		Convey("test init", func() {

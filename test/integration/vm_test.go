@@ -28,7 +28,7 @@ func Test_callWithAuth(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
@@ -63,7 +63,7 @@ func Test_VMMethod(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
@@ -111,7 +111,7 @@ func Test_VMMethod_Event(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
 		if err != nil || ca == nil {
@@ -162,7 +162,7 @@ func Test_RamPayer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
@@ -292,7 +292,7 @@ func Test_StackHeight(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("", "./test_data/nest0", "./test_data/nest0")
@@ -408,9 +408,9 @@ func Test_SpecialChar(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 		kp := prepareAuth(t, s)
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 100000)
 
 		c, err := (&contract.Compiler{}).Parse("", code, abi)
