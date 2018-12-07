@@ -81,7 +81,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractB16fmmc427BBhHyUCGzchFTosGZb5diVu88dNkaiKTFN")
-		So(r.GasUsage, ShouldEqual, 759700)
+		So(r.GasUsage, ShouldEqual, 760200)
 		So(s.Visitor.TokenBalance("ram", kp.ID), ShouldEqual, int64(2697))
 
 		r, err = s.Call(cname, "hello", "[]", kp.ID, kp)
