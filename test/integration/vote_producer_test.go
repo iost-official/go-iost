@@ -47,6 +47,35 @@ func prepareProducerVote(t *testing.T, s *Simulator, kp *account.KeyPair) {
 	s.Visitor.Commit()
 }
 
+func prepareNewProducerVote(t *testing.T, s *Simulator, kp *account.KeyPair) {
+	s.Head.Number = 0
+	// deploy vote.iost
+	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
+	r, err := s.Call("vote.iost", "init", `[]`, kp.ID, kp)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
+
+	// deploy vote_producer.iost
+	setNonNativeContract(s, "vote_producer.iost", "vote_producer.js", ContractPath)
+	r, err = s.Call("vote_producer.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
+
+	r, err = s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "vote_producer.iost", "1000"), kp.ID, kp)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
+
+	r, err = s.Call("vote_producer.iost", "init", `[]`, kp.ID, kp)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
+
+	s.Visitor.Commit()
+}
+
 func Test_InitProducer(t *testing.T) {
 	ilog.Stop()
 	Convey("test InitProducer", t, func() {
@@ -408,6 +437,502 @@ func Test_Vote1(t *testing.T) {
 			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
 			// 6, 3, 2, 4, 7, 1
 			pendingList, _ = json.Marshal([]string{testID[12], testID[6], testID[4], testID[8], testID[14], testID[2]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+		})
+	})
+}
+
+func Test_Vote2(t *testing.T) {
+	ilog.Stop()
+	Convey("test Vote2", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		s.Head.Number = 0
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		prepareToken(t, s, kp)
+		prepareNewProducerVote(t, s, kp)
+		for i := 0; i < 12; i += 2 {
+			r, err := s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, testID[i], testID[i]), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+		}
+
+		Convey("test new vote/unvote", func() {
+			s.Head.Number = 1
+			kp6, _ := account.NewKeyPair(common.Base58Decode(testID[13]), crypto.Secp256k1)
+			kp7, _ := account.NewKeyPair(common.Base58Decode(testID[15]), crypto.Secp256k1)
+			kp8, _ := account.NewKeyPair(common.Base58Decode(testID[17]), crypto.Secp256k1)
+			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp6.ID, testID[12]), kp6.ID, kp6)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, kp6.ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp7.ID, testID[14]), kp7.ID, kp7)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, kp7.ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kp8.ID, testID[16]), kp8.ID, kp8)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, kp8.ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp7.ID), kp7.ID, kp7)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kp8.ID), kp8.ID, kp8)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp6.ID)), ShouldEqual, `["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp7.ID)), ShouldEqual, `["0",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", kp8.ID)), ShouldEqual, `["0",false,-1]`)
+
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp6.ID, "100000000"), kp.ID, kp)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", testID[12])), ShouldEqual, `["100000000",false,-1]`)
+
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp7.ID, kp6.ID, "100000000"), kp7.ID, kp7)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", testID[12])), ShouldEqual, `["200000000",false,-1]`)
+			So(s.Visitor.MHas("vote.iost-p-1", testID[12]), ShouldEqual, false)
+
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp8.ID, kp6.ID, "100000000"), kp8.ID, kp8)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", testID[12])), ShouldEqual, `["300000000",false,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-p_1", testID[12])), ShouldEqual, `"300000000"`)
+
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp7.ID, "215000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, kp8.ID, "220000000"), kp.ID, kp)
+
+			r, err = s.Call("vote_producer.iost", "GetProducer", fmt.Sprintf(`["%v"]`, kp6.ID), kp6.ID, kp6)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Returns[0], ShouldEqual, `["{\"pubkey\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"loc\":\"loc\",\"url\":\"url\",\"netId\":\"netId\",\"status\":1,\"online\":true,\"voteInfo\":{\"votes\":\"300000000\",\"deleted\":false,\"clearTime\":-1}}"]`)
+
+			r, err = s.Call("vote_producer.iost", "GetVote", fmt.Sprintf(`["%v"]`, kp.ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Returns[0], ShouldEqual, `["[{\"option\":\"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9\",\"votes\":\"100000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB\",\"votes\":\"215000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9\",\"votes\":\"220000000\",\"voteTime\":1,\"clearedVotes\":\"0\"}]"]`)
+
+			// do stat
+			// q = 0.9
+			s.Head.Number = 200
+			r, err = s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 0
+			// 2	: 0				, 0
+			// 3	: 0				, 0
+			// 4	: 0				, 0
+			// 5	: 0				, 0
+			// 6	: q^1*300000000	, 300000000
+			// 7	: 1*215000000	, 215000000
+			// 8	: 1*220000000	, 220000000
+			// 0, 3, 1, 4, 5, 2
+			currentList, _ := json.Marshal([]string{testID[0], testID[6], testID[2], testID[8], testID[10], testID[4]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 6, 0, 3, 1, 4, 5
+			pendingList, _ := json.Marshal([]string{testID[12], testID[0], testID[6], testID[2], testID[8], testID[10]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "240000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[4], "230000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[6], "260000000"), kp.ID, kp)
+			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[8], "250000000"), kp.ID, kp)
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 240000000
+			// 2	: 230000000		, 230000000
+			// 3	: 0				, 260000000
+			// 4	: 0				, 250000000
+			// 5	: 0				, 0
+			// 6	: q^2*300000000	, 300000000
+			// 7	: 430000000		, 215000000
+			// 8	: q^1*440000000	, 220000000
+			// 6, 0, 3, 1, 4, 5
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 8, 6, 0, 3, 1, 4
+			pendingList, _ = json.Marshal([]string{testID[16], testID[12], testID[0], testID[6], testID[2], testID[8]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Call("vote_producer.iost", "Unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[16], testID[12], "60000000"), kp8.ID, kp8)
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 240000000
+			// 2	: 460000000		, 230000000
+			// 3	: 0				, 260000000
+			// 4	: 0				, 250000000
+			// 5	: 0				, 0
+			// 6	: q^3*300000000	, 300000000
+			// 7	: q^1*645000000	, 215000000
+			// 8	: q^2*440000000	, 220000000
+			// 8, 6, 0, 3, 1, 4
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 7, 8, 6, 0, 3, 1
+			pendingList, _ = json.Marshal([]string{testID[14], testID[16], testID[12], testID[0], testID[6], testID[2]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 0				, 240000000
+			// 2	: q^1*690000000	, 230000000
+			// 3	: 0				, 260000000
+			// 4	: 250000000		, 250000000
+			// 5	: 0				, 0
+			// 6	: q^4*300000000	, 300000000
+			// 7	: q^2*645000000	, 215000000
+			// 8	: q^3*440000000	, 220000000
+			// 7, 8, 6, 0, 3, 1
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 2, 7, 8, 6, 0, 3
+			pendingList, _ = json.Marshal([]string{testID[4], testID[14], testID[16], testID[12], testID[0], testID[6]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: 240000000		, 240000000
+			// 2	: q^2*690000000	, 230000000
+			// 3	: 0				, 260000000
+			// 4	: q^1*500000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^5*300000000	, 300000000
+			// 7	: q^3*645000000	, 215000000
+			// 8	: q^4*440000000	, 220000000
+			// 2, 7, 8, 6, 0, 3
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 2, 7, 4, 8, 6, 0
+			pendingList, _ = json.Marshal([]string{testID[4], testID[14], testID[8], testID[16], testID[12], testID[0]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^1*480000000	, 240000000
+			// 2	: q^3*690000000	, 230000000
+			// 3	: 260000000		, 260000000
+			// 4	: q^2*500000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^6*300000000	, 300000000
+			// 7	: q^4*645000000	, 215000000
+			// 8	: q^5*440000000	, 220000000
+			// 2, 7, 4, 8, 6, 0
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 2, 1, 7, 4, 8, 6
+			pendingList, _ = json.Marshal([]string{testID[4], testID[2], testID[14], testID[8], testID[16], testID[12]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^2*480000000	, 240000000
+			// 2	: q^4*690000000	, 230000000
+			// 3	: q^1*520000000	, 260000000
+			// 4	: q^3*500000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: 0				, 300000000
+			// 7	: q^5*645000000	, 215000000
+			// 8	: q^6*440000000	, 220000000
+			// 2, 1, 7, 4, 8, 6
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 3, 2, 1, 7, 4, 8
+			pendingList, _ = json.Marshal([]string{testID[6], testID[4], testID[2], testID[14], testID[8], testID[16]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^3*480000000	, 240000000
+			// 2	: q^5*690000000	, 230000000
+			// 3	: q^2*520000000	, 260000000
+			// 4	: q^4*500000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^1*300000000	, 300000000
+			// 7	: q^6*645000000	, 215000000
+			// 8	: 0				, 220000000
+			// 3, 2, 1, 7, 4, 8
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 3, 2, 1, 7, 6, 4
+			pendingList, _ = json.Marshal([]string{testID[6], testID[4], testID[2], testID[14], testID[12], testID[8]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 0
+			// 1	: q^4*480000000	, 240000000
+			// 2	: q^6*690000000	, 230000000
+			// 3	: q^3*520000000	, 260000000
+			// 4	: q^5*500000000	, 250000000
+			// 5	: 0				, 0
+			// 6	: q^2*300000000	, 300000000
+			// 7	: q^7*645000000	, 215000000
+			// 8	: 220000000		, 220000000
+			// 3, 2, 1, 7, 6, 4
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 3, 2, 1, 7, 6, 4
+			pendingList, _ = json.Marshal([]string{testID[6], testID[4], testID[2], testID[14], testID[12], testID[8]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+		})
+	})
+}
+
+func Test_Unregister2(t *testing.T) {
+	ilog.Start()
+	Convey("test Unregister2", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		s.Head.Number = 0
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		prepareToken(t, s, kp)
+		prepareNewProducerVote(t, s, kp)
+
+		Convey("test new Unregister", func() {
+			kps := map[int]*account.KeyPair{}
+			for i := 0; i < 12; i += 2 {
+				kpi, err := account.NewKeyPair(common.Base58Decode(testID[i+1]), crypto.Secp256k1)
+				So(err, ShouldBeNil)
+				kps[i] = kpi
+				r, err := s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, kpi.ID, testID[i]), kp.ID, kp)
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+			}
+			s.Head.Number = 1
+			for i := 12; i <= 18; i += 2 {
+				kpi, err := account.NewKeyPair(common.Base58Decode(testID[i+1]), crypto.Secp256k1)
+				So(err, ShouldBeNil)
+				kps[i] = kpi
+				r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kpi.ID, testID[i]), kpi.ID, kpi)
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+				r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, kpi.ID), kp.ID, kp)
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+				r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kpi.ID), kpi.ID, kpi)
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+			}
+
+			for i := 0; i <= 18; i += 2 {
+				s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, kp.ID, testID[i], i+2), kp.ID, kp)
+				So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", testID[i])), ShouldEqual, fmt.Sprintf(`["%v",false,-1]`, i+2))
+			}
+
+			// do stat
+			// q = 0.9
+			s.Head.Number = 200
+			r, err := s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			// acc	: score			, votes
+			// 0	: 0				, 2
+			// 1	: 0				, 4
+			// 2	: 0				, 6
+			// 3	: 0				, 8
+			// 4	: 0				, 10
+			// 5	: 0				, 12
+			// 6	: 14			, 14
+			// 7	: 16			, 16
+			// 8	: 18			, 18
+			// 9	: q^1*20		, 20
+			// 0, 3, 1, 4, 5, 2
+			currentList, _ := json.Marshal([]string{testID[0], testID[6], testID[2], testID[8], testID[10], testID[4]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 9, 0, 3, 1, 4, 5
+			pendingList, _ := json.Marshal([]string{testID[18], testID[0], testID[6], testID[2], testID[8], testID[10]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			r, err = s.Call("vote_producer.iost", "ApplyUnregister", fmt.Sprintf(`["%v"]`, kps[18].ID), kps[18].ID, kps[18])
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 2
+			// 1	: 0				, 4
+			// 2	: 6				, 6
+			// 3	: 0				, 8
+			// 4	: 0				, 10
+			// 5	: 0				, 12
+			// 6	: 28			, 14
+			// 7	: 32			, 16
+			// 8	: q^1*36		, 18
+			// 9	: q^2*20		, 20
+			// 9, 0, 3, 1, 4, 5
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 8, 9, 0, 3, 1, 4
+			pendingList, _ = json.Marshal([]string{testID[16], testID[18], testID[0], testID[6], testID[2], testID[8]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			r, err = s.Call("vote_producer.iost", "ApproveUnregister", fmt.Sprintf(`["%v"]`, kps[18].ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 2
+			// 1	: 0				, 4
+			// 2	: 12			, 6
+			// 3	: 0				, 8
+			// 4	: 0				, 10
+			// 5	: 12			, 12
+			// 6	: 42			, 14
+			// 7	: q^1*48		, 16
+			// 8	: q^2*36		, 18
+			// 9 X	: 0				, 20
+			// 8, 9, 0, 3, 1, 4
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 7, 8, 0, 3, 1, 4
+			pendingList, _ = json.Marshal([]string{testID[14], testID[16], testID[0], testID[6], testID[2], testID[8]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// unregister 8
+			r, err = s.Call("vote_producer.iost", "ApplyUnregister", fmt.Sprintf(`["%v"]`, kps[16].ID), kps[16].ID, kps[16])
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "ApproveUnregister", fmt.Sprintf(`["%v"]`, kps[16].ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			// unregister 3
+			r, err = s.Call("vote_producer.iost", "ApplyUnregister", fmt.Sprintf(`["%v"]`, kps[6].ID), kps[6].ID, kps[6])
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			r, err = s.Call("vote_producer.iost", "ApproveUnregister", fmt.Sprintf(`["%v"]`, kps[6].ID), kp.ID, kp)
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0	: 0				, 2
+			// 1	: 0				, 4
+			// 2	: 18			, 6
+			// 3 X	: 0				, 8
+			// 4	: 0				, 10
+			// 5	: q^1*24		, 12
+			// 6	: q^2*56		, 14
+			// 7	: q^3*48		, 16
+			// 8 X	: 0				, 18
+			// 9 X	: 0				, 20
+			// 7, 8, 0, 3, 1, 4
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 6, 7, 5, 0, 1, 4
+			pendingList, _ = json.Marshal([]string{testID[12], testID[14], testID[10], testID[0], testID[2], testID[8]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			// force unregister all left except for 2 (or testID[4])
+			for _, i := range []int{0, 2, 8, 10, 12, 14} {
+				r, err = s.Call("vote_producer.iost", "Unregister", fmt.Sprintf(`["%v"]`, kps[i].ID), kp.ID, kp)
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+			}
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0 W	: 0				, 2
+			// 1 W	: 0				, 4
+			// 2	: q^1*24		, 6
+			// 3 X	: 0				, 8
+			// 4 X	: 0				, 10
+			// 5 W	: q^2*24		, 12
+			// 6 W	: q^3*56		, 14
+			// 7 W	: q^4*48		, 16
+			// 8 X	: 0				, 18
+			// 9 X	: 0				, 20
+			// 6, 7, 5, 0, 1, 4
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 2, 6, 7, 5, 0, 1
+			pendingList, _ = json.Marshal([]string{testID[4], testID[12], testID[14], testID[10], testID[0], testID[2]})
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+
+			for _, i := range []int{6, 8, 16, 18} {
+				r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, kps[i].ID, testID[i]), kps[i].ID, kps[i])
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+				r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, kps[i].ID), kp.ID, kp)
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+				r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, kps[i].ID), kps[i].ID, kps[i])
+				So(err, ShouldBeNil)
+				So(r.Status.Code, ShouldEqual, tx.Success)
+			}
+
+			// do stat
+			s.Head.Number += 200
+			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
+			// acc	: score			, votes
+			// 0 X	: 0				, 2
+			// 1 X	: 0				, 4
+			// 2	: q^2*24		, 6
+			// 3	: q^1*8			, 8
+			// 4	: q^1*10		, 10
+			// 5 X	: 0				, 0
+			// 6 W 	: q^4*56		, 14
+			// 7 X	: 0				, 0
+			// 8	: q^1*18		, 18
+			// 9	: q^1*20		, 20
+			// 2, 6, 7, 5, 0, 1
+			currentList = pendingList
+			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+			// 2, 9, 8, 4, 3, 6
+			pendingList, _ = json.Marshal([]string{testID[4], testID[18], testID[16], testID[8], testID[6], testID[12]})
 			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 		})
 	})
