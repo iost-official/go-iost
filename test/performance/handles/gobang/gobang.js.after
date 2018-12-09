@@ -1,0 +1,136 @@
+use strict;
+class Board {
+    constructor(b) {
+        this.record = b;
+    }
+    isAvailable(x, y) {
+        return _IOSTBinaryOp(this.record[_IOSTBinaryOp(_IOSTBinaryOp(x, ',', '+'), y, '+')], undefined, '===');
+    }
+    move(x, y, step) {
+        this.record[_IOSTBinaryOp(_IOSTBinaryOp(x, ',', '+'), y, '+')] = step;
+    }
+    color(x, y) {
+        if (this.isAvailable(x, y)) {
+            return 2;
+        }
+        return _IOSTBinaryOp(this.record[_IOSTBinaryOp(_IOSTBinaryOp(x, ',', '+'), y, '+')], 2, '%');
+    }
+}
+class Game {
+    constructor(a, b) {
+        this.a = a;
+        this.b = b;
+        this.count = 0;
+        this.board = new Board({});
+        this.winner = null;
+        this.hash = '';
+    }
+    isTurn(player) {
+        return _IOSTBinaryOp(_IOSTBinaryOp(this.count, 2, '%'), 0, '===') && _IOSTBinaryOp(player, this.a, '===') || _IOSTBinaryOp(_IOSTBinaryOp(this.count, 2, '%'), 1, '===') && _IOSTBinaryOp(player, this.b, '===');
+    }
+    move(player, x, y) {
+        if (_IOSTBinaryOp(this.winner, null, '!==')) {
+            return 'this game has come to a close';
+        }
+        if (!this.isTurn(player)) {
+            return _IOSTBinaryOp(_IOSTBinaryOp(_IOSTBinaryOp('error player ', player, '+'), ', should be: ', '+'), this.isTurn(this.a) ? this.a : this.b, '+');
+        }
+        if (!this.board.isAvailable(x, y)) {
+            return 'this cross has marked';
+        }
+        this.board.move(x, y, this.count++);
+        if (this._result(x, y)) {
+            this.winner = player;
+        }
+        return 0;
+    }
+    _result(x, y) {
+        return _IOSTBinaryOp(this._count(x, y, 1, 0), 5, '>=') || _IOSTBinaryOp(this._count(x, y, 0, 1), 5, '>=') || _IOSTBinaryOp(this._count(x, y, 1, 1), 5, '>=') || _IOSTBinaryOp(this._count(x, y, 1, -1), 5, '>=');
+    }
+    _count(x, y, stepx, stepy) {
+        let count = 1;
+        const color = this.board.color(x, y);
+        let cx = x;
+        let cy = y;
+        for (let i = 0; _IOSTBinaryOp(i, 4, '<'); i++) {
+            cx = _IOSTBinaryOp(cx, stepx, '+');
+            cy = _IOSTBinaryOp(cy, stepy, '+');
+            if (!Game._checkBound(cx) || !Game._checkBound(cy))
+                break;
+            if (_IOSTBinaryOp(color, this.board.color(cx, cy), '!=='))
+                break;
+            count++;
+        }
+        cx = x;
+        cy = y;
+        for (let i = 0; _IOSTBinaryOp(i, 4, '<'); i++) {
+            cx = _IOSTBinaryOp(cx, stepx, '-');
+            cy = _IOSTBinaryOp(cy, stepy, '-');
+            if (_IOSTBinaryOp(color, this.board.color(cx, cy), '!=='))
+                break;
+            count++;
+        }
+        return count;
+    }
+    static _checkBound(i) {
+        return !(_IOSTBinaryOp(i, 0, '<') || _IOSTBinaryOp(i, 15, '>='));
+    }
+    static fromJSON(json) {
+        const obj = JSON.parse(json);
+        let g = new Game(obj.a, obj.b);
+        g.count = obj.count;
+        g.winner = obj.winner;
+        g.hash = obj.hash;
+        g.board = new Board(obj.board.record);
+        return g;
+    }
+}
+class Gobang {
+    constructor() {
+    }
+    init() {
+        storage.put('nonce', JSON.stringify(0));
+    }
+    newGameWith(b) {
+        const jn = storage.get('nonce');
+        const id = JSON.parse(jn);
+        const newGame = new Game(tx.publisher, b, 15);
+        newGame.hash = tx.hash;
+        this._saveGame(id, newGame);
+        storage.put('nonce', JSON.stringify(_IOSTBinaryOp(id, 1, '+')));
+        return id;
+    }
+    move(id, x, y, hash) {
+        let g = this._readGame(id);
+        if (_IOSTBinaryOp(g.hash, hash, '!==')) {
+            throw 'illegal hash in this fork';
+        }
+        if (!Game._checkBound(x) || !Game._checkBound(y))
+            throw 'input out of bounds';
+        console.log(tx.publisher);
+        const rtn = g.move(tx.publisher, x, y);
+        if (_IOSTBinaryOp(rtn, 0, '!==')) {
+            throw rtn;
+        }
+        g.hash = tx.hash;
+        this._saveGame(id, g);
+    }
+    accomplish(id) {
+        let game = this._readGame(id);
+        if (!BlockChain.requireAuth(game.a, 'active') && !BlockChain.requireAuth(game.b, 'active')) {
+            throw 'require auth error';
+        }
+        this._releaseGame(id);
+    }
+    _readGame(id) {
+        const gj = storage.get(_IOSTBinaryOp('games', id, '+'));
+        return Game.fromJSON(gj);
+    }
+    _saveGame(id, game) {
+        storage.put(_IOSTBinaryOp('games', id, '+'), JSON.stringify(game), game.a);
+    }
+    _releaseGame(id) {
+        storage.del(_IOSTBinaryOp('games', id, '+'));
+    }
+}
+module.exports = Gobang;
