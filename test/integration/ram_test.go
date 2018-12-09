@@ -1,6 +1,8 @@
 package integration
 
 import (
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/native"
 	"testing"
 
 	"github.com/iost-official/go-iost/account"
@@ -49,6 +51,10 @@ func TestRAM(t *testing.T) {
 	r, err = s.Call(contractName, "issue", array2json([]interface{}{initialTotal, increaseInterval, increaseAmount, 0}), admin.ID, admin)
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
+	}
+	dbKey := "token.iost" + database.Separator + native.TokenInfoMapPrefix + "ram"
+	if database.MustUnmarshal(s.Visitor.MGet(dbKey, "fullName")) != "IOST system ram" {
+		panic("incorrect token full name")
 	}
 	initRAM := s.Visitor.TokenBalance("ram", kp.ID)
 
