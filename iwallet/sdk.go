@@ -2,20 +2,21 @@ package iwallet
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"fmt"
-	"os"
-	"strings"
-	"time"
-
-	"github.com/mitchellh/go-homedir"
-	"google.golang.org/grpc"
-
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/mitchellh/go-homedir"
+	"google.golang.org/grpc"
+	"os"
+	"strconv"
+	"strings"
+	"time"
 )
 
 // SDK ...
@@ -25,8 +26,8 @@ type SDK struct {
 	keyPair     *account.KeyPair
 	signAlgo    string
 
-	gasLimit    int64
-	gasPrice    int64
+	gasLimit    float64
+	gasRatio    float64
 	expiration  int64
 	amountLimit string
 	delaySecond int64
@@ -48,9 +49,9 @@ func (s *SDK) SetAccount(name string, kp *account.KeyPair) {
 }
 
 // SetTxInfo ...
-func (s *SDK) SetTxInfo(gasLimit int64, gasPrice int64, expiration int64, delaySecond int64) {
+func (s *SDK) SetTxInfo(gasLimit float64, gasRatio float64, expiration int64, delaySecond int64) {
 	s.gasLimit = gasLimit
-	s.gasPrice = gasPrice
+	s.gasRatio = gasRatio
 	s.expiration = expiration
 	s.delaySecond = delaySecond
 }
@@ -67,8 +68,8 @@ func (s *SDK) SetServer(server string) {
 	s.server = server
 }
 
-func (s *SDK) parseAmountLimit(limitStr string) ([]*contract.Amount, error) {
-	result := make([]*contract.Amount, 0)
+func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
+	result := make([]*rpcpb.AmountLimit, 0)
 	if limitStr == "" {
 		return result, nil
 	}
@@ -79,32 +80,49 @@ func (s *SDK) parseAmountLimit(limitStr string) ([]*contract.Amount, error) {
 			return nil, fmt.Errorf("invalid amount limit %v", gram)
 		}
 		token := limit[0]
-		amountLimit, err := common.UnmarshalFixed(limit[1])
+		amountLimit, err := strconv.ParseFloat(limit[1], 64)
 		if err != nil {
 			return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
 		}
-		tokenLimit := &contract.Amount{}
+		tokenLimit := &rpcpb.AmountLimit{}
 		tokenLimit.Token = token
-		tokenLimit.Val = amountLimit.Marshal()
+		tokenLimit.Value = amountLimit
 		result = append(result, tokenLimit)
 	}
 	return result, nil
 }
 
-func (s *SDK) createTx(actions []*tx.Action) (*tx.Tx, error) {
+func (s *SDK) createTx(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
 	amountLimits, err := s.parseAmountLimit(s.amountLimit)
 	if err != nil {
 		return nil, err
 	}
 	now := time.Now().UnixNano()
 	expiration := now + s.expiration*1e9
-	trx := tx.NewTx(actions, []string{}, s.gasLimit, s.gasPrice, expiration, s.delaySecond*1e9)
-	trx.AmountLimit = amountLimits
-	return trx, nil
+
+	ret := &rpcpb.TransactionRequest{
+		Time:          time.Now().UnixNano(),
+		Actions:       actions,
+		Signers:       []string{},
+		GasLimit:      s.gasLimit,
+		GasRatio:      s.gasRatio,
+		Expiration:    expiration,
+		PublisherSigs: []*rpcpb.Signature{},
+		Delay:         s.delaySecond * 1e9,
+		AmountLimit:   amountLimits,
+	}
+	return ret, nil
 }
 
-func (s *SDK) signTx(t *tx.Tx) (*tx.Tx, error) {
-	return tx.SignTx(t, s.accountName, []*account.KeyPair{s.keyPair})
+func (s *SDK) signTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, error) {
+	sig := &rpcpb.Signature{
+		Algorithm: rpcpb.Signature_Algorithm(s.getSignAlgo()),
+		Signature: s.getSignAlgo().Sign(common.Sha3(txToBytes(t)), s.keyPair.Seckey),
+		PublicKey: s.getSignAlgo().GetPubkey(s.keyPair.Seckey),
+	}
+	t.PublisherSigs = []*rpcpb.Signature{sig}
+	t.Publisher = s.accountName
+	return t, nil
 }
 
 func (s *SDK) getSignAlgoName() string {
@@ -205,7 +223,7 @@ func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 	return client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHashStr})
 }
 
-func (s *SDK) sendTx(stx *tx.Tx) (string, error) {
+func (s *SDK) sendTx(stx *rpcpb.TransactionRequest) (string, error) {
 	fmt.Println("sending tx")
 	if sdk.verbose {
 		fmt.Println(stx.String())
@@ -216,7 +234,7 @@ func (s *SDK) sendTx(stx *tx.Tx) (string, error) {
 	}
 	defer conn.Close()
 	client := rpcpb.NewApiServiceClient(conn)
-	resp, err := client.SendTransaction(context.Background(), toTxRequest(stx))
+	resp, err := client.SendTransaction(context.Background(), stx)
 	if err != nil {
 		return "", err
 	}
@@ -236,7 +254,7 @@ func (s *SDK) checkTransaction(txHash string) bool {
 			fmt.Println("result not ready, please wait.")
 			continue
 		}
-		if tx.StatusCode(txReceipt.StatusCode) != tx.Success {
+		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
 			fmt.Println("exec tx failed: ", txReceipt.Message)
 			fmt.Println("full error information: ", marshalTextString(txReceipt))
 		} else {
@@ -342,8 +360,8 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 
 // PledgeForGas ...
 func (s *SDK) PledgeForGas(gasPledged int64) error {
-	var acts []*tx.Action
-	acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, s.accountName, gasPledged)))
+	var acts []*rpcpb.Action
+	acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, s.accountName, gasPledged)))
 	trx, err := s.createTx(acts)
 	if err != nil {
 		return err
@@ -372,14 +390,14 @@ func (s *SDK) PledgeForGas(gasPledged int64) error {
 
 // CreateNewAccount ...
 func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
-	var acts []*tx.Action
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
+	var acts []*rpcpb.Action
+	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
 	if initialRAM > 0 {
-		acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
+		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
 	}
-	acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
 	if initialCoins > 0 {
-		acts = append(acts, tx.NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
+		acts = append(acts, NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
 	}
 	trx, err := s.createTx(acts)
 	if err != nil {
@@ -411,7 +429,7 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 }
 
 // PublishContract converts contract js code to transaction. If 'send', also send it to chain.
-func (s *SDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (stx *tx.Tx, txHash string, err error) {
+func (s *SDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (stx *rpcpb.TransactionRequest, txHash string, err error) {
 	fd, err := readFile(codePath)
 	if err != nil {
 		fmt.Println("Read source code file failed: ", err.Error())
@@ -425,27 +443,45 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 		return nil, "", err
 	}
 	abi := string(fd)
-
-	compiler := new(contract.Compiler)
-	if compiler == nil {
-		fmt.Println("gen compiler instance failed")
-		return nil, "", err
-	}
-	c, err := compiler.Parse(conID, code, abi)
+	var info *contract.Info
+	err = json.Unmarshal([]byte(abi), &info)
 	if err != nil {
-		fmt.Printf("gen contract error:%v\n", err)
 		return nil, "", err
 	}
-
+	c := &contract.Contract{
+		ID:   conID,
+		Code: code,
+		Info: info,
+	}
 	methodName := "SetCode"
-	data := `["` + c.B64Encode() + `"]`
 	if update {
 		methodName = "UpdateCode"
-		data = `["` + c.B64Encode() + `", "` + updateID + `"]`
 	}
-
-	action := tx.NewAction("system.iost", methodName, data)
-	trx, err := s.createTx([]*tx.Action{action})
+	marshalMethod := "json"
+	var contractStr string
+	if marshalMethod == "json" {
+		buf, err := json.Marshal(c)
+		if err != nil {
+			return nil, "", err
+		}
+		contractStr = string(buf)
+	} else {
+		buf, err := proto.Marshal(c)
+		if err != nil {
+			return nil, "", err
+		}
+		contractStr = base64.StdEncoding.EncodeToString(buf)
+	}
+	arr := []string{contractStr}
+	if update {
+		arr = append(arr, updateID)
+	}
+	data, err := json.Marshal(arr)
+	if err != nil {
+		return nil, "", err
+	}
+	action := NewAction("system.iost", methodName, string(data))
+	trx, err := s.createTx([]*rpcpb.Action{action})
 	if err != nil {
 		return nil, "", err
 	}
@@ -462,46 +498,64 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	return trx, hash, nil
 }
 
-func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
-	ret := &rpcpb.TransactionRequest{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasRatio:   float64(t.GasRatio) / 100,
-		GasLimit:   float64(t.GasLimit) / 100,
-		Delay:      t.Delay,
-		Signers:    t.Signers,
-		Publisher:  t.Publisher,
-	}
+func actionToBytes(a *rpcpb.Action) []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteString(a.Contract, true)
+	sn.WriteString(a.ActionName, true)
+	sn.WriteString(a.Data, true)
+	return sn.Bytes()
+}
+
+func amountToBytes(a *rpcpb.AmountLimit) []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteString(a.Token, true)
+	sn.WriteString(strconv.FormatFloat(a.Value, 'f', -1, 64), true)
+	return sn.Bytes()
+}
+
+func signatureToBytes(s *rpcpb.Signature) []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteByte(byte(s.Algorithm), true)
+	sn.WriteBytes(s.Signature, true)
+	sn.WriteBytes(s.PublicKey, true)
+	return sn.Bytes()
+}
+
+func txToBytes(t *rpcpb.TransactionRequest) []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteInt64(t.Time, true)
+	sn.WriteInt64(t.Expiration, true)
+	sn.WriteInt64(int64(t.GasRatio*100), true)
+	sn.WriteInt64(int64(t.GasLimit*100), true)
+	sn.WriteInt64(t.Delay, true)
+	sn.WriteStringSlice(t.Signers, true)
+
+	actionBytes := make([][]byte, 0, len(t.Actions))
 	for _, a := range t.Actions {
-		ret.Actions = append(ret.Actions, &rpcpb.Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
+		actionBytes = append(actionBytes, actionToBytes(a))
 	}
+	sn.WriteBytesSlice(actionBytes, false)
+
+	amountBytes := make([][]byte, 0, len(t.AmountLimit))
 	for _, a := range t.AmountLimit {
-		fixed, err := common.UnmarshalFixed(a.Val)
-		if err != nil {
-			continue
-		}
-		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
-			Token: a.Token,
-			Value: fixed.ToFloat(),
-		})
+		amountBytes = append(amountBytes, amountToBytes(a))
 	}
-	for _, s := range t.Signs {
-		ret.Signatures = append(ret.Signatures, &rpcpb.Signature{
-			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
-			PublicKey: s.Pubkey,
-			Signature: s.Sig,
-		})
+	sn.WriteBytesSlice(amountBytes, false)
+
+	signBytes := make([][]byte, 0, len(t.Signatures))
+	for _, sig := range t.Signatures {
+		signBytes = append(signBytes, signatureToBytes(sig))
 	}
-	for _, s := range t.PublishSigns {
-		ret.PublisherSigs = append(ret.PublisherSigs, &rpcpb.Signature{
-			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
-			PublicKey: s.Pubkey,
-			Signature: s.Sig,
-		})
+	sn.WriteBytesSlice(signBytes, false)
+
+	return sn.Bytes()
+}
+
+// NewAction ...
+func NewAction(contract string, name string, data string) *rpcpb.Action {
+	return &rpcpb.Action{
+		Contract:   contract,
+		ActionName: name,
+		Data:       data,
 	}
-	return ret
 }

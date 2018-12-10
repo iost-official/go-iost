@@ -27,7 +27,7 @@ char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 
 const char *preloadBlockCode = R"(
 // load Block
-const blockInfo = JSON.parse(BlockChain.blockInfo());
+const blockInfo = JSON.parse(blockchain.blockInfo());
 const block = {
    number: blockInfo.number,
    parentHash: blockInfo.parent_hash,
@@ -37,7 +37,7 @@ const block = {
 
 
 // load tx
-const txInfo = JSON.parse(BlockChain.txInfo());
+const txInfo = JSON.parse(blockchain.txInfo());
 const tx = {
    time: txInfo.time,
    hash: txInfo.hash,

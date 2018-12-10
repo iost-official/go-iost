@@ -93,11 +93,11 @@ class VoteContract {
     }
 
     _requireAuth(account, permission) {
-        BlockChain.requireAuth(account, permission);
+        blockchain.requireAuth(account, permission);
     }
 
     _call(contract, api, args) {
-        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
+        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -177,6 +177,11 @@ class VoteContract {
             if (storage.mapHas("producerKeyToId", pubkey)) {
                 throw new Error("pubkey is used by another producer");
             }
+            const currentList = this._get("currentProducerList");
+            const pendingList = this._get("pendingProducerList");
+            if (currentList.includes(pro.pubkey) || pendingList.includes(pro.pubkey)) {
+                throw new Error("account in producerList, can't change pubkey");
+            }
 
             this._mapDel("producerKeyToId", pro.pubkey, account);
             this._mapPut("producerKeyToId", pubkey, account, account);
@@ -247,8 +252,7 @@ class VoteContract {
 
         const pro = this._mapGet("producerTable", account);
         this._mapDel("producerTable", account);
-        this._mapDel("preProducerMap", account);
-        this._mapDel("producerKeyToId", pro.pubkey, account);
+        this._mapDel("producerKeyToId", pro.pubkey);
 
         this._call("token.iost", "transfer", ["iost", "vote_producer.iost", account, pro.registerFee, ""]);
     }
@@ -289,7 +293,6 @@ class VoteContract {
             voter
         ]);
     }
-
 
     _getScores() {
         const scores = this._get("producerScores");
@@ -365,7 +368,7 @@ class VoteContract {
         let minScore = new Float64(MaxFloat64);
         for (const key of pendingProducerList) {
             const account = this._mapGet("producerKeyToId", key);
-            const score = new Float64(scores[account] ? scores[account] : "0");
+            const score = new Float64(scores[account] || "0");
             oldPreList.push({
                 "key": key,
                 "prior": 1,

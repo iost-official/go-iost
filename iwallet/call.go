@@ -16,8 +16,8 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/rpc/pb"
 
-	"github.com/iost-official/go-iost/core/tx"
 	"github.com/spf13/cobra"
 )
 
@@ -41,9 +41,9 @@ var callCmd = &cobra.Command{
 			fmt.Println(`Error: number of args should be a multiplier of 3`)
 			return
 		}
-		var actions []*tx.Action = make([]*tx.Action, argc/3)
+		var actions = make([]*rpcpb.Action, argc/3)
 		for i := 0; i < len(args); i += 3 {
-			act := tx.NewAction(args[i], args[i+1], args[i+2]) //check sth here
+			act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
 			actions[i] = act
 		}
 		trx, err := sdk.createTx(actions)
