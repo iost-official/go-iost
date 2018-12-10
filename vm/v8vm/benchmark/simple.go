@@ -48,7 +48,18 @@ class Contract {
 	}
 
 	show() {
-		return "hello world";
+		return "Hello World!"
+	}
+
+	test() {
+		let a = "what the fuck is this!"
+		let b = new Array(10000)
+		let d = 1;
+		for (let i = 0; i < b.length; i++)
+		{
+			b[i] = new Array(1000)
+		}
+		return a
 	}
 }
 
