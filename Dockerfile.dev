@@ -22,4 +22,4 @@ RUN curl -L https://git.io/vp6lP | sh
 
 WORKDIR $GOPATH/src/github.com/iost-official/go-iost
 
-CMD ["make"]
+CMD ["make vmlib && make"]

@@ -319,7 +319,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         return;
     }
     //raise(SIGILL);
-    *(int*) 0 = 0;
+    //*(int*) 0 = 0;
 
     // reset gas count
     sbx->gasUsed = 0;
@@ -371,7 +371,8 @@ void handleSig(int sig)
 {
     printf("OUCH! - I got signal %d\n", sig);
     std::fflush(stdout);
-    exit(1);
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    //exit(1);
 }
 
 ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
