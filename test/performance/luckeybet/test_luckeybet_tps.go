@@ -132,7 +132,7 @@ func publish() string {
 	abiPath := codePath + ".abi"
 	sdk := iwallet.SDK{}
 	sdk.SetAccount(testID, testKp)
-	sdk.SetTxInfo(10000, 100, 5, 0)
+	sdk.SetTxInfo(10000.0, 1.0, 5, 0)
 	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		panic(err)
