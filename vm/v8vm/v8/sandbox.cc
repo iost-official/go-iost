@@ -318,6 +318,8 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         error = exception;
         return;
     }
+    //raise(SIGILL);
+    *(int*) 0 = 0;
 
     // reset gas count
     sbx->gasUsed = 0;
@@ -369,6 +371,7 @@ void handleSig(int sig)
 {
     printf("OUCH! - I got signal %d\n", sig);
     std::fflush(stdout);
+    exit(1);
 }
 
 ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
@@ -386,6 +389,9 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     sigemptyset(&act.sa_mask);
     act.sa_flags = 0;
     sigaction(SIGINT, &act, 0);
+    sigaction(SIGFPE, &act, 0);
+    sigaction(SIGILL, &act, 0);
+    sigaction(SIGSEGV, &act, 0);
 
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
