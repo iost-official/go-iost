@@ -1,4 +1,5 @@
 #include <signal.h>
+#include <unistd.h>
 #include "sandbox.h"
 #include "console.h"
 #include "require.h"
@@ -369,10 +370,11 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
 
 void handleSig(int sig)
 {
-    printf("OUCH! - I got signal %d\n", sig);
-    std::fflush(stdout);
-    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    // printf("OUCH! - I got signal %d\n", sig);
+    // std::fflush(stdout);
+    // std::this_thread::sleep_for(std::chrono::milliseconds(1000));
     //exit(1);
+    sleep(1);
 }
 
 ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
