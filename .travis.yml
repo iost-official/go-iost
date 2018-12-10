@@ -19,6 +19,7 @@ matrix:
     before_script:
     - git lfs pull
     script:
+    - make vmlib
     - make build
     - make lint
     - make test
