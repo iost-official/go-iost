@@ -1,15 +1,33 @@
 package call
 
 import (
+	"context"
+	"fmt"
 	"log"
 	"sync"
+
+	"golang.org/x/time/rate"
 )
+
+const (
+	goroutineLimit = 2000
+)
+
+type semaphore chan struct{}
+
+func (s semaphore) Acquire() {
+	s <- struct{}{}
+}
+
+func (s semaphore) Release() {
+	<-s
+}
 
 var handles = make(map[string]Handler)
 
 // Run ...
-func Run(handleType string, iterNum int, parallelNum int, address string, flag bool) {
-	results := make(chan string)
+func Run(handleType string, amount int, tps int, prepare int, flag bool) {
+	// results := make(chan string)
 
 	handle, exist := handles[handleType]
 	if !exist {
@@ -17,43 +35,43 @@ func Run(handleType string, iterNum int, parallelNum int, address string, flag b
 		return
 	}
 
-	err := handle.Init(address, parallelNum)
-	if err != nil {
-		log.Println("Init error")
-		return
+	if prepare > 0 {
+		err := handle.Prepare()
+		if err != nil {
+			log.Println("prepare error: ", err)
+			return
+		}
 	}
 
-	err = handle.Publish()
-	if err != nil {
-		log.Println("Publish error")
-		return
-	}
+	limiter := rate.NewLimiter(rate.Limit(tps), 1)
 
-	var iWaitGroup sync.WaitGroup
-	iWaitGroup.Add(iterNum)
+	wg := new(sync.WaitGroup)
+	wg.Add(amount)
 
-	for i := 0; i < iterNum; i++ {
+	sem := make(semaphore, goroutineLimit)
+	for i := 0; i < amount; i++ {
+		err := limiter.Wait(context.Background())
+		if err != nil {
+			panic(err)
+		}
+		sem.Acquire()
 		go func(it int) {
-			var waitGroup sync.WaitGroup
-
-			for j := 0; j < parallelNum; j++ {
-				waitGroup.Add(1)
-				go func(jj int) {
-					Handle(handle, jj, results)
-					waitGroup.Done()
-				}(j)
+			defer sem.Release()
+			defer wg.Done()
+			// Handle(handle, it, results)
+			_, err := handle.Run(it)
+			if err != nil {
+				fmt.Println(err)
 			}
-			waitGroup.Wait()
-			iWaitGroup.Done()
 		}(i)
+		if i%10000 == 0 {
+			fmt.Printf("sent %d txs\n", i)
+		}
 	}
 
-	go func() {
-		iWaitGroup.Wait()
-		close(results)
-	}()
+	wg.Wait()
 
-	Display(results, flag)
+	// Display(results, flag)
 }
 
 // Register ...
