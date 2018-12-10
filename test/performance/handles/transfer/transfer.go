@@ -43,7 +43,7 @@ func (t *transferHandle) Publish() error {
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/transfer/transfer.js"
 	abiPath := codePath + ".abi"
 	sdk.SetAccount("admin", acc)
-	sdk.SetTxInfo(5000000, 100, 90, 0)
+	sdk.SetTxInfo(50000.0, 1.0, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
 	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
