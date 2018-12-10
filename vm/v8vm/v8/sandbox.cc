@@ -1,3 +1,4 @@
+#include <signal.h>
 #include "sandbox.h"
 #include "console.h"
 #include "require.h"
@@ -364,6 +365,12 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     return;
 }
 
+void handleSig(int sig)
+{
+    printf("OUCH! - I got signal %d\n", sig);
+    std::fflush(stdout);
+}
+
 ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
@@ -372,6 +379,14 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     std::string error;
     bool isJson = false;
     bool isDone = false;
+
+    // register sigaction
+    struct sigaction act;
+    act.sa_handler = handleSig;
+    sigemptyset(&act.sa_mask);
+    act.sa_flags = 0;
+    sigaction(SIGINT, &act, 0);
+
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
