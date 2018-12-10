@@ -552,13 +552,11 @@ func TestEngine_Func(t *testing.T) {
 	}
 
 	// illegal instruction on mac
-	/*
 		host, code = MyInit(t, "func", int64(100000000000))
 		_, _, err = vmPool.LoadAndCall(host, code, "func1")
 		if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
 			t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
 		}
-	*/
 
 	host, code = MyInit(t, "func")
 	rs, _, err := vmPool.LoadAndCall(host, code, "func3", 4)
