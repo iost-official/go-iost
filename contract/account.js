@@ -29,7 +29,7 @@ class Account {
     }
 
     _ra(id) {
-        if (!BlockChain.requireAuth(id, "owner")) {
+        if (!blockchain.requireAuth(id, "owner")) {
             throw new Error("require auth failed");
         }
     }
@@ -56,7 +56,7 @@ class Account {
         this._checkIdValid(id);
         let account = {};
         account.id = id;
-        account.referrer = BlockChain.publisher();
+        account.referrer = blockchain.publisher();
         account.referrer_update_time = block.time;
         account.permissions = {};
         account.permissions.active = {
@@ -79,8 +79,8 @@ class Account {
             }],
             threshold: 1,
         };
-        this._saveAccount(account, BlockChain.publisher());
-        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([BlockChain.publisher(), "30000"]));
+        this._saveAccount(account, blockchain.publisher());
+        blockchain.callWithAuth("gas.iost", "reward", JSON.stringify([blockchain.publisher(), "30000"]));
     }
 
     UpdateReferrer(id, referrer) {
