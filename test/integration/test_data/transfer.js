@@ -2,12 +2,12 @@ class transfer {
     init(){
     }
     transfer(from, to, amount) {
-        // let ret = BlockChain.call("token.iost", "transfer", '["iost", "' + from + '","' + to + '","' + amount + '", ""]');
-        BlockChain.transfer(from, to, amount, "");
+        // let ret = blockchain.call("token.iost", "transfer", '["iost", "' + from + '","' + to + '","' + amount + '", ""]');
+        blockchain.transfer(from, to, amount, "");
     }
     withdraw(to, amount) {
-        //let ret = BlockChain.callWithAuth("token.iost", "transfer", '["iost", "' + BlockChain.contractName() + '","' + to + '","' + amount + '", ""]');
-        BlockChain.withdraw(to, amount, "");
+        //let ret = blockchain.callWithAuth("token.iost", "transfer", '["iost", "' + blockchain.contractName() + '","' + to + '","' + amount + '", ""]');
+        blockchain.withdraw(to, amount, "");
     }
 }
 
