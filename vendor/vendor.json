@@ -1456,6 +1456,12 @@
 			"revisionTime": "2018-05-10T04:57:31Z"
 		},
 		{
+			"checksumSHA1": "7Ev/X4Xe8P3961myez/hBKO05ig=",
+			"path": "golang.org/x/time/rate",
+			"revision": "85acf8d2951cb2a3bde7632f9ff273ef0379bcbd",
+			"revisionTime": "2018-11-08T03:19:45Z"
+		},
+		{
 			"checksumSHA1": "YNqziavfZHurG6wrwR5Uf9SnI4s=",
 			"path": "google.golang.org/genproto/googleapis/api/annotations",
 			"revision": "c66870c02cf823ceb633bcd05be3c7cda29976f4",
