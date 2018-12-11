@@ -43,13 +43,13 @@ func toPbTxReceipt(tr *tx.TxReceipt) *rpcpb.TxReceipt {
 }
 
 func toPbAmountLimit(a *contract.Amount) *rpcpb.AmountLimit {
-	fixed, err := common.UnmarshalFixed(a.Val)
+	fixed, err := strconv.ParseFloat(a.Val, 64)
 	if err != nil {
 		return nil
 	}
 	return &rpcpb.AmountLimit{
 		Token: a.Token,
-		Value: fixed.ToFloat(),
+		Value: fixed,
 	}
 }
 
