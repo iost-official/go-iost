@@ -13,7 +13,7 @@ private:
 public:
     IOSTCrypto(SandboxPtr ptr): sbxPtr(ptr) {}
 
-    char* sha3(const char *msg);
+    CStr sha3(const CStr msg);
 };
 
 #endif // IOST_V8_CRYPTO_H
