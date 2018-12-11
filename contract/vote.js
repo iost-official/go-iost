@@ -1,6 +1,6 @@
 const producerRegisterFee = "200000000";
 const preProducerThreshold = "210000000";
-const voteLockTime = 864000;
+const voteLockTime = 2592000;
 const voteStatInterval = 200;
 const iostDecimal = 8;
 const scoreDecreaseRate = new Float64("0.999995");
@@ -28,7 +28,7 @@ class VoteContract {
                 minVote: preProducerThreshold,
                 options: [],
                 anyOption: false,
-                unvoteInterval: voteLockTime
+                freezeTime: voteLockTime
             }
         ]);
         this._put("voteId", JSON.stringify(voteId));
