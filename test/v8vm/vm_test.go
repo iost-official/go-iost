@@ -437,7 +437,7 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall param2 run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0] != "null" {
+	if len(rs) != 1 || rs[0] != "" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
 

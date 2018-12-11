@@ -47,10 +47,10 @@ void NewConsoleLog(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    String::Utf8Value levelStr(levelVal);
-    String::Utf8Value logStr(logVal);
+    NewCStr(levelStr, levelVal);
+    NewCStr(logStr, logVal);
 
-    CConsole(sbxPtr, *levelStr, *logStr);
+    CConsole(sbxPtr, levelStr, logStr);
 }
 
 void InitConsole(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
