@@ -46,7 +46,11 @@ import (
 	"sync"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
+	"os"
+	"os/signal"
+	"syscall"
 )
 
 // Sandbox is an execution environment that allows separate, unrelated, JavaScript
@@ -239,6 +243,16 @@ obj.%s(%s);
 
 // Execute prepared code, return results, gasUsed
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
+	c := make(chan os.Signal)
+	signal.Notify(c, syscall.SIGILL, syscall.SIGSEGV, syscall.SIGINT, syscall.SIGFPE)
+	go func() {
+		for {
+			select {
+			case e := <-c:
+				ilog.Errorf("signal received, %v", e)
+			}
+		}
+	}()
 	cCode := C.CString(preparedCode)
 	defer C.free(unsafe.Pointer(cCode))
 	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
