@@ -49,7 +49,6 @@ const tx = {
 };)";
 
 const int sandboxMemLimit = 100000000; // 100mb
-int startMemHHH = 0;
 const char *copyString(const std::string &str) {
     char *cstr = new char[str.length() + 1];
     std::strcpy(cstr, str.c_str());
@@ -291,9 +290,9 @@ size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
     /*fields[1] = v8_heap_stats.total_heap_size();
     fields[2] = v8_heap_stats.used_heap_size();
     fields[3] = v8_heap_stats.external_memory();*/
-    int a = v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
+    //int a = v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
     //std::cout << "MemoryUsed: " << a - startMemHHH  << std::endl;
-    return a;
+    return v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
 }
 
 void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
@@ -376,8 +375,8 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     std::string error;
     bool isJson = false;
     bool isDone = false;
-    std::cout << "StartMemBeforeChange: " << startMemHHH << std::endl;
-    startMemHHH = MemoryUsage(isolate, sbx->allocator);
+    //std::cout << "StartMemBeforeChange: " << startMemHHH << std::endl;
+    //startMemHHH = MemoryUsage(isolate, sbx->allocator);
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { nullptr, nullptr, isJson, 0 };
