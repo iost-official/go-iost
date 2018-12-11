@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
@@ -145,7 +146,7 @@ func (p *PoB) messageLoop() {
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
 				var blkInfo msgpb.BlockInfo
-				err := blkInfo.Unmarshal(incomingMessage.Data())
+				err := proto.Unmarshal(incomingMessage.Data(), &blkInfo)
 				if err != nil {
 					continue
 				}
@@ -158,7 +159,7 @@ func (p *PoB) messageLoop() {
 			}
 			if p.baseVariable.Mode() == global.ModeNormal {
 				var rh msgpb.BlockInfo
-				err := rh.Unmarshal(incomingMessage.Data())
+				err := proto.Unmarshal(incomingMessage.Data(), &rh)
 				if err != nil {
 					continue
 				}
@@ -181,7 +182,7 @@ func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 		ilog.Debug("duplicate block, block number: ", blkInfo.Number)
 		return
 	}
-	bytes, err := blkInfo.Marshal()
+	bytes, err := proto.Marshal(blkInfo)
 	if err != nil {
 		ilog.Debugf("fail to Marshal requestblock, %v", err)
 		return
@@ -215,7 +216,7 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 		Number: blk.Head.Number,
 		Hash:   blk.HeadHash(),
 	}
-	b, err := blkInfo.Marshal()
+	b, err := proto.Marshal(blkInfo)
 	if err != nil {
 		ilog.Error("fail to encode block hash")
 	} else {

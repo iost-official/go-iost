@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
@@ -40,7 +41,7 @@ func (a *Action) FromPb(ac *txpb.Action) *Action {
 
 // Encode encode action as byte array
 func (a *Action) Encode() []byte {
-	b, err := a.ToPb().Marshal()
+	b, err := proto.Marshal(a.ToPb())
 	if err != nil {
 		panic(err)
 	}
@@ -50,7 +51,7 @@ func (a *Action) Encode() []byte {
 // Decode action from byte array
 func (a *Action) Decode(b []byte) error {
 	ac := &txpb.Action{}
-	err := ac.Unmarshal(b)
+	err := proto.Unmarshal(b, ac)
 	if err != nil {
 		return err
 	}

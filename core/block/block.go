@@ -3,6 +3,7 @@ package block
 import (
 	"errors"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	blockpb "github.com/iost-official/go-iost/core/block/pb"
 	"github.com/iost-official/go-iost/core/merkletree"
@@ -66,7 +67,7 @@ func (b *BlockHead) FromPb(bh *blockpb.BlockHead) *BlockHead {
 
 // Encode is marshal
 func (b *BlockHead) Encode() ([]byte, error) {
-	bhByte, err := b.ToPb().Marshal()
+	bhByte, err := proto.Marshal(b.ToPb())
 	if err != nil {
 		return nil, errors.New("fail to encode blockhead")
 	}
@@ -76,7 +77,7 @@ func (b *BlockHead) Encode() ([]byte, error) {
 // Decode is unmarshal
 func (b *BlockHead) Decode(bhByte []byte) error {
 	bh := &blockpb.BlockHead{}
-	err := bh.Unmarshal(bhByte)
+	err := proto.Unmarshal(bhByte, bh)
 	if err != nil {
 		return errors.New("fail to decode blockhead")
 	}
@@ -144,7 +145,7 @@ func (b *Block) Encode() ([]byte, error) {
 	if b.Sign != nil {
 		br.Sign = b.Sign.ToPb()
 	}
-	brByte, err := br.Marshal()
+	brByte, err := proto.Marshal(br)
 	if err != nil {
 		return nil, errors.New("fail to encode blockraw")
 	}
@@ -154,7 +155,7 @@ func (b *Block) Encode() ([]byte, error) {
 // Decode is unmarshal
 func (b *Block) Decode(blockByte []byte) error {
 	br := &blockpb.Block{}
-	err := br.Unmarshal(blockByte)
+	err := proto.Unmarshal(blockByte, br)
 	if err != nil {
 		return errors.New("fail to decode blockraw")
 	}
@@ -215,7 +216,7 @@ func (b *Block) EncodeM() ([]byte, error) {
 	for _, r := range b.Receipts {
 		br.ReceiptHashes = append(br.ReceiptHashes, r.Hash())
 	}
-	brByte, err := br.Marshal()
+	brByte, err := proto.Marshal(br)
 	if err != nil {
 		return nil, errors.New("fail to encode blockraw")
 	}

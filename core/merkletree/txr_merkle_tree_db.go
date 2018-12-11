@@ -3,6 +3,7 @@ package merkletree
 import (
 	"encoding/binary"
 	"errors"
+	fmt "fmt"
 	"sync"
 
 	"github.com/iost-official/go-iost/db/kv"
@@ -42,11 +43,11 @@ func Init(LevelDBPath string) error {
 func (mdb *TXRMerkleTreeDB) Put(m *TXRMerkleTree, blockNum uint64) error {
 	mByte, err := m.Encode()
 	if err != nil {
-		return errors.New("fail to encode TXRMerkleTree")
+		return fmt.Errorf("fail to encode TXRMerkleTree: %v", err)
 	}
 	err = mdb.txrMerkleTreeDB.Put(Uint64ToBytes(blockNum), mByte)
 	if err != nil {
-		return errors.New("fail to put TXRMerkleTree")
+		return fmt.Errorf("fail to put TXRMerkleTree: %v", err)
 	}
 	return nil
 }
