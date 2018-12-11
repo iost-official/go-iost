@@ -164,6 +164,10 @@ class VoteContract {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
+        if (pro.status === STATUS_APPLY) {
+            this._doRemoveProducer(account, pro.pubkey, false);
+            return;
+        }
         if (pro.status !== STATUS_APPROVED) {
             throw new Error("producer not approved");
         }
