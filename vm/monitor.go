@@ -83,7 +83,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	// flag-down fare
 	switch c.Info.Lang {
 	case "javascript":
-		h.PayCost(host.Costs["JSCost"], h.Context().Value("publisher").(string))
+		cost.AddAssign(host.Costs["JSCost"])
 	}
 
 	vm, ok := m.vms[c.Info.Lang]
