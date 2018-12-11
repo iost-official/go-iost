@@ -23,7 +23,7 @@ void InitGoBlockchain(blockInfoFunc blkInfo, txInfoFunc txInfo, contextInfoFunc 
 	CEvent = event;
 }
 
-char* IOSTBlockchain::BlockInfo(char **result) {
+char* IOSTBlockchain::BlockInfo(CStr *result) {
     size_t gasUsed = 0;
 
     char* ret = CBlkInfo(sbxPtr, result, &gasUsed);
@@ -33,7 +33,7 @@ char* IOSTBlockchain::BlockInfo(char **result) {
     return ret;
 }
 
-char* IOSTBlockchain::TxInfo(char **result) {
+char* IOSTBlockchain::TxInfo(CStr *result) {
     size_t gasUsed = 0;
 
     char* ret = CTxInfo(sbxPtr, result, &gasUsed);
@@ -43,7 +43,7 @@ char* IOSTBlockchain::TxInfo(char **result) {
     return ret;
 }
 
-char* IOSTBlockchain::ContextInfo(char **result) {
+char* IOSTBlockchain::ContextInfo(CStr *result) {
     size_t gasUsed = 0;
 
     char* ret = CCtxInfo(sbxPtr, result, &gasUsed);
@@ -53,7 +53,7 @@ char* IOSTBlockchain::ContextInfo(char **result) {
     return ret;
 }
 
-char* IOSTBlockchain::Call(const char *contract, const char *api, const char *args, char **result) {
+char* IOSTBlockchain::Call(const CStr contract, const CStr api, const CStr args, CStr *result) {
     size_t gasUsed = 0;
     char* ret = CCall(sbxPtr, contract, api, args, result, &gasUsed);
 
@@ -62,7 +62,7 @@ char* IOSTBlockchain::Call(const char *contract, const char *api, const char *ar
     return ret;
 }
 
-char* IOSTBlockchain::CallWithAuth(const char *contract, const char *api, const char *args, char **result) {
+char* IOSTBlockchain::CallWithAuth(const CStr contract, const CStr api, const CStr args, CStr *result) {
     size_t gasUsed = 0;
     char* ret = CCallWA(sbxPtr, contract, api, args, result, &gasUsed);
 
@@ -71,7 +71,7 @@ char* IOSTBlockchain::CallWithAuth(const char *contract, const char *api, const 
     return ret;
 }
 
-char* IOSTBlockchain::RequireAuth(const char *accountID, const char *permission, bool *result) {
+char* IOSTBlockchain::RequireAuth(const CStr accountID, const CStr permission, bool *result) {
     size_t gasUsed = 0;
     char* ret = CRequireAuth(sbxPtr, accountID, permission, result, &gasUsed);
 
@@ -80,7 +80,7 @@ char* IOSTBlockchain::RequireAuth(const char *accountID, const char *permission,
     return ret;
 }
 
-char* IOSTBlockchain::Receipt(const char *content) {
+char* IOSTBlockchain::Receipt(const CStr content) {
     size_t gasUsed = 0;
     char* ret = CReceipt(sbxPtr, content, &gasUsed);
 
@@ -89,7 +89,7 @@ char* IOSTBlockchain::Receipt(const char *content) {
     return ret;
 }
 
-char* IOSTBlockchain::Event(const char *content) {
+char* IOSTBlockchain::Event(const CStr content) {
     size_t gasUsed = 0;
     char* ret = CEvent(sbxPtr, content, &gasUsed);
 
@@ -122,7 +122,7 @@ void IOSTBlockchain_blockInfo(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
 
-    char* resultStr = nullptr;
+    CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -141,15 +141,15 @@ void IOSTBlockchain_blockInfo(const FunctionCallbackInfo<Value> &args) {
         free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    if (resultStr != nullptr) free(resultStr);
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr.data, String::kNormalString, resultStr.size));
+    if (resultStr.data != nullptr) free(resultStr.data);
 }
 
 void IOSTBlockchain_txInfo(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
 
-    char *resultStr = nullptr;
+    CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -167,15 +167,15 @@ void IOSTBlockchain_txInfo(const FunctionCallbackInfo<Value> &args) {
         free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    if (resultStr != nullptr) free(resultStr);
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr.data, String::kNormalString, resultStr.size));
+    if (resultStr.data != nullptr) free(resultStr.data);
 }
 
 void IOSTBlockchain_contextInfo(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
     Local<Object> self = args.Holder();
 
-    char *resultStr = nullptr;
+    CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -193,8 +193,8 @@ void IOSTBlockchain_contextInfo(const FunctionCallbackInfo<Value> &args) {
         free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    if (resultStr != nullptr) free(resultStr);
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr.data, String::kNormalString, resultStr.size));
+    if (resultStr.data != nullptr) free(resultStr.data);
 }
 
 void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
@@ -234,10 +234,10 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    String::Utf8Value contractStr(contract);
-    String::Utf8Value apiStr(api);
-    String::Utf8Value argStr(arg);
-    char* resultStr = nullptr;
+    NewCStr(contractStr, contract);
+    NewCStr(apiStr, api);
+    NewCStr(argStr, arg);
+    CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -246,7 +246,7 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
-    char *ret = bc->Call(*contractStr, *apiStr, *argStr, &resultStr);
+    char *ret = bc->Call(contractStr, apiStr, argStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -255,8 +255,8 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
         free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    if (resultStr != nullptr) free(resultStr);
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr.data, String::kNormalString, resultStr.size));
+    if (resultStr.data != nullptr) free(resultStr.data);
 }
 
 void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
@@ -296,10 +296,10 @@ void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    String::Utf8Value contractStr(contract);
-    String::Utf8Value apiStr(api);
-    String::Utf8Value argStr(arg);
-    char* resultStr = nullptr;
+    NewCStr(contractStr, contract);
+    NewCStr(apiStr, api);
+    NewCStr(argStr, arg);
+    CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -308,7 +308,7 @@ void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
-    char *ret = bc->CallWithAuth(*contractStr, *apiStr, *argStr, &resultStr);
+    char *ret = bc->CallWithAuth(contractStr, apiStr, argStr, &resultStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -317,8 +317,8 @@ void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
         free(ret);
         return;
     }
-    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr));
-    if (resultStr != nullptr) free(resultStr);
+    args.GetReturnValue().Set(String::NewFromUtf8(isolate, resultStr.data, String::kNormalString, resultStr.size));
+    if (resultStr.data != nullptr) free(resultStr.data);
 }
 
 void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
@@ -351,8 +351,8 @@ void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    String::Utf8Value accountIDStr(accountID);
-    String::Utf8Value permissionStr(permission);
+    NewCStr(accountIDStr, accountID);
+    NewCStr(permissionStr, permission);
     bool result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -362,7 +362,7 @@ void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
-    char *ret = bc->RequireAuth(*accountIDStr, *permissionStr, &result);
+    char *ret = bc->RequireAuth(accountIDStr, permissionStr, &result);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -395,7 +395,7 @@ void IOSTBlockchain_receipt(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    String::Utf8Value contentStr(content);
+    NewCStr(contentStr, content);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -404,7 +404,7 @@ void IOSTBlockchain_receipt(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
-    char *ret = bc->Receipt(*contentStr);
+    char *ret = bc->Receipt(contentStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)
@@ -437,7 +437,7 @@ void IOSTBlockchain_event(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    String::Utf8Value contentStr(content);
+    NewCStr(contentStr, content);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -446,7 +446,7 @@ void IOSTBlockchain_event(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
-    char *ret = bc->Event(*contentStr);
+    char *ret = bc->Event(contentStr);
     if (ret != nullptr) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, ret)

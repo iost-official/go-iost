@@ -9,6 +9,12 @@
 
 using namespace v8;
 
+#ifndef NewCStr
+#define NewCStr(name, str) \
+	v8::String::Utf8Value __v8String_ ## name(str);\
+	CStr name = {*__v8String_ ## name, __v8String_ ## name.length()};
+#endif
+
 typedef struct {
   Persistent<Context> context;
   Isolate *isolate;
@@ -20,7 +26,7 @@ typedef struct {
   std::unique_ptr<ThreadPool> threadPool;
 } Sandbox;
 
-extern ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime);
+extern ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime);
 
 size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator);
 

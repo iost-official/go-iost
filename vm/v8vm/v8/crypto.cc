@@ -7,9 +7,9 @@ void InitGoCrypto(sha3Func sha3) {
     CSha3 = sha3;
 }
 
-char* IOSTCrypto::sha3(const char *msg) {
+CStr IOSTCrypto::sha3(const CStr msg) {
     size_t gasUsed;
-    char *ret = CSha3(sbxPtr, msg, &gasUsed);
+    CStr ret = CSha3(sbxPtr, msg, &gasUsed);
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
     return ret;
@@ -56,7 +56,7 @@ void IOSTCrypto_sha3(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    String::Utf8Value msgStr(msg);
+    NewCStr(msgStr, msg);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -65,10 +65,10 @@ void IOSTCrypto_sha3(const FunctionCallbackInfo<Value> &args) {
     }
 
     IOSTCrypto *ic = static_cast<IOSTCrypto *>(extVal->Value());
-    char* ret = ic->sha3(*msgStr);
-    if (ret != nullptr) {
-        args.GetReturnValue().Set(String::NewFromUtf8(isolate, ret));
-        free(ret);
+    CStr ret = ic->sha3(msgStr);
+    if (ret.data != nullptr) {
+        args.GetReturnValue().Set(String::NewFromUtf8(isolate, ret.data, String::kNormalString, ret.size));
+        free(ret.data);
         return;
     }
     args.GetReturnValue().SetNull();

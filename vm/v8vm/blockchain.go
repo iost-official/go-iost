@@ -6,8 +6,8 @@ package v8
 import "C"
 import (
 	"encoding/json"
-
 	"errors"
+
 	"github.com/iost-official/go-iost/vm/host"
 )
 
@@ -16,8 +16,25 @@ var (
 	ErrGetSandbox = errors.New("get sandbox failed")
 )
 
+func newCStr(str string) C.CStr {
+	cstr := C.CStr{}
+	cstr.data = C.CString(str)
+	cstr.size = C.int(len(str))
+	return cstr
+}
+
+func (cstr *C.CStr) SetString(str string) {
+	cstr.data = C.CString(str)
+	cstr.size = C.int(len(str))
+	return
+}
+
+func (cstr C.CStr) GoString() string {
+	return C.GoStringN(cstr.data, cstr.size)
+}
+
 //export goBlockInfo
-func goBlockInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
+func goBlockInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
@@ -25,13 +42,13 @@ func goBlockInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 
 	blkInfo, cost := sbx.host.BlockInfo()
 	*gasUsed = C.size_t(cost.CPU)
-	*info = C.CString(string(blkInfo))
+	info.SetString(string(blkInfo))
 
 	return nil
 }
 
 //export goTxInfo
-func goTxInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
+func goTxInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
@@ -39,13 +56,13 @@ func goTxInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
 
 	txInfo, cost := sbx.host.TxInfo()
 	*gasUsed = C.size_t(cost.CPU)
-	*info = C.CString(string(txInfo))
+	info.SetString(string(txInfo))
 
 	return nil
 }
 
 //export goContextInfo
-func goContextInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char {
+func goContextInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
@@ -53,21 +70,21 @@ func goContextInfo(cSbx C.SandboxPtr, info **C.char, gasUsed *C.size_t) *C.char 
 
 	ctxInfo, cost := sbx.host.ContextInfo()
 	*gasUsed = C.size_t(cost.CPU)
-	*info = C.CString(string(ctxInfo))
+	info.SetString(string(ctxInfo))
 
 	return nil
 }
 
 //export goCall
-func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goCall(cSbx C.SandboxPtr, contract, api, args C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	contractStr := C.GoString(contract)
-	apiStr := C.GoString(api)
-	argsStr := C.GoString(args)
+	contractStr := contract.GoString()
+	apiStr := api.GoString()
+	argsStr := args.GoString()
 
 	callRs, cost, err := sbx.host.Call(contractStr, apiStr, argsStr)
 	*gasUsed = C.size_t(cost.CPU)
@@ -80,21 +97,21 @@ func goCall(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gas
 		return C.CString(host.ErrInvalidData.Error())
 	}
 
-	*result = C.CString(string(rsStr))
+	result.SetString(string(rsStr))
 
 	return nil
 }
 
 //export goCallWithAuth
-func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	contractStr := C.GoString(contract)
-	apiStr := C.GoString(api)
-	argsStr := C.GoString(args)
+	contractStr := contract.GoString()
+	apiStr := api.GoString()
+	argsStr := args.GoString()
 
 	callRs, cost, err := sbx.host.CallWithAuth(contractStr, apiStr, argsStr)
 	*gasUsed = C.size_t(cost.CPU)
@@ -107,20 +124,20 @@ func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args *C.char, result **C.c
 		return C.CString(host.ErrInvalidData.Error())
 	}
 
-	*result = C.CString(string(rsStr))
+	result.SetString(string(rsStr))
 
 	return nil
 }
 
 //export goRequireAuth
-func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool, gasUsed *C.size_t) *C.char {
+func goRequireAuth(cSbx C.SandboxPtr, ID, permission C.CStr, ok *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	pubKeyStr := C.GoString(ID)
-	permissionStr := C.GoString(permission)
+	pubKeyStr := ID.GoString()
+	permissionStr := permission.GoString()
 
 	callOk, RequireAuthCost := sbx.host.RequireAuth(pubKeyStr, permissionStr)
 
@@ -132,13 +149,13 @@ func goRequireAuth(cSbx C.SandboxPtr, ID *C.char, permission *C.char, ok *C.bool
 }
 
 //export goReceipt
-func goReceipt(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
+func goReceipt(cSbx C.SandboxPtr, content C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	contentStr := C.GoString(content)
+	contentStr := content.GoString()
 
 	cost := sbx.host.Receipt(contentStr)
 
@@ -148,13 +165,13 @@ func goReceipt(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
 }
 
 //export goEvent
-func goEvent(cSbx C.SandboxPtr, content *C.char, gasUsed *C.size_t) *C.char {
+func goEvent(cSbx C.SandboxPtr, content C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	contentStr := C.GoString(content)
+	contentStr := content.GoString()
 
 	cost := sbx.host.PostEvent(contentStr)
 
