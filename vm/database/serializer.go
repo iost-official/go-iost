@@ -3,8 +3,9 @@ package database
 import (
 	"encoding/binary"
 	"errors"
-	"github.com/iost-official/go-iost/common"
 	"strings"
+
+	"github.com/iost-official/go-iost/common"
 )
 
 // const prefixs

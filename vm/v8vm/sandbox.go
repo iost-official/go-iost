@@ -3,36 +3,36 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
-char* goBlockInfo(SandboxPtr, char **, size_t *);
-char* goTxInfo(SandboxPtr, char **, size_t *);
-char* goContextInfo(SandboxPtr, char **, size_t *);
-char* goCall(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-char* goCallWithAuth(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-char* goRequireAuth(SandboxPtr, const char *, const char *, bool *, size_t *);
-char* goReceipt(SandboxPtr, const char *, size_t *);
-char* goEvent(SandboxPtr, const char *, size_t *);
+char* goBlockInfo(SandboxPtr, CStr *, size_t *);
+char* goTxInfo(SandboxPtr, CStr *, size_t *);
+char* goContextInfo(SandboxPtr, CStr *, size_t *);
+char* goCall(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goCallWithAuth(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goRequireAuth(SandboxPtr, const CStr, const CStr, bool *, size_t *);
+char* goReceipt(SandboxPtr, const CStr, size_t *);
+char* goEvent(SandboxPtr, const CStr, size_t *);
 
-char* goPut(SandboxPtr, const char *, const char *, const char *, size_t *);
-char* goHas(SandboxPtr, const char *, const char *, bool *, size_t *);
-char* goGet(SandboxPtr, const char *, const char *, char **, size_t *);
-char* goDel(SandboxPtr, const char *, const char *, size_t *);
-char* goMapPut(SandboxPtr, const char *, const char *, const char *, const char *, size_t *);
-char* goMapHas(SandboxPtr, const char *, const char *, const char *, bool *, size_t *);
-char* goMapGet(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-char* goMapDel(SandboxPtr, const char *, const char *, const char *, size_t *);
-char* goMapKeys(SandboxPtr, const char *, const char *, char **, size_t *);
-char* goMapLen(SandboxPtr, const char *, const char *, size_t *, size_t *);
+char* goPut(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
+char* goHas(SandboxPtr, const CStr, const CStr, bool *, size_t *);
+char* goGet(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
+char* goDel(SandboxPtr, const CStr, const CStr, size_t *);
+char* goMapPut(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
+char* goMapHas(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
+char* goMapGet(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goMapDel(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
+char* goMapKeys(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
+char* goMapLen(SandboxPtr, const CStr, const CStr, size_t *, size_t *);
 
-char* goGlobalHas(SandboxPtr, const char *, const char *, const char *, bool *, size_t *);
-char* goGlobalGet(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-char* goGlobalMapHas(SandboxPtr, const char *, const char *, const char *, const char *, bool *, size_t *);
-char* goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, const char *, char **, size_t *);
-char* goGlobalMapKeys(SandboxPtr, const char *,  const char *, const char *, char **, size_t *);
-char* goGlobalMapLen(SandboxPtr, const char *, const char *, const char *, size_t *, size_t *);
+char* goGlobalHas(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
+char* goGlobalGet(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goGlobalMapHas(SandboxPtr, const CStr, const CStr, const CStr, const CStr, bool *, size_t *);
+char* goGlobalMapGet(SandboxPtr, const CStr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goGlobalMapKeys(SandboxPtr, const CStr,  const CStr, const CStr, CStr *, size_t *);
+char* goGlobalMapLen(SandboxPtr, const CStr, const CStr, const CStr, size_t *, size_t *);
 
-char* goConsoleLog(SandboxPtr, const char *, const char *);
+char* goConsoleLog(SandboxPtr, const CStr, const CStr);
 
-char* goSha3(SandboxPtr, const char *, size_t *);
+CStr goSha3(SandboxPtr, const CStr, size_t *);
 */
 import "C"
 import (
@@ -160,25 +160,25 @@ func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
 // Validate contract before save, return err if invalid
 func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 	code := moduleReplacer.Replace(contract.Code)
-	cCode := C.CString(code)
-	defer C.free(unsafe.Pointer(cCode))
+	cCode := newCStr(code)
+	defer C.free(unsafe.Pointer(cCode.data))
 
 	abi, _ := json.Marshal(contract.Info.Abi)
-	cAbi := C.CString(string(abi))
-	defer C.free(unsafe.Pointer(cAbi))
+	cAbi := newCStr(string(abi))
+	defer C.free(unsafe.Pointer(cAbi.data))
 
 	var (
-		cResult *C.char
-		cErrMsg *C.char
+		cResult C.CStr
+		cErrMsg C.CStr
 	)
 	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg)
 
-	result := C.GoString(cResult)
-	C.free(unsafe.Pointer(cResult))
+	result := cResult.GoString()
+	C.free(unsafe.Pointer(cResult.data))
 
 	if ret == 1 || result != "success" {
-		errMsg := C.GoString(cErrMsg)
-		C.free(unsafe.Pointer(cErrMsg))
+		errMsg := cErrMsg.GoString()
+		C.free(unsafe.Pointer(cErrMsg.data))
 		return fmt.Errorf("validate code error: %v, result: %v", errMsg, result)
 	}
 
@@ -188,22 +188,22 @@ func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 // Compile contract before execution, return compiled code
 func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	code := moduleReplacer.Replace(contract.Code)
-	cCode := C.CString(code)
-	defer C.free(unsafe.Pointer(cCode))
+	cCode := newCStr(code)
+	defer C.free(unsafe.Pointer(cCode.data))
 
 	var (
-		cCompiledCode *C.char
-		cErrMsg       *C.char
+		cCompiledCode C.CStr
+		cErrMsg       C.CStr
 	)
 	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg)
 	if ret == 1 {
-		errMsg := C.GoString(cErrMsg)
-		C.free(unsafe.Pointer(cErrMsg))
+		errMsg := cErrMsg.GoString()
+		C.free(unsafe.Pointer(cErrMsg.data))
 		return "", errors.New(errMsg)
 	}
 
-	compiledCode := C.GoString(cCompiledCode)
-	C.free(unsafe.Pointer(cCompiledCode))
+	compiledCode := cCompiledCode.GoString()
+	C.free(unsafe.Pointer(cCompiledCode.data))
 
 	return compiledCode, nil
 }
@@ -253,20 +253,22 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 			}
 		}
 	}()
-	cCode := C.CString(preparedCode)
-	defer C.free(unsafe.Pointer(cCode))
+
+	cCode := newCStr(preparedCode)
+	defer C.free(unsafe.Pointer(cCode.data))
+
 	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
 
 	rs := C.Execute(sbx.context, cCode, expireTime)
 
 	var result string
-	result = C.GoString(rs.Value)
-	defer C.free(unsafe.Pointer(rs.Value))
-	defer C.free(unsafe.Pointer(rs.Err))
+	result = rs.Value.GoString()
+	defer C.free(unsafe.Pointer(rs.Value.data))
+	defer C.free(unsafe.Pointer(rs.Err.data))
 
 	var err error
-	if rs.Err != nil {
-		err = errors.New(C.GoString(rs.Err))
+	if rs.Err.data != nil {
+		err = errors.New(rs.Err.GoString())
 	}
 
 	gasUsed := rs.gasUsed
@@ -275,10 +277,6 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 }
 
 func formatFuncArgs(args []interface{}) (string, error) {
-	if len(args) == 0 {
-		// hack for vm_test param2
-		return "null", nil
-	}
 	var strArgs []string
 	for _, arg := range args {
 		switch v := arg.(type) {
