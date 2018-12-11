@@ -1,6 +1,8 @@
 package merkletree
 
 import (
+	"encoding/hex"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/core/tx"
 )
@@ -11,8 +13,9 @@ func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {
 	data := make([][]byte, len(txrs))
 	m.Tx2Txr = make(map[string][]byte)
 	for i, txr := range txrs {
-		m.Tx2Txr[string(txr.TxHash)] = txr.Hash()
-		data[i] = m.Tx2Txr[string(txr.TxHash)]
+		k := hex.EncodeToString(txr.TxHash)
+		m.Tx2Txr[k] = txr.Hash()
+		data[i] = m.Tx2Txr[k]
 	}
 	m.Mt.Build(data)
 }

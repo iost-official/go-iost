@@ -2,12 +2,14 @@ package wal
 
 import (
 	"encoding/binary"
-	"github.com/iost-official/go-iost/db/wal/pcrc"
-	"github.com/iost-official/go-iost/ilog"
 	"hash"
 	"io"
 	"os"
 	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/db/wal/pcrc"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // walPageBytes is the alignment for flushing logs to the backing Writer.
@@ -52,24 +54,11 @@ func (e *encoder) encode(log *Log) error {
 
 	e.crc.Write(log.Data)
 	log.Checksum = e.crc.Sum64()
-	var (
-		data []byte
-		err  error
-		n    int
-	)
 
 	//serialize log into data
-	if log.Size() > len(e.buf) {
-		data, err = log.Marshal()
-		if err != nil {
-			return err
-		}
-	} else {
-		n, err = log.MarshalTo(e.buf)
-		if err != nil {
-			return err
-		}
-		data = e.buf[:n]
+	data, err := proto.Marshal(log)
+	if err != nil {
+		return err
 	}
 
 	lenField, padByteLength := encodeFrameSize(len(data))

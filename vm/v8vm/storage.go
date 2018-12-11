@@ -17,22 +17,22 @@ import (
 var ErrInvalidDbValType = errors.New("invalid db value type")
 
 //export goPut
-func goPut(cSbx C.SandboxPtr, key, val, ramPayer *C.char, gasUsed *C.size_t) *C.char {
+func goPut(cSbx C.SandboxPtr, key, val, ramPayer C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
-	v := C.GoString(val)
+	k := key.GoString()
+	v := val.GoString()
 
 	var cost contract.Cost
 
 	var err error
-	if ramPayer == nil || C.GoString(ramPayer) == "" {
+	if ramPayer.data == nil || ramPayer.GoString() == "" {
 		cost, err = sbx.host.Put(k, v)
 	} else {
-		o := C.GoString(ramPayer)
+		o := ramPayer.GoString()
 		cost, err = sbx.host.Put(k, v, o)
 	}
 	*gasUsed = C.size_t(cost.CPU)
@@ -44,13 +44,13 @@ func goPut(cSbx C.SandboxPtr, key, val, ramPayer *C.char, gasUsed *C.size_t) *C.
 }
 
 //export goHas
-func goHas(cSbx C.SandboxPtr, key, ramPayer *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
+func goHas(cSbx C.SandboxPtr, key, ramPayer C.CStr, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
+	k := key.GoString()
 	var ret bool
 	var cost contract.Cost
 
@@ -63,13 +63,13 @@ func goHas(cSbx C.SandboxPtr, key, ramPayer *C.char, result *C.bool, gasUsed *C.
 }
 
 //export goGet
-func goGet(cSbx C.SandboxPtr, key, ramPayer *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goGet(cSbx C.SandboxPtr, key, ramPayer C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
+	k := key.GoString()
 	var val interface{}
 	var cost contract.Cost
 
@@ -77,7 +77,6 @@ func goGet(cSbx C.SandboxPtr, key, ramPayer *C.char, result **C.char, gasUsed *C
 
 	*gasUsed = C.size_t(cost.CPU)
 	if val == nil {
-		*result = nil
 		return nil
 	}
 
@@ -85,19 +84,19 @@ func goGet(cSbx C.SandboxPtr, key, ramPayer *C.char, result **C.char, gasUsed *C
 	if err != nil {
 		return C.CString(err.Error())
 	}
-	*result = C.CString(valStr)
+	result.SetString(valStr)
 
 	return nil
 }
 
 //export goDel
-func goDel(cSbx C.SandboxPtr, key, ramPayer *C.char, gasUsed *C.size_t) *C.char {
+func goDel(cSbx C.SandboxPtr, key, ramPayer C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
+	k := key.GoString()
 	var cost contract.Cost
 
 	cost, err := sbx.host.Del(k)
@@ -111,22 +110,22 @@ func goDel(cSbx C.SandboxPtr, key, ramPayer *C.char, gasUsed *C.size_t) *C.char 
 }
 
 //export goMapPut
-func goMapPut(cSbx C.SandboxPtr, key, field, val, ramPayer *C.char, gasUsed *C.size_t) *C.char {
+func goMapPut(cSbx C.SandboxPtr, key, field, val, ramPayer C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
-	f := C.GoString(field)
-	v := C.GoString(val)
+	k := key.GoString()
+	f := field.GoString()
+	v := val.GoString()
 
 	var cost contract.Cost
 	var err error
-	if ramPayer == nil || C.GoString(ramPayer) == "" {
+	if ramPayer.data == nil || ramPayer.GoString() == "" {
 		cost, err = sbx.host.MapPut(k, f, v)
 	} else {
-		o := C.GoString(ramPayer)
+		o := ramPayer.GoString()
 		cost, err = sbx.host.MapPut(k, f, v, o)
 	}
 	*gasUsed = C.size_t(cost.CPU)
@@ -138,14 +137,14 @@ func goMapPut(cSbx C.SandboxPtr, key, field, val, ramPayer *C.char, gasUsed *C.s
 }
 
 //export goMapHas
-func goMapHas(cSbx C.SandboxPtr, key, field, ramPayer *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
+func goMapHas(cSbx C.SandboxPtr, key, field, ramPayer C.CStr, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
-	f := C.GoString(field)
+	k := key.GoString()
+	f := field.GoString()
 	var cost contract.Cost
 	var ret bool
 	ret, cost = sbx.host.MapHas(k, f)
@@ -157,14 +156,14 @@ func goMapHas(cSbx C.SandboxPtr, key, field, ramPayer *C.char, result *C.bool, g
 }
 
 //export goMapGet
-func goMapGet(cSbx C.SandboxPtr, key, field, ramPayer *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goMapGet(cSbx C.SandboxPtr, key, field, ramPayer C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
-	f := C.GoString(field)
+	k := key.GoString()
+	f := field.GoString()
 	var cost contract.Cost
 	var val interface{}
 	val, cost = sbx.host.MapGet(k, f)
@@ -172,24 +171,23 @@ func goMapGet(cSbx C.SandboxPtr, key, field, ramPayer *C.char, result **C.char, 
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = nil
 		return nil
 	}
 	valStr, _ := dbValToString(val)
-	*result = C.CString(valStr)
+	result.SetString(valStr)
 
 	return nil
 }
 
 //export goMapDel
-func goMapDel(cSbx C.SandboxPtr, key, field, ramPayer *C.char, gasUsed *C.size_t) *C.char {
+func goMapDel(cSbx C.SandboxPtr, key, field, ramPayer C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
-	f := C.GoString(field)
+	k := key.GoString()
+	f := field.GoString()
 
 	var cost contract.Cost
 	cost, err := sbx.host.MapDel(k, f)
@@ -203,13 +201,13 @@ func goMapDel(cSbx C.SandboxPtr, key, field, ramPayer *C.char, gasUsed *C.size_t
 }
 
 //export goMapKeys
-func goMapKeys(cSbx C.SandboxPtr, key, ramPayer *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goMapKeys(cSbx C.SandboxPtr, key, ramPayer C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
+	k := key.GoString()
 
 	var cost contract.Cost
 	var fstr []string
@@ -219,19 +217,19 @@ func goMapKeys(cSbx C.SandboxPtr, key, ramPayer *C.char, result **C.char, gasUse
 		return C.CString(err.Error())
 	}
 	*gasUsed = C.size_t(cost.CPU)
-	*result = C.CString(string(j))
+	result.SetString(string(j))
 
 	return nil
 }
 
 //export goMapLen
-func goMapLen(cSbx C.SandboxPtr, key, ramPayer *C.char, result *C.size_t, gasUsed *C.size_t) *C.char {
+func goMapLen(cSbx C.SandboxPtr, key, ramPayer C.CStr, result *C.size_t, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	k := C.GoString(key)
+	k := key.GoString()
 
 	var cost contract.Cost
 	var len int
@@ -243,14 +241,14 @@ func goMapLen(cSbx C.SandboxPtr, key, ramPayer *C.char, result *C.size_t, gasUse
 }
 
 //export goGlobalHas
-func goGlobalHas(cSbx C.SandboxPtr, contractName, key, ramPayer *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
+func goGlobalHas(cSbx C.SandboxPtr, contractName, key, ramPayer C.CStr, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	c := C.GoString(contractName)
-	k := C.GoString(key)
+	c := contractName.GoString()
+	k := key.GoString()
 	var ret bool
 	var cost contract.Cost
 
@@ -263,14 +261,14 @@ func goGlobalHas(cSbx C.SandboxPtr, contractName, key, ramPayer *C.char, result 
 }
 
 //export goGlobalGet
-func goGlobalGet(cSbx C.SandboxPtr, contractName, key, ramPayer *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goGlobalGet(cSbx C.SandboxPtr, contractName, key, ramPayer C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	c := C.GoString(contractName)
-	k := C.GoString(key)
+	c := contractName.GoString()
+	k := key.GoString()
 
 	var cost contract.Cost
 	var val interface{}
@@ -279,25 +277,24 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key, ramPayer *C.char, result 
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = nil
 		return nil
 	}
 	valStr, _ := dbValToString(val)
-	*result = C.CString(valStr)
+	result.SetString(valStr)
 
 	return nil
 }
 
 //export goGlobalMapHas
-func goGlobalMapHas(cSbx C.SandboxPtr, contractName, key, field, ramPayer *C.char, result *C.bool, gasUsed *C.size_t) *C.char {
+func goGlobalMapHas(cSbx C.SandboxPtr, contractName, key, field, ramPayer C.CStr, result *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	c := C.GoString(contractName)
-	k := C.GoString(key)
-	f := C.GoString(field)
+	c := contractName.GoString()
+	k := key.GoString()
+	f := field.GoString()
 	var cost contract.Cost
 	var ret bool
 	ret, cost = sbx.host.GlobalMapHas(c, k, f)
@@ -309,15 +306,15 @@ func goGlobalMapHas(cSbx C.SandboxPtr, contractName, key, field, ramPayer *C.cha
 }
 
 //export goGlobalMapGet
-func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, ramPayer *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, ramPayer C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	c := C.GoString(contractName)
-	k := C.GoString(key)
-	f := C.GoString(field)
+	c := contractName.GoString()
+	k := key.GoString()
+	f := field.GoString()
 	var cost contract.Cost
 	var val interface{}
 	val, cost = sbx.host.GlobalMapGet(c, k, f)
@@ -325,24 +322,23 @@ func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, ramPayer *C.cha
 	*gasUsed = C.size_t(cost.CPU)
 
 	if val == nil {
-		*result = nil
 		return nil
 	}
 	valStr, _ := dbValToString(val)
-	*result = C.CString(valStr)
+	result.SetString(valStr)
 
 	return nil
 }
 
 //export goGlobalMapKeys
-func goGlobalMapKeys(cSbx C.SandboxPtr, contractName, key, ramPayer *C.char, result **C.char, gasUsed *C.size_t) *C.char {
+func goGlobalMapKeys(cSbx C.SandboxPtr, contractName, key, ramPayer C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	c := C.GoString(contractName)
-	k := C.GoString(key)
+	c := contractName.GoString()
+	k := key.GoString()
 
 	var cost contract.Cost
 	var fstr []string
@@ -352,20 +348,20 @@ func goGlobalMapKeys(cSbx C.SandboxPtr, contractName, key, ramPayer *C.char, res
 		return C.CString(err.Error())
 	}
 	*gasUsed = C.size_t(cost.CPU)
-	*result = C.CString(string(j))
+	result.SetString(string(j))
 
 	return nil
 }
 
 //export goGlobalMapLen
-func goGlobalMapLen(cSbx C.SandboxPtr, contractName, key, ramPayer *C.char, result *C.size_t, gasUsed *C.size_t) *C.char {
+func goGlobalMapLen(cSbx C.SandboxPtr, contractName, key, ramPayer C.CStr, result *C.size_t, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)
 	if !ok {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	c := C.GoString(contractName)
-	k := C.GoString(key)
+	c := contractName.GoString()
+	k := key.GoString()
 
 	var cost contract.Cost
 	var len int

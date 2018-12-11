@@ -63,7 +63,7 @@ const require = NativeModule.require;
 const storage = require('storage');
 
 // blockchain
-const BlockChain = require('blockchain');
+const blockchain = require('blockchain');
 
 // other helper functions
 // var BigNumber = require('bignumber');

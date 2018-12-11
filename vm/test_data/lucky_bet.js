@@ -23,7 +23,7 @@ class Contract {
             throw new Error("lucky number should be >=0 and <= 9");
         }
 
-        BlockChain.deposit(account, coins, "");
+        blockchain.deposit(account, coins, "");
 
         let userNumber = JSON.parse(storage.get("user_number"));
         let totalCoins = JSON.parse(storage.get("total_coins"));
@@ -40,7 +40,7 @@ class Contract {
         storage.put("total_coins", JSON.stringify(totalCoins));
 
         if (userNumber >= maxUserNumber) {
-            const bi = JSON.parse(BlockChain.blockInfo());
+            const bi = JSON.parse(blockchain.blockInfo());
             const bn = bi.number;
             const ph = bi.parent_hash;
             const lastLuckyBlock = JSON.parse(storage.get("last_lucky_block"));
@@ -93,7 +93,7 @@ class Contract {
                 table = winTable;
                 table.forEach(function (record) {
                     const reward = (tc.multi(record.coins).div(totalVal));
-                    BlockChain.withdraw(record.account, reward, "");
+                    blockchain.withdraw(record.account, reward, "");
                     record.reward = reward.toString();
                     result.records.push(record)
                 })

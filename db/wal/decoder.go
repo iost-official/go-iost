@@ -3,12 +3,13 @@ package wal
 import (
 	"bufio"
 	"encoding/binary"
-	"github.com/gogo/protobuf/proto"
-	"github.com/iost-official/go-iost/db/wal/pcrc"
-	"github.com/iost-official/go-iost/ilog"
 	"hash"
 	"io"
 	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/db/wal/pcrc"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
@@ -72,7 +73,7 @@ func (d *decoder) decodeRecord(log *Log) error {
 		return err
 	}
 	//Decode the record.
-	if err := log.Unmarshal(data[:recBytes]); err != nil {
+	if err := proto.Unmarshal(data[:recBytes], log); err != nil {
 		if d.isTornWrite(data) {
 			return io.ErrUnexpectedEOF
 		}

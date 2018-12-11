@@ -3,6 +3,7 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -348,7 +349,7 @@ func Test_Validate(t *testing.T) {
 }
 
 func Test_SpecialChar(t *testing.T) {
-	ilog.Start()
+	ilog.Stop()
 	spStr := ""
 	for i := 0x00; i <= 0x1F; i++ {
 		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
@@ -383,7 +384,7 @@ func Test_SpecialChar(t *testing.T) {
 		"class Test {" +
 		"	init() {}" +
 		"	transfer(from, to, amountJson) {" +
-		"		BlockChain.transfer(from, to, amountJson.amount, '');" +
+		"		blockchain.transfer(from, to, amountJson.amount, '');" +
 		"	}" +
 		"};" +
 		"module.exports = Test;"
@@ -437,5 +438,31 @@ func Test_SpecialChar(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(s.Visitor.TokenBalanceFixed("iost", kp2.ID).ToString(), ShouldEqual, "2000")
+	})
+}
+
+func Test_CallResult(t *testing.T) {
+	ilog.Stop()
+	Convey("test call result", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 2000000)
+		s.SetRAM(kp.ID, 10000)
+
+		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
+		So(err, ShouldBeNil)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		//s.Visitor.Put(cname+"-ret", database.MustMarshal("ab\x00c"))
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+		r, err = s.Call(cname, "ret_eof", `[]`, kp.ID, kp)
+		So(err, ShouldBeNil)
+		a := s.Visitor.Get(cname + "-ret")
+		b := strings.NewReplacer("\x00", "\\x00").Replace(a)
+		So(b, ShouldEqual, "sab\\x00c@"+cname)
+		So(len(r.Returns), ShouldEqual, 1)
+		So(r.Returns[0], ShouldEqual, `["ab\u0000cd"]`)
 	})
 }
