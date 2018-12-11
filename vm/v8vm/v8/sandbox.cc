@@ -49,10 +49,11 @@ const tx = {
 };)";
 
 const int sandboxMemLimit = 100000000; // 100mb
-const char *copyString(const std::string &str) {
-    char *cstr = new char[str.length() + 1];
-    std::strcpy(cstr, str.c_str());
-    return cstr;
+void copyString(CStr &cstr, const std::string &str) {
+    cstr.size = str.length();
+    cstr.data = new char[cstr.size + 1];
+    std::memcpy(cstr.data, str.c_str(), cstr.size + 1);
+    return;
 }
 
 std::string v8ValueToStdString(Local<Value> val) {
@@ -295,7 +296,7 @@ size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
     return v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
 }
 
-void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
+void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -324,7 +325,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     // reset gas count
     sbx->gasUsed = 0;
 
-    source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
+    source = String::NewFromUtf8(isolate, code.data, NewStringType::kNormal, code.size).ToLocalChecked();
     fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
     script = Script::Compile(source, fileName);
 
@@ -349,7 +350,7 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
 
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
-        result = *retV8Str;
+        result.assign(*retV8Str, retV8Str.length());
         isDone = true;
         return;
     }
@@ -360,14 +361,14 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         if (!jsonRet.IsEmpty()) {
             isJson = true;
             String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());
-            result = *jsonRetStr;
+            result.assign(*jsonRetStr, jsonRetStr.length());
         }
     }
     isDone = true;
     return;
 }
 
-ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
+ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -379,35 +380,35 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     //startMemHHH = MemoryUsage(isolate, sbx->allocator);
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
-    ValueTuple res = { nullptr, nullptr, isJson, 0 };
+    ValueTuple res = { {nullptr, 0}, {nullptr, 0}, isJson, 0 };
 //    auto startTime = std::chrono::steady_clock::now();
     while(true) {
         if (error.length() > 0) {
-            res.Err = copyString(error);
+            copyString(res.Err, error);
             res.gasUsed = sbx->gasUsed;
             break;
         }
         if (result.length() > 0) {
-            res.Value = copyString(result);
+            copyString(res.Value, result);
             res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
             break;
         }
         if (isDone) {
-            res.Value = copyString(result);
+            copyString(res.Value, result);
             res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
             break;
         }
   /*      if (MemoryUsage(isolate, sbx->allocator) > sbx->memLimit) {
             isolate->TerminateExecution();
-            res.Err = strdup("out of memory");
+            copyString(res.Err, "out of memory");
             res.gasUsed = sbx->gasLimit;
             break;
         } */
         if (sbx->gasUsed > sbx->gasLimit) {
             isolate->TerminateExecution();
-            res.Err = strdup("out of gas");
+            copyString(res.Err, "out of gas");
             res.gasUsed = sbx->gasUsed;
             break;
         }
@@ -415,7 +416,7 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
         //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
         if (now > expireTime) {
             isolate->TerminateExecution();
-            res.Err = strdup(("execution killed, current time : " + std::to_string(now) + " , expireTime: " + std::to_string(expireTime)).c_str());
+            copyString(res.Err, ("execution killed, current time : " + std::to_string(now) + " , expireTime: " + std::to_string(expireTime)).c_str());
             res.gasUsed = sbx->gasUsed;
             break;
         }

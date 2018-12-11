@@ -78,7 +78,7 @@ void lowMemoryNotification(IsolateWrapperPtr ptr) {
     return;
 }
 
-ValueTuple Execute(SandboxPtr ptr, const char *code, long long int expireTime) {
+ValueTuple Execute(SandboxPtr ptr, const CStr code, long long int expireTime) {
     ValueTuple ret = Execution(ptr, code, expireTime);
     return ret;
 }

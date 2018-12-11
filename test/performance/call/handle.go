@@ -1,19 +1,21 @@
 package call
 
-import "log"
+import (
+	"fmt"
+	"log"
+)
 
 // Handler ...
 type Handler interface {
-	Init(add string, conNum int) error
-	Publish() error
-	Transfer(i int) string
+	Prepare() error
+	Run(i int) (interface{}, error)
 }
 
 // Handle ...
 func Handle(handler Handler, num int, results chan<- string) {
-	r := handler.Transfer(num)
+	r, err := handler.Run(num)
 
-	results <- r
+	results <- fmt.Sprintf("res:%v, err:%v", r, err)
 }
 
 // Display ...
