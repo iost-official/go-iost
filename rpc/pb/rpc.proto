@@ -64,7 +64,7 @@ service ApiService {
     // get contract
     rpc GetContract (GetContractRequest) returns (Contract) {
         option (google.api.http) = {
-            get: "/getContract/{id}"
+            get: "/getContract/{id}/{by_longest_chain}"
         };
     }
 

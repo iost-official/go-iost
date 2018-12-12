@@ -5,6 +5,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -135,7 +136,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 		case <-syncHeightTicker.C:
 			num := sy.blockCache.Head().Head.Number
 			sh := &msgpb.SyncHeight{Height: num, Time: time.Now().Unix()}
-			bytes, err := sh.Marshal()
+			bytes, err := proto.Marshal(sh)
 			if err != nil {
 				ilog.Errorf("marshal syncheight failed. err=%v", err)
 				continue
@@ -144,7 +145,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage, true)
 		case req := <-sy.syncHeightChan:
 			var sh msgpb.SyncHeight
-			err := sh.Unmarshal(req.Data())
+			err := proto.Unmarshal(req.Data(), &sh)
 			if err != nil {
 				ilog.Errorf("unmarshal syncheight failed. err=%v", err)
 				continue
@@ -245,7 +246,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 }
 
 func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
-	bytes, err := hr.Marshal()
+	bytes, err := proto.Marshal(hr)
 	if err != nil {
 		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
@@ -293,7 +294,7 @@ func (sy *SyncImpl) messageLoop() {
 			switch req.Type() {
 			case p2p.SyncBlockHashRequest:
 				var rh msgpb.BlockHashQuery
-				err := rh.Unmarshal(req.Data())
+				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashQuery failed:%v", err)
 					break
@@ -301,7 +302,7 @@ func (sy *SyncImpl) messageLoop() {
 				go sy.handleHashQuery(&rh, req.From())
 			case p2p.SyncBlockHashResponse:
 				var rh msgpb.BlockHashResponse
-				err := rh.Unmarshal(req.Data())
+				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashResponse failed:%v", err)
 					break
@@ -309,7 +310,7 @@ func (sy *SyncImpl) messageLoop() {
 				go sy.handleHashResp(&rh, req.From())
 			case p2p.SyncBlockRequest:
 				var rh msgpb.BlockInfo
-				err := rh.Unmarshal(req.Data())
+				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
 					break
 				}
@@ -402,7 +403,7 @@ func (sy *SyncImpl) handleHashQuery(rh *msgpb.BlockHashQuery, peerID p2p.PeerID)
 	if len(resp.BlockInfos) == 0 {
 		return
 	}
-	bytes, err := resp.Marshal()
+	bytes, err := proto.Marshal(resp)
 	if err != nil {
 		ilog.Errorf("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 		return
@@ -502,8 +503,8 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		ilog.Debugf("callback block is a single block, num:%v", bn)
 		return false, false
 	}
-	bi := msgpb.BlockInfo{Number: bn, Hash: bHash}
-	bytes, err := bi.Marshal()
+	bi := &msgpb.BlockInfo{Number: bn, Hash: bHash}
+	bytes, err := proto.Marshal(bi)
 	if err != nil {
 		ilog.Errorf("marshal request block failed. err=%v", err)
 		return false, false

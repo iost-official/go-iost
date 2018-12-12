@@ -1,11 +1,10 @@
 'use strict';
 
+const esprima = require('esprima/dist/esprima.js');
+
 function checkAbiNameValid(name) {
     if (name.length <= 0 || name.length > 32) {
         throw new Error("abi name invalid. abi name length should be between 1,32  got " + name)
-    }
-    if (name[0] === "_") {
-        throw new Error("abi name invalid. abi name shouldn't start with _");
     }
     for (let i in name) {
         let ch = name.charAt(i);
@@ -47,7 +46,7 @@ function checkOneAbi(a, methodMap) {
         checkAmountLimitValid(a.amountLimit);
     }
     if (a.name === "init") {
-        throw new Error("abi has internal function: init");
+        throw new Error("abi has internal function");
     }
     const params = methodMap[a.name];
     if (params === undefined || params === null || !Array.isArray(params)) {
@@ -70,7 +69,7 @@ function checkOneClass(node, abi, cls) {
         return false;
     }
     let methodMap = {};
-    for (m of node.body.body) {
+    for (let m of node.body.body) {
         if (m.type !== "MethodDefinition" || m.key.type !== "Identifier" || m.value.type !== "FunctionExpression") {
             continue;
         }
@@ -105,3 +104,15 @@ function validate(source, abi) {
 }
 
 module.exports = validate;
+
+let fs = require('fs');
+
+let file = process.argv[2];
+fs.readFile(file, 'utf8', function(err, contents) {
+    fs.readFile(file + ".abi", 'utf8', function(err, abiContents) {
+        console.log('calling validate, code len = ' + contents.length + ", abi content len = " + abiContents.length);
+        let abi = JSON.parse(abiContents);
+        let res = validate(contents, abi.abi);
+        console.log('result: ' + res);
+    });
+});
