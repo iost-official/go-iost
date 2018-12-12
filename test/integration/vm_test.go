@@ -466,3 +466,26 @@ func Test_CallResult(t *testing.T) {
 		So(r.Returns[0], ShouldEqual, `["ab\u0000cd"]`)
 	})
 }
+
+func Test_ReturnObjectToJsonError(t *testing.T) {
+	ilog.Stop()
+	Convey("test return object toJSON error", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 2000000)
+		s.SetRAM(kp.ID, 10000)
+
+		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
+		So(err, ShouldBeNil)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+
+		r, err = s.Call(cname, "ret_obj", `[]`, kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		So(r.Status.Message, ShouldContainSubstring, "error in JSON.stringfy")
+	})
+}

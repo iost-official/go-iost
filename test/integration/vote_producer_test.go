@@ -299,7 +299,6 @@ func Test_Vote1(t *testing.T) {
 			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 			// do stat
-			s.Call("vote_producer.iost", "Unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[16], testID[12], "60000000"), kp8.ID, kp8)
 			s.Head.Number += 200
 			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
@@ -572,7 +571,6 @@ func Test_Vote2(t *testing.T) {
 			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 			// do stat
-			s.Call("vote_producer.iost", "Unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[16], testID[12], "60000000"), kp8.ID, kp8)
 			s.Head.Number += 200
 			s.Call("base.iost", "Stat", `[]`, kp.ID, kp)
 			// acc	: score			, votes
