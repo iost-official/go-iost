@@ -1,10 +1,10 @@
 'use strict';
 
-let esprima = require('esprima/dist/esprima.js');
-let escodegen = require('escodegen/escodegen.js');
+const esprima = require('esprima/dist/esprima.js');
+const escodegen = require('escodegen/escodegen.js');
 
-let lang = "javascript";
-let version = "1.0.0";
+const lang = "javascript";
+const version = "1.0.0";
 
 function isClassDecl(stat) {
 	return !!(stat && stat.type === "ClassDeclaration");
@@ -41,7 +41,7 @@ function genAbi(def) {
 function genAbiArr(stat) {
 	let abiArr = [];
 	if (!isClassDecl(stat) || stat.body.type !== "ClassBody") {
-		console.error("invalid statement for generate abi. stat = " + stat);
+		throw new Error("invalid statement for generate abi. stat = " + stat);
 		return null;
 	}
 	let initFound = false;
@@ -56,7 +56,7 @@ function genAbiArr(stat) {
 		}
 	}
 	if (!initFound) {
-		console.error("init not found!");
+		throw new Error("init not found!");
 		return null;
 	}
 	return abiArr;
@@ -65,7 +65,8 @@ function genAbiArr(stat) {
 function checkInvalidKeyword(tokens) {
     for (let i = 0; i < tokens.length; i++) {
         if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
-            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp" || tokens[i].value === "IOSTInstruction")) {
+            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp" || tokens[i].value === "IOSTInstruction" ||
+             tokens[i].value === "_IOSTTemplateTag" || tokens[i].value === "_IOSTSpreadElement")) {
             throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
         }
         if (tokens[i].type === "RegularExpression") {
@@ -122,6 +123,15 @@ function processOperator(node, pnode) {
         newnode.tag = tagNode;
         newnode.quasi = node;
         node = newnode;
+    } else if (node.type === "SpreadElement") {
+        let newnode = {};
+        newnode.type = "CallExpression";
+        let calleeNode = {};
+        calleeNode.type = 'Identifier';
+        calleeNode.name = '_IOSTSpreadElement';
+        newnode.callee = calleeNode;
+        newnode.arguments = [node.argument];
+        node.argument = newnode;
     }
     return node;
 }
@@ -154,7 +164,7 @@ function processContract(source) {
 
 	let abiArr = [];
 	if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
-		console.error("invalid source! ast = " + ast);
+		throw new Error("invalid source! ast = " + ast);
 		return ["", ""];
 	}
 
