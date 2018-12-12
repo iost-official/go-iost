@@ -84,13 +84,13 @@ func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 		p = a.Permissions["active"]
 	}
 
-	u := p.Users
+	u := p.Items
 	for _, g := range p.Groups {
 		grp, ok := a.Groups[g]
 		if !ok {
 			continue
 		}
-		u = append(u, grp.Users...)
+		u = append(u, grp.Items...)
 	}
 
 	var weight int
