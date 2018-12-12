@@ -2,7 +2,6 @@ package host
 
 import (
 	"encoding/json"
-
 	"strings"
 
 	"github.com/iost-official/go-iost/account"

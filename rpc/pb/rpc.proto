@@ -64,7 +64,7 @@ service ApiService {
     // get contract
     rpc GetContract (GetContractRequest) returns (Contract) {
         option (google.api.http) = {
-            get: "/getContract/{id}"
+            get: "/getContract/{id}/{by_longest_chain}"
         };
     }
 
@@ -411,12 +411,14 @@ message Account {
     message  GasInfo {
         // current total gas amount
         double current_total = 1;
+        double transferable_gas = 2;
+        double pledge_gas = 3;
         // gas increase speed
-        double increase_speed = 2;
+        double increase_speed = 4;
         // gas limit
-        double limit = 3;
+        double limit = 5;
         // pledge information
-        repeated PledgeInfo pledged_info = 4;
+        repeated PledgeInfo pledged_info = 6;
     }
 
     // gas information

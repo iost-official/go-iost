@@ -8,7 +8,7 @@ import (
 
 	"os"
 
-	"github.com/gogo/protobuf/proto"
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
@@ -103,11 +103,11 @@ func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 	if err != nil {
 		return
 	}
-	bcRaw := BlockCacheRaw{
+	bcRaw := &BlockCacheRaw{
 		BlockBytes:  blockByte,
 		WitnessList: &bcn.WitnessList,
 	}
-	b, err = bcRaw.Marshal()
+	b, err = proto.Marshal(bcRaw)
 	return
 }
 func decodeBCN(b []byte) (block block.Block, witnessList WitnessList, err error) {
@@ -180,6 +180,7 @@ type BlockCache interface {
 	Draw() string
 	CleanDir() error
 	Recover(p conAlgo) (err error)
+	NewWAL(config *common.Config) (err error)
 }
 
 // BlockCacheImpl is the implementation of BlockCache
@@ -267,6 +268,16 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	return &bc, nil
 }
 
+// NewWAL New wal when old one is not recoverable. Move Old File into Corrupted for later analysis.
+func (bc *BlockCacheImpl) NewWAL(config *common.Config) (err error) {
+	walPath := config.DB.LdbPath + blockCacheWALDir
+	corruptWalPath := config.DB.LdbPath + blockCacheWALDir + "Corrupted"
+	os.Rename(walPath, corruptWalPath)
+	bc.wal, err = wal.Create(walPath, []byte("block_cache_wal"))
+	return
+
+}
+
 // Recover recover previews block cache
 func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 	if bc.wal.HasDecoder() {
@@ -275,7 +286,12 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 		if err != nil {
 			return err
 		}
-		for _, entry := range entries {
+		ilog.Info("Recover block start")
+		for i, entry := range entries {
+			fmt.Printf("\r%v/%v", i+1, len(entries))
+			if i%2000 == 0 {
+				ilog.Infof("Recover block progress:%v/%v", i, len(entries))
+			}
 			err := bc.apply(entry, p)
 			if err != nil {
 				return err
@@ -393,12 +409,18 @@ func (bc *BlockCacheImpl) updateLongest() {
 // AddWithWit add block with witnessList
 func (bc *BlockCacheImpl) AddWithWit(blk *block.Block, witnessList WitnessList) (bcn *BlockCacheNode) {
 	bcn = bc.Add(blk)
+	if bcn == nil {
+		return nil
+	}
 	bcn.WitnessList = witnessList
-	return
+	return bcn
 }
 
 // Add is add a block
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
+	if bc.LinkedRoot().Head.Number >= blk.Head.Number {
+		return nil
+	}
 	newNode, nok := bc.hmget(blk.HeadHash())
 	if nok && newNode.Type != Virtual {
 		return newNode
@@ -532,11 +554,11 @@ func (bc *BlockCacheImpl) flushWAL(h *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) writeSetHeadWAL(h *BlockCacheNode) (err error) {
-	bcMessage := BcMessage{
+	bcMessage := &BcMessage{
 		Data: h.Block.HeadHash(),
 		Type: BcMessageType_SetRootType,
 	}
-	data, err := bcMessage.Marshal()
+	data, err := proto.Marshal(bcMessage)
 	if err != nil {
 		return
 	}
@@ -552,11 +574,11 @@ func (bc *BlockCacheImpl) writeAddNodeWAL(h *BlockCacheNode) (uint64, error) {
 	if err != nil {
 		return 0, err
 	}
-	bcMessage := BcMessage{
+	bcMessage := &BcMessage{
 		Data: hb,
 		Type: BcMessageType_LinkType,
 	}
-	data, err := bcMessage.Marshal()
+	data, err := proto.Marshal(bcMessage)
 	if err != nil {
 		return 0, err
 	}

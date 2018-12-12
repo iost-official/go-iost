@@ -101,14 +101,14 @@ func readWALNames(dirpath string) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	wnames := checkWalNames(names)
+	wnames := checkWalNames(dirpath, names)
 	if len(wnames) == 0 {
 		return nil, ErrFileNotFound
 	}
 	return wnames, nil
 }
 
-func checkWalNames(names []string) []string {
+func checkWalNames(dirpath string, names []string) []string {
 	wnames := make([]string, 0)
 	var tmpWal string
 	for _, name := range names {
@@ -121,6 +121,10 @@ func checkWalNames(names []string) []string {
 				tmpWal = name
 			} else {
 				ilog.Warn("ignore file in WAL directory, path: ", name, " error: ", err)
+				err := os.Remove(dirpath + "/" + name)
+				if err != nil {
+					ilog.Error("Remove file: ", err)
+				}
 			}
 			continue
 		}

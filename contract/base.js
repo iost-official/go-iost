@@ -23,7 +23,7 @@ class Base {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
+        const ret = blockchain.requireAuth(account, permission);
         if (ret !== true) {
             throw new Error("require auth failed. ret = " + ret);
         }
@@ -42,11 +42,11 @@ class Base {
     }
 
     _vote() {
-        BlockChain.callWithAuth("vote_producer.iost", "Stat", `[]`);
+        blockchain.callWithAuth("vote_producer.iost", "Stat", `[]`);
     }
 
     _bonus(data) {
-        BlockChain.callWithAuth("bonus.iost", "IssueContribute", JSON.stringify([data]));
+        blockchain.callWithAuth("bonus.iost", "IssueContribute", JSON.stringify([data]));
     }
 
     _saveBlockInfo() {

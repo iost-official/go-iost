@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
 )
@@ -29,6 +30,9 @@ type Status struct {
 
 // ToPb convert Status to proto buf data structure.
 func (s *Status) ToPb() *txpb.Status {
+	if s == nil {
+		return nil
+	}
 	return &txpb.Status{
 		Code:    int32(s.Code),
 		Message: s.Message,
@@ -138,7 +142,7 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 
 // Encode TxReceipt as byte array
 func (r *TxReceipt) Encode() []byte {
-	b, err := r.ToPb().Marshal()
+	b, err := proto.Marshal(r.ToPb())
 	if err != nil {
 		panic(err)
 	}
@@ -165,7 +169,7 @@ func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 // Decode TxReceipt from byte array
 func (r *TxReceipt) Decode(b []byte) error {
 	tr := &txpb.TxReceipt{}
-	err := tr.Unmarshal(b)
+	err := proto.Unmarshal(b, tr)
 	if err != nil {
 		return err
 	}

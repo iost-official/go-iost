@@ -3,12 +3,14 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
@@ -27,7 +29,7 @@ func Test_callWithAuth(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
@@ -62,7 +64,7 @@ func Test_VMMethod(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
@@ -110,7 +112,7 @@ func Test_VMMethod_Event(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
 		if err != nil || ca == nil {
@@ -161,7 +163,7 @@ func Test_RamPayer(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
@@ -261,7 +263,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2465)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2533)
 
 			ram0 = s.GetRAM(testID[0])
 			ram4 := s.GetRAM(testID[4])
@@ -291,7 +293,7 @@ func Test_StackHeight(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		createToken(t, s, kp)
 
 		ca, err := s.Compile("", "./test_data/nest0", "./test_data/nest0")
@@ -320,13 +322,13 @@ func Test_StackHeight(t *testing.T) {
 }
 
 func Test_Validate(t *testing.T) {
-	ilog.SetLevel(ilog.LevelInfo)
+	ilog.Stop()
 	Convey("test validate", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 300)
 
 		c, err := s.Compile("validate", "test_data/validate", "test_data/validate")
@@ -335,6 +337,155 @@ func Test_Validate(t *testing.T) {
 		_, r, err := s.DeployContract(c, kp.ID, kp)
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
-		So(r.Status.Message, ShouldEqual, "validate code error: Error: abi not defined in source code: c")
+		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
+
+		c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
+		So(err, ShouldBeNil)
+		_, r, err = s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err.Error(), ShouldContainSubstring, "Error: args should be one of ")
+		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: args should be one of ")
+	})
+}
+
+func Test_SpecialChar(t *testing.T) {
+	ilog.Stop()
+	spStr := ""
+	for i := 0x00; i <= 0x1F; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0x7F, string(rune(0x7F)))
+	for i := 0x80; i <= 0x9F; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0x2028, string(rune(0x2028)))
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0x2029, string(rune(0x2029)))
+	spStr += fmt.Sprintf("const char%d = `%s`;\n", 0xE0001, string(rune(0xE0001)))
+	for i := 0xE0020; i <= 0xE007F; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	lst := []int64{0x061C, 0x200E, 0x200F, 0x202A, 0x202B, 0x202C, 0x202D, 0x202E, 0x2066, 0x2067, 0x2068, 0x2069}
+	for _, i := range lst {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0xE0100; i <= 0xE01EF; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0x180B; i <= 0x180E; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0x200C; i <= 0x200D; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	for i := 0xFFF0; i <= 0xFFFF; i++ {
+		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
+	}
+	code := spStr +
+		"class Test {" +
+		"	init() {}" +
+		"	transfer(from, to, amountJson) {" +
+		"		blockchain.transfer(from, to, amountJson.amount, '');" +
+		"	}" +
+		"};" +
+		"module.exports = Test;"
+
+	abi := `
+	{
+		"lang": "javascript",
+		"version": "1.0.0",
+		"abi": [
+			{
+				"name": "transfer",
+				"args": [
+					"string",
+					"string",
+					"json"
+				]
+			}
+		]
+	}
+	`
+	Convey("test validate", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		createAccountsWithResource(s)
+		createToken(t, s, kp)
+		s.SetGas(kp.ID, 10000000)
+		s.SetRAM(kp.ID, 100000)
+
+		c, err := (&contract.Compiler{}).Parse("", code, abi)
+		So(err, ShouldBeNil)
+
+		cname, _, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+
+		kp2, _ := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
+		s.Visitor.SetTokenBalanceFixed("iost", kp.ID, "1000")
+		s.Visitor.SetTokenBalanceFixed("iost", kp2.ID, "1000")
+		params := []interface{}{
+			kp.ID,
+			kp2.ID,
+			map[string]string{
+				"amount": "1000",
+				"hack":   "\u2028\u2029\u0000",
+			},
+		}
+		paramsByte, err := json.Marshal(params)
+		So(err, ShouldBeNil)
+		r, err := s.Call(cname, "transfer", string(paramsByte), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(s.Visitor.TokenBalanceFixed("iost", kp2.ID).ToString(), ShouldEqual, "2000")
+	})
+}
+
+func Test_CallResult(t *testing.T) {
+	ilog.Stop()
+	Convey("test call result", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 2000000)
+		s.SetRAM(kp.ID, 10000)
+
+		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
+		So(err, ShouldBeNil)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		//s.Visitor.Put(cname+"-ret", database.MustMarshal("ab\x00c"))
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+		r, err = s.Call(cname, "ret_eof", `[]`, kp.ID, kp)
+		So(err, ShouldBeNil)
+		a := s.Visitor.Get(cname + "-ret")
+		b := strings.NewReplacer("\x00", "\\x00").Replace(a)
+		So(b, ShouldEqual, "sab\\x00c@"+cname)
+		So(len(r.Returns), ShouldEqual, 1)
+		So(r.Returns[0], ShouldEqual, `["ab\u0000cd"]`)
+	})
+}
+
+func Test_ReturnObjectToJsonError(t *testing.T) {
+	ilog.Stop()
+	Convey("test return object toJSON error", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 2000000)
+		s.SetRAM(kp.ID, 10000)
+
+		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
+		So(err, ShouldBeNil)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+
+		r, err = s.Call(cname, "ret_obj", `[]`, kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		So(r.Status.Message, ShouldContainSubstring, "error in JSON.stringfy")
 	})
 }

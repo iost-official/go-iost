@@ -39,14 +39,14 @@ class VoteCommonContract {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
+        const ret = blockchain.requireAuth(account, permission);
         if (ret !== true) {
             throw new Error("require auth failed. ret = " + ret);
         }
     }
 
     _call(contract, api, args) {
-        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
+        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -155,11 +155,11 @@ class VoteCommonContract {
 
         const anyOption = !!info.anyOption; // default to false
 
-        let unvoteInterval = info.unvoteInterval;
-        if (unvoteInterval === undefined) {
-            unvoteInterval = 0;
-        } else if (!Number.isInteger(unvoteInterval) || unvoteInterval < 0) {
-            throw new Error("unvoteInterval not valid.");
+        let freezeTime = info.freezeTime;
+        if (freezeTime === undefined) {
+            freezeTime = 0;
+        } else if (!Number.isInteger(freezeTime) || freezeTime < 0) {
+            throw new Error("freezeTime not valid.");
         }
 
         const bn = block.number;
@@ -175,7 +175,7 @@ class VoteCommonContract {
             resultNumber: resultNumber,
             minVote: minVote,
             anyOption: anyOption,
-            unvoteInterval: unvoteInterval,
+            freezeTime: freezeTime,
             deposit: bn > 0 ? newVoteFee : "0"
         }, owner);
 
@@ -366,11 +366,11 @@ class VoteCommonContract {
             throw new Error("amount too large. max amount = " + votes);
         }
         const info = this._mapGet("voteInfo", voteId);
-        if (info && userVotes[option][1] + info.unvoteInterval > block.number) {
-            throw new Error("unvoteInterval not reached.");
+        let freezeTime = tx.time;
+        if (info !== false) {
+            freezeTime += info.freezeTime*1e9;
         }
-
-        this._call("token.iost", "transfer", ["iost", "vote.iost", account, amount.toFixed(), ""]);
+        this._call("token.iost", "transferFreeze", ["iost", "vote.iost", account, amount.toFixed(), freezeTime, ""]);
 
         const leftVoteNum = votes.minus(amount);
 

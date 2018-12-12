@@ -437,7 +437,7 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall param2 run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0] != "null" {
+	if len(rs) != 1 || rs[0] != "" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
 
@@ -551,11 +551,14 @@ func TestEngine_Func(t *testing.T) {
 		t.Fatalf("LoadAndCall for should return error: out of gas, but got %v\n", err)
 	}
 
-	//host, code = MyInit(t, "func", int64(100000000000))
-	//_, _, err = vmPool.LoadAndCall(host, code, "func1")
-	//if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
-	//	t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
-	//}
+	// illegal instruction on mac
+	/*
+		host, code = MyInit(t, "func", int64(100000000000))
+		_, _, err = vmPool.LoadAndCall(host, code, "func1")
+		if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
+			t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
+		}
+	*/
 
 	host, code = MyInit(t, "func")
 	rs, _, err := vmPool.LoadAndCall(host, code, "func3", 4)
@@ -578,14 +581,17 @@ func TestEngine_Func(t *testing.T) {
 
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger")
-	/*
-		_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
-		if err != nil {
-			t.Fatal("LoadAndCall for should return no error, got %s", err.Error())
-		}
-	*/
+	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
+	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Invalid string length") {
+		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Invalid string length, got %s", err.Error())
+	}
 
-	_, _, err := vmPool.LoadAndCall(host, code, "visitUndefined")
+	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
+	if err != nil {
+		t.Fatalf("LoadAndCall for should return no error, got %s", err.Error())
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: TypeError: Cannot set property 'c' of undefined") {
 		t.Fatalf("LoadAndCall for should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
 	}
@@ -707,5 +713,17 @@ func TestEngine_Sha3(t *testing.T) {
 	}
 	if rs[0] != common.Base58Encode(common.Sha3([]byte(testStr))) {
 		t.Fatalf("LoadAndCall sha3 invalid result")
+	}
+}
+
+func TestEngine_ArrayOfFrom(t *testing.T) {
+	host, code := MyInit(t, "arrayfunc")
+	_, _, err := vmPool.LoadAndCall(host, code, "from")
+	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+		t.Fatalf("LoadAndCall array from error: %v", err)
+	}
+	_, _, err = vmPool.LoadAndCall(host, code, "to")
+	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
 }

@@ -339,7 +339,7 @@ func TestVerifyBlock(t *testing.T) {
 		secKey = common.Sha3([]byte("sec of id2"))
 		account2, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		staticProperty = newStaticProperty(account0, []string{account0.ID, account1.ID, account2.ID})
-		rootTime := common.GetCurrentTimestamp().Slot - 1
+		rootTime := time.Now().UnixNano()
 		rootBlk := &block.Block{
 			Head: &block.BlockHead{
 				Number:  1,
@@ -359,7 +359,7 @@ func TestVerifyBlock(t *testing.T) {
 		rcpt0 := &tx.TxReceipt{
 			TxHash: tx0.Hash(),
 		}
-		curTime := common.GetCurrentTimestamp().Slot
+		curTime := time.Now().UnixNano()
 		hash, _ := rootBlk.Head.Hash()
 		witness := witnessOfSlot(curTime)
 		blk := &block.Block{

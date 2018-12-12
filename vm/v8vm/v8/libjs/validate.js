@@ -1,11 +1,38 @@
 'use strict';
 
+function checkAbiNameValid(name) {
+    if (name.length <= 0 || name.length > 32) {
+        throw new Error("abi name invalid. abi name length should be between 1,32  got " + name)
+    }
+    if (name[0] === "_") {
+        throw new Error("abi name invalid. abi name shouldn't start with _");
+    }
+    for (let i in name) {
+        let ch = name.charAt(i);
+        if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch == '_')) {
+            throw new Error("abi name invalid. abi name contains invalid character " + ch);
+        }
+    }
+}
+
+function checkAmountLimitValid(amountLimit) {
+    for (let i in amountLimit) {
+        let limit = amountLimit[i];
+        if (typeof limit.token !== "string") {
+            throw new Error("amountLimit invalid. token in amountLimit should be string type. limit = " + limit);
+        }
+        if (typeof limit.val!== "string") {
+            throw new Error("amountLimit invalid. val in amountLimit should be string type. limit = " + limit);
+        }
+    }
+}
+
 function checkExports(ast) {
     if (ast.type !== "Program" || ast.body.length <= 1) {
         throw new Error("empty source code.");
     }
-    last = ast.body[ast.body.length - 1];
-    exp = last.expression;
+    let last = ast.body[ast.body.length - 1];
+    let exp = last.expression;
     if (last.type !== "ExpressionStatement" || exp.type !== "AssignmentExpression" || exp.operator !== "="
     || exp.left.type !== "MemberExpression" || exp.left.object.type !== "Identifier" || exp.left.property.type !== "Identifier"
     || exp.left.object.name !== "module" || exp.left.property.name !== "exports" || exp.right.type !== "Identifier") {
@@ -15,6 +42,13 @@ function checkExports(ast) {
 }
 
 function checkOneAbi(a, methodMap) {
+    checkAbiNameValid(a.name);
+    if (a.amountLimit !== undefined && a.amountLimit !== null) {
+        checkAmountLimitValid(a.amountLimit);
+    }
+    if (a.name === "init") {
+        throw new Error("abi has internal function: init");
+    }
     const params = methodMap[a.name];
     if (params === undefined || params === null || !Array.isArray(params)) {
         throw new Error("abi not defined in source code: " + a.name);
@@ -22,6 +56,12 @@ function checkOneAbi(a, methodMap) {
     const args = a.args || [];
     if (args.length !== params.length) {
         throw new Error("args length not match: " + a.name);
+    }
+    for (let i in args) {
+        let arg = args[i];
+        if (!["string", "bool", "number", "json"].includes(arg)) {
+            throw new Error(`args should be one of ["string", "bool", "number", "json"]`)
+        }
     }
 }
 

@@ -115,30 +115,9 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract
 
 func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 	cost := contract.Cost0()
-	for _, abi := range c.Info.Abi {
-		cost.AddAssign(CommonOpCost(1))
-		if err := h.checkAbiNameValid(abi.Name); err != nil {
-			return cost, err
-		}
-		if abi.Name == "init" {
-			return cost, ErrAbiHasInternalFunc
-		}
-	}
 	err := h.monitor.Validate(c)
-	cost.AddAssign(Costs["ValidateCost"])
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	return cost, err
-}
-
-func (h *Host) checkAbiNameValid(name string) error {
-	if len(name) <= 0 || len(name) > 32 {
-		return fmt.Errorf("abi name invalid. abi name length should be between 1,32  got %v", name)
-	}
-	for _, ch := range name {
-		if !(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch == '_') {
-			return fmt.Errorf("abi name invalid. abi name contains invalid character %v", ch)
-		}
-	}
-	return nil
 }
 
 func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error) {
@@ -173,7 +152,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	}
 
 	code, err := h.monitor.Compile(c)
-	cost.AddAssign(Costs["CompileCost"])
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err
 	}
@@ -238,7 +217,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	}
 
 	code, err := h.monitor.Compile(c)
-	cost.AddAssign(Costs["CompileCost"])
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err
 	}

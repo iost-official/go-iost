@@ -22,6 +22,9 @@ p2p:
 rpc:
   gatewayaddr: 0.0.0.0:30001
   grpcaddr: 0.0.0.0:30002
+  trytx: false
+  allowOrigins:
+    - "*"
 log:
   filelog:
     path: logs/

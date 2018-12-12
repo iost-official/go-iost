@@ -15,23 +15,23 @@ private:
 public:
     IOSTContractStorage(SandboxPtr ptr): sbxPtr(ptr) {}
 
-    char* Put(const char *key, const char *value, const char *owner);
-    char* Has(const char *key, const char *owner, bool *result);
-	char* Get(const char *key, const char *owner, char **result);
-	char* Del(const char *key, const char *owner);
-	char* MapPut(const char *key, const char *field, const char *value, const char *owner);
-	char* MapHas(const char *key, const char *field, const char *owner, bool *result);
-	char* MapGet(const char *key, const char *field, const char *owner, char **result);
-	char* MapDel(const char *key, const char *field, const char *owner);
-	char* MapKeys(const char *key, const char *owner, char **result);
-	char* MapLen(const char *key, const char *owner, size_t *result);
+    char* Put(const CStr key, const CStr value, const CStr owner);
+    char* Has(const CStr key, const CStr owner, bool *result);
+	char* Get(const CStr key, const CStr owner, CStr *result);
+	char* Del(const CStr key, const CStr owner);
+	char* MapPut(const CStr key, const CStr field, const CStr value, const CStr owner);
+	char* MapHas(const CStr key, const CStr field, const CStr owner, bool *result);
+	char* MapGet(const CStr key, const CStr field, const CStr owner, CStr *result);
+	char* MapDel(const CStr key, const CStr field, const CStr owner);
+	char* MapKeys(const CStr key, const CStr owner, CStr *result);
+	char* MapLen(const CStr key, const CStr owner, size_t *result);
 	
-	char* GlobalHas(const char *contract, const char *key, const char *owner, bool *result);
-	char* GlobalGet(const char *contract, const char *key, const char *owner, char **result);
-	char* GlobalMapHas(const char *contract, const char *key, const char *field, const char *owner, bool *result);
-	char* GlobalMapGet(const char *contract, const char *key, const char *field, const char *owner, char **result);
-	char* GlobalMapKeys(const char *contract,  const char *key, const char *owner, char **result);
-	char* GlobalMapLen(const char *contract, const char *key, const char *owner, size_t *result);
+	char* GlobalHas(const CStr contract, const CStr key, const CStr owner, bool *result);
+	char* GlobalGet(const CStr contract, const CStr key, const CStr owner, CStr *result);
+	char* GlobalMapHas(const CStr contract, const CStr key, const CStr field, const CStr owner, bool *result);
+	char* GlobalMapGet(const CStr contract, const CStr key, const CStr field, const CStr owner, CStr *result);
+	char* GlobalMapKeys(const CStr contract,  const CStr key, const CStr owner, CStr *result);
+	char* GlobalMapLen(const CStr contract, const CStr key, const CStr owner, size_t *result);
 
 };
 

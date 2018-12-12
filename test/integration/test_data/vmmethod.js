@@ -3,15 +3,15 @@ class Contract {
     }
 
     contractName() {
-        return BlockChain.contractName();
+        return blockchain.contractName();
     }
 
     receiptf(data) {
-        BlockChain.receipt(data);
+        blockchain.receipt(data);
     }
 
     event(data) {
-        BlockChain.event(data);
+        blockchain.event(data);
     }
 
     putwithpayer(k, v, p) {

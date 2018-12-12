@@ -106,14 +106,14 @@ func TestToken_Create(t *testing.T) {
 			So(err.Error(), ShouldEqual, "token exists")
 		})
 
-		Convey("create invalid token name", func() {
+		Convey("create invalid token symbol", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iostaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "issuer0", int64(100), []byte("{}"))
-			So(err.Error(), ShouldContainSubstring, "token name invalid.")
+			So(err.Error(), ShouldContainSubstring, "token symbol invalid.")
 
 			_, _, err = e.LoadAndCall(host, code, "create", "IOST", "issuer0", int64(100), []byte("{}"))
-			So(err.Error(), ShouldContainSubstring, "token name invalid.")
+			So(err.Error(), ShouldContainSubstring, "token symbol invalid.")
 		})
 
 		Convey("create token config", func() {

@@ -1,15 +1,17 @@
 package integration
 
 import (
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/native"
 	"testing"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 
@@ -18,7 +20,7 @@ func TestRAM(t *testing.T) {
 	defer s.Clear()
 	ilog.Stop()
 
-	prepareContract(s)
+	createAccountsWithResource(s)
 	contractName := "ram.iost"
 	err := setNonNativeContract(s, contractName, "ram.js", ContractPath)
 	if err != nil {
@@ -31,7 +33,7 @@ func TestRAM(t *testing.T) {
 	}
 	kp := prepareAuth(t, s)
 	createToken(t, s, kp)
-	s.SetGas(kp.ID, 1000000)
+	s.SetGas(kp.ID, 10000000)
 
 	s.Head.Number = 0
 	r, err := s.Call(contractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin)
@@ -49,6 +51,10 @@ func TestRAM(t *testing.T) {
 	r, err = s.Call(contractName, "issue", array2json([]interface{}{initialTotal, increaseInterval, increaseAmount, 0}), admin.ID, admin)
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
+	}
+	dbKey := "token.iost" + database.Separator + native.TokenInfoMapPrefix + "ram"
+	if database.MustUnmarshal(s.Visitor.MGet(dbKey, "fullName")) != "IOST system ram" {
+		panic("incorrect token full name")
 	}
 	initRAM := s.Visitor.TokenBalance("ram", kp.ID)
 

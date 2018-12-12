@@ -20,7 +20,7 @@ const (
 
 		transfer(from, to, amount) {
 			//Function called by other
-			BlockChain.transfer(from, to, amount, "")
+			blockchain.transfer(from, to, amount, "")
 		}
 
 	};

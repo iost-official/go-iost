@@ -52,7 +52,7 @@ static char compileCodeFormat[] =
     "%s\n"  // load validate
     "%s\n"; // load inject_gas
 
-int compileInternal(SandboxPtr ptr, const char *code, const char *extra, char *format, const char *file, const char **ret) {
+int compileInternal(SandboxPtr ptr, const CStr code, const CStr extra, char *format, const char *file, CStr *ret, CStr *errMsg) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -63,11 +63,15 @@ int compileInternal(SandboxPtr ptr, const char *code, const char *extra, char *f
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
+    TryCatch tryCatch(isolate);
+    tryCatch.SetVerbose(true);
+
     char *formatedCode = nullptr;
-    if (extra == nullptr) {
-        asprintf(&formatedCode, format, code);
+    // TODO: print with length
+    if (extra.data == nullptr) {
+        asprintf(&formatedCode, format, code.data);
     } else {
-        asprintf(&formatedCode, format, code, extra);
+        asprintf(&formatedCode, format, code.data, extra.data);
     }
 
     Local<String> source = String::NewFromUtf8(isolate, formatedCode, NewStringType::kNormal).ToLocalChecked();
@@ -83,19 +87,29 @@ int compileInternal(SandboxPtr ptr, const char *code, const char *extra, char *f
             if (retStr.length() == 0) {
                 return 1;
             }
-            *ret = strdup(*retStr);
+            ret->data = strdup(*retStr);
+            ret->size = retStr.length();
             return 0;
         }
+
+        if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+            std::string exception = reportException(isolate, context, tryCatch);
+            errMsg->data = strdup(exception.c_str());
+            errMsg->size = exception.length();
+            return 1;
+        }
     }
+    errMsg->data = strdup("script is empty");
+    errMsg->size = std::strlen(errMsg->data);
     return 1;
 }
 
-int compile(SandboxPtr ptr, const char *code, const char **compiledCode) {
-    return compileInternal(ptr, code, nullptr, injectGasFormat, "__inject_gas.js", compiledCode);
+int compile(SandboxPtr ptr, const CStr code, CStr *compiledCode, CStr *errMsg) {
+    return compileInternal(ptr, code, {nullptr, 0}, injectGasFormat, "__inject_gas.js", compiledCode, errMsg);
 }
 
-int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result) {
-    return compileInternal(ptr, code, abi, validateFormat, "__validate.js", result);
+int validate(SandboxPtr ptr, const CStr code, const CStr abi, CStr *result, CStr *errMsg) {
+    return compileInternal(ptr, code, abi, validateFormat, "__validate.js", result, errMsg);
 }
 
 CustomStartupData createStartupData() {

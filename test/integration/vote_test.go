@@ -12,8 +12,8 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
-	. "github.com/smartystreets/goconvey/convey"
 	"github.com/iost-official/go-iost/vm/database"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 func prepareToken(t *testing.T, s *Simulator, kp *account.KeyPair) {
@@ -46,7 +46,7 @@ func prepareVote(t *testing.T, s *Simulator, kp *account.KeyPair) (*tx.TxReceipt
 	config["minVote"] = 10
 	config["options"] = []string{"option1", "option2", "option3", "option4"}
 	config["anyOption"] = false
-	config["unvoteInterval"] = 0
+	config["freezeTime"] = 0
 	params := []interface{}{
 		testID[0],
 		"test vote",
@@ -69,7 +69,7 @@ func Test_NewVote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 
 		Convey("test NewVote", func() {
@@ -79,7 +79,7 @@ func Test_NewVote(t *testing.T) {
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(1999999000*1e8))
 			So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `"1"`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"unvoteInterval":0,"deposit":"1000"}`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000"}`)
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")), ShouldEqual, `["0",false,-1]`)
 
 			r, err = s.Call("Contractvoteresult", "GetResult", `["1"]`, kp.ID, kp)
@@ -103,7 +103,7 @@ func Test_AddOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -134,7 +134,7 @@ func Test_RemoveOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -161,7 +161,7 @@ func Test_Vote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -263,7 +263,7 @@ func Test_DelVote(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -308,7 +308,7 @@ func Test_MixVoteOption(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		prepareContract(s)
+		createAccountsWithResource(s)
 		prepareToken(t, s, kp)
 		prepareVote(t, s, kp)
 
@@ -440,11 +440,11 @@ func Test_MixVoteOption(t *testing.T) {
 			s.Call("vote.iost", "RemoveOption", `["1", "option2", true]`, kp.ID, kp)
 			s.Call("vote.iost", "RemoveOption", `["1", "option1", true]`, kp.ID, kp)
 			So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"option1", "option2", "option3", "option4", "option5"})
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option5")),ShouldEqual, `["0",true,-1]`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option4")),ShouldEqual, `["400",true,-1]`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option3")),ShouldEqual, `["300",true,-1]`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option2")),ShouldEqual, `["300",true,-1]`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")),ShouldEqual, `["100",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option5")), ShouldEqual, `["0",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option4")), ShouldEqual, `["400",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option3")), ShouldEqual, `["300",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option2")), ShouldEqual, `["300",true,-1]`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")), ShouldEqual, `["100",true,-1]`)
 			So(s.Visitor.MKeys("vote.iost-p_1"), ShouldResemble, []string{})
 		})
 	})
