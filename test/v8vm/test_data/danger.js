@@ -4,7 +4,11 @@ class Danger {
     }
 
     bigArray() {
-        return new Array(1000000000)
+        return new Array(1000000);
+    }
+
+    tooBigArray() {
+        return new Array(1000000000);
     }
 
     visitUndefined() {

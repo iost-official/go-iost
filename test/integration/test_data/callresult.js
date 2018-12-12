@@ -7,6 +7,13 @@ class Test {
         console.log("js result is " + res.replace("\x00", "\\x00"));
         return res + "d";
     }
+    ret_obj() {
+        return {
+            toJSON: function() {
+                throw new Error("error in JSON.stringfy");
+            }
+        };
+    }
 }
 
 module.exports = Test;
