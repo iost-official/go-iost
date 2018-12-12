@@ -54,7 +54,7 @@ func (t *transferHandle) Publish() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGas(1500000)
+	err = sdk.PledgeForGasAndRam(1500000, 0)
 	if err != nil {
 		return err
 	}

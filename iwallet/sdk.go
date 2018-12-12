@@ -122,6 +122,20 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
+func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
+	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpcpb.NewApiServiceClient(conn)
+	value, err := client.GetContractStorage(context.Background(), r)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
@@ -341,9 +355,12 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 }
 
 // PledgeForGas ...
-func (s *SDK) PledgeForGas(gasPledged int64) error {
+func (s *SDK) PledgeForGasAndRam(gasPledged int64, ram int64) error {
 	var acts []*tx.Action
 	acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, s.accountName, gasPledged)))
+	if ram > 0 {
+		acts = append(acts, tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, s.accountName, ram)))
+	}
 	trx, err := s.createTx(acts)
 	if err != nil {
 		return err

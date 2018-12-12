@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
@@ -93,11 +94,17 @@ func (t *Tx) baseHash() []byte {
 
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
 func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
+	ilog.Info("where")
+	ilog.Info(kps)
 	tx.Signs = append(tx.Signs, signs...)
 
 	tx.PublishSigns = []*crypto.Signature{}
 	for _, kp := range kps {
-		sig := kp.Sign(tx.publishHash())
+		ilog.Info("where")
+		temp := tx.publishHash()
+		ilog.Info("after publishhash")
+		ilog.Info(kp)
+		sig := kp.Sign(temp)
 		tx.PublishSigns = append(tx.PublishSigns, sig)
 	}
 	tx.Publisher = id

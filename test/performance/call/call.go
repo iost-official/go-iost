@@ -25,7 +25,7 @@ func Run(handleType string, iterNum int, parallelNum int, address string, flag b
 
 	err = handle.Publish()
 	if err != nil {
-		log.Println("Publish error")
+		log.Println("Publish error", err)
 		return
 	}
 

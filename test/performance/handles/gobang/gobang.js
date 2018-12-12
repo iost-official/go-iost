@@ -59,7 +59,7 @@ class Game {
     }
 
     _count(x, y, stepx, stepy) {
-        let count = 1;z
+        let count = 1;
         const color = this.board.color(x,y);
         let cx = x;
         let cy = y;

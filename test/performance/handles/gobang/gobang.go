@@ -10,60 +10,69 @@ import (
 	"github.com/iost-official/go-iost/iwallet"
 	"github.com/iost-official/go-iost/test/performance/call"
 
+	"encoding/json"
+
+	"math/rand"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/rpc/pb"
 	"google.golang.org/grpc"
 )
 
 var conns []*grpc.ClientConn
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
+var rootID = "admin"
+var rootAcc *account.KeyPair
 var contractID string
 var sdk = iwallet.SDK{}
-
 var testID = "i" + strconv.FormatInt(time.Now().Unix(), 10)
+var testAcc *account.KeyPair
 
-type transferHandle struct{}
+type gobangHandle struct{}
+
+var board map[string]bool
 
 func init() {
-	transfer := new(transferHandle)
-	call.Register("transfer", transfer)
+	gobang := new(gobangHandle)
+	call.Register("gobang", gobang)
+	rootAcc, _ = account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
 }
 
 // Init ...
-func (t *transferHandle) Init(add string, conNum int) error {
+func (t *gobangHandle) Init(add string, conNum int) error {
 	initConn(add, conNum)
 	return nil
 }
 
 // Publish ...
-func (t *transferHandle) Publish() error {
-	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/transfer/transfer.js"
+func (t *gobangHandle) Publish() error {
+	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/gobang/gobang.js"
 	abiPath := codePath + ".abi"
-	sdk.SetAccount("admin", acc)
-	sdk.SetTxInfo(5000000, 100, 90, 0)
+	sdk.SetAccount("admin", rootAcc)
+	sdk.SetTxInfo(10000000, 100, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
-	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
+	testAcc, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		return err
 	}
-	err = sdk.CreateNewAccount(testID, testKp, 1000000, 10000, 100000)
+	err = sdk.CreateNewAccount(testID, testAcc, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGas(1500000)
+	err = sdk.PledgeForGasAndRam(1500000, 100000000)
 	if err != nil {
 		return err
 	}
-	sdk.SetAccount(testID, testKp)
+	sdk.SetAccount(testID, testAcc)
 	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(5) * time.Second)
 	client := rpcpb.NewApiServiceClient(conns[0])
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHash})
 	if err != nil {
@@ -77,13 +86,65 @@ func (t *transferHandle) Publish() error {
 	return nil
 }
 
-// Transfer ...
-func (t *transferHandle) Transfer(i int) string {
-	action := tx.NewAction(contractID, "transfer", fmt.Sprintf(`["admin","%v",1]`, testID))
-	acc, _ := account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 5000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
-	stx, err := tx.SignTx(trx, "admin", []*account.KeyPair{acc})
+func (t *gobangHandle) wait(h string) {
+	g := rpcpb.GetContractStorageRequest{Id: contractID, Key: "games" + "0", Field: "", ByLongestChain: true}
+	for {
+		v, err := sdk.GetContractStorage(&g)
+		if err != nil {
+			ilog.Error(err)
+		}
+		var f interface{}
+		err = json.Unmarshal([]byte(v.Data), &f)
+		if err != nil {
+			ilog.Error(err)
+		}
+		if f == nil {
+			continue
+		}
+		m := f.(map[string]interface{})
+		if m["hash"] == h {
+			break
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
 
+func (t *gobangHandle) Transfer(i int) string {
+	act := tx.NewAction(contractID, "newGameWith", fmt.Sprintf(`["%v"]`, testID))
+	h := t.transfer(i, act, rootAcc, rootID)
+	ilog.Infof("newGameWith hash: %v", h)
+	t.wait(h)
+	round := 0
+	for {
+		acc := rootAcc
+		id := rootID
+		var x, y int
+		for {
+			x = rand.Intn(15)
+			y = rand.Intn(15)
+			if board[strconv.Itoa(x)+","+strconv.Itoa(y)] == false {
+				break
+			}
+		}
+		if round%2 == 1 {
+			acc = testAcc
+			id = testID
+		}
+		act = tx.NewAction(contractID, "move", fmt.Sprintf(`[0, %v, %v, "%v"]`, x, y, h))
+		ilog.Info("move: %v", fmt.Sprintf(`[0, %v, %v, "%v"]`, x, y, h))
+		h = t.transfer(i, act, acc, id)
+		ilog.Infof("move hash: %v", h)
+		t.wait(h)
+		round++
+	}
+
+	return ""
+}
+
+// Transfer ...
+func (t *gobangHandle) transfer(i int, act *tx.Action, acc *account.KeyPair, id string) string {
+	trx := tx.NewTx([]*tx.Action{act}, []string{}, 10000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	stx, err := tx.SignTx(trx, id, []*account.KeyPair{acc})
 	if err != nil {
 		return fmt.Sprintf("signtx:%v err:%v", stx, err)
 	}

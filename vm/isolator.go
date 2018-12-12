@@ -68,7 +68,9 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
+		ilog.Info(common.Base58Encode(t.Hash()))
 		if i.h.GasPayed(t.Publisher)*t.GasRatio >= t.GasLimit {
+			ilog.Info(i.h.GasPayed(t.Publisher), " ", t.GasRatio, " ", t.GasLimit)
 			return fmt.Errorf("gas limit should be larger")
 		}
 		gas := i.h.AllGas(i.publisherID)

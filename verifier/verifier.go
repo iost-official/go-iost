@@ -187,6 +187,7 @@ L:
 		}
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
+		ilog.Info(r)
 		if err != nil {
 			ilog.Errorf("isolator run error %v", err)
 			provider.Drop(t, err)
