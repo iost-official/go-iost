@@ -216,7 +216,19 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		}
 
 		i.tr.Status = status
+
 		gasLimit := i.h.Context().GValue("gas_limit").(int64)
+
+		cost.AddAssign(contract.NewCost(0, int64(len(ret)), 0))
+
+		currentGasLimit := gasLimit - cost.ToGas()
+		if currentGasLimit < 0 {
+			currentGasLimit = 0
+			status.Code = tx.ErrorRuntime
+			status.Message = "out of gas"
+			ret = ""
+		}
+
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
 			cost.CPU = gasLimit
 			cost.Net = 0
@@ -234,7 +246,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			}
 		}
 
-		i.h.Context().GSet("gas_limit", gasLimit-cost.ToGas())
+		i.h.Context().GSet("gas_limit", currentGasLimit)
 
 		i.h.PayCost(cost, i.publisherID)
 

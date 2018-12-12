@@ -49,6 +49,21 @@ class Account {
         }
     }
 
+    _checkPermValid(id) {
+        if (block.number === 0) {
+            return
+        }
+        if (id.length < 1 || id.length > 32) {
+            throw new Error("id invalid. id length should be between 6,32 > " + id)
+        }
+        for (let i in id) {
+            let ch = id[i];
+            if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
+                throw new Error("id invalid. id contains invalid character > " + ch);
+            }
+        }
+    }
+
     SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
@@ -81,7 +96,7 @@ class Account {
     }
     AddPermission(id, perm, thres) {
         this._ra(id);
-        this._checkIdValid(perm);
+        this._checkPermValid(perm);
         let acc = this._loadAccount(id);
         if (acc.permissions[perm] !== undefined) {
             throw new Error("permission already exist");
@@ -138,7 +153,7 @@ class Account {
     }
     AddGroup(id, grp) {
         this._ra(id);
-        this._checkIdValid(grp);
+        this._checkPermValid(grp);
         let acc = this._loadAccount(id);
         if (acc.groups[grp] !== undefined) {
             throw new Error("group already exist");
