@@ -338,7 +338,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
         return;
     }
 
-    if (ret.IsEmpty()) {
+    if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
