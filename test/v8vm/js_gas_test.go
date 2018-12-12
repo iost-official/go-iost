@@ -152,4 +152,50 @@ func TestInjectGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		t.Log(rs, cost0)
 	})
+
+	Convey("test length0", t, func() {
+		rs, cost0, err := vmPool.LoadAndCall(host, code, "length0", "input")
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+	})
+
+	Convey("test array0", t, func() {
+		rs, cost0, err := vmPool.LoadAndCall(host, code, "array0", 1)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+		rs, cost1, err := vmPool.LoadAndCall(host, code, "array0", 3)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas())
+	})
+
+	Convey("test string0", t, func() {
+		rs, cost0, err := vmPool.LoadAndCall(host, code, "string0", 1)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+		rs, cost1, err := vmPool.LoadAndCall(host, code, "string0", 3)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost1)
+		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas())
+	})
+
+	Convey("test string1", t, func() {
+		rs, cost0, err := vmPool.LoadAndCall(host, code, "string1", 1)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+		rs, cost1, err := vmPool.LoadAndCall(host, code, "string1", 3)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost1)
+		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas())
+	})
+
+	Convey("test spread0", t, func() {
+		rs, cost0, err := vmPool.LoadAndCall(host, code, "spread0", 10)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost0)
+		rs, cost1, err := vmPool.LoadAndCall(host, code, "spread0", 100)
+		So(err, ShouldBeNil)
+		t.Log(rs, cost1)
+		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas())
+	})
 }

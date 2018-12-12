@@ -263,7 +263,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2465)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2533)
 
 			ram0 = s.GetRAM(testID[0])
 			ram4 := s.GetRAM(testID[4])
@@ -328,7 +328,7 @@ func Test_Validate(t *testing.T) {
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 300)
 
 		c, err := s.Compile("validate", "test_data/validate", "test_data/validate")
@@ -338,6 +338,13 @@ func Test_Validate(t *testing.T) {
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
 		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
+
+		c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
+		So(err, ShouldBeNil)
+		_, r, err = s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err.Error(), ShouldContainSubstring, "Error: args should be one of ")
+		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: args should be one of ")
 	})
 }
 

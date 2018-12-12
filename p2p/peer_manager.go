@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 	p2pb "github.com/iost-official/go-iost/p2p/pb"
@@ -465,10 +466,10 @@ func (pm *PeerManager) routingQuery(ids []string) {
 	if len(ids) == 0 {
 		return
 	}
-	query := p2pb.RoutingQuery{
+	query := &p2pb.RoutingQuery{
 		Ids: ids,
 	}
-	bytes, err := query.Marshal()
+	bytes, err := proto.Marshal(query)
 	if err != nil {
 		ilog.Errorf("pb encode failed. err=%v, obj=%+v", err, query)
 		return
@@ -612,7 +613,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 		}
 	}
 
-	resp := p2pb.RoutingResponse{}
+	resp := &p2pb.RoutingResponse{}
 	for pid := range pidSet {
 		info := pm.peerStore.PeerInfo(pid)
 		if len(info.Addrs) > 0 {
@@ -628,7 +629,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 	if len(resp.Peers) == 0 {
 		return []byte{}, nil
 	}
-	bytes, err := resp.Marshal()
+	bytes, err := proto.Marshal(resp)
 	if err != nil {
 		ilog.Errorf("pb encode failed. err=%v, obj=%+v", err, resp)
 		return nil, err
@@ -642,7 +643,7 @@ func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) 
 	data, _ := msg.data()
 
 	query := &p2pb.RoutingQuery{}
-	err := query.Unmarshal(data)
+	err := proto.Unmarshal(data, query)
 	if err != nil {
 		ilog.Errorf("pb decode failed. err=%v, bytes=%v", err, data)
 		return
@@ -661,7 +662,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 
 	data, _ := msg.data()
 	resp := &p2pb.RoutingResponse{}
-	err := resp.Unmarshal(data)
+	err := proto.Unmarshal(data, resp)
 	if err != nil {
 		ilog.Errorf("pb decode failed. err=%v, bytes=%v", err, data)
 		return
