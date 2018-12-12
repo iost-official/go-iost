@@ -152,5 +152,52 @@ class Gas {
         }
         return data;
     }
+
+    length0(a) {
+        String.prototype.toString = function () {
+            return {length: -100};
+        };
+        a.concat("a");
+        /*
+        a.length = -100;
+        return a.concat("a");
+        */
+    }
+
+    array0(N) {
+        let a = [1,2,3,4];
+        if (N === 1) {
+            a.splice(1, 5, 'a');
+            return a;
+        } else {
+            a.splice(1, 5, 'a', 'a', 'a');
+            return a;
+        }
+    }
+
+    string0(N) {
+        let a = "sdf";
+        return a.repeat(N);
+    }
+
+    string1(N) {
+        let a = "sdf";
+        if (N === 1) {
+            return a.concat("data");
+        } else {
+            return a.concat("datadatadata");
+        }
+    }
+
+    spread0(N) {
+        function f() {
+            let b = new Array();
+            b[N] = 9;
+            return b;
+        }
+        let a = [1,...[2,3],...'abc', ...f()];
+        return a;
+    }
+
 };
 module.exports = Gas;
