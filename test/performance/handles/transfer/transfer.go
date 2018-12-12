@@ -30,7 +30,6 @@ const (
 )
 
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
-var contractID string
 var sdk = iwallet.SDK{}
 
 type transferHandler struct {
@@ -62,7 +61,7 @@ func (t *transferHandler) writeCache() {
 	}
 }
 
-// Publish ...
+// Prepare ...
 func (t *transferHandler) Prepare() error {
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/transfer/transfer.js"
@@ -105,7 +104,7 @@ func (t *transferHandler) Prepare() error {
 	return nil
 }
 
-// Transfer ...
+// Run ...
 func (t *transferHandler) Run(i int) (interface{}, error) {
 	action := tx.NewAction(t.contractID, "transfer", fmt.Sprintf(`["admin","%v",1]`, t.testID))
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
