@@ -5,7 +5,6 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // KeyPair account of the ios
@@ -39,7 +38,6 @@ func NewKeyPair(seckey []byte, algo crypto.Algorithm) (*KeyPair, error) {
 
 // Sign sign a tx
 func (a *KeyPair) Sign(info []byte) *crypto.Signature {
-	ilog.Info(a.Algorithm, info, a.Seckey)
 	return crypto.NewSignature(a.Algorithm, info, a.Seckey)
 }
 
