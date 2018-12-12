@@ -5,6 +5,10 @@
     {
       "name": "ret_eof",
       "args": []
+    },
+    {
+      "name": "ret_obj",
+      "args": []
     }
   ]
 }

@@ -581,7 +581,12 @@ func TestEngine_Func(t *testing.T) {
 
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger")
-	_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
+	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
+	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Invalid string length") {
+		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Invalid string length, got %s", err.Error())
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
 	if err != nil {
 		t.Fatalf("LoadAndCall for should return no error, got %s", err.Error())
 	}
