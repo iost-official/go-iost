@@ -81,6 +81,7 @@ class Account {
     }
     AddPermission(id, perm, thres) {
         this._ra(id);
+        this._checkIdValid(perm);
         let acc = this._loadAccount(id);
         if (acc.permissions[perm] !== undefined) {
             throw new Error("permission already exist");
@@ -137,6 +138,7 @@ class Account {
     }
     AddGroup(id, grp) {
         this._ra(id);
+        this._checkIdValid(grp);
         let acc = this._loadAccount(id);
         if (acc.groups[grp] !== undefined) {
             throw new Error("group already exist");

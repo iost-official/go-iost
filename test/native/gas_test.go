@@ -90,7 +90,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 
 	authList := make(map[string]int)
 	h.Context().Set("auth_contract_list", authList)
-	authList[user1.Permissions["active"].Users[0].ID] = 2
+	authList[user1.Permissions["active"].Items[0].ID] = 2
 	h.Context().Set("auth_list", authList)
 
 	code := &contract.Contract{
