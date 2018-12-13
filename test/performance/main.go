@@ -17,7 +17,7 @@ func init() {
 func main() {
 	var iterNum = 1
 	var parallelNum = 100
-	var address = "localhost:30002"
+	var address = "3.0.81.219:30002"
 
 	log.Println("Start test!")
 	start := time.Now()
