@@ -59,7 +59,11 @@ func (t *gobangHandle) Publish() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGasAndRam(1500000, 100000000)
+	err = sdk.PledgeForGasAndRam(1500000, 0)
+	if err != nil {
+		return err
+	}
+	err = sdk.PledgeForGasAndRam(100, 10000000)
 	if err != nil {
 		return err
 	}
