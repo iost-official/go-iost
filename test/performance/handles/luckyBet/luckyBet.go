@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"github.com/iost-official/go-iost/iwallet"
 	"github.com/iost-official/go-iost/test/performance/call"
-	"github.com/iostio/iost.io/log"
 	"io/ioutil"
+	"log"
 	"os"
 	"strconv"
 	"strings"
@@ -70,7 +70,7 @@ func (t *luckyBetHandler) writeCache() {
 
 // Prepare ...
 func (t *luckyBetHandler) Prepare() error {
-	log.Info("lucky bet Prepare")
+	log.Println("lucky bet Prepare")
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/vm/test_data/lucky_bet.js"
 	abiPath := codePath + ".abi"
