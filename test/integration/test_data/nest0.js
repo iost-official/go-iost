@@ -5,23 +5,23 @@ class Contract {
 
     call(conName, abiName, args) {
         storage.put("nest0", "000")
-        BlockChain.call(conName, abiName, args)
+        blockchain.call(conName, abiName, args)
     }
 
     sh0(conName) {
-        BlockChain.call(conName, "sh1", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh1", JSON.stringify([blockchain.contractName()]));
     }
 
     sh2(conName) {
-        BlockChain.call(conName, "sh3", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh3", JSON.stringify([blockchain.contractName()]));
     }
 
     sh4(conName) {
-        BlockChain.call(conName, "sh5", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh5", JSON.stringify([blockchain.contractName()]));
     }
 
     sh6(conName) {
-        BlockChain.call(conName, "sh7", JSON.stringify([BlockChain.contractName()]));
+        blockchain.call(conName, "sh7", JSON.stringify([blockchain.contractName()]));
     }
 }
 

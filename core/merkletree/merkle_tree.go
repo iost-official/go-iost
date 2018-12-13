@@ -2,7 +2,9 @@ package merkletree
 
 import (
 	"bytes"
+	"encoding/hex"
 	"errors"
+
 	"github.com/iost-official/go-iost/common"
 
 	"math"
@@ -42,7 +44,7 @@ func (m *MerkleTree) Build(data [][]byte) {
 	}
 	m.Hash2Idx = make(map[string]int32)
 	for idx, datum := range data {
-		m.Hash2Idx[string(datum)] = int32(idx) + n - 1
+		m.Hash2Idx[hex.EncodeToString(datum)] = int32(idx) + n - 1
 	}
 }
 
@@ -56,7 +58,7 @@ func (m *MerkleTree) MerklePath(hash []byte) ([][]byte, error) {
 	if m.LeafNum == 0 {
 		return nil, errors.New("merkletree hasn't built")
 	}
-	idx, ok := m.Hash2Idx[string(hash)]
+	idx, ok := m.Hash2Idx[hex.EncodeToString(hash)]
 	if !ok {
 		return nil, errors.New("hash isn't in the tree")
 	}

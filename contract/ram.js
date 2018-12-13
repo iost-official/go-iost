@@ -9,7 +9,7 @@ class RAMContract {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
+        const ret = blockchain.requireAuth(account, permission);
         if (ret !== true) {
             throw new Error("require auth failed. ret = " + ret);
         }
@@ -119,10 +119,11 @@ class RAMContract {
             throw new Error("init out of genesis block");
         }
         const veryLarge = 100 * 64 * 1024 * 1024 * 1024;
-        let data = [this._getTokenName(), this._getContractName(), veryLarge, {"decimal":0}];
-        BlockChain.callWithAuth("token.iost", "create", JSON.stringify(data));
+        const tokenInfo = {"decimal":0, "fullName":"IOST system ram"}
+        let data = [this._getTokenName(), this._getContractName(), veryLarge, tokenInfo];
+        blockchain.callWithAuth("token.iost", "create", JSON.stringify(data));
         data = [this._getTokenName(), this._getContractName(), (initialTotal).toString()];
-        BlockChain.callWithAuth("token.iost", "issue", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "issue", JSON.stringify(data));
         this._put("lastUpdateBlockTime", block.time);
         this._put("increaseInterval", increaseInterval);
         this._put("increaseAmount", increaseAmount);
@@ -160,7 +161,7 @@ class RAMContract {
         }
         const increaseAmount = this._get("increaseAmount");
         const data = [this._getTokenName(), this._getContractName(), increaseAmount.toString()];
-        BlockChain.callWithAuth("token.iost", "issue", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "issue", JSON.stringify(data));
         this._put("lastUpdateBlockTime", t);
         this._changeLeftSpace(increaseAmount);
     }
@@ -172,9 +173,9 @@ class RAMContract {
         const feeRate = 0.01;
         const fee = Math.ceil(feeRate * rawPrice);
         const price = rawPrice + fee;
-        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, this._getContractName(), price.toString(), ""]));
+        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, this._getContractName(), price.toString(), ""]));
         const data = [this._getTokenName(), this._getContractName(), account, (amount).toString(), ""];
-        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
         this._changeLeftSpace(-amount);
         this._changeBalance(rawPrice);
         this._changeUsedSpace(amount);
@@ -184,9 +185,9 @@ class RAMContract {
     sell(account, receiver, amount) {
         this._requireAuth(account, transferPermission);
         const data = [this._getTokenName(), account, this._getContractName(), (amount).toString(), ""];
-        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
         const price = this._price("sell", amount);
-        BlockChain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", this._getContractName(), receiver, price.toString(), ""]));
+        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", this._getContractName(), receiver, price.toString(), ""]));
         this._changeLeftSpace(amount);
         this._changeBalance(-price);
         this._changeUsedSpace(-amount);

@@ -20,10 +20,8 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/rpc/pb"
-	"google.golang.org/grpc"
 )
 
-var conns []*grpc.ClientConn
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
 var rootID = "admin"
 var rootAcc *account.KeyPair
@@ -37,20 +35,15 @@ type gobangHandle struct{}
 func init() {
 	gobang := new(gobangHandle)
 	call.Register("gobang", gobang)
-	rootAcc, _ = account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-}
-
-// Init ...
-func (t *gobangHandle) Init(add string, conNum int) error {
-	initConn(add, conNum)
-	return nil
 }
 
 // Publish ...
-func (t *gobangHandle) Publish() error {
+func (t *gobangHandle) Prepare() error {
 	var err error
+	rootAcc, _ = account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/gobang/gobang.js"
 	abiPath := codePath + ".abi"
+	sdk.SetServer(call.GetClient(0).Addr())
 	sdk.SetAccount("admin", rootAcc)
 	sdk.SetTxInfo(10000000, 100, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
@@ -72,7 +65,7 @@ func (t *gobangHandle) Publish() error {
 		return err
 	}
 	time.Sleep(time.Duration(30) * time.Second)
-	client := rpcpb.NewApiServiceClient(conns[0])
+	client := call.GetClient(0)
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHash})
 	if err != nil {
 		return err
@@ -86,13 +79,10 @@ func (t *gobangHandle) Publish() error {
 }
 
 func (t *gobangHandle) wait(i int, h string, id string) bool {
-	ilog.Info(id)
 	g := rpcpb.GetContractStorageRequest{Id: contractID, Key: "games" + id, Field: "", ByLongestChain: true}
 	for {
-		ilog.Info("get storage, ", i)
 		v, err := sdk.GetContractStorage(&g)
 		if err != nil {
-			ilog.Error(err)
 			time.Sleep(3000 * time.Millisecond)
 			continue
 		}
@@ -102,11 +92,9 @@ func (t *gobangHandle) wait(i int, h string, id string) bool {
 			ilog.Error(err)
 		}
 		if f == nil {
-			ilog.Info("f is nil, ", i)
 			continue
 		}
 		m := f.(map[string]interface{})
-		ilog.Info(m["hash"], " ", i)
 		if m["hash"] == h {
 			if m["winner"] != nil {
 				return true
@@ -124,7 +112,6 @@ func (t *gobangHandle) getGameID(h string) string {
 			time.Sleep(100 * time.Millisecond)
 			continue
 		}
-		ilog.Info(v)
 		if len(v.Returns) == 0 {
 			continue
 		}
@@ -141,9 +128,9 @@ func (t *gobangHandle) getGameID(h string) string {
 	}
 }
 
-func (t *gobangHandle) Transfer(i int) string {
+func (t *gobangHandle) Run(i int) (interface{}, error) {
+	ilog.Info("run ", i)
 	var board = make(map[string]bool)
-	ilog.Info("transfer: ", i)
 	act := tx.NewAction(contractID, "newGameWith", fmt.Sprintf(`["%v"]`, testID))
 	h := t.transfer(i, act, rootAcc, rootID)
 	gameID := t.getGameID(h)
@@ -161,7 +148,6 @@ func (t *gobangHandle) Transfer(i int) string {
 				break
 			}
 		}
-		ilog.Info(i, " ", round, " ", x, " ", y)
 		if round%2 == 1 {
 			acc = testAcc
 			id = testID
@@ -170,12 +156,11 @@ func (t *gobangHandle) Transfer(i int) string {
 		h = t.transfer(i, act, acc, id)
 		r := t.wait(i, h, gameID)
 		if r {
-			ilog.Info("end of game")
 			break
 		}
 		round++
 	}
-	return ""
+	return "", nil
 }
 
 // Transfer ...
@@ -185,84 +170,10 @@ func (t *gobangHandle) transfer(i int, act *tx.Action, acc *account.KeyPair, id 
 	if err != nil {
 		return fmt.Sprintf("signtx:%v err:%v", stx, err)
 	}
-	var txHash []byte
-	txHash, err = sendTx(stx, i)
+	var txHash string
+	txHash, err = call.SendTx(stx, i)
 	if err != nil {
 		return fmt.Sprintf("sendtx:%v  err:%v", txHash, err)
 	}
 	return string(txHash)
-}
-
-func initConn(add string, num int) {
-	sdk.SetServer(add)
-	conns = make([]*grpc.ClientConn, num)
-	allServers := []string{"3.0.81.219:30002", "3.0.192.236:30002"}
-	for i := 0; i < num; i++ {
-		conn, err := grpc.Dial(allServers[i%len(allServers)], grpc.WithInsecure())
-		if err != nil {
-			panic(err)
-		}
-		conns[i] = conn
-	}
-}
-
-func toTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
-	ret := &rpcpb.TransactionRequest{
-		Time:       t.Time,
-		Expiration: t.Expiration,
-		GasRatio:   float64(t.GasRatio) / 100,
-		GasLimit:   float64(t.GasLimit) / 100,
-		Delay:      t.Delay,
-		Signers:    t.Signers,
-		Publisher:  t.Publisher,
-	}
-	for _, a := range t.Actions {
-		ret.Actions = append(ret.Actions, &rpcpb.Action{
-			Contract:   a.Contract,
-			ActionName: a.ActionName,
-			Data:       a.Data,
-		})
-	}
-	for _, a := range t.AmountLimit {
-		fixed, err := common.UnmarshalFixed(a.Val)
-		if err != nil {
-			continue
-		}
-		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
-			Token: a.Token,
-			Value: fixed.ToFloat(),
-		})
-	}
-	for _, s := range t.Signs {
-		ret.Signatures = append(ret.Signatures, &rpcpb.Signature{
-			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
-			PublicKey: s.Pubkey,
-			Signature: s.Sig,
-		})
-	}
-	for _, s := range t.PublishSigns {
-		ret.PublisherSigs = append(ret.PublisherSigs, &rpcpb.Signature{
-			Algorithm: rpcpb.Signature_Algorithm(s.Algorithm),
-			PublicKey: s.Pubkey,
-			Signature: s.Sig,
-		})
-	}
-	return ret
-}
-
-func sendTx(stx *tx.Tx, i int) ([]byte, error) {
-	client := rpcpb.NewApiServiceClient(conns[i])
-	resp, err := client.SendTransaction(context.Background(), toTxRequest(stx))
-	if err != nil {
-		return nil, err
-	}
-	return []byte(resp.Hash), nil
-}
-
-func loadBytes(s string) []byte {
-	if s[len(s)-1] == 10 {
-		s = s[:len(s)-1]
-	}
-	buf := common.Base58Decode(s)
-	return buf
 }

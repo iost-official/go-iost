@@ -4,11 +4,6 @@ const activePermission = "active";
 
 class IssueContract {
     constructor() {
-        BigNumber.config({
-            DECIMAL_PLACES: 50,
-            POW_PRECISION: 50,
-            ROUNDING_MODE: BigNumber.ROUND_DOWN
-        });
     }
 
     init() {
@@ -88,14 +83,14 @@ class IssueContract {
     }
 
     _requireAuth(account, permission) {
-        const ret = BlockChain.requireAuth(account, permission);
+        const ret = blockchain.requireAuth(account, permission);
         if (ret !== true) {
             throw new Error("require auth failed. ret = " + ret);
         }
     }
 
     _call(contract, api, args) {
-        const ret = BlockChain.callWithAuth(contract, api, JSON.stringify(args));
+        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
         if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }

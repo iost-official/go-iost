@@ -3,8 +3,8 @@
 
 #include "sandbox.h"
 
-int compile(SandboxPtr, const char *code, const char **compiledCode, const char **errMsg);
-int validate(SandboxPtr ptr, const char *code, const char *abi, const char **result);
+int compile(SandboxPtr, const CStr code, CStr *compiledCode, CStr *errMsg);
+int validate(SandboxPtr ptr, const CStr code, const CStr abi, CStr *result, CStr *errMsg);
 CustomStartupData createStartupData();
 CustomStartupData createCompileStartupData();
 

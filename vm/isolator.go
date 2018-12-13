@@ -227,11 +227,13 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			actionCost.CPU = vmGasLimit
 			actionCost.Net = 0
 		}
+		actionCost.AddAssign(contract.NewCost(0, int64(len(ret)), 0))
 		if actionCost.ToGas() > vmGasLimit {
 			//ilog.Errorf("vm limit gas exceed %v(%v) > %v", actionCost.ToGas(), actionCost, vmGasLimit)
 			i.tr.Status = &tx.Status{Code: tx.ErrorRuntime, Message: host.ErrGasLimitExceeded.Error()}
 			actionCost.CPU = vmGasLimit
 			actionCost.Net = 0
+			ret = ""
 		}
 
 		if status.Code == 0 {

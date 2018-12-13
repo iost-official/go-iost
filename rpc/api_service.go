@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
+	"sort"
 	"time"
 
 	"github.com/iost-official/go-iost/common"
@@ -259,6 +260,29 @@ func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractReq
 		return nil, errors.New("contract not found")
 	}
 	return toPbContract(contract), nil
+}
+
+// GetGasRatio returns gas ratio information in head block
+func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) (*rpcpb.GasRatioResponse, error) {
+	ratios := make([]float64, 0)
+	for _, tx := range as.bc.Head().Block.Txs {
+		if tx.Publisher != "_Block_Base" {
+			ratios = append(ratios, float64(tx.GasRatio)/100.0)
+		}
+	}
+	if len(ratios) == 0 {
+		return &rpcpb.GasRatioResponse{
+			LowestGasRatio: 1.0,
+			MedianGasRatio: 1.0,
+		}, nil
+	}
+	sort.Float64s(ratios)
+	lowest := ratios[0]
+	mid := ratios[len(ratios)/2]
+	return &rpcpb.GasRatioResponse{
+		LowestGasRatio: lowest,
+		MedianGasRatio: mid,
+	}, nil
 }
 
 // GetContractStorage returns contract storage corresponding to the given key and field.

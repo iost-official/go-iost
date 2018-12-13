@@ -61,10 +61,17 @@ service ApiService {
         };
     }
 
+    // get gas ratio infomation
+    rpc GetGasRatio (EmptyRequest) returns (GasRatioResponse) {
+        option (google.api.http) = {
+            get: "/getGasRatio"
+        };
+    }
+
     // get contract
     rpc GetContract (GetContractRequest) returns (Contract) {
         option (google.api.http) = {
-            get: "/getContract/{id}"
+            get: "/getContract/{id}/{by_longest_chain}"
         };
     }
 
@@ -388,6 +395,13 @@ message FrozenBalance {
     double amount = 1;
     // free time
     int64 time = 2;
+}
+
+message GasRatioResponse {
+    // lowest gas ratio in head block
+    double lowestGasRatio = 1;
+    // median gas ratio in head block
+    double medianGasRatio = 2;
 }
 
 // The message defines account struct.

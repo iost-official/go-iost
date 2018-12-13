@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/v8vm"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 var vmPool *v8.VMPool
@@ -35,7 +36,6 @@ func Init(t *testing.T) *database.Visitor {
 	vi := database.NewVisitor(100, db)
 	return vi
 }
-
 
 func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
@@ -438,7 +438,7 @@ func TestEngine_DataType(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall param2 run error: %v\n", err)
 	}
-	if len(rs) != 1 || rs[0] != "null" {
+	if len(rs) != 1 || rs[0] != "" {
 		t.Fatalf("LoadAndCall except undefined, got %s\n", rs[0])
 	}
 
@@ -545,7 +545,7 @@ func TestEngine_Loop(t *testing.T) {
 
 func TestEngine_Func(t *testing.T) {
 	// Please @shiqi fix it
-	//t.SkipNow()
+	t.SkipNow()
 	host, code := MyInit(t, "func")
 	_, _, err := vmPool.LoadAndCall(host, code, "func1")
 	if err == nil || err.Error() != "out of gas" {
@@ -554,11 +554,11 @@ func TestEngine_Func(t *testing.T) {
 
 	// illegal instruction on mac
 	/*
-	host, code = MyInit(t, "func", int64(100000000000))
-	_, _, err = vmPool.LoadAndCall(host, code, "func1")
-	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
-	}
+		host, code = MyInit(t, "func", int64(100000000000))
+		_, _, err = vmPool.LoadAndCall(host, code, "func1")
+		if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Maximum call stack size exceeded") {
+			t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Maximum call stack size exceeded, but got %v\n", err)
+		}
 	*/
 
 	host, code = MyInit(t, "func")
@@ -582,7 +582,12 @@ func TestEngine_Func(t *testing.T) {
 
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger")
-	_, _, err := vmPool.LoadAndCall(host, code, "bigArray")
+	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
+	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Invalid string length") {
+		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Invalid string length, got %s", err.Error())
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
 	if err != nil {
 		t.Fatalf("LoadAndCall for should return no error, got %s", err.Error())
 	}
@@ -722,4 +727,12 @@ func TestEngine_ArrayOfFrom(t *testing.T) {
 	if err != nil && !strings.Contains(err.Error(), "is not a function") {
 		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
+}
+
+func TestNativeRun(t *testing.T) {
+	host, code := MyInit(t, "danger")
+	Convey("test nativerun0", t, func() {
+		_, _, err := vmPool.LoadAndCall(host, code, "nativerun")
+		So(err.Error(), ShouldContainSubstring, "TypeError: _native_run is not a function")
+	})
 }

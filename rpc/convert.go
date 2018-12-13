@@ -43,13 +43,13 @@ func toPbTxReceipt(tr *tx.TxReceipt) *rpcpb.TxReceipt {
 }
 
 func toPbAmountLimit(a *contract.Amount) *rpcpb.AmountLimit {
-	fixed, err := common.UnmarshalFixed(a.Val)
+	fixed, err := strconv.ParseFloat(a.Val, 64)
 	if err != nil {
 		return nil
 	}
 	return &rpcpb.AmountLimit{
 		Token: a.Token,
-		Value: fixed.ToFloat(),
+		Value: fixed,
 	}
 }
 
@@ -108,7 +108,7 @@ func toPbItem(item *account.Item) *rpcpb.Account_Item {
 
 func toPbGroup(group *account.Group) *rpcpb.Account_Group {
 	ret := &rpcpb.Account_Group{Name: group.Name}
-	for _, u := range group.Users {
+	for _, u := range group.Items {
 		ret.Items = append(ret.Items, toPbItem(u))
 	}
 	return ret
@@ -120,7 +120,7 @@ func toPbPermission(permission *account.Permission) *rpcpb.Account_Permission {
 		Groups:    permission.Groups,
 		Threshold: int64(permission.Threshold),
 	}
-	for _, u := range permission.Users {
+	for _, u := range permission.Items {
 		ret.Items = append(ret.Items, toPbItem(u))
 	}
 	return ret

@@ -3,6 +3,7 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 	"testing"
 
 	. "github.com/smartystreets/goconvey/convey"
@@ -262,7 +263,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2465)
+			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2533)
 
 			ram0 = s.GetRAM(testID[0])
 			ram4 := s.GetRAM(testID[4])
@@ -327,7 +328,7 @@ func Test_Validate(t *testing.T) {
 		defer s.Clear()
 		kp := prepareAuth(t, s)
 		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 1000000)
+		s.SetGas(kp.ID, 10000000)
 		s.SetRAM(kp.ID, 300)
 
 		c, err := s.Compile("validate", "test_data/validate", "test_data/validate")
@@ -337,11 +338,18 @@ func Test_Validate(t *testing.T) {
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
 		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
+
+		c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
+		So(err, ShouldBeNil)
+		_, r, err = s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err.Error(), ShouldContainSubstring, "Error: args should be one of ")
+		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: args should be one of ")
 	})
 }
 
 func Test_SpecialChar(t *testing.T) {
-	ilog.Start()
+	ilog.Stop()
 	spStr := ""
 	for i := 0x00; i <= 0x1F; i++ {
 		spStr += fmt.Sprintf("const char%d = `%s`;\n", i, string(rune(i)))
@@ -376,7 +384,7 @@ func Test_SpecialChar(t *testing.T) {
 		"class Test {" +
 		"	init() {}" +
 		"	transfer(from, to, amountJson) {" +
-		"		BlockChain.transfer(from, to, amountJson.amount, '');" +
+		"		blockchain.transfer(from, to, amountJson.amount, '');" +
 		"	}" +
 		"};" +
 		"module.exports = Test;"
@@ -430,5 +438,54 @@ func Test_SpecialChar(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(s.Visitor.TokenBalanceFixed("iost", kp2.ID).ToString(), ShouldEqual, "2000")
+	})
+}
+
+func Test_CallResult(t *testing.T) {
+	ilog.Stop()
+	Convey("test call result", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 2000000)
+		s.SetRAM(kp.ID, 10000)
+
+		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
+		So(err, ShouldBeNil)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		//s.Visitor.Put(cname+"-ret", database.MustMarshal("ab\x00c"))
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+		r, err = s.Call(cname, "ret_eof", `[]`, kp.ID, kp)
+		So(err, ShouldBeNil)
+		a := s.Visitor.Get(cname + "-ret")
+		b := strings.NewReplacer("\x00", "\\x00").Replace(a)
+		So(b, ShouldEqual, "sab\\x00c@"+cname)
+		So(len(r.Returns), ShouldEqual, 1)
+		So(r.Returns[0], ShouldEqual, `["ab\u0000cd"]`)
+	})
+}
+
+func Test_ReturnObjectToJsonError(t *testing.T) {
+	ilog.Stop()
+	Convey("test return object toJSON error", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		kp := prepareAuth(t, s)
+		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
+		s.SetGas(kp.ID, 2000000)
+		s.SetRAM(kp.ID, 10000)
+
+		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
+		So(err, ShouldBeNil)
+		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+
+		r, err = s.Call(cname, "ret_obj", `[]`, kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		So(r.Status.Message, ShouldContainSubstring, "error in JSON.stringfy")
 	})
 }

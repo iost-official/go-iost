@@ -29,7 +29,7 @@ class Account {
     }
 
     _ra(id) {
-        if (!BlockChain.requireAuth(id, "owner")) {
+        if (!blockchain.requireAuth(id, "owner")) {
             throw new Error("require auth failed");
         }
     }
@@ -49,6 +49,21 @@ class Account {
         }
     }
 
+    _checkPermValid(id) {
+        if (block.number === 0) {
+            return
+        }
+        if (id.length < 1 || id.length > 32) {
+            throw new Error("id invalid. id length should be between 6,32 > " + id)
+        }
+        for (let i in id) {
+            let ch = id[i];
+            if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
+                throw new Error("id invalid. id contains invalid character > " + ch);
+            }
+        }
+    }
+
     SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
@@ -56,7 +71,7 @@ class Account {
         this._checkIdValid(id);
         let account = {};
         account.id = id;
-        account.referrer = BlockChain.publisher();
+        account.referrer = blockchain.publisher();
         account.referrer_update_time = block.time;
         account.permissions = {};
         account.permissions.active = {
@@ -79,8 +94,10 @@ class Account {
             }],
             threshold: 1,
         };
-        this._saveAccount(account, BlockChain.publisher());
-        BlockChain.callWithAuth("gas.iost", "reward", JSON.stringify([BlockChain.publisher(), "30000"]));
+        this._saveAccount(account, blockchain.publisher());
+        if (storage.globalMapHas("vote_producer.iost", "producerTable", blockchain.publisher())) {
+            blockchain.callWithAuth("gas.iost", "reward", JSON.stringify([blockchain.publisher(), "30000"]));
+        }
     }
 
     UpdateReferrer(id, referrer) {
@@ -98,6 +115,7 @@ class Account {
     }
     AddPermission(id, perm, thres) {
         this._ra(id);
+        this._checkPermValid(perm);
         let acc = this._loadAccount(id);
         if (acc.permissions[perm] !== undefined) {
             throw new Error("permission already exist");
@@ -154,6 +172,7 @@ class Account {
     }
     AddGroup(id, grp) {
         this._ra(id);
+        this._checkPermValid(grp);
         let acc = this._loadAccount(id);
         if (acc.groups[grp] !== undefined) {
             throw new Error("group already exist");
