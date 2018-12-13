@@ -510,6 +510,16 @@
     // WebAssembly
     WebAssembly = null;
 
+    // Native
+    IOSTBlockchain = null;
+    IOSTInstruction = null;
+    IOSTStorage = null;
+    _IOSTCrypto = null;
+    _native_log = null;
+    _native_run = null;
+    _native_require = null;
+    _cLog = null;
+
     // BigNumber
     const BigNumberconstructor = BigNumber.prototype.constructor;
     BigNumber.prototype.constructor = function() {

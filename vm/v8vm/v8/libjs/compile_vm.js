@@ -1,63 +1,64 @@
 'use strict';
 
-function NativeModule(id) {
-    this.filename = id + '.js';
-    this.id = id;
-    this.exports = {};
-    this.loaded = false;
-}
+const require = (function(){
+    const inner_native_require = _native_require;
+    const inner_native_run = _native_run;
 
-NativeModule._cache = {};
-
-NativeModule.require = function (id) {
-    if (id === '_native_module') {
-        return NativeModule;
+    function NativeModule(id) {
+        this.filename = id + '.js';
+        this.id = id;
+        this.exports = {};
+        this.loaded = false;
     }
 
-    let cached = NativeModule.getCached(id);
-    if (cached) {
-        return cached.exports;
-    }
+    NativeModule._cache = {};
 
-    let nativeModule = new NativeModule(id);
-    nativeModule.compile();
-    nativeModule.cache();
+    NativeModule.require = function (id) {
+        let cached = NativeModule.getCached(id);
+        if (cached) {
+            return cached.exports;
+        }
 
-    return nativeModule.exports;
-};
+        let nativeModule = new NativeModule(id);
+        nativeModule.compile();
+        nativeModule.cache();
 
-NativeModule.getCached = function(id) {
-    return NativeModule._cache[id];
-};
+        return nativeModule.exports;
+    };
 
-NativeModule.getSource = function(id) {
-    return _native_require(id);
-};
+    NativeModule.getCached = function(id) {
+        return NativeModule._cache[id];
+    };
 
-NativeModule.wrap = function(script) {
-    return NativeModule.wrapper[0] + script + NativeModule.wrapper[1];
-};
+    NativeModule.getSource = function(id) {
+        return inner_native_require(id);
+    };
 
-NativeModule.wrapper = [
-    '(function (exports, require, module, __filename, __dirname) {\n',
-    '\n});'
-];
+    NativeModule.wrap = function(script) {
+        return NativeModule.wrapper[0] + script + NativeModule.wrapper[1];
+    };
 
-NativeModule.prototype.compile = function () {
-    let source = NativeModule.getSource(this.id);
-    source = NativeModule.wrap(source);
+    NativeModule.wrapper = [
+        '(function (exports, require, module, __filename, __dirname) {\n',
+        '\n});'
+    ];
 
-    let fn = _native_run(source, this.filename);
-    fn(this.exports, NativeModule.require, this, this.filename);
+    NativeModule.prototype.compile = function () {
+        let source = NativeModule.getSource(this.id);
+        source = NativeModule.wrap(source);
 
-    this.loaded = true;
-};
+        let fn = inner_native_run(source, this.filename);
+        fn(this.exports, NativeModule.require, this, this.filename);
 
-NativeModule.prototype.cache = function() {
-    NativeModule._cache[this.id] = this;
-};
+        this.loaded = true;
+    };
 
-let require = NativeModule.require;
+    NativeModule.prototype.cache = function() {
+        NativeModule._cache[this.id] = this;
+    };
+
+    return NativeModule.require;
+})();
 
 let injectGas = require('inject_gas');
 
