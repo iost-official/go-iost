@@ -38,7 +38,6 @@ func init() {
 	gobang := new(gobangHandle)
 	call.Register("gobang", gobang)
 	rootAcc, _ = account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
-	rand.Seed(0)
 }
 
 // Init ...
@@ -94,6 +93,8 @@ func (t *gobangHandle) wait(i int, h string, id string) bool {
 		v, err := sdk.GetContractStorage(&g)
 		if err != nil {
 			ilog.Error(err)
+			time.Sleep(3000 * time.Millisecond)
+			continue
 		}
 		var f interface{}
 		err = json.Unmarshal([]byte(v.Data), &f)
@@ -112,8 +113,7 @@ func (t *gobangHandle) wait(i int, h string, id string) bool {
 			}
 			return false
 		}
-		time.Sleep(100 * time.Millisecond)
-		ilog.Info(t.getGameID(h))
+		time.Sleep(3000 * time.Millisecond)
 	}
 }
 
@@ -196,7 +196,7 @@ func (t *gobangHandle) transfer(i int, act *tx.Action, acc *account.KeyPair, id 
 func initConn(add string, num int) {
 	sdk.SetServer(add)
 	conns = make([]*grpc.ClientConn, num)
-	allServers := []string{add}
+	allServers := []string{"3.0.81.219:30002", "3.0.192.236:30002"}
 	for i := 0; i < num; i++ {
 		conn, err := grpc.Dial(allServers[i%len(allServers)], grpc.WithInsecure())
 		if err != nil {
