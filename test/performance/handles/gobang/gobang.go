@@ -267,7 +267,3 @@ func loadBytes(s string) []byte {
 	buf := common.Base58Decode(s)
 	return buf
 }
-
-func main() {
-
-}
