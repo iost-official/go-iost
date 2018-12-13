@@ -116,6 +116,7 @@ func (s *Server) startGateway() error {
 }
 
 func errorHandler(_ context.Context, _ *runtime.ServeMux, _ runtime.Marshaler, w http.ResponseWriter, _ *http.Request, err error) {
+	w.WriteHeader(400)
 	bytes, e := json.Marshal(err)
 	if e != nil {
 		bytes = []byte(fmt.Sprint(err))

@@ -23,7 +23,7 @@ func TestRequireAuth_ByKey(t *testing.T) {
 		ac.Permissions["pa"] = &account.Permission{
 			Name:   "pa",
 			Groups: []string{},
-			Users: []*account.Item{
+			Items: []*account.Item{
 				{
 					ID:         "keya",
 					Permission: "",
@@ -69,7 +69,7 @@ func TestAuthority_ByUser(t *testing.T) {
 		ac.Permissions["pa"] = &account.Permission{
 			Name:   "pa",
 			Groups: []string{},
-			Users: []*account.Item{
+			Items: []*account.Item{
 				{
 					ID:         "keya",
 					Permission: "",
@@ -96,7 +96,7 @@ func TestAuthority_ByUser(t *testing.T) {
 		ac.Permissions["active"] = &account.Permission{
 			Name:   "active",
 			Groups: []string{},
-			Users: []*account.Item{
+			Items: []*account.Item{
 				{
 					ID:         "keyb",
 					Permission: "",
@@ -135,7 +135,7 @@ func TestAuthority_Active(t *testing.T) {
 		ac.Permissions["active"] = &account.Permission{
 			Name:   "pa",
 			Groups: []string{},
-			Users: []*account.Item{
+			Items: []*account.Item{
 				{
 					ID:         "keya",
 					Permission: "",

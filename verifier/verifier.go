@@ -156,6 +156,9 @@ L:
 		if limit > c.TxTimeLimit {
 			limit = c.TxTimeLimit
 		}
+		if limit < 100*time.Microsecond {
+			break L
+		}
 		t := provider.Tx()
 		if t == nil {
 			break L
