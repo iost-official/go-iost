@@ -76,7 +76,7 @@ func (t *gobangHandle) Publish() error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Duration(5) * time.Second)
+	time.Sleep(time.Duration(30) * time.Second)
 	client := rpcpb.NewApiServiceClient(conns[0])
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHash})
 	if err != nil {
