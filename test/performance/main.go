@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/test/performance/call"
+	_ "github.com/iost-official/go-iost/test/performance/handles/luckyBet"
 	_ "github.com/iost-official/go-iost/test/performance/handles/transfer"
 )
 
@@ -37,7 +38,7 @@ func main() {
 		servers = strings.Split(*s, ",")
 	}
 
-	fmt.Printf("\nsend %d %s transactions to %v, tps: %v\n\n", *amount, *job, servers, *tps)
+	fmt.Printf("\nsend %d %s transactions to %v, tps: %v prepare: %v\n\n", *amount, *job, servers, *tps, *prepare)
 
 	call.InitClients(servers)
 
