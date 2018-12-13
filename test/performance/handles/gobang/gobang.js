@@ -1,10 +1,19 @@
 class Board {
     constructor(b){
+        if (b === undefined) {
+            this.record = {};
+            for (let i = 0; i < 15; i ++) {
+                for (let j = 0; j < 15; j ++) {
+                    this.record[i + "," + j] = -1
+                }
+            }
+            return
+        }
         this.record = b;
     }
 
     isAvailable(x, y) {
-        return this.record[x + "," + y] === undefined
+        return this.record[x + "," + y] === -1
     }
     move(x, y, step) {
         this.record[x + "," + y] = step
@@ -22,9 +31,10 @@ class Game {
         this.a = a;
         this.b = b;
         this.count = 0;
-        this.board = new Board({});
+        this.board = new Board();
         this.winner = null;
-        this.hash = ""
+        this.hash = "";
+        this.placeHolder = ""
     }
 
     isTurn(player) {
@@ -108,7 +118,7 @@ class Gobang {
     newGameWith(b) {
         const jn = storage.get("nonce");
         const id = JSON.parse(jn);
-        const newGame = new Game(tx.publisher, b, 15);
+        const newGame = new Game(tx.publisher, b);
         newGame.hash = tx.hash;
         this._saveGame(id, newGame);
         storage.put("nonce", JSON.stringify(id + 1));
@@ -116,7 +126,7 @@ class Gobang {
     }
 
     move(id, x, y, hash) {
-        let g = this._readGame(id);
+        const g = this._readGame(id);
         if (g.hash !== hash) {
             throw "illegal hash in this fork"
         }
@@ -131,6 +141,12 @@ class Gobang {
             throw rtn
         }
         g.hash = tx.hash;
+        if (tx.publisher === g.a) {
+            g.placeHolder = "0000000000000000000000000000000000000000"
+        } else {
+            g.placeHolder = "";
+        }
+
         this._saveGame(id, g)
     }
 

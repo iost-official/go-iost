@@ -34,12 +34,11 @@ var testAcc *account.KeyPair
 
 type gobangHandle struct{}
 
-var board map[string]bool
-
 func init() {
 	gobang := new(gobangHandle)
 	call.Register("gobang", gobang)
 	rootAcc, _ = account.NewKeyPair(loadBytes(rootKey), crypto.Ed25519)
+	rand.Seed(0)
 }
 
 // Init ...
@@ -50,12 +49,13 @@ func (t *gobangHandle) Init(add string, conNum int) error {
 
 // Publish ...
 func (t *gobangHandle) Publish() error {
+	var err error
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/gobang/gobang.js"
 	abiPath := codePath + ".abi"
 	sdk.SetAccount("admin", rootAcc)
 	sdk.SetTxInfo(10000000, 100, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
-	testAcc, err := account.NewKeyPair(nil, crypto.Ed25519)
+	testAcc, err = account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		return err
 	}
@@ -86,9 +86,11 @@ func (t *gobangHandle) Publish() error {
 	return nil
 }
 
-func (t *gobangHandle) wait(h string) {
-	g := rpcpb.GetContractStorageRequest{Id: contractID, Key: "games" + "0", Field: "", ByLongestChain: true}
+func (t *gobangHandle) wait(i int, h string, id string) bool {
+	ilog.Info(id)
+	g := rpcpb.GetContractStorageRequest{Id: contractID, Key: "games" + id, Field: "", ByLongestChain: true}
 	for {
+		ilog.Info("get storage, ", i)
 		v, err := sdk.GetContractStorage(&g)
 		if err != nil {
 			ilog.Error(err)
@@ -99,21 +101,54 @@ func (t *gobangHandle) wait(h string) {
 			ilog.Error(err)
 		}
 		if f == nil {
+			ilog.Info("f is nil, ", i)
 			continue
 		}
 		m := f.(map[string]interface{})
+		ilog.Info(m["hash"], " ", i)
 		if m["hash"] == h {
-			break
+			if m["winner"] != nil {
+				return true
+			}
+			return false
 		}
 		time.Sleep(100 * time.Millisecond)
+		ilog.Info(t.getGameID(h))
+	}
+}
+
+func (t *gobangHandle) getGameID(h string) string {
+	for {
+		v, err := sdk.GetTxReceiptByTxHash(h)
+		if err != nil {
+			time.Sleep(100 * time.Millisecond)
+			ilog.Info("nil")
+			continue
+		}
+		ilog.Info(v)
+		if len(v.Returns) == 0 {
+			continue
+		}
+		var f interface{}
+		err = json.Unmarshal([]byte(v.Returns[0]), &f)
+		if err != nil {
+			ilog.Error(err)
+		}
+		if f == nil {
+			continue
+		}
+		m := f.([]interface{})
+		return m[0].(string)
 	}
 }
 
 func (t *gobangHandle) Transfer(i int) string {
+	var board = make(map[string]bool)
+	ilog.Info("transfer: ", i)
 	act := tx.NewAction(contractID, "newGameWith", fmt.Sprintf(`["%v"]`, testID))
 	h := t.transfer(i, act, rootAcc, rootID)
-	ilog.Infof("newGameWith hash: %v", h)
-	t.wait(h)
+	gameID := t.getGameID(h)
+	t.wait(i, h, gameID)
 	round := 0
 	for {
 		acc := rootAcc
@@ -123,27 +158,30 @@ func (t *gobangHandle) Transfer(i int) string {
 			x = rand.Intn(15)
 			y = rand.Intn(15)
 			if board[strconv.Itoa(x)+","+strconv.Itoa(y)] == false {
+				board[strconv.Itoa(x)+","+strconv.Itoa(y)] = true
 				break
 			}
 		}
+		ilog.Info(i, " ", round, " ", x, " ", y)
 		if round%2 == 1 {
 			acc = testAcc
 			id = testID
 		}
-		act = tx.NewAction(contractID, "move", fmt.Sprintf(`[0, %v, %v, "%v"]`, x, y, h))
-		ilog.Info("move: %v", fmt.Sprintf(`[0, %v, %v, "%v"]`, x, y, h))
+		act = tx.NewAction(contractID, "move", fmt.Sprintf(`[%v, %v, %v, "%v"]`, gameID, x, y, h))
 		h = t.transfer(i, act, acc, id)
-		ilog.Infof("move hash: %v", h)
-		t.wait(h)
+		r := t.wait(i, h, gameID)
+		if r {
+			ilog.Info("end of game")
+			break
+		}
 		round++
 	}
-
 	return ""
 }
 
 // Transfer ...
 func (t *gobangHandle) transfer(i int, act *tx.Action, acc *account.KeyPair, id string) string {
-	trx := tx.NewTx([]*tx.Action{act}, []string{}, 10000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{act}, []string{}, 1000000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
 	stx, err := tx.SignTx(trx, id, []*account.KeyPair{acc})
 	if err != nil {
 		return fmt.Sprintf("signtx:%v err:%v", stx, err)
@@ -228,4 +266,8 @@ func loadBytes(s string) []byte {
 	}
 	buf := common.Base58Decode(s)
 	return buf
+}
+
+func main() {
+
 }

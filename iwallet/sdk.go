@@ -209,7 +209,7 @@ func (s *SDK) getTxByHash(hash string) (*rpcpb.TransactionResponse, error) {
 	return client.GetTxByHash(context.Background(), &rpcpb.TxHashRequest{Hash: hash})
 }
 
-func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
+func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -241,7 +241,7 @@ func (s *SDK) checkTransaction(txHash string) bool {
 	// It may be better to to create a grpc client and reuse it. TODO later
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
-		txReceipt, err := s.getTxReceiptByTxHash(txHash)
+		txReceipt, err := s.GetTxReceiptByTxHash(txHash)
 		if err != nil {
 			fmt.Println("result not ready, please wait. Details: ", err)
 			continue

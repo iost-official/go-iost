@@ -16,7 +16,7 @@ func init() {
 
 func main() {
 	var iterNum = 1
-	var parallelNum = 1
+	var parallelNum = 100
 	var address = "localhost:30002"
 
 	log.Println("Start test!")

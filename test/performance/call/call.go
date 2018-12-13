@@ -3,6 +3,8 @@ package call
 import (
 	"log"
 	"sync"
+
+	"github.com/iost-official/go-iost/ilog"
 )
 
 var handles = make(map[string]Handler)
@@ -37,6 +39,7 @@ func Run(handleType string, iterNum int, parallelNum int, address string, flag b
 			var waitGroup sync.WaitGroup
 
 			for j := 0; j < parallelNum; j++ {
+				ilog.Info("para: ", j)
 				waitGroup.Add(1)
 				go func(jj int) {
 					Handle(handle, jj, results)
