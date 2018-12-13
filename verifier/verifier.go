@@ -179,6 +179,7 @@ L:
 			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
+		ilog.Info(common.Base58Encode(t.Hash()))
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
@@ -187,7 +188,7 @@ L:
 		}
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
-		//ilog.Info(r)
+		ilog.Info(r)
 		if err != nil {
 			ilog.Errorf("isolator run error %v", err)
 			provider.Drop(t, err)
