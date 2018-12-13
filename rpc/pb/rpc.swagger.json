@@ -162,7 +162,7 @@
         ]
       }
     },
-    "/getContract/{id}": {
+    "/getContract/{id}/{by_longest_chain}": {
       "get": {
         "summary": "get contract",
         "operationId": "GetContract",
@@ -184,9 +184,9 @@
           },
           {
             "name": "by_longest_chain",
-            "description": "get data by longest chain's head block or last irreversible block.",
-            "in": "query",
-            "required": false,
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
             "type": "boolean",
             "format": "boolean"
           }
@@ -218,6 +218,23 @@
             }
           }
         ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getGasRatio": {
+      "get": {
+        "summary": "get gas ratio infomation",
+        "operationId": "GetGasRatio",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGasRatioResponse"
+            }
+          }
+        },
         "tags": [
           "ApiService"
         ]
@@ -831,6 +848,21 @@
         }
       },
       "description": "The message defines the account's frozen balance."
+    },
+    "rpcpbGasRatioResponse": {
+      "type": "object",
+      "properties": {
+        "lowestGasRatio": {
+          "type": "number",
+          "format": "double",
+          "title": "lowest gas ratio in head block"
+        },
+        "medianGasRatio": {
+          "type": "number",
+          "format": "double",
+          "title": "median gas ratio in head block"
+        }
+      }
     },
     "rpcpbGetContractStorageRequest": {
       "type": "object",
