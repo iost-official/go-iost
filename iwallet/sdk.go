@@ -389,7 +389,7 @@ func (s *SDK) PledgeForGasAndRam(gasPledged int64, ram int64) error {
 
 // CreateNewAccount ...
 func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
-	s.verbose = true
+	s.checkResultMaxRetry = 100
 	var acts []*tx.Action
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
 	if initialRAM > 0 {
