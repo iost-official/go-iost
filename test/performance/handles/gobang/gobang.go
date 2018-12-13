@@ -126,7 +126,6 @@ func (t *gobangHandle) getGameID(h string) string {
 		v, err := sdk.GetTxReceiptByTxHash(h)
 		if err != nil {
 			time.Sleep(100 * time.Millisecond)
-			ilog.Info("nil")
 			continue
 		}
 		ilog.Info(v)
