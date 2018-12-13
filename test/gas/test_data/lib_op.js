@@ -5,6 +5,30 @@ class LibOp {
     }
 
     // String
+    doStringCharAt(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").charAt(3)
+        }
+    }
+
+    doStringCharCodeAt(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").charCodeAt(3)
+        }
+    }
+
+    doStringLength(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").length
+        }
+    }
+
+    doStringConstructor(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").constructor("yellow")
+        }
+    }
+
     doStringToString(num) {
         for (let i = 0; i < num; i++) {
             ("redbluegreen").toString()
@@ -73,7 +97,13 @@ class LibOp {
 
     doStringSlice(num) {
         for (let i = 0; i < num; i++) {
-            ("redbluegreen").startsWith("red")
+            ("redbluegreen").slice()
+        }
+    }
+
+    doStringSubstring(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").substring(3)
         }
     }
 

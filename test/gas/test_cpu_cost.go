@@ -41,6 +41,10 @@ var (
 			"Conditional",
 		},
 		"lib": {
+			"StringCharAt",
+			"StringCharCodeAt",
+			"StringLength",
+			"StringConstructor",
 			"StringToString",
 			"StringValueOf",
 			"StringConcat",
@@ -53,6 +57,7 @@ var (
 			"StringSplit",
 			"StringStartsWith",
 			"StringSlice",
+			"StringSubstring",
 			"StringToLowerCase",
 			"StringToUpperCase",
 			"StringTrim",
