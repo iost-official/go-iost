@@ -300,7 +300,6 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
-
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
@@ -342,7 +341,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
         return;
     }
 
-    if (ret.IsEmpty()) {
+    if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
@@ -362,6 +361,12 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
             isJson = true;
             String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());
             result.assign(*jsonRetStr, jsonRetStr.length());
+        }
+
+        if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+            std::string exception = reportException(isolate, context, tryCatch);
+            error = exception;
+            return;
         }
     }
     isDone = true;

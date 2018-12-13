@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
@@ -138,8 +139,7 @@ func (t *Tx) ToPb() *txpb.Tx {
 
 // Encode tx to byte array
 func (t *Tx) Encode() []byte {
-	tr := t.ToPb()
-	b, err := tr.Marshal()
+	b, err := proto.Marshal(t.ToPb())
 	if err != nil {
 		panic(err)
 	}
@@ -179,7 +179,7 @@ func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 // Decode tx from byte array
 func (t *Tx) Decode(b []byte) error {
 	tr := &txpb.Tx{}
-	err := tr.Unmarshal(b)
+	err := proto.Unmarshal(b, tr)
 	if err != nil {
 		return err
 	}

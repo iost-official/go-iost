@@ -1,5 +1,5 @@
 const PRE_PRODUCER_THRESHOLD = "1";
-const VOTE_LOCKTIME = 864000;
+const VOTE_LOCKTIME = 2592000;
 const VOTE_STAT_INTERVAL = 200;
 const IOST_DECIMAL = 8;
 const SCORE_DECREASE_RATE = new Float64("0.9");
@@ -30,7 +30,7 @@ class VoteContract {
                 minVote: PRE_PRODUCER_THRESHOLD,
                 options: [],
                 anyOption: false,
-                unvoteInterval: VOTE_LOCKTIME
+                freezeTime: VOTE_LOCKTIME
             }
         ]);
         this._put("voteId", JSON.stringify(voteId));
@@ -164,6 +164,10 @@ class VoteContract {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
+        if (pro.status === STATUS_APPLY) {
+            this._doRemoveProducer(account, pro.pubkey, false);
+            return;
+        }
         if (pro.status !== STATUS_APPROVED) {
             throw new Error("producer not approved");
         }

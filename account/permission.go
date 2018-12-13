@@ -20,14 +20,14 @@ type Item struct {
 // Group group of permissions
 type Group struct {
 	Name  string  `json:"name"`
-	Users []*Item `json:"items"`
+	Items []*Item `json:"items"`
 }
 
 // Permission permission struct
 type Permission struct {
 	Name      string   `json:"name"`
 	Groups    []string `json:"groups"`
-	Users     []*Item  `json:"items"`
+	Items     []*Item  `json:"items"`
 	Threshold int      `json:"threshold"`
 }
 
@@ -50,7 +50,7 @@ func NewInitAccount(id, ownerKey, activeKey string) *Account {
 	a.Permissions["owner"] = &Permission{
 		Name:      "owner",
 		Threshold: 1,
-		Users: []*Item{
+		Items: []*Item{
 			{
 				ID:        ownerKey,
 				IsKeyPair: true,
@@ -61,7 +61,7 @@ func NewInitAccount(id, ownerKey, activeKey string) *Account {
 	a.Permissions["active"] = &Permission{
 		Name:      "active",
 		Threshold: 1,
-		Users: []*Item{
+		Items: []*Item{
 			{
 				ID:        activeKey,
 				IsKeyPair: true,
