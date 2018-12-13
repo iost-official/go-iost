@@ -199,5 +199,8 @@ class Gas {
         return a;
     }
 
+    bignumber0() {
+        return new BigNumber("1234");
+    }
 };
 module.exports = Gas;
