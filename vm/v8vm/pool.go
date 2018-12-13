@@ -12,6 +12,8 @@ type vmPoolType int
 var (
 	TotalExecuteTime = time.Duration(0)
 	TotalTime = time.Duration(0)
+	TotalGetVM = time.Duration(0)
+	TotalBeforeExec = time.Duration(0)
 )
 const (
 	// CompileVMPool maintains a pool of compile vm instance
@@ -94,6 +96,8 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 	a := time.Now()
 	vm := vmp.getRunVM()
+	ilog.Info("GetVm Time : ", time.Since(a))
+	TotalGetVM += time.Since(a)
 	defer func() {
 		go vm.recycle(RunVMPool)
 		ilog.Info("Used Time Total: ", time.Since(a))
@@ -106,6 +110,8 @@ func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api
 
 	vm.setHost(host)
 	preparedCode, _ := vm.setContract(contract, api, args)
+	ilog.Info("BeforeExec Time : ", time.Since(a))
+	TotalBeforeExec += time.Since(a)
 
 	return vm.execute(preparedCode)
 }

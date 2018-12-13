@@ -108,6 +108,8 @@ func main() {
 		}
 	}
 	tps := float64(times) / time.Since(a).Seconds()
+	fmt.Println("time used getVM: ", v8.TotalGetVM)
+	fmt.Println("time used BeforeExec: ", v8.TotalBeforeExec)
 	fmt.Println("time used exec: ", v8.TotalExecuteTime)
 	fmt.Println("time used total: ", v8.TotalTime)
 	fmt.Println("time used: ", time.Since(a))
