@@ -53,7 +53,7 @@ func (t *gobangHandle) Publish() error {
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/gobang/gobang.js"
 	abiPath := codePath + ".abi"
 	sdk.SetAccount("admin", rootAcc)
-	sdk.SetTxInfo(1000000, 100, 90, 0)
+	sdk.SetTxInfo(10000000, 100, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
 	testAcc, err = account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
