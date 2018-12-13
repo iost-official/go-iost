@@ -2,6 +2,7 @@ package v8vm
 
 import (
 	"testing"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -9,30 +10,30 @@ func TestInjectGas(t *testing.T) {
 	host, code := MyInit(t, "gas1")
 	vmPool.LoadAndCall(host, code, "constructor")
 
-	Convey("test assignment0", t, func(){
+	Convey("test assignment0", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment0")
 		//So(err.Error(), ShouldContainSubstring, "is not iterable")
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
 
-	Convey("test assignment1", t, func(){
+	Convey("test assignment1", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment1")
 		So(err.Error(), ShouldContainSubstring, "Cannot assign to read only property")
 		t.Log(rs, cost)
 	})
-	Convey("test assignment11", t, func(){
+	Convey("test assignment11", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment11")
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
-	Convey("test assignment111", t, func(){
+	Convey("test assignment111", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment111")
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
 
-	Convey("test assignment2", t, func(){
+	Convey("test assignment2", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment2", 10)
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
@@ -41,7 +42,7 @@ func TestInjectGas(t *testing.T) {
 		t.Log(rs, cost)
 	})
 
-	Convey("test assignment3", t, func(){
+	Convey("test assignment3", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment3", 10)
 		So(err.Error(), ShouldContainSubstring, "Arrayconcat is not defined")
 		t.Log(rs, cost)
@@ -49,39 +50,39 @@ func TestInjectGas(t *testing.T) {
 
 	// deconstruct assignment is not allowed now
 	/*
-	Convey("test assignment4", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-		rs, cost, err = vmPool.LoadAndCall(host, code, "assignment4", 10000)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
+		Convey("test assignment4", t, func(){
+			rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4", 10)
+			So(err, ShouldBeNil)
+			t.Log(rs, cost)
+			rs, cost, err = vmPool.LoadAndCall(host, code, "assignment4", 10000)
+			So(err, ShouldBeNil)
+			t.Log(rs, cost)
+		})
 
-	Convey("test assignment44", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment44", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
-	Convey("test assignment444", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment444", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
-	Convey("test assignment4444", t, func(){
-		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4444", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
+		Convey("test assignment44", t, func(){
+			rs, cost, err := vmPool.LoadAndCall(host, code, "assignment44", 10)
+			So(err, ShouldBeNil)
+			t.Log(rs, cost)
+		})
+		Convey("test assignment444", t, func(){
+			rs, cost, err := vmPool.LoadAndCall(host, code, "assignment444", 10)
+			So(err, ShouldBeNil)
+			t.Log(rs, cost)
+		})
+		Convey("test assignment4444", t, func(){
+			rs, cost, err := vmPool.LoadAndCall(host, code, "assignment4444", 10)
+			So(err, ShouldBeNil)
+			t.Log(rs, cost)
+		})
 	*/
 
-	Convey("test instruction counter0", t, func(){
+	Convey("test instruction counter0", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "counter0", 10)
 		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
 
-	Convey("test yield0", t, func(){
+	Convey("test yield0", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "yield0", 10)
 		So(err, ShouldBeNil)
 		So(rs[0], ShouldEqual, "10")
@@ -197,5 +198,11 @@ func TestInjectGas(t *testing.T) {
 		So(err, ShouldBeNil)
 		t.Log(rs, cost1)
 		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas())
+	})
+
+	Convey("test bignumber0", t, func() {
+		_, cost0, err := vmPool.LoadAndCall(host, code, "bignumber0", "")
+		So(err, ShouldBeNil)
+		So(cost0.ToGas(), ShouldEqual, int64(241))
 	})
 }

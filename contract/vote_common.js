@@ -13,11 +13,6 @@ const userVotePrefix = "u_";
 
 class VoteCommonContract {
     constructor() {
-        BigNumber.config({
-            DECIMAL_PLACES: 50,
-            POW_PRECISION: 50,
-            ROUNDING_MODE: BigNumber.ROUND_DOWN
-        });
     }
 
     init() {
