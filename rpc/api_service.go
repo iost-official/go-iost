@@ -333,6 +333,12 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 			return nil, fmt.Errorf("try transaction failed: %v", err)
 		}
 	}
+	dbVisitor := as.getStateDBVisitor(true)
+	gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
+	gas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
+	if gas.LessThan(gasLimit) {
+		return nil, fmt.Errorf("invalid gas of user %v has %v < %v", t.Publisher, gas.ToString(), gasLimit.ToString())
+	}
 	err := as.txpool.AddTx(t)
 	if err != nil {
 		return nil, err

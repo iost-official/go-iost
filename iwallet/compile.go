@@ -42,6 +42,7 @@ func generateABI(codePath string) (string, error) {
 	err := cmd.Run()
 	if err != nil {
 		fmt.Println("run ", "node", contractPath, "/contract.js ", codePath, " Failed, error: ", err.Error())
+		fmt.Println("Please make sure node.js has been installed")
 		return "", err
 	}
 

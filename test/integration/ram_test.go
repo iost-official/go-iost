@@ -40,10 +40,6 @@ func TestRAM(t *testing.T) {
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
 	}
-	r, err = s.Call(contractName, "initContractName", array2json([]interface{}{contractName}), admin.ID, admin)
-	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
-		panic("call failed " + err.Error() + " " + r.String())
-	}
 
 	var initialTotal int64 = 128 * 1024 * 1024 * 1024
 	var increaseInterval int64 = 24 * 3600
