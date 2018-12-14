@@ -103,8 +103,6 @@ func (e *VM) recycle(poolType vmPoolType) {
 		e.sandbox.Release()
 	}
 
-	C.lowMemoryNotification(e.isolate)
-
 	if e.refCount >= vmRefLimit {
 		// release isolate
 		if e.isolate != nil {
@@ -117,6 +115,9 @@ func (e *VM) recycle(poolType vmPoolType) {
 		} else {
 			e.isolate = C.newIsolate(customStartupData)
 		}
+	} else{
+		C.lowMemoryNotification(e.isolate)
+
 	}
 
 	// then regen new sandbox
