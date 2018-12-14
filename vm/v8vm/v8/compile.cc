@@ -64,7 +64,7 @@ int compileInternal(SandboxPtr ptr, const CStr code, const CStr extra, char *for
     Context::Scope context_scope(context);
 
     TryCatch tryCatch(isolate);
-    tryCatch.SetVerbose(true);
+    tryCatch.SetVerbose(false);
 
     char *formatedCode = nullptr;
     // TODO: print with length
@@ -92,7 +92,7 @@ int compileInternal(SandboxPtr ptr, const CStr code, const CStr extra, char *for
             return 0;
         }
 
-        if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+        if (tryCatch.HasCaught()) {
             std::string exception = reportException(isolate, context, tryCatch);
             errMsg->data = strdup(exception.c_str());
             errMsg->size = exception.length();
