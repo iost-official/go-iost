@@ -5,6 +5,7 @@
 #include "compile.h"
 #include "snapshot_blob.bin.h"
 #include "natives_blob.bin.h"
+#include "iostream"
 
 #include "libplatform/libplatform.h"
 
@@ -15,6 +16,10 @@
 using namespace v8;
 
 void init() {
+#ifdef __linux__
+    std::string noGC ("--expose_gc");
+    V8::SetFlagsFromString(noGC.c_str(), noGC.length()+1);
+#endif
     V8::InitializeICU();
 
     Platform *platform = platform::CreateDefaultPlatform();
@@ -65,7 +70,13 @@ void lowMemoryNotification(IsolateWrapperPtr ptr) {
     }
 
     Isolate *isolate = static_cast<Isolate*>((static_cast<IsolateWrapper*>(ptr))->isolate);
+    isolate->ContextDisposedNotification();
+#ifdef __linux__
+    isolate->RequestGarbageCollectionForTesting(Isolate::GarbageCollectionType::kFullGarbageCollection);
+#else
     isolate->LowMemoryNotification();
+#endif
+
     return;
 }
 
