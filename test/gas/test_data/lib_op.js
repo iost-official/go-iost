@@ -25,7 +25,7 @@ class LibOp {
 
     doStringConstructor(num) {
         for (let i = 0; i < num; i++) {
-            String.constructor("yellow")
+            String.prototype.constructor("yellow")
         }
     }
 
@@ -146,7 +146,7 @@ class LibOp {
     // Array
     doArrayConstructor(num) {
         for (let i = 0; i < num; i++) {
-            Array.constructor(["red", "blue", "green"])
+            Array.prototype.constructor(["red", "blue", "green"])
         }
     }
 
@@ -371,6 +371,151 @@ class LibOp {
     doMathSqrt(num) {
         for (let i = 0; i < num; i++) {
             Math.sqrt(3.4)
+        }
+    }
+
+    // BigNumber
+    doBigNumberConstructor(num) {
+        for (let i = 0; i < num; i++) {
+            BigNumber.prototype.constructor("99999999999999999999999999999")
+        }
+    }
+
+    doBigNumberAbs(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").abs()
+        }
+    }
+
+    doBigNumberDiv(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").div("99999")
+        }
+    }
+
+    doBigNumberIdiv(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").idiv("99999")
+        }
+    }
+
+    doBigNumberPow(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").pow("99999")
+        }
+    }
+
+    doBigNumberIntegerValue(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").integerValue()
+        }
+    }
+
+    doBigNumberEq(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").eq("99999")
+        }
+    }
+
+    doBigNumberIsFinite(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isFinite()
+        }
+    }
+
+    doBigNumberGt(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").gt("99999")
+        }
+    }
+
+    doBigNumberGte(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").gte("99999")
+        }
+    }
+
+    doBigNumberIsInteger(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isInteger()
+        }
+    }
+
+    doBigNumberLt(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").lt("99999")
+        }
+    }
+
+    doBigNumberLte(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").lte("99999")
+        }
+    }
+
+    doBigNumberIsNaN(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isNaN()
+        }
+    }
+
+    doBigNumberIsNegative(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isNegative()
+        }
+    }
+
+    doBigNumberIsPositive(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isPositive()
+        }
+    }
+
+    doBigNumberIsZero(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isZero()
+        }
+    }
+
+    doBigNumberMinus(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").minus("99999")
+        }
+    }
+
+    doBigNumberMod(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").mod("99999")
+        }
+    }
+
+    doBigNumberTimes(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").times("99999")
+        }
+    }
+
+    doBigNumberNegated(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").negated()
+        }
+    }
+
+    doBigNumberPlus(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").plus("99999")
+        }
+    }
+
+    doBigNumberSqrt(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").sqrt()
+        }
+    }
+
+    doBigNumberToFixed(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").toFixed(5)
         }
     }
 
