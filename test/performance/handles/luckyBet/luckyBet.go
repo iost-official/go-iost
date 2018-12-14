@@ -3,13 +3,14 @@ package luckyBet
 import (
 	"context"
 	"fmt"
-	"github.com/iost-official/go-iost/iwallet"
-	"github.com/iost-official/go-iost/test/performance/call"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/iost-official/go-iost/iwallet"
+	"github.com/iost-official/go-iost/test/performance/call"
 
 	"time"
 
@@ -89,7 +90,7 @@ func (t *luckyBetHandler) Prepare() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGas(15000000)
+	err = sdk.PledgeForGasAndRAM(15000000, 0)
 	if err != nil {
 		return err
 	}
@@ -123,18 +124,9 @@ func (t *luckyBetHandler) Run(i int) (interface{}, error) {
 		return nil, fmt.Errorf("sign tx error: %v", err)
 	}
 	var txHash string
-	txHash, err = sendTx(stx, i)
+	txHash, err = call.SendTx(stx, i)
 	if err != nil {
 		return nil, err
 	}
 	return txHash, nil
-}
-
-func sendTx(stx *tx.Tx, i int) (string, error) {
-	client := call.GetClient(i)
-	resp, err := client.SendTransaction(context.Background(), call.ToTxRequest(stx))
-	if err != nil {
-		return "", err
-	}
-	return resp.Hash, nil
 }

@@ -351,6 +351,7 @@ func TestGas_TGas(t *testing.T) {
 	}
 	other, err := account.NewKeyPair(nil, crypto.Secp256k1)
 	otherID := "lispc0"
+	s.Visitor.MPut("vote_producer.iost-producerTable", kp.ID, "dummy")
 	Convey("test tgas", t, func() {
 		Convey("account referrer should got 30000 tgas", func() {
 			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, other.ID, other.ID}), kp.ID, kp)
@@ -369,7 +370,6 @@ func TestGas_TGas(t *testing.T) {
 			So(s.Visitor.TGas(otherID).ToString(), ShouldEqual, "10000")
 		})
 		Convey("referrer get 15% reward", func() {
-			s.Visitor.MPut("vote_producer.iost-producerTable", kp.ID, "dummy")
 			s.Visitor.Commit()
 			r, err := s.Call("token.iost", "transfer", array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}), otherID, other)
 			So(err, ShouldBeNil)

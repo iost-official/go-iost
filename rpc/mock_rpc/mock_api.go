@@ -125,6 +125,19 @@ func (mr *MockApiServiceServerMockRecorder) GetContractStorage(arg0, arg1 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractStorage", reflect.TypeOf((*MockApiServiceServer)(nil).GetContractStorage), arg0, arg1)
 }
 
+// GetGasRatio mocks base method
+func (m *MockApiServiceServer) GetGasRatio(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.GasRatioResponse, error) {
+	ret := m.ctrl.Call(m, "GetGasRatio", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GasRatioResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetGasRatio indicates an expected call of GetGasRatio
+func (mr *MockApiServiceServerMockRecorder) GetGasRatio(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGasRatio", reflect.TypeOf((*MockApiServiceServer)(nil).GetGasRatio), arg0, arg1)
+}
+
 // GetNodeInfo mocks base method
 func (m *MockApiServiceServer) GetNodeInfo(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.NodeInfoResponse, error) {
 	ret := m.ctrl.Call(m, "GetNodeInfo", arg0, arg1)

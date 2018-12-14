@@ -1,0 +1,45 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "newGameWith",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "100000"
+                }
+            ]
+        },
+        {
+            "name": "move",
+            "args": [
+                "number",
+                "number",
+                "number",
+                "string"
+            ],
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "100000"
+                }
+            ]
+        },
+        {
+            "name": "accomplish",
+            "args": [
+                "number"
+            ],
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "100000"
+                }
+            ]
+        }
+    ]
+}
