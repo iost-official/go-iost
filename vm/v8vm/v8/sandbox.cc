@@ -196,7 +196,7 @@ std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryC
     std::stringstream ss;
     ss << "Uncaught exception: ";
 
-    if (tryCatch.Message().IsEmpty()) {
+    if (tryCatch.Exception()->IsNull() || tryCatch.Message().IsEmpty()) {
         return ss.str();
     }
 
@@ -304,7 +304,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
     Context::Scope context_scope(context);
 
     TryCatch tryCatch(isolate);
-    tryCatch.SetVerbose(true);
+    tryCatch.SetVerbose(false);
 
     // preload block info.
     Local<String> source = String::NewFromUtf8(isolate, preloadBlockCode, NewStringType::kNormal).ToLocalChecked();
@@ -312,7 +312,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
     Local<Script> script = Script::Compile(source, fileName);
 
     Local<Value> ret = script->Run();
-    if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+    if (tryCatch.HasCaught()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
@@ -333,12 +333,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
 
     ret = script->Run();
 
-    if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
-        isDone = true;
-        return;
-    }
-
-    if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+    if (tryCatch.HasCaught()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
@@ -360,7 +355,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
             result.assign(*jsonRetStr, jsonRetStr.length());
         }
 
-        if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+        if (tryCatch.HasCaught()) {
             std::string exception = reportException(isolate, context, tryCatch);
             error = exception;
             return;
