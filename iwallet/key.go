@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/spf13/cobra"
 )
 
@@ -32,7 +33,20 @@ var keyCmd = &cobra.Command{
 			fmt.Printf("NewKeyPair error %v\nn", err)
 			return
 		}
-		ret, err := json.MarshalIndent(n, "", "    ")
+
+		type key struct {
+			ID        string
+			Algorithm string
+			Pubkey    string
+			Seckey    string
+		}
+		var k key
+		k.ID = n.ID
+		k.Algorithm = n.Algorithm.String()
+		k.Pubkey = common.Base58Encode(n.Pubkey)
+		k.Seckey = common.Base58Encode(n.Seckey)
+
+		ret, err := json.MarshalIndent(k, "", "    ")
 		if err != nil {
 			fmt.Printf("error %v\n", err)
 			return
