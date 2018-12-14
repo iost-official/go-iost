@@ -80,7 +80,7 @@ func (t *transferHandler) Prepare() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGasAndRam(1500000, 0)
+	err = sdk.PledgeForGasAndRAM(1500000, 0)
 	if err != nil {
 		return err
 	}

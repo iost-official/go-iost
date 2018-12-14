@@ -229,7 +229,7 @@ func (s *SDK) getTxByHash(hash string) (*rpcpb.TransactionResponse, error) {
 	return client.GetTxByHash(context.Background(), &rpcpb.TxHashRequest{Hash: hash})
 }
 
-// GetTxReceiptByTxHash...
+// GetTxReceiptByTxHash ...
 func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
@@ -375,8 +375,8 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	return nil
 }
 
-// PledgeForGas ...
-func (s *SDK) PledgeForGasAndRam(gasPledged int64, ram int64) error {
+// PledgeForGasAndRAM ...
+func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 	var acts []*rpcpb.Action
 	acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, s.accountName, gasPledged)))
 	if ram > 0 {

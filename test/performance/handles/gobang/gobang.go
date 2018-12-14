@@ -55,7 +55,7 @@ func (t *gobangHandle) Prepare() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGasAndRam(1500000, 10000000)
+	err = sdk.PledgeForGasAndRAM(1500000, 10000000)
 	if err != nil {
 		return err
 	}
@@ -175,5 +175,5 @@ func (t *gobangHandle) transfer(i int, act *tx.Action, acc *account.KeyPair, id 
 	if err != nil {
 		return fmt.Sprintf("sendtx:%v  err:%v", txHash, err)
 	}
-	return string(txHash)
+	return txHash
 }

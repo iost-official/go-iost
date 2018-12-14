@@ -53,6 +53,7 @@ func ToTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 	return ret
 }
 
+// SendTx ...
 func SendTx(stx *tx.Tx, i int) (string, error) {
 	client := GetClient(i)
 	resp, err := client.SendTransaction(context.Background(), ToTxRequest(stx))

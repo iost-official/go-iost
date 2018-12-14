@@ -90,7 +90,7 @@ func (t *luckyBetHandler) Prepare() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGasAndRam(15000000, 0)
+	err = sdk.PledgeForGasAndRAM(15000000, 0)
 	if err != nil {
 		return err
 	}
