@@ -3,18 +3,10 @@ package v8
 import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
-	"time"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 type vmPoolType int
 
-var (
-	TotalExecuteTime = time.Duration(0)
-	TotalTime = time.Duration(0)
-	TotalGetVM = time.Duration(0)
-	TotalBeforeExec = time.Duration(0)
-)
 const (
 	// CompileVMPool maintains a pool of compile vm instance
 	CompileVMPool vmPoolType = iota
@@ -94,24 +86,13 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 
 // LoadAndCall load compiled Javascript code and run code with specified api and args
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-	a := time.Now()
 	vm := vmp.getRunVM()
-	ilog.Info("GetVm Time : ", time.Since(a))
-	TotalGetVM += time.Since(a)
 	defer func() {
 		go vm.recycle(RunVMPool)
-		ilog.Info("Used Time Total: ", time.Since(a))
-		TotalTime += time.Since(a)
-	}()
-	defer func() {
-		ilog.Info("Execute Used time: ", time.Since(a))
-		TotalExecuteTime += time.Since(a)
 	}()
 
 	vm.setHost(host)
 	preparedCode, _ := vm.setContract(contract, api, args)
-	ilog.Info("BeforeExec Time : ", time.Since(a))
-	TotalBeforeExec += time.Since(a)
 
 	return vm.execute(preparedCode)
 }
