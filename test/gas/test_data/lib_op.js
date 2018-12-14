@@ -300,6 +300,80 @@ class LibOp {
             )
         }
     }
+
+    // Math
+    doMathAbs(num) {
+        for (let i = 0; i < num; i++) {
+            Math.abs(-1)
+        }
+    }
+
+    doMathCbrt(num) {
+        for (let i = 0; i < num; i++) {
+            Math.cbrt(2.5)
+        }
+    }
+
+    doMathCeil(num) {
+        for (let i = 0; i < num; i++) {
+            Math.ceil(-1.5)
+        }
+    }
+
+    doMathFloor(num) {
+        for (let i = 0; i < num; i++) {
+            Math.floor(1.5)
+        }
+    }
+
+    doMathLog(num) {
+        for (let i = 0; i < num; i++) {
+            Math.log(5)
+        }
+    }
+
+    doMathLog10(num) {
+        for (let i = 0; i < num; i++) {
+            Math.log10(1234)
+        }
+    }
+
+    doMathLog1p(num) {
+        for (let i = 0; i < num; i++) {
+            Math.log1p(0.7)
+        }
+    }
+
+    doMathMax(num) {
+        for (let i = 0; i < num; i++) {
+            Math.max(3, 10, 5)
+        }
+    }
+
+    doMathMin(num) {
+        for (let i = 0; i < num; i++) {
+            Math.min(3, 10, 5)
+        }
+    }
+
+    doMathPow(num) {
+        for (let i = 0; i < num; i++) {
+            Math.pow(3, 15.5)
+        }
+    }
+
+    doMathRound(num) {
+        for (let i = 0; i < num; i++) {
+            Math.round(2.7)
+        }
+    }
+
+    doMathSqrt(num) {
+        for (let i = 0; i < num; i++) {
+            Math.sqrt(3.4)
+        }
+    }
+
 };
 
 module.exports = LibOp;
