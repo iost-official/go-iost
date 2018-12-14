@@ -115,7 +115,7 @@ func (e *VM) recycle(poolType vmPoolType) {
 		} else {
 			e.isolate = C.newIsolate(customStartupData)
 		}
-	} else{
+	} else {
 		C.lowMemoryNotification(e.isolate)
 
 	}
