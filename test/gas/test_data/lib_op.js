@@ -25,7 +25,7 @@ class LibOp {
 
     doStringConstructor(num) {
         for (let i = 0; i < num; i++) {
-            ("redbluegreen").constructor("yellow")
+            String.constructor("yellow")
         }
     }
 
@@ -144,15 +144,15 @@ class LibOp {
     }
 
     // Array
-    doArrayIsArray(num) {
+    doArrayConstructor(num) {
         for (let i = 0; i < num; i++) {
-            Array.isArray(["red", "blue", "green"])
+            Array.constructor(["red", "blue", "green"])
         }
     }
 
-    doArrayOf(num) {
+    doArrayToString(num) {
         for (let i = 0; i < num; i++) {
-            Array.of(["red", "blue", "green"])
+            (["red", "blue", "green"]).toString()
         }
     }
 
@@ -164,25 +164,25 @@ class LibOp {
 
     doArrayEvery(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).every(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).every(function (x) { return true; })
         }
     }
     
     doArrayFilter(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).filter(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).filter(function (x) { return true; })
         }
     }
 
     doArrayFind(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).find(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).find(function (x) { return true; })
         }
     }
 
     doArrayFindIndex(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).findIndex(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).findIndex(function (x) { return true; })
         }
     }
 
@@ -224,7 +224,7 @@ class LibOp {
 
     doArrayMap(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).map(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).map(function (x) { return x; })
         }
     }
 
@@ -270,12 +270,6 @@ class LibOp {
         }
     }
 
-    doArrayToString(num) {
-        for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).toString()
-        }
-    }
-    
     doArrayUnshift(num) {
         for (let i = 0; i < num; i++) {
             (["red", "blue", "green"]).unshift("yellow")
