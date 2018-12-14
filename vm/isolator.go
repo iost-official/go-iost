@@ -265,6 +265,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 	if i.t.GasLimit < i.h.GasPayed()*i.t.GasRatio {
 		ilog.Errorf("total gas cost is above limit %v < %v * %v", i.t.GasLimit, i.h.GasPayed(), i.t.GasRatio)
+		return nil, fmt.Errorf("total gas cost is above limit %v < %v * %v", i.t.GasLimit, i.h.GasPayed(), i.t.GasRatio)
 	}
 	payedGas, err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 	if err != nil {
@@ -276,7 +277,7 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
 		payedGas, err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
 	i.tr.GasUsage = payedGas.Value

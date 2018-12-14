@@ -42,6 +42,7 @@ func Run(handleType string, amount int, tps int, prepare int, flag bool) {
 			return
 		}
 	}
+
 	limiter := rate.NewLimiter(rate.Limit(tps), 1)
 
 	wg := new(sync.WaitGroup)

@@ -22,7 +22,7 @@ var (
 	defaultAmount  = 9999999999
 	defaultTPS     = 9999999999
 	defaultServers = []string{"localhost:30002"}
-	defaultJob     = "gobang"
+	defaultJob     = "transfer"
 )
 
 func main() {
