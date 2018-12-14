@@ -40,7 +40,7 @@ class DexContract {
     }
     cancel_order(orderID) {
         let orderJSON = this._get_order(orderID);
-        if (orderID === null) {
+        if (orderJSON === null) {
             throw new Error("not a valid order");
         }
         this._requireAuth(orderJSON["seller"], "active");
@@ -50,7 +50,7 @@ class DexContract {
     }
     take_order(orderID) {
         let orderJSON = this._get_order(orderID);
-        if (orderID === null) {
+        if (orderJSON === null) {
             throw new Error("not a valid order");
         }
         blockchain.callWithAuth("token.iost", "transfer",
