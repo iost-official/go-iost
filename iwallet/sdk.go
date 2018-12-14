@@ -141,6 +141,7 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
+// GetContractStorage ...
 func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
@@ -228,6 +229,7 @@ func (s *SDK) getTxByHash(hash string) (*rpcpb.TransactionResponse, error) {
 	return client.GetTxByHash(context.Background(), &rpcpb.TxHashRequest{Hash: hash})
 }
 
+// GetTxReceiptByTxHash...
 func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
