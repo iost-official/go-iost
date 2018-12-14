@@ -16,9 +16,10 @@
 using namespace v8;
 
 void init() {
+#ifdef __linux__
     std::string noGC ("--expose_gc");
-    std::cout << "Start V8 With " << noGC << std::endl;
     V8::SetFlagsFromString(noGC.c_str(), noGC.length()+1);
+#endif
     V8::InitializeICU();
 
     Platform *platform = platform::CreateDefaultPlatform();
@@ -70,8 +71,11 @@ void lowMemoryNotification(IsolateWrapperPtr ptr) {
 
     Isolate *isolate = static_cast<Isolate*>((static_cast<IsolateWrapper*>(ptr))->isolate);
     isolate->ContextDisposedNotification();
-    //isolate->LowMemoryNotification();
+#ifdef __linux__
     isolate->RequestGarbageCollectionForTesting(Isolate::GarbageCollectionType::kFullGarbageCollection);
+#else
+    isolate->LowMemoryNotification();
+#endif
 
     return;
 }
