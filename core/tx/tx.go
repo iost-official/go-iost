@@ -95,7 +95,6 @@ func (t *Tx) baseHash() []byte {
 // SignTx sign the whole tx, including signers' signature, only publisher should do this
 func SignTx(tx *Tx, id string, kps []*account.KeyPair, signs ...*crypto.Signature) (*Tx, error) {
 	tx.Signs = append(tx.Signs, signs...)
-
 	tx.PublishSigns = []*crypto.Signature{}
 	for _, kp := range kps {
 		sig := kp.Sign(tx.publishHash())
