@@ -4,23 +4,7 @@ class BaseOp {
     constructor() {
     }
 
-    doCall(num) {
-        function F(a) {
-            return F
-        }
-        let a = F
-        for (let i = 0; i < num; i++) {
-            a = a("justtest")
-        }
-    }
-
-    doNew(num) {
-        for (let i = 0; i < num; i++) {
-            let a = "justtest"
-        }
-    }
-
-    doThrow(num) {
+    doThrowStatement(num) {
         for (let i = 0; i < num; i++) {
             try {
                 throw "justtest";
@@ -29,19 +13,52 @@ class BaseOp {
         }
     }
 
-    doYield(num) {
-        function *F() {
-            while (true) {
-                yield F
-            }
+    doCallExpression(num) {
+        function f(a) {
+            return
         }
-        let a = F()
         for (let i = 0; i < num; i++) {
-            a.next()
+            f("justtest")
         }
     }
 
-    doMember(num) {
+    doTemplateLiteral(num) {
+        let person = "iost"
+        let age = "18"
+        for (let i = 0; i < num; i++) {
+            `that ${ person } is a ${ age }`
+        }
+    }
+
+    doTaggedTemplateExpression(num) {
+        function myTag(s, p, a) {
+            return s
+        }
+        let person = "iost"
+        let age = "18"
+        for (let i = 0; i < num; i++) {
+            myTag`that ${ person } is a ${ age }`
+        }
+    }
+
+    doNewExpression(num) {
+        for (let i = 0; i < num; i++) {
+            new Number(10)
+        }
+    }
+
+    doYieldExpression(num) {
+        function F() {
+            while (true) {
+                yield "justtest"
+            }
+        }
+        for (let i = 0; i < num; i++) {
+            F()
+        }
+    }
+
+    doMemberExpression(num) {
         let a = {
             justtest: "justtest"
         }
@@ -50,63 +67,63 @@ class BaseOp {
         }
     }
 
-    doMeta(num) {
+    doMetaProperty(num) {
         for (let i = 0; i < num; i++) {
             new.target
         }
     }
 
-    doAssignment(num) {
+    doAssignmentExpression(num) {
         let a = "justtest"
         for (let i = 0; i < num; i++) {
             a = "justtest"
         }
     }
 
-    doPlus(num) {
+    doUpdateExpression(num) {
         let a = 9999
         for (let i = 0; i < num; i++) {
             a++;
         }
     }
 
-    doAdd(num) {
+    doBinaryExpressionAdd(num) {
         for (let i = 0; i < num; i++) {
             9999 + 8888;
         }
     }
 
-    doSub(num) {
+    doBinaryExpressionSub(num) {
         for (let i = 0; i < num; i++) {
             9999 - 8888;
         }
     }
 
-    doMutiple(num) {
+    doBinaryExpressionMutiple(num) {
         for (let i = 0; i < num; i++) {
             9999 * 8888;
         }
     }
 
-    doDiv(num) {
+    doBinaryExpressionDiv(num) {
         for (let i = 0; i < num; i++) {
             9999 / 8888;
         }
     }
 
-    doNot(num) {
+    doUnaryExpressionNot(num) {
         for (let i = 0; i < num; i++) {
             ~1;
         }
     }
 
-    doAnd(num) {
+    doLogicalExpressionAnd(num) {
         for (let i = 0; i < num; i++) {
             1 && 0;
         }
     }
 
-    doConditional(num) {
+    doConditionalExpression(num) {
         for (let i = 0; i < num; i++) {
             true?true:true;
         }

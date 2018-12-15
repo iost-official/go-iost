@@ -24,21 +24,23 @@ var (
 			"Empty",
 		},
 		"base": {
-			"Call",
-			"New",
-			"Throw",
-			"Yield",
-			"Member",
-			"Meta",
-			"Assignment",
-			"Plus",
-			"Add",
-			"Sub",
-			"Mutiple",
-			"Div",
-			"Not",
-			"And",
-			"Conditional",
+			"ThrowStatement",
+			"CallExpression",
+			"TemplateLiteral",
+			"TaggedTemplateExpression",
+			"NewExpression",
+			"YieldExpression",
+			"MemberExpression",
+			"MetaProperty",
+			"AssignmentExpression",
+			"UpdateExpression",
+			"BinaryExpressionAdd",
+			"BinaryExpressionSub",
+			"BinaryExpressionMutiple",
+			"BinaryExpressionDiv",
+			"UnaryExpressionNot",
+			"LogicalExpressionAnd",
+			"ConditionalExpression",
 		},
 		"lib": {
 			"StringCharAt",
@@ -119,7 +121,7 @@ var (
 			"BigNumberIsZero",
 			"BigNumberMinus",
 			"BigNumberMod",
-			"BigNumberTimes"
+			"BigNumberTimes",
 			"BigNumberNegated",
 			"BigNumberPlus",
 			"BigNumberSqrt",
@@ -390,7 +392,51 @@ func getOverview() {
 	os.RemoveAll("mvccdb")
 }
 
+func getOverviewTable() {
+	mvccdb, err := db.NewMVCCDB("mvccdb")
+	if err != nil {
+		log.Fatalf("New MVCC DB failed: %v", err)
+	}
+	vi := database.NewVisitor(100, mvccdb)
+
+	for _, opType := range []string{"base", "lib", "storage"} {
+		for _, op := range OpList[opType] {
+			for i := 0; ; i = i + 10000 {
+				tcost, ccost := runOp(
+					vi,
+					fmt.Sprintf("%v_op.js", opType),
+					fmt.Sprintf("do%v", op),
+					i,
+				)
+
+				if tcost > 0.2 {
+					emptyT, emptyC := runOp(
+						vi,
+						fmt.Sprintf("%v_op.js", "empty"),
+						fmt.Sprintf("do%v", "Empty"),
+						i,
+					)
+					name := fmt.Sprintf("%v:%v", opType, op)
+					gas := float64(ccost-emptyC) / float64(i)
+					time := (tcost - emptyT) * 1e9 / float64(i)
+					fmt.Printf(
+						"%20v    cost: 8.2%fgas    time: 8.2%fns    cost/time: 8.2%fgas/us",
+						name,
+						gas,
+						time,
+						gas/time*1e3,
+					)
+					break
+				}
+			}
+		}
+	}
+
+	os.RemoveAll("mvccdb")
+}
+
 func main() {
-	getOverview()
-	getOpDetail()
+	//getOverview()
+	//getOpDetail()
+	getOverviewTable()
 }
