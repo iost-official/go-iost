@@ -71,6 +71,18 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 	return res, nil
 }
 
+// GetRAMInfo returns the chain info.
+func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
+	dbVisitor := as.getStateDBVisitor(true)
+	return &rpcpb.RAMInfoResponse{
+		AvailableRam: dbVisitor.LeftRAM(),
+		UsedRam:      dbVisitor.UsedRAM(),
+		TotalRam:     dbVisitor.TotalRAM(),
+		SellPrice:    dbVisitor.SellPrice(),
+		BuyPrice:     dbVisitor.BuyPrice(),
+	}, nil
+}
+
 // GetChainInfo returns the chain info.
 func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.ChainInfoResponse, error) {
 	headBlock := as.bc.Head().Block
@@ -334,6 +346,12 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 		if err != nil {
 			return nil, fmt.Errorf("try transaction failed: %v", err)
 		}
+	}
+	dbVisitor := as.getStateDBVisitor(true)
+	gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
+	gas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
+	if gas.LessThan(gasLimit) {
+		return nil, fmt.Errorf("invalid gas of user %v has %v < %v", t.Publisher, gas.ToString(), gasLimit.ToString())
 	}
 	err := as.txpool.AddTx(t)
 	if err != nil {
