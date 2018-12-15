@@ -132,15 +132,15 @@ message NetworkInfo {
 // The message containing blockchain's ram information.
 message RAMInfoResponse {
     // how many bytes have been used
-    int64 used = 1;
+    int64 used_ram = 1;
     // how many bytes have not been used
-    int64 left = 2;
+    int64 available_ram = 2;
     // total ram byte
-    int64 total = 3;
-    // User can sell NUM bytes RAM to system to get `NUM * sellPrice` IOSTs
-    double sellPrice = 4;
-    // User can spend approximate `NUM * buyPrice` IOSTs for NUM bytes RAM
-    double buyPrice = 5;
+    int64 total_ram = 3;
+    // User can sell NUM bytes RAM to system to get `NUM * sell_price` IOSTs
+    double sell_price = 4;
+    // User can spend approximate `NUM * buy_price` IOSTs for NUM bytes RAM
+    double buy_price = 5;
 }
 
 // The message containing the node's information.
@@ -420,9 +420,9 @@ message FrozenBalance {
 
 message GasRatioResponse {
     // lowest gas ratio in head block
-    double lowestGasRatio = 1;
+    double lowest_gas_ratio = 1;
     // median gas ratio in head block
-    double medianGasRatio = 2;
+    double median_gas_ratio = 2;
 }
 
 // The message defines account struct.

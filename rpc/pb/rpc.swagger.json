@@ -869,12 +869,12 @@
     "rpcpbGasRatioResponse": {
       "type": "object",
       "properties": {
-        "lowestGasRatio": {
+        "lowest_gas_ratio": {
           "type": "number",
           "format": "double",
           "title": "lowest gas ratio in head block"
         },
-        "medianGasRatio": {
+        "median_gas_ratio": {
           "type": "number",
           "format": "double",
           "title": "median gas ratio in head block"
@@ -993,30 +993,30 @@
     "rpcpbRAMInfoResponse": {
       "type": "object",
       "properties": {
-        "used": {
+        "used_ram": {
           "type": "string",
           "format": "int64",
           "title": "how many bytes have been used"
         },
-        "left": {
+        "available_ram": {
           "type": "string",
           "format": "int64",
           "title": "how many bytes have not been used"
         },
-        "total": {
+        "total_ram": {
           "type": "string",
           "format": "int64",
           "title": "total ram byte"
         },
-        "sellPrice": {
+        "sell_price": {
           "type": "number",
           "format": "double",
-          "title": "User can sell NUM bytes RAM to system to get `NUM * sellPrice` IOSTs"
+          "title": "User can sell NUM bytes RAM to system to get `NUM * sell_price` IOSTs"
         },
-        "buyPrice": {
+        "buy_price": {
           "type": "number",
           "format": "double",
-          "title": "User can spend approximate `NUM * buyPrice` IOSTs for NUM bytes RAM"
+          "title": "User can spend approximate `NUM * buy_price` IOSTs for NUM bytes RAM"
         }
       },
       "description": "The message containing blockchain's ram information."

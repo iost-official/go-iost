@@ -73,11 +73,11 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
 	dbVisitor := as.getStateDBVisitor(true)
 	return &rpcpb.RAMInfoResponse{
-		Left:      dbVisitor.LeftRAM(),
-		Used:      dbVisitor.UsedRAM(),
-		Total:     dbVisitor.TotalRAM(),
-		SellPrice: dbVisitor.SellPrice(),
-		BuyPrice:  dbVisitor.BuyPrice(),
+		AvailableRam: dbVisitor.LeftRAM(),
+		UsedRam:      dbVisitor.UsedRAM(),
+		TotalRam:     dbVisitor.TotalRAM(),
+		SellPrice:    dbVisitor.SellPrice(),
+		BuyPrice:     dbVisitor.BuyPrice(),
 	}, nil
 }
 
