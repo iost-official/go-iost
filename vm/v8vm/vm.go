@@ -104,7 +104,7 @@ func (e *VM) recycle(poolType vmPoolType) {
 		e.sandbox.Release()
 	}
 
-	if rand.Int() % (vmRefLimit - e.refCount) == 0{
+	if rand.Int()%(vmRefLimit-e.refCount) == 0 {
 		// release isolate
 		if e.isolate != nil {
 			e.refCount = 0
