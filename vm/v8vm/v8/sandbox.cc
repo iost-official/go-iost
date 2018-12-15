@@ -35,6 +35,7 @@ const block = {
    time: blockInfo.time
 };
 
+
 // load tx
 const txInfo = JSON.parse(blockchain.txInfo());
 const tx = {
@@ -290,6 +291,8 @@ size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
     /*fields[1] = v8_heap_stats.total_heap_size();
     fields[2] = v8_heap_stats.used_heap_size();
     fields[3] = v8_heap_stats.external_memory();*/
+    //int a = v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
+    //std::cout << "MemoryUsed: " << a - startMemHHH  << std::endl;
     return v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
 }
 
@@ -373,6 +376,8 @@ ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime) 
     std::string error;
     bool isJson = false;
     bool isDone = false;
+    //std::cout << "StartMemBeforeChange: " << startMemHHH << std::endl;
+    //startMemHHH = MemoryUsage(isolate, sbx->allocator);
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { {nullptr, 0}, {nullptr, 0}, isJson, 0 };
@@ -420,5 +425,6 @@ ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime) 
     }
     if (exec.joinable())
         exec.join();
+    //std::cout << " MemoryUsed: " << MemoryUsage(isolate, sbx->allocator) - startMemHHH << std::endl;
     return res;
 }
