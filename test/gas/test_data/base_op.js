@@ -48,13 +48,14 @@ class BaseOp {
     }
 
     doYieldExpression(num) {
-        function F() {
+        function *F() {
             while (true) {
                 yield "justtest"
             }
         }
+        let f = F()
         for (let i = 0; i < num; i++) {
-            F()
+            f.next()
         }
     }
 

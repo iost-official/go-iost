@@ -420,7 +420,7 @@ func getOverviewTable() {
 					gas := float64(ccost-emptyC) / float64(i)
 					time := (tcost - emptyT) * 1e9 / float64(i)
 					fmt.Printf(
-						"%20v    cost: 8.2%fgas    time: 8.2%fns    cost/time: 8.2%fgas/us",
+						"%35v    cost: %10.2fgas    time: %10.2fns    cost/time: %10.2fgas/us\n",
 						name,
 						gas,
 						time,
