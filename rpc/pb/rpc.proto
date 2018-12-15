@@ -12,10 +12,17 @@ service ApiService {
         };
     }
 
-    // get the chain information
+    // get blockchain information
     rpc GetChainInfo (EmptyRequest) returns (ChainInfoResponse) {
         option (google.api.http) = {
             get: "/getChainInfo"
+        };
+    }
+
+    // get current blockchain ram information
+    rpc GetRAMInfo (EmptyRequest) returns (RAMInfoResponse) {
+        option (google.api.http) = {
+            get: "/getRAMInfo"
         };
     }
 
@@ -120,6 +127,20 @@ message NetworkInfo {
     int32 peer_count = 2;
     // peers' information
     repeated PeerInfo peer_info = 3;
+}
+
+// The message containing blockchain's ram information.
+message RAMInfoResponse {
+    // how many bytes have been used
+    int64 used_ram = 1;
+    // how many bytes have not been used
+    int64 available_ram = 2;
+    // total ram byte
+    int64 total_ram = 3;
+    // User can sell NUM bytes RAM to system to get `NUM * sell_price` IOSTs
+    double sell_price = 4;
+    // User can spend approximate `NUM * buy_price` IOSTs for NUM bytes RAM
+    double buy_price = 5;
 }
 
 // The message containing the node's information.
@@ -399,9 +420,9 @@ message FrozenBalance {
 
 message GasRatioResponse {
     // lowest gas ratio in head block
-    double lowestGasRatio = 1;
+    double lowest_gas_ratio = 1;
     // median gas ratio in head block
-    double medianGasRatio = 2;
+    double median_gas_ratio = 2;
 }
 
 // The message defines account struct.

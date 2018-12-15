@@ -158,7 +158,7 @@ func (g *GasHandler) PledgerInfo(name string) []PledgerInfo {
 	return result
 }
 
-// PGasAtTime return current total gas. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
+// PGasAtTime return pledge gas at given time. It is min(limit, last_updated_gas + time_since_last_updated * increase_speed)
 func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 	if t <= 0 {
 		ilog.Fatalf("PGasAtTime failed. invalid t time %v", t)
@@ -188,4 +188,9 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 		result = limit
 	}
 	return
+}
+
+// TotalGasAtTime return total gas at given time.. It is pgas + tgas
+func (g *GasHandler) TotalGasAtTime(name string, t int64) (result *common.Fixed) {
+	return g.TGas(name).Add(g.PGasAtTime(name, t))
 }

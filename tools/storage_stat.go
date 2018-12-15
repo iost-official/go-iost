@@ -47,6 +47,19 @@ func printTokenBalance(db *leveldb.DB, tokenType string) {
 	fmt.Println()
 }
 
+func printAll(db *leveldb.DB) { // nolint
+	fmt.Println("######## all kvs #############")
+	iter := db.NewIteratorByPrefix([]byte("state/")).(*leveldb.Iter)
+	for iter.Next() {
+		k := string(iter.Key())
+		v := string(iter.Value())
+		if len(v) > 100 {
+			v = v[:100] + "..."
+		}
+		fmt.Printf("%v\t%v\n", k, v)
+	}
+}
+
 func printRAMUsage(db *leveldb.DB) {
 	fmt.Println("######## system ram usage #############")
 	m := make(map[string]int)
@@ -128,4 +141,5 @@ func main() {
 	printRAMUsage(db)
 	printTokenBalance(db, "iost")
 	printTokenBalance(db, "ram")
+	//printAll(db)
 }

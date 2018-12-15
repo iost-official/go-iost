@@ -71,7 +71,7 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if i.h.GasPayed(t.Publisher)*t.GasRatio >= t.GasLimit {
 			return fmt.Errorf("gas limit should be larger")
 		}
-		gas := i.h.AllGas(i.publisherID)
+		gas := i.h.TotalGas(i.publisherID)
 		gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
 		if gas.LessThan(gasLimit) {
 			ilog.Infof("publisher's gas balance is less than gas limit: publisher %v current gas:%v, gas limit:%v\n", i.publisherID, gas.ToString(), gasLimit.ToString())
