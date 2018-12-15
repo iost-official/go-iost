@@ -17,8 +17,8 @@ import (
 
 // values
 var (
-	ErrExpiredTx    = errors.New("Expired tx")
-	ErrNotArrivedTx = errors.New("Not arrived tx")
+	ErrExpiredTx    = errors.New("expired tx")
+	ErrNotArrivedTx = errors.New("not arrived tx")
 )
 
 // Verifier ..
