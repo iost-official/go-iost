@@ -69,6 +69,18 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 	return res, nil
 }
 
+// GetRAMInfo returns the chain info.
+func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
+	dbVisitor := as.getStateDBVisitor(true)
+	return &rpcpb.RAMInfoResponse{
+		Left:      dbVisitor.LeftRAM(),
+		Used:      dbVisitor.UsedRAM(),
+		Total:     dbVisitor.TotalRAM(),
+		SellPrice: dbVisitor.SellPrice(),
+		BuyPrice:  dbVisitor.BuyPrice(),
+	}, nil
+}
+
 // GetChainInfo returns the chain info.
 func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.ChainInfoResponse, error) {
 	headBlock := as.bc.Head().Block

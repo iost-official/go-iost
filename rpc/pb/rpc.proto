@@ -12,10 +12,17 @@ service ApiService {
         };
     }
 
-    // get the chain information
+    // get blockchain information
     rpc GetChainInfo (EmptyRequest) returns (ChainInfoResponse) {
         option (google.api.http) = {
             get: "/getChainInfo"
+        };
+    }
+
+    // get current blockchain ram information
+    rpc GetRAMInfo (EmptyRequest) returns (RAMInfoResponse) {
+        option (google.api.http) = {
+            get: "/getRAMInfo"
         };
     }
 
@@ -120,6 +127,20 @@ message NetworkInfo {
     int32 peer_count = 2;
     // peers' information
     repeated PeerInfo peer_info = 3;
+}
+
+// The message containing blockchain's ram information.
+message RAMInfoResponse {
+    // how many bytes have been used
+    int64 used = 1;
+    // how many bytes have not been used
+    int64 left = 2;
+    // total ram byte
+    int64 total = 3;
+    // User can sell NUM bytes RAM to system to get `NUM * sellPrice` IOSTs
+    double sellPrice = 4;
+    // User can spend approximate `NUM * buyPrice` IOSTs for NUM bytes RAM
+    double buyPrice = 5;
 }
 
 // The message containing the node's information.

@@ -147,7 +147,7 @@
     },
     "/getChainInfo": {
       "get": {
-        "summary": "get the chain information",
+        "summary": "get blockchain information",
         "operationId": "GetChainInfo",
         "responses": {
           "200": {
@@ -249,6 +249,23 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbNodeInfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getRAMInfo": {
+      "get": {
+        "summary": "get current blockchain ram information",
+        "operationId": "GetRAMInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbRAMInfoResponse"
             }
           }
         },
@@ -972,6 +989,37 @@
         }
       },
       "description": "The message defines peer information."
+    },
+    "rpcpbRAMInfoResponse": {
+      "type": "object",
+      "properties": {
+        "used": {
+          "type": "string",
+          "format": "int64",
+          "title": "how many bytes have been used"
+        },
+        "left": {
+          "type": "string",
+          "format": "int64",
+          "title": "how many bytes have not been used"
+        },
+        "total": {
+          "type": "string",
+          "format": "int64",
+          "title": "total ram byte"
+        },
+        "sellPrice": {
+          "type": "number",
+          "format": "double",
+          "title": "User can sell NUM bytes RAM to system to get `NUM * sellPrice` IOSTs"
+        },
+        "buyPrice": {
+          "type": "number",
+          "format": "double",
+          "title": "User can spend approximate `NUM * buyPrice` IOSTs for NUM bytes RAM"
+        }
+      },
+      "description": "The message containing blockchain's ram information."
     },
     "rpcpbSendTransactionResponse": {
       "type": "object",
