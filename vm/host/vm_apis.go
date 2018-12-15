@@ -8,13 +8,12 @@ import (
 
 // APIDelegate ...
 type APIDelegate struct {
-	h  *Host
-	ec *event.Collector
+	h *Host
 }
 
 // NewAPI ...
 func NewAPI(h *Host) APIDelegate {
-	return APIDelegate{h: h, ec: event.GetCollector()}
+	return APIDelegate{h: h}
 }
 
 func (h *APIDelegate) receipt(s string) {
@@ -28,7 +27,7 @@ func (h *APIDelegate) receipt(s string) {
 	h.h.ctx.GSet("receipts", append(rs, rec))
 
 	// post event for receipt
-	h.ec.Post(event.NewEvent(event.ContractReceipt, rec.Content),
+	event.GetCollector().Post(event.NewEvent(event.ContractReceipt, rec.Content),
 		&event.Meta{ContractID: h.h.Context().Value("contract_name").(string)})
 }
 
