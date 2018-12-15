@@ -211,9 +211,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 
 	api.EXPECT().GetAccount(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.Account{
-		Name:       "admin",
-		Balance:    20000.3,
-		CreateTime: 0,
+		Name:    "admin",
+		Balance: 20000.3,
 		GasInfo: &rpcpb.Account_GasInfo{
 			CurrentTotal:  1000.2,
 			IncreaseSpeed: 20.3,
