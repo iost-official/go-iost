@@ -255,13 +255,13 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		go p.broadcastBlockHash(blk)
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 		if err != nil {
-			ilog.Errorf("received new block error, err:%v", err)
+			ilog.Warnf("received new block error, err:%v", err)
 			return
 		}
 	case p2p.SyncBlockResponse:
 		err := p.handleRecvBlock(blk)
 		if err != nil {
-			ilog.Errorf("received sync block error, err:%v", err)
+			ilog.Warnf("received sync block error, err:%v", err)
 			return
 		}
 	}
