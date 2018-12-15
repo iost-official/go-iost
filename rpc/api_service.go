@@ -391,12 +391,10 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 	ch := ec.Subscribe(id, topics, filter)
 	defer ec.Unsubscribe(id, topics)
 
-	timer := time.NewTimer(time.Minute)
 	for {
 		select {
-		case <-timer.C:
-			ilog.Debugf("timeup in subscribe stream")
-			return nil
+		case <-res.Context().Done():
+			return res.Context().Err()
 		case ev := <-ch:
 			e := &rpcpb.Event{
 				Topic: rpcpb.Event_Topic(ev.Topic),
