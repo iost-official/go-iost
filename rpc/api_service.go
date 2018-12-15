@@ -391,8 +391,11 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 	ch := ec.Subscribe(id, topics, filter)
 	defer ec.Unsubscribe(id, topics)
 
+	timeup := time.NewTimer(time.Hour)
 	for {
 		select {
+		case <-timeup.C:
+			return nil
 		case <-res.Context().Done():
 			return res.Context().Err()
 		case ev := <-ch:
