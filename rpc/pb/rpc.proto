@@ -99,6 +99,14 @@ service ApiService {
         };
     }
 
+    // subscribe an event
+    rpc Subscribe (SubscribeRequest) returns (stream SubscribeResponse) {
+        option (google.api.http) = {
+            post: "/subscribe"
+            body: "*"
+        };
+    }
+
 }
 
 // The message defines an empty request.
@@ -410,8 +418,6 @@ message Account {
     string name = 1;
     // account balance
     double balance = 2;
-    // account create timestamp
-    int64 create_time = 3;
 
     // The message defines account pledged coin information.
     message PledgeInfo {
@@ -436,7 +442,7 @@ message Account {
     }
 
     // gas information
-    GasInfo gas_info = 4;
+    GasInfo gas_info = 3;
 
     // The message defines account ram information.
     message RAMInfo {
@@ -445,7 +451,7 @@ message Account {
     }
 
     // ram information
-    RAMInfo ram_info = 5;
+    RAMInfo ram_info = 4;
 
     // The message defines permission item.
     message Item {
@@ -480,12 +486,12 @@ message Account {
     }
 
     // account permission
-    map<string, Permission> permissions = 6;
+    map<string, Permission> permissions = 5;
     // account groups
-    map<string, Group> groups = 7;
+    map<string, Group> groups = 6;
 
     // frozen balance information
-    repeated FrozenBalance frozen_balances = 8;
+    repeated FrozenBalance frozen_balances = 7;
 }
 
 // The message defines the get account request.
@@ -571,3 +577,34 @@ message GetTokenBalanceRequest {
     bool by_longest_chain = 3;
 }
 
+// The message defines event struct.
+message Event {
+    enum Topic {
+        // contract receipt
+        CONTRACT_RECEIPT = 0;
+        // contract event
+        CONTRACT_EVENT = 1;
+    }
+    // event topic
+    Topic topic = 1;
+    // event data
+    string data = 2;
+    // event time
+    int64 time = 3;
+}
+
+// The message defines subscribe request.
+message SubscribeRequest {
+	repeated Event.Topic topics = 1;
+
+    message Filter {
+        // contract id
+        string contract_id = 1;
+    }
+    Filter filter = 2;
+}
+
+// The message defines subscribe response.
+message SubscribeResponse {
+	Event event = 1;
+}

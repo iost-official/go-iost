@@ -1,192 +1,112 @@
-package event
+package event_test
 
 import (
-	"fmt"
 	"sync/atomic"
 	"testing"
 	"time"
 
+	"github.com/iost-official/go-iost/core/event"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/stretchr/testify/assert"
 )
 
-//nolint
-func TestEventCollector_Post(t *testing.T) {
-	sub1 := NewSubscription(100, []Event_Topic{Event_TransactionResult})
-	sub2 := NewSubscription(100, []Event_Topic{Event_ContractEvent})
-	sub3 := NewSubscription(100, []Event_Topic{Event_TransactionResult, Event_ContractEvent})
+func TestEventCollectorPost(t *testing.T) {
+	ilog.Stop()
+	ec := event.GetController()
 
-	ec := GetEventCollectorInstance()
-	ec.Subscribe(sub1)
-	ec.Subscribe(sub2)
-	ec.Subscribe(sub3)
+	ch1 := ec.Subscribe(1, []event.Topic{event.ContractEvent}, nil)
+	ch2 := ec.Subscribe(2, []event.Topic{event.ContractEvent}, &event.Meta{ContractID: "base.iost"})
+	ch3 := ec.Subscribe(3, []event.Topic{event.ContractReceipt, event.ContractEvent}, nil)
+
 	count1 := int32(0)
 	count2 := int32(0)
 	count3 := int32(0)
 
-	go func(ch <-chan *Event) {
-		t.Log("run sub1")
+	go func(ch <-chan *event.Event) {
+		t.Log("select ch1")
 		for {
 			select {
 			case e := <-ch:
-				if e.Topic != Event_TransactionResult {
-					t.Fatalf("sub1 expect event topic Event_TransactionResult, got %s", e.Topic.String())
-				}
-				if e.Data != "test1" {
-					t.Fatalf("sub1 expect event data test1, got %s", e.Data)
+				assert.Equal(t, event.ContractEvent, e.Topic)
+				if e.Data != "test1" && e.Data != "test2" {
+					t.Fatalf("sub1 expect event data test1/2, got %s", e.Data)
 				}
 				atomic.AddInt32(&count1, 1)
 			}
 		}
-	}(sub1.ReadChan())
+	}(ch1)
 
-	go func(ch <-chan *Event) {
-		t.Log("run sub2")
+	go func(ch <-chan *event.Event) {
+		t.Log("select ch2")
 		for {
 			select {
 			case e := <-ch:
-				if e.Topic != Event_ContractEvent {
-					t.Fatalf("sub2 expect event topic Event_ContractEvent, got %s", e.Topic.String())
-				}
-				if e.Data != "test2" {
-					t.Fatalf("sub2 expect event data test2, got %s", e.Data)
-				}
+				assert.Equal(t, event.ContractEvent, e.Topic)
+				assert.Equal(t, "test2", e.Data)
 				atomic.AddInt32(&count2, 1)
 			}
 		}
-	}(sub2.ReadChan())
+	}(ch2)
 
-	go func(ch <-chan *Event) {
-		t.Log("run sub3")
+	go func(ch <-chan *event.Event) {
+		t.Log("select ch3")
 		for {
 			select {
 			case e := <-ch:
-				if e.Topic != Event_TransactionResult && e.Topic != Event_ContractEvent {
-					t.Fatalf("sub3 expect event topic Event_TransactionResult or Event_ContractEvent, got %s", e.Topic.String())
+				if e.Topic != event.ContractEvent && e.Topic != event.ContractReceipt {
+					t.Fatalf("sub3 expect event topic ContractEvent or ContractReceipt, got %s", e.Topic)
 				}
 				atomic.AddInt32(&count3, 1)
 			}
 		}
-	}(sub3.ReadChan())
+	}(ch3)
 
-	ec.Post(NewEvent(Event_TransactionResult, "test1"))
-	ec.Post(NewEvent(Event_ContractEvent, "test2"))
-	ec.Post(NewEvent(Event_ContractEvent, "test2"))
-
-	time.Sleep(time.Millisecond * 100)
-
-	fcount1 := atomic.LoadInt32(&count1)
-	fcount2 := atomic.LoadInt32(&count2)
-	fcount3 := atomic.LoadInt32(&count3)
-	assert.EqualValues(t, 1, fcount1)
-	assert.EqualValues(t, 2, fcount2)
-	assert.EqualValues(t, 3, fcount3)
-
-	ec.Unsubscribe(sub1)
-	ec.Post(NewEvent(Event_TransactionResult, "test1"))
-	ec.Post(NewEvent(Event_ContractEvent, "test2"))
-	ec.Post(NewEvent(Event_ContractEvent, "test2"))
+	ec.Post(event.NewEvent(event.ContractEvent, "test1"), &event.Meta{ContractID: "token.iost"})
+	ec.Post(event.NewEvent(event.ContractEvent, "test2"), &event.Meta{ContractID: "base.iost"})
+	ec.Post(event.NewEvent(event.ContractReceipt, "test3"), &event.Meta{ContractID: "base.iost"})
 
 	time.Sleep(time.Millisecond * 100)
 
-	fcount1 = atomic.LoadInt32(&count1)
-	fcount2 = atomic.LoadInt32(&count2)
-	fcount3 = atomic.LoadInt32(&count3)
-	assert.EqualValues(t, 1, fcount1)
-	assert.EqualValues(t, 4, fcount2)
-	assert.EqualValues(t, 6, fcount3)
+	assert.EqualValues(t, 2, atomic.LoadInt32(&count1))
+	assert.EqualValues(t, 1, atomic.LoadInt32(&count2))
+	assert.EqualValues(t, 3, atomic.LoadInt32(&count3))
+
+	ec.Unsubscribe(1, []event.Topic{event.ContractEvent})
+	ec.Post(event.NewEvent(event.ContractEvent, "test2"), &event.Meta{ContractID: "base.iost"})
+
+	time.Sleep(time.Millisecond * 100)
+
+	assert.EqualValues(t, 2, atomic.LoadInt32(&count1))
+	assert.EqualValues(t, 2, atomic.LoadInt32(&count2))
+	assert.EqualValues(t, 4, atomic.LoadInt32(&count3))
 }
 
-//nolint
-func TestEventCollector_Full(t *testing.T) {
-	sub1 := NewSubscription(1, []Event_Topic{Event_TransactionResult})
-	sub2 := NewSubscription(1, []Event_Topic{Event_ContractEvent})
-	sub3 := NewSubscription(1, []Event_Topic{Event_TransactionResult, Event_ContractEvent})
+func TestEventCollectorFullPost(t *testing.T) {
+	ilog.Stop()
 
-	ec := GetEventCollectorInstance()
-	ec.Subscribe(sub1)
-	ec.Subscribe(sub2)
-	ec.Subscribe(sub3)
-	count1 := int32(0)
-	count2 := int32(0)
-	count3 := int32(0)
+	ec := event.GetController()
+	ch := ec.Subscribe(1, []event.Topic{event.ContractEvent}, nil)
 
-	ec.Post(NewEvent(Event_TransactionResult, "test1"))
-	ec.Post(NewEvent(Event_TransactionResult, "test1"))
-	ec.Post(NewEvent(Event_ContractEvent, "test2"))
-	ec.Post(NewEvent(Event_ContractEvent, "test2"))
-	time.Sleep(time.Millisecond * 100)
+	count := int32(0)
 
-	go func(ch <-chan *Event) {
-		t.Log("run sub1")
-		for {
-			select {
-			case e := <-ch:
-				if e.Topic != Event_TransactionResult {
-					t.Fatalf("sub1 expect event topic Event_TransactionResult, got %s", e.Topic.String())
-				}
-				atomic.AddInt32(&count1, 1)
-			}
-		}
-	}(sub1.ReadChan())
-
-	go func(ch <-chan *Event) {
-		t.Log("run sub2")
-		for {
-			select {
-			case e := <-ch:
-				if e.Topic != Event_ContractEvent {
-					t.Fatalf("sub2 expect event topic Event_ContractEvent, got %s", e.Topic.String())
-				}
-				atomic.AddInt32(&count2, 1)
-			}
-		}
-	}(sub2.ReadChan())
-
-	go func(ch <-chan *Event) {
-		t.Log("run sub3")
-		for {
-			select {
-			case e := <-ch:
-				if e.Topic != Event_TransactionResult && e.Topic != Event_ContractEvent {
-					t.Fatalf("sub3 expect event topic Event_TransactionResult or Event_ContractEvent, got %s", e.Topic.String())
-				}
-				atomic.AddInt32(&count3, 1)
-			}
-		}
-	}(sub3.ReadChan())
-
-	time.Sleep(time.Millisecond * 100)
-	fcount1 := atomic.LoadInt32(&count1)
-	fcount2 := atomic.LoadInt32(&count2)
-	fcount3 := atomic.LoadInt32(&count3)
-	assert.EqualValues(t, 1, fcount1)
-	assert.EqualValues(t, 1, fcount2)
-	assert.EqualValues(t, 1, fcount3)
-
-	sub1 = NewSubscription(1000, []Event_Topic{Event_TransactionResult})
-	sub2 = NewSubscription(1000, []Event_Topic{Event_ContractEvent})
-	sub3 = NewSubscription(1000, []Event_Topic{Event_TransactionResult, Event_ContractEvent})
-	ec.Subscribe(sub1)
-	ec.Subscribe(sub2)
-	ec.Subscribe(sub3)
-	data := "test1"
-	for i := 0; i < 5; i++ {
-		data += data
+	for i := 0; i < event.EventChSize+100; i++ {
+		ec.Post(event.NewEvent(event.ContractEvent, "test1"), &event.Meta{ContractID: "token.iost"})
 	}
 
-	t0 := time.Now().Nanosecond()
-	// almost 6ms for 10000 post
-	for i := 0; i < 1000; i++ {
-		ec.Post(NewEvent(Event_TransactionResult, data))
-		time.Sleep(time.Microsecond * 50)
-	}
-	t1 := time.Now().Nanosecond()
-	fmt.Println(t1 - t0)
 	time.Sleep(time.Millisecond * 100)
-	fcount1 = atomic.LoadInt32(&count1)
-	fcount2 = atomic.LoadInt32(&count2)
-	fcount3 = atomic.LoadInt32(&count3)
-	assert.True(t, fcount1 <= 1001, fmt.Sprintf("Expect count1 <= 1001, got count1: %v", fcount1))
-	assert.EqualValues(t, 1, fcount2)
-	assert.True(t, fcount3 <= 1001, fmt.Sprintf("Expect count3 <= 1001, got count3: %v", fcount3))
+
+	go func(ch <-chan *event.Event) {
+		t.Log("select ch")
+		for {
+			select {
+			case e := <-ch:
+				assert.Equal(t, event.ContractEvent, e.Topic)
+				atomic.AddInt32(&count, 1)
+			}
+		}
+	}(ch)
+
+	time.Sleep(time.Millisecond * 100)
+
+	assert.EqualValues(t, event.EventChSize, atomic.LoadInt32(&count))
 }

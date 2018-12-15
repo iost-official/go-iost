@@ -376,6 +376,33 @@
           "ApiService"
         ]
       }
+    },
+    "/subscribe": {
+      "post": {
+        "summary": "subscribe an event",
+        "operationId": "Subscribe",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/rpcpbSubscribeResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbSubscribeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -559,6 +586,15 @@
       },
       "description": "The message defines the ABI struct."
     },
+    "EventTopic": {
+      "type": "string",
+      "enum": [
+        "CONTRACT_RECEIPT",
+        "CONTRACT_EVENT"
+      ],
+      "default": "CONTRACT_RECEIPT",
+      "title": "- CONTRACT_RECEIPT: contract receipt\n - CONTRACT_EVENT: contract event"
+    },
     "SignatureAlgorithm": {
       "type": "string",
       "enum": [
@@ -568,6 +604,15 @@
       ],
       "default": "UNKNOWN",
       "description": "The enumeration defines the signature algorithm.\n\n - UNKNOWN: unknown\n - SECP256K1: secp256k1\n - ED25519: ed25519"
+    },
+    "SubscribeRequestFilter": {
+      "type": "object",
+      "properties": {
+        "contract_id": {
+          "type": "string",
+          "title": "contract id"
+        }
+      }
     },
     "TxReceiptReceipt": {
       "type": "object",
@@ -610,11 +655,6 @@
           "type": "number",
           "format": "double",
           "title": "account balance"
-        },
-        "create_time": {
-          "type": "string",
-          "format": "int64",
-          "title": "account create timestamp"
         },
         "gas_info": {
           "$ref": "#/definitions/AccountGasInfo",
@@ -833,6 +873,25 @@
       },
       "description": "The message defines the contract struct."
     },
+    "rpcpbEvent": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "$ref": "#/definitions/EventTopic",
+          "title": "event topic"
+        },
+        "data": {
+          "type": "string",
+          "title": "event data"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64",
+          "title": "event time"
+        }
+      },
+      "description": "The message defines event struct."
+    },
     "rpcpbFrozenBalance": {
       "type": "object",
       "properties": {
@@ -1002,6 +1061,30 @@
         }
       },
       "description": "The message defines signature struct."
+    },
+    "rpcpbSubscribeRequest": {
+      "type": "object",
+      "properties": {
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventTopic"
+          }
+        },
+        "filter": {
+          "$ref": "#/definitions/SubscribeRequestFilter"
+        }
+      },
+      "description": "The message defines subscribe request."
+    },
+    "rpcpbSubscribeResponse": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/rpcpbEvent"
+        }
+      },
+      "description": "The message defines subscribe response."
     },
     "rpcpbTransaction": {
       "type": "object",

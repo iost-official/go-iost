@@ -11,7 +11,7 @@ type EventPoster struct {
 
 // PostEvent post the event
 func (p *EventPoster) PostEvent(data string) contract.Cost {
-	e := event.NewEvent(event.Event_ContractEvent, data)
-	event.GetEventCollectorInstance().Post(e)
+	e := event.NewEvent(event.ContractEvent, data)
+	event.GetCollector().Post(e, nil)
 	return EventCost(len(data))
 }

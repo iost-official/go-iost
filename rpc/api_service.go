@@ -14,9 +14,11 @@ import (
 	"github.com/iost-official/go-iost/consensus/pob"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/verifier"
@@ -350,6 +352,46 @@ func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.Transactio
 		return nil, err
 	}
 	return toPbTxReceipt(receipt), nil
+}
+
+// Subscribe used for event.
+func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiService_SubscribeServer) error {
+
+	topics := make([]event.Topic, 0)
+	for _, t := range req.Topics {
+		topics = append(topics, event.Topic(t))
+	}
+	var filter *event.Meta
+	if req.GetFilter() != nil {
+		filter = &event.Meta{
+			ContractID: req.GetFilter().GetContractId(),
+		}
+	}
+
+	ec := event.GetCollector()
+	id := time.Now().UnixNano()
+	ch := ec.Subscribe(id, topics, filter)
+	defer ec.Unsubscribe(id, topics)
+
+	timer := time.NewTimer(time.Minute)
+	for {
+		select {
+		case <-timer.C:
+			ilog.Debugf("timeup in subscribe stream")
+			return nil
+		case ev := <-ch:
+			e := &rpcpb.Event{
+				Topic: rpcpb.Event_Topic(ev.Topic),
+				Data:  ev.Data,
+				Time:  ev.Time,
+			}
+			err := res.Send(&rpcpb.SubscribeResponse{Event: e})
+			if err != nil {
+				ilog.Errorf("stream send failed. err=%v", err)
+				return err
+			}
+		}
+	}
 }
 
 func (as *APIService) getStateDBVisitor(longestChain bool) *database.Visitor {
