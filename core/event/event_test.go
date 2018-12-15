@@ -12,7 +12,7 @@ import (
 
 func TestEventCollectorPost(t *testing.T) {
 	ilog.Stop()
-	ec := event.GetController()
+	ec := event.GetCollector()
 
 	ch1 := ec.Subscribe(1, []event.Topic{event.ContractEvent}, nil)
 	ch2 := ec.Subscribe(2, []event.Topic{event.ContractEvent}, &event.Meta{ContractID: "base.iost"})
@@ -84,7 +84,7 @@ func TestEventCollectorPost(t *testing.T) {
 func TestEventCollectorFullPost(t *testing.T) {
 	ilog.Stop()
 
-	ec := event.GetController()
+	ec := event.GetCollector()
 	ch := ec.Subscribe(1, []event.Topic{event.ContractEvent}, nil)
 
 	count := int32(0)
