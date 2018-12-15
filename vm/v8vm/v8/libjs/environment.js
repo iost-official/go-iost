@@ -120,6 +120,12 @@
         return Stringslice.call(this, ...arguments);
     };
 
+    const Stringsubstring = String.prototype.substring;
+    String.prototype.substring = function() {
+        _IOSTInstruction_counter.incr(this.length);
+        return Stringsubstring.call(this, ...arguments);
+    };
+
     const StringtoLowerCase = String.prototype.toLowerCase;
     String.prototype.toLowerCase = function() {
         _IOSTInstruction_counter.incr(this.length);
