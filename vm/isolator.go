@@ -242,7 +242,8 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			}
 		}
 
-		i.h.Context().GSet("gas_limit", vmGasLimit-actionCost.ToGas())
+		vmGasLimit -= actionCost.ToGas()
+		i.h.Context().GSet("gas_limit", vmGasLimit)
 		i.h.PayCost(actionCost, i.publisherID)
 
 		if status.Code != tx.Success {
