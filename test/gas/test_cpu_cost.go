@@ -144,7 +144,7 @@ var (
 
 var vmPool *v8.VMPool
 var testDataPath = "./test_data/"
-var baseCPUCost = int64(2000)
+var baseCPUCost = int64(25000)
 
 func runOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
 	b, err := ioutil.ReadFile(path.Join(testDataPath, name))
@@ -152,6 +152,16 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 		log.Fatalf("Read file failed: %v", err)
 	}
 	code := string(b)
+
+	contract := &contract.Contract{
+		ID:   name,
+		Code: code,
+	}
+
+	contract.Code, err = vmPool.Compile(contract)
+	if err != nil {
+		log.Fatalf("Compile contract failed: %v", err)
+	}
 
 	now := time.Now()
 
@@ -164,16 +174,6 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 	expTime := time.Now().Add(time.Second * 10)
 	host.SetDeadline(expTime)
 
-	contract := &contract.Contract{
-		ID:   name,
-		Code: code,
-	}
-
-	contract.Code, err = vmPool.Compile(contract)
-	if err != nil {
-		log.Fatalf("Compile contract failed: %v", err)
-	}
-
 	_, cost, err := vmPool.LoadAndCall(host, contract, api, num)
 
 	if err != nil {
@@ -185,7 +185,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 
 func init() {
 	// TODO The number of pool need adjust
-	vmPool = v8.NewVMPool(30, 30)
+	vmPool = v8.NewVMPool(10, 400)
 	vmPool.Init()
 }
 
@@ -401,6 +401,15 @@ func getOverviewTable() {
 
 	ttotal := float64(0)
 	ctotal := float64(0)
+	for i := 0; i < 200; i++ {
+		runOp(
+			vi,
+			fmt.Sprintf("%v_op.js", "empty"),
+			fmt.Sprintf("do%v", "StartUp"),
+			i,
+		)
+	}
+
 	for i := 0; ; i++ {
 		tcost, ccost := runOp(
 			vi,
@@ -462,7 +471,7 @@ func getOverviewTable() {
 }
 
 func main() {
-	getOverview()
-	getOpDetail()
+	//getOverview()
+	//getOpDetail()
 	getOverviewTable()
 }
