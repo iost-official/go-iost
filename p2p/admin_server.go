@@ -1,9 +1,11 @@
 package p2p
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
 
 	"github.com/iost-official/go-iost/ilog"
 
@@ -37,7 +39,8 @@ func (as *adminServer) Start() {
 }
 
 func (as *adminServer) Stop() {
-	as.srv.Shutdown(nil)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second) // nolint
+	as.srv.Shutdown(ctx)
 }
 
 func (as *adminServer) registerRoute(mux *http.ServeMux) {
