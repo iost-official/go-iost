@@ -6,9 +6,9 @@ import (
 	"math"
 	"strconv"
 
+	"fmt"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
-	"fmt"
 )
 
 var token721ABIs *abiSet

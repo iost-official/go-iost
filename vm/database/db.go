@@ -23,7 +23,7 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		MapHandler:      MapHandler{cachedDB},
 		ContractHandler: ContractHandler{cachedDB},
 		TokenHandler:    TokenHandler{cachedDB},
-		Token721Handler:    Token721Handler{cachedDB},
+		Token721Handler: Token721Handler{cachedDB},
 		RAMHandler:      RAMHandler{cachedDB},
 	}
 	v.GasHandler = GasHandler{v.BasicHandler, v.MapHandler}
@@ -52,7 +52,7 @@ func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
 		MapHandler:      MapHandler{watcher},
 		ContractHandler: ContractHandler{watcher},
 		TokenHandler:    TokenHandler{watcher},
-		Token721Handler:    Token721Handler{watcher},
+		Token721Handler: Token721Handler{watcher},
 		RAMHandler:      RAMHandler{watcher},
 	}
 	v.GasHandler = GasHandler{v.BasicHandler, v.MapHandler}

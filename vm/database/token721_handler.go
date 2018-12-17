@@ -1,11 +1,11 @@
 package database
 
 import (
-	"strings"
 	"fmt"
+	"strings"
 )
 
-// TokenContractName name of basic token contract
+// Token721ContractName name of basic token contract
 const Token721ContractName = "token721.iost"
 
 // Token721Handler easy to get balance of token.iost
@@ -37,13 +37,13 @@ func (m *Token721Handler) Token721Balance(tokenName, acc string) int64 {
 	return ib
 }
 
-// Token721Balance get token balance of acc
+// Token721IDList get token balance of acc
 func (m *Token721Handler) Token721IDList(tokenName, acc string) []string {
 	ids := m.db.Get(m.idKey(tokenName, acc))
 	if len(ids) == 0 {
 		return []string{}
 	}
-	return strings.Split(ids, "@")[1:];
+	return strings.Split(ids, "@")[1:]
 }
 
 // Token721Metadata get token balance of acc
@@ -65,7 +65,7 @@ func (m *Token721Handler) Token721Owner(tokenName, tokenID string) (string, erro
 	currentRaw := m.db.Get(m.ownerKey(tokenName, tokenID))
 	owner, ok := Unmarshal(currentRaw).(string)
 	if !ok || owner == "" {
-		return "", fmt.Errorf("token %v %v not found.", tokenName, tokenID)
+		return "", fmt.Errorf("token %v %v not found", tokenName, tokenID)
 	}
 	return owner, nil
 }
