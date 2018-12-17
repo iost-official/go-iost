@@ -399,30 +399,29 @@ func getOverviewTable() {
 	}
 	vi := database.NewVisitor(100, mvccdb)
 
-	ttotal := 0.0
-	ctotal := 0.0
+	ttotal := float64(0)
+	ctotal := float64(0)
 	for i := 0; ; i++ {
 		tcost, ccost := runOp(
 			vi,
-					fmt.Sprintf("%v_op.js", "empty"),
-					fmt.Sprintf("do%v", "StartUp"),
-					i,
-				)
-		ttotal := ttotal + tcost
-		ctotal := ctotal + float64(ccost)
+			fmt.Sprintf("%v_op.js", "empty"),
+			fmt.Sprintf("do%v", "StartUp"),
+			i,
+		)
+		ttotal = ttotal + tcost
+		ctotal = ctotal + float64(ccost)
 		if ttotal > 0.2 {
-					name := fmt.Sprintf("%v:%v", "empty", "StartUp")
-					gas := ctotal/ float64(i)
-					time := ttotal*1e9 /float64(i)
-					fmt.Printf(
-						"%35v    cost: %10.2fgas    time: %10.2fns    cost/time: %10.2fgas/us\n",
-						name,
-						gas,
-						time,
-						gas/time*1e3,
-					)
-					break
-
+			name := fmt.Sprintf("%v:%v", "empty", "StartUp")
+			gas := ctotal / float64(i)
+			time := ttotal*1e9 / float64(i)
+			fmt.Printf(
+				"%35v    cost: %12.2fgas    time: %12.2fns    cost/time: %12.2fgas/us\n",
+				name,
+				gas,
+				time,
+				gas/time*1e3,
+			)
+			break
 		}
 	}
 
@@ -447,7 +446,7 @@ func getOverviewTable() {
 					gas := float64(ccost-emptyC) / float64(i)
 					time := (tcost - emptyT) * 1e9 / float64(i)
 					fmt.Printf(
-						"%35v    cost: %10.2fgas    time: %10.2fns    cost/time: %10.2fgas/us\n",
+						"%35v    cost: %12.2fgas    time: %12.2fns    cost/time: %12.2fgas/us\n",
 						name,
 						gas,
 						time,
