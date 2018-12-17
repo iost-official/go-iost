@@ -14,9 +14,11 @@ import (
 	"github.com/iost-official/go-iost/consensus/pob"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/verifier"
@@ -67,6 +69,18 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 	}
 	res.Network = networkInfo
 	return res, nil
+}
+
+// GetRAMInfo returns the chain info.
+func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
+	dbVisitor := as.getStateDBVisitor(true)
+	return &rpcpb.RAMInfoResponse{
+		AvailableRam: dbVisitor.LeftRAM(),
+		UsedRam:      dbVisitor.UsedRAM(),
+		TotalRam:     dbVisitor.TotalRAM(),
+		SellPrice:    dbVisitor.SellPrice(),
+		BuyPrice:     dbVisitor.BuyPrice(),
+	}, nil
 }
 
 // GetChainInfo returns the chain info.
@@ -333,6 +347,12 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 			return nil, fmt.Errorf("try transaction failed: %v", err)
 		}
 	}
+	dbVisitor := as.getStateDBVisitor(true)
+	gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
+	gas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
+	if gas.LessThan(gasLimit) {
+		return nil, fmt.Errorf("invalid gas of user %v has %v < %v", t.Publisher, gas.ToString(), gasLimit.ToString())
+	}
 	err := as.txpool.AddTx(t)
 	if err != nil {
 		return nil, err
@@ -350,6 +370,47 @@ func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.Transactio
 		return nil, err
 	}
 	return toPbTxReceipt(receipt), nil
+}
+
+// Subscribe used for event.
+func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiService_SubscribeServer) error {
+
+	topics := make([]event.Topic, 0)
+	for _, t := range req.Topics {
+		topics = append(topics, event.Topic(t))
+	}
+	var filter *event.Meta
+	if req.GetFilter() != nil {
+		filter = &event.Meta{
+			ContractID: req.GetFilter().GetContractId(),
+		}
+	}
+
+	ec := event.GetCollector()
+	id := time.Now().UnixNano()
+	ch := ec.Subscribe(id, topics, filter)
+	defer ec.Unsubscribe(id, topics)
+
+	timeup := time.NewTimer(time.Hour)
+	for {
+		select {
+		case <-timeup.C:
+			return nil
+		case <-res.Context().Done():
+			return res.Context().Err()
+		case ev := <-ch:
+			e := &rpcpb.Event{
+				Topic: rpcpb.Event_Topic(ev.Topic),
+				Data:  ev.Data,
+				Time:  ev.Time,
+			}
+			err := res.Send(&rpcpb.SubscribeResponse{Event: e})
+			if err != nil {
+				ilog.Errorf("stream send failed. err=%v", err)
+				return err
+			}
+		}
+	}
 }
 
 func (as *APIService) getStateDBVisitor(longestChain bool) *database.Visitor {

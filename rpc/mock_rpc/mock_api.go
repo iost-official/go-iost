@@ -151,6 +151,19 @@ func (mr *MockApiServiceServerMockRecorder) GetNodeInfo(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetNodeInfo), arg0, arg1)
 }
 
+// GetRAMInfo mocks base method
+func (m *MockApiServiceServer) GetRAMInfo(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.RAMInfoResponse, error) {
+	ret := m.ctrl.Call(m, "GetRAMInfo", arg0, arg1)
+	ret0, _ := ret[0].(*pb.RAMInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRAMInfo indicates an expected call of GetRAMInfo
+func (mr *MockApiServiceServerMockRecorder) GetRAMInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRAMInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetRAMInfo), arg0, arg1)
+}
+
 // GetTokenBalance mocks base method
 func (m *MockApiServiceServer) GetTokenBalance(arg0 context.Context, arg1 *pb.GetTokenBalanceRequest) (*pb.GetTokenBalanceResponse, error) {
 	ret := m.ctrl.Call(m, "GetTokenBalance", arg0, arg1)
@@ -201,4 +214,16 @@ func (m *MockApiServiceServer) SendTransaction(arg0 context.Context, arg1 *pb.Tr
 // SendTransaction indicates an expected call of SendTransaction
 func (mr *MockApiServiceServerMockRecorder) SendTransaction(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTransaction", reflect.TypeOf((*MockApiServiceServer)(nil).SendTransaction), arg0, arg1)
+}
+
+// Subscribe mocks base method
+func (m *MockApiServiceServer) Subscribe(arg0 *pb.SubscribeRequest, arg1 pb.ApiService_SubscribeServer) error {
+	ret := m.ctrl.Call(m, "Subscribe", arg0, arg1)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Subscribe indicates an expected call of Subscribe
+func (mr *MockApiServiceServerMockRecorder) Subscribe(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockApiServiceServer)(nil).Subscribe), arg0, arg1)
 }

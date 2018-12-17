@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/test/performance/call"
+	_ "github.com/iost-official/go-iost/test/performance/handles/gobang"
 	_ "github.com/iost-official/go-iost/test/performance/handles/luckyBet"
 	_ "github.com/iost-official/go-iost/test/performance/handles/transfer"
 )

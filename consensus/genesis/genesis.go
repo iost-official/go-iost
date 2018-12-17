@@ -142,7 +142,6 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "ram.iost", code.B64Encode())))
 	acts = append(acts, tx.NewAction("ram.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
-	acts = append(acts, tx.NewAction("ram.iost", "initContractName", fmt.Sprintf(`["%v"]`, "ram.iost")))
 	var initialTotal int64 = 128 * 1024 * 1024 * 1024        // 128GB at first
 	var increaseInterval int64 = 24 * 3600                   // increase every day
 	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365 // 64GB per year
@@ -162,7 +161,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 		acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, v.ID, gasPledgeAmount)))
 	}
 
-	trx := tx.NewTx(acts, nil, 100000000, 100, 0, 0)
+	trx := tx.NewTx(acts, nil, 1000000000, 100, 0, 0)
 	trx.Time = 0
 	trx, err = tx.SignTx(trx, "inituser", []*account.KeyPair{keyPair})
 	if err != nil {

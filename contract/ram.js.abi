@@ -9,12 +9,6 @@
             ]
         },
         {
-            "name": "initContractName",
-            "args": [
-                "string"
-            ]
-        },
-        {
             "name": "initAdmin",
             "args": [
                 "string"

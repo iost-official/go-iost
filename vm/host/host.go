@@ -52,7 +52,7 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 	h.Info = NewInfo(h)
 	h.Teller = NewTeller(h)
 	h.APIDelegate = NewAPI(h)
-	h.EventPoster = EventPoster{}
+	h.EventPoster = NewEventPoster(h)
 	h.DNS = NewDNS(h)
 	h.Authority = Authority{h: h}
 	h.GasManager = NewGasManager(h)

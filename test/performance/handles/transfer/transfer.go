@@ -80,7 +80,7 @@ func (t *transferHandler) Prepare() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGas(15000000)
+	err = sdk.PledgeForGasAndRAM(1500000, 0)
 	if err != nil {
 		return err
 	}
@@ -115,18 +115,9 @@ func (t *transferHandler) Run(i int) (interface{}, error) {
 		return nil, fmt.Errorf("sign tx error: %v", err)
 	}
 	var txHash string
-	txHash, err = sendTx(stx, i)
+	txHash, err = call.SendTx(stx, i)
 	if err != nil {
 		return nil, err
 	}
 	return txHash, nil
-}
-
-func sendTx(stx *tx.Tx, i int) (string, error) {
-	client := call.GetClient(i)
-	resp, err := client.SendTransaction(context.Background(), call.ToTxRequest(stx))
-	if err != nil {
-		return "", err
-	}
-	return resp.Hash, nil
 }

@@ -194,16 +194,12 @@ func (g *GasManager) refreshPGasWithValue(name string, value *common.Fixed) (con
 
 // PGas returns the current total gas of a user. It is dynamically calculated
 func (g *GasManager) PGas(name string) *common.Fixed {
-	t := g.h.ctx.Value("time").(int64)
-	if t <= 0 {
-		ilog.Fatalf("PGas invalid time %v", t)
-	}
-	return g.h.DB().PGasAtTime(name, t)
+	return g.h.DB().PGasAtTime(name, g.h.ctx.Value("time").(int64))
 }
 
-// AllGas ...
-func (g *GasManager) AllGas(name string) *common.Fixed {
-	return g.PGas(name).Add(g.h.DB().TGas(name))
+// TotalGas ...
+func (g *GasManager) TotalGas(name string) *common.Fixed {
+	return g.h.DB().TotalGasAtTime(name, g.h.ctx.Value("time").(int64))
 }
 
 // RefreshPGas update the gas status

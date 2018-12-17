@@ -5,6 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"os"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -13,10 +18,6 @@ import (
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/mitchellh/go-homedir"
 	"google.golang.org/grpc"
-	"os"
-	"strconv"
-	"strings"
-	"time"
 )
 
 // SDK ...
@@ -140,6 +141,21 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
+// GetContractStorage ...
+func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
+	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpcpb.NewApiServiceClient(conn)
+	value, err := client.GetContractStorage(context.Background(), r)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
@@ -213,7 +229,8 @@ func (s *SDK) getTxByHash(hash string) (*rpcpb.TransactionResponse, error) {
 	return client.GetTxByHash(context.Background(), &rpcpb.TxHashRequest{Hash: hash})
 }
 
-func (s *SDK) getTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
+// GetTxReceiptByTxHash ...
+func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return nil, err
@@ -245,7 +262,7 @@ func (s *SDK) checkTransaction(txHash string) bool {
 	// It may be better to to create a grpc client and reuse it. TODO later
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
-		txReceipt, err := s.getTxReceiptByTxHash(txHash)
+		txReceipt, err := s.GetTxReceiptByTxHash(txHash)
 		if err != nil {
 			fmt.Println("result not ready, please wait. Details: ", err)
 			continue
@@ -358,10 +375,13 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	return nil
 }
 
-// PledgeForGas ...
-func (s *SDK) PledgeForGas(gasPledged int64) error {
+// PledgeForGasAndRAM ...
+func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 	var acts []*rpcpb.Action
 	acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, s.accountName, gasPledged)))
+	if ram > 0 {
+		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, s.accountName, ram)))
+	}
 	trx, err := s.createTx(acts)
 	if err != nil {
 		return err
