@@ -8,6 +8,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
+	"fmt"
 )
 
 var token721ABIs *abiSet
@@ -183,7 +184,7 @@ var (
 			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, issuer.(string))
 			cost.AddAssign(cost0)
 
-			return []interface{}{}, cost, err
+			return []interface{}{tokenID}, cost, err
 		},
 	}
 
@@ -222,11 +223,11 @@ var (
 			tmp, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, tokenID)
 			cost.AddAssign(cost0)
 			if tmp == nil {
-				return nil, cost, host.ErrInvalidData
+				return nil, cost, fmt.Errorf("error tokenID not exists. %v %v", tokenName, tokenID)
 			}
 			owner := tmp.(string)
 			if owner != from {
-				return nil, cost, host.ErrInvalidData
+				return nil, cost, fmt.Errorf("error token owner isn't from. owner: %v, from: %v", owner, from)
 			}
 
 			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, from)

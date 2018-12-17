@@ -244,7 +244,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	arr, err := js.Array()
 	if err != nil {
 		ilog.Error(js.EncodePretty())
-		return nil, err
+		return nil, fmt.Errorf("error args should be array, %v, %v", err, js)
 	}
 
 	if len(arr) != len(abi.Args) {
@@ -255,31 +255,31 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 		case "string":
 			s, err := js.GetIndex(i).String()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse string arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		case "bool":
 			s, err := js.GetIndex(i).Bool()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse bool arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		case "number":
 			s, err := js.GetIndex(i).Int64()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse number arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		case "json":
 			s, err := js.GetIndex(i).Encode()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse json arg %v, %v", js.GetIndex(i), err)
 			}
 			// make sure s is a valid json
 			_, err = simplejson.NewJson(s)
 			if err != nil {
 				ilog.Error(string(s))
-				return nil, err
+				return nil, fmt.Errorf("error parse json arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		}
