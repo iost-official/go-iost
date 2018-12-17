@@ -112,7 +112,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("vote.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy vote_producer.iost
-	code, err = compile("vote_producer.iost", gConf.ContractPath, "vote_producer.js")
+	code, err = compile("vote_producer.iost", gConf.ContractPath, "vote.js")
 	if err != nil {
 		return nil, nil, err
 	}
