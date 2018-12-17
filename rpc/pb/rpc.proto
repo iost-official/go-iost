@@ -589,7 +589,7 @@ message GetToken721InfoRequest {
     // the token name
     string token = 1;
     // token id
-    string tokenID = 2;
+    string token_id = 2;
     // get data by longest chain's head block or last irreversible block
     bool by_longest_chain = 3;
 }

@@ -162,7 +162,7 @@
         ]
       }
     },
-    "/getContract/{id}": {
+    "/getContract/{id}/{by_longest_chain}": {
       "get": {
         "summary": "get contract",
         "operationId": "GetContract",
@@ -184,9 +184,9 @@
           },
           {
             "name": "by_longest_chain",
-            "description": "get data by longest chain's head block or last irreversible block.",
-            "in": "query",
-            "required": false,
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
             "type": "boolean",
             "format": "boolean"
           }
@@ -235,6 +235,129 @@
             }
           }
         },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getToken721Balance/{account}/{token}/{by_longest_chain}": {
+      "get": {
+        "summary": "get token721 balance",
+        "operationId": "GetToken721Balance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetToken721BalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account",
+            "description": "account name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "token",
+            "description": "the token name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getToken721Metadata/{token}/{token_id}/{by_longest_chain}": {
+      "get": {
+        "summary": "get token721 metadata",
+        "operationId": "GetToken721Metadata",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetToken721MetadataResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "description": "the token name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "token_id",
+            "description": "token id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getToken721Owner/{token}/{token_id}/{by_longest_chain}": {
+      "get": {
+        "summary": "get token721 owner",
+        "operationId": "GetToken721Owner",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetToken721OwnerResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "description": "the token name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "token_id",
+            "description": "token id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
         "tags": [
           "ApiService"
         ]
@@ -864,6 +987,44 @@
         }
       },
       "description": "The message defines get contract storage response."
+    },
+    "rpcpbGetToken721BalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "token balance"
+        },
+        "tokenIDs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "balance information"
+        }
+      },
+      "description": "The message defines get token721 balance response."
+    },
+    "rpcpbGetToken721MetadataResponse": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "string",
+          "title": "token metadata"
+        }
+      },
+      "description": "The message defines get token721 metadata response."
+    },
+    "rpcpbGetToken721OwnerResponse": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string",
+          "title": "token owner"
+        }
+      },
+      "description": "The message defines get token721 owner response."
     },
     "rpcpbGetTokenBalanceResponse": {
       "type": "object",
