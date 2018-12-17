@@ -185,8 +185,12 @@ func TestToken721_Transfer(t *testing.T) {
 
 			So(host.DB().Token721Balance("iost", "user0"), ShouldEqual, 1)
 			So(fmt.Sprintf("%v", host.DB().Token721IDList("iost", "user0")), ShouldEqual, fmt.Sprintf("%v", []string{"3"}))
-			So(host.DB().Token721Owner("iost", "3"), ShouldEqual, "user0")
-			So(host.DB().Token721Metadata("iost", "3"), ShouldEqual, "{\"hp\": 100}")
+			rs, err := host.DB().Token721Owner("iost", "3")
+			So(err, ShouldBeNil)
+			So(rs, ShouldEqual, "user0")
+			rs, err = host.DB().Token721Metadata("iost", "3")
+			So(err, ShouldBeNil)
+			So(rs, ShouldEqual, "{\"hp\": 100}")
 
 			tokenID, _, err := e.LoadAndCall(host, code, "tokenOfOwnerByIndex", "iost", "user0", int64(0))
 			So(err, ShouldBeNil)

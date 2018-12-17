@@ -251,6 +251,40 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 	}, nil
 }
 
+// GetToken721Balance returns balance of account of an specific token721 token.
+func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	// pack basic account information
+	acc, _ := host.ReadAuth(dbVisitor, req.GetAccount())
+	if acc == nil {
+		return nil, errors.New("account not found")
+	}
+	balance := dbVisitor.Token721Balance(req.GetToken(), req.GetAccount())
+	ids := dbVisitor.Token721IDList(req.GetToken(), req.GetAccount())
+	return &rpcpb.GetToken721BalanceResponse{
+		Balance:        balance,
+		TokenIDs:		ids,
+	}, nil
+}
+
+// GetToken721Metadata returns metadata of an specific token721 token.
+func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721MetadataResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	metadata, err := dbVisitor.Token721Metadata(req.GetToken(), req.GetTokenID())
+	return &rpcpb.GetToken721MetadataResponse{
+		Metadata:metadata,
+	}, err
+}
+
+// GetToken721Owner returns owner of an specific token721 token.
+func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721OwnerResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	owner, err := dbVisitor.Token721Owner(req.GetToken(), req.GetTokenID())
+	return &rpcpb.GetToken721OwnerResponse{
+		Owner:owner,
+	}, err
+}
+
 // GetContract returns contract information corresponding to the given contract ID.
 func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
 	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)

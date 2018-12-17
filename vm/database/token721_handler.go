@@ -2,6 +2,7 @@ package database
 
 import (
 	"strings"
+	"fmt"
 )
 
 // TokenContractName name of basic token contract
@@ -46,25 +47,25 @@ func (m *Token721Handler) Token721IDList(tokenName, acc string) []string {
 }
 
 // Token721Metadata get token balance of acc
-func (m *Token721Handler) Token721Metadata(tokenName, tokenID string) string {
-	owner := m.Token721Owner(tokenName, tokenID)
-	if len(owner) == 0 {
-		return ""
+func (m *Token721Handler) Token721Metadata(tokenName, tokenID string) (string, error) {
+	owner, err := m.Token721Owner(tokenName, tokenID)
+	if err != nil {
+		return "", err
 	}
 	currentRaw := m.db.Get(m.metadataKey(tokenName, owner, tokenID))
 	metadata, ok := Unmarshal(currentRaw).(string)
 	if !ok {
-		return ""
+		return "", nil
 	}
-	return metadata
+	return metadata, nil
 }
 
 // Token721Owner get token owner of tokenID
-func (m *Token721Handler) Token721Owner(tokenName, tokenID string) string {
+func (m *Token721Handler) Token721Owner(tokenName, tokenID string) (string, error) {
 	currentRaw := m.db.Get(m.ownerKey(tokenName, tokenID))
 	owner, ok := Unmarshal(currentRaw).(string)
-	if !ok {
-		return ""
+	if !ok || owner == "" {
+		return "", fmt.Errorf("token %v %v not found.", tokenName, tokenID)
 	}
-	return owner
+	return owner, nil
 }

@@ -61,6 +61,25 @@ service ApiService {
         };
     }
 
+    // get token721 balance
+    rpc GetToken721Balance (GetTokenBalanceRequest) returns (GetToken721BalanceResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Balance/{account}/{token}/{by_longest_chain}"
+        };
+    }
+    // get token721 metadata
+    rpc GetToken721Metadata (GetToken721InfoRequest) returns (GetToken721MetadataResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Metadata/{token}/{token_id}/{by_longest_chain}"
+        };
+    }
+    // get token721 owner
+    rpc GetToken721Owner (GetToken721InfoRequest) returns (GetToken721OwnerResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Owner/{token}/{token_id}/{by_longest_chain}"
+        };
+    }
+
     // get contract
     rpc GetContract (GetContractRequest) returns (Contract) {
         option (google.api.http) = {
@@ -557,3 +576,31 @@ message GetTokenBalanceRequest {
     bool by_longest_chain = 3;
 }
 
+// The message defines get token721 balance response.
+message GetToken721BalanceResponse {
+    // token balance
+    int64 balance = 1;
+    // balance information
+    repeated string tokenIDs = 2;
+}
+
+// The message defines get token721 info request.
+message GetToken721InfoRequest {
+    // the token name
+    string token = 1;
+    // token id
+    string tokenID = 2;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 3;
+}
+
+// The message defines get token721 metadata response.
+message GetToken721MetadataResponse {
+    // token metadata
+    string metadata = 1;
+}
+// The message defines get token721 owner response.
+message GetToken721OwnerResponse {
+    // token owner
+    string owner = 1;
+}
