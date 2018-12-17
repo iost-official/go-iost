@@ -12,15 +12,14 @@ import (
 type TxPool interface {
 	Start() error
 	Stop()
-	AddLinkedNode(linkedNode *blockcache.BlockCacheNode, headNode *blockcache.BlockCacheNode) error
-	AddTx(tx *tx.Tx) TAddTx
+	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
+	AddTx(tx *tx.Tx) error
 	DelTx(hash []byte) error
 	DelTxList(delList []*tx.Tx)
-	TxIterator() (*Iterator, *blockcache.BlockCacheNode)
-	PendingTxs(maxCnt int) (TxsList, *blockcache.BlockCacheNode, error)
-	ExistTxs(hash []byte, chainBlock *block.Block) (FRet, error)
-	CheckTxs(txs []*tx.Tx, chainBlock *block.Block) (*tx.Tx, error)
+	ExistTxs(hash []byte, chainBlock *block.Block) FRet
+	GetFromPending(hash []byte) (*tx.Tx, error)
+	GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error)
 	Lock()
 	Release()
-	TxTimeOut(tx *tx.Tx) bool
+	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
 }

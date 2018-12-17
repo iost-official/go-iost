@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+import "github.com/iost-official/go-iost/crypto/pb/signature.proto";
+import "github.com/iost-official/go-iost/core/tx/pb/tx.proto";
+package blockpb;
+
+enum BlockType{
+    NORMAL = 0;
+    ONLYHASH = 1;
+}
+
+message BlockHead {
+    int64 version = 1;
+    bytes parentHash = 2;
+    bytes txMerkleHash = 3;
+    bytes txReceiptMerkleHash = 4;
+    bytes info = 5;
+    int64 number = 6;
+    string witness = 7;
+    int64 time = 8;
+}
+
+message Block {
+    BlockHead head = 1;
+    sigpb.Signature sign = 2;
+    repeated txpb.Tx txs = 3;
+    repeated txpb.TxReceipt receipts = 4;
+    repeated bytes txHashes = 5;
+    repeated bytes receiptHashes = 6;
+    BlockType blockType = 7;
+}
+

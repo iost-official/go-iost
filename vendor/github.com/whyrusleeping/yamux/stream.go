@@ -6,6 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+
+	"github.com/libp2p/go-buffer-pool"
 )
 
 type streamState int
@@ -33,8 +35,8 @@ type Stream struct {
 	state     streamState
 	stateLock sync.Mutex
 
-	recvBuf  *bytes.Buffer
 	recvLock sync.Mutex
+	recvBuf  pool.Buffer
 
 	controlHdr     header
 	controlErr     chan error
@@ -47,8 +49,8 @@ type Stream struct {
 	recvNotifyCh chan struct{}
 	sendNotifyCh chan struct{}
 
-	readDeadline  time.Time
-	writeDeadline time.Time
+	readDeadline  atomic.Value // time.Time
+	writeDeadline atomic.Value // time.Time
 }
 
 // newStream is used to construct a new stream within
@@ -67,6 +69,8 @@ func newStream(session *Session, id uint32, state streamState) *Stream {
 		recvNotifyCh: make(chan struct{}, 1),
 		sendNotifyCh: make(chan struct{}, 1),
 	}
+	s.readDeadline.Store(time.Time{})
+	s.writeDeadline.Store(time.Time{})
 	return s
 }
 
@@ -90,7 +94,7 @@ START:
 		fallthrough
 	case streamClosed:
 		s.recvLock.Lock()
-		if s.recvBuf == nil || s.recvBuf.Len() == 0 {
+		if s.recvBuf.Len() == 0 {
 			s.recvLock.Unlock()
 			s.stateLock.Unlock()
 			return 0, io.EOF
@@ -104,7 +108,7 @@ START:
 
 	// If there is no data available, block
 	s.recvLock.Lock()
-	if s.recvBuf == nil || s.recvBuf.Len() == 0 {
+	if s.recvBuf.Len() == 0 {
 		s.recvLock.Unlock()
 		goto WAIT
 	}
@@ -120,8 +124,9 @@ START:
 WAIT:
 	var timeout <-chan time.Time
 	var timer *time.Timer
-	if !s.readDeadline.IsZero() {
-		delay := s.readDeadline.Sub(time.Now())
+	readDeadline := s.readDeadline.Load().(time.Time)
+	if !readDeadline.IsZero() {
+		delay := readDeadline.Sub(time.Now())
 		timer = time.NewTimer(delay)
 		timeout = timer.C
 	}
@@ -157,6 +162,14 @@ func (s *Stream) write(b []byte) (n int, err error) {
 	var flags uint16
 	var max uint32
 	var body io.Reader
+	var timeout <-chan time.Time
+
+	writeDeadline := s.writeDeadline.Load().(time.Time)
+	if !writeDeadline.IsZero() {
+		delay := writeDeadline.Sub(time.Now())
+		timeout = time.After(delay)
+	}
+
 START:
 	s.stateLock.Lock()
 	switch s.state {
@@ -186,7 +199,7 @@ START:
 
 	// Send the header
 	s.sendHdr.encode(typeData, flags, s.id, max)
-	if err := s.session.waitForSendErr(s.sendHdr, body, s.sendErr); err != nil {
+	if err = s.session.waitForSendErr(s.sendHdr, body, s.sendErr, timeout); err != nil {
 		return 0, err
 	}
 
@@ -197,18 +210,12 @@ START:
 	return int(max), err
 
 WAIT:
-	var timeout <-chan time.Time
-	if !s.writeDeadline.IsZero() {
-		delay := s.writeDeadline.Sub(time.Now())
-		timeout = time.After(delay)
-	}
 	select {
 	case <-s.sendNotifyCh:
 		goto START
 	case <-timeout:
 		return 0, ErrTimeout
 	}
-	return 0, nil
 }
 
 // sendFlags determines any flags that are appropriate
@@ -236,22 +243,25 @@ func (s *Stream) sendWindowUpdate() error {
 
 	// Determine the delta update
 	max := s.session.config.MaxStreamWindowSize
-	delta := max - atomic.LoadUint32(&s.recvWindow)
+	s.recvLock.Lock()
+	delta := (max - uint32(s.recvBuf.Len())) - s.recvWindow
 
 	// Determine the flags if any
 	flags := s.sendFlags()
 
 	// Check if we can omit the update
 	if delta < (max/2) && flags == 0 {
+		s.recvLock.Unlock()
 		return nil
 	}
 
 	// Update our window
-	atomic.AddUint32(&s.recvWindow, delta)
+	s.recvWindow += delta
+	s.recvLock.Unlock()
 
 	// Send the header
 	s.controlHdr.encode(typeWindowUpdate, flags, s.id, delta)
-	if err := s.session.waitForSendErr(s.controlHdr, nil, s.controlErr); err != nil {
+	if err := s.session.waitForSendErr(s.controlHdr, nil, s.controlErr, nil); err != nil {
 		return err
 	}
 	return nil
@@ -265,7 +275,7 @@ func (s *Stream) sendClose() error {
 	flags := s.sendFlags()
 	flags |= flagFIN
 	s.controlHdr.encode(typeWindowUpdate, flags, s.id, 0)
-	return s.session.waitForSendErr(s.controlHdr, nil, s.controlErr)
+	return s.session.waitForSendErr(s.controlHdr, nil, s.controlErr, nil)
 }
 
 // sendReset is used to send a RST
@@ -274,7 +284,7 @@ func (s *Stream) sendReset() error {
 	defer s.controlHdrLock.Unlock()
 
 	s.controlHdr.encode(typeWindowUpdate, flagRST, s.id, 0)
-	return s.session.waitForSendErr(s.controlHdr, nil, s.controlErr)
+	return s.session.waitForSendErr(s.controlHdr, nil, s.controlErr, nil)
 }
 
 // Reset resets the stream (forcibly closes the stream)
@@ -424,29 +434,27 @@ func (s *Stream) readData(hdr header, flags uint16, conn io.Reader) error {
 	if length == 0 {
 		return nil
 	}
-	if remain := atomic.LoadUint32(&s.recvWindow); length > remain {
-		s.session.logger.Printf("[ERR] yamux: receive window exceeded (stream: %d, remain: %d, recv: %d)", s.id, remain, length)
-		return ErrRecvWindowExceeded
-	}
 
 	// Wrap in a limited reader
 	conn = &io.LimitedReader{R: conn, N: int64(length)}
 
 	// Copy into buffer
 	s.recvLock.Lock()
-	if s.recvBuf == nil {
-		// Allocate the receive buffer just-in-time to fit the full data frame.
-		// This way we can read in the whole packet without further allocations.
-		s.recvBuf = bytes.NewBuffer(make([]byte, 0, length))
+
+	if length > s.recvWindow {
+		s.session.logger.Printf("[ERR] yamux: receive window exceeded (stream: %d, remain: %d, recv: %d)", s.id, s.recvWindow, length)
+		return ErrRecvWindowExceeded
 	}
-	if _, err := io.Copy(s.recvBuf, conn); err != nil {
+
+	s.recvBuf.Grow(int(length))
+	if _, err := io.Copy(&s.recvBuf, conn); err != nil {
 		s.session.logger.Printf("[ERR] yamux: Failed to read stream data: %v", err)
 		s.recvLock.Unlock()
 		return err
 	}
 
 	// Decrement the receive window
-	atomic.AddUint32(&s.recvWindow, ^uint32(length-1))
+	s.recvWindow -= length
 	s.recvLock.Unlock()
 
 	// Unblock any readers
@@ -467,23 +475,16 @@ func (s *Stream) SetDeadline(t time.Time) error {
 
 // SetReadDeadline sets the deadline for future Read calls.
 func (s *Stream) SetReadDeadline(t time.Time) error {
-	s.readDeadline = t
+	s.readDeadline.Store(t)
 	return nil
 }
 
 // SetWriteDeadline sets the deadline for future Write calls
 func (s *Stream) SetWriteDeadline(t time.Time) error {
-	s.writeDeadline = t
+	s.writeDeadline.Store(t)
 	return nil
 }
 
-// Shrink is used to compact the amount of buffers utilized
-// This is useful when using Yamux in a connection pool to reduce
-// the idle memory utilization.
+// Shrink is a no-op. The internal buffer automatically shrinks itself.
 func (s *Stream) Shrink() {
-	s.recvLock.Lock()
-	if s.recvBuf != nil && s.recvBuf.Len() == 0 {
-		s.recvBuf = nil
-	}
-	s.recvLock.Unlock()
 }

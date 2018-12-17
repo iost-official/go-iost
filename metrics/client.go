@@ -5,6 +5,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/push"
 )
@@ -39,9 +40,6 @@ func NewClient() *Client {
 
 // SetPusher sets the pusher with the given addr.
 func (c *Client) SetPusher(addr, username, password string) error {
-	if !isAddrAvailable(addr) {
-		return ErrPusherUnavailable
-	}
 	c.pusher = push.New(addr, "iost")
 	c.pusher.BasicAuth(username, password)
 	for _, colloctor := range c.collectorCache {
@@ -131,7 +129,10 @@ func (c *Client) startPush() {
 	for {
 		select {
 		case <-timer.C:
-			c.pusher.Push()
+			err := c.pusher.Push()
+			if err != nil {
+				ilog.Warnf("push metrics failed:%v", err)
+			}
 			timer.Reset(pushInterval)
 		case <-c.exitCh:
 			timer.Stop()

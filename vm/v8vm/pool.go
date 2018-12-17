@@ -8,7 +8,9 @@ import (
 type vmPoolType int
 
 const (
-	CompileVMPool vmPoolType = iota // vm pool with compiled startup data
+	// CompileVMPool maintains a pool of compile vm instance
+	CompileVMPool vmPoolType = iota
+	// RunVMPool maintains a pool of run vm instance
 	RunVMPool
 )
 
@@ -32,11 +34,15 @@ func NewVMPool(compilePoolSize, runPoolSize int) *VMPool {
 }
 
 func (vmp *VMPool) getCompileVM() *VM {
-	return <-vmp.compilePoolBuff
+	vm := <-vmp.compilePoolBuff
+	vm.refCount++
+	return vm
 }
 
 func (vmp *VMPool) getRunVM() *VM {
-	return <-vmp.runPoolBuff
+	vm := <-vmp.runPoolBuff
+	vm.refCount++
+	return vm
 }
 
 // Init init VMPool.
@@ -58,21 +64,31 @@ func (vmp *VMPool) SetJSPath(path string) {
 	vmp.jsPath = path
 }
 
+// Validate js code and abi.
+func (vmp *VMPool) Validate(contract *contract.Contract) error {
+	vm := vmp.getCompileVM()
+	defer func() {
+		go vm.recycle(CompileVMPool)
+	}()
+
+	return vm.validate(contract)
+}
+
 // Compile compile js code to binary.
 func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 	vm := vmp.getCompileVM()
 	defer func() {
-		go vm.recycle()
+		go vm.recycle(CompileVMPool)
 	}()
 
 	return vm.compile(contract)
 }
 
 // LoadAndCall load compiled Javascript code and run code with specified api and args
-func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost *contract.Cost, err error) {
+func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 	vm := vmp.getRunVM()
 	defer func() {
-		go vm.recycle()
+		go vm.recycle(RunVMPool)
 	}()
 
 	vm.setHost(host)

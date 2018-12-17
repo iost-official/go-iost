@@ -4,14 +4,15 @@ import (
 	"fmt"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
+	"flag"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/v8vm"
+	"runtime/pprof"
 )
 
 var vmPool *v8.VMPool
@@ -28,7 +29,7 @@ func MyInit(conName string, optional ...interface{}) (*host.Host, *contract.Cont
 	vi := database.NewVisitor(100, db)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(10000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
@@ -48,7 +49,18 @@ class Contract {
 	}
 
 	show() {
-		return "hello world";
+		return "Hello World!"
+	}
+
+	test() {
+		let a = "what the fuck is this!"
+		let b = new Array(10000)
+		let d = 1;
+		for (let i = 0; i < b.length; i++)
+		{
+			b[i] = new Array(1000)
+		}
+		return a
 	}
 }
 
@@ -64,13 +76,23 @@ module.exports = Contract;
 func main() {
 	host, code := MyInit("simple")
 	//vmPool.LoadAndCall(host, code, "show")
-
-	var times = 10000
-	if len(os.Args) >= 2 {
-		timesT, err := strconv.Atoi(os.Args[1])
-		times = timesT
+	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
+	var times = *flag.Int("times", 0, "write cpu profile to file")
+	flag.Parse()
+	// 如果命令行设置了 cpuprofile
+	if *cpuprofile != "" {
+		// 根据命令行指定文件名创建 profile 文件
+		f, err := os.Create(*cpuprofile)
 		if err != nil {
+			log.Fatal(err)
 		}
+		// 开启 CPU profiling
+		pprof.StartCPUProfile(f)
+		defer pprof.StopCPUProfile()
+	}
+
+	if times == 0 {
+		times = 10000
 	}
 
 	fmt.Println("runnig now...")
@@ -78,13 +100,15 @@ func main() {
 
 	var i = 0
 	for ; i < times; i++ {
+		expTime := time.Now().Add(time.Second * 10)
+		host.SetDeadline(expTime)
 		_, _, err := vmPool.LoadAndCall(host, code, "show")
 		if err != nil {
 			log.Fatal("error: ", err)
 		}
 	}
-	timeUsed := time.Since(a).Nanoseconds()
-	tps := int(1000 / (float64(timeUsed) / 1000000 / float64(times)))
+	tps := float64(times) / time.Since(a).Seconds()
 	fmt.Println("time used: ", time.Since(a))
-	fmt.Println("each: ", tps)
+	fmt.Println("tps: ", tps)
+
 }

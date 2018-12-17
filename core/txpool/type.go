@@ -1,6 +1,8 @@
 package txpool
 
 import (
+	"bytes"
+	"errors"
 	"sync"
 	"time"
 
@@ -11,15 +13,19 @@ import (
 	"github.com/iost-official/go-iost/metrics"
 )
 
+// Values.
 var (
 	clearInterval = 10 * time.Second
-	// Expiration is the transaction expiration
-	Expiration  = int64(90 * time.Second)
-	filterTime  = int64(90 * time.Second)
-	maxCacheTxs = 30000
+	filterTime    = int64(90 * time.Second)
+	maxCacheTxs   = 10000
 
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
+
+	ErrDupPendingTx = errors.New("tx exists in pending")
+	ErrDupChainTx   = errors.New("tx exists in chain")
+	ErrCacheFull    = errors.New("txpool is full")
+	ErrTxNotFound   = errors.New("tx not found")
 )
 
 // FRet find the return value of the tx
@@ -43,94 +49,90 @@ const (
 	noForkBCN
 )
 
-// TAddTx add the return value of the tx
-type TAddTx uint
-
-const (
-	// Success ...
-	Success TAddTx = iota
-	// TimeError ...
-	TimeError
-	// VerifyError ...
-	VerifyError
-	// DupError ...
-	DupError
-	// GasPriceError ...
-	GasPriceError
-	// CacheFullError ...
-	CacheFullError
-)
-
 type forkChain struct {
+	nrw     sync.RWMutex
 	NewHead *blockcache.BlockCacheNode
+	orw     sync.RWMutex
 	OldHead *blockcache.BlockCacheNode
+	frw     sync.RWMutex
 	ForkBCN *blockcache.BlockCacheNode
 }
 
-// TxsList tx sort
-type TxsList []*tx.Tx
-
-// Len ...
-func (s TxsList) Len() int { return len(s) }
-
-// Less ...
-func (s TxsList) Less(i, j int) bool {
-	if s[i].GasPrice > s[j].GasPrice {
-		return true
-	}
-
-	if s[i].GasPrice == s[j].GasPrice {
-		if s[i].Time < s[j].Time {
-			return true
-		}
-	}
-	return false
+// GetNewHead returns forkChain's new head.
+func (f *forkChain) GetNewHead() *blockcache.BlockCacheNode {
+	f.nrw.RLock()
+	defer f.nrw.RUnlock()
+	return f.NewHead
 }
 
-// Swap ...
-func (s TxsList) Swap(i, j int) { s[i], s[j] = s[j], s[i] }
+// SetNewHead sets forkChain's new head.
+func (f *forkChain) SetNewHead(n *blockcache.BlockCacheNode) {
+	f.nrw.Lock()
+	f.NewHead = n
+	f.nrw.Unlock()
+}
 
-// Push ...
-func (s *TxsList) Push(x *tx.Tx) {
-	*s = append(*s, x)
+// GetOldHead returns forkChain's old head.
+func (f *forkChain) GetOldHead() *blockcache.BlockCacheNode {
+	f.orw.RLock()
+	defer f.orw.RUnlock()
+	return f.OldHead
+}
+
+// SetOldHead sets forkChain's old head.
+func (f *forkChain) SetOldHead(n *blockcache.BlockCacheNode) {
+	f.orw.Lock()
+	f.OldHead = n
+	f.orw.Unlock()
+}
+
+// GetForkBCN returns forkChain's fork bcn.
+func (f *forkChain) GetForkBCN() *blockcache.BlockCacheNode {
+	f.frw.RLock()
+	defer f.frw.RUnlock()
+	return f.ForkBCN
+}
+
+func (f *forkChain) SetForkBCN(n *blockcache.BlockCacheNode) {
+	f.frw.Lock()
+	f.ForkBCN = n
+	f.frw.Unlock()
 }
 
 type blockTx struct {
-	txMap      *sync.Map
-	ParentHash []byte
-	cTime      int64
+	txMap        *sync.Map // map[string]*tx.Tx
+	txReceiptMap *sync.Map // map[string]*tx.TxReceipt
+	ParentHash   []byte
+	time         int64
 }
 
-func newBlockTx() *blockTx {
+func newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
-		txMap:      new(sync.Map),
-		ParentHash: make([]byte, 32),
+		txMap:        new(sync.Map),
+		txReceiptMap: new(sync.Map),
+		ParentHash:   blk.Head.ParentHash,
+		time:         blk.Head.Time,
 	}
-
+	for _, v := range blk.Txs {
+		b.txMap.Store(string(v.Hash()), v)
+	}
+	for _, v := range blk.Receipts {
+		b.txReceiptMap.Store(string(v.TxHash), v)
+	}
 	return b
 }
 
-func (b *blockTx) time() int64 {
-	return b.cTime
-}
-
-func (b *blockTx) setTime(t int64) {
-	b.cTime = t
-}
-
-func (b *blockTx) addBlock(ib *block.Block) {
-
-	for _, v := range ib.Txs {
-		b.txMap.Store(string(v.Hash()), v)
+func (b *blockTx) getTxAndReceipt(hash []byte) (*tx.Tx, *tx.TxReceipt) {
+	t, exist := b.txMap.Load(string(hash))
+	if !exist {
+		return nil, nil
 	}
-	b.ParentHash = ib.Head.ParentHash
-}
-
-func (b *blockTx) existTx(hash []byte) bool {
-
-	_, r := b.txMap.Load(string(hash))
-
-	return r
+	retTx := t.(*tx.Tx)
+	tr, exist := b.txReceiptMap.Load(string(hash))
+	if exist {
+		return retTx, tr.(*tx.TxReceipt)
+	}
+	return retTx, nil
 }
 
 // SortedTxMap is a red black tree of tx.
@@ -143,10 +145,13 @@ type SortedTxMap struct {
 func compareTx(a, b interface{}) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
-	if txa.GasPrice == txb.GasPrice {
+	if txa.GasRatio == txb.GasRatio && txb.Time == txa.Time {
+		return bytes.Compare(txa.Hash(), txb.Hash())
+	}
+	if txa.GasRatio == txb.GasRatio {
 		return int(txb.Time - txa.Time)
 	}
-	return int(txa.GasPrice - txb.GasPrice)
+	return int(txa.GasRatio - txb.GasRatio)
 }
 
 // NewSortedTxMap returns a new SortedTxMap instance.
@@ -188,8 +193,8 @@ func (st *SortedTxMap) Del(hash []byte) {
 
 // Size returns the size of SortedTxMap.
 func (st *SortedTxMap) Size() int {
-	st.rw.Lock()
-	defer st.rw.Unlock()
+	st.rw.RLock()
+	defer st.rw.RUnlock()
 
 	return len(st.txMap)
 }
@@ -221,8 +226,9 @@ type iterRes struct {
 
 func (iter *Iterator) getNext() {
 	iter.rw.RLock()
+	defer iter.rw.RUnlock()
+
 	ok := iter.iter.Prev()
-	iter.rw.RUnlock()
 	if !ok {
 		iter.res <- &iterRes{nil, false}
 		return

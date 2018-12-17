@@ -1,38 +1,86 @@
 language: go
-
 branches:
   only:
-    - master
-    - develop
-    - /^sprint.*$/
-
+  - master
+  - develop
+  - "/^sprint.*$/"
 matrix:
+  fast_finish: true
   include:
-    - os: osx
-      osx_image: xcode10
-      go: "1.11"
-      env:
-        - VERBOSE=true
-      before_install:
-        - brew install rocksdb
-        - brew install git-lfs
-        - git lfs install
-      before_script:
-        - git lfs pull
-      script:
-        - make build
-        - make test
-
-    - os: linux
-      dist: trusty
-      go: "1.11"
-      services:
-        - docker
-      before_install:
-        - docker pull iostio/iost-dev:2.0.0-go1.11
-        - git lfs install
-      before_script:
-        - git lfs pull
-      script:
-        - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:2.0.0-go1.11 make build
-        - docker run -it --rm -e VERBOSE=true -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:2.0.0-go1.11 make test
+  - os: osx
+    osx_image: xcode10
+    go: "1.11"
+    env: JOB=osx_test
+    before_install:
+    - brew install git-lfs
+    - git lfs install
+    - brew tap alecthomas/homebrew-tap
+    - brew install gometalinter
+    before_script:
+    - git lfs pull
+    script:
+    - make build
+    - make lint
+    - make test
+    after_success:
+    - bash <(curl -s https://codecov.io/bash)
+  - os: linux
+    dist: trusty
+    go: "1.11"
+    env: JOB=linux_test
+    services:
+    - docker
+    before_install:
+    - docker pull iostio/iost-dev:1.1.0
+    - git lfs install
+    before_script:
+    - git lfs pull
+    script:
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.1.0 make build
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.1.0 make lint
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:1.1.0 make test
+    after_success:
+    - bash <(curl -s https://codecov.io/bash)
+  - os: linux
+    dist: trusty
+    go: "1.11"
+    env: JOB=e2e_test
+    services:
+    - docker
+    before_install:
+    - docker pull iostio/iost-dev:1.1.0
+    - git lfs install
+    before_script:
+    - git lfs pull
+    script:
+    - make e2e_test
+  - os: linux
+    dist: trusty
+    go: "1.11"
+    if: type = cron
+    env: JOB=k8s_test
+    services:
+    - docker
+    before_install:
+    - docker pull iostio/iost-dev:1.1.0
+    - git lfs install
+    - pyenv global 3.6 && pip install awscli
+    - go get -u -v github.com/kubernetes-sigs/aws-iam-authenticator/cmd/aws-iam-authenticator
+    - sudo apt-get update && sudo apt-get install -y apt-transport-https
+    - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
+    - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+    - sudo apt-get update && sudo apt-get install -y kubectl
+    before_script:
+    - git lfs pull
+    script:
+    - pyenv global 3.6
+    - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+    - aws eks update-kubeconfig --region us-west-2 --name devnet
+    - make k8s_test
+notifications:
+  slack:
+    rooms:
+      - secure: "N1Z77CrXsokHH+L4ToF0uzUPL5/FmnyuMzjFWJrPkfP//mSOH+cy2xm8FPYl+LNxtEdHNzy8c+/ATxtBUXGPFjnAKZbnWAVhYlfaL8Pv7Fd/otzvFJoMPGAU1HqedF7PCv36vLgnOg3s1XVtuCmTvmq3IWGQlfeZ2V2QRz8eXiZ+ZibhyHolJq3UubGi/1TJcOKXb8rRqTDQ2Frn2cJP+h+FdqgIFeDi0Hbb7v8sULEs0NW3F5nqXTVG9QaTgTTypppwme2r2oCVvE8W4gpeHOqG0betPH4QNWRumiLQ+OCIoFoQVEIdNfFpF9wQccc7e0a1MAF4dBHrujit/8frcllO1AWl/cnVXt2ppgfKrHqVaLEUlKwaORIbizCRKpjbX4jyIXoWNAiJW9hET7sjWkEyhEfqDyey+QTZBh5laexAbuwsbdD293YSuDEZv3btYG9JJKBWIMINsyBgWFpwFD7e+KDAimujBxzE+YEFAGlTJyggS+ss0OzItMlC0QSJB2Z3jYz8k7K8mmrSIYAZUbVKVY9I/+gEVp1OFWe6+YwBLlGbjWEKX7r5i6089zmUjeUnLUKIiwQdV1O9sCyz+TgmnmmLQugcKLrNYpP788c+O5Ox+Ln/EG6I1OntKr45YcWOuS3mdmPVFRETnuHOxA/8mH9rxYnk3L1LLtchFxM="
+    on_success: change
+    on_failure: always
+    on_pull_requests: false

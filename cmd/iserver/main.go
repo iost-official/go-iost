@@ -15,30 +15,16 @@
 package main
 
 import (
-	"encoding/json"
-	"net/http"
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
 	"syscall"
 
-	"strconv"
-	"strings"
-
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus"
-	"github.com/iost-official/go-iost/consensus/synchronizer"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/iserver"
 	"github.com/iost-official/go-iost/metrics"
-	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/rpc"
-	"github.com/iost-official/go-iost/vm"
 	flag "github.com/spf13/pflag"
 )
 
@@ -59,23 +45,6 @@ func initMetrics(metricsConfig *common.MetricsConfig) error {
 	return metrics.Start()
 }
 
-func getLogLevel(l string) ilog.Level {
-	switch l {
-	case "debug":
-		return ilog.LevelDebug
-	case "info":
-		return ilog.LevelInfo
-	case "warn":
-		return ilog.LevelWarn
-	case "error":
-		return ilog.LevelError
-	case "fatal":
-		return ilog.LevelFatal
-	default:
-		return ilog.LevelDebug
-	}
-}
-
 func initLogger(logConfig *common.LogConfig) {
 	if logConfig == nil {
 		return
@@ -86,12 +55,12 @@ func initLogger(logConfig *common.LogConfig) {
 	}
 	if logConfig.ConsoleLog != nil && logConfig.ConsoleLog.Enable {
 		consoleWriter := ilog.NewConsoleWriter()
-		consoleWriter.SetLevel(getLogLevel(logConfig.ConsoleLog.Level))
+		consoleWriter.SetLevel(ilog.NewLevel(logConfig.ConsoleLog.Level))
 		logger.AddWriter(consoleWriter)
 	}
 	if logConfig.FileLog != nil && logConfig.FileLog.Enable {
 		fileWriter := ilog.NewFileWriter(logConfig.FileLog.Path)
-		fileWriter.SetLevel(getLogLevel(logConfig.FileLog.Level))
+		fileWriter.SetLevel(ilog.NewLevel(logConfig.FileLog.Level))
 		logger.AddWriter(fileWriter)
 	}
 	ilog.InitLogger(logger)
@@ -111,81 +80,21 @@ func main() {
 
 	initLogger(conf.Log)
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
-
-	vm.SetUp(conf.VM)
+	ilog.Infof("build time:%v", global.BuildTime)
+	ilog.Infof("git hash:%v", global.GitHash)
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {
 		ilog.Errorf("init metrics failed. err=%v", err)
 	}
 
-	bv, err := global.New(conf)
-	if err != nil {
-		ilog.Fatalf("create global failed. err=%v", err)
-	}
-	if conf.Genesis.CreateGenesis {
-		genesisBlock, _ := bv.BlockChain().GetBlockByNumber(0)
-		ilog.Infof("createGenesisHash: %v", common.Base58Encode(genesisBlock.HeadHash()))
-	}
-	var app common.App
-
-	p2pService, err := p2p.NewNetService(conf.P2P)
-	if err != nil {
-		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
-	}
-	app = append(app, p2pService)
-
-	accSecKey := conf.ACC.SecKey
-	acc, err := account.NewAccount(common.Base58Decode(accSecKey), getSignAlgo(conf.ACC.Algorithm))
-	if err != nil {
-		ilog.Fatalf("NewAccount failed, stop the program! err:%v", err)
-	}
-
-	blkCache, err := blockcache.NewBlockCache(bv)
-	if err != nil {
-		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
-	}
-
-	sync, err := synchronizer.NewSynchronizer(bv, blkCache, p2pService)
-	if err != nil {
-		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
-	}
-	app = append(app, sync)
-
-	var txp txpool.TxPool
-	txp, err = txpool.NewTxPoolImpl(bv, blkCache, p2pService)
-	if err != nil {
-		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
-	}
-	app = append(app, txp)
-
-	rpcServer := rpc.NewRPCServer(txp, blkCache, bv, p2pService)
-	app = append(app, rpcServer)
-
-	jsonRPCServer := rpc.NewJSONServer(bv)
-	app = append(app, jsonRPCServer)
-	consensus, err := consensus.Factory("pob", acc, bv, blkCache, txp, p2pService)
-	if err != nil {
-		ilog.Fatalf("consensus initialization failed, stop the program! err:%v", err)
-	}
-	app = append(app, consensus)
-
-	err = app.Start()
-	if err != nil {
-		ilog.Fatalf("start iserver failed. err=%v", err)
-	}
-
-	if conf.Debug != nil {
-		startDebugServer(conf.Debug.ListenAddr, blkCache, p2pService, bv.BlockChain())
-	}
+	iserver := iserver.New(conf)
+	iserver.Start()
 
 	waitExit()
 
-	app.Stop()
+	iserver.Stop()
 	ilog.Stop()
-	bv.BlockChain().Close()
-	bv.StateDB().Close()
-	bv.TxDB().Close()
 }
 
 func waitExit() {
@@ -193,46 +102,4 @@ func waitExit() {
 	signal.Notify(c, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 	i := <-c
 	ilog.Infof("IOST server received interrupt[%v], shutting down...", i)
-}
-
-func startDebugServer(addr string, blkCache blockcache.BlockCache, p2pService p2p.Service, blkChain block.Chain) {
-	http.HandleFunc("/debug/blockcache/", func(rw http.ResponseWriter, r *http.Request) {
-		rw.Write([]byte(blkCache.Draw()))
-	})
-	http.HandleFunc("/debug/blockchain/", func(rw http.ResponseWriter, r *http.Request) {
-		rg := r.URL.Query()
-		sp := strings.Split(rg["range"][0], "-")
-		start, err := strconv.Atoi(sp[0])
-		if err != nil {
-			return
-		}
-		end, err := strconv.Atoi(sp[1])
-		if err != nil {
-			return
-		}
-		rw.Write([]byte(blkChain.Draw(int64(start), int64(end))))
-	})
-	http.HandleFunc("/debug/p2p/neighbors/", func(rw http.ResponseWriter, r *http.Request) {
-		neighbors := p2pService.NeighborStat()
-		bytes, _ := json.MarshalIndent(neighbors, "", "    ")
-		rw.Write(bytes)
-	})
-
-	go func() {
-		err := http.ListenAndServe(addr, nil)
-		if err != nil {
-			ilog.Errorf("start debug server failed. err=%v", err)
-		}
-	}()
-}
-
-func getSignAlgo(algo string) crypto.Algorithm {
-	switch algo {
-	case "secp256k1":
-		return crypto.Secp256k1
-	case "ed25519":
-		return crypto.Ed25519
-	default:
-		return crypto.Ed25519
-	}
 }

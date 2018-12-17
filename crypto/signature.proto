@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package crypto;
-
-message SignatureRaw {
-    int32 algorithm = 1;
-    bytes sig = 2;
-    bytes pubKey = 3;
-}

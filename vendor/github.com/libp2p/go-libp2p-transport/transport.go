@@ -3,19 +3,35 @@ package transport
 import (
 	"context"
 	"net"
+	"time"
 
 	logging "github.com/ipfs/go-log"
+	inet "github.com/libp2p/go-libp2p-net"
+	peer "github.com/libp2p/go-libp2p-peer"
+	smux "github.com/libp2p/go-stream-muxer"
 	ma "github.com/multiformats/go-multiaddr"
-	manet "github.com/multiformats/go-multiaddr-net"
 )
+
+// DialTimeout is the maximum duration a Dial is allowed to take.
+// This includes the time between dialing the raw network connection,
+// protocol selection as well the handshake, if applicable.
+var DialTimeout = 60 * time.Second
+
+// AcceptTimeout is the maximum duration an Accept is allowed to take.
+// This includes the time between accepting the raw network connection,
+// protocol selection as well as the handshake, if applicable.
+var AcceptTimeout = 60 * time.Second
 
 var log = logging.Logger("transport")
 
 // Conn is an extension of the net.Conn interface that provides multiaddr
 // information, and an accessor for the transport used to create the conn
 type Conn interface {
-	manet.Conn
+	smux.Conn
+	inet.ConnSecurity
+	inet.ConnMultiaddrs
 
+	// Transport returns the transport to which this connection belongs.
 	Transport() Transport
 }
 
@@ -24,19 +40,31 @@ type Conn interface {
 // but many more can be implemented, sctp, audio signals, sneakernet, UDT, a
 // network of drones carrying usb flash drives, and so on.
 type Transport interface {
-	Dialer(laddr ma.Multiaddr, opts ...DialOpt) (Dialer, error)
-	Listen(laddr ma.Multiaddr) (Listener, error)
-	Matches(ma.Multiaddr) bool
-}
+	// Dial dials a remote peer. It should try to reuse local listener
+	// addresses if possible but it may choose not to.
+	Dial(ctx context.Context, raddr ma.Multiaddr, p peer.ID) (Conn, error)
 
-// Dialer is an abstraction that is normally filled by an object containing
-// information/options around how to perform the dial. An example would be
-// setting TCP dial timeout for all dials made, or setting the local address
-// that we dial out from.
-type Dialer interface {
-	Dial(raddr ma.Multiaddr) (Conn, error)
-	DialContext(ctx context.Context, raddr ma.Multiaddr) (Conn, error)
-	Matches(ma.Multiaddr) bool
+	// CanDial returns true if this transport knows how to dial the given
+	// multiaddr.
+	//
+	// Returning true does not guarantee that dialing this multiaddr will
+	// succeed. This function should *only* be used to preemptively filter
+	// out addresses that we can't dial.
+	CanDial(addr ma.Multiaddr) bool
+
+	// Listen listens on the passed multiaddr.
+	Listen(laddr ma.Multiaddr) (Listener, error)
+
+	// Protocol returns the set of protocols handled by this transport.
+	//
+	// See the Network interface for an explanation of how this is used.
+	Protocols() []int
+
+	// Proxy returns true if this is a proxy transport.
+	//
+	// See the Network interface for an explanation of how this is used.
+	// TODO: Make this a part of the go-multiaddr protocol instead?
+	Proxy() bool
 }
 
 // Listener is an interface closely resembling the net.Listener interface.  The
@@ -50,9 +78,20 @@ type Listener interface {
 	Multiaddr() ma.Multiaddr
 }
 
-// DialOpt is an option used for configuring dialer behaviour
-type DialOpt interface{}
+// Network is an inet.Network with methods for managing transports.
+type Network interface {
+	inet.Network
 
-type ReuseportOpt bool
-
-var ReusePorts ReuseportOpt = true
+	// AddTransport adds a transport to this Network.
+	//
+	// When dialing, this Network will iterate over the protocols in the
+	// remote multiaddr and pick the first protocol registered with a proxy
+	// transport, if any. Otherwise, it'll pick the transport registered to
+	// handle the last protocol in the multiaddr.
+	//
+	// When listening, this Network will iterate over the protocols in the
+	// local multiaddr and pick the *last* protocol registered with a proxy
+	// transport, if any. Otherwise, it'll pick the transport registered to
+	// handle the last protocol in the multiaddr.
+	AddTransport(t Transport) error
+}

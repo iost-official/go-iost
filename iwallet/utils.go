@@ -1,12 +1,11 @@
 package iwallet
 
 import (
+	"github.com/golang/protobuf/jsonpb"
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 	"io/ioutil"
 	"os"
-	"strings"
-
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto"
 )
 
 func saveBytes(buf []byte) string {
@@ -21,6 +20,7 @@ func loadBytes(s string) []byte {
 	return buf
 }
 
+/*
 func changeSuffix(filename, suffix string) string {
 	dist := filename[:strings.LastIndex(filename, ".")]
 	dist = dist + suffix
@@ -36,6 +36,7 @@ func saveTo(Dist string, file []byte) error {
 	defer f.Close()
 	return err
 }
+*/
 
 func readFile(src string) ([]byte, error) {
 	fi, err := os.Open(src)
@@ -50,13 +51,13 @@ func readFile(src string) ([]byte, error) {
 	return fd, nil
 }
 
-func getSignAlgo(algo string) crypto.Algorithm {
-	switch algo {
-	case "secp256k1":
-		return crypto.Secp256k1
-	case "ed25519":
-		return crypto.Ed25519
-	default:
-		return crypto.Ed25519
+func marshalTextString(pb proto.Message) string {
+	m := jsonpb.Marshaler{}
+	m.EmitDefaults = true
+	m.Indent = "    "
+	r, err := m.MarshalToString(pb)
+	if err != nil {
+		return "json.Marshal error: " + err.Error()
 	}
+	return r
 }

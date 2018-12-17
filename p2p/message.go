@@ -51,7 +51,7 @@ const (
 	SyncBlockRequest
 	SyncBlockResponse
 	SyncHeight
-	PublishTxRequest
+	PublishTx
 
 	UrgentMessage = 1
 	NormalMessage = 2
@@ -65,6 +65,8 @@ func (m MessageType) String() string {
 		return "RoutingTableResponse"
 	case NewBlock:
 		return "NewBlock"
+	case NewBlockRequest:
+		return "NewBlockRequest"
 	case SyncBlockHashRequest:
 		return "SyncBlockHashRequest"
 	case SyncBlockHashResponse:
@@ -75,12 +77,10 @@ func (m MessageType) String() string {
 		return "SyncBlockResponse"
 	case SyncHeight:
 		return "SyncHeight"
-	case PublishTxRequest:
-		return "PublishTxRequest"
+	case PublishTx:
+		return "PublishTx"
 	case NewBlockHash:
 		return "NewBlockHash"
-	case NewBlockRequest:
-		return "NewBlockRequest"
 	default:
 		return "unknown_type:" + strconv.Itoa(int(m))
 	}
@@ -153,14 +153,14 @@ func (m *p2pMessage) data() ([]byte, error) {
 }
 
 func (m *p2pMessage) needDedup() bool {
-	return m.messageType() == NewBlock ||
-		m.messageType() == PublishTxRequest || m.messageType() == NewBlockHash
+	return m.messageType() == PublishTx || m.messageType() == NewBlockHash
 }
 
 func newP2PMessage(chainID uint32, messageType MessageType, version uint16, reserved uint32, data []byte) *p2pMessage {
 	if reserved&reservedCompressionFlag > 0 {
 		data = snappy.Encode(nil, data)
 	}
+	// content := make([]byte, dataBegin+len(data))
 	content := make([]byte, dataBegin+len(data))
 	binary.BigEndian.PutUint32(content, chainID)
 	binary.BigEndian.PutUint16(content[messageTypeBegin:messageTypeEnd], uint16(messageType))

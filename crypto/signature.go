@@ -5,6 +5,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/crypto/pb"
 )
 
 // Signature is the signature of some message
@@ -35,14 +36,26 @@ func (s *Signature) SetPubkey(pubkey []byte) {
 	s.Pubkey = pubkey
 }
 
-// Encode will marshal the signature by protobuf
-func (s *Signature) Encode() ([]byte, error) {
-	sr := &SignatureRaw{
+// ToPb convert Signature to proto buf data structure.
+func (s *Signature) ToPb() *sigpb.Signature {
+	return &sigpb.Signature{
 		Algorithm: int32(s.Algorithm),
 		Sig:       s.Sig,
 		PubKey:    s.Pubkey,
 	}
-	b, err := proto.Marshal(sr)
+}
+
+// FromPb convert Signature from proto buf data structure.
+func (s *Signature) FromPb(sr *sigpb.Signature) *Signature {
+	s.Algorithm = Algorithm(sr.Algorithm)
+	s.Sig = sr.Sig
+	s.Pubkey = sr.PubKey
+	return s
+}
+
+// Encode will marshal the signature by protobuf
+func (s *Signature) Encode() ([]byte, error) {
+	b, err := proto.Marshal(s.ToPb())
 	if err != nil {
 		return nil, errors.New("fail to encode signature")
 	}
@@ -51,19 +64,25 @@ func (s *Signature) Encode() ([]byte, error) {
 
 // Decode will unmarshal the signature by protobuf
 func (s *Signature) Decode(b []byte) error {
-	sr := &SignatureRaw{}
+	sr := &sigpb.Signature{}
 	err := proto.Unmarshal(b, sr)
 	if err != nil {
 		return err
 	}
-	s.Algorithm = Algorithm(sr.Algorithm)
-	s.Sig = sr.Sig
-	s.Pubkey = sr.PubKey
-	return err
+	s.FromPb(sr)
+	return nil
+}
+
+// ToBytes converts Signature to a specific byte slice.
+func (s *Signature) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteByte(byte(s.Algorithm), true)
+	sn.WriteBytes(s.Sig, true)
+	sn.WriteBytes(s.Pubkey, true)
+	return sn.Bytes()
 }
 
 // Hash returns the hash code of signature
 func (s *Signature) Hash() []byte {
-	b, _ := s.Encode()
-	return common.Sha3(b)
+	return common.Sha3(s.ToBytes())
 }

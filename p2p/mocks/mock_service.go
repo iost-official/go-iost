@@ -35,13 +35,13 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // Broadcast mocks base method
-func (m *MockService) Broadcast(arg0 []byte, arg1 p2p.MessageType, arg2 p2p.MessagePriority) {
-	m.ctrl.Call(m, "Broadcast", arg0, arg1, arg2)
+func (m *MockService) Broadcast(arg0 []byte, arg1 p2p.MessageType, arg2 p2p.MessagePriority, arg3 bool) {
+	m.ctrl.Call(m, "Broadcast", arg0, arg1, arg2, arg3)
 }
 
 // Broadcast indicates an expected call of Broadcast
-func (mr *MockServiceMockRecorder) Broadcast(arg0, arg1, arg2 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcast", reflect.TypeOf((*MockService)(nil).Broadcast), arg0, arg1, arg2)
+func (mr *MockServiceMockRecorder) Broadcast(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcast", reflect.TypeOf((*MockService)(nil).Broadcast), arg0, arg1, arg2, arg3)
 }
 
 // ConnectBPs mocks base method
@@ -69,6 +69,18 @@ func (mr *MockServiceMockRecorder) Deregister(arg0 interface{}, arg1 ...interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Deregister", reflect.TypeOf((*MockService)(nil).Deregister), varargs...)
 }
 
+// GetAllNeighbors mocks base method
+func (m *MockService) GetAllNeighbors() []*p2p.Peer {
+	ret := m.ctrl.Call(m, "GetAllNeighbors")
+	ret0, _ := ret[0].([]*p2p.Peer)
+	return ret0
+}
+
+// GetAllNeighbors indicates an expected call of GetAllNeighbors
+func (mr *MockServiceMockRecorder) GetAllNeighbors() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAllNeighbors", reflect.TypeOf((*MockService)(nil).GetAllNeighbors))
+}
+
 // ID mocks base method
 func (m *MockService) ID() string {
 	ret := m.ctrl.Call(m, "ID")
@@ -81,16 +93,14 @@ func (mr *MockServiceMockRecorder) ID() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ID", reflect.TypeOf((*MockService)(nil).ID))
 }
 
-// NeighborStat mocks base method
-func (m *MockService) NeighborStat() map[string]interface{} {
-	ret := m.ctrl.Call(m, "NeighborStat")
-	ret0, _ := ret[0].(map[string]interface{})
-	return ret0
+// PutPeerToBlack mocks base method
+func (m *MockService) PutPeerToBlack(arg0 string) {
+	m.ctrl.Call(m, "PutPeerToBlack", arg0)
 }
 
-// NeighborStat indicates an expected call of NeighborStat
-func (mr *MockServiceMockRecorder) NeighborStat() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NeighborStat", reflect.TypeOf((*MockService)(nil).NeighborStat))
+// PutPeerToBlack indicates an expected call of PutPeerToBlack
+func (mr *MockServiceMockRecorder) PutPeerToBlack(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PutPeerToBlack", reflect.TypeOf((*MockService)(nil).PutPeerToBlack), arg0)
 }
 
 // Register mocks base method
@@ -111,13 +121,13 @@ func (mr *MockServiceMockRecorder) Register(arg0 interface{}, arg1 ...interface{
 }
 
 // SendToPeer mocks base method
-func (m *MockService) SendToPeer(arg0 go_libp2p_peer.ID, arg1 []byte, arg2 p2p.MessageType, arg3 p2p.MessagePriority) {
-	m.ctrl.Call(m, "SendToPeer", arg0, arg1, arg2, arg3)
+func (m *MockService) SendToPeer(arg0 go_libp2p_peer.ID, arg1 []byte, arg2 p2p.MessageType, arg3 p2p.MessagePriority, arg4 bool) {
+	m.ctrl.Call(m, "SendToPeer", arg0, arg1, arg2, arg3, arg4)
 }
 
 // SendToPeer indicates an expected call of SendToPeer
-func (mr *MockServiceMockRecorder) SendToPeer(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendToPeer", reflect.TypeOf((*MockService)(nil).SendToPeer), arg0, arg1, arg2, arg3)
+func (mr *MockServiceMockRecorder) SendToPeer(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendToPeer", reflect.TypeOf((*MockService)(nil).SendToPeer), arg0, arg1, arg2, arg3, arg4)
 }
 
 // Start mocks base method

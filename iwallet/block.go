@@ -15,15 +15,15 @@
 package iwallet
 
 import (
-	"context"
-	"encoding/json"
 	"fmt"
 	"strconv"
 
-	"github.com/iost-official/go-iost/rpc"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
+
+var method string
+var complete bool
 
 // blockCmd represents the block command
 var blockCmd = &cobra.Command{
@@ -31,69 +31,41 @@ var blockCmd = &cobra.Command{
 	Short: "print block info, default find by block number",
 	Long:  `print block info, default find by block number`,
 	Args:  cobra.ExactArgs(1),
-	Run: func(cmd *cobra.Command, args []string) {
-		var i int64
-		var err error
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
 			fmt.Println(`Error: block num or hash not given`)
 			return
 		}
-
-		switch method {
-		case "num":
-			i, err = strconv.ParseInt(args[0], 10, 64)
+		var blockInfo *rpcpb.BlockResponse
+		var num int64
+		if method == "num" {
+			num, err = strconv.ParseInt(args[0], 10, 64)
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Printf("invalid block number %v\n", err)
 				return
 			}
-		case "hash":
-		default:
-			fmt.Println("please enter correct method arg")
-			return
-		}
-
-		conn, err := grpc.Dial(server, grpc.WithInsecure())
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer conn.Close()
-		client := rpc.NewApisClient(conn)
-		var blockInfo *rpc.BlockInfo
-		if method == "num" {
-			blockInfo, err = client.GetBlockByNum(context.Background(), &rpc.BlockByNumReq{Num: i, Complete: complete})
+			blockInfo, err = sdk.getGetBlockByNum(num, complete)
 			if err != nil {
-				fmt.Println(err.Error())
+				fmt.Printf(err.Error())
+				return
+			}
+		} else if method == "hash" {
+			blockInfo, err = sdk.getGetBlockByHash(args[0], complete)
+			if err != nil {
+				fmt.Printf(err.Error())
 				return
 			}
 		} else {
-			blockInfo, err = client.GetBlockByHash(context.Background(), &rpc.BlockByHashReq{Hash: args[0], Complete: complete})
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
+			fmt.Println("please enter correct method arg")
+			return
 		}
-		blockInfoJson, err := json.Marshal(blockInfo)
-		fmt.Println(string(blockInfoJson))
+		fmt.Println(marshalTextString(blockInfo))
+		return nil
 	},
 }
 
-var method string
-var complete bool
-
 func init() {
 	rootCmd.AddCommand(blockCmd)
-
 	blockCmd.Flags().StringVarP(&method, "method", "m", "num", "find by block num or hash")
 	blockCmd.Flags().BoolVarP(&complete, "complete", "c", false, "indicate whether to fetch all the trxs in the block or not")
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// blockCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// blockCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

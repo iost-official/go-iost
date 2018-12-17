@@ -4,12 +4,13 @@
 #include "storage.h"
 #include "blockchain.h"
 #include "instruction.h"
+#include "crypto.h"
 
 #include "vm.js.h"
 #include "compile_vm.js.h"
+#include "environment.js.h"
 #include <assert.h>
 #include <cstring>
-#include <string>
 #include <fstream>
 #include <sstream>
 #include <thread>
@@ -21,11 +22,38 @@
 #include <chrono>
 
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
+char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
 char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
-const char *copyString(const std::string &str) {
-    char *cstr = new char[str.length() + 1];
-    std::strcpy(cstr, str.c_str());
-    return cstr;
+
+const char *preloadBlockCode = R"(
+// load Block
+const blockInfo = JSON.parse(blockchain.blockInfo());
+const block = {
+   number: blockInfo.number,
+   parentHash: blockInfo.parent_hash,
+   witness: blockInfo.witness,
+   time: blockInfo.time
+};
+
+
+// load tx
+const txInfo = JSON.parse(blockchain.txInfo());
+const tx = {
+   time: txInfo.time,
+   hash: txInfo.hash,
+   expiration: txInfo.expiration,
+   gasLimit: txInfo.gas_limit,
+   gasRatio: txInfo.gas_ratio,
+   authList: txInfo.auth_list,
+   publisher: txInfo.publisher
+};)";
+
+const int sandboxMemLimit = 100000000; // 100mb
+void copyString(CStr &cstr, const std::string &str) {
+    cstr.size = str.length();
+    cstr.data = new char[cstr.size + 1];
+    std::memcpy(cstr.data, str.c_str(), cstr.size + 1);
+    return;
 }
 
 std::string v8ValueToStdString(Local<Value> val) {
@@ -87,6 +115,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
+    InitCrypto(isolate, global);
 
     global->Set(
               String::NewFromUtf8(isolate, "_native_log", NewStringType::kNormal)
@@ -105,8 +134,10 @@ const char* ToCString(const v8::String::Utf8Value& value) {
   return *value ? *value : "<string conversion failed>";
 }
 
-SandboxPtr newSandbox(IsolatePtr ptr) {
-    Isolate *isolate = static_cast<Isolate*>(ptr);
+SandboxPtr newSandbox(IsolateWrapperPtr ptr) {
+    IsolateWrapper *isolateWrapper = static_cast<IsolateWrapper*>(ptr);
+    Isolate *isolate = static_cast<Isolate*>(isolateWrapper->isolate);
+    ArrayBufferAllocator* allocator= static_cast<ArrayBufferAllocator*>(isolateWrapper->allocator);
 
     Locker locker(isolate);
     Isolate::Scope isolate_scope(isolate);
@@ -114,6 +145,7 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
 
     Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
+    context->AllowCodeGenerationFromStrings(false);
 
     Sandbox *sbx = new Sandbox();
     Local<Object> global = context->Global();
@@ -121,9 +153,11 @@ SandboxPtr newSandbox(IsolatePtr ptr) {
 
     sbx->context.Reset(isolate, context);
     sbx->isolate = isolate;
+    sbx->allocator = allocator;
     sbx->jsPath = strdup("v8/libjs");
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
+    sbx->memLimit = sandboxMemLimit;
 
     return static_cast<SandboxPtr>(sbx);
 }
@@ -154,11 +188,16 @@ void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit) {
     sbx->gasLimit = gasLimit;
 }
 
+void setSandboxMemLimit(SandboxPtr ptr, size_t memLimit) {
+    Sandbox *sbx = static_cast<Sandbox*>(ptr);
+    sbx->memLimit = memLimit;
+}
+
 std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryCatch) {
     std::stringstream ss;
     ss << "Uncaught exception: ";
 
-    if (tryCatch.Message().IsEmpty()) {
+    if (tryCatch.Exception()->IsNull() || tryCatch.Message().IsEmpty()) {
         return ss.str();
     }
 
@@ -220,32 +259,44 @@ void loadVM(SandboxPtr ptr, int vmType) {
     Local<Context> context = sbx->context.Get(isolate);
     Context::Scope context_scope(context);
 
-    std::string vmPath;
-    Local<String> source;
-
     if (vmType == 0) {
         return;
     }
-//    if (vmType == 0) {
-//        vmPath += "compile_vm.js";
-//        source = String::NewFromUtf8(isolate, compileVmJsLib, NewStringType::kNormal).ToLocalChecked();
-//    } else {
-    vmPath += "vm.js";
-    source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
-//    }
 
-    Local<String> fileName = String::NewFromUtf8(isolate, vmPath.c_str(), NewStringType::kNormal).ToLocalChecked();
+    // load vm
+    const char *vmPath = "vm.js";
+    Local<String> source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, vmPath, NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
-
     if (!script.IsEmpty()) {
         Local<Value> result = script->Run();
-        if (!result.IsEmpty()) {
-//            std::cout << "result vm: " << v8ValueToStdString(result) << std::endl;
-        }
+    }
+
+    // load environment
+    const char *envPath = "env.js";
+    source = String::NewFromUtf8(isolate, envJsLib, NewStringType::kNormal).ToLocalChecked();
+
+    fileName = String::NewFromUtf8(isolate, envPath, NewStringType::kNormal).ToLocalChecked();
+    script = Script::Compile(source, fileName);
+    if (!script.IsEmpty()) {
+        Local<Value> result = script->Run();
     }
 }
 
-void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
+size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
+    // V8 memory usage
+    HeapStatistics v8_heap_stats;
+    isolate->GetHeapStatistics(&v8_heap_stats);
+
+    /*fields[1] = v8_heap_stats.total_heap_size();
+    fields[2] = v8_heap_stats.used_heap_size();
+    fields[3] = v8_heap_stats.external_memory();*/
+    //int a = v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
+    //std::cout << "MemoryUsed: " << a - startMemHHH  << std::endl;
+    return v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
+}
+
+void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::string &error, bool &isJson, bool &isDone) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -256,11 +307,26 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
     Context::Scope context_scope(context);
 
     TryCatch tryCatch(isolate);
-    tryCatch.SetVerbose(true);
+    tryCatch.SetVerbose(false);
 
-    Local<String> source = String::NewFromUtf8(isolate, code, NewStringType::kNormal).ToLocalChecked();
-    Local<String> fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
+    // preload block info.
+    Local<String> source = String::NewFromUtf8(isolate, preloadBlockCode, NewStringType::kNormal).ToLocalChecked();
+    Local<String> fileName = String::NewFromUtf8(isolate, "_preload_block.js", NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
+
+    Local<Value> ret = script->Run();
+    if (tryCatch.HasCaught()) {
+        std::string exception = reportException(isolate, context, tryCatch);
+        error = exception;
+        return;
+    }
+
+    // reset gas count
+    sbx->gasUsed = 0;
+
+    source = String::NewFromUtf8(isolate, code.data, NewStringType::kNormal, code.size).ToLocalChecked();
+    fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();
+    script = Script::Compile(source, fileName);
 
     if (script.IsEmpty()) {
         std::string exception = reportException(isolate, context, tryCatch);
@@ -268,13 +334,9 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         return;
     }
 
-    Local<Value> ret = script->Run();
+    ret = script->Run();
 
-    if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
-        return;
-    }
-
-    if (ret.IsEmpty()) {
+    if (tryCatch.HasCaught()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
@@ -282,7 +344,8 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
 
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
-        result = *retV8Str;
+        result.assign(*retV8Str, retV8Str.length());
+        isDone = true;
         return;
     }
 
@@ -292,13 +355,20 @@ void RealExecute(SandboxPtr ptr, const char *code, std::string &result, std::str
         if (!jsonRet.IsEmpty()) {
             isJson = true;
             String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());
-            result = *jsonRetStr;
+            result.assign(*jsonRetStr, jsonRetStr.length());
+        }
+
+        if (tryCatch.HasCaught()) {
+            std::string exception = reportException(isolate, context, tryCatch);
+            error = exception;
+            return;
         }
     }
     isDone = true;
+    return;
 }
 
-ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime) {
+ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime) {
     Sandbox *sbx = static_cast<Sandbox*>(ptr);
     Isolate *isolate = sbx->isolate;
 
@@ -306,42 +376,55 @@ ValueTuple Execution(SandboxPtr ptr, const char *code, long long int expireTime)
     std::string error;
     bool isJson = false;
     bool isDone = false;
+    //std::cout << "StartMemBeforeChange: " << startMemHHH << std::endl;
+    //startMemHHH = MemoryUsage(isolate, sbx->allocator);
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
-    exec.detach();
 
-    ValueTuple res = { nullptr, nullptr, isJson, 0 };
+    ValueTuple res = { {nullptr, 0}, {nullptr, 0}, isJson, 0 };
 //    auto startTime = std::chrono::steady_clock::now();
     while(true) {
         if (error.length() > 0) {
-            res.Err = copyString(error);
+            copyString(res.Err, error);
             res.gasUsed = sbx->gasUsed;
             break;
         }
         if (result.length() > 0) {
-            res.Value = copyString(result);
+            copyString(res.Value, result);
             res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
             break;
         }
         if (isDone) {
+            copyString(res.Value, result);
+            res.isJson = isJson;
             res.gasUsed = sbx->gasUsed;
             break;
         }
+  /*      if (MemoryUsage(isolate, sbx->allocator) > sbx->memLimit) {
+            isolate->TerminateExecution();
+            copyString(res.Err, "out of memory");
+            res.gasUsed = sbx->gasLimit;
+            break;
+        } */
         if (sbx->gasUsed > sbx->gasLimit) {
             isolate->TerminateExecution();
-            res.Err = strdup("out of gas");
+            copyString(res.Err, "out of gas");
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::steady_clock::now().time_since_epoch()).count();
+        auto now = std::chrono::duration_cast<std::chrono::nanoseconds>(std::chrono::system_clock::now().time_since_epoch()).count();
         //auto execTime = std::chrono::duration_cast<std::chrono::milliseconds>(now - startTime).count();
         if (now > expireTime) {
             isolate->TerminateExecution();
-            res.Err = strdup(("execution killed, current time : " + std::to_string(now) + " , expireTime: " + std::to_string(expireTime)).c_str());
+            copyString(res.Err, ("execution killed, current time : " + std::to_string(now) + " , expireTime: " + std::to_string(expireTime)).c_str());
             res.gasUsed = sbx->gasUsed;
             break;
         }
-        usleep(10);
+        //usleep(10);
+        std::this_thread::sleep_for(std::chrono::microseconds(10));
     }
+    if (exec.joinable())
+        exec.join();
+    //std::cout << " MemoryUsed: " << MemoryUsage(isolate, sbx->allocator) - startMemHHH << std::endl;
     return res;
 }

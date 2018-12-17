@@ -3,7 +3,11 @@ package contract
 import (
 	"encoding/base64"
 
-	"github.com/gogo/protobuf/proto"
+	"encoding/json"
+	"io/ioutil"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 )
 
 //go:generate protoc --gofast_out=. contract.proto
@@ -20,12 +24,18 @@ const (
 	ContractPay
 )
 
+// FixedAmount the limit amount of token used by contract
+type FixedAmount struct {
+	Token string
+	Val   *common.Fixed
+}
+
 //type ContractInfo struct {
 //	Name     string
 //	Lang     string
 //	Version  VersionCode
 //	Payment  PaymentCode
-//	Limit    *Cost
+//	Limit    Cost
 //	GasPrice uint64
 //}
 //
@@ -88,4 +98,39 @@ func (c *Contract) ABI(name string) *ABI {
 		}
 	}
 	return nil
+}
+
+// Compile read src and abi file, generate contract structure
+func Compile(id, src, abi string) (*Contract, error) {
+	bs, err := ioutil.ReadFile(src)
+	if err != nil {
+		return nil, err
+	}
+	code := string(bs)
+
+	as, err := ioutil.ReadFile(abi)
+	if err != nil {
+		return nil, err
+	}
+
+	var info Info
+	err = json.Unmarshal(as, &info)
+	if err != nil {
+		return nil, err
+	}
+	c := Contract{
+		ID:   id,
+		Info: &info,
+		Code: code,
+	}
+
+	return &c, nil
+}
+
+// ToBytes converts Amount to bytes.
+func (a *Amount) ToBytes() []byte {
+	sn := common.NewSimpleNotation()
+	sn.WriteString(a.Token, true)
+	sn.WriteString(a.Val, true)
+	return sn.Bytes()
 }

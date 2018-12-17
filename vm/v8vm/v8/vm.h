@@ -9,7 +9,7 @@
 extern "C" {
 #endif // __cplusplus
 
-typedef void* IsolatePtr;
+typedef void* IsolateWrapperPtr;
 typedef void* SandboxPtr;
 
 typedef struct {
@@ -18,67 +18,87 @@ typedef struct {
 } CustomStartupData;
 
 typedef struct {
-    const char *Value;
-    const char *Err;
+    char *data;
+    int size;
+} CStr;
+
+typedef struct {
+    void* isolate;
+    void* allocator;
+} IsolateWrapper;
+
+typedef struct {
+    CStr Value;
+    CStr Err;
     bool isJson;
     size_t gasUsed;
 } ValueTuple;
 
 extern void init();
-extern IsolatePtr newIsolate(CustomStartupData);
-extern void releaseIsolate(IsolatePtr ptr);
+extern IsolateWrapperPtr newIsolate(CustomStartupData);
+extern void releaseIsolate(IsolateWrapperPtr ptr);
 
-extern SandboxPtr newSandbox(IsolatePtr ptr);
+// free memory
+extern void lowMemoryNotification(IsolateWrapperPtr ptr);
+
+extern SandboxPtr newSandbox(IsolateWrapperPtr ptr);
 extern void loadVM(SandboxPtr ptr, int vmType);
 extern void releaseSandbox(SandboxPtr ptr);
 
-extern ValueTuple Execute(SandboxPtr ptr, const char *code, long long int expireTime);
+extern ValueTuple Execute(SandboxPtr ptr, const CStr code, long long int expireTime);
 extern void setJSPath(SandboxPtr ptr, const char *jsPath);
 extern void setSandboxGasLimit(SandboxPtr ptr, size_t gasLimit);
+extern void setSandboxMemLimit(SandboxPtr ptr, size_t memLimit);
 
 // log
-typedef int (*consoleFunc)(SandboxPtr, const char *, const char *);
+typedef char* (*consoleFunc)(SandboxPtr, const CStr, const CStr);
 void InitGoConsole(consoleFunc);
 
 // require
-typedef char *(*requireFunc)(SandboxPtr, const char *);
+typedef char *(*requireFunc)(SandboxPtr, const CStr);
 void InitGoRequire(requireFunc);
 
 // blockchain
-typedef int (*transferFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
-typedef int (*withdrawFunc)(SandboxPtr, const char *, const char *, size_t *);
-typedef int (*depositFunc)(SandboxPtr, const char *, const char *, size_t *);
-typedef int (*topUpFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
-typedef int (*countermandFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
-typedef int (*blockInfoFunc)(SandboxPtr, char **, size_t *);
-typedef int (*txInfoFunc)(SandboxPtr, char **, size_t *);
-typedef int (*callFunc)(SandboxPtr, const char *, const char *, const char *, char **, size_t *);
-typedef int (*requireAuthFunc)(SandboxPtr, const char *, const bool *, size_t *);
-typedef int (*grantServiFunc)(SandboxPtr, const char *, const char *, size_t *);
-void InitGoBlockchain(transferFunc, withdrawFunc,
-                        depositFunc, topUpFunc, countermandFunc,
-                        blockInfoFunc, txInfoFunc, callFunc, callFunc, requireAuthFunc, grantServiFunc);
+typedef char* (*blockInfoFunc)(SandboxPtr, CStr *, size_t *);
+typedef char* (*txInfoFunc)(SandboxPtr, CStr *, size_t *);
+typedef char* (*contextInfoFunc)(SandboxPtr, CStr *, size_t *);
+typedef char* (*callFunc)(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+typedef char* (*callWithAuthFunc)(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+typedef char* (*requireAuthFunc)(SandboxPtr, const CStr, const CStr, bool *, size_t *);
+typedef char* (*receiptFunc)(SandboxPtr, const CStr, size_t *);
+typedef char* (*eventFunc)(SandboxPtr, const CStr, size_t *);
+
+void InitGoBlockchain(blockInfoFunc, txInfoFunc, contextInfoFunc, callFunc, callWithAuthFunc, requireAuthFunc, receiptFunc, eventFunc);
 
 // storage
-typedef int (*putFunc)(SandboxPtr, const char *, const char *, size_t *);
-typedef char *(*getFunc)(SandboxPtr, const char *, size_t *);
-typedef int (*delFunc)(SandboxPtr, const char *, size_t *);
-typedef int (*mapPutFunc)(SandboxPtr, const char *, const char *, const char *, size_t *);
-typedef bool (*mapHasFunc)(SandboxPtr, const char *, const char *, size_t *);
-typedef char *(*mapGetFunc)(SandboxPtr, const char *, const char *, size_t *);
-typedef int (*mapDelFunc)(SandboxPtr, const char *, const char *, size_t *);
-typedef char *(*mapKeysFunc)(SandboxPtr, const char *, size_t *);
-typedef char *(*globalGetFunc)(SandboxPtr, const char *, const char *, size_t *);
-void InitGoStorage(putFunc, getFunc, delFunc,
-    mapPutFunc, mapHasFunc, mapGetFunc, mapDelFunc, mapKeysFunc,
-    globalGetFunc);
+typedef char* (*putFunc)(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
+typedef char* (*hasFunc)(SandboxPtr, const CStr, const CStr, bool *, size_t *);
+typedef char* (*getFunc)(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
+typedef char* (*delFunc)(SandboxPtr, const CStr, const CStr, size_t *);
+typedef char* (*mapPutFunc)(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
+typedef char* (*mapHasFunc)(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
+typedef char* (*mapGetFunc)(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+typedef char* (*mapDelFunc)(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
+typedef char* (*mapKeysFunc)(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
+typedef char* (*mapLenFunc)(SandboxPtr, const CStr, const CStr, size_t *, size_t *);
+typedef char* (*globalHasFunc)(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
+typedef char* (*globalGetFunc)(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+typedef char* (*globalMapHasFunc)(SandboxPtr, const CStr, const CStr, const CStr, const CStr, bool *, size_t *);
+typedef char* (*globalMapGetFunc)(SandboxPtr, const CStr, const CStr, const CStr, const CStr, CStr *, size_t *);
+typedef char* (*globalMapKeysFunc)(SandboxPtr, const CStr,  const CStr, const CStr, CStr *, size_t *);
+typedef char* (*globalMapLenFunc)(SandboxPtr, const CStr, const CStr, const CStr, size_t *, size_t *);
 
-extern void goMapLen(SandboxPtr, const char *, size_t *);
-extern void goGlobalMapGet(SandboxPtr, const char *, const char *, const char *, size_t *);
-extern void goGlobalMapKeys(SandboxPtr, const char *, const char *, size_t *);
-extern void goGlobalMapLen(SandboxPtr, const char *, const char *, size_t *);
+void InitGoStorage(putFunc, hasFunc, getFunc, delFunc,
+    mapPutFunc, mapHasFunc, mapGetFunc, mapDelFunc, mapKeysFunc, mapLenFunc,
+    globalHasFunc, globalGetFunc, globalMapHasFunc, globalMapGetFunc, globalMapKeysFunc, globalMapLenFunc);
 
-extern int compile(SandboxPtr, const char *code, const char **compiledCode);
+// crypto
+typedef CStr (*sha3Func)(SandboxPtr, const CStr, size_t *);
+
+void InitGoCrypto(sha3Func);
+
+extern int compile(SandboxPtr, const CStr code, CStr *compiledCode, CStr *errMsg);
+extern int validate(SandboxPtr ptr, const CStr code, const CStr abi, CStr *result, CStr *errMsg);
 extern CustomStartupData createStartupData();
 extern CustomStartupData createCompileStartupData();
 

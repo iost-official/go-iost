@@ -1,8 +1,6 @@
 package consensus
 
 import (
-	"sync"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/consensus/pob"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -11,31 +9,27 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 )
 
-// Consensus handles the different consensus strategy.
+// Type is the type of consensus
+type Type uint8
+
+// The types of consensus
+const (
+	_ Type = iota
+	Pob
+)
+
+// Consensus is a consensus server.
 type Consensus interface {
 	Start() error
 	Stop()
 }
 
-var cons Consensus
-
-var once sync.Once
-
-// Factory handles the different consensus strategy.
-func Factory(consensusType string, account *account.Account, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service) (Consensus, error) {
-	if consensusType == "" {
-		consensusType = "pob"
+// New returns the different consensus strategy.
+func New(cType Type, account *account.KeyPair, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service) Consensus {
+	switch cType {
+	case Pob:
+		return pob.New(account, baseVariable, blkcache, txPool, service)
+	default:
+		return pob.New(account, baseVariable, blkcache, txPool, service)
 	}
-
-	var err error
-
-	switch consensusType {
-	case "pob":
-		if cons == nil {
-			once.Do(func() {
-				cons = pob.NewPoB(account, baseVariable, blkcache, txPool, service)
-			})
-		}
-	}
-	return cons, err
 }

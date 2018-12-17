@@ -7,10 +7,12 @@ import (
 	"sync"
 	"time"
 
+	logging "github.com/ipfs/go-log"
 	addrutil "github.com/libp2p/go-addr-util"
-	iconn "github.com/libp2p/go-libp2p-interface-conn"
 	lgbl "github.com/libp2p/go-libp2p-loggables"
+	inet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
+	transport "github.com/libp2p/go-libp2p-transport"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
@@ -35,18 +37,24 @@ var (
 
 	// ErrDialToSelf is returned if we attempt to dial our own peer
 	ErrDialToSelf = errors.New("dial to self attempted")
+
+	// ErrNoTransport is returned when we don't know a transport for the
+	// given multiaddr.
+	ErrNoTransport = errors.New("no transport for protocol")
 )
 
-// dialAttempts governs how many times a goroutine will try to dial a given peer.
+// DialAttempts governs how many times a goroutine will try to dial a given peer.
 // Note: this is down to one, as we have _too many dials_ atm. To add back in,
 // add loop back in Dial(.)
-const dialAttempts = 1
+const DialAttempts = 1
 
-// number of concurrent outbound dials over transports that consume file descriptors
-const concurrentFdDials = 160
+// ConcurrentFdDials is the number of concurrent outbound dials over transports
+// that consume file descriptors
+const ConcurrentFdDials = 160
 
-// number of concurrent outbound dials to make per peer
-const defaultPerPeerRateLimit = 8
+// DefaultPerPeerRateLimit is the number of concurrent outbound dials to make
+// per peer
+const DefaultPerPeerRateLimit = 8
 
 // dialbackoff is a struct used to avoid over-dialing the same, dead peers.
 // Whenever we totally time out on a peer (all three attempts), we add them
@@ -74,7 +82,12 @@ const defaultPerPeerRateLimit = 8
 //  }
 //
 
-type dialbackoff struct {
+// DialBackoff is a type for tracking peer dial backoffs.
+//
+// * It's safe to use it's zero value.
+// * It's thread-safe.
+// * It's *not* safe to move this type after using.
+type DialBackoff struct {
 	entries map[peer.ID]*backoffPeer
 	lock    sync.RWMutex
 }
@@ -84,7 +97,7 @@ type backoffPeer struct {
 	until time.Time
 }
 
-func (db *dialbackoff) init() {
+func (db *DialBackoff) init() {
 	if db.entries == nil {
 		db.entries = make(map[peer.ID]*backoffPeer)
 	}
@@ -92,7 +105,7 @@ func (db *dialbackoff) init() {
 
 // Backoff returns whether the client should backoff from dialing
 // peer p
-func (db *dialbackoff) Backoff(p peer.ID) (backoff bool) {
+func (db *DialBackoff) Backoff(p peer.ID) (backoff bool) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 	db.init()
@@ -104,13 +117,26 @@ func (db *dialbackoff) Backoff(p peer.ID) (backoff bool) {
 	return false
 }
 
-const baseBackoffTime = time.Second * 5
-const maxBackoffTime = time.Minute * 5
+// BackoffBase is the base amount of time to backoff (default: 5s).
+var BackoffBase = time.Second * 5
+
+// BackoffCoef is the backoff coefficient (default: 1s).
+var BackoffCoef = time.Second
+
+// BackoffMax is the maximum backoff time (default: 5m).
+var BackoffMax = time.Minute * 5
 
 // AddBackoff lets other nodes know that we've entered backoff with
 // peer p, so dialers should not wait unnecessarily. We still will
 // attempt to dial with one goroutine, in case we get through.
-func (db *dialbackoff) AddBackoff(p peer.ID) {
+//
+// Backoff is not exponential, it's quadratic and computed according to the
+// following formula:
+//
+//     BackoffBase + BakoffCoef * PriorBackoffs^2
+//
+// Where PriorBackoffs is the number of previous backoffs.
+func (db *DialBackoff) AddBackoff(p peer.ID) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 	db.init()
@@ -118,61 +144,59 @@ func (db *dialbackoff) AddBackoff(p peer.ID) {
 	if !ok {
 		db.entries[p] = &backoffPeer{
 			tries: 1,
-			until: time.Now().Add(baseBackoffTime),
+			until: time.Now().Add(BackoffBase),
 		}
 		return
 	}
 
-	expTimeAdd := time.Second * time.Duration(bp.tries*bp.tries)
-	if expTimeAdd > maxBackoffTime {
-		expTimeAdd = maxBackoffTime
+	backoffTime := BackoffBase + BackoffCoef*time.Duration(bp.tries*bp.tries)
+	if backoffTime > BackoffMax {
+		backoffTime = BackoffMax
 	}
-	bp.until = time.Now().Add(baseBackoffTime + expTimeAdd)
+	bp.until = time.Now().Add(backoffTime)
 	bp.tries++
 }
 
 // Clear removes a backoff record. Clients should call this after a
 // successful Dial.
-func (db *dialbackoff) Clear(p peer.ID) {
+func (db *DialBackoff) Clear(p peer.ID) {
 	db.lock.Lock()
 	defer db.lock.Unlock()
 	db.init()
 	delete(db.entries, p)
 }
 
-// Dial connects to a peer.
+// DialPeer connects to a peer.
 //
 // The idea is that the client of Swarm does not need to know what network
 // the connection will happen over. Swarm can use whichever it choses.
 // This allows us to use various transport protocols, do NAT traversal/relay,
-// etc. to achive connection.
-func (s *Swarm) Dial(ctx context.Context, p peer.ID) (*Conn, error) {
+// etc. to achieve connection.
+func (s *Swarm) DialPeer(ctx context.Context, p peer.ID) (inet.Conn, error) {
+	return s.dialPeer(ctx, p)
+}
+
+// internal dial method that returns an unwrapped conn
+//
+// It is gated by the swarm's dial synchronization systems: dialsync and
+// dialbackoff.
+func (s *Swarm) dialPeer(ctx context.Context, p peer.ID) (*Conn, error) {
+	log.Debugf("[%s] swarm dialing peer [%s]", s.local, p)
 	var logdial = lgbl.Dial("swarm", s.LocalPeer(), p, nil, nil)
+	err := p.Validate()
+	if err != nil {
+		return nil, err
+	}
+
 	if p == s.local {
 		log.Event(ctx, "swarmDialSelf", logdial)
 		return nil, ErrDialToSelf
 	}
 
-	return s.gatedDialAttempt(ctx, p)
-}
-
-func (s *Swarm) bestConnectionToPeer(p peer.ID) *Conn {
-	cs := s.ConnectionsToPeer(p)
-	for _, conn := range cs {
-		if conn != nil { // dump out the first one we find. (TODO pick better)
-			return conn
-		}
-	}
-	return nil
-}
-
-// gatedDialAttempt is an attempt to dial a node. It is gated by the swarm's
-// dial synchronization systems: dialsync and dialbackoff.
-func (s *Swarm) gatedDialAttempt(ctx context.Context, p peer.ID) (*Conn, error) {
 	defer log.EventBegin(ctx, "swarmDialAttemptSync", p).Done()
 
 	// check if we already have an open connection first
-	conn := s.bestConnectionToPeer(p)
+	conn := s.bestConnToPeer(p)
 	if conn != nil {
 		return conn, nil
 	}
@@ -183,14 +207,29 @@ func (s *Swarm) gatedDialAttempt(ctx context.Context, p peer.ID) (*Conn, error) 
 		return nil, ErrDialBackoff
 	}
 
-	return s.dsync.DialLock(ctx, p)
+	// apply the DialPeer timeout
+	ctx, cancel := context.WithTimeout(ctx, inet.GetDialPeerTimeout(ctx))
+	defer cancel()
+
+	conn, err = s.dsync.DialLock(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+
+	log.Debugf("network for %s finished dialing %s", s.local, p)
+	return conn, err
 }
 
 // doDial is an ugly shim method to retain all the logging and backoff logic
 // of the old dialsync code
 func (s *Swarm) doDial(ctx context.Context, p peer.ID) (*Conn, error) {
-	ctx, cancel := context.WithTimeout(ctx, s.dialT)
-	defer cancel()
+	// Short circuit.
+	// By the time we take the dial lock, we may already *have* a connection
+	// to the peer.
+	c := s.bestConnToPeer(p)
+	if c != nil {
+		return c, nil
+	}
 
 	logdial := lgbl.Dial("swarm", s.LocalPeer(), p, nil, nil)
 
@@ -200,15 +239,29 @@ func (s *Swarm) doDial(ctx context.Context, p peer.ID) (*Conn, error) {
 
 	conn, err := s.dial(ctx, p)
 	if err != nil {
+		conn = s.bestConnToPeer(p)
+		if conn != nil {
+			// Hm? What error?
+			// Could have canceled the dial because we received a
+			// connection or some other random reason.
+			// Just ignore the error and return the connection.
+			log.Debugf("ignoring dial error because we have a connection: %s", err)
+			return conn, nil
+		}
 		if err != context.Canceled {
 			log.Event(ctx, "swarmDialBackoffAdd", logdial)
 			s.backf.AddBackoff(p) // let others know to backoff
 		}
 
-		// ok, we failed. try again. (if loop is done, our error is output)
+		// ok, we failed.
 		return nil, fmt.Errorf("dial attempt failed: %s", err)
 	}
 	return conn, nil
+}
+
+func (s *Swarm) canDial(addr ma.Multiaddr) bool {
+	t := s.TransportForDialing(addr)
+	return t != nil && t.CanDial(addr)
 }
 
 // dial is the actual swarm's dial logic, gated by Dial.
@@ -228,49 +281,33 @@ func (s *Swarm) dial(ctx context.Context, p peer.ID) (*Conn, error) {
 		log.Debug("Dial not given PrivateKey, so WILL NOT SECURE conn.")
 	}
 
-	ila, _ := s.InterfaceListenAddresses()
-	subtractFilter := addrutil.SubtractFilter(append(ila, s.peers.Addrs(s.local)...)...)
-
-	// get live channel of addresses for peer, filtered by the given filters
-	/*
-		remoteAddrChan := s.peers.AddrsChan(ctx, p,
-			addrutil.AddrUsableFilter,
-			subtractFilter,
-			s.Filters.AddrBlocked)
-	*/
-
 	//////
 	/*
-		This code is temporary, the peerstore can currently provide
+		This slice-to-chan code is temporary, the peerstore can currently provide
 		a channel as an interface for receiving addresses, but more thought
 		needs to be put into the execution. For now, this allows us to use
 		the improved rate limiter, while maintaining the outward behaviour
 		that we previously had (halting a dial when we run out of addrs)
 	*/
-	paddrs := s.peers.Addrs(p)
-	goodAddrs := addrutil.FilterAddrs(paddrs,
-		addrutil.AddrUsableFunc,
-		subtractFilter,
-		addrutil.FilterNeg(s.Filters.AddrBlocked),
-	)
-	remoteAddrChan := make(chan ma.Multiaddr, len(goodAddrs))
+	goodAddrs := s.filterKnownUndialables(s.peers.Addrs(p))
+	goodAddrsChan := make(chan ma.Multiaddr, len(goodAddrs))
 	for _, a := range goodAddrs {
-		remoteAddrChan <- a
+		goodAddrsChan <- a
 	}
-	close(remoteAddrChan)
+	close(goodAddrsChan)
 	/////////
 
 	// try to get a connection to any addr
-	connC, err := s.dialAddrs(ctx, p, remoteAddrChan)
+	connC, err := s.dialAddrs(ctx, p, goodAddrsChan)
 	if err != nil {
 		logdial["error"] = err.Error()
 		return nil, err
 	}
-	logdial["netconn"] = lgbl.NetConn(connC)
-
-	// ok try to setup the new connection.
-	defer log.EventBegin(ctx, "swarmDialDoSetup", logdial, lgbl.NetConn(connC)).Done()
-	swarmC, err := dialConnSetup(ctx, s, connC)
+	logdial["conn"] = logging.Metadata{
+		"localAddr":  connC.LocalMultiaddr(),
+		"remoteAddr": connC.RemoteMultiaddr(),
+	}
+	swarmC, err := s.addConn(connC, inet.DirOutbound)
 	if err != nil {
 		logdial["error"] = err.Error()
 		connC.Close() // close the connection. didn't work out :(
@@ -281,7 +318,32 @@ func (s *Swarm) dial(ctx context.Context, p peer.ID) (*Conn, error) {
 	return swarmC, nil
 }
 
-func (s *Swarm) dialAddrs(ctx context.Context, p peer.ID, remoteAddrs <-chan ma.Multiaddr) (iconn.Conn, error) {
+// filterKnownUndialables takes a list of multiaddrs, and removes those
+// that we definitely don't want to dial: addresses configured to be blocked,
+// IPv6 link-local addresses, addresses without a dial-capable transport,
+// and addresses that we know to be our own.
+// This is an optimization to avoid wasting time on dials that we know are going to fail.
+func (s *Swarm) filterKnownUndialables(addrs []ma.Multiaddr) []ma.Multiaddr {
+	lisAddrs, _ := s.InterfaceListenAddresses()
+	var ourAddrs []ma.Multiaddr
+	for _, addr := range lisAddrs {
+		protos := addr.Protocols()
+		// we're only sure about filtering out /ip4 and /ip6 addresses, so far
+		if len(protos) == 2 && (protos[0].Code == ma.P_IP4 || protos[0].Code == ma.P_IP6) {
+			ourAddrs = append(ourAddrs, addr)
+		}
+	}
+
+	return addrutil.FilterAddrs(addrs,
+		addrutil.SubtractFilter(ourAddrs...),
+		s.canDial,
+		// TODO: Consider allowing link-local addresses
+		addrutil.AddrOverNonLocalIP,
+		addrutil.FilterNeg(s.Filters.AddrBlocked),
+	)
+}
+
+func (s *Swarm) dialAddrs(ctx context.Context, p peer.ID, remoteAddrs <-chan ma.Multiaddr) (transport.Conn, error) {
 	log.Debugf("%s swarm dialing %s", s.local, p)
 
 	ctx, cancel := context.WithCancel(ctx)
@@ -343,64 +405,31 @@ func (s *Swarm) limitedDial(ctx context.Context, p peer.ID, a ma.Multiaddr, resp
 	})
 }
 
-func (s *Swarm) dialAddr(ctx context.Context, p peer.ID, addr ma.Multiaddr) (iconn.Conn, error) {
+func (s *Swarm) dialAddr(ctx context.Context, p peer.ID, addr ma.Multiaddr) (transport.Conn, error) {
+	// Just to double check. Costs nothing.
+	if s.local == p {
+		return nil, ErrDialToSelf
+	}
 	log.Debugf("%s swarm dialing %s %s", s.local, p, addr)
 
-	connC, err := s.dialer.Dial(ctx, addr, p)
+	tpt := s.TransportForDialing(addr)
+	if tpt == nil {
+		return nil, ErrNoTransport
+	}
+
+	connC, err := tpt.Dial(ctx, addr, p)
 	if err != nil {
 		return nil, fmt.Errorf("%s --> %s dial attempt failed: %s", s.local, p, err)
 	}
 
-	// if the connection is not to whom we thought it would be...
-	remotep := connC.RemotePeer()
-	if remotep != p {
+	// Trust the transport? Yeah... right.
+	if connC.RemotePeer() != p {
 		connC.Close()
-		_, err := connC.Read(nil) // should return any potential errors (ex: from secio)
-		return nil, fmt.Errorf("misdial to %s through %s (got %s): %s", p, addr, remotep, err)
-	}
-
-	// if the connection is to ourselves...
-	// this can happen TONS when Loopback addrs are advertized.
-	// (this should be caught by two checks above, but let's just make sure.)
-	if remotep == s.local {
-		connC.Close()
-		return nil, fmt.Errorf("misdial to %s through %s (got self)", p, addr)
+		err = fmt.Errorf("BUG in transport %T: tried to dial %s, dialed %s", p, connC.RemotePeer(), tpt)
+		log.Error(err)
+		return nil, err
 	}
 
 	// success! we got one!
 	return connC, nil
-}
-
-var ConnSetupTimeout = time.Minute * 5
-
-// dialConnSetup is the setup logic for a connection from the dial side.
-func dialConnSetup(ctx context.Context, s *Swarm, connC iconn.Conn) (*Conn, error) {
-	deadline, ok := ctx.Deadline()
-	if !ok {
-		deadline = time.Now().Add(ConnSetupTimeout)
-	}
-
-	if err := connC.SetDeadline(deadline); err != nil {
-		return nil, err
-	}
-
-	// Add conn to ps swarm. Setup will be done by the connection handler.
-	psC, err := s.swarm.AddConn(connC)
-	if err != nil {
-		// connC is closed by caller if we fail.
-		return nil, fmt.Errorf("failed to add conn to ps.Swarm: %s", err)
-	}
-
-	swarmC, err := wrapConn(psC)
-	if err != nil {
-		psC.Close() // we need to make sure psC is Closed.
-		return nil, err
-	}
-
-	if err := connC.SetDeadline(time.Time{}); err != nil {
-		log.Error("failed to reset connection deadline after setup: ", err)
-		return nil, err
-	}
-
-	return swarmC, err
 }

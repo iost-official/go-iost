@@ -60,6 +60,18 @@ func (mr *MockBaseVariableMockRecorder) Config() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockBaseVariable)(nil).Config))
 }
 
+// Continuous mocks base method
+func (m *MockBaseVariable) Continuous() int {
+	ret := m.ctrl.Call(m, "Continuous")
+	ret0, _ := ret[0].(int)
+	return ret0
+}
+
+// Continuous indicates an expected call of Continuous
+func (mr *MockBaseVariableMockRecorder) Continuous() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continuous", reflect.TypeOf((*MockBaseVariable)(nil).Continuous))
+}
+
 // Mode mocks base method
 func (m *MockBaseVariable) Mode() global.TMode {
 	ret := m.ctrl.Call(m, "Mode")
@@ -92,28 +104,4 @@ func (m *MockBaseVariable) StateDB() db.MVCCDB {
 // StateDB indicates an expected call of StateDB
 func (mr *MockBaseVariableMockRecorder) StateDB() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "StateDB", reflect.TypeOf((*MockBaseVariable)(nil).StateDB))
-}
-
-// TxDB mocks base method
-func (m *MockBaseVariable) TxDB() global.TxDB {
-	ret := m.ctrl.Call(m, "TxDB")
-	ret0, _ := ret[0].(global.TxDB)
-	return ret0
-}
-
-// TxDB indicates an expected call of TxDB
-func (mr *MockBaseVariableMockRecorder) TxDB() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxDB", reflect.TypeOf((*MockBaseVariable)(nil).TxDB))
-}
-
-// WitnessList mocks base method
-func (m *MockBaseVariable) WitnessList() []string {
-	ret := m.ctrl.Call(m, "WitnessList")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// WitnessList indicates an expected call of WitnessList
-func (mr *MockBaseVariableMockRecorder) WitnessList() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "WitnessList", reflect.TypeOf((*MockBaseVariable)(nil).WitnessList))
 }

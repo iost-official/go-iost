@@ -60,14 +60,14 @@ func (mr *MockVMMockRecorder) Init() *gomock.Call {
 }
 
 // LoadAndCall mocks base method
-func (m *MockVM) LoadAndCall(arg0 *host.Host, arg1 *contract.Contract, arg2 string, arg3 ...interface{}) ([]interface{}, *contract.Cost, error) {
+func (m *MockVM) LoadAndCall(arg0 *host.Host, arg1 *contract.Contract, arg2 string, arg3 ...interface{}) ([]interface{}, contract.Cost, error) {
 	varargs := []interface{}{arg0, arg1, arg2}
 	for _, a := range arg3 {
 		varargs = append(varargs, a)
 	}
 	ret := m.ctrl.Call(m, "LoadAndCall", varargs...)
 	ret0, _ := ret[0].([]interface{})
-	ret1, _ := ret[1].(*contract.Cost)
+	ret1, _ := ret[1].(contract.Cost)
 	ret2, _ := ret[2].(error)
 	return ret0, ret1, ret2
 }
@@ -86,4 +86,16 @@ func (m *MockVM) Release() {
 // Release indicates an expected call of Release
 func (mr *MockVMMockRecorder) Release() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Release", reflect.TypeOf((*MockVM)(nil).Release))
+}
+
+// Validate mocks base method
+func (m *MockVM) Validate(arg0 *contract.Contract) error {
+	ret := m.ctrl.Call(m, "Validate", arg0)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Validate indicates an expected call of Validate
+func (mr *MockVMMockRecorder) Validate(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Validate", reflect.TypeOf((*MockVM)(nil).Validate), arg0)
 }

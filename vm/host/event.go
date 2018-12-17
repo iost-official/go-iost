@@ -7,11 +7,18 @@ import (
 
 // EventPoster the event handler in host
 type EventPoster struct {
+	h *Host
 }
 
-// Post post the event
-func Post(topic event.Event_Topic, data string) *contract.Cost {
-	e := event.NewEvent(topic, data)
-	event.GetEventCollectorInstance().Post(e)
+// NewEventPoster returns a new EventPoster instance.
+func NewEventPoster(h *Host) EventPoster {
+	return EventPoster{h: h}
+}
+
+// PostEvent post the event
+func (p *EventPoster) PostEvent(data string) contract.Cost {
+	e := event.NewEvent(event.ContractEvent, data)
+	event.GetCollector().Post(e,
+		&event.Meta{ContractID: p.h.Context().Value("contract_name").(string)})
 	return EventCost(len(data))
 }

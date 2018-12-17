@@ -3,31 +3,29 @@ package synchronizer
 import (
 	"sort"
 	"sync"
-	"sync/atomic"
 	"time"
 
-	"github.com/gogo/protobuf/proto"
-
+	"github.com/golang/protobuf/proto"
+	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/message"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
+	"github.com/uber-go/atomic"
 )
 
 var (
-	// TODO: configurable
-	confirmNumber = 8
-	// SyncNumber    int64 = int64(ConfirmNumber) * 2 / 3
-	syncNumber int64 = 11
-
-	maxBlockHashQueryNumber int64 = 500
+	confirmNumber           int64
+	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
 	heightAvailableTime     int64 = 22 * 3
 	heightTimeout           int64 = 100 * 22 * 3
+	continuousNum           int
+	syncNumber              int64
+	printInterval           int64 = 1000
 )
 
 // Synchronizer defines the functions of synchronizer module
@@ -41,19 +39,20 @@ type Synchronizer interface {
 
 //SyncImpl is the implementation of Synchronizer.
 type SyncImpl struct {
-	p2pService   p2p.Service
-	blockCache   blockcache.BlockCache
-	lastBcn      *blockcache.BlockCacheNode
-	basevariable global.BaseVariable
-	dc           DownloadController
-	reqMap       *sync.Map
-	heightMap    *sync.Map
-	syncEnd      int64
-	button       int32
+	p2pService      p2p.Service
+	blockCache      blockcache.BlockCache
+	lastBcn         *blockcache.BlockCacheNode
+	baseVariable    global.BaseVariable
+	dc              DownloadController
+	reqMap          *sync.Map
+	heightMap       *sync.Map
+	syncEnd         atomic.Int64
+	lastPrintHeight atomic.Int64
 
 	messageChan    chan p2p.IncomingMessage
 	syncHeightChan chan p2p.IncomingMessage
 	exitSignal     chan struct{}
+	wg             *sync.WaitGroup
 }
 
 // NewSynchronizer returns a SyncImpl instance.
@@ -61,14 +60,14 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 	sy := &SyncImpl{
 		p2pService:   p2pserv,
 		blockCache:   blkcache,
-		basevariable: basevariable,
+		baseVariable: basevariable,
 		reqMap:       new(sync.Map),
 		heightMap:    new(sync.Map),
 		lastBcn:      nil,
-		syncEnd:      0,
+		wg:           new(sync.WaitGroup),
 	}
 	var err error
-	sy.dc, err = NewDownloadController(sy.reqSyncBlock)
+	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -81,70 +80,18 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 
 	sy.syncHeightChan = sy.p2pService.Register("sync height", p2p.SyncHeight)
 	sy.exitSignal = make(chan struct{})
-	atomic.StoreInt32(&sy.button, 0)
 
+	continuousNum = basevariable.Continuous()
+	confirmNumber = int64(len(blkcache.LinkedRoot().Active()))*2/3 + 1
+	syncNumber = confirmNumber * int64(continuousNum)
+	ilog.Infof("NewSynchronizer confirmNumber:%v", confirmNumber)
 	return sy, nil
-}
-
-func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID p2p.PeerID, hState *hashStateInfo) bool {
-	bn, ok := p.(int64)
-	if !ok {
-		ilog.Errorf("get p failed.")
-		return false
-	}
-	// ilog.Infof("callback try sync block, num:%v", bn)
-	if hState.state == Work {
-		// ilog.Infof("callback check work hash, num:%v", bn)
-		pid, ok := hState.p.(p2p.PeerID)
-		if !ok {
-			ilog.Errorf("get peerID failed.")
-			return false
-		}
-		if bn <= sy.blockCache.LinkedRoot().Number {
-			sy.dc.FreePeer(hash, pid)
-			sy.dc.MissionComplete(hash)
-			// ilog.Infof("callback block confirmed, num:%v", bn)
-			return false
-		}
-		bHash := []byte(hash)
-		if bcn, err := sy.blockCache.Find(bHash); err == nil {
-			sy.dc.FreePeer(hash, pid)
-			if bcn.Type == blockcache.Linked {
-				sy.dc.MissionComplete(hash)
-				// ilog.Infof("callback block linked, num:%v", bn)
-				// return false
-			}
-			// ilog.Infof("callback block is a single block, num:%v", bn)
-		}
-		return false
-	}
-	if bn <= sy.blockCache.LinkedRoot().Number {
-		sy.dc.MissionComplete(hash)
-		// ilog.Infof("callback block confirmed, num:%v", bn)
-		return false
-	}
-	bHash := []byte(hash)
-	if bcn, err := sy.blockCache.Find(bHash); err == nil {
-		if bcn.Type == blockcache.Linked {
-			sy.dc.MissionComplete(hash)
-			//ilog.Infof("callback block linked, num:%v", bn)
-		}
-		// ilog.Infof("callback block is a single block, num:%v", bn)
-		return false
-	}
-	bi := message.BlockInfo{Number: bn, Hash: bHash}
-	bytes, err := bi.Marshal()
-	if err != nil {
-		ilog.Errorf("marshal request block failed. err=%v", err)
-		return false
-	}
-	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
-	return true
 }
 
 // Start starts the synchronizer module.
 func (sy *SyncImpl) Start() error {
-	go sy.dc.Start()
+	sy.dc.Start()
+	sy.wg.Add(4)
 	go sy.syncHeightLoop()
 	go sy.messageLoop()
 	go sy.retryDownloadLoop()
@@ -156,23 +103,24 @@ func (sy *SyncImpl) Start() error {
 func (sy *SyncImpl) Stop() {
 	sy.dc.Stop()
 	close(sy.exitSignal)
+	sy.wg.Wait()
 }
 
 func (sy *SyncImpl) initializer() {
-	if sy.basevariable.Mode() != global.ModeInit {
+	defer sy.wg.Done()
+	if sy.baseVariable.Mode() != global.ModeInit {
 		return
 	}
 	for {
 		select {
 		case <-time.After(retryTime):
-			if sy.basevariable.BlockChain().Length() == 0 {
+			if sy.baseVariable.BlockChain().Length() == 0 {
 				ilog.Errorf("block chain is empty")
-				continue
-			} else {
-				sy.basevariable.SetMode(global.ModeNormal)
-				sy.checkSync()
 				return
 			}
+			sy.baseVariable.SetMode(global.ModeNormal)
+			sy.checkSync()
+			return
 		case <-sy.exitSignal:
 			return
 		}
@@ -180,37 +128,37 @@ func (sy *SyncImpl) initializer() {
 }
 
 func (sy *SyncImpl) syncHeightLoop() {
+	defer sy.wg.Done()
 	syncHeightTicker := time.NewTicker(syncHeightTime)
 	checkTicker := time.NewTicker(checkTime)
 	for {
 		select {
 		case <-syncHeightTicker.C:
-			num := sy.blockCache.Head().Number
-			sh := &message.SyncHeight{Height: num, Time: time.Now().Unix()}
+			num := sy.blockCache.Head().Head.Number
+			sh := &msgpb.SyncHeight{Height: num, Time: time.Now().Unix()}
 			bytes, err := proto.Marshal(sh)
 			if err != nil {
 				ilog.Errorf("marshal syncheight failed. err=%v", err)
 				continue
 			}
-			ilog.Infof("broadcast sync height")
-			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage)
+			ilog.Debugf("broadcast sync height")
+			sy.p2pService.Broadcast(bytes, p2p.SyncHeight, p2p.UrgentMessage, true)
 		case req := <-sy.syncHeightChan:
-			var sh message.SyncHeight
+			var sh msgpb.SyncHeight
 			err := proto.Unmarshal(req.Data(), &sh)
 			if err != nil {
 				ilog.Errorf("unmarshal syncheight failed. err=%v", err)
 				continue
 			}
 			if shIF, ok := sy.heightMap.Load(req.From()); ok {
-				if shOld, ok := shIF.(*message.SyncHeight); ok {
+				if shOld, ok := shIF.(*msgpb.SyncHeight); ok {
 					if shOld.Height == sh.Height {
 						continue
 					}
 				}
 			}
-			ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
+			//ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
 			sy.heightMap.Store(req.From(), &sh)
-			//atomic.StoreInt32(&sy.button, 1)
 		case <-checkTicker.C:
 			sy.checkSync()
 			sy.checkGenBlock()
@@ -224,21 +172,15 @@ func (sy *SyncImpl) syncHeightLoop() {
 }
 
 func (sy *SyncImpl) checkSync() bool {
-	if sy.basevariable.Mode() != global.ModeNormal {
+	if sy.baseVariable.Mode() != global.ModeNormal {
 		return false
 	}
-	/*
-		if atomic.LoadInt32(&sy.button) == 0 {
-			return false
-		}
-		atomic.StoreInt32(&sy.button, 0)
-	*/
-	height := sy.basevariable.BlockChain().Length() - 1
+	height := sy.baseVariable.BlockChain().Length() - 1
 	heights := make([]int64, 0, 0)
-	heights = append(heights, sy.blockCache.Head().Number)
+	heights = append(heights, sy.blockCache.Head().Head.Number)
 	now := time.Now().Unix()
 	sy.heightMap.Range(func(k, v interface{}) bool {
-		sh, ok := v.(*message.SyncHeight)
+		sh, ok := v.(*msgpb.SyncHeight)
 		if !ok || sh.Time+heightAvailableTime < now {
 			if sh.Time+heightTimeout < now {
 				sy.heightMap.Delete(k)
@@ -255,10 +197,14 @@ func (sy *SyncImpl) checkSync() bool {
 		return true
 	})
 	netHeight := heights[len(heights)/2]
-	ilog.Infof("check sync, heights: %+v", heights)
+	ilog.Debugf("check sync, heights: %+v", heights)
+	if netHeight-sy.lastPrintHeight.Load() > printInterval {
+		ilog.Infof("sync heights: %+v", heights)
+		sy.lastPrintHeight.Store(netHeight)
+	}
 	if netHeight > height+syncNumber {
-		sy.basevariable.SetMode(global.ModeSync)
-		sy.dc.Reset()
+		sy.baseVariable.SetMode(global.ModeSync)
+		sy.dc.ReStart()
 		go sy.syncBlocks(height+1, netHeight)
 		return true
 	}
@@ -266,101 +212,105 @@ func (sy *SyncImpl) checkSync() bool {
 }
 
 func (sy *SyncImpl) checkGenBlock() bool {
-	if sy.basevariable.Mode() != global.ModeNormal {
+	if sy.baseVariable.Mode() != global.ModeNormal {
 		return false
 	}
 	bcn := sy.blockCache.Head()
-	for bcn != nil && bcn.Block.Head.Witness == sy.basevariable.Config().ACC.ID {
-		bcn = bcn.Parent
+	for bcn != nil && bcn.Block.Head.Witness == sy.baseVariable.Config().ACC.ID {
+		bcn = bcn.GetParent()
 	}
 	if bcn == nil {
 		return false
 	}
-	height := sy.basevariable.BlockChain().Length() - 1
-	num := 0
+	height := sy.baseVariable.BlockChain().Length() - 1
+	var num int64
 	if bcn != sy.lastBcn {
 		sy.lastBcn = bcn
 		witness := bcn.Block.Head.Witness
-		for i := 0; i < confirmNumber; i++ {
-			bcn = bcn.Parent
+		for i := int64(0); i < confirmNumber*int64(continuousNum); i++ {
 			if bcn == nil {
 				break
 			}
 			if witness == bcn.Block.Head.Witness {
 				num++
 			}
+			bcn = bcn.GetParent()
 		}
 	}
-	if num > 0 {
-		go sy.syncBlocks(height+1, sy.blockCache.Head().Number)
+	if num > int64(continuousNum) {
+		ilog.Debugf("num: %v, continuousNum: %v", num, continuousNum)
+		go sy.syncBlocks(height+1, sy.blockCache.Head().Head.Number)
 		return true
 	}
 	return false
 }
 
-func (sy *SyncImpl) queryBlockHash(hr *message.BlockHashQuery) {
-	bytes, err := hr.Marshal()
+func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
+	bytes, err := proto.Marshal(hr)
 	if err != nil {
 		ilog.Errorf("marshal blockhashquery failed. err=%v", err)
 		return
 	}
-	ilog.Infof("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
-	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	ilog.Debugf("[sync] request block hash. reqtype=%v, start=%v, end=%v, nums size=%v", hr.ReqType, hr.Start, hr.End, len(hr.Nums))
+	sy.p2pService.Broadcast(bytes, p2p.SyncBlockHashRequest, p2p.UrgentMessage, true)
 }
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
-	sy.syncEnd = endNumber
+	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
+	sy.syncEnd.Store(endNumber)
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
-		for sy.blockCache.Head().Number+3 < startNumber {
+		for sy.blockCache.Head().Head.Number+3 < startNumber {
 			time.Sleep(500 * time.Millisecond)
 		}
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
-		sy.queryBlockHash(&message.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
+		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
 		startNumber += maxBlockHashQueryNumber
 	}
 	if startNumber <= endNumber {
 		for i := startNumber; i <= endNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
-		sy.queryBlockHash(&message.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
+		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
 	}
 	return nil
 }
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
-	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Number, sy.syncEnd)
-	if sy.syncEnd <= sy.blockCache.Head().Number {
-		sy.basevariable.SetMode(global.ModeNormal)
-		sy.dc.Reset()
+	ilog.Debugf("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd.Load())
+	if sy.syncEnd.Load() <= sy.blockCache.Head().Head.Number {
+		sy.baseVariable.SetMode(global.ModeNormal)
+		sy.dc.ReStart()
 	}
 }
 
 func (sy *SyncImpl) messageLoop() {
+	defer sy.wg.Done()
 	for {
 		select {
 		case req := <-sy.messageChan:
-			if req.Type() == p2p.SyncBlockHashRequest {
-				var rh message.BlockHashQuery
-				err := rh.Unmarshal(req.Data())
+			switch req.Type() {
+			case p2p.SyncBlockHashRequest:
+				var rh msgpb.BlockHashQuery
+				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashQuery failed:%v", err)
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
-			} else if req.Type() == p2p.SyncBlockHashResponse {
-				var rh message.BlockHashResponse
-				err := rh.Unmarshal(req.Data())
+			case p2p.SyncBlockHashResponse:
+				var rh msgpb.BlockHashResponse
+				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
 					ilog.Errorf("unmarshal BlockHashResponse failed:%v", err)
 					break
 				}
 				go sy.handleHashResp(&rh, req.From())
-			} else if req.Type() == p2p.SyncBlockRequest {
-				var rh message.BlockInfo
-				err := rh.Unmarshal(req.Data())
+			case p2p.SyncBlockRequest:
+				var rh msgpb.BlockInfo
+				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
 					break
 				}
@@ -372,34 +322,34 @@ func (sy *SyncImpl) messageLoop() {
 	}
 }
 
-func (sy *SyncImpl) getBlockHashes(start int64, end int64) *message.BlockHashResponse {
-	resp := &message.BlockHashResponse{
-		BlockInfos: make([]*message.BlockInfo, 0, end-start+1),
+func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashResponse {
+	resp := &msgpb.BlockHashResponse{
+		BlockInfos: make([]*msgpb.BlockInfo, 0, end-start+1),
 	}
 	node := sy.blockCache.Head()
-	if node != nil && end > node.Number {
-		end = node.Number
+	if node != nil && end > node.Head.Number {
+		end = node.Head.Number
 	}
 
 	for i := end; i >= start; i-- {
 		var hash []byte
 		var err error
 
-		for node != nil && i < node.Number {
-			node = node.Parent
+		for node != nil && i < node.Head.Number {
+			node = node.GetParent()
 		}
 
 		if node != nil {
 			hash = node.Block.HeadHash()
 		} else {
-			hash, err = sy.basevariable.BlockChain().GetHashByNumber(i)
+			hash, err = sy.baseVariable.BlockChain().GetHashByNumber(i)
 			if err != nil {
 				ilog.Errorf("get hash by number from db failed. err=%v, number=%v", err, i)
 				continue
 			}
 		}
 
-		blkInfo := message.BlockInfo{
+		blkInfo := msgpb.BlockInfo{
 			Number: i,
 			Hash:   hash,
 		}
@@ -411,9 +361,9 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *message.BlockHashRes
 	return resp
 }
 
-func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *message.BlockHashResponse {
-	resp := &message.BlockHashResponse{
-		BlockInfos: make([]*message.BlockInfo, 0, len(nums)),
+func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *msgpb.BlockHashResponse {
+	resp := &msgpb.BlockHashResponse{
+		BlockInfos: make([]*msgpb.BlockInfo, 0, len(nums)),
 	}
 	var blk *block.Block
 	var err error
@@ -423,12 +373,12 @@ func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *message.BlockHashRespons
 		if err == nil {
 			hash = blk.HeadHash()
 		} else {
-			hash, err = sy.basevariable.BlockChain().GetHashByNumber(num)
+			hash, err = sy.baseVariable.BlockChain().GetHashByNumber(num)
 			if err != nil {
 				continue
 			}
 		}
-		blkInfo := message.BlockInfo{
+		blkInfo := msgpb.BlockInfo{
 			Number: num,
 			Hash:   hash,
 		}
@@ -437,46 +387,46 @@ func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *message.BlockHashRespons
 	return resp
 }
 
-func (sy *SyncImpl) handleHashQuery(rh *message.BlockHashQuery, peerID p2p.PeerID) {
+func (sy *SyncImpl) handleHashQuery(rh *msgpb.BlockHashQuery, peerID p2p.PeerID) {
 	if rh.End < rh.Start || rh.Start < 0 {
 		return
 	}
-	var resp *message.BlockHashResponse
-	if rh.ReqType == 0 {
+	var resp *msgpb.BlockHashResponse
+
+	switch rh.ReqType {
+	case msgpb.RequireType_GETBLOCKHASHES:
 		resp = sy.getBlockHashes(rh.Start, rh.End)
-	}
-	if rh.ReqType == 1 {
+	case msgpb.RequireType_GETBLOCKHASHESBYNUMBER:
 		resp = sy.getBlockHashesByNums(rh.Nums)
 	}
+
 	if len(resp.BlockInfos) == 0 {
 		return
 	}
-	bytes, err := resp.Marshal()
+	bytes, err := proto.Marshal(resp)
 	if err != nil {
 		ilog.Errorf("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
 		return
 	}
-	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
+	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage, true)
 }
 
-func (sy *SyncImpl) handleHashResp(rh *message.BlockHashResponse, peerID p2p.PeerID) {
-	ilog.Infof("receive block hashes: len=%v", len(rh.BlockInfos))
+func (sy *SyncImpl) handleHashResp(rh *msgpb.BlockHashResponse, peerID p2p.PeerID) {
+	ilog.Debugf("receive block hashes: len=%v", len(rh.BlockInfos))
 	for _, blkInfo := range rh.BlockInfos {
-		sy.reqMap.Delete(blkInfo.Number)
-		if blkInfo.Number <= sy.blockCache.LinkedRoot().Number {
-			continue
-		}
-		if _, err := sy.blockCache.Find(blkInfo.Hash); err != nil {
+		if blkInfo.Number > sy.blockCache.LinkedRoot().Head.Number {
 			sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
 		}
+		sy.reqMap.Delete(blkInfo.Number)
 	}
 }
 
 func (sy *SyncImpl) retryDownloadLoop() {
+	defer sy.wg.Done()
 	for {
 		select {
 		case <-time.After(retryTime):
-			hq := &message.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
+			hq := &msgpb.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
 			sy.reqMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(int64)
 				if !ok {
@@ -487,7 +437,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 				return true
 			})
 			if len(hq.Nums) > 0 {
-				// ilog.Debug("retry download ", hr.Nums)
+				//ilog.Info("retry download ", hq.Nums)
 				sort.Slice(hq.Nums, func(i int, j int) bool {
 					return hq.Nums[i] < hq.Nums[j]
 				})
@@ -499,23 +449,70 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	}
 }
 
-func (sy *SyncImpl) handleBlockQuery(rh *message.BlockInfo, peerID p2p.PeerID) {
-	var b []byte
-	var err error
-	node, err := sy.blockCache.Find(rh.Hash)
-	if err == nil {
-		b, err = node.Block.Encode()
+func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
+	var blk *block.Block
+	blk, err := sy.blockCache.GetBlockByHash(rh.Hash)
+	if err != nil {
+		blk, err = sy.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 		if err != nil {
-			ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
+			ilog.Errorf("handle block query failed to get block.")
 			return
 		}
-		sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
-		return
 	}
-	b, err = sy.basevariable.BlockChain().GetBlockByteByHash(rh.Hash)
+	b, err := blk.Encode()
 	if err != nil {
-		ilog.Errorf("handle block query failed to get block.")
+		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 		return
 	}
-	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
+	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage, true)
+}
+
+func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
+	bn, ok := p.(int64)
+	if !ok {
+		ilog.Errorf("get p failed.")
+		return false
+	}
+	if bn <= sy.blockCache.LinkedRoot().Head.Number {
+		return true
+	}
+	bHash := []byte(hash)
+	if _, err := sy.blockCache.Find(bHash); err == nil {
+		return true
+	}
+	return false
+}
+
+func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{}) (bool, bool) {
+	bn, ok := p.(int64)
+	if !ok {
+		ilog.Errorf("get p failed.")
+		return false, false
+	}
+	ilog.Debugf("callback try sync block, num:%v", bn)
+	if bn <= sy.blockCache.LinkedRoot().Head.Number {
+		ilog.Debugf("callback block confirmed, num:%v", bn)
+		return false, true
+	}
+	bHash := []byte(hash)
+	if bcn, err := sy.blockCache.Find(bHash); err == nil {
+		if bcn.Type == blockcache.Linked {
+			ilog.Debugf("callback block linked, num:%v", bn)
+			return false, true
+		}
+		ilog.Debugf("callback block is a single block, num:%v", bn)
+		return false, false
+	}
+	bi := &msgpb.BlockInfo{Number: bn, Hash: bHash}
+	bytes, err := proto.Marshal(bi)
+	if err != nil {
+		ilog.Errorf("marshal request block failed. err=%v", err)
+		return false, false
+	}
+	pid, ok := peerID.(p2p.PeerID)
+	if !ok {
+		return false, false
+	}
+	sy.p2pService.SendToPeer(pid, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage, true)
+	return true, false
 }

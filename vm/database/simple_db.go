@@ -18,6 +18,7 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/crypto"
 )
 
 // SimpleDB implements simple database interface
@@ -105,7 +106,7 @@ func (d *SimpleDB) Keys(table string, prefix string) ([]string, error) {
 // Save save db data to json file
 func (d *SimpleDB) Save(path string) error {
 
-	d.json.Del("c-iost.system")
+	d.json.Del("c-system.iost")
 
 	f, err := os.Create(path)
 	if err != nil {
@@ -170,9 +171,9 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	}
 
 	t := &tx.Tx{}
-	s := make([][]byte, 0)
+	s := make([]string, 0)
 	for _, v := range json.Get("signers").MustArray() {
-		s = append(s, []byte(v.(string)))
+		s = append(s, v.(string))
 	}
 
 	t.Signers = s
@@ -180,12 +181,14 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	t.Publisher.Pubkey = account.GetPubkeyByID(p)
+	t.PublishSigns = append(t.PublishSigns, &crypto.Signature{
+		Pubkey: account.GetPubkeyByID(p),
+	})
 	t.GasLimit, err = json.Get("gas_limit").Int64()
 	if err != nil {
 		return nil, err
 	}
-	t.GasPrice, err = json.Get("gas_price").Int64()
+	t.GasRatio, err = json.Get("gas_ratio").Int64()
 	if err != nil {
 		return nil, err
 	}
@@ -217,13 +220,13 @@ func (d *SimpleDB) AddSystem(path string) {
 		panic(err)
 	}
 
-	c, err := cp.Parse("iost.system", "", string(fd))
+	c, err := cp.Parse("system.iost", "", string(fd))
 	if err != nil {
 		panic(err)
 	}
 	fmt.Println(c)
 
-	d.json.Set("c-iost.system", c.Encode())
+	d.json.Set("c-system.iost", c.Encode())
 }
 
 // Commit do nothing

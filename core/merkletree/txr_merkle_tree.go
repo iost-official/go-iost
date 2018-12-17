@@ -1,7 +1,7 @@
 package merkletree
 
 import (
-	"errors"
+	"encoding/hex"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/core/tx"
@@ -13,24 +13,11 @@ func (m *TXRMerkleTree) Build(txrs []*tx.TxReceipt) {
 	data := make([][]byte, len(txrs))
 	m.Tx2Txr = make(map[string][]byte)
 	for i, txr := range txrs {
-		m.Tx2Txr[string(txr.TxHash)] = txr.Encode()
-		data[i] = m.Tx2Txr[string(txr.TxHash)]
+		k := hex.EncodeToString(txr.TxHash)
+		m.Tx2Txr[k] = txr.Hash()
+		data[i] = m.Tx2Txr[k]
 	}
 	m.Mt.Build(data)
-}
-
-// GetTXR return receipt of the transaction
-func (m *TXRMerkleTree) GetTXR(hash []byte) (*tx.TxReceipt, error) {
-	txr := tx.TxReceipt{}
-	txrHash, ok := m.Tx2Txr[string(hash)]
-	if !ok {
-		return nil, errors.New("txHash isn't in the tree")
-	}
-	err := txr.Decode(txrHash)
-	if err != nil {
-		return nil, err
-	}
-	return &txr, nil
 }
 
 // RootHash return root of merkle tree

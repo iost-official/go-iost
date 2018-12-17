@@ -1,77 +1,149 @@
 'use strict';
 
-function NativeModule(id) {
-    this.filename = id + '.js';
-    this.id = id;
-    this.exports = {};
-    this.loaded = false;
-}
-
-NativeModule._cache = {};
-
-NativeModule.require = function (id) {
-    if (id == '_native_module') {
-        return NativeModule;
+const require = (function(){
+    const inner_native_require = _native_require;
+    const inner_native_run = _native_run;
+    let NativeModule = function(id) {
+        this.filename = id + '.js';
+        this.id = id;
+        this.exports = {};
+        this.loaded = false;
     }
 
-    var cached = NativeModule.getCached(id);
-    if (cached) {
-        return cached.exports;
-    }
+    NativeModule._cache = {};
 
-    var nativeModule = new NativeModule(id);
-    nativeModule.compile();
-    nativeModule.cache();
+    NativeModule.require = function (id) {
+        const cached = NativeModule.getCached(id);
+        if (cached) {
+            return cached.exports;
+        }
 
-    return nativeModule.exports;
-};
+        const nativeModule = new NativeModule(id);
+        nativeModule.compile();
+        nativeModule.cache();
 
-NativeModule.getCached = function(id) {
-    return NativeModule._cache[id];
-};
+        return nativeModule.exports;
+    };
 
-NativeModule.getSource = function(id) {
-    return _native_require(id);
-};
+    NativeModule.getCached = function(id) {
+        return NativeModule._cache[id];
+    };
 
-NativeModule.wrap = function(script) {
-    return NativeModule.wrapper[0] + script + NativeModule.wrapper[1];
-};
+    NativeModule.getSource = function(id) {
+        return inner_native_require(id);
+    };
 
-NativeModule.wrapper = [
-    '(function (exports, require, module, __filename, __dirname) {\n',
-    '\n});'
-];
+    NativeModule.wrap = function(script) {
+        return NativeModule.wrapper[0] + script + NativeModule.wrapper[1];
+    };
 
-NativeModule.prototype.compile = function () {
-    var source = NativeModule.getSource(this.id);
-    source = NativeModule.wrap(source);
+    NativeModule.wrapper = [
+        '(function (exports, require, module, __filename, __dirname) {\n',
+        '\n});'
+    ];
 
-    var fn = _native_run(source, this.filename);
-    fn(this.exports, NativeModule.require, this, this.filename);
+    NativeModule.prototype.compile = function () {
+        let source = NativeModule.getSource(this.id);
+        source = NativeModule.wrap(source);
 
-    this.loaded = true;
-};
+        const fn = inner_native_run(source, this.filename);
+        fn(this.exports, NativeModule.require, this, this.filename);
 
-NativeModule.prototype.cache = function() {
-    NativeModule._cache[this.id] = this;
-};
+        this.loaded = true;
+    };
 
-var require = NativeModule.require;
+    NativeModule.prototype.cache = function() {
+        NativeModule._cache[this.id] = this;
+    };
+
+    return NativeModule.require;
+})();
 
 // storage
-var storage = require('storage');
+const storage = require('storage');
 
 // blockchain
-var BlockChain = require('blockchain');
+const blockchain = require('blockchain');
 
-// other helper funcitons
+// other helper functions
 // var BigNumber = require('bignumber');
 // var Int64 = require('int64');
 
 // var injectGas = require('inject_gas');
 
-var _IOSTInstruction_counter = new IOSTInstruction;
+// crypto
+const IOSTCrypto = new _IOSTCrypto;
 
-// var Console = require('console');
-var console = new Console;
+const _IOSTInstruction_counter = new IOSTInstruction;
+
+// + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
+const _IOSTBinaryOp = function(left, right, op) {
+    if ((typeof left === "string" || typeof right === "string") &&
+        (op === "+" || op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
+        _IOSTInstruction_counter.incr(left === null || left === undefined || left.toString().length <= 0 ? 0 : left.toString().length);
+        _IOSTInstruction_counter.incr(right === null || right === undefined || right.toString().length <= 0 ? 0 : right.toString().length);
+    }
+    _IOSTInstruction_counter.incr(3);
+    switch (op) {
+        case '+':
+            return left + right;
+        case '-':
+            return left - right;
+        case '*':
+            return left * right;
+        case '/':
+            return left / right;
+        case '%':
+            return left % right;
+        case '**':
+            return left ** right;
+        case '|':
+            return left | right;
+        case '&':
+            return left & right;
+        case '^':
+            return left ^ right;
+        case '>>':
+            return left >> right;
+        case '>>>':
+            return left >>> right;
+        case '<<':
+            return left << right;
+        case '==':
+            return left === right;
+        case '!=':
+            return left !== right;
+        case '===':
+            return left === right;
+        case '!==':
+            return left !== right;
+        case '>':
+            return left > right;
+        case '>=':
+            return left >= right;
+        case '<':
+            return left < right;
+        case '<=':
+            return left <= right;
+    }
+};
+
+const _IOSTTemplateTag = function(strings, ...keys) {
+    _IOSTInstruction_counter.incr(8);
+    let res = new String("");
+    for (let i = 0; i < strings.length - 1; i++) {
+        _IOSTInstruction_counter.incr(23);
+        res = res.concat(strings[i], keys[i]);
+    }
+    _IOSTInstruction_counter.incr(26);
+    res = res.concat(strings[strings.length - 1]);
+    return res.toString();
+};
+
+const _IOSTSpreadElement = function (args) {
+    if (args !== undefined && args !== null && args.length > 0) {
+        _IOSTInstruction_counter.incr(args.length);
+    }
+    return args;
+}
+const console = new Console;

@@ -1,0 +1,22 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "f1",
+      "args": []
+    },
+    {
+      "name": "f2",
+      "args": []
+    },
+    {
+      "name": "f3",
+      "args": []
+    },
+    {
+      "name": "f4",
+      "args": []
+    }
+  ]
+}

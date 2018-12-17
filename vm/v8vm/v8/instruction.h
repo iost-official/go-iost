@@ -3,6 +3,9 @@
 
 #include "sandbox.h"
 #include "stddef.h"
+#include <iostream>
+#include <cstring>
+#include <string>
 
 void InitInstruction(Isolate *isolate, Local<ObjectTemplate> globalTpl);
 void NewIOSTContractInstruction(const FunctionCallbackInfo<Value> &info);
@@ -11,18 +14,33 @@ void IOSTContractInstruction_Incr(const FunctionCallbackInfo<Value> &args);
 
 class IOSTContractInstruction {
 private:
-    SandboxPtr sbxPtr;
+    Sandbox* sbxPtr;
+    Isolate* isolate;
+    int count;
 public:
-    IOSTContractInstruction(SandboxPtr ptr): sbxPtr(ptr) {}
+    IOSTContractInstruction(SandboxPtr ptr){
+        sbxPtr = static_cast<Sandbox*>(ptr);
+        isolate = sbxPtr->isolate;
+        count = 0;
+    }
 
     size_t Incr(size_t num) {
-        Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
-        sbx->gasUsed += num;
-        return sbx->gasUsed;
+        sbxPtr->gasUsed += num;
+        count ++;
+        return sbxPtr->gasUsed;
     }
     size_t Count() {
-        Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
-        return sbx->gasUsed;
+        return count;
+    }
+    void MemUsageCheck(){
+        size_t usedMem = MemoryUsage(isolate, sbxPtr->allocator);
+        if (usedMem > sbxPtr->memLimit){
+            Local<Value> err = Exception::Error(
+                String::NewFromUtf8(isolate, strdup( ("IOSTContractInstruction_Incr Memory Using too much! used: " + std::to_string(usedMem) + " Limit: " +std::to_string(sbxPtr->memLimit)).c_str() ) )
+            );
+            isolate->ThrowException(err);
+        }
+        return;
     }
 };
 

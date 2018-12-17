@@ -1,0 +1,34 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "contractName",
+      "args": []
+    },
+    {
+      "name": "receiptf",
+      "args": ["string"]
+    },
+    {
+      "name": "event",
+      "args": ["string"]
+    },
+    {
+      "name": "putwithpayer",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "get",
+      "args": ["string"]
+    },
+    {
+      "name": "mapputwithpayer",
+      "args": ["string", "string", "string", "string"]
+    },
+    {
+      "name": "mapget",
+      "args": ["string", "string"]
+    }
+  ]
+}

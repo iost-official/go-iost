@@ -1,0 +1,15 @@
+coverage:
+  range: "25...50"
+  round: down
+  precision: 2
+  status:
+    project: off
+    patch: off
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false 
+  require_base: no
+  require_head: yes
+  branches: null
+

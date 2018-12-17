@@ -161,6 +161,8 @@ prototype
 /core/block/database/
 core/tx/database/
 database/database/
+core/txpool/DelayTxDB/
+data/
 
 
 /core/tx/database/
@@ -174,6 +176,7 @@ iwallet/test
 iwallet/iwallet
 
 # build and test
+/coverage.txt
 /target
 imonitor/imonitor
 consensus/common/tx/
@@ -201,13 +204,8 @@ core/block/txDB/
 bak/
 blockDB/
 
-p2p/priv.key
-storage/
-iserver/iserver
-iserver/blockDB/
-iserver/netpath2/
-iserver/netpath3/
-iserver/txDB/
+/p2p/priv.key
+/storage/
 
 iwallet/sc/
 iwallet/testTX.py
@@ -249,8 +247,10 @@ cmd/playground/contract/package-lock.json
 vm/test_data/lucky_bet.js.after
 
 *.temp
+*.cc.o
 
 /config/StatePoolDB/
 /config/levelDB/
 /config/logs/
 /config/priv.key
+/block_cache_wal/

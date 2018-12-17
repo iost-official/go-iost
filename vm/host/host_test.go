@@ -3,8 +3,6 @@ package host
 import (
 	"testing"
 
-	"errors"
-
 	"time"
 
 	. "github.com/golang/mock/gomock"
@@ -30,7 +28,7 @@ func sliceEqual(a, b []string) bool {
 	return false
 }
 
-func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, Host) {
+func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, *Host) {
 	mockCtrl := NewController(t)
 	defer mockCtrl.Finish()
 	db := database.NewMockIMultiValue(mockCtrl)
@@ -39,7 +37,7 @@ func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, Host) {
 	//monitor := Monitor{}
 
 	host := NewHost(ctx, bdb, nil, nil)
-	return db, *host
+	return db, host
 }
 
 func TestHost_Put(t *testing.T) {
@@ -56,7 +54,86 @@ func TestHost_Put(t *testing.T) {
 		}
 	})
 
-	host.Put("hello", "world")
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("", nil)
+
+	_, _ = host.Put("hello", "world")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != 37 {
+		t.Fatal(host.cost)
+	}
+}
+
+func TestHost_Put2(t *testing.T) {
+
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().Do(func(a, b, c string) {
+		t.Log("put: ", a, b, c)
+	})
+
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa", nil)
+
+	_, _ = host.Put("hello", "world")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != 17 {
+		t.Fatal(host.cost)
+	}
+}
+
+func TestHost_PutUserSpace(t *testing.T) {
+
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().Do(func(a, b, c string) {
+		t.Log("put: ", a, b, c)
+	})
+
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sa@abc", nil)
+
+	_, _ = host.Put("hello", "worldn", "abc")
+	host.FlushCacheCost()
+	if host.cost["abc"].Data != 5 {
+		t.Fatal(host.cost)
+	}
+
+	v, _ := host.Get("hello")
+	if v.(string) != "worldn" {
+		t.Fatal(v)
+	}
+}
+
+func TestHost_Del(t *testing.T) {
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().Do(func(a, b, c string) {
+		t.Log("put: ", a, b, c)
+	})
+
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld@contractName", nil)
+	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld@contractName", nil)
+
+	_, _ = host.Del("hello")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != -37 {
+		t.Fatal(host.cost)
+	}
+	_, _ = host.Del("hello")
+	host.FlushCacheCost()
+	if host.cost["contractName"].Data != -37 {
+		t.Fatal(host.cost)
+	}
 }
 
 func TestHost_Get(t *testing.T) {
@@ -98,17 +175,79 @@ func TestHost_MapPut(t *testing.T) {
 		}
 	})
 	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
-	mock.EXPECT().Get("state", "m-contractName-hello").Return("", errors.New("not found"))
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("", nil)
+	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
 	tr := watchTime(func() {
-		host.MapPut("hello", "1", "world")
+		_, _ = host.MapPut("hello", "1", "world")
 	})
+	host.FlushCacheCost()
 	if tr > time.Millisecond {
 		t.Log("to slow")
+	}
+
+	if host.cost["contractName"].Data != 39 {
+		t.Fatal(host.cost)
+	}
+}
+
+func TestHost_MapPut_Owner(t *testing.T) {
+
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Put("state", "m-contractName-hello-1", Any()).Do(func(a, b, c string) {
+		if c != "sworld" {
+			t.Fatal(c)
+		}
+	})
+	mock.EXPECT().Put("state", "m-contractName-hello", Any()).Do(func(a, b, c string) {
+		if c != "@1" {
+			t.Fatal(c)
+		}
+	})
+	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("", nil)
+	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
+
+	tr := watchTime(func() {
+		_, _ = host.MapPut("hello", "1", "world", "abc")
+	})
+	host.FlushCacheCost()
+	if tr > time.Millisecond {
+		t.Log("to slow")
+	}
+
+	if host.cost["abc"].Data != 30 {
+		t.Fatal(host.cost)
 	}
 }
 
 func TestHost_MapGet(t *testing.T) {
+
+	ctx := NewContext(nil)
+	ctx.Set("commit", "abc")
+	ctx.Set("contract_name", "contractName")
+
+	mock, host := myinit(t, ctx)
+
+	mock.EXPECT().Get(Any(), Any()).DoAndReturn(func(a, b string) (string, error) {
+		if a != "state" || b != "m-contractName-hello-1" {
+			t.Fatal(a, b)
+		}
+		return "sworld", nil
+	})
+
+	ans, _ := host.MapGet("hello", "1")
+	if ans != "world" {
+		t.Fatal(ans)
+	}
+}
+
+func TestHost_MapGet_Owner(t *testing.T) {
 
 	ctx := NewContext(nil)
 	ctx.Set("commit", "abc")
@@ -145,25 +284,18 @@ func TestHost_MapKeys(t *testing.T) {
 	}
 }
 
-func TestHost_RequireAuth(t *testing.T) {
+func TestHost_MapKeys_Owner(t *testing.T) {
 
 	ctx := NewContext(nil)
 	ctx.Set("commit", "abc")
 	ctx.Set("contract_name", "contractName")
-	ctx.Set("auth_list", map[string]int{"a": 1, "b": 0})
 
-	_, host := myinit(t, ctx)
+	mock, host := myinit(t, ctx)
 
-	ans, _ := host.RequireAuth("a")
-	if !ans {
-		t.Fatal(ans)
-	}
-	ans, _ = host.RequireAuth("b")
-	if ans {
-		t.Fatal(ans)
-	}
-	ans, _ = host.RequireAuth("c")
-	if ans {
+	mock.EXPECT().Get("state", "m-contractName-hello").Return("@a@b@c", nil)
+
+	ans, _ := host.MapKeys("hello")
+	if !sliceEqual(ans, []string{"a", "b", "c"}) {
 		t.Fatal(ans)
 	}
 }
@@ -172,41 +304,3 @@ func TestHost_BlockInfo(t *testing.T) {
 
 }
 
-func TestTeller_Transfer(t *testing.T) {
-	ctx := NewContext(nil)
-	ctx.Set("contract_name", "contractName")
-	ctx.Set("auth_list", map[string]int{"hello": 1, "b": 0})
-
-	mock, host := myinit(t, ctx)
-
-	var (
-		ihello = int64(1000)
-		iworld = int64(0)
-	)
-
-	mock.EXPECT().Get(Any(), Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-		switch key {
-		case "i-hello":
-			return database.MustMarshal(ihello), nil
-		case "i-world":
-			return database.MustMarshal(iworld), nil
-		}
-		return database.MustMarshal(nil), nil
-	})
-
-	mock.EXPECT().Put(Any(), Any(), Any()).AnyTimes().DoAndReturn(func(a, b, c string) error {
-		t.Log("put:", a, b, database.MustUnmarshal(c))
-		switch b {
-		case "i-hello":
-			ihello = database.MustUnmarshal(c).(int64)
-		case "i-world":
-			iworld = database.MustUnmarshal(c).(int64)
-		}
-
-		return nil
-	})
-
-	host.Transfer("hello", "world", 3)
-	host.Transfer("hello", "world", 3)
-
-}

@@ -1,0 +1,30 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "number",
+            "args": [],
+            "payment": 0,
+            "cost_limit": [
+                1,
+                1,
+                1
+            ],
+            "price_limit": 1
+        },
+        {
+            "name": "can_update",
+            "args": [
+                "json"
+            ],
+            "payment": 0,
+            "cost_limit": [
+                1,
+                1,
+                1
+            ],
+            "price_limit": 1
+        }
+    ]
+}

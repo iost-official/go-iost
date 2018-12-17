@@ -1,20 +1,23 @@
 package host
 
 import (
-	"encoding/json"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
+	"encoding/json"
+
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 )
 
 // Monitor monitor interface
 type Monitor interface {
-	Call(host *Host, contractName, api string, jarg string) (rtn []interface{}, cost *contract.Cost, err error)
+	Call(host *Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error)
+	Validate(con *contract.Contract) error
 	Compile(con *contract.Contract) (string, error)
 }
 
@@ -25,7 +28,9 @@ type Host struct {
 	Teller
 	APIDelegate
 	EventPoster
-	DHCP
+	DNS
+	Authority
+	GasManager
 
 	logger  *ilog.Logger
 	ctx     *Context
@@ -47,9 +52,10 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 	h.Info = NewInfo(h)
 	h.Teller = NewTeller(h)
 	h.APIDelegate = NewAPI(h)
-	h.EventPoster = EventPoster{}
-	h.DHCP = NewDHCP(h)
-
+	h.EventPoster = NewEventPoster(h)
+	h.DNS = NewDNS(h)
+	h.Authority = Authority{h: h}
+	h.GasManager = NewGasManager(h)
 	return h
 
 }
@@ -66,96 +72,127 @@ func (h *Host) SetContext(ctx *Context) {
 }
 
 // Call  call a new contract in this context
-func (h *Host) Call(contract, api, jarg string) ([]interface{}, *contract.Cost, error) {
+func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, contract.Cost, error) {
 
 	// save stack
-	record := contract + "-" + api
+	record := cont + "-" + api
 
 	height := h.ctx.Value("stack_height").(int)
 
 	for i := 0; i < height; i++ {
 		key := "stack" + strconv.Itoa(i)
 		if h.ctx.Value(key).(string) == record {
-			return nil, nil, ErrReenter
+			return nil, contract.Cost{}, ErrReenter
 		}
 	}
 
 	key := "stack" + strconv.Itoa(height)
 
-	h.ctx = NewContext(h.ctx)
+	h.PushCtx()
+	defer func() {
+		h.PopCtx()
+	}()
+
+	// handle withAuth
+	if len(withAuth) > 0 && withAuth[0] {
+		authList := h.ctx.Value("auth_contract_list").(map[string]int)
+		authList[h.ctx.Value("contract_name").(string)] = 1
+		h.ctx.Set("auth_contract_list", authList)
+	}
 
 	h.ctx.Set("stack_height", height+1)
 	h.ctx.Set(key, record)
-	rtn, cost, err := h.monitor.Call(h, contract, api, jarg)
-
-	h.ctx = h.ctx.Base()
+	rtn, cost, err := h.monitor.Call(h, cont, api, jarg)
+	cost.AddAssign(CommonOpCost(height))
 
 	return rtn, cost, err
 }
 
-// CallWithReceipt call and generate receipt
-func (h *Host) CallWithReceipt(contractName, api, jarg string) ([]interface{}, *contract.Cost, error) {
-	rtn, cost, err := h.Call(contractName, api, jarg)
+// CallWithAuth  call a new contract with permission of current contract
+func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract.Cost, error) {
+	return h.Call(contract, api, jarg, true)
+}
 
-	var sarr []interface{}
-	sarr = append(sarr, api)
-	sarr = append(sarr, jarg)
+func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
+	cost := contract.Cost0()
+	err := h.monitor.Validate(c)
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
+	return cost, err
+}
 
-	if err != nil {
-		sarr = append(sarr, err.Error())
-	} else {
-		sarr = append(sarr, "success")
+func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error) {
+	cost := contract.Cost0()
+	for _, abi := range c.Info.Abi {
+		for _, limit := range abi.AmountLimit {
+			cost.AddAssign(CommonOpCost(1))
+			decimal := h.db.Decimal(limit.Token)
+			if decimal == -1 {
+				return cost, ErrAmountLimitTokenNotExists
+			}
+			_, err := common.NewFixed(limit.Val, decimal)
+			if err != nil {
+				return cost, err
+			}
+		}
 	}
-	s, err := json.Marshal(sarr)
-	if err != nil {
-		return rtn, cost, err
-	}
-	h.receipt(tx.SystemDefined, string(s))
-	cost.AddAssign(ReceiptCost(len(s)))
-	return rtn, cost, err
-
+	return cost, nil
 }
 
 // SetCode set code to storage
-func (h *Host) SetCode(c *contract.Contract) (*contract.Cost, error) {
-	code, err := h.monitor.Compile(c)
+func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
+	cost, err := h.checkAbiValid(c)
 	if err != nil {
-		return CompileErrCost, err
+		return cost, err
+	}
+
+	cost0, err := h.checkAmountLimitValid(c)
+	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
+	}
+
+	code, err := h.monitor.Compile(c)
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
+	if err != nil {
+		return cost, err
 	}
 	c.Code = code
 
 	initABI := contract.ABI{
-		Name:    "init",
-		Payment: 0,
-		Args:    []string{},
+		Name: "init",
+		Args: []string{},
 	}
 
 	c.Info.Abi = append(c.Info.Abi, &initABI)
 
 	l := len(c.Encode()) // todo multi Encode call
-	//ilog.Debugf("length is : %v", l)
+	//fmt.Println("host setcode, paycost, ", owner)
+	cost.AddAssign(contract.Cost{Data: int64(l), DataList: []contract.DataItem{
+		{Payer: owner, Val: int64(l)},
+	}})
 
+	if h.db.HasContract(c.ID) {
+		return cost, ErrContractExists
+	}
 	h.db.SetContract(c)
+	_, cost0, err = h.Call(c.ID, "init", "[]")
+	cost.AddAssign(cost0)
 
-	_, cost, err := h.Call(c.ID, "init", "[]")
-
-	cost.AddAssign(CodeSavageCost(l))
-
-	//ilog.Debugf("set gas is : %v", cost.ToGas())
-
-	return cost, err // todo check set cost
+	return cost, err
 }
 
 // UpdateCode update code
-func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*contract.Cost, error) {
+func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (contract.Cost, error) {
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
-		return ContractNotFoundCost, ErrContractNotFound
+		return Costs["GetCost"], ErrContractNotFound
 	}
 	abi := oc.ABI("can_update")
 	if abi == nil {
-		return ABINotFoundCost, ErrUpdateRefused
+		return Costs["GetCost"], ErrUpdateRefused
 	}
+
+	oldL := len(oc.Encode())
 
 	rtn, cost, err := h.Call(c.ID, "can_update", `["`+string(id)+`"]`)
 
@@ -163,39 +200,56 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (*co
 		return cost, fmt.Errorf("call can_update: %v", err)
 	}
 
-	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrUpdateRefused
 	}
 
-	// set code  without invoking init
+	cost0, err := h.checkAbiValid(c)
+	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
+	}
+
+	cost0, err = h.checkAmountLimitValid(c)
+	cost.AddAssign(cost0)
+	if err != nil {
+		return cost, err
+	}
+
 	code, err := h.monitor.Compile(c)
-	cost.AddAssign(CompileErrCost)
+	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err
 	}
 	c.Code = code
 
+	// set code  without invoking init
 	h.db.SetContract(c)
 
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
+	cost.AddAssign(co)
 	l := len(c.Encode()) // todo multi Encode call
-	cost.AddAssign(CodeSavageCost(l))
+	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
+		{Payer: owner.(string), Val: int64(l - oldL)},
+	}})
 
 	return cost, nil
 }
 
 // DestroyCode delete code
-func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
+func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 	// todo free kv
 
 	oc := h.db.Contract(contractName)
 	if oc == nil {
-		return ContractNotFoundCost, ErrContractNotFound
+		return Costs["GetCost"], ErrContractNotFound
 	}
 	abi := oc.ABI("can_destroy")
 	if abi == nil {
-		return ABINotFoundCost, ErrDestroyRefused
+		return Costs["GetCost"], ErrDestroyRefused
 	}
+
+	oldL := len(oc.Encode())
 
 	rtn, cost, err := h.Call(contractName, "can_destroy", "[]")
 
@@ -203,13 +257,31 @@ func (h *Host) DestroyCode(contractName string) (*contract.Cost, error) {
 		return cost, err
 	}
 
-	// todo rtn[0] should be bool type
 	if t, ok := rtn[0].(string); !ok || t != "true" {
 		return cost, ErrDestroyRefused
 	}
 
+	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
+	cost.AddAssign(co)
+	cost.AddAssign(contract.Cost{Data: int64(-oldL), DataList: []contract.DataItem{
+		{Payer: owner.(string), Val: int64(-oldL)},
+	}})
+
+	h.db.MDel("system.iost-contract_owner", oc.ID)
+
 	h.db.DelContract(contractName)
-	return DelContractCost, nil
+	return Costs["PutCost"], nil
+}
+
+// CancelDelaytx deletes delaytx hash.
+func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
+
+	if !h.db.HasDelaytx(txHash) {
+		return Costs["DelaytxNotFoundCost"], ErrDelaytxNotFound
+	}
+
+	h.db.DelDelaytx(txHash)
+	return Costs["DelDelaytxCost"], nil
 }
 
 // Logger get a log in host
@@ -242,4 +314,30 @@ func (h *Host) Deadline() time.Time {
 // SetDeadline set this host's deadline
 func (h *Host) SetDeadline(t time.Time) {
 	h.deadline = t
+}
+
+// IsValidAccount check whether account exists
+func (h *Host) IsValidAccount(name string) bool {
+	if h.Context().Value("number") == int64(0) {
+		return true
+	}
+	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().MGet("auth.iost"+"-auth", name)) != nil
+}
+
+// ReadSettings read settings from db
+func (h *Host) ReadSettings() {
+	j, _ := h.DBHandler.GlobalMapGet("system.iost", "settings", "host")
+	if j == nil {
+		return
+	}
+	var s Setting
+	err := json.Unmarshal([]byte(j.(string)), &s)
+	if err != nil {
+		panic(err)
+	}
+
+	for k, v := range s.Costs {
+		Costs[k] = v
+	}
+
 }

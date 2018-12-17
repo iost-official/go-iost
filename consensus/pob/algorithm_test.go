@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/go-iost/core/txpool/mock"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/smartystreets/goconvey/convey"
@@ -26,14 +27,14 @@ var testID = []string{
 	"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
 }
 
-func MakeTx(act tx.Action) (*tx.Tx, error) {
-	trx := tx.NewTx([]*tx.Action{&act}, nil, int64(10000), int64(1), int64(10000000))
+func MakeTx(act *tx.Action) (*tx.Tx, error) {
+	trx := tx.NewTx([]*tx.Action{act}, nil, 10000, 1, 10000000, 0)
 
-	ac, err := account.NewAccount(common.Base58Decode(testID[1]), crypto.Secp256k1)
+	ac, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
 	if err != nil {
 		return nil, err
 	}
-	trx, err = tx.SignTx(trx, ac)
+	trx, err = tx.SignTx(trx, ac.ID, []*account.KeyPair{ac})
 	if err != nil {
 		return nil, err
 	}
@@ -41,7 +42,7 @@ func MakeTx(act tx.Action) (*tx.Tx, error) {
 }
 
 func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
-	account, _ := account.NewAccount(nil, crypto.Secp256k1)
+	account, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	topBlock := &block.Block{
 		Head: &block.BlockHead{
 			ParentHash: []byte("abc"),
@@ -58,34 +59,84 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	}
 	defer stateDB.Close()
 	vi := database.NewVisitor(0, stateDB)
-	vi.SetBalance(testID[0], 100000000)
-	vi.SetContract(native.ABI())
+	vi.SetTokenBalance("iost", testID[0], 100000000000000000)
+	vi.SetContract(native.SystemABI())
 	vi.Commit()
 	stateDB.Tag(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
-	for i := 0; i < 10000; i++ {
-		act := tx.NewAction("iost.system", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+	for i := 0; i < 40000; i++ {
+		act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
 		trx, _ := MakeTx(act)
 		pendingTx.Add(trx)
 	}
-	mockTxPool.EXPECT().TxIterator().Return(pendingTx.Iter(), &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
-	mockTxPool.EXPECT().TxTimeOut(gomock.Any()).Return(false).AnyTimes()
+	mockTxPool.EXPECT().PendingTx().Return(pendingTx, &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
+	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
-		generateBlock(account, mockTxPool, stateDB)
+		generateBlock(account, mockTxPool, stateDB, time.Millisecond*1000)
 	}
+	b.StopTimer()
+}
+
+func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
+	account, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+	topBlock := &block.Block{
+		Head: &block.BlockHead{
+			ParentHash: []byte("abc"),
+			Number:     10,
+			Witness:    "witness",
+			Time:       123456,
+		},
+	}
+	topBlock.CalculateHeadHash()
+	mockController := gomock.NewController(nil)
+	stateDB, err := db.NewMVCCDB("./StateDB")
+	if err != nil {
+		b.Fatal(err)
+	}
+	defer stateDB.Close()
+	vi := database.NewVisitor(0, stateDB)
+	vi.SetTokenBalance("iost", testID[0], 100000000000000000)
+	vi.SetContract(native.SystemABI())
+	vi.Commit()
+	stateDB.Tag(string(topBlock.HeadHash()))
+	mockTxPool := txpool_mock.NewMockTxPool(mockController)
+	pendingTx := txpool.NewSortedTxMap()
+	for i := 0; i < 30000; i++ {
+		act := tx.NewAction("system.iost", "Transfer", fmt.Sprintf(`["%v","%v",%v]`, testID[0], testID[2], "100"))
+		trx, _ := MakeTx(act)
+		pendingTx.Add(trx)
+	}
+	mockTxPool.EXPECT().PendingTx().Return(pendingTx, &blockcache.BlockCacheNode{Block: topBlock}).AnyTimes()
+	mockTxPool.EXPECT().DelTxList(gomock.Any()).AnyTimes()
+	blk, _ := generateBlock(account, mockTxPool, stateDB, time.Millisecond*1000)
+
+	b.ResetTimer()
+	for j := 0; j < b.N; j++ {
+		v := verifier.Verifier{}
+		v.Verify(blk, topBlock, stateDB, &verifier.Config{
+			Mode:        0,
+			Timeout:     time.Millisecond * 1000,
+			TxTimeLimit: time.Millisecond * 100,
+		})
+	}
+	b.StopTimer()
 }
 
 func TestConfirmNode(t *testing.T) {
 	convey.Convey("Test of Confirm node", t, func() {
 
-		acc, _ := account.NewAccount(nil, crypto.Secp256k1)
+		acc, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 		staticProperty = newStaticProperty(acc, []string{"id0", "id1", "id2", "id3", "id4"})
 
 		rootNode := &blockcache.BlockCacheNode{
-			Number:       1,
-			Witness:      "id0",
+			Block: &block.Block{
+				Head: &block.BlockHead{
+					Number:  1,
+					Witness: "id0",
+				},
+			},
 			ConfirmUntil: 0,
 		}
 		convey.Convey("Normal", func() {
@@ -95,7 +146,7 @@ func TestConfirmNode(t *testing.T) {
 			node = addNode(node, 5, 0, "id4")
 
 			confirmNode := calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 2)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 2)
 		})
 
 		convey.Convey("Diconvey.Sordered normal", func() {
@@ -107,7 +158,7 @@ func TestConfirmNode(t *testing.T) {
 			node = addNode(node, 7, 0, "id3")
 
 			confirmNode := calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 
 		convey.Convey("Diconvey.Sordered not enough", func() {
@@ -124,17 +175,21 @@ func TestConfirmNode(t *testing.T) {
 
 			node = addNode(node, 7, 2, "id0")
 			confirmNode = calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 	})
 }
 
 func TestNodeInfoUpdate(t *testing.T) {
 	convey.Convey("Test of node info update", t, func() {
-		staticProperty = newStaticProperty(&account.Account{ID: "id0"}, []string{"id0", "id1", "id2"})
+		staticProperty = newStaticProperty(&account.KeyPair{ID: "id0"}, []string{"id0", "id1", "id2"})
 		rootNode := &blockcache.BlockCacheNode{
-			Number:   1,
-			Witness:  "id0",
+			Block: &block.Block{
+				Head: &block.BlockHead{
+					Number:  1,
+					Witness: "id0",
+				},
+			},
 			Children: make(map[*blockcache.BlockCacheNode]bool),
 		}
 		staticProperty.Watermark["id0"] = 2
@@ -152,7 +207,7 @@ func TestNodeInfoUpdate(t *testing.T) {
 			convey.So(staticProperty.Watermark["id0"], convey.ShouldEqual, 5)
 
 			node = calculateConfirm(node, rootNode)
-			convey.So(node.Number, convey.ShouldEqual, 2)
+			convey.So(node.Head.Number, convey.ShouldEqual, 2)
 		})
 
 		convey.Convey("Slot witness error", func() {
@@ -191,17 +246,17 @@ func TestNodeInfoUpdate(t *testing.T) {
 			node = addBlock(node, 6, "id2", 9)
 			updateWaterMark(node)
 			confirmNode = calculateConfirm(node, rootNode)
-			convey.So(confirmNode.Number, convey.ShouldEqual, 4)
+			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 	})
 }
 
 func TestVerifyBasics(t *testing.T) {
 	convey.Convey("Test of verifyBasics", t, func() {
-		secKey := common.Sha256([]byte("secKey of id0"))
-		account0, _ := account.NewAccount(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("secKey of id1"))
-		account1, _ := account.NewAccount(secKey, crypto.Secp256k1)
+		secKey := common.Sha3([]byte("secKey of id0"))
+		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
+		secKey = common.Sha3([]byte("secKey of id1"))
+		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		staticProperty = newStaticProperty(account1, []string{account0.ID, account1.ID, "id2"})
 		convey.Convey("Normal (self block)", func() {
 			blk := &block.Block{
@@ -277,14 +332,14 @@ func TestVerifyBasics(t *testing.T) {
 
 func TestVerifyBlock(t *testing.T) {
 	convey.Convey("Test of verify block", t, func() {
-		secKey := common.Sha256([]byte("secKey of id0"))
-		account0, _ := account.NewAccount(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("sec of id1"))
-		account1, _ := account.NewAccount(secKey, crypto.Secp256k1)
-		secKey = common.Sha256([]byte("sec of id2"))
-		account2, _ := account.NewAccount(secKey, crypto.Secp256k1)
+		secKey := common.Sha3([]byte("secKey of id0"))
+		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
+		secKey = common.Sha3([]byte("sec of id1"))
+		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
+		secKey = common.Sha3([]byte("sec of id2"))
+		account2, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		staticProperty = newStaticProperty(account0, []string{account0.ID, account1.ID, account2.ID})
-		rootTime := common.GetCurrentTimestamp().Slot - 1
+		rootTime := time.Now().UnixNano()
 		rootBlk := &block.Block{
 			Head: &block.BlockHead{
 				Number:  1,
@@ -299,12 +354,12 @@ func TestVerifyBlock(t *testing.T) {
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 			}},
-			Signers: [][]byte{account1.Pubkey},
+			Signers: []string{account1.ID},
 		}
 		rcpt0 := &tx.TxReceipt{
 			TxHash: tx0.Hash(),
 		}
-		curTime := common.GetCurrentTimestamp().Slot
+		curTime := time.Now().UnixNano()
 		hash, _ := rootBlk.Head.Hash()
 		witness := witnessOfSlot(curTime)
 		blk := &block.Block{
@@ -317,8 +372,8 @@ func TestVerifyBlock(t *testing.T) {
 			Txs:      []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},
 		}
-		blk.Head.TxsHash = blk.CalculateTxsHash()
-		blk.Head.MerkleHash = blk.CalculateMerkleHash()
+		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+		blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
 		info, _ := blk.Head.Hash()
 		var sig *crypto.Signature
 		if witness == account0.ID {
@@ -348,11 +403,15 @@ func TestVerifyBlock(t *testing.T) {
 
 func addNode(parent *blockcache.BlockCacheNode, number int64, confirm int64, witness string) *blockcache.BlockCacheNode {
 	node := &blockcache.BlockCacheNode{
-		Parent:       parent,
-		Number:       number,
+		Block: &block.Block{
+			Head: &block.BlockHead{
+				Number:  number,
+				Witness: witness,
+			},
+		},
 		ConfirmUntil: confirm,
-		Witness:      witness,
 	}
+	node.SetParent(parent)
 	return node
 }
 

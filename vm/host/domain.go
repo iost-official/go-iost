@@ -1,31 +1,32 @@
 package host
 
 import (
+	"github.com/iost-official/go-iost/ilog"
 	"strings"
 )
 
 // const table name
 const (
-	DHCPTable      = "dhcp_table"
-	DHCPRTable     = "dhcp_revert_table"
-	DHCPOwnerTable = "dhcp_owner_table"
+	DNSTable      = "dns_table"
+	DNSRTable     = "dns_revert_table"
+	DNSOwnerTable = "dns_owner_table"
 )
 
-// DHCP dhcp server handler
-type DHCP struct {
+// DNS dns server handler
+type DNS struct {
 	h *Host
 }
 
-// NewDHCP make a dhcp
-func NewDHCP(h *Host) DHCP {
-	return DHCP{
+// NewDNS make a dns
+func NewDNS(h *Host) DNS {
+	return DNS{
 		h: h,
 	}
 }
 
 // ContractID find cid from url
-func (d *DHCP) ContractID(url string) string {
-	cid, _ := d.h.MapGet(DHCPTable, url)
+func (d *DNS) ContractID(url string) string {
+	cid, _ := d.h.GlobalMapGet("domain.iost", DNSTable, url)
 	if s, ok := cid.(string); ok {
 		return s
 	}
@@ -33,8 +34,8 @@ func (d *DHCP) ContractID(url string) string {
 }
 
 // URLOwner find owner of url
-func (d *DHCP) URLOwner(url string) string {
-	owner, _ := d.h.MapGet(DHCPOwnerTable, url)
+func (d *DNS) URLOwner(url string) string {
+	owner, _ := d.h.GlobalMapGet("domain.iost", DNSOwnerTable, url)
 	if s, ok := owner.(string); ok {
 		return s
 	}
@@ -42,13 +43,16 @@ func (d *DHCP) URLOwner(url string) string {
 }
 
 // URLTransfer give url to another id
-func (d *DHCP) URLTransfer(url, to string) {
-	d.h.MapPut(DHCPOwnerTable, url, to)
+func (d *DNS) URLTransfer(url, to string) {
+	_, err := d.h.MapPut(DNSOwnerTable, url, to)
+	if err != nil {
+		ilog.Errorf("url transfer mapPut failed. err = %v", err)
+	}
 }
 
 // URL git url of cid
-func (d *DHCP) URL(cid string) string {
-	domain, _ := d.h.MapGet(DHCPRTable, cid)
+func (d *DNS) URL(cid string) string {
+	domain, _ := d.h.GlobalMapGet("domain.iost", DNSRTable, cid)
 	if s, ok := domain.(string); ok {
 		return s
 	}
@@ -56,23 +60,29 @@ func (d *DHCP) URL(cid string) string {
 }
 
 // IsDomain determine if s is a domain
-func (d *DHCP) IsDomain(s string) bool {
-	if strings.HasPrefix(s, "Contract") || strings.HasPrefix(s, "iost.") {
+func (d *DNS) IsDomain(s string) bool {
+	if strings.HasPrefix(s, "Contract") || strings.HasSuffix(s, ".iost") {
 		return false
 	}
 	return true
 }
 
 // WriteLink add url and url owner to contract
-func (d *DHCP) WriteLink(url, cid, owner string) {
-	d.h.MapPut(DHCPTable, url, cid)
-	d.h.MapPut(DHCPRTable, cid, url)
-	d.h.MapPut(DHCPOwnerTable, url, owner)
+func (d *DNS) WriteLink(url, cid, owner string) {
+	_, err0 := d.h.MapPut(DNSTable, url, cid)
+	_, err1 := d.h.MapPut(DNSRTable, cid, url)
+	_, err2 := d.h.MapPut(DNSOwnerTable, url, owner)
+	if err0 != nil || err1 != nil || err2 != nil {
+		ilog.Errorf("write link mapPut failed. err = %v %v %v", err0, err1, err2)
+	}
 }
 
 // RemoveLink remove a url
-func (d *DHCP) RemoveLink(url, cid string) {
-	d.h.MapDel(DHCPRTable, cid)
-	d.h.MapDel(DHCPTable, url)
-	d.h.MapDel(DHCPOwnerTable, url)
+func (d *DNS) RemoveLink(url, cid string) {
+	_, err0 := d.h.MapDel(DNSRTable, cid)
+	_, err1 := d.h.MapDel(DNSTable, url)
+	_, err2 := d.h.MapDel(DNSOwnerTable, url)
+	if err0 != nil || err1 != nil || err2 != nil {
+		ilog.Errorf("remove link mapPut failed. err = %v %v %v", err0, err1, err2)
+	}
 }

@@ -12,7 +12,10 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
+	"math/rand"
 )
+
+const vmRefLimit = 60
 
 // CVMInitOnce vm init once
 var CVMInitOnce = sync.Once{}
@@ -21,34 +24,36 @@ var customCompileStartupData C.CustomStartupData
 
 // VM contains isolate instance, which is a v8 VM with its own heap.
 type VM struct {
-	isolate              C.IsolatePtr
+	isolate              C.IsolateWrapperPtr
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
 	vmType               vmPoolType
 	jsPath               string
+	refCount             int
 	limitsOfInstructions int64
 	limitsOfMemorySize   int64
 }
 
 // NewVM return new vm with isolate and sandbox
-func NewVM(vmType vmPoolType, jsPath string) *VM {
+func NewVM(poolType vmPoolType, jsPath string) *VM {
 	CVMInitOnce.Do(func() {
 		C.init()
 		customStartupData = C.createStartupData()
 		customCompileStartupData = C.createCompileStartupData()
 	})
-	var isolate C.IsolatePtr
-	if vmType == CompileVMPool {
-		isolate = C.newIsolate(customCompileStartupData)
+	var isolateWrapperPtr C.IsolateWrapperPtr
+	if poolType == CompileVMPool {
+		isolateWrapperPtr = C.newIsolate(customCompileStartupData)
 	} else {
-		isolate = C.newIsolate(customStartupData)
+		isolateWrapperPtr = C.newIsolate(customStartupData)
 	}
 	e := &VM{
-		isolate: isolate,
-		vmType:  vmType,
+		isolate: isolateWrapperPtr,
+		vmType:  poolType,
 		jsPath:  jsPath,
 	}
 	e.sandbox = NewSandbox(e)
+
 	return e
 }
 
@@ -63,20 +68,8 @@ func (e *VM) init() error {
 	return nil
 }
 
-// Run load contract from code and invoke api function
-func (e *VM) Run(code, api string, args ...interface{}) (interface{}, error) {
-	contr := &contract.Contract{
-		ID:   "run_id",
-		Code: code,
-	}
-
-	preparedCode, err := e.sandbox.Prepare(contr, api, args)
-	if err != nil {
-		return "", err
-	}
-
-	rs, _, err := e.sandbox.Execute(preparedCode)
-	return rs, err
+func (e *VM) validate(c *contract.Contract) error {
+	return e.sandbox.Validate(c)
 }
 
 func (e *VM) compile(contract *contract.Contract) (string, error) {
@@ -87,13 +80,13 @@ func (e *VM) setHost(host *host.Host) {
 	e.sandbox.SetHost(host)
 }
 
-func (e *VM) setContract(contract *contract.Contract, api string, args ...interface{}) (string, error) {
+func (e *VM) setContract(contract *contract.Contract, api string, args []interface{}) (string, error) {
 	return e.sandbox.Prepare(contract, api, args)
 }
 
-func (e *VM) execute(code string) (rtn []interface{}, cost *contract.Cost, err error) {
+func (e *VM) execute(code string) (rtn []interface{}, cost contract.Cost, err error) {
 	rs, gasUsed, err := e.sandbox.Execute(code)
-	gasCost := contract.NewCost(gasUsed, 0, 0)
+	gasCost := contract.NewCost(0, 0, gasUsed)
 	return []interface{}{rs}, gasCost, err
 }
 
@@ -105,12 +98,29 @@ func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
 	e.releaseChannel = releaseChannel
 }
 
-func (e *VM) recycle() {
+func (e *VM) recycle(poolType vmPoolType) {
 	// first release sandbox
 	if e.sandbox != nil {
 		e.sandbox.Release()
 	}
-	// then gen new sandbox
+
+	if rand.Int()%(vmRefLimit-e.refCount) == 0 {
+		// release isolate
+		if e.isolate != nil {
+			e.refCount = 0
+			C.releaseIsolate(e.isolate)
+		}
+		// regen isolate
+		if poolType == CompileVMPool {
+			e.isolate = C.newIsolate(customCompileStartupData)
+		} else {
+			e.isolate = C.newIsolate(customStartupData)
+		}
+	} else {
+		C.lowMemoryNotification(e.isolate)
+	}
+
+	// then regen new sandbox
 	e.sandbox = NewSandbox(e)
 	if e.releaseChannel != nil {
 		e.releaseChannel <- e

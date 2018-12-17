@@ -1,35 +1,24 @@
 'use strict';
 
-var esprima = require('esprima/dist/esprima.js');
+const esprima = require('esprima/dist/esprima.js');
+const escodegen = require('escodegen/escodegen.js');
 
-var lang = "javascript";
-var version = "1.0.0";
+const lang = "javascript";
+const version = "1.0.0";
 
 function isClassDecl(stat) {
-	if (!stat || stat === null) {
-		return false;
-	}
-	if (stat.type === "ClassDeclaration") {
-		return true;
-	}
-	return false;
+	return !!(stat && stat.type === "ClassDeclaration");
 }
 
 function isExport(stat) {
-	if (!stat || stat === null) {
-		return false;
-	}
-	if (stat.type === "AssignmentExpression" && stat.left.type === "MemberExpression" &&
-			stat.left.object.type === "Identifier" && stat.left.object.name === "module" &&
-			stat.left.property.type === "Identifier" && stat.left.property.name === "exports") {
-		return true;
-	}
-	return false;
+	return !!(stat && stat.type === "AssignmentExpression" && stat.left && stat.left.type === "MemberExpression"
+    && stat.left.object && stat.left.object.type === "Identifier" && stat.left.object.name === "module"
+    && stat.left.property && stat.left.property.type === "Identifier" && stat.left.property.name === "exports");
 }
 
 function getExportName(stat) {
-	if (stat.right.type != "Identifier") {
-		throw "module.exports should be assigned to an identifier";
+	if (stat.right.type !== "Identifier") {
+		throw new Error("module.exports should be assigned to an identifier");
 	}
 	return stat.right.name;
 }
@@ -39,25 +28,27 @@ function isPublicMethod(def) {
 }
 
 function genAbi(def) {
-	var abi = {
+	return {
 		"name": def.key.name,
-		"args": new Array(def.value.params.length).fill("string")
+		"args": new Array(def.value.params.length).fill("string"),
+		"amountLimit": [{
+            "token": "iost",
+            "val": "0"
+        }]
 	};
-	return abi;
 }
 
 function genAbiArr(stat) {
-	var abiArr = [];
+	let abiArr = [];
 	if (!isClassDecl(stat) || stat.body.type !== "ClassBody") {
-		console.error("invalid statment for generate abi. stat = " + stat);
+		throw new Error("invalid statement for generate abi. stat = " + stat);
 		return null;
 	}
-	var initFound = false;
-	for (var i in stat.body.body) {
-		var def = stat.body.body[i];
+	let initFound = false;
+	for (let def of stat.body.body) {
 		if (def.type === "MethodDefinition" && isPublicMethod(def)) {
-			if (def.key.name == "constructor") {
-			} else if (def.key.name == "init") {
+			if (def.key.name === "constructor") {
+			} else if (def.key.name === "init") {
 				initFound = true;
 			} else {
 				abiArr.push(genAbi(def));
@@ -65,70 +56,156 @@ function genAbiArr(stat) {
 		}
 	}
 	if (!initFound) {
-		console.error("init not found!");
+		throw new Error("init not found!");
 		return null;
 	}
 	return abiArr;
 }
 
+function checkInvalidKeyword(tokens) {
+    for (let i = 0; i < tokens.length; i++) {
+        if ((tokens[i].type === "Identifier" || tokens[i].type === "Literal") &&
+            (tokens[i].value === "_IOSTInstruction_counter" || tokens[i].value === "_IOSTBinaryOp" || tokens[i].value === "IOSTInstruction" ||
+             tokens[i].value === "_IOSTTemplateTag" || tokens[i].value === "_IOSTSpreadElement")) {
+            throw new Error("use of _IOSTInstruction_counter or _IOSTBinaryOp keyword is not allowed");
+        }
+        if (tokens[i].type === "RegularExpression") {
+            throw new Error("use of RegularExpression is not allowed." + tokens[i].val)
+        }
+    }
+}
+
+function checkOperator(tokens) {
+    for (let i = 0; i < tokens.length; i++) {
+        if (tokens[i].type === "Punctuator" &&
+            (tokens[i].value === "+" || tokens[i].value === "-" || tokens[i].value === "*" || tokens[i].value === "/" || tokens[i].value === "%" ||
+                tokens[i].value === "+=" || tokens[i].value === "-=" || tokens[i].value === "*=" || tokens[i].value === "/=" || tokens[i].value === "%=" ||
+                tokens[i].value === "++" || tokens[i].value === "--")) {
+            throw new Error("use of +-*/% operators is not allowed");
+        }
+    }
+}
+
+function processOperator(node, pnode) {
+    if (node.type === "ArrayPattern" || node.type === "ObjectPattern") {
+        throw new Error("use of ArrayPattern or ObjectPattern is not allowed." + JSON.stringify(node));
+    }
+    let ops = ['+', '-', '*', '/', '%', '**', '|', '&', '^', '>>', '>>>', '<<', '==', '!=', '===', '!==', '>', '>=', '<', '<='];
+
+    if (node.type === "AssignmentExpression" && node.operator !== '=') {
+        let subnode = {};
+        subnode.operator = node.operator.substr(0, node.operator.length - 1);
+        subnode.type = 'BinaryExpression';
+        subnode.left = Object.assign({}, node.left);
+        subnode.right = node.right;
+        node.operator = '=';
+        node.right = subnode;
+
+    } else if (node.type === "BinaryExpression" && ops.includes(node.operator)) {
+        let newnode = {};
+        newnode.type = "CallExpression";
+        let calleeNode = {};
+        calleeNode.type = 'Identifier';
+        calleeNode.name = '_IOSTBinaryOp';
+        newnode.callee = calleeNode;
+        let opNode = {};
+        opNode.type = 'Literal';
+        opNode.value = node.operator;
+        opNode.raw = '\'' + node.operator + '\'';
+        newnode.arguments = [node.left, node.right, opNode];
+        node = newnode;
+    } else if (node.type === "TemplateLiteral" && (pnode === undefined || pnode.type !== "TaggedTemplateExpression")) {
+        let newnode = {};
+        newnode.type = "TaggedTemplateExpression";
+        let tagNode = {};
+        tagNode.type = 'Identifier';
+        tagNode.name = '_IOSTTemplateTag';
+        newnode.tag = tagNode;
+        newnode.quasi = node;
+        node = newnode;
+    } else if (node.type === "SpreadElement") {
+        let newnode = {};
+        newnode.type = "CallExpression";
+        let calleeNode = {};
+        calleeNode.type = 'Identifier';
+        calleeNode.name = '_IOSTSpreadElement';
+        newnode.callee = calleeNode;
+        newnode.arguments = [node.argument];
+        node.argument = newnode;
+    }
+    return node;
+}
+
+function traverseOperator(node, pnode) {
+    node = processOperator(node, pnode);
+    for (let key in node) {
+        if (node.hasOwnProperty(key)) {
+            let child = node[key];
+            if (typeof child === 'object' && child !== null) {
+                node[key] = traverseOperator(child, node);
+            }
+        }
+    }
+    return node;
+}
+
+function handleOperator(ast) {
+    ast = traverseOperator(ast);
+    // generate source from ast
+    return escodegen.generate(ast);
+}
+
 function processContract(source) {
-	var newSource, abi;
-    var ast = esprima.parseModule(source, {
+  let ast = esprima.parseModule(source, {
 		range: true,
 		loc: true,
 		tokens: true
 	});
 
-	var abiArr = [];
+	let abiArr = [];
 	if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
-		console.error("invalid source! ast = " + ast);
-		return ["", ""]
+		throw new Error("invalid source! ast = " + ast);
+		return ["", ""];
 	}
-	var validRange = [];
-	var className;
-	for (var i in ast.body) {
-		var stat = ast.body[i];
 
+    checkInvalidKeyword(ast.tokens);
+	// checkOperator(ast.tokens);
+    let newSource = "use strict;\n" + handleOperator(ast);
+
+	//let validRange = [];
+	let className;
+	for (let stat of ast.body) {
 		if (isClassDecl(stat)) {
-			validRange.push(stat.range);
+			//validRange.push(stat.range);
 		}
 		else if (stat.type === "ExpressionStatement" && isExport(stat.expression)) {
-			validRange.push(stat.range);
+			//validRange.push(stat.range);
 			className = getExportName(stat.expression);
 		}
 	}
-
-	for (var i in ast.body) {
-		var stat = ast.body[i];
-
-		if (isClassDecl(stat) && stat.id.type == "Identifier" && stat.id.name == className) {
+	for (let stat of ast.body) {
+		if (isClassDecl(stat) && stat.id.type === "Identifier" && stat.id.name === className) {
 			abiArr = genAbiArr(stat);
 		}
 	}
 
-	newSource = 'use strict;\n';
-	for (var i in validRange) {
-		var r = validRange[i];
-    	newSource += source.slice(r[0], r[1]) + "\n";
-	}
-
-	var abi = {};
+	let abi = {};
 	abi["lang"] = lang;
 	abi["version"] = version;
 	abi["abi"] = abiArr;
-	var abiStr = JSON.stringify(abi, null, 4); 
+	let abiStr = JSON.stringify(abi, null, 4);
 
 	return [newSource, abiStr]
 }
 module.exports = processContract;
 
 
-var fs = require('fs');
+let fs = require('fs');
 
-var file = process.argv[2]
+let file = process.argv[2];
 fs.readFile(file, 'utf8', function(err, contents) {
 	console.log('before calling process, len = ' + contents.length);
-	var [newSource, abi] = processContract(contents)
+	let [newSource, abi] = processContract(contents);
 	console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
 
 	fs.writeFile(file + ".after", newSource, function(err) {
@@ -136,12 +213,12 @@ fs.readFile(file, 'utf8', function(err, contents) {
     	    return console.log(err);
     	}
     	console.log("The new contract file was saved as " + file + ".after");
-	}); 
+	});
 
 	fs.writeFile(file + ".abi", abi, function(err) {
     	if(err) {
     	    return console.log(err);
     	}
     	console.log("The new abi file was saved as " + file + ".abi");
-	}); 
+	});
 });

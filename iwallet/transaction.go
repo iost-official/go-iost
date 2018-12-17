@@ -15,12 +15,8 @@
 package iwallet
 
 import (
-	"context"
 	"fmt"
-
-	"github.com/iost-official/go-iost/rpc"
 	"github.com/spf13/cobra"
-	"google.golang.org/grpc"
 )
 
 // transactionCmd represents the transaction command
@@ -28,42 +24,20 @@ var transactionCmd = &cobra.Command{
 	Use:   "transaction",
 	Short: "find transactions",
 	Long:  `find transaction by transaction hash`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
 			fmt.Println(`Error: transaction hash not given`)
 			return
 		}
-
-		conn, err := grpc.Dial(server, grpc.WithInsecure())
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		defer conn.Close()
-		client := rpc.NewApisClient(conn)
-		txRaw, err := client.GetTxByHash(context.Background(), &rpc.HashReq{Hash: args[0]})
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		//fmt.Println("tx raw:", txRaw.TxRaw)
+		txRaw, err := sdk.getTxByHash(args[0])
 		if err != nil {
 			fmt.Println(err.Error())
 		}
-		fmt.Println(txRaw)
+		fmt.Println(marshalTextString(txRaw))
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(transactionCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// transactionCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// transactionCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

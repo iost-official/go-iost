@@ -13,8 +13,6 @@ import (
 	ic "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	lgbl "github.com/libp2p/go-libp2p-loggables"
-	metrics "github.com/libp2p/go-libp2p-metrics"
-	mstream "github.com/libp2p/go-libp2p-metrics/stream"
 	inet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
 	pstore "github.com/libp2p/go-libp2p-peerstore"
@@ -44,7 +42,6 @@ var ClientVersion = "go-libp2p/3.3.4"
 type IDService struct {
 	Host host.Host
 
-	Reporter metrics.Reporter
 	// connections undergoing identification
 	// for wait purposes
 	currid map[inet.Conn]chan struct{}
@@ -64,7 +61,7 @@ func NewIDService(h host.Host) *IDService {
 		Host:   h,
 		currid: make(map[inet.Conn]chan struct{}),
 	}
-	h.SetStreamHandler(ID, s.RequestHandler)
+	h.SetStreamHandler(ID, s.requestHandler)
 	h.Network().Notify((*netNotifiee)(s))
 	return s
 }
@@ -86,7 +83,12 @@ func (ids *IDService) IdentifyConn(c inet.Conn) {
 	ids.currid[c] = ch
 	ids.currmu.Unlock()
 
-	defer close(ch)
+	defer func() {
+		close(ch)
+		ids.currmu.Lock()
+		delete(ids.currid, c)
+		ids.currmu.Unlock()
+	}()
 
 	s, err := c.NewStream()
 	if err != nil {
@@ -95,40 +97,22 @@ func (ids *IDService) IdentifyConn(c inet.Conn) {
 		c.Close()
 		return
 	}
-	defer s.Close()
 
 	s.SetProtocol(ID)
-
-	if ids.Reporter != nil {
-		s = mstream.WrapStream(s, ids.Reporter)
-	}
 
 	// ok give the response to our handler.
 	if err := msmux.SelectProtoOrFail(ID, s); err != nil {
 		log.Event(context.TODO(), "IdentifyOpenFailed", c.RemotePeer(), logging.Metadata{"error": err})
+		s.Reset()
 		return
 	}
 
-	ids.ResponseHandler(s)
-
-	ids.currmu.Lock()
-	_, found := ids.currid[c]
-	delete(ids.currid, c)
-	ids.currmu.Unlock()
-
-	if !found {
-		log.Errorf("IdentifyConn failed to find channel (programmer error) for %s", c)
-		return
-	}
+	ids.responseHandler(s)
 }
 
-func (ids *IDService) RequestHandler(s inet.Stream) {
-	defer s.Close()
+func (ids *IDService) requestHandler(s inet.Stream) {
+	defer inet.FullClose(s)
 	c := s.Conn()
-
-	if ids.Reporter != nil {
-		s = mstream.WrapStream(s, ids.Reporter)
-	}
 
 	w := ggio.NewDelimitedWriter(s)
 	mes := pb.Identify{}
@@ -139,20 +123,21 @@ func (ids *IDService) RequestHandler(s inet.Stream) {
 		c.RemotePeer(), c.RemoteMultiaddr())
 }
 
-func (ids *IDService) ResponseHandler(s inet.Stream) {
-	defer s.Close()
+func (ids *IDService) responseHandler(s inet.Stream) {
 	c := s.Conn()
 
 	r := ggio.NewDelimitedReader(s, 2048)
 	mes := pb.Identify{}
 	if err := r.ReadMsg(&mes); err != nil {
 		log.Warning("error reading identify message: ", err)
+		s.Reset()
 		return
 	}
 	ids.consumeMessage(&mes, c)
-
 	log.Debugf("%s received message from %s %s", ID,
 		c.RemotePeer(), c.RemoteMultiaddr())
+
+	go inet.FullClose(s)
 }
 
 func (ids *IDService) populateMessage(mes *pb.Identify, c inet.Conn) {
@@ -267,7 +252,7 @@ func (ids *IDService) consumeReceivedPubKey(c inet.Conn, kb []byte) {
 
 	newKey, err := ic.UnmarshalPublicKey(kb)
 	if err != nil {
-		log.Errorf("%s cannot unmarshal key from remote peer: %s", lp, rp)
+		log.Warningf("%s cannot unmarshal key from remote peer: %s, %s", lp, rp, err)
 		return
 	}
 
@@ -408,7 +393,8 @@ func (ids *IDService) consumeObservedAddress(observed []byte, c inet.Conn) {
 
 	// ok! we have the observed version of one of our ListenAddresses!
 	log.Debugf("added own observed listen addr: %s --> %s", c.LocalMultiaddr(), maddr)
-	ids.observedAddrs.Add(maddr, c.RemoteMultiaddr())
+	ids.observedAddrs.Add(maddr, c.LocalMultiaddr(), c.RemoteMultiaddr(),
+		c.Stat().Direction)
 }
 
 func addrInAddrs(a ma.Multiaddr, as []ma.Multiaddr) bool {

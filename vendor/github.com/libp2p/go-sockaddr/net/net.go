@@ -196,7 +196,7 @@ func UnixAddrToSockaddr(addr *net.UnixAddr) (Sockaddr, int) {
 	return &SockaddrUnix{Name: addr.Name}, t
 }
 
-// IPAndZoneToSockaddr converts a net.IP (with optional IPv6 Zone) to a Sockaddr
+// SockaddrToIPAndZone converts a Sockaddr to a net.IP (with optional IPv6 Zone)
 // Returns nil if conversion fails.
 func SockaddrToIPAndZone(sa Sockaddr) (net.IP, string) {
 	switch sa := sa.(type) {

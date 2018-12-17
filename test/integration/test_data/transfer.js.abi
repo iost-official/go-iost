@@ -1,0 +1,22 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "transfer",
+      "args": ["string", "string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "100"
+      }]
+    },
+    {
+      "name": "withdraw",
+      "args": ["string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "100"
+      }]
+    }
+  ]
+}

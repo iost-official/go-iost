@@ -1,26 +1,29 @@
 package pob
 
 import (
+	"strings"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"strings"
 )
 
 var staticProperty *StaticProperty
 
 // StaticProperty handles the the static property of pob.
 type StaticProperty struct {
-	account           *account.Account
+	account           *account.KeyPair
 	NumberOfWitnesses int64
 	WitnessList       []string
 	Watermark         map[string]int64
+	SlotUsed          map[int64]bool
 }
 
-func newStaticProperty(account *account.Account, witnessList []string) *StaticProperty {
+func newStaticProperty(account *account.KeyPair, witnessList []string) *StaticProperty {
 	property := &StaticProperty{
 		account:     account,
 		WitnessList: make([]string, 0),
 		Watermark:   make(map[string]int64),
+		SlotUsed:    make(map[int64]bool),
 	}
 
 	property.updateWitness(witnessList)
@@ -47,6 +50,10 @@ var (
 	second2nanosecond int64 = 1000000000
 )
 
+func witnessOfNanoSec(nanosec int64) string {
+	return witnessOfSec(nanosec / second2nanosecond)
+}
+
 func witnessOfSec(sec int64) string {
 	return witnessOfSlot(sec / common.SlotLength)
 }
@@ -60,4 +67,9 @@ func witnessOfSlot(slot int64) string {
 func timeUntilNextSchedule(timeSec int64) int64 {
 	currentSlot := timeSec / (second2nanosecond * common.SlotLength)
 	return (currentSlot+1)*second2nanosecond*common.SlotLength - timeSec
+}
+
+// GetStaticProperty return property. RPC needs it.
+func GetStaticProperty() *StaticProperty {
+	return staticProperty
 }

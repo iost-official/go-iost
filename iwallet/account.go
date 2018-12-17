@@ -15,101 +15,225 @@
 package iwallet
 
 import (
+	"encoding/json"
 	"fmt"
-	"path/filepath"
-
-	"os"
-	"strings"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"io/ioutil"
+	"os"
+	"strings"
 )
+
+var (
+	createName       string
+	viewAccounts     string
+	importAccount    string
+	deleteMethod     string
+	cryptoName       = []string{"ed25519", "secp256k1"}
+	initialRAM       int64
+	initialBalance   int64
+	initialGasPledge int64
+)
+
+type acc struct {
+	Name    string
+	KeyPair *account.KeyPair
+}
+type accounts struct {
+	Dir     string
+	Account []*acc
+}
 
 // accountCmd represents the account command
 var accountCmd = &cobra.Command{
 	Use:   "account",
-	Short: "Account manage",
+	Short: "KeyPair manage",
 	Long:  `Manage account of local storage`,
-	Run: func(cmd *cobra.Command, args []string) {
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		switch {
-		case nickName != "no":
-			if strings.ContainsAny(nickName, `?*:|/\"`) || len(nickName) > 16 {
-				fmt.Println("invalid nick name")
-			}
-			algo := getSignAlgo(signAlgo)
-			ac, _ := account.NewAccount(nil, algo)
-			if !filepath.IsAbs(kvPath) {
-				kvPath, _ = filepath.Abs(kvPath)
-			}
-			if err := os.MkdirAll(kvPath, 0700); err != nil {
-				panic(err)
-			}
-			fileName := kvPath + "/" + nickName
-			if algo == crypto.Ed25519 {
-				fileName += "_ed25519"
-			}
-			if algo == crypto.Secp256k1 {
-				fileName += "_secp256k1"
-			}
-			pubfile, err := os.Create(fileName + ".pub")
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			defer pubfile.Close()
-
-			_, err = pubfile.WriteString(saveBytes(ac.Pubkey))
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-
-			secFile, err := os.Create(fileName)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			defer secFile.Close()
-
-			_, err = secFile.WriteString(saveBytes(ac.Seckey))
-			if err != nil {
-				fmt.Println(err.Error())
-				return
-			}
-			fmt.Println("the iost account ID is:")
-			fmt.Println(account.GetIDByPubkey(ac.Pubkey))
-			fmt.Println("please save your account ID!")
-		default:
-			fmt.Println("invalid input")
+		case len(createName) != 0:
+			return createAccount(createName)
+		case len(viewAccounts) != 0:
+			viewAccount(viewAccounts)
+		case len(deleteMethod) != 0:
+			delAccount(deleteMethod)
+		case len(importAccount) != 0:
+			importAcc(importAccount, args)
 		}
+		return nil
+
 	},
 }
 
-var kvPath string
-var nickName string
-
 func init() {
 	rootCmd.AddCommand(accountCmd)
+	accountCmd.Flags().StringVarP(&createName, "create", "c", "", "create an account on blockchain")
+	accountCmd.Flags().StringVarP(&viewAccounts, "accounts", "a", "", "view account by name or All")
+	accountCmd.Flags().StringVarP(&importAccount, "import", "i", "", "import an account, args[account_name account_private_key]")
+	accountCmd.Flags().StringVarP(&deleteMethod, "delete", "", "", "delete an account")
+	accountCmd.Flags().Int64VarP(&initialRAM, "initial_ram", "", 1024, "buy $initial_ram bytes ram for the new account")
+	accountCmd.Flags().Int64VarP(&initialGasPledge, "initial_gas_pledge", "", 10, "pledge $initial_gas_pledge IOSTs for the new account")
+	accountCmd.Flags().Int64VarP(&initialBalance, "initial_balance", "", 0, "transfer $initial_balance IOSTs to the new account")
 
-	home, err := homedir.Dir()
+}
+
+func createAccount(name string) (err error) {
+	newName := name
+	if strings.ContainsAny(newName, `?*:|/\"`) || len(newName) > 16 {
+		return fmt.Errorf("invalid account name")
+	}
+	algo := sdk.getSignAlgo()
+	newKp, err := account.NewKeyPair(nil, algo)
 	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
+		return fmt.Errorf("create key pair failed %v", err)
+	}
+	err = sdk.loadAccount()
+	if err != nil {
+		return fmt.Errorf("load account failed. Is ~/.iwallet/<accountName>_ed25519 exists")
+	}
+	err = sdk.CreateNewAccount(newName, newKp, initialGasPledge, initialRAM, initialBalance)
+	if err != nil {
+		return fmt.Errorf("create new account error %v", err)
+	}
+	err = sdk.saveAccount(newName, newKp)
+	if err != nil {
+		return fmt.Errorf("saveAccount failed %v", err)
+	}
+	return nil
+}
+
+func viewAccount(name string) {
+
+	dir, err := sdk.getAccountDir()
+	if err != nil {
+		fmt.Println("getAccountDir error: ", err)
+		return
+	}
+	al := accounts{}
+	al.Dir = dir
+	if name == "All" {
+		for _, v := range cryptoName {
+
+			files, err := getFilesAndDirs(dir, v)
+			if err != nil {
+				fmt.Println("getFilesAndDirs error: ", err)
+				return
+			}
+			for _, f := range files {
+				fsk, err := readFile(f)
+				if err != nil {
+					fmt.Println("read file failed: ", err)
+					continue
+				}
+				keyPair, err := account.NewKeyPair(loadBytes(string(fsk)), crypto.NewAlgorithm(v))
+				if err != nil {
+					fmt.Println("NewKeyPair error: ", err)
+					continue
+				}
+				name, err := getFileName(f, "_"+v)
+				if err != nil {
+					fmt.Println("getFileName error: ", err)
+					continue
+				}
+				al.Account = append(al.Account, &acc{name, keyPair})
+
+			}
+			if len(files) != 0 {
+				ret, err := json.MarshalIndent(al, "", "    ")
+				if err != nil {
+					fmt.Println("json.Marshal error: ", err)
+					return
+				}
+				fmt.Println(string(ret))
+				al = accounts{}
+			}
+		}
+	} else {
+		for _, v := range cryptoName {
+			n := fmt.Sprintf("%s/%s_%s", dir, name, v)
+			fsk, err := readFile(n)
+			if err != nil {
+				continue
+			}
+			keyPair, err := account.NewKeyPair(loadBytes(string(fsk)), crypto.NewAlgorithm(v))
+			if err != nil {
+				fmt.Println("NewKeyPair error: ", err)
+				continue
+			}
+			al.Account = append(al.Account, &acc{name, keyPair})
+		}
+
+		ret, err := json.MarshalIndent(al, "", "    ")
+		if err != nil {
+			fmt.Println("json.Marshal error: ", err)
+			return
+		}
+		fmt.Println(string(ret))
+	}
+}
+
+func importAcc(name string, args []string) {
+	if len(args) == 0 {
+		fmt.Println("Error: private key not given")
+		return
+	}
+	keyPair, err := account.NewKeyPair(loadBytes(args[0]), sdk.getSignAlgo())
+	if err != nil {
+		fmt.Println("private key error: ", err)
+		return
+	}
+	err = sdk.saveAccount(name, keyPair)
+	if err != nil {
+		fmt.Printf("saveAccount failed %v\n", err)
+	}
+}
+
+func delAccount(name string) error {
+	dir, err := sdk.getAccountDir()
+	if err != nil {
+		return fmt.Errorf("getAccountDir error: %v", err)
+	}
+	for _, v := range cryptoName {
+		n := fmt.Sprintf("%s/%s_%s", dir, name, v)
+		os.Remove(n)
+		os.Remove(n + ".id")
+		os.Remove(n + ".pub")
+	}
+	fmt.Printf("delete %v success\n", name)
+	return nil
+}
+
+func getFileName(file string, suf string) (string, error) {
+	f := file
+	startIndex := strings.LastIndex(f, "/")
+	if startIndex == -1 {
+		return "", fmt.Errorf("file name error")
 	}
 
-	accountCmd.Flags().StringVarP(&nickName, "name", "n", "id", "Create new account, using input as nickname")
-	accountCmd.Flags().StringVarP(&kvPath, "path", "p", home+"/.iwallet", "Set path of key pair file")
-	accountCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
+	lastIndex := strings.LastIndex(f, suf)
+	if lastIndex == -1 {
+		return "", fmt.Errorf("file name error")
+	}
 
-	// Here you will define your flags and configuration settings.
+	return f[startIndex+1 : lastIndex], nil
+}
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// accountCmd.PersistentFlags().String("foo", "", "A help for foo")
+func getFilesAndDirs(dirPth string, suf string) (files []string, err error) {
+	dir, err := ioutil.ReadDir(dirPth)
+	if err != nil {
+		return nil, err
+	}
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// accountCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	PthSep := string(os.PathSeparator)
+	for _, fi := range dir {
+		if !fi.IsDir() {
+			ok := strings.HasSuffix(fi.Name(), suf)
+			if ok {
+				files = append(files, dirPth+PthSep+fi.Name())
+			}
+		}
+	}
+
+	return files, nil
 }

@@ -2,8 +2,10 @@ package merkletree
 
 import (
 	"bytes"
-	"crypto/sha256"
+	"encoding/hex"
 	"errors"
+
+	"github.com/iost-official/go-iost/common"
 
 	"math"
 )
@@ -23,18 +25,16 @@ func (m *MerkleTree) Build(data [][]byte) {
 	end := n + int32(len(data)) - 2
 	for {
 		for i := start; i <= end; i = i + 2 {
-			var tmpHash [32]byte
+			p := (i - 1) / 2
 			if m.HashList[i+1] == nil {
-				tmpHash = sha256.Sum256(append(m.HashList[i], m.HashList[i]...))
+				m.HashList[p] = common.Sha3(append(m.HashList[i], m.HashList[i]...))
 			} else {
 				if bytes.Compare(m.HashList[i], m.HashList[i+1]) < 0 {
-					tmpHash = sha256.Sum256(append(m.HashList[i], m.HashList[i+1]...))
+					m.HashList[p] = common.Sha3(append(m.HashList[i], m.HashList[i+1]...))
 				} else {
-					tmpHash = sha256.Sum256(append(m.HashList[i+1], m.HashList[i]...))
+					m.HashList[p] = common.Sha3(append(m.HashList[i+1], m.HashList[i]...))
 				}
 			}
-			p := (i - 1) / 2
-			m.HashList[p] = tmpHash[:]
 		}
 		start = (start - 1) / 2
 		end = (end - 1) / 2
@@ -44,7 +44,7 @@ func (m *MerkleTree) Build(data [][]byte) {
 	}
 	m.Hash2Idx = make(map[string]int32)
 	for idx, datum := range data {
-		m.Hash2Idx[string(datum)] = int32(idx) + n - 1
+		m.Hash2Idx[hex.EncodeToString(datum)] = int32(idx) + n - 1
 	}
 }
 
@@ -58,7 +58,7 @@ func (m *MerkleTree) MerklePath(hash []byte) ([][]byte, error) {
 	if m.LeafNum == 0 {
 		return nil, errors.New("merkletree hasn't built")
 	}
-	idx, ok := m.Hash2Idx[string(hash)]
+	idx, ok := m.Hash2Idx[hex.EncodeToString(hash)]
 	if !ok {
 		return nil, errors.New("hash isn't in the tree")
 	}
@@ -84,13 +84,11 @@ func (m *MerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (boo
 		return false, errors.New("rootHash input error")
 	}
 	for _, p := range mp {
-		var tmpHash [32]byte
 		if bytes.Compare(hash, p) < 0 {
-			tmpHash = sha256.Sum256(append(hash, p...))
+			hash = common.Sha3(append(hash, p...))
 		} else {
-			tmpHash = sha256.Sum256(append(p, hash...))
+			hash = common.Sha3(append(p, hash...))
 		}
-		hash = tmpHash[:]
 	}
 	return bytes.Equal(hash, rootHash), nil
 }

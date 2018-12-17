@@ -17,7 +17,7 @@ ifeq ($(LC_OS_NAME), darwin)
 	LD=clang++
 	LIB_SUFFIX=.dylib
 	CXXFLAGS+=-I./include/_darwin_amd64
-	LIBS+=-lv8_base -lv8_init -lv8_initializers -lv8_libsampler -lv8_snapshot
+	LIBS+=-lv8_init -lv8_initializers -lv8_libsampler -lv8_snapshot -lv8_base 
 	LIB_PATH=./libv8/_darwin_amd64
 	INSTALL=install
 	INSTALL_PATH=./libv8/_darwin_amd64
@@ -35,7 +35,7 @@ else
 	LDCONFIG=sudo /sbin/ldconfig
 endif
 
-vm: vm.cc.o console.cc.o require.cc.o storage.cc.o blockchain.cc.o sandbox.cc.o instruction.cc.o compile.cc.o
+vm: vm.cc.o allocator.cc.o console.cc.o require.cc.o storage.cc.o blockchain.cc.o sandbox.cc.o instruction.cc.o compile.cc.o crypto.cc.o
 	$(LD) -g -shared $(LDFLAGS) $^ -o libvm$(LIB_SUFFIX) -L$(LIB_PATH) $(LIBS)
 
 %.cc.o: %.cc

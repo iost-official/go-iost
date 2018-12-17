@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"context"
 	"encoding/binary"
 	"errors"
 	"io"
@@ -9,10 +8,10 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/ilog"
-	multiaddr "github.com/multiformats/go-multiaddr"
 
 	libnet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-peer"
+	"github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 )
 
@@ -28,8 +27,6 @@ const (
 	bloomErrRate      = 0.001
 
 	msgChanSize = 1024
-
-	maxStreamCount = 4
 )
 
 // Peer represents a neighbor which we connect directily.
@@ -44,10 +41,7 @@ type Peer struct {
 	conn        libnet.Conn
 	peerManager *PeerManager
 
-	// streams is a chan type from which we get a stream to send data and put it back after finishing.
-	streams     chan libnet.Stream
-	streamCount int
-	streamMutex sync.Mutex
+	stream libnet.Stream
 
 	recentMsg      *bloom.BloomFilter
 	bloomMutex     sync.Mutex
@@ -56,25 +50,38 @@ type Peer struct {
 	urgentMsgCh chan *p2pMessage
 	normalMsgCh chan *p2pMessage
 
+	direction connDirection
+
 	quitWriteCh chan struct{}
 	once        sync.Once
 }
 
 // NewPeer returns a new instance of Peer struct.
-func NewPeer(stream libnet.Stream, pm *PeerManager) *Peer {
+func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Peer {
 	peer := &Peer{
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
 		conn:        stream.Conn(),
+		stream:      stream,
 		peerManager: pm,
-		streams:     make(chan libnet.Stream, maxStreamCount),
 		recentMsg:   bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
 		normalMsgCh: make(chan *p2pMessage, msgChanSize),
 		quitWriteCh: make(chan struct{}),
+		direction:   direction,
 	}
-	peer.AddStream(stream)
+	go peer.readLoop(stream)
 	return peer
+}
+
+// ID return the net id.
+func (p *Peer) ID() string {
+	return p.id.Pretty()
+}
+
+// Addr return the address.
+func (p *Peer) Addr() string {
+	return p.addr.String()
 }
 
 // Start starts peer's loop.
@@ -96,92 +103,41 @@ func (p *Peer) Stop() {
 
 // AddStream tries to add a Stream in stream pool.
 func (p *Peer) AddStream(stream libnet.Stream) error {
-	p.streamMutex.Lock()
-	defer p.streamMutex.Unlock()
-
-	if p.streamCount >= maxStreamCount {
-		return ErrStreamCountExceed
-	}
-	p.streams <- stream
-	p.streamCount++
+	/*  if err := p.streamPool.Put(stream); err != nil { */
+	// return err
+	/* } */
 	go p.readLoop(stream)
 	return nil
 }
 
-// CloseStream closes a stream and decrease the stream count.
-//
-// Notice that it only closes the stream for writing. Reading will still work (that
-// is, the remote side can still write).
-func (p *Peer) CloseStream(stream libnet.Stream) {
-	p.streamMutex.Lock()
-	defer p.streamMutex.Unlock()
-
-	stream.Close()
-	p.streamCount--
-}
-
-func (p *Peer) newStream() (libnet.Stream, error) {
-	p.streamMutex.Lock()
-	defer p.streamMutex.Unlock()
-	if p.streamCount >= maxStreamCount {
-		return nil, ErrStreamCountExceed
-	}
-	stream, err := p.peerManager.host.NewStream(context.Background(), p.id, protocolID)
-	if err != nil {
-		ilog.Errorf("creating stream failed. pid=%v, err=%v", p.id.Pretty(), err)
-		return nil, err
-	}
-	p.streamCount++
-	go p.readLoop(stream)
-	return stream, nil
-}
-
-// getStream tries to get a stream from the stream pool.
-//
-// If the stream pool is empty and the stream count is less than maxStreamCount, it would create a
-// new stream and use it. Otherwise it would wait for a free stream.
-func (p *Peer) getStream() (libnet.Stream, error) {
-	select {
-	case stream := <-p.streams:
-		return stream, nil
-	default:
-		stream, err := p.newStream()
-		if err == ErrStreamCountExceed {
-			break
-		}
-		return stream, err
-	}
-	return <-p.streams, nil
-}
-
 func (p *Peer) write(m *p2pMessage) error {
-	stream, err := p.getStream()
+	// s, err := p.streamPool.Get()
 	// if getStream fails, the TCP connection may be broken and we should stop the peer.
-	if err != nil {
-		ilog.Errorf("get stream fails. err=%v", err)
-		p.peerManager.RemoveNeighbor(p.id)
-		return err
-	}
+	/* if err != nil { */
+	// ilog.Errorf("get stream fails. err=%v", err)
+	// p.peerManager.RemoveNeighbor(p.id)
+	// return err
+	// }
+	/* stream := s.(libnet.Stream) */
 
 	// 5 kB/s
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
-	if err = stream.SetWriteDeadline(deadline); err != nil {
+	if err := p.stream.SetWriteDeadline(deadline); err != nil {
 		ilog.Warnf("set write deadline failed. err=%v", err)
-		p.CloseStream(stream)
+		p.stream.Close()
 		return err
 	}
-
-	_, err = stream.Write(m.content())
+	_, err := p.stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("write message failed. err=%v", err)
-		p.CloseStream(stream)
+		// p.stream.Close()
+		p.peerManager.RemoveNeighbor(p.id)
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
 	byteOutCounter.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)
 
-	p.streams <- stream
 	return nil
 }
 
@@ -192,7 +148,7 @@ func (p *Peer) writeLoop() {
 			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 			return
 		case um := <-p.urgentMsgCh:
-			go p.write(um)
+			p.write(um)
 		case nm := <-p.normalMsgCh:
 			for done := false; !done; {
 				select {
@@ -200,12 +156,12 @@ func (p *Peer) writeLoop() {
 					ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
 					return
 				case um := <-p.urgentMsgCh:
-					go p.write(um)
+					p.write(um)
 				default:
 					done = true
 				}
 			}
-			go p.write(nm)
+			p.write(nm)
 		}
 	}
 }
@@ -239,18 +195,23 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
 		byteInCounter.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
-
 		p.handleMessage(msg)
 	}
 }
 
 // SendMessage puts message into the corresponding channel.
-func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
+func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate, async bool) error {
 	if deduplicate && msg.needDedup() {
 		if p.hasMessage(msg) {
 			// ilog.Debug("ignore reduplicate message")
 			return ErrDuplicateMessage
 		}
+	}
+	if !async {
+		if msg.needDedup() {
+			p.recordMessage(msg)
+		}
+		return p.write(msg)
 	}
 	ch := p.urgentMsgCh
 	if mp == NormalMessage {

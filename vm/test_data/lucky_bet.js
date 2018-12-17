@@ -15,18 +15,15 @@ class Contract {
         }
     }
     bet(account, luckyNumber, coins, nonce) {
-        if (coins < 100000000 || coins > 500000000) {
+        if (coins < 1 || coins > 5) {
             console.log(coins);
-            throw "bet coins should be >=1 and <= 5"
+            throw new Error("bet coins should be >=1 and <= 5");
         }
         if (luckyNumber < 0 || luckyNumber > 9) {
-            throw "lucky number should be >=0 and <= 9"
+            throw new Error("lucky number should be >=0 and <= 9");
         }
 
-        const result = BlockChain.deposit(account, coins);
-        if (result !== 0) {
-            throw "cannot bet"
-        }
+        blockchain.deposit(account, coins, "");
 
         let userNumber = JSON.parse(storage.get("user_number"));
         let totalCoins = JSON.parse(storage.get("total_coins"));
@@ -37,13 +34,13 @@ class Contract {
 
         storage.mapPut('table', luckyNumber.toString(), JSON.stringify(table));
 
-        userNumber += 1
-        totalCoins += coins
+        userNumber += 1;
+        totalCoins += coins;
         storage.put("user_number", JSON.stringify(userNumber));
         storage.put("total_coins", JSON.stringify(totalCoins));
 
         if (userNumber >= maxUserNumber) {
-            const bi = JSON.parse(BlockChain.blockInfo());
+            const bi = JSON.parse(blockchain.blockInfo());
             const bn = bi.number;
             const ph = bi.parent_hash;
             const lastLuckyBlock = JSON.parse(storage.get("last_lucky_block"));
@@ -95,8 +92,8 @@ class Contract {
             if( i === ln) {
                 table = winTable;
                 table.forEach(function (record) {
-                    const reward = (tc.multi(record.coins/ 100000000).div(totalVal/ 100000000));
-                    BlockChain.withdraw(record.account, reward);
+                    const reward = (tc.multi(record.coins).div(totalVal));
+                    blockchain.withdraw(record.account, reward, "");
                     record.reward = reward.toString();
                     result.records.push(record)
                 })

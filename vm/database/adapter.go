@@ -4,7 +4,6 @@ type database interface {
 	Get(key string) (value string)
 	Put(key, value string)
 	Has(key string) bool
-	Keys(prefix string) []string
 	Del(key string)
 }
 
@@ -14,43 +13,43 @@ const (
 )
 
 type chainbaseAdapter struct {
-	cb  IMultiValue
-	err error // todo handle error
+	cb IMultiValue
 }
 
 func (c *chainbaseAdapter) Get(key string) (value string) {
 	var err error
 	value, err = c.cb.Get(StateTable, key)
 	if err != nil {
-		c.err = err
-		return "n"
+		panic(err)
 	}
 	if value == "" {
-		return "n"
+		return NilPrefix
 	}
 	return
 }
+
 func (c *chainbaseAdapter) Put(key, value string) {
-	c.err = c.cb.Put(StateTable, key, value)
+	err := c.cb.Put(StateTable, key, value)
+	if err != nil {
+		panic(err)
+	}
 }
+
 func (c *chainbaseAdapter) Has(key string) bool {
 	ok, err := c.cb.Has(StateTable, key)
 	if err != nil {
-		c.err = err
-		return false
+		panic(err)
 	}
 	return ok
 }
-func (c *chainbaseAdapter) Keys(prefix string) []string {
-	var rtn []string
-	rtn, c.err = c.cb.Keys(StateTable, prefix)
-	return rtn
-}
 
 func (c *chainbaseAdapter) Del(key string) {
-	c.err = c.cb.Del(StateTable, key)
+	err := c.cb.Del(StateTable, key)
+	if err != nil {
+		panic(err)
+	}
 }
 
 func newChainbaseAdapter(cb IMultiValue) *chainbaseAdapter {
-	return &chainbaseAdapter{cb, nil}
+	return &chainbaseAdapter{cb}
 }

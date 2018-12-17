@@ -1,5 +1,10 @@
 package host
 
+import (
+	"bytes"
+	"fmt"
+)
+
 // Context thread unsafe context with global fields
 type Context struct { // thread unsafe
 	base   *Context
@@ -25,6 +30,22 @@ func NewContext(base *Context) *Context {
 
 }
 
+func (c *Context) String() string {
+	if c == nil {
+		return "nil"
+	}
+	b := new(bytes.Buffer)
+	for key, value := range c.value {
+		fmt.Fprintf(b, "%s=%v ", key, value)
+	}
+	fmt.Fprint(b, "\n")
+	for key, value := range c.gValue {
+		fmt.Fprintf(b, "%s=%v ", key, value)
+	}
+	fmt.Fprint(b, "\n|\n")
+	return b.String() + c.base.String()
+}
+
 // Value get value of key
 func (c *Context) Value(key string) (value interface{}) {
 	cc := c
@@ -32,18 +53,22 @@ func (c *Context) Value(key string) (value interface{}) {
 		var ok bool
 		value, ok = cc.value[key]
 		if ok {
-			return
+			break
 		}
 		cc = cc.base
 		if cc == nil {
-			return nil
+			value = nil
+			break
 		}
 
 	}
+	//ilog.Debugf("get %s -> %v", key, value)
+	return
 }
 
 // Set  set value of k
 func (c *Context) Set(key string, value interface{}) {
+	//ilog.Debugf("set %s -> %v", key, value)
 	c.value[key] = value
 }
 
@@ -63,6 +88,15 @@ func (c *Context) GSet(key string, value interface{}) {
 		cc = cc.base
 	}
 	cc.gValue[key] = value
+}
+
+// GClear clear global values
+func (c *Context) GClear() {
+	cc := c
+	for cc.base != nil {
+		cc = cc.base
+	}
+	cc.gValue = make(map[string]interface{})
 }
 
 // Base get base of context

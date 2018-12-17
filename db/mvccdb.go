@@ -39,7 +39,7 @@ type MVCCDB interface {
 
 // NewMVCCDB return new mvccdb
 func NewMVCCDB(path string) (MVCCDB, error) {
-	return NewCacheMVCCDB(path, mvcc.TrieCache)
+	return NewCacheMVCCDB(path, mvcc.MapCache)
 }
 
 // Item is the value of cache
@@ -146,6 +146,7 @@ func (m *CommitManager) FreeBefore(c *Commit) {
 // CacheMVCCDB is the mvcc db with cache
 type CacheMVCCDB struct {
 	head    *Commit
+	rwmu    sync.RWMutex
 	stage   *Commit
 	storage *kv.Storage
 	cm      *CommitManager
@@ -190,6 +191,7 @@ func (m *CacheMVCCDB) isValidTable(table string) bool {
 
 // Get returns the value of specify key and table
 func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
+	//fmt.Printf("Get %v %v\n", table, key)
 	if !m.isValidTable(table) {
 		return "", ErrTableNotValid
 	}
@@ -214,6 +216,7 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 
 // Put will insert the key-value pair into the table
 func (m *CacheMVCCDB) Put(table string, key string, value string) error {
+	//fmt.Printf("Put %v %v %v\n", table, key, value)
 	if !m.isValidTable(table) {
 		return ErrTableNotValid
 	}
@@ -289,6 +292,9 @@ func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
 
 // Commit will commit current state of mvccdb
 func (m *CacheMVCCDB) Commit() {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	m.cm.Add(m.stage)
 	m.head = m.stage
 	m.stage = m.head.Fork()
@@ -296,11 +302,17 @@ func (m *CacheMVCCDB) Commit() {
 
 // Rollback will rollback the state of mvccdb
 func (m *CacheMVCCDB) Rollback() {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	m.stage = m.head.Fork()
 }
 
 // Checkout will checkout the specify tag of mvccdb
 func (m *CacheMVCCDB) Checkout(t string) bool {
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
+
 	head := m.cm.Get(t)
 	if head == nil {
 		return false
@@ -312,12 +324,20 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 
 // Tag will add tag to current state of mvccdb
 func (m *CacheMVCCDB) Tag(t string) {
+	m.Commit()
+
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
 	m.cm.AddTag(m.head, t)
 }
 
 // CurrentTag will returns current tag of mvccdb
 func (m *CacheMVCCDB) CurrentTag() string {
 	// TODO how to write better in this place
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
 	tags := m.cm.GetTags(m.head)
 	return tags[len(tags)-1]
 }
@@ -325,6 +345,9 @@ func (m *CacheMVCCDB) CurrentTag() string {
 // Fork will fork the mvcdb
 // thread safe between all forks of the mvccdb
 func (m *CacheMVCCDB) Fork() MVCCDB {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
 	mvccdb := &CacheMVCCDB{
 		head:    m.head,
 		stage:   m.head.Fork(),

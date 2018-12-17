@@ -5,7 +5,7 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 )
 
 // ACCConfig account of the system
@@ -15,13 +15,32 @@ type ACCConfig struct {
 	Algorithm string
 }
 
-// GenesisConfig config of the genesis block
+// Witness config of the genesis block
+type Witness struct {
+	ID      string
+	Owner   string
+	Active  string
+	Balance int64
+}
+
+// TokenInfo config of the genesis block
+type TokenInfo struct {
+	FoundationAccount string
+	IOSTTotalSupply   int64
+	IOSTDecimal       int64
+	RAMTotalSupply    int64
+	RAMGenesisAmount  int64
+}
+
+// GenesisConfig config of the genesis bloc
 type GenesisConfig struct {
 	CreateGenesis    bool
-	GenesisHash      string
-	WitnessInfo      []string
-	VoteContractPath string
-	AdminID			 string
+	InitialTimestamp string
+	TokenInfo        *TokenInfo
+	WitnessInfo      []*Witness
+	ContractPath     string
+	AdminInfo        *Witness
+	FoundationInfo   *Witness
 }
 
 // DBConfig config of the database
@@ -37,17 +56,24 @@ type VMConfig struct {
 
 // P2PConfig is the config for p2p network.
 type P2PConfig struct {
-	ListenAddr string
-	SeedNodes  []string
-	ChainID    uint32
-	Version    uint16
-	DataPath   string
+	ListenAddr   string
+	SeedNodes    []string
+	ChainID      uint32
+	Version      uint16
+	DataPath     string
+	InboundConn  int
+	OutboundConn int
+	BlackPID     []string
+	BlackIP      []string
+	AdminPort    string
 }
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
-	JSONPort int
-	GRPCPort int
+	GatewayAddr  string
+	GRPCAddr     string
+	AllowOrigins []string
+	TryTx        bool
 }
 
 // FileLogConfig is the config for filewriter of ilog.
@@ -84,10 +110,16 @@ type DebugConfig struct {
 	ListenAddr string
 }
 
+// VersionConfig contrains netname(mainnet / testnet etc) and protocol info
+type VersionConfig struct {
+	NetName         string
+	ProtocolVersion string
+}
+
 // Config provide all configuration for the application
 type Config struct {
 	ACC     *ACCConfig
-	Genesis *GenesisConfig
+	Genesis string
 	VM      *VMConfig
 	DB      *DBConfig
 	P2P     *P2PConfig
@@ -95,10 +127,11 @@ type Config struct {
 	Log     *LogConfig
 	Metrics *MetricsConfig
 	Debug   *DebugConfig
+	Version *VersionConfig
 }
 
-// NewConfig returns a new instance of Config
-func NewConfig(configfile string) *Config {
+// LoadYamlAsViper load yaml file as viper object
+func LoadYamlAsViper(configfile string) *viper.Viper {
 	v := viper.GetViper()
 	v.SetConfigType("yaml")
 
@@ -111,6 +144,12 @@ func NewConfig(configfile string) *Config {
 		ilog.Fatalf("Failed to read config file: %v", err)
 	}
 
+	return v
+}
+
+// NewConfig returns a new instance of Config
+func NewConfig(configfile string) *Config {
+	v := LoadYamlAsViper(configfile)
 	c := &Config{}
 	if err := v.Unmarshal(c); err != nil {
 		ilog.Fatalf("Unable to decode into struct, %v", err)
