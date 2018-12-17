@@ -270,7 +270,7 @@ func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetToke
 // GetToken721Metadata returns metadata of an specific token721 token.
 func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721MetadataResponse, error) {
 	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
-	metadata, err := dbVisitor.Token721Metadata(req.GetToken(), req.GetTokenID())
+	metadata, err := dbVisitor.Token721Metadata(req.GetToken(), req.GetTokenId())
 	return &rpcpb.GetToken721MetadataResponse{
 		Metadata:metadata,
 	}, err
@@ -279,7 +279,7 @@ func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetTok
 // GetToken721Owner returns owner of an specific token721 token.
 func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721OwnerResponse, error) {
 	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
-	owner, err := dbVisitor.Token721Owner(req.GetToken(), req.GetTokenID())
+	owner, err := dbVisitor.Token721Owner(req.GetToken(), req.GetTokenId())
 	return &rpcpb.GetToken721OwnerResponse{
 		Owner:owner,
 	}, err
