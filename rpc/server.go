@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -35,6 +36,8 @@ type Server struct {
 	gatewayAddr   string
 	gatewayServer *http.Server
 	allowOrigins  []string
+
+	quitCh chan struct{}
 }
 
 func p(pp interface{}) error {
@@ -47,6 +50,7 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 		grpcAddr:     bv.Config().RPC.GRPCAddr,
 		gatewayAddr:  bv.Config().RPC.GatewayAddr,
 		allowOrigins: bv.Config().RPC.AllowOrigins,
+		quitCh:       make(chan struct{}),
 	}
 	s.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(
@@ -62,7 +66,7 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 			),
 		),
 		grpc.MaxConcurrentStreams(maxConcurrentStreams))
-	apiService := NewAPIService(tp, bc, bv, p2pService)
+	apiService := NewAPIService(tp, bc, bv, p2pService, s.quitCh)
 	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
 	return s
 }
@@ -126,6 +130,8 @@ func errorHandler(_ context.Context, _ *runtime.ServeMux, _ runtime.Marshaler, w
 
 // Stop stops the rpc server.
 func (s *Server) Stop() {
-	s.gatewayServer.Shutdown(nil)
+	close(s.quitCh)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second) // nolint
+	s.gatewayServer.Shutdown(ctx)
 	s.grpcServer.GracefulStop()
 }
