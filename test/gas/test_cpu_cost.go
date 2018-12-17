@@ -413,7 +413,7 @@ func getOverviewTable() {
 		if ttotal > 0.2 {
 			name := fmt.Sprintf("%v:%v", "empty", "StartUp")
 			gas := ctotal / float64(i)
-			time := ttotal*1e9 / float64(i)
+			time := ttotal * 1e9 / float64(i)
 			fmt.Printf(
 				"%35v    cost: %12.2fgas    time: %12.2fns    cost/time: %12.2fgas/us\n",
 				name,
@@ -462,7 +462,7 @@ func getOverviewTable() {
 }
 
 func main() {
-	//getOverview()
-	//getOpDetail()
+	getOverview()
+	getOpDetail()
 	getOverviewTable()
 }
