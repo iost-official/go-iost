@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -29,7 +30,7 @@ var receiptCmd = &cobra.Command{
 			fmt.Println(`Error: transaction hash not given`)
 			return
 		}
-		txReceipt, err := sdk.getTxReceiptByTxHash(args[0])
+		txReceipt, err := sdk.GetTxReceiptByTxHash(args[0])
 		if err != nil {
 			fmt.Println(err.Error())
 			return

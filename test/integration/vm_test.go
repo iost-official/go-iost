@@ -122,12 +122,10 @@ func Test_VMMethod_Event(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
-		eve := event.GetEventCollectorInstance()
+		eve := event.GetCollector()
 		// contract event
-		sub1 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractEvent})
-		eve.Subscribe(sub1)
-		sub2 := event.NewSubscription(100, []event.Event_Topic{event.Event_ContractReceipt})
-		eve.Subscribe(sub2)
+		ch1 := eve.Subscribe(1, []event.Topic{event.ContractEvent}, nil)
+		ch2 := eve.Subscribe(2, []event.Topic{event.ContractReceipt}, nil)
 
 		r, err = s.Call(cname, "event", fmt.Sprintf(`["%v"]`, "eventdata"), testID[0], kp)
 		s.Visitor.Commit()
@@ -135,9 +133,9 @@ func Test_VMMethod_Event(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 
-		e := <-sub1.ReadChan()
+		e := <-ch1
 		So(e.Data, ShouldEqual, "eventdata")
-		So(e.Topic, ShouldEqual, event.Event_ContractEvent)
+		So(e.Topic, ShouldEqual, event.ContractEvent)
 
 		// receipt event
 		r, err = s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receipteventdata"), testID[0], kp)
@@ -146,9 +144,9 @@ func Test_VMMethod_Event(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 
-		e = <-sub2.ReadChan()
+		e = <-ch2
 		So(e.Data, ShouldEqual, "receipteventdata")
-		So(e.Topic, ShouldEqual, event.Event_ContractReceipt)
+		So(e.Topic, ShouldEqual, event.ContractReceipt)
 	})
 }
 

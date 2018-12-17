@@ -10,6 +10,7 @@ type Visitor struct {
 	RollbackHandler
 	DelaytxHandler
 	GasHandler
+	RAMHandler
 }
 
 // NewVisitor get a visitor of a DB, with cache length determined
@@ -23,6 +24,7 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		ContractHandler: ContractHandler{cachedDB},
 		TokenHandler:    TokenHandler{cachedDB},
 		Token721Handler:    Token721Handler{cachedDB},
+		RAMHandler:      RAMHandler{cachedDB},
 	}
 	v.GasHandler = GasHandler{v.BasicHandler, v.MapHandler}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
@@ -51,6 +53,7 @@ func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
 		ContractHandler: ContractHandler{watcher},
 		TokenHandler:    TokenHandler{watcher},
 		Token721Handler:    Token721Handler{watcher},
+		RAMHandler:      RAMHandler{watcher},
 	}
 	v.GasHandler = GasHandler{v.BasicHandler, v.MapHandler}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)

@@ -452,3 +452,65 @@ func TestAuthority(t *testing.T) {
 	})
 
 }
+
+func TestGasLimit2(t *testing.T) {
+	ilog.Stop()
+	Convey("test of gas limit 2", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		createAccountsWithResource(s)
+
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		So(err, ShouldBeNil)
+
+		createToken(t, s, kp)
+
+		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
+		So(err, ShouldBeNil)
+		So(ca, ShouldNotBeNil)
+		s.SetContract(ca)
+
+		Convey("test of amount limit", func() {
+			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
+			s.Visitor.SetTokenBalanceFixed("iost", testID[2], "0")
+			s.SetGas(kp.ID, 2000000)
+			s.SetRAM(kp.ID, 10000)
+
+			acts := []*tx.Action{}
+			for i := 0; i < 2; i++ {
+				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10")))
+			}
+			trx := tx.NewTx(acts, nil, 1355600, 100, s.Head.Time, 0)
+
+			r, err := s.CallTx(trx, kp.ID, kp)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.GasUsage, ShouldEqual, int64(1355600))
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", testID[0]), Decimal: s.Visitor.Decimal("iost")}
+			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", testID[2]), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "980")
+			So(balance2.ToString(), ShouldEqual, "20")
+
+			// out of gas
+			s.Visitor.SetTokenBalanceFixed("iost", testID[0], "1000")
+			s.Visitor.SetTokenBalanceFixed("iost", testID[2], "0")
+			s.SetGas(kp.ID, 2000000)
+			s.SetRAM(kp.ID, 10000)
+			acts = []*tx.Action{}
+			for i := 0; i < 4; i++ {
+				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[2], "10")))
+			}
+			trx = tx.NewTx(acts, nil, 2000000, 100, s.Head.Time, 0)
+
+			r, err = s.CallTx(trx, kp.ID, kp)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+			So(r.Status.Message, ShouldEqual, "out of gas")
+			So(r.GasUsage, ShouldEqual, int64(2000000))
+		})
+	})
+}

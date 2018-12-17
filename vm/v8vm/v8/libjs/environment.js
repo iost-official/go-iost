@@ -120,6 +120,12 @@
         return Stringslice.call(this, ...arguments);
     };
 
+    const Stringsubstring = String.prototype.substring;
+    String.prototype.substring = function() {
+        _IOSTInstruction_counter.incr(this.length);
+        return Stringsubstring.call(this, ...arguments);
+    };
+
     const StringtoLowerCase = String.prototype.toLowerCase;
     String.prototype.toLowerCase = function() {
         _IOSTInstruction_counter.incr(this.length);
@@ -509,4 +515,171 @@
 
     // WebAssembly
     WebAssembly = null;
+
+    // Native
+    IOSTBlockchain = null;
+    IOSTInstruction = null;
+    IOSTStorage = null;
+    _IOSTCrypto = null;
+    _native_log = null;
+    _native_run = null;
+    _native_require = null;
+    _cLog = null;
+
+    // BigNumber
+    const BigNumberconstructor = BigNumber.prototype.constructor;
+    BigNumber.prototype.constructor = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumberconstructor.call(this, ...arguments);
+    };
+
+    const BigNumberabs = BigNumber.prototype.abs;
+    BigNumber.prototype.absoluteValue = BigNumber.prototype.abs = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumberabs.call(this, ...arguments);
+    };
+
+    const BigNumberdiv = BigNumber.prototype.div;
+    BigNumber.prototype.dividedBy = BigNumber.prototype.div = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumberdiv.call(this, ...arguments);
+    };
+
+    const BigNumberidiv = BigNumber.prototype.idiv;
+    BigNumber.prototype.dividedToIntegerBy = BigNumber.prototype.idiv = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumberidiv.call(this, ...arguments);
+    };
+
+    const BigNumberpow = BigNumber.prototype.pow;
+    BigNumber.prototype.exponentiatedBy = BigNumber.prototype.pow = function() {
+        _IOSTInstruction_counter.incr(50);
+        return BigNumberpow.call(this, ...arguments);
+    };
+
+    const BigNumberintegerValue = BigNumber.prototype.integerValue;
+    BigNumber.prototype.integerValue = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberintegerValue.call(this, ...arguments);
+    };
+
+    const BigNumbereq = BigNumber.prototype.eq;
+    BigNumber.prototype.isEqualTo = BigNumber.prototype.eq = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumbereq.call(this, ...arguments);
+    };
+
+    const BigNumberisFinite = BigNumber.prototype.isFinite;
+    BigNumber.prototype.isFinite = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberisFinite.call(this, ...arguments);
+    };
+
+    const BigNumbergt = BigNumber.prototype.gt;
+    BigNumber.prototype.isGreaterThan = BigNumber.prototype.gt = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumbergt.call(this, ...arguments);
+    };
+
+    const BigNumbergte = BigNumber.prototype.gte;
+    BigNumber.prototype.isGreaterThanOrEqualTo = BigNumber.prototype.gte = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumbergte.call(this, ...arguments);
+    };
+
+    const BigNumberisInteger = BigNumber.prototype.isInteger;
+    BigNumber.prototype.isInteger = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberisInteger.call(this, ...arguments);
+    };
+
+    const BigNumberlt = BigNumber.prototype.lt;
+    BigNumber.prototype.isLessThan = BigNumber.prototype.lt = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberlt.call(this, ...arguments);
+    };
+
+    const BigNumberlte = BigNumber.prototype.lte;
+    BigNumber.prototype.isLessThanOrEqualTo = BigNumber.prototype.lte = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberlte.call(this, ...arguments);
+    };
+
+    const BigNumberisNaN = BigNumber.prototype.isNaN;
+    BigNumber.prototype.isNaN = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberisNaN.call(this, ...arguments);
+    };
+
+    const BigNumberisNegative = BigNumber.prototype.isNegative;
+    BigNumber.prototype.isNegative = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberisNegative.call(this, ...arguments);
+    };
+
+    const BigNumberisPositive = BigNumber.prototype.isPositive;
+    BigNumber.prototype.isPositive = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberisPositive.call(this, ...arguments);
+    };
+
+    const BigNumberisZero = BigNumber.prototype.isZero;
+    BigNumber.prototype.isZero = function() {
+        _IOSTInstruction_counter.incr(10);
+        return BigNumberisZero.call(this, ...arguments);
+    };
+
+    const BigNumberminus = BigNumber.prototype.minus;
+    BigNumber.prototype.minus = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumberminus.call(this, ...arguments);
+    };
+
+    const BigNumbermod = BigNumber.prototype.mod;
+    BigNumber.prototype.mod = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumbermod.call(this, ...arguments);
+    };
+
+    const BigNumbertimes = BigNumber.prototype.times;
+    BigNumber.prototype.multipliedBy = BigNumber.prototype.times = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumbertimes.call(this, ...arguments);
+    };
+
+    const BigNumbernegated = BigNumber.prototype.negated;
+    BigNumber.prototype.negated = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumbernegated.call(this, ...arguments);
+    };
+
+    const BigNumberplus = BigNumber.prototype.plus;
+    BigNumber.prototype.plus = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumberplus.call(this, ...arguments);
+    };
+
+    const BigNumbersqrt = BigNumber.prototype.sqrt;
+    BigNumber.prototype.squareRoot = BigNumber.prototype.sqrt = function() {
+        _IOSTInstruction_counter.incr(50);
+        return BigNumbersqrt.call(this, ...arguments);
+    };
+
+    const BigNumbertoFixed = BigNumber.prototype.toFixed;
+    BigNumber.prototype.toFixed = function() {
+        _IOSTInstruction_counter.incr(20);
+        return BigNumbertoFixed.call(this, ...arguments);
+    };
+
+    BigNumber.config({
+        DECIMAL_PLACES: 50,
+        POW_PRECISION: 50,
+        ROUNDING_MODE: BigNumber.ROUND_DOWN
+    });
+    const OrigBigNumber = BigNumber;
+    BigNumber = OrigBigNumber.prototype.constructor;
+    BigNumber.prototype = OrigBigNumber.prototype;
+    BigNumber.isBigNumber = OrigBigNumber.isBigNumber;
+    BigNumber.maximum = BigNumber.max = OrigBigNumber.maximum;
+    BigNumber.minimum = BigNumber.min = OrigBigNumber.minimum;
 })();

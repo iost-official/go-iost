@@ -35,6 +35,7 @@ const block = {
    time: blockInfo.time
 };
 
+
 // load tx
 const txInfo = JSON.parse(blockchain.txInfo());
 const tx = {
@@ -196,7 +197,7 @@ std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryC
     std::stringstream ss;
     ss << "Uncaught exception: ";
 
-    if (tryCatch.Message().IsEmpty()) {
+    if (tryCatch.Exception()->IsNull() || tryCatch.Message().IsEmpty()) {
         return ss.str();
     }
 
@@ -290,6 +291,8 @@ size_t MemoryUsage(Isolate* isolate, ArrayBufferAllocator* allocator) {
     /*fields[1] = v8_heap_stats.total_heap_size();
     fields[2] = v8_heap_stats.used_heap_size();
     fields[3] = v8_heap_stats.external_memory();*/
+    //int a = v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
+    //std::cout << "MemoryUsed: " << a - startMemHHH  << std::endl;
     return v8_heap_stats.total_heap_size() + allocator->GetMaxAllocatedMemSize();
 }
 
@@ -304,7 +307,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
     Context::Scope context_scope(context);
 
     TryCatch tryCatch(isolate);
-    tryCatch.SetVerbose(true);
+    tryCatch.SetVerbose(false);
 
     // preload block info.
     Local<String> source = String::NewFromUtf8(isolate, preloadBlockCode, NewStringType::kNormal).ToLocalChecked();
@@ -312,7 +315,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
     Local<Script> script = Script::Compile(source, fileName);
 
     Local<Value> ret = script->Run();
-    if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+    if (tryCatch.HasCaught()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
@@ -333,12 +336,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
 
     ret = script->Run();
 
-    if (tryCatch.HasCaught() && tryCatch.Exception()->IsNull()) {
-        isDone = true;
-        return;
-    }
-
-    if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+    if (tryCatch.HasCaught()) {
         std::string exception = reportException(isolate, context, tryCatch);
         error = exception;
         return;
@@ -360,7 +358,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
             result.assign(*jsonRetStr, jsonRetStr.length());
         }
 
-        if (tryCatch.HasCaught() && !tryCatch.Exception()->IsNull()) {
+        if (tryCatch.HasCaught()) {
             std::string exception = reportException(isolate, context, tryCatch);
             error = exception;
             return;
@@ -378,6 +376,8 @@ ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime) 
     std::string error;
     bool isJson = false;
     bool isDone = false;
+    //std::cout << "StartMemBeforeChange: " << startMemHHH << std::endl;
+    //startMemHHH = MemoryUsage(isolate, sbx->allocator);
     std::thread exec(RealExecute, ptr, code, std::ref(result), std::ref(error), std::ref(isJson), std::ref(isDone));
 
     ValueTuple res = { {nullptr, 0}, {nullptr, 0}, isJson, 0 };
@@ -425,5 +425,6 @@ ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime) 
     }
     if (exec.joinable())
         exec.join();
+    //std::cout << " MemoryUsed: " << MemoryUsage(isolate, sbx->allocator) - startMemHHH << std::endl;
     return res;
 }

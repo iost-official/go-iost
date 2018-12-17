@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/v8vm"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 var vmPool *v8.VMPool
@@ -726,4 +727,12 @@ func TestEngine_ArrayOfFrom(t *testing.T) {
 	if err != nil && !strings.Contains(err.Error(), "is not a function") {
 		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
+}
+
+func TestNativeRun(t *testing.T) {
+	host, code := MyInit(t, "danger")
+	Convey("test nativerun0", t, func() {
+		_, _, err := vmPool.LoadAndCall(host, code, "nativerun")
+		So(err.Error(), ShouldContainSubstring, "TypeError: _native_run is not a function")
+	})
 }

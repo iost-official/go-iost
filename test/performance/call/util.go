@@ -1,6 +1,8 @@
 package call
 
 import (
+	"context"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -49,4 +51,14 @@ func ToTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 		})
 	}
 	return ret
+}
+
+// SendTx ...
+func SendTx(stx *tx.Tx, i int) (string, error) {
+	client := GetClient(i)
+	resp, err := client.SendTransaction(context.Background(), ToTxRequest(stx))
+	if err != nil {
+		return "", err
+	}
+	return resp.Hash, nil
 }

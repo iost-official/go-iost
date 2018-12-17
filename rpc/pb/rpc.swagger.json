@@ -147,7 +147,7 @@
     },
     "/getChainInfo": {
       "get": {
-        "summary": "get the chain information",
+        "summary": "get blockchain information",
         "operationId": "GetChainInfo",
         "responses": {
           "200": {
@@ -223,6 +223,23 @@
         ]
       }
     },
+    "/getGasRatio": {
+      "get": {
+        "summary": "get gas ratio infomation",
+        "operationId": "GetGasRatio",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGasRatioResponse"
+            }
+          }
+        },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getNodeInfo": {
       "get": {
         "summary": "get the node information",
@@ -232,6 +249,23 @@
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbNodeInfoResponse"
+            }
+          }
+        },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getRAMInfo": {
+      "get": {
+        "summary": "get current blockchain ram information",
+        "operationId": "GetRAMInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbRAMInfoResponse"
             }
           }
         },
@@ -482,6 +516,33 @@
           "ApiService"
         ]
       }
+    },
+    "/subscribe": {
+      "post": {
+        "summary": "subscribe an event",
+        "operationId": "Subscribe",
+        "responses": {
+          "200": {
+            "description": "A successful response.(streaming responses)",
+            "schema": {
+              "$ref": "#/definitions/rpcpbSubscribeResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbSubscribeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
     }
   },
   "definitions": {
@@ -665,6 +726,15 @@
       },
       "description": "The message defines the ABI struct."
     },
+    "EventTopic": {
+      "type": "string",
+      "enum": [
+        "CONTRACT_RECEIPT",
+        "CONTRACT_EVENT"
+      ],
+      "default": "CONTRACT_RECEIPT",
+      "title": "- CONTRACT_RECEIPT: contract receipt\n - CONTRACT_EVENT: contract event"
+    },
     "SignatureAlgorithm": {
       "type": "string",
       "enum": [
@@ -674,6 +744,15 @@
       ],
       "default": "UNKNOWN",
       "description": "The enumeration defines the signature algorithm.\n\n - UNKNOWN: unknown\n - SECP256K1: secp256k1\n - ED25519: ed25519"
+    },
+    "SubscribeRequestFilter": {
+      "type": "object",
+      "properties": {
+        "contract_id": {
+          "type": "string",
+          "title": "contract id"
+        }
+      }
     },
     "TxReceiptReceipt": {
       "type": "object",
@@ -716,11 +795,6 @@
           "type": "number",
           "format": "double",
           "title": "account balance"
-        },
-        "create_time": {
-          "type": "string",
-          "format": "int64",
-          "title": "account create timestamp"
         },
         "gas_info": {
           "$ref": "#/definitions/AccountGasInfo",
@@ -939,6 +1013,25 @@
       },
       "description": "The message defines the contract struct."
     },
+    "rpcpbEvent": {
+      "type": "object",
+      "properties": {
+        "topic": {
+          "$ref": "#/definitions/EventTopic",
+          "title": "event topic"
+        },
+        "data": {
+          "type": "string",
+          "title": "event data"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64",
+          "title": "event time"
+        }
+      },
+      "description": "The message defines event struct."
+    },
     "rpcpbFrozenBalance": {
       "type": "object",
       "properties": {
@@ -954,6 +1047,21 @@
         }
       },
       "description": "The message defines the account's frozen balance."
+    },
+    "rpcpbGasRatioResponse": {
+      "type": "object",
+      "properties": {
+        "lowest_gas_ratio": {
+          "type": "number",
+          "format": "double",
+          "title": "lowest gas ratio in head block"
+        },
+        "median_gas_ratio": {
+          "type": "number",
+          "format": "double",
+          "title": "median gas ratio in head block"
+        }
+      }
     },
     "rpcpbGetContractStorageRequest": {
       "type": "object",
@@ -1102,6 +1210,37 @@
       },
       "description": "The message defines peer information."
     },
+    "rpcpbRAMInfoResponse": {
+      "type": "object",
+      "properties": {
+        "used_ram": {
+          "type": "string",
+          "format": "int64",
+          "title": "how many bytes have been used"
+        },
+        "available_ram": {
+          "type": "string",
+          "format": "int64",
+          "title": "how many bytes have not been used"
+        },
+        "total_ram": {
+          "type": "string",
+          "format": "int64",
+          "title": "total ram byte"
+        },
+        "sell_price": {
+          "type": "number",
+          "format": "double",
+          "title": "User can sell NUM bytes RAM to system to get `NUM * sell_price` IOSTs"
+        },
+        "buy_price": {
+          "type": "number",
+          "format": "double",
+          "title": "User can spend approximate `NUM * buy_price` IOSTs for NUM bytes RAM"
+        }
+      },
+      "description": "The message containing blockchain's ram information."
+    },
     "rpcpbSendTransactionResponse": {
       "type": "object",
       "properties": {
@@ -1131,6 +1270,30 @@
         }
       },
       "description": "The message defines signature struct."
+    },
+    "rpcpbSubscribeRequest": {
+      "type": "object",
+      "properties": {
+        "topics": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/EventTopic"
+          }
+        },
+        "filter": {
+          "$ref": "#/definitions/SubscribeRequestFilter"
+        }
+      },
+      "description": "The message defines subscribe request."
+    },
+    "rpcpbSubscribeResponse": {
+      "type": "object",
+      "properties": {
+        "event": {
+          "$ref": "#/definitions/rpcpbEvent"
+        }
+      },
+      "description": "The message defines subscribe response."
     },
     "rpcpbTransaction": {
       "type": "object",

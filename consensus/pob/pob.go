@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -255,13 +256,13 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		go p.broadcastBlockHash(blk)
 		p.blockReqMap.Delete(string(blk.HeadHash()))
 		if err != nil {
-			ilog.Errorf("received new block error, err:%v", err)
+			ilog.Warnf("received new block error, err:%v", err)
 			return
 		}
 	case p2p.SyncBlockResponse:
 		err := p.handleRecvBlock(blk)
 		if err != nil {
-			ilog.Errorf("received sync block error, err:%v", err)
+			ilog.Warnf("received sync block error, err:%v", err)
 			return
 		}
 	}
@@ -432,7 +433,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
-			ilog.Errorf("verify block failed. err=%v", err)
+			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
 			p.blockCache.Del(node)
 			return err
 		}

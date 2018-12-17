@@ -288,7 +288,6 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 		}
 		ilog.Info("Recover block start")
 		for i, entry := range entries {
-			fmt.Printf("\r%v/%v", i+1, len(entries))
 			if i%2000 == 0 {
 				ilog.Infof("Recover block progress:%v/%v", i, len(entries))
 			}
