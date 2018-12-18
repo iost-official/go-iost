@@ -3,9 +3,11 @@
 
 package sigpb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type Signature struct {
 	Algorithm            int32    `protobuf:"varint,1,opt,name=algorithm,proto3" json:"algorithm,omitempty"`
@@ -31,16 +33,17 @@ func (m *Signature) Reset()         { *m = Signature{} }
 func (m *Signature) String() string { return proto.CompactTextString(m) }
 func (*Signature) ProtoMessage()    {}
 func (*Signature) Descriptor() ([]byte, []int) {
-	return fileDescriptor_signature_74ff8db053743c9e, []int{0}
+	return fileDescriptor_c53b1d22a903f3a6, []int{0}
 }
+
 func (m *Signature) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Signature.Unmarshal(m, b)
 }
 func (m *Signature) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Signature.Marshal(b, m, deterministic)
 }
-func (dst *Signature) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Signature.Merge(dst, src)
+func (m *Signature) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Signature.Merge(m, src)
 }
 func (m *Signature) XXX_Size() int {
 	return xxx_messageInfo_Signature.Size(m)
@@ -76,11 +79,9 @@ func init() {
 	proto.RegisterType((*Signature)(nil), "sigpb.Signature")
 }
 
-func init() {
-	proto.RegisterFile("crypto/pb/signature.proto", fileDescriptor_signature_74ff8db053743c9e)
-}
+func init() { proto.RegisterFile("crypto/pb/signature.proto", fileDescriptor_c53b1d22a903f3a6) }
 
-var fileDescriptor_signature_74ff8db053743c9e = []byte{
+var fileDescriptor_c53b1d22a903f3a6 = []byte{
 	// 123 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x92, 0x4c, 0x2e, 0xaa, 0x2c,
 	0x28, 0xc9, 0xd7, 0x2f, 0x48, 0xd2, 0x2f, 0xce, 0x4c, 0xcf, 0x4b, 0x2c, 0x29, 0x2d, 0x4a, 0xd5,
