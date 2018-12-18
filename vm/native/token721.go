@@ -118,7 +118,7 @@ var (
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			to := args[1].(string)
-			metaDateJSON := args[2].(string)
+			metaDateJSON := string(args[2].([]byte))
 
 			metaDate := make(map[string]interface{})
 			err = json.Unmarshal([]byte(metaDateJSON), &metaDate)
