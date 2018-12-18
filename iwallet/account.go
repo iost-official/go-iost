@@ -121,7 +121,7 @@ func viewAccount(name string) {
 				return
 			}
 			for _, f := range files {
-				fsk, err := readFile(f)
+				fsk, err := loadKey(f)
 				if err != nil {
 					fmt.Println("read file failed: ", err)
 					continue

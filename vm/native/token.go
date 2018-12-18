@@ -253,7 +253,7 @@ var (
 				}
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -263,7 +263,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check exists
@@ -325,7 +325,7 @@ var (
 			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, TotalSupplyMapField)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -335,7 +335,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -353,7 +353,7 @@ var (
 				return nil, cost, errors.New("supply too much")
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set supply, set balance
@@ -424,7 +424,7 @@ var (
 				return nil, cost, host.ErrTokenNoTransfer
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -434,7 +434,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -447,7 +447,7 @@ var (
 				return nil, cost, host.ErrInvalidAmount
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set balance
@@ -470,7 +470,7 @@ var (
 				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			fbalance -= amount
@@ -521,7 +521,7 @@ var (
 				return nil, cost, host.ErrTokenNoTransfer
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -531,7 +531,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -544,7 +544,7 @@ var (
 				return nil, cost, host.ErrInvalidAmount
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// sub balance of from
@@ -566,7 +566,7 @@ var (
 			cost0 = setBalance(h, tokenSym, from, fbalance, from)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// freeze token of to
@@ -611,7 +611,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -624,7 +624,7 @@ var (
 				return nil, cost, host.ErrInvalidAmount
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set balance
@@ -645,7 +645,7 @@ var (
 			cost0 = setBalance(h, tokenSym, from, fbalance, from)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set supply
@@ -686,7 +686,7 @@ var (
 				return nil, cost, err
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			balanceStr, cost0 := genAmount(h, tokenSym, balance)
@@ -712,7 +712,7 @@ var (
 				return nil, cost, host.ErrTokenNotExists
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, SupplyMapField)

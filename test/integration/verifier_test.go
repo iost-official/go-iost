@@ -2,6 +2,7 @@ package integration
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/iost-official/go-iost/account"
@@ -373,6 +374,60 @@ func TestNativeVM_GasLimit(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "out of gas")
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+	})
+}
+
+func TestNativeVM_GasPledgeShortCut(t *testing.T) {
+	ilog.Stop()
+	Convey("test one can pledge for gas without initial gas", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		createAccountsWithResource(s)
+		s.SetContract(native.GasABI())
+
+		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
+		if err != nil {
+			t.Fatal(err)
+		}
+		createToken(t, s, kp)
+		var pledgeAmount int64 = 100
+		var initialBalance int64 = 1000
+		var expectedGasAfterPlegde = pledgeAmount*int64(native.GasImmediateReward.ToFloat())
+		pledgeAction := &tx.Action{
+			Contract:   "gas.iost",
+			ActionName: "pledge",
+			Data:       fmt.Sprintf(`["%v", "%v", "%v"]`, testID[0], testID[0], pledgeAmount),
+		}
+		var txGasLimit int64 = 10000
+		Convey("normal case", func() {
+			s.SetGas(kp.ID, 0)
+			tx0 := tx.NewTx([]*tx.Action{pledgeAction}, nil, txGasLimit * 100, 100, 10000000, 0)
+			r, err := s.CallTx(tx0, testID[0], kp)
+			txGasUsage := r.GasUsage/100
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(s.GetGas(testID[0]), ShouldEqual, expectedGasAfterPlegde-txGasUsage)
+			So(s.Visitor.TokenBalanceFixed("iost", testID[0]).ToString(), ShouldEqual, strconv.Itoa(int(initialBalance - pledgeAmount)))
+		})
+		SkipConvey("vm can kill tx if gas limit is not enough(TODO it is not possible in current code)", func(){
+			s.SetGas(kp.ID, 0)
+			anotherAction := &tx.Action{
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, testID[0], testID[2], 5),
+			}
+			// the first action can run succ
+			tx0 := tx.NewTx([]*tx.Action{pledgeAction, anotherAction}, nil, txGasLimit * 100, 100, 10000000, 0)
+			r, err := s.CallTx(tx0, testID[0], kp)
+			//txGasUsage := r.GasUsage/100
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "out of gas")
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+			So(s.GetGas(testID[0]), ShouldEqual, expectedGasAfterPlegde-txGasLimit)
+			So(s.Visitor.TokenBalanceFixed("iost", testID[0]).ToString(), ShouldEqual, strconv.Itoa(int(initialBalance - pledgeAmount)))
+		})
 	})
 }
 

@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/iost-official/go-iost/vm"
 	"reflect"
 	"sort"
 	"time"
@@ -348,12 +349,12 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 		}
 	}
 	dbVisitor := as.getStateDBVisitor(true)
-	gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
-	gas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
-	if gas.LessThan(gasLimit) {
-		return nil, fmt.Errorf("invalid gas of user %v has %v < %v", t.Publisher, gas.ToString(), gasLimit.ToString())
+	currentGas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
+	err := vm.CheckTxGasLimitValid(t, currentGas, dbVisitor)
+	if err != nil {
+		return nil, err
 	}
-	err := as.txpool.AddTx(t)
+	err = as.txpool.AddTx(t)
 	if err != nil {
 		return nil, err
 	}
