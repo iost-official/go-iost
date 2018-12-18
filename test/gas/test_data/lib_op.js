@@ -5,6 +5,30 @@ class LibOp {
     }
 
     // String
+    doStringCharAt(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").charAt(3)
+        }
+    }
+
+    doStringCharCodeAt(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").charCodeAt(3)
+        }
+    }
+
+    doStringLength(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").length
+        }
+    }
+
+    doStringConstructor(num) {
+        for (let i = 0; i < num; i++) {
+            String.prototype.constructor("yellow")
+        }
+    }
+
     doStringToString(num) {
         for (let i = 0; i < num; i++) {
             ("redbluegreen").toString()
@@ -73,7 +97,13 @@ class LibOp {
 
     doStringSlice(num) {
         for (let i = 0; i < num; i++) {
-            ("redbluegreen").startsWith("red")
+            ("redbluegreen").slice()
+        }
+    }
+
+    doStringSubstring(num) {
+        for (let i = 0; i < num; i++) {
+            ("redbluegreen").substring(3)
         }
     }
 
@@ -114,15 +144,15 @@ class LibOp {
     }
 
     // Array
-    doArrayIsArray(num) {
+    doArrayConstructor(num) {
         for (let i = 0; i < num; i++) {
-            Array.isArray(["red", "blue", "green"])
+            Array.prototype.constructor(["red", "blue", "green"])
         }
     }
 
-    doArrayOf(num) {
+    doArrayToString(num) {
         for (let i = 0; i < num; i++) {
-            Array.of(["red", "blue", "green"])
+            (["red", "blue", "green"]).toString()
         }
     }
 
@@ -134,25 +164,25 @@ class LibOp {
 
     doArrayEvery(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).every(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).every(function (x) { return true; })
         }
     }
     
     doArrayFilter(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).filter(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).filter(function (x) { return true; })
         }
     }
 
     doArrayFind(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).find(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).find(function (x) { return true; })
         }
     }
 
     doArrayFindIndex(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).findIndex(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).findIndex(function (x) { return true; })
         }
     }
 
@@ -194,7 +224,7 @@ class LibOp {
 
     doArrayMap(num) {
         for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).map(function (x) { return x == "read"; })
+            (["red", "blue", "green"]).map(function (x) { return x; })
         }
     }
 
@@ -240,12 +270,6 @@ class LibOp {
         }
     }
 
-    doArrayToString(num) {
-        for (let i = 0; i < num; i++) {
-            (["red", "blue", "green"]).toString()
-        }
-    }
-    
     doArrayUnshift(num) {
         for (let i = 0; i < num; i++) {
             (["red", "blue", "green"]).unshift("yellow")
@@ -276,6 +300,225 @@ class LibOp {
             )
         }
     }
+
+    // Math
+    doMathAbs(num) {
+        for (let i = 0; i < num; i++) {
+            Math.abs(-1)
+        }
+    }
+
+    doMathCbrt(num) {
+        for (let i = 0; i < num; i++) {
+            Math.cbrt(2.5)
+        }
+    }
+
+    doMathCeil(num) {
+        for (let i = 0; i < num; i++) {
+            Math.ceil(-1.5)
+        }
+    }
+
+    doMathFloor(num) {
+        for (let i = 0; i < num; i++) {
+            Math.floor(1.5)
+        }
+    }
+
+    doMathLog(num) {
+        for (let i = 0; i < num; i++) {
+            Math.log(5)
+        }
+    }
+
+    doMathLog10(num) {
+        for (let i = 0; i < num; i++) {
+            Math.log10(1234)
+        }
+    }
+
+    doMathLog1p(num) {
+        for (let i = 0; i < num; i++) {
+            Math.log1p(0.7)
+        }
+    }
+
+    doMathMax(num) {
+        for (let i = 0; i < num; i++) {
+            Math.max(3, 10, 5)
+        }
+    }
+
+    doMathMin(num) {
+        for (let i = 0; i < num; i++) {
+            Math.min(3, 10, 5)
+        }
+    }
+
+    doMathPow(num) {
+        for (let i = 0; i < num; i++) {
+            Math.pow(3, 15.5)
+        }
+    }
+
+    doMathRound(num) {
+        for (let i = 0; i < num; i++) {
+            Math.round(2.7)
+        }
+    }
+
+    doMathSqrt(num) {
+        for (let i = 0; i < num; i++) {
+            Math.sqrt(3.4)
+        }
+    }
+
+    // BigNumber
+    doBigNumberConstructor(num) {
+        for (let i = 0; i < num; i++) {
+            BigNumber.prototype.constructor("99999999999999999999999999999")
+        }
+    }
+
+    doBigNumberAbs(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").abs()
+        }
+    }
+
+    doBigNumberDiv(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").div("99999")
+        }
+    }
+
+    doBigNumberIdiv(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").idiv("99999")
+        }
+    }
+
+    doBigNumberPow(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").pow("99999")
+        }
+    }
+
+    doBigNumberIntegerValue(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").integerValue()
+        }
+    }
+
+    doBigNumberEq(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").eq("99999")
+        }
+    }
+
+    doBigNumberIsFinite(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isFinite()
+        }
+    }
+
+    doBigNumberGt(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").gt("99999")
+        }
+    }
+
+    doBigNumberGte(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").gte("99999")
+        }
+    }
+
+    doBigNumberIsInteger(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isInteger()
+        }
+    }
+
+    doBigNumberLt(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").lt("99999")
+        }
+    }
+
+    doBigNumberLte(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").lte("99999")
+        }
+    }
+
+    doBigNumberIsNaN(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isNaN()
+        }
+    }
+
+    doBigNumberIsNegative(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isNegative()
+        }
+    }
+
+    doBigNumberIsPositive(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isPositive()
+        }
+    }
+
+    doBigNumberIsZero(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").isZero()
+        }
+    }
+
+    doBigNumberMinus(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").minus("99999")
+        }
+    }
+
+    doBigNumberMod(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").mod("99999")
+        }
+    }
+
+    doBigNumberTimes(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").times("99999")
+        }
+    }
+
+    doBigNumberNegated(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").negated()
+        }
+    }
+
+    doBigNumberPlus(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").plus("99999")
+        }
+    }
+
+    doBigNumberSqrt(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").sqrt()
+        }
+    }
+
+    doBigNumberToFixed(num) {
+        for (let i = 0; i < num; i++) {
+            new BigNumber("-99999999999999999999999999999").toFixed(5)
+        }
+    }
+
 };
 
 module.exports = LibOp;

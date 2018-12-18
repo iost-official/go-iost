@@ -123,7 +123,7 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, 
 		if !gas.IsZero() {
 			err := t.h.CostGas(payer, gas)
 			if err != nil {
-				ilog.Fatalf("pay gas cost failed: %v %v %v", err, payer, gas)
+				return nil, fmt.Errorf("pay gas cost failed: %v %v %v", err, payer, gas)
 			}
 			// reward 15% gas to account referrer
 			if !t.h.IsContract(payer) {
@@ -137,6 +137,7 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, 
 				}
 			}
 		}
+
 		if payer == t.h.Context().Value("publisher").(string) {
 			payedGas = gas
 		}
