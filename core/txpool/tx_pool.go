@@ -164,7 +164,7 @@ func (pool *TxPImpl) verifyWorkers() {
 		pool.pendingTx.Add(&t)
 		pool.mu.Unlock()
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
-		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage, true)
+		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
 	}
 }
 
@@ -225,7 +225,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 		pool.pendingTx.Size(),
 	)
 
-	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
+	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil
 }

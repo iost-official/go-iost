@@ -191,7 +191,7 @@ func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 	p.blockReqMap.Store(string(blkInfo.Hash), time.AfterFunc(blockReqTimeout, func() {
 		p.blockReqMap.Delete(string(blkInfo.Hash))
 	}))
-	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage, true)
+	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
 }
 
 func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
@@ -209,7 +209,7 @@ func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 		return
 	}
-	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
+	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
@@ -222,7 +222,7 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 		ilog.Error("fail to encode block hash")
 	} else {
 		if p.baseVariable.Mode() == global.ModeNormal {
-			p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage, true)
+			p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage)
 		}
 	}
 }
@@ -364,7 +364,7 @@ func (p *PoB) gen(num int) {
 		ilog.Error(err)
 		return
 	}
-	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
+	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 	metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 	err = p.handleRecvBlock(blk)
 	if err != nil {

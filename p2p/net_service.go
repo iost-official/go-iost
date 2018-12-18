@@ -44,8 +44,8 @@ type Service interface {
 	ConnectBPs([]string)
 	PutPeerToBlack(string)
 
-	Broadcast([]byte, MessageType, MessagePriority, bool)
-	SendToPeer(PeerID, []byte, MessageType, MessagePriority, bool)
+	Broadcast([]byte, MessageType, MessagePriority)
+	SendToPeer(PeerID, []byte, MessageType, MessagePriority)
 	Register(string, ...MessageType) chan IncomingMessage
 	Deregister(string, ...MessageType)
 

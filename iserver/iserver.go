@@ -93,8 +93,8 @@ func (s *IServer) Start() error {
 		s.p2p,
 		s.sync,
 		s.txp,
-		s.rpcServer,
 		s.consensus,
+		s.rpcServer,
 	}
 	for _, s := range Services {
 		if err := s.Start(); err != nil {
@@ -117,8 +117,8 @@ func (s *IServer) Stop() {
 		s.debug.Stop()
 	}
 	Services := []Service{
-		s.consensus,
 		s.rpcServer,
+		s.consensus,
 		s.txp,
 		s.sync,
 		s.p2p,

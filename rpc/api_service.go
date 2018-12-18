@@ -36,16 +36,19 @@ type APIService struct {
 	txpool     txpool.TxPool
 	blockchain block.Chain
 	bv         global.BaseVariable
+
+	quitCh chan struct{}
 }
 
 // NewAPIService returns a new APIService instance.
-func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service) *APIService {
+func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, quitCh chan struct{}) *APIService {
 	return &APIService{
 		p2pService: p2pService,
 		txpool:     tp,
 		blockchain: bv.BlockChain(),
 		bc:         bcache,
 		bv:         bv,
+		quitCh:     quitCh,
 	}
 }
 
@@ -396,6 +399,8 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 	for {
 		select {
 		case <-timeup.C:
+			return nil
+		case <-as.quitCh:
 			return nil
 		case <-res.Context().Done():
 			return res.Context().Err()
