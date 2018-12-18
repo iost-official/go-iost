@@ -75,9 +75,9 @@ class BaseOp {
     }
 
     doAssignmentExpression(num) {
-        let a = "justtest"
+        let a = 123456
         for (let i = 0; i < num; i++) {
-            a = "justtest"
+            a = 123456
         }
     }
 
@@ -129,6 +129,52 @@ class BaseOp {
             true?true:true;
         }
     }
+
+    doSpreadElement(num) {
+        function f(a, b, c, d) {
+            return
+        }
+        for (let i = 0; i < num; i++) {
+            f(...[10, 11, 12, 13])
+        }
+    }
+
+    doObjectExpression(num) {
+        for (let i = 0; i < num; i++) {
+            let a = { name: "Jack", age: 10, 5: true }
+        }
+    }
+
+    doArrayExpression(num) {
+        for (let i = 0; i < num; i++) {
+            [3, 5, 100]
+        }
+    }
+
+    doFunctionExpression(num) {
+        for (let i = 0; i < num; i++) {
+            let a = function(width, height) { return width * height }
+        }
+    }
+
+    doArrowFunctionExpression(num) {
+        for (let i = 0; i < num; i++) {
+            material => material.length
+        }
+    }
+
+    doClassDeclaration(num) {
+        for (let i = 0; i < num; i++) {
+            class Polygon { }
+        }
+    }
+
+    doStringLiteral(num) {
+        for (let i = 0; i < num; i++) {
+            "justtest"
+        }
+    }
+
 };
 
 module.exports = BaseOp;

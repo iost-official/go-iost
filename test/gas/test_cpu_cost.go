@@ -41,6 +41,13 @@ var (
 			"UnaryExpressionNot",
 			"LogicalExpressionAnd",
 			"ConditionalExpression",
+			"SpreadElement",
+			"ObjectExpression",
+			"ArrayExpression",
+			"FunctionExpression",
+			"ArrowFunctionExpression",
+			"ClassDeclaration",
+			"StringLiteral",
 		},
 		"lib": {
 			"StringCharAt",
@@ -144,7 +151,7 @@ var (
 
 var vmPool *v8.VMPool
 var testDataPath = "./test_data/"
-var baseCPUCost = int64(25000)
+var baseCPUCost = int64(30000)
 
 func runOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
 	b, err := ioutil.ReadFile(path.Join(testDataPath, name))
