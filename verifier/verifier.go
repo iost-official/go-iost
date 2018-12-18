@@ -191,7 +191,7 @@ L:
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
 		if err != nil {
-			ilog.Errorf("isolator run error %v", err)
+			ilog.Errorf("isolator run error %v %v", t.String(), err)
 			provider.Drop(t, err)
 			continue L
 		}
@@ -205,7 +205,12 @@ L:
 			break L
 		}
 		//ilog.Debugf("exec tx %v success", common.Base58Encode(t.Hash()))
-		r, _ = isolator.PayCost()
+		r, err = isolator.PayCost()
+		if err != nil {
+			ilog.Errorf("pay cost err %v %v", t.String(), err)
+			provider.Drop(t, err)
+			continue L
+		}
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)

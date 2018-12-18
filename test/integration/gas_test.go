@@ -290,7 +290,7 @@ func TestGas_unpledgeTooMuch(t *testing.T) {
 		So(err, ShouldBeNil)
 		delta1 := int64(1)
 		timePass(h, delta1)
-		unpledgeAmount := (pledgeAmount - native.GasMinPledgeInIOST) + int64(1)
+		unpledgeAmount := (pledgeAmount - int64(native.GasMinPledgeOfUser.ToFloat())) + int64(1)
 		_, _, err = e.LoadAndCall(h, code, "unpledge", testAcc, testAcc, toString(unpledgeAmount))
 		So(err, ShouldNotBeNil)
 	})

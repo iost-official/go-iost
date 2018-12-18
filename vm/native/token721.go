@@ -82,7 +82,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check exists
@@ -132,7 +132,7 @@ var (
 			totalSupply, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, TotalSupplyMapField)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check supply
@@ -148,7 +148,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set supply, set balance
@@ -209,7 +209,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			tmp, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, tokenID)
