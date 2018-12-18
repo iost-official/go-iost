@@ -67,5 +67,23 @@ func TestAuthority(t *testing.T) {
 		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "acc1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "unexpected item")
+
+		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "IOST1234", 1}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `{"id":"IOST1234","is_key_pair":true,"weight":1}`)
+
+		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "acc1@active", 1}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
+
+		r, err = s.Call("auth.iost", "RevokePermission", array2json([]interface{}{"myidid", "active", "acc1"}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
+
+		r, err = s.Call("auth.iost", "RevokePermission", array2json([]interface{}{"myidid", "active", "acc2"}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "item not found")
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
+
 	})
 }
