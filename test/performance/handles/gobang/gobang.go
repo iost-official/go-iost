@@ -43,9 +43,9 @@ func (t *gobangHandle) Prepare() error {
 	rootAcc, _ = account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/gobang/gobang.js"
 	abiPath := codePath + ".abi"
-	sdk.SetServer(call.GetClient(0).Addr())
+	sdk.SetServer("3.0.81.219:30002")
 	sdk.SetAccount("admin", rootAcc)
-	sdk.SetTxInfo(10000000, 100, 90, 0)
+	sdk.SetTxInfo(100000, 1, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
 	testAcc, err = account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
@@ -64,7 +64,7 @@ func (t *gobangHandle) Prepare() error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(50) * time.Second)
 	client := call.GetClient(0)
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHash})
 	if err != nil {

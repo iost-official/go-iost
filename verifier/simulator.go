@@ -206,7 +206,6 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 		return nil, err
 	}
 	isolator.Commit()
-
 	return r, nil
 }
 
