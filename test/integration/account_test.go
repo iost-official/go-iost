@@ -64,12 +64,10 @@ func TestAuthority(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 
-		ilog.Info(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")))
 		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "acc1", 1}), kp.ID, kp)
 		So(err, ShouldBeNil)
-		ilog.Info(r.Status.Message)
 		So(r.Status.Message, ShouldEqual, "")
-		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+		ilog.Info(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")))
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 	})
-
 }
