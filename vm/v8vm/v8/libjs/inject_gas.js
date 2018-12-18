@@ -270,6 +270,12 @@ function processNode(node, parentNode, lastInjection) {
         }];
 
     } else if (node.type === "ArrowFunctionExpression") {
+        let value = chargedExpression[node.type];
+        console.log("arrow function value, ", value);
+        if (newLastInjection === null) {
+            newLastInjection = addInjection(node.range[0], InjectType.gasIncrWithSemicolon, 0);
+        }
+        injectionMap.get(newLastInjection.pos)[newLastInjection.index].value += value;
 
         if (node.body.type !== 'BlockStatement') {
             addInjection(node.body.range[0], InjectType.str, "function(){");
