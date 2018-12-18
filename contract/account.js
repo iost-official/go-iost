@@ -64,6 +64,12 @@ class Account {
         }
     }
 
+    _checkWeight(weight) {
+        if (weight <= 0) {
+            throw "weight less than zero"
+        }
+    }
+
     SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
@@ -136,6 +142,7 @@ class Account {
     }
     AssignPermission(id, perm, un, weight) {
         this._ra(id);
+        this._checkWeight(weight);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[perm].items, un);
         if (index < 0) {
@@ -193,6 +200,7 @@ class Account {
     }
     AssignGroup(id, group, un, weight) {
         this._ra(id);
+        this._checkWeight(weight);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[group].items, un);
         if (index < 0) {
