@@ -47,6 +47,10 @@ var (
 			"FunctionExpression",
 			"ArrowFunctionExpression",
 			"ClassDeclaration",
+			"FunctionDeclaration",
+			"VariableDeclarator",
+			"VariableDeclaratorWithoutInit",
+			"MethodDefinition",
 			"StringLiteral",
 		},
 		"lib": {

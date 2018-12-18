@@ -169,6 +169,34 @@ class BaseOp {
         }
     }
 
+    doFunctionDeclaration(num) {
+        for (let i = 0; i < num; i++) {
+            function a(width, height) { return width * height }
+        }
+    }
+
+    doVariableDeclarator(num) {
+        for (let i = 0; i < num; i++) {
+            let a = 1
+        }
+    }
+
+    doVariableDeclaratorWithoutInit(num) {
+        for (let i = 0; i < num; i++) {
+            let a
+        }
+    }
+
+    doMethodDefinition(num) {
+        for (let i = 0; i < num; i++) {
+            let obj = {
+                foo() {
+                    return 'bar';
+                }
+            }
+        }
+    }
+
     doStringLiteral(num) {
         for (let i = 0; i < num; i++) {
             "justtest"
