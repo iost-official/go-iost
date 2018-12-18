@@ -426,12 +426,12 @@ func getOverviewTable() {
 		)
 	}
 
-	for i := 0; ; i++ {
+	for i := 1; ; i++ {
 		tcost, ccost := runOp(
 			vi,
 			fmt.Sprintf("%v_op.js", "empty"),
 			fmt.Sprintf("do%v", "StartUp"),
-			i,
+			0,
 		)
 		ttotal = ttotal + tcost
 		ctotal = ctotal + float64(ccost)
