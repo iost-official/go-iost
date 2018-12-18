@@ -7,7 +7,7 @@ import (
 )
 
 func TestInjectGas(t *testing.T) {
-	host, code := MyInit(t, "gas1")
+	host, code := MyInit(t, "gas1", int64(1e7))
 	vmPool.LoadAndCall(host, code, "constructor")
 
 	Convey("test assignment0", t, func() {
@@ -223,6 +223,6 @@ func TestInjectGas(t *testing.T) {
 	Convey("test bignumber0", t, func() {
 		_, cost0, err := vmPool.LoadAndCall(host, code, "bignumber0", "")
 		So(err, ShouldBeNil)
-		So(cost0.ToGas(), ShouldEqual, int64(247))
+		So(cost0.ToGas(), ShouldEqual, int64(391))
 	})
 }

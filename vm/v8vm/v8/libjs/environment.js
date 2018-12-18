@@ -456,12 +456,14 @@
         return JSONparse.call(this, ...arguments);
     };
 
+    /*
     const JSONstringify = JSON.stringify;
     JSON.stringify = function () {
         const rs = JSONstringify.call(this, ...arguments);
         _IOSTInstruction_counter.incr(rs.length * 2);
         return rs;
     };
+    */
 
     // Functions
     parseFloat = null;

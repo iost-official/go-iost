@@ -581,26 +581,26 @@ func TestEngine_Func(t *testing.T) {
 }
 
 func TestEngine_Danger(t *testing.T) {
-	host, code := MyInit(t, "danger")
+	host, code := MyInit(t, "danger", int64(1e8))
 	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
-	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: RangeError: Invalid string length") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: RangeError: Invalid string length, got %s", err.Error())
+	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr invalid gas") {
+		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr invalid gas, got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
-	if err != nil {
-		t.Fatalf("LoadAndCall for should return no error, got %s", err.Error())
+	if err == nil || !strings.Contains(err.Error(), "result too long") {
+		t.Fatalf("LoadAndCall bigArray should return error: result too long, got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: TypeError: Cannot set property 'c' of undefined") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
+		t.Fatalf("LoadAndCall visitUndefined should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
 	}
 
 	host, code = MyInit(t, "danger")
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
-		t.Fatalf("LoadAndCall for should return error: Uncaught exception: test throw, but got %v\n", err)
+		t.Fatalf("LoadAndCall throw should return error: Uncaught exception: test throw, but got %v\n", err)
 	}
 }
 
@@ -734,5 +734,71 @@ func TestNativeRun(t *testing.T) {
 	Convey("test nativerun0", t, func() {
 		_, _, err := vmPool.LoadAndCall(host, code, "nativerun")
 		So(err.Error(), ShouldContainSubstring, "TypeError: _native_run is not a function")
+	})
+}
+
+func TestEngine_JSON(t *testing.T) {
+	Convey("test stringify1", t, func() {
+		host, code := MyInit(t, "json", int64(1e8))
+		_, cost, err := vmPool.LoadAndCall(host, code, "stringify10")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(4993))
+
+		_, cost, err = vmPool.LoadAndCall(host, code, "stringify11")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(5107))
+	})
+
+	Convey("test stringify2", t, func() {
+		host, code := MyInit(t, "json", int64(1e8))
+		_, cost, err := vmPool.LoadAndCall(host, code, "stringify20")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(629545))
+
+		_, cost, err = vmPool.LoadAndCall(host, code, "stringify21")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(724369))
+	})
+
+	Convey("test stringify3", t, func() {
+		host, code := MyInit(t, "json", int64(1e8))
+		_, cost, err := vmPool.LoadAndCall(host, code, "stringify30")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(3152207))
+
+		_, cost, err = vmPool.LoadAndCall(host, code, "stringify31")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(6111172))
+	})
+
+	Convey("test stringify4", t, func() {
+		host, code := MyInit(t, "json", int64(1e8))
+		_, cost, err := vmPool.LoadAndCall(host, code, "stringify40")
+		So(err.Error(), ShouldContainSubstring, "Converting circular structure to JSON")
+		So(cost.ToGas(), ShouldEqual, int64(266))
+	})
+
+	Convey("test stringify5", t, func() {
+		host, code := MyInit(t, "json", int64(1e8))
+		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify50")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(958))
+		So(len(rtn), ShouldEqual, int64(1))
+		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
+
+		rtn, cost, err = vmPool.LoadAndCall(host, code, "stringify51")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(495))
+		So(len(rtn), ShouldEqual, int64(1))
+		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
+	})
+
+	Convey("test stringify6", t, func() {
+		host, code := MyInit(t, "json", int64(1e8))
+		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify60")
+		So(err, ShouldBeNil)
+		So(cost.ToGas(), ShouldEqual, int64(1226))
+		So(len(rtn), ShouldEqual, int64(1))
+		So(rtn[0], ShouldEqual, `{"a":{"b":{"c":""}}} {"a":{"b":{"c":""}}}`)
 	})
 }
