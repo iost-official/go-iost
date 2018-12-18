@@ -16,7 +16,7 @@ class Account {
         return JSON.parse(a);
     }
     static _find(items, name) {
-        for (let i = 0; i < items.length(); i ++) {
+        for (let i = 0; i < items.length; i ++) {
             if (items[i].id === name ) {
                 return i
             }
@@ -146,13 +146,15 @@ class Account {
                     is_key_pair: true,
                     weight: weight
                 });
-            } else {
+            } else if (len > 0 ) {
                 acc.permissions[perm].items.push({
                     id : un.substring(0, len),
-                    permission: un.substring(len, un.length()),
+                    permission: un.substring(len, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
+            } else {
+                throw "unexpected item"
             }
         } else {
             acc.permissions[perm].items[index].weight = weight
@@ -204,7 +206,7 @@ class Account {
             } else {
                 acc.groups[group].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len, un.length()),
+                    permission: un.substring(len, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
