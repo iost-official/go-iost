@@ -172,7 +172,6 @@
 		},
 		{
 			"checksumSHA1": "cX6yDXJruFt102YDAPW4luFdmg4=",
-			"origin": "github.com/iost-official/go-iost/vendor/github.com/golang/protobuf/ptypes/empty",
 			"path": "github.com/golang/protobuf/ptypes/empty",
 			"revision": "1d3f30b51784bec5aad268e59fd3c2fc1c2fe73f",
 			"revisionTime": "2018-11-28T19:23:52Z"
