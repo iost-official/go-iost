@@ -7,18 +7,18 @@ class BaseOp {
     doThrowStatement(num) {
         for (let i = 0; i < num; i++) {
             try {
-                throw "justtest";
+                throw 123456;
             } catch (err) {
             }
         }
     }
 
     doCallExpression(num) {
-        function f(a) {
+        function f(a, b, c, d) {
             return
         }
         for (let i = 0; i < num; i++) {
-            f("justtest")
+            f(10, 11, 12, 13)
         }
     }
 
@@ -50,7 +50,7 @@ class BaseOp {
     doYieldExpression(num) {
         function *F() {
             while (true) {
-                yield "justtest"
+                yield 123456
             }
         }
         let f = F()
