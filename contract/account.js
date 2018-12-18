@@ -100,6 +100,7 @@ class Account {
             }],
             threshold: 1,
         };
+        account.groups = {}
         this._saveAccount(account, blockchain.publisher());
         if (storage.globalMapHas("vote_producer.iost", "producerTable", blockchain.publisher())) {
             blockchain.callWithAuth("gas.iost", "reward", JSON.stringify([blockchain.publisher(), "30000"]));

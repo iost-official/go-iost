@@ -85,5 +85,16 @@ func TestAuthority(t *testing.T) {
 		So(r.Status.Message, ShouldContainSubstring, "item not found")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
 
+		r, err = s.Call("auth.iost", "AddGroup", array2json([]interface{}{"myidid", "grp0"}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"groups":{"grp0":{"name":"grp0","items":[]}}`)
+
+		r, err = s.Call("auth.iost", "AddGroup", array2json([]interface{}{"myidid", "grp0"}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "group already exist")
+		ilog.Info(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")))
+		r, err = s.Call("auth.iost", "DropGroup", array2json([]interface{}{"myidid", "grp0"}), kp.ID, kp)
+		So(err, ShouldBeNil)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `"groups":{"grp0":{"name":"grp0","items":[]}}`)
 	})
 }
