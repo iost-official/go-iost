@@ -1,7 +1,6 @@
 package native
 
 import (
-	"encoding/json"
 	"errors"
 	"math"
 	"strconv"
@@ -112,20 +111,13 @@ var (
 
 	issueToken721ABI = &abi{
 		name: "issue",
-		args: []string{"string", "string", "json"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			to := args[1].(string)
-			metaDateJSON := string(args[2].([]byte))
-
-			metaDate := make(map[string]interface{})
-			err = json.Unmarshal([]byte(metaDateJSON), &metaDate)
-			cost.AddAssign(host.CommonOpCost(2))
-			if err != nil {
-				return nil, cost, err
-			}
+			metaDataJSON := args[2].(string)
 
 			// get token info
 			ok, cost0 := checkToken721Exists(h, tokenName)
@@ -181,7 +173,7 @@ var (
 			cost0 = setToken721Balance(h, tokenName, to, tbalance, issuer.(string))
 			cost.AddAssign(cost0)
 
-			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, issuer.(string))
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, issuer.(string))
 			cost.AddAssign(cost0)
 
 			return []interface{}{tokenID}, cost, err
@@ -255,14 +247,14 @@ var (
 			cost0 = setToken721Balance(h, tokenName, to, tbalance, from)
 			cost.AddAssign(cost0)
 
-			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
+			metaDataJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
 			cost0, err = h.MapDel(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, from)
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, from)
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, err
@@ -376,9 +368,9 @@ var (
 				return nil, cost, host.ErrTokenExists
 			}
 
-			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+owner, tokenID)
+			metaDataJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+owner, tokenID)
 			cost.AddAssign(cost0)
-			return []interface{}{metaDateJSON.(string)}, cost, nil
+			return []interface{}{metaDataJSON.(string)}, cost, nil
 		},
 	}
 )
