@@ -254,6 +254,16 @@ func newMockAPI() rpcpb.ApiServiceServer {
 			{Amount: 111.2, Time: 2343242},
 		},
 	}, nil)
+	api.EXPECT().GetToken721Balance(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetToken721BalanceResponse{
+		Balance:  2,
+		TokenIDs: []string{"2", "0"},
+	}, nil)
+	api.EXPECT().GetToken721Metadata(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetToken721MetadataResponse{
+		Metadata: `{"name": "pikaqiu", "hp": 100}`,
+	}, nil)
+	api.EXPECT().GetToken721Owner(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetToken721OwnerResponse{
+		Owner: "myaccount",
+	}, nil)
 
 	api.EXPECT().GetContract(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.Contract{
 		Id:       "Contract12312131",
