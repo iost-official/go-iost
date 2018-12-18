@@ -52,6 +52,11 @@ var (
 			"VariableDeclaratorWithoutInit",
 			"MethodDefinition",
 			"StringLiteral",
+			"ForStatement",
+			"ForInStatement",
+			"ForOfStatement",
+			"WhileStatement",
+			"DoWhileStatement",
 		},
 		"lib": {
 			"StringCharAt",
