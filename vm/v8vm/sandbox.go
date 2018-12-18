@@ -49,6 +49,13 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 )
 
+const resultMaxLength = 65536 // byte
+
+// Error message
+var (
+	ErrResultTooLong = errors.New("result too long")
+)
+
 // Sandbox is an execution environment that allows separate, unrelated, JavaScript
 // code to run in a single instance of IVM.
 type Sandbox struct {
@@ -230,10 +237,15 @@ ret;
 
 	return fmt.Sprintf(`
 %s;
-var obj = new module.exports;
+const obj = new module.exports;
 
 // run contract with specified function and args
-obj.%s(%s);
+let rs = obj.%s(%s);
+if (rs !== null && (typeof rs === 'function') || (typeof rs === 'object')) {
+	_IOSTInstruction_counter.incr(12);
+	rs = JSON.stringify(rs);
+}
+rs;
 `, code, function, argStr), nil
 }
 
@@ -244,18 +256,22 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
 
 	rs := C.Execute(sbx.context, cCode, expireTime)
+	defer C.free(unsafe.Pointer(rs.Value.data))
+	defer C.free(unsafe.Pointer(rs.Err.data))
+
+	gasUsed := rs.gasUsed
+
+	if rs.Value.size > resultMaxLength {
+		return "", int64(gasUsed), ErrResultTooLong
+	}
 
 	var result string
 	result = rs.Value.GoString()
-	defer C.free(unsafe.Pointer(rs.Value.data))
-	defer C.free(unsafe.Pointer(rs.Err.data))
 
 	var err error
 	if rs.Err.data != nil {
 		err = errors.New(rs.Err.GoString())
 	}
-
-	gasUsed := rs.gasUsed
 
 	return result, int64(gasUsed), err
 }

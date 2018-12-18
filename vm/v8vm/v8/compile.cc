@@ -4,6 +4,7 @@
 #include "console.h"
 #include "require.h"
 
+#include "json.js.h"
 #include "bignumber.js.h"
 #include "int64.js.h"
 #include "float64.js.h"
@@ -34,6 +35,7 @@ static char validateFormat[] =
 static char codeFormat[] =
         "let module = {};\n"
         "module.exports = {};\n"
+        "%s\n"  // load JSON
         "%s\n"  // load BigNumber
         "let BigNumber = module.exports;\n"
         "%s\n"  // load Int64
@@ -113,6 +115,7 @@ int validate(SandboxPtr ptr, const CStr code, const CStr abi, CStr *result, CStr
 }
 
 CustomStartupData createStartupData() {
+    char *jsonjs = reinterpret_cast<char *>(__libjs_json_js);
     char *bignumberjs = reinterpret_cast<char *>(__libjs_bignumber_js);
     char *int64js = reinterpret_cast<char *>(__libjs_int64_js);
     char *float64js = reinterpret_cast<char *>(__libjs_float64_js);
@@ -121,6 +124,7 @@ CustomStartupData createStartupData() {
 
     char *code = nullptr;
     asprintf(&code, codeFormat,
+        jsonjs,
         bignumberjs,
         int64js,
         float64js,
