@@ -303,7 +303,7 @@ func (s *SDK) loadAccount() error {
 		return fmt.Errorf("you must provide account name")
 	}
 	kpPath := fmt.Sprintf("%s/%s_%s", dir, s.accountName, s.getSignAlgoName())
-	fsk, err := readFile(kpPath)
+	fsk, err := loadKey(kpPath)
 	if err != nil {
 		return fmt.Errorf("read file failed: %v", err)
 	}
@@ -342,7 +342,7 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 		return err
 	}
 
-	secFile, err := os.Create(fileName)
+	secFile, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0400)
 	if err != nil {
 		return err
 	}
@@ -415,7 +415,9 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 	if initialRAM > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
 	}
-	acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	if initialGasPledge > 0 {
+		acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	}
 	if initialCoins > 0 {
 		acts = append(acts, NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
 	}

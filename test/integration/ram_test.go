@@ -42,8 +42,8 @@ func TestRAM(t *testing.T) {
 	}
 
 	var initialTotal int64 = 128 * 1024 * 1024 * 1024
-	var increaseInterval int64 = 24 * 3600
-	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365
+	var increaseInterval int64 = 10 * 60                   // increase every 10 mins
+	var increaseAmount int64 = 10 * (64*1024*1024*1024) / (365 * 24 * 60) // 64GB per year
 	r, err = s.Call(contractName, "issue", array2json([]interface{}{initialTotal, increaseInterval, increaseAmount, 0}), admin.ID, admin)
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
@@ -77,14 +77,14 @@ func TestRAM(t *testing.T) {
 			})
 			Convey("when buying triggers increasing total ram", func() {
 				head := s.Head
-				head.Time = head.Time + increaseInterval*1000*1000*1000
+				head.Time = head.Time + 144 * increaseInterval*1000*1000*1000
 				s.SetBlockHead(head)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", contractName)
 				r, err := s.Call(contractName, "buy", array2json([]interface{}{kp.ID, kp.ID, buyAmount}), kp.ID, kp)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", contractName)
-				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+increaseAmount-buyAmount)
+				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+ 144 * increaseAmount-buyAmount)
 			})
 			Convey("user can buy for others", func() {
 				other := testID[4]

@@ -51,7 +51,7 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 		return nil, nil, nil, fmt.Errorf("abi %s not found", api)
 	}
 
-	args, err = unmarshalArgs(abi, jarg)
+	args, err = UnmarshalArgs(abi, jarg)
 
 	return
 }
@@ -59,9 +59,7 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
-
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
-
 	if err != nil {
 		return nil, host.Costs["GetCost"], fmt.Errorf("prepare contract: %v", err)
 	}
@@ -231,7 +229,8 @@ func Factory(lang string) VM {
 	return nil
 }
 
-func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
+// UnmarshalArgs convert action data to args according to abi
+func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	if strings.HasSuffix(data, ",]") {
 		data = data[:len(data)-2] + "]"
 	}
