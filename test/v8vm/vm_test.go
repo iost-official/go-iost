@@ -736,3 +736,36 @@ func TestNativeRun(t *testing.T) {
 		So(err.Error(), ShouldContainSubstring, "TypeError: _native_run is not a function")
 	})
 }
+
+func TestV8Safe(t *testing.T) {
+	host, code := MyInit(t, "v8Safe")
+	_, _, err := vmPool.LoadAndCall(host, code, "CVE_2018_6149")
+	if err != nil && !strings.Contains(err.Error(), "out of gas") {
+		t.Fatalf("LoadAndCall V8Safe CVE_2018_6149 error: %v", err)
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "CVE_2018_6143")
+	if err == nil {
+		t.Fatalf("LoadAndCall V8Safe CVE_2018_6143 should return error")
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "CVE_2018_6136")
+	if err == nil {
+		t.Fatalf("LoadAndCall V8Safe CVE_2018_6136 should return error")
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "CVE_2018_6092")
+	if err == nil {
+		t.Fatalf("LoadAndCall V8Safe CVE_2018_6092 should return error")
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "CVE_2018_6065")
+	if !strings.Contains(err.Error(), "out of gas") {
+		t.Fatalf("LoadAndCall V8Safe CVE_2018_6065 should return error")
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "CVE_2018_6056")
+	if err == nil {
+		t.Fatalf("LoadAndCall V8Safe CVE_2018_6056 should return error")
+	}
+}
