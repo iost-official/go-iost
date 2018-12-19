@@ -581,7 +581,7 @@ func TestEngine_Func(t *testing.T) {
 }
 
 func TestEngine_Danger(t *testing.T) {
-	host, code := MyInit(t, "danger", int64(1e8))
+	host, code := MyInit(t, "danger", int64(1e12))
 	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
 	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr invalid gas") {
 		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr invalid gas, got %v\n", err)

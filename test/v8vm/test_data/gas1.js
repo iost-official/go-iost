@@ -41,7 +41,7 @@ class Gas {
 
     assignment2(N) {
         // should forbid Array.from
-        //Array.from({length: N}, (val, index) => index);
+        Array.from({length: N}, (val, index) => index);
     }
     assignment3(N) {
         // can't reach Arrayconcat to get back original prototype
@@ -173,6 +173,12 @@ class Gas {
             a.splice(1, 5, 'a', 'a', 'a');
             return a;
         }
+    }
+    array1(N) {
+        let a = new Array(N);
+    }
+    array2(N) {
+        [].concat(new Array(N));
     }
 
     string0(N) {

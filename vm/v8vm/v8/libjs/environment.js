@@ -293,7 +293,6 @@
         'splice',
         'unshift'
     ];
-
     const arrayMethods = Object.getOwnPropertyNames(Array.prototype);
     arrayMethods.forEach((method) => {
         if (!arrayAllowedMethods.includes(method)) {
@@ -303,8 +302,9 @@
 
     const Arrayconstructor = Array.prototype.constructor;
     Array.prototype.constructor = function() {
-        _IOSTInstruction_counter.incr(this.length);
-        return Arrayconstructor.call(this, ...arguments);
+        let res = Arrayconstructor.call(this, ...arguments);
+        _IOSTInstruction_counter.incr(res.length);
+        return res;
     };
 
     const ArraytoString = Array.prototype.toString;
@@ -315,8 +315,9 @@
 
     const Arrayconcat = Array.prototype.concat;
     Array.prototype.concat = function() {
-        _IOSTInstruction_counter.incr(this.length);
-        return Arrayconcat.call(this, ...arguments);
+        let res = Arrayconcat.call(this, ...arguments);
+        _IOSTInstruction_counter.incr(res.length);
+        return res;
     };
 
     const Arrayevery = Array.prototype.every;
@@ -438,6 +439,11 @@
 
     Array.from = null;
     Array.of = null;
+    const OrigArray = Array;
+    Array = OrigArray.prototype.constructor;
+    Array.prototype = OrigArray.prototype;
+    Array.isArray = OrigArray.isArray;
+
 
     // JSON
     const JSONparse = JSON.parse;
