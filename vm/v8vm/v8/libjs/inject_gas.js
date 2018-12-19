@@ -2,12 +2,12 @@
 
 // expression to be charged for some instruction, used to calculate inject value
 const chargedExpression = {
-    ThrowStatement: 24,
+    ThrowStatement: 50,
     // expression
-    CallExpression: 8,
-    TaggedTemplateExpression: 8,
+    CallExpression: 4,
+    TaggedTemplateExpression: 4,
     NewExpression: 8,
-    YieldExpression: 6,
+    YieldExpression: 8,
     MemberExpression: 4,
     MetaProperty: 4,
     AssignmentExpression: 3,
@@ -17,18 +17,24 @@ const chargedExpression = {
     LogicalExpression: 3,
     ConditionalExpression: 3,
 
-    ObjectExpression: 3,
-    ArrayExpression: 1,
-    FunctionExpression: 3,
-    ArrowFunctionExpression: 3,
+    ObjectExpression: 0.1,
+    ArrayExpression: 0.1,
+    FunctionExpression: 1,
+    ArrowFunctionExpression: 1,
     // declaration
     ClassDeclaration: 3,
     FunctionDeclaration: 3,
     VariableDeclarator: 3,
-    VariableDeclaratorWithoutInit: 1,
-    MethodDefinition: 3,
+    VariableDeclaratorWithoutInit: 3,
+    MethodDefinition: 2,
     // literal
-    StringLiteral: 1
+    StringLiteral: 0.1,
+    // statement
+    ForStatement: 1,
+    ForInStatement: 4,
+    ForOfStatement: 2,
+    IfStatement: 1,
+    WhileStatement: 1
 };
 // statement before which can inject gas, used to find inject location
 const InjectableStatement = {
@@ -217,7 +223,7 @@ function processNode(node, parentNode, lastInjection) {
         if (body.type === 'BlockStatement') {
             pos = body.range[0] + 1;
         }
-        addInjection(pos, InjectType.gasIncrWithSemicolon, 1);
+        addInjection(pos, InjectType.gasIncrWithSemicolon, chargedExpression[node.type]);
 
         let injectionPoint2 = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
         let injectionPoint3 = addInjectionPoint(node.update, InjectType.gasIncrWithComma, 0);
@@ -234,13 +240,13 @@ function processNode(node, parentNode, lastInjection) {
         if (body.type === 'BlockStatement') {
             pos = body.range[0] + 1;
         }
-        addInjection(pos, InjectType.gasIncrWithSemicolon, 1);
+        addInjection(pos, InjectType.gasIncrWithSemicolon, chargedExpression[node.type]);
 
         return [newLastInjection, {}];
 
     } else if (node.type === "WhileStatement" || node.type === "DoWhileStatement") {
         ensure_block(node.body);
-        let injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 1);
+        let injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, chargedExpression[node.type]);
         return [newLastInjection, {
             "test": injectionPoint
         }];
@@ -297,7 +303,7 @@ function processNode(node, parentNode, lastInjection) {
         let value = chargedExpression[node.type];
         if (value === null || value === undefined) {
             if (node.type === "Literal" && typeof node.value === "string") {
-                value = chargedExpression["StringLiteral"] * node.value.length;
+                value = 1 + chargedExpression["StringLiteral"] * node.value.length;
             } else {
                 return [newLastInjection, {}];
             }
@@ -306,10 +312,10 @@ function processNode(node, parentNode, lastInjection) {
             value = chargedExpression["VariableDeclaratorWithoutInit"]
         }
         if (node.type === "ObjectExpression" && node.properties !== undefined && node.properties.length > 0) {
-            value = value * node.properties.length;
+            value = 2 + value * node.properties.length;
         }
         if (node.type === "ArrayExpression" && node.elements !== undefined && node.elements.length > 0) {
-            value = value * node.elements.length;
+            value = 2 + value * node.elements.length;
         }
         if (newLastInjection === null) {
             newLastInjection = addInjection(node.range[0], InjectType.gasIncrWithSemicolon, 0);
