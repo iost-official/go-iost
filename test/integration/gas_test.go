@@ -344,44 +344,44 @@ func TestGas_TGas(t *testing.T) {
 	}
 	s.SetContract(ca)
 	s.SetContract(native.GasABI())
-	kp := prepareAuth(t, s)
-	err = createToken(t, s, kp)
+	acc := prepareAuth(t, s)
+	err = createToken(t, s, acc)
 	if err != nil {
 		panic(err)
 	}
 	other, err := account.NewKeyPair(nil, crypto.Secp256k1)
 	otherID := "lispc0"
-	s.Visitor.MPut("vote_producer.iost-producerTable", kp.ID, "dummy")
+	s.Visitor.MPut("vote_producer.iost-producerTable", acc.ID, "dummy")
 	Convey("test tgas", t, func() {
 		Convey("account referrer should got 30000 tgas", func() {
-			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, other.ID, other.ID}), kp.ID, kp)
+			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, other.ID, other.ID}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TGas(kp.ID).ToString(), ShouldEqual, "30000")
-			r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{kp.ID, otherID, "199"}), kp.ID, kp)
+			So(s.Visitor.TGas(acc.ID).ToString(), ShouldEqual, "30000")
+			r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc.ID, otherID, "199"}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldBeEmpty)
 		})
 		Convey("tgas can be transferred", func() {
-			r, err := s.Call("gas.iost", "transfer", array2json([]interface{}{kp.ID, otherID, "10000"}), kp.ID, kp)
+			r, err := s.Call("gas.iost", "transfer", array2json([]interface{}{acc.ID, otherID, "10000"}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TGas(kp.ID).ToString(), ShouldEqual, "20000")
+			So(s.Visitor.TGas(acc.ID).ToString(), ShouldEqual, "20000")
 			So(s.Visitor.TGas(otherID).ToString(), ShouldEqual, "10000")
 		})
 		Convey("referrer get 15% reward", func() {
 			s.Visitor.Commit()
-			r, err := s.Call("token.iost", "transfer", array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}), otherID, other)
+			r, err := s.Call("token.iost", "transfer", array2json([]interface{}{"iost", otherID, acc.ID, "1", ""}), otherID, other)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldNotBeEmpty)
-			So(s.Visitor.TGas(kp.ID).ToFloat(), ShouldAlmostEqual, 20000+float64(r.GasUsage)/100*0.15)
+			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, 20000+float64(r.GasUsage)/100*0.15)
 		})
 		Convey("when pgas is used up, tgas will be used", func() {
 			s.SetGas(otherID, 123)
 			trx := tx.NewTx([]*tx.Action{{
 				Contract:   "token.iost",
 				ActionName: "transfer",
-				Data:       array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}),
+				Data:       array2json([]interface{}{"iost", otherID, acc.ID, "1", ""}),
 			}}, nil, 1000000, 100, s.Head.Time+10000000, 0)
 			trx.Time = s.Head.Time
 			r, err := s.CallTx(trx, otherID, other)

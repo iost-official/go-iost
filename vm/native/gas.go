@@ -238,7 +238,8 @@ var (
 			if unpledgeAmount.LessThan(GasMinPledgePerAction) {
 				return nil, cost, fmt.Errorf("min unpledge num is %d", GasMinPledgePerAction)
 			}
-			pledged, cost := h.GasManager.GasPledge(gasUser, pledger)
+			pledged, cost0 := h.GasManager.GasPledge(gasUser, pledger)
+			cost.AddAssign(cost0)
 			if pledged.IsZero() {
 				return nil, cost, fmt.Errorf("%v did not pledge for %v", pledger, gasUser)
 			}
