@@ -142,16 +142,15 @@ class RAMContract {
     }
 
     _checkIssue() {
-        const t = block.time;
-        const nextUpdateTime = this._get("lastUpdateBlockTime") + this._get("increaseInterval") * 1000 * 1000 * 1000;
-        if (t < nextUpdateTime) {
-            return;
+        const increaseInterval = this._get("increaseInterval");
+        const slotNum = Math.floor(block.time/1e9/increaseInterval) - Math.floor(this._get("lastUpdateBlockTime")/1e9/increaseInterval);
+        if (slotNum > 0) {
+            const increaseAmount = this._get("increaseAmount") * slotNum;
+            const data = [this._getTokenName(), blockchain.contractName(), increaseAmount.toString()];
+            blockchain.callWithAuth("token.iost", "issue", JSON.stringify(data));
+            this._put("lastUpdateBlockTime", block.time);
+            this._changeLeftSpace(increaseAmount);
         }
-        const increaseAmount = this._get("increaseAmount");
-        const data = [this._getTokenName(), blockchain.contractName(), increaseAmount.toString()];
-        blockchain.callWithAuth("token.iost", "issue", JSON.stringify(data));
-        this._put("lastUpdateBlockTime", t);
-        this._changeLeftSpace(increaseAmount);
     }
 
     buy(payer, account, amount) {

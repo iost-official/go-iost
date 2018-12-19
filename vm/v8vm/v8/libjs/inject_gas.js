@@ -223,13 +223,14 @@ function processNode(node, parentNode, lastInjection) {
         if (body.type === 'BlockStatement') {
             pos = body.range[0] + 1;
         }
-        addInjection(pos, InjectType.gasIncrWithSemicolon, chargedExpression[node.type]);
+        let ip0 = addInjection(pos, InjectType.gasIncrWithSemicolon, chargedExpression[node.type]);
 
         let injectionPoint2 = addInjectionPoint(node.test, InjectType.gasIncrWithComma, 0);
         let injectionPoint3 = addInjectionPoint(node.update, InjectType.gasIncrWithComma, 0);
         return [newLastInjection, {
             "test": injectionPoint2,
-            "update": injectionPoint3
+            "update": injectionPoint3,
+            "body": ip0
         }];
 
     } else if (node.type === "ForInStatement" || node.type === "ForOfStatement") {
@@ -240,15 +241,25 @@ function processNode(node, parentNode, lastInjection) {
         if (body.type === 'BlockStatement') {
             pos = body.range[0] + 1;
         }
-        addInjection(pos, InjectType.gasIncrWithSemicolon, chargedExpression[node.type]);
+        let ip0 = addInjection(pos, InjectType.gasIncrWithSemicolon, chargedExpression[node.type]);
 
-        return [newLastInjection, {}];
+        return [newLastInjection, {
+            "body": ip0
+        }];
 
     } else if (node.type === "WhileStatement" || node.type === "DoWhileStatement") {
         ensure_block(node.body);
+        let body = node.body;
+        let pos = body.range[0];
+        if (body.type === 'BlockStatement') {
+            pos = body.range[0] + 1;
+        }
+        let ip0 = addInjection(pos, InjectType.gasIncrWithSemicolon, 1);
+
         let injectionPoint = addInjectionPoint(node.test, InjectType.gasIncrWithComma, chargedExpression[node.type]);
         return [newLastInjection, {
-            "test": injectionPoint
+            "test": injectionPoint,
+            "body": ip0
         }];
 
     } else if (node.type === "WithStatement") {
@@ -265,6 +276,12 @@ function processNode(node, parentNode, lastInjection) {
         }];
 
     } else if (node.type === "ArrowFunctionExpression") {
+        let value = chargedExpression[node.type];
+        console.log("arrow function value, ", value);
+        if (newLastInjection === null) {
+            newLastInjection = addInjection(node.range[0], InjectType.gasIncrWithSemicolon, 0);
+        }
+        injectionMap.get(newLastInjection.pos)[newLastInjection.index].value += value;
 
         if (node.body.type !== 'BlockStatement') {
             addInjection(node.body.range[0], InjectType.str, "function(){");

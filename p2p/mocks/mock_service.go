@@ -35,13 +35,13 @@ func (m *MockService) EXPECT() *MockServiceMockRecorder {
 }
 
 // Broadcast mocks base method
-func (m *MockService) Broadcast(arg0 []byte, arg1 p2p.MessageType, arg2 p2p.MessagePriority, arg3 bool) {
-	m.ctrl.Call(m, "Broadcast", arg0, arg1, arg2, arg3)
+func (m *MockService) Broadcast(arg0 []byte, arg1 p2p.MessageType, arg2 p2p.MessagePriority) {
+	m.ctrl.Call(m, "Broadcast", arg0, arg1, arg2)
 }
 
 // Broadcast indicates an expected call of Broadcast
-func (mr *MockServiceMockRecorder) Broadcast(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcast", reflect.TypeOf((*MockService)(nil).Broadcast), arg0, arg1, arg2, arg3)
+func (mr *MockServiceMockRecorder) Broadcast(arg0, arg1, arg2 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Broadcast", reflect.TypeOf((*MockService)(nil).Broadcast), arg0, arg1, arg2)
 }
 
 // ConnectBPs mocks base method
@@ -121,13 +121,13 @@ func (mr *MockServiceMockRecorder) Register(arg0 interface{}, arg1 ...interface{
 }
 
 // SendToPeer mocks base method
-func (m *MockService) SendToPeer(arg0 go_libp2p_peer.ID, arg1 []byte, arg2 p2p.MessageType, arg3 p2p.MessagePriority, arg4 bool) {
-	m.ctrl.Call(m, "SendToPeer", arg0, arg1, arg2, arg3, arg4)
+func (m *MockService) SendToPeer(arg0 go_libp2p_peer.ID, arg1 []byte, arg2 p2p.MessageType, arg3 p2p.MessagePriority) {
+	m.ctrl.Call(m, "SendToPeer", arg0, arg1, arg2, arg3)
 }
 
 // SendToPeer indicates an expected call of SendToPeer
-func (mr *MockServiceMockRecorder) SendToPeer(arg0, arg1, arg2, arg3, arg4 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendToPeer", reflect.TypeOf((*MockService)(nil).SendToPeer), arg0, arg1, arg2, arg3, arg4)
+func (mr *MockServiceMockRecorder) SendToPeer(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendToPeer", reflect.TypeOf((*MockService)(nil).SendToPeer), arg0, arg1, arg2, arg3)
 }
 
 // Start mocks base method

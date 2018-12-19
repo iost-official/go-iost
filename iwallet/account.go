@@ -18,6 +18,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/spf13/cobra"
 	"io/ioutil"
@@ -28,6 +29,8 @@ import (
 var (
 	createName       string
 	viewAccounts     string
+	ownerKey         string
+	activeKey        string
 	importAccount    string
 	deleteMethod     string
 	cryptoName       = []string{"ed25519", "secp256k1"}
@@ -38,8 +41,9 @@ var (
 
 type acc struct {
 	Name    string
-	KeyPair *account.KeyPair
+	KeyPair *key
 }
+
 type accounts struct {
 	Dir     string
 	Account []*acc
@@ -70,6 +74,8 @@ func init() {
 	rootCmd.AddCommand(accountCmd)
 	accountCmd.Flags().StringVarP(&createName, "create", "c", "", "create an account on blockchain")
 	accountCmd.Flags().StringVarP(&viewAccounts, "accounts", "a", "", "view account by name or All")
+	accountCmd.Flags().StringVarP(&ownerKey, "owner", "", "", "owner key")
+	accountCmd.Flags().StringVarP(&activeKey, "active", "", "", "active key")
 	accountCmd.Flags().StringVarP(&importAccount, "import", "i", "", "import an account, args[account_name account_private_key]")
 	accountCmd.Flags().StringVarP(&deleteMethod, "delete", "", "", "delete an account")
 	accountCmd.Flags().Int64VarP(&initialRAM, "initial_ram", "", 1024, "buy $initial_ram bytes ram for the new account")
@@ -79,27 +85,49 @@ func init() {
 }
 
 func createAccount(name string) (err error) {
+	var (
+		autoKey    bool
+		okey, akey string
+		newKp      *account.KeyPair
+	)
+
 	newName := name
 	if strings.ContainsAny(newName, `?*:|/\"`) || len(newName) > 16 {
 		return fmt.Errorf("invalid account name")
 	}
-	algo := sdk.getSignAlgo()
-	newKp, err := account.NewKeyPair(nil, algo)
-	if err != nil {
-		return fmt.Errorf("create key pair failed %v", err)
+
+	if sdk.checkID(ownerKey) && sdk.checkID(activeKey) {
+		okey, akey = ownerKey, activeKey
+	} else {
+		aLgo := sdk.getSignAlgo()
+		newKp, err = account.NewKeyPair(nil, aLgo)
+		if err != nil {
+			return fmt.Errorf("create key pair failed %v", err)
+		}
+		okey, akey = newKp.ID, newKp.ID
+		autoKey = true
 	}
+
 	err = sdk.loadAccount()
 	if err != nil {
 		return fmt.Errorf("load account failed. Is ~/.iwallet/<accountName>_ed25519 exists")
 	}
-	err = sdk.CreateNewAccount(newName, newKp, initialGasPledge, initialRAM, initialBalance)
+	err = sdk.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
 	if err != nil {
 		return fmt.Errorf("create new account error %v", err)
 	}
-	err = sdk.saveAccount(newName, newKp)
-	if err != nil {
-		return fmt.Errorf("saveAccount failed %v", err)
+	if autoKey {
+		err = sdk.saveAccount(newName, newKp)
+		if err != nil {
+			return fmt.Errorf("saveAccount failed %v", err)
+		}
 	}
+
+	fmt.Println("create account done")
+	fmt.Println("the iost account ID is:", name)
+	fmt.Println("owner permission key:", okey)
+	fmt.Println("active permission key:", akey)
+
 	return nil
 }
 
@@ -121,7 +149,7 @@ func viewAccount(name string) {
 				return
 			}
 			for _, f := range files {
-				fsk, err := readFile(f)
+				fsk, err := loadKey(f)
 				if err != nil {
 					fmt.Println("read file failed: ", err)
 					continue
@@ -135,8 +163,14 @@ func viewAccount(name string) {
 				if err != nil {
 					fmt.Println("getFileName error: ", err)
 					continue
+
 				}
-				al.Account = append(al.Account, &acc{name, keyPair})
+				var k key
+				k.ID = keyPair.ID
+				k.Algorithm = keyPair.Algorithm.String()
+				k.Pubkey = common.Base58Encode(keyPair.Pubkey)
+				k.Seckey = common.Base58Encode(keyPair.Seckey)
+				al.Account = append(al.Account, &acc{name, &k})
 
 			}
 			if len(files) != 0 {
@@ -161,7 +195,13 @@ func viewAccount(name string) {
 				fmt.Println("NewKeyPair error: ", err)
 				continue
 			}
-			al.Account = append(al.Account, &acc{name, keyPair})
+			var k key
+			k.ID = keyPair.ID
+			k.Algorithm = keyPair.Algorithm.String()
+			k.Pubkey = common.Base58Encode(keyPair.Pubkey)
+			k.Seckey = common.Base58Encode(keyPair.Seckey)
+
+			al.Account = append(al.Account, &acc{name, &k})
 		}
 
 		ret, err := json.MarshalIndent(al, "", "    ")
@@ -187,6 +227,10 @@ func importAcc(name string, args []string) {
 	if err != nil {
 		fmt.Printf("saveAccount failed %v\n", err)
 	}
+
+	fmt.Println("import account done")
+	fmt.Println("the iost account ID is:", name)
+	fmt.Println("active permission:", keyPair.ID)
 }
 
 func delAccount(name string) error {

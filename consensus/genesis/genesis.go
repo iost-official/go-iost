@@ -78,6 +78,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 	// deploy token.iost
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.TokenABI().B64Encode())))
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token721.iost", native.Token721ABI().B64Encode())))
 
 	// deploy bonus.iost
 	code, err = compile("bonus.iost", gConf.ContractPath, "bonus.js")
@@ -142,10 +143,10 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "ram.iost", code.B64Encode())))
 	acts = append(acts, tx.NewAction("ram.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
-	var initialTotal int64 = 128 * 1024 * 1024 * 1024        // 128GB at first
-	var increaseInterval int64 = 24 * 3600                   // increase every day
-	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365 // 64GB per year
-	var reserveRAM = initialTotal * 3 / 10                   // reserve for foundation
+	var initialTotal int64 = 128 * 1024 * 1024 * 1024                           // 128GB at first
+	var increaseInterval int64 = 10 * 60                                        // increase every 10 mins
+	var increaseAmount int64 = 10 * (64 * 1024 * 1024 * 1024) / (365 * 24 * 60) // 64GB per year
+	var reserveRAM = initialTotal * 3 / 10                                      // reserve for foundation
 	acts = append(acts, tx.NewAction("ram.iost", "issue", fmt.Sprintf(`[%v, %v, %v, %v]`, initialTotal, increaseInterval, increaseAmount, reserveRAM)))
 
 	adminInitialRAM := 100000

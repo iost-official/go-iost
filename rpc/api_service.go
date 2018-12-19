@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/iost-official/go-iost/vm"
 	"reflect"
 	"sort"
 	"time"
@@ -35,16 +36,19 @@ type APIService struct {
 	txpool     txpool.TxPool
 	blockchain block.Chain
 	bv         global.BaseVariable
+
+	quitCh chan struct{}
 }
 
 // NewAPIService returns a new APIService instance.
-func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service) *APIService {
+func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, quitCh chan struct{}) *APIService {
 	return &APIService{
 		p2pService: p2pService,
 		txpool:     tp,
 		blockchain: bv.BlockChain(),
 		bc:         bcache,
 		bv:         bv,
+		quitCh:     quitCh,
 	}
 }
 
@@ -266,6 +270,40 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 	}, nil
 }
 
+// GetToken721Balance returns balance of account of an specific token721 token.
+func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	// pack basic account information
+	acc, _ := host.ReadAuth(dbVisitor, req.GetAccount())
+	if acc == nil {
+		return nil, errors.New("account not found")
+	}
+	balance := dbVisitor.Token721Balance(req.GetToken(), req.GetAccount())
+	ids := dbVisitor.Token721IDList(req.GetToken(), req.GetAccount())
+	return &rpcpb.GetToken721BalanceResponse{
+		Balance:  balance,
+		TokenIDs: ids,
+	}, nil
+}
+
+// GetToken721Metadata returns metadata of an specific token721 token.
+func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721MetadataResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	metadata, err := dbVisitor.Token721Metadata(req.GetToken(), req.GetTokenId())
+	return &rpcpb.GetToken721MetadataResponse{
+		Metadata: metadata,
+	}, err
+}
+
+// GetToken721Owner returns owner of an specific token721 token.
+func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721OwnerResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	owner, err := dbVisitor.Token721Owner(req.GetToken(), req.GetTokenId())
+	return &rpcpb.GetToken721OwnerResponse{
+		Owner: owner,
+	}, err
+}
+
 // GetContract returns contract information corresponding to the given contract ID.
 func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
 	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
@@ -348,12 +386,12 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 		}
 	}
 	dbVisitor := as.getStateDBVisitor(true)
-	gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
-	gas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
-	if gas.LessThan(gasLimit) {
-		return nil, fmt.Errorf("invalid gas of user %v has %v < %v", t.Publisher, gas.ToString(), gasLimit.ToString())
+	currentGas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
+	err := vm.CheckTxGasLimitValid(t, currentGas, dbVisitor)
+	if err != nil {
+		return nil, err
 	}
-	err := as.txpool.AddTx(t)
+	err = as.txpool.AddTx(t)
 	if err != nil {
 		return nil, err
 	}
@@ -395,6 +433,8 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 	for {
 		select {
 		case <-timeup.C:
+			return nil
+		case <-as.quitCh:
 			return nil
 		case <-res.Context().Done():
 			return res.Context().Err()

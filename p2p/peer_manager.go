@@ -32,7 +32,7 @@ var (
 	metricsStatInterval      = 3 * time.Second
 	findBPInterval           = 2 * time.Second
 
-	dialTimeout        = 2 * time.Second
+	dialTimeout        = 3 * time.Second
 	deadPeerRetryTimes = 5
 )
 
@@ -237,6 +237,7 @@ func (pm *PeerManager) ConnectBPs(ids []string) {
 // In other cases, reset the stream.
 func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 	remotePID := s.Conn().RemotePeer()
+	pm.freshPeer(remotePID)
 
 	if pm.isStreamBlack(s) {
 		ilog.Infof("remote peer is in black list. pid=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
@@ -475,7 +476,7 @@ func (pm *PeerManager) routingQuery(ids []string) {
 		return
 	}
 
-	pm.Broadcast(bytes, RoutingTableQuery, UrgentMessage, true)
+	pm.Broadcast(bytes, RoutingTableQuery, UrgentMessage)
 	outboundNeighborCount := pm.NeighborCount(outbound)
 	if outboundNeighborCount >= pm.neighborCap[outbound] {
 		return
@@ -503,7 +504,7 @@ func (pm *PeerManager) routingQuery(ids []string) {
 			continue
 		}
 		pm.HandleStream(stream, outbound)
-		pm.SendToPeer(peerID, bytes, RoutingTableQuery, UrgentMessage, true)
+		pm.SendToPeer(peerID, bytes, RoutingTableQuery, UrgentMessage)
 		t++
 	}
 }
@@ -542,16 +543,14 @@ func (pm *PeerManager) dnsResolve(peerID peer.ID, addr multiaddr.Multiaddr) erro
 }
 
 // Broadcast sends message to all the neighbors.
-//
-// if async is false, the method will be blocked until the message is sent out.
-func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority, async bool) {
+func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriority) {
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	wg := new(sync.WaitGroup)
 	for _, p := range pm.GetAllNeighbors() {
 		wg.Add(1)
 		go func(p *Peer) {
-			p.SendMessage(msg, mp, true, async)
+			p.SendMessage(msg, mp, true)
 			wg.Done()
 		}(p)
 	}
@@ -559,14 +558,12 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 }
 
 // SendToPeer sends message to the specified peer.
-//
-// if async is false, the method will be blocked until the message is sent out.
-func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority, async bool) {
+func (pm *PeerManager) SendToPeer(peerID peer.ID, data []byte, typ MessageType, mp MessagePriority) {
 	msg := newP2PMessage(pm.config.ChainID, typ, pm.config.Version, defaultReservedFlag, data)
 
 	peer := pm.GetNeighbor(peerID)
 	if peer != nil {
-		peer.SendMessage(msg, mp, false, async)
+		peer.SendMessage(msg, mp, false)
 	}
 }
 
@@ -652,7 +649,7 @@ func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, peerID peer.ID) 
 	queryIDs := query.GetIds()
 	bytes, _ := pm.getRoutingResponse(queryIDs)
 	if len(bytes) > 0 {
-		pm.SendToPeer(peerID, bytes, RoutingTableResponse, UrgentMessage, true)
+		pm.SendToPeer(peerID, bytes, RoutingTableResponse, UrgentMessage)
 	}
 }
 

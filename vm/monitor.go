@@ -51,7 +51,7 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 		return nil, nil, nil, fmt.Errorf("abi %s not found", api)
 	}
 
-	args, err = unmarshalArgs(abi, jarg)
+	args, err = UnmarshalArgs(abi, jarg)
 
 	return
 }
@@ -59,9 +59,7 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
-
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
-
 	if err != nil {
 		return nil, host.Costs["GetCost"], fmt.Errorf("prepare contract: %v", err)
 	}
@@ -231,7 +229,8 @@ func Factory(lang string) VM {
 	return nil
 }
 
-func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
+// UnmarshalArgs convert action data to args according to abi
+func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	if strings.HasSuffix(data, ",]") {
 		data = data[:len(data)-2] + "]"
 	}
@@ -244,7 +243,7 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	arr, err := js.Array()
 	if err != nil {
 		ilog.Error(js.EncodePretty())
-		return nil, err
+		return nil, fmt.Errorf("error args should be array, %v, %v", err, js)
 	}
 
 	if len(arr) != len(abi.Args) {
@@ -255,31 +254,31 @@ func unmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 		case "string":
 			s, err := js.GetIndex(i).String()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse string arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		case "bool":
 			s, err := js.GetIndex(i).Bool()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse bool arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		case "number":
 			s, err := js.GetIndex(i).Int64()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse number arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		case "json":
 			s, err := js.GetIndex(i).Encode()
 			if err != nil {
-				return nil, err
+				return nil, fmt.Errorf("error parse json arg %v, %v", js.GetIndex(i), err)
 			}
 			// make sure s is a valid json
 			_, err = simplejson.NewJson(s)
 			if err != nil {
 				ilog.Error(string(s))
-				return nil, err
+				return nil, fmt.Errorf("error parse json arg %v, %v", js.GetIndex(i), err)
 			}
 			rtn = append(rtn, s)
 		}
