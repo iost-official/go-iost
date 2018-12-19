@@ -223,8 +223,9 @@ class VoteContract {
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
-        if (this._get("pendingProducerList").includes(account) ||
-            this._get("currentProducerList").includes(account)) {
+        const pubkey = this._mapGet("producerTable", account).pubkey;
+        if (this._get("pendingProducerList").includes(pubkey) ||
+            this._get("currentProducerList").includes(pubkey)) {
             throw new Error("producer in pending list or in current list, can't logout");
         }
         const pro = this._mapGet("producerTable", account);

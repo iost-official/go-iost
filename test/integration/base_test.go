@@ -27,22 +27,21 @@ func Test_Base(t *testing.T) {
 
 		s.Head.Number = 0
 
-		acc := testAccounts[0]
 		createAccountsWithResource(s)
-		prepareToken(t, s, acc)
-		prepareProducerVote(t, s, acc)
+		prepareToken(t, s, acc0)
+		prepareProducerVote(t, s, acc0)
 		for _, acc := range testAccounts[:6] {
 			s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
 		}
 
 		// deploy bonus.iost
 		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		s.Call("bonus.iost", "init", `[]`, acc.ID, acc.KeyPair)
+		s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
 
-		prepareBase(t, s, acc)
+		prepareBase(t, s, acc0)
 
 		s.Head.Number = 200
-		re, err := s.Call("base.iost", "Exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc.ID, 12345678), acc.ID, acc.KeyPair)
+		re, err := s.Call("base.iost", "Exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc0.ID, 12345678), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(re.Status.Message, ShouldEqual, "")
 	})

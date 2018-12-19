@@ -29,7 +29,7 @@ func TestRAM(t *testing.T) {
 	s.SetGas(acc.ID, 10000000)
 
 	s.Head.Number = 0
-	admin := testAccounts[1]
+	admin := acc1
 	r, err := s.Call(contractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin.KeyPair)
 	if err != nil || r.Status.Code != tx.StatusCode(tx.Success) {
 		panic("call failed " + err.Error() + " " + r.String())
@@ -48,7 +48,7 @@ func TestRAM(t *testing.T) {
 	}
 	initRAM := s.Visitor.TokenBalance("ram", acc.ID)
 	s.Head.Number = 1
-	other := testAccounts[2].ID
+	other := acc2.ID
 
 	Convey("test of ram", t, func() {
 		Convey("user has no ram if he did not buy", func() {
