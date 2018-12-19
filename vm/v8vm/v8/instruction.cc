@@ -1,4 +1,5 @@
 #include "instruction.h"
+#include "limits.h"
 #include <iostream>
 
 void NewIOSTContractInstruction(const FunctionCallbackInfo<Value> &args) {
