@@ -14,8 +14,13 @@ func (m *DelaytxHandler) delaytxKey(txHash string) string {
 }
 
 // StoreDelaytx stores delaytx hash.
-func (m *DelaytxHandler) StoreDelaytx(txHash string) {
-	m.db.Put(m.delaytxKey(txHash), "")
+func (m *DelaytxHandler) StoreDelaytx(txHash, publisher string) {
+	m.db.Put(m.delaytxKey(txHash), publisher)
+}
+
+// GetDelaytx gets the delay tx's publisher.
+func (m *DelaytxHandler) GetDelaytx(txHash string) string {
+	return m.db.Get(m.delaytxKey(txHash))
 }
 
 // HasDelaytx checks whether the delaytx exists.

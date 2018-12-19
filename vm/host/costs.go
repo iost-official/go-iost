@@ -45,17 +45,17 @@ func CommonOpCost(layer int) contract.Cost {
 }
 
 // DelayTxCost returns cost of a delay transaction.
-func DelayTxCost(hashLen int, payer string) contract.Cost {
+func DelayTxCost(dataLen int, payer string) contract.Cost {
 	cost := Costs["PutCost"]
-	cost.Data = int64(hashLen)
-	cost.DataList = []contract.DataItem{{Payer: payer, Val: int64(hashLen)}}
+	cost.Data = int64(dataLen)
+	cost.DataList = []contract.DataItem{{Payer: payer, Val: int64(dataLen)}}
 	return cost
 }
 
 // DelDelayTxCost returns cost of a delay transaction.
-func DelDelayTxCost(hashLen int, payer string) contract.Cost {
+func DelDelayTxCost(dataLen int, payer string) contract.Cost {
 	cost := Costs["DelCost"]
-	cost.Data = -int64(hashLen)
-	cost.DataList = []contract.DataItem{{Payer: payer, Val: -int64(hashLen)}}
+	cost.Data = -int64(dataLen)
+	cost.DataList = []contract.DataItem{{Payer: payer, Val: -int64(dataLen)}}
 	return cost
 }

@@ -77,3 +77,8 @@ func (a *Action) ToBytes() []byte {
 	sn.WriteString(a.Data, true)
 	return sn.Bytes()
 }
+
+// Equal returns whether two actions are equal.
+func (a *Action) Equal(ac *Action) bool {
+	return a.ActionName == ac.ActionName && a.Data == ac.Data && a.Contract == ac.Contract
+}

@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/db/kv"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // BlockChain is the implementation of chain
@@ -103,9 +104,17 @@ func (bc *BlockChain) Push(block *Block) error {
 
 		if t.Delay > 0 {
 			bc.blockChainDB.Put(append(delaytxPrefix, tHash...), txBytes)
+
+			txBytes, err := bc.blockChainDB.Keys(delaytxPrefix)
+			ilog.Warn(txBytes, err)
 		}
 		if t.IsDefer() {
 			bc.blockChainDB.Delete(append(delaytxPrefix, t.ReferredTx...))
+		}
+		if cancelHash, exist := t.CanceledDelaytxHash(); exist {
+			if block.Receipts[i].Status.Code == tx.Success {
+				bc.blockChainDB.Delete(append(delaytxPrefix, cancelHash...))
+			}
 		}
 	}
 	err = bc.blockChainDB.CommitBatch()
@@ -327,19 +336,26 @@ func (bc *BlockChain) Close() {
 
 // AllDelaytx returns all delay transactions.
 func (bc *BlockChain) AllDelaytx() ([]*tx.Tx, error) {
-	txBytes, err := bc.blockChainDB.Keys(delaytxPrefix)
-	if err != nil {
-		return nil, err
-	}
-	ret := make([]*tx.Tx, 0, len(txBytes))
-	for _, txByte := range txBytes {
+	iter := bc.blockChainDB.NewIteratorByPrefix(delaytxPrefix)
+	ret := make([]*tx.Tx, 0)
+	for iter.Next() {
 		t := &tx.Tx{}
-		err = t.Decode(txByte)
+		err := t.Decode(iter.Value())
 		if err != nil {
+			ilog.Warn(err)
 			continue
 		}
 		ret = append(ret, t)
 	}
+	ilog.Warn("all delay tx size:", len(ret))
+	/*  for _, txByte := range txBytes { */
+	// t := &tx.Tx{}
+	// err = t.Decode(txByte)
+	// if err != nil {
+	// continue
+	// }
+	// ret = append(ret, t)
+	/* } */
 	return ret, nil
 }
 

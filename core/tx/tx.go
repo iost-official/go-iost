@@ -1,6 +1,7 @@
 package tx
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -13,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
@@ -219,26 +221,90 @@ func (t *Tx) IsDefer() bool {
 	return len(t.ReferredTx) > 0
 }
 
-// VerifyDefer verifes whether the defer tx is matched  with the referred tx.
-func (t *Tx) VerifyDefer(referredTx *Tx) error {
-	if referredTx.Publisher != t.Publisher {
-		return errors.New("unmatched referred tx publisher")
+// CanceledDelaytxHash returns the delay transaction hash that is canceled.
+func (t *Tx) CanceledDelaytxHash() ([]byte, bool) {
+	for _, action := range t.Actions {
+		if action.Contract == "system.iost" && action.ActionName == "CancelDelaytx" {
+			var actionData []string
+			err := json.Unmarshal([]byte(action.Data), &actionData)
+			ilog.Errorln(err, actionData)
+			if err == nil && len(actionData) > 0 {
+				return common.Base58Decode(actionData[0]), true
+			}
+		}
 	}
+	return nil, false
+}
+
+func (t *Tx) verifyDeferBaseFields(referredTx *Tx) error {
 	if referredTx.Time+referredTx.Delay != t.Time {
 		return errors.New("unmatched referred tx delay time")
 	}
 	if referredTx.Expiration+referredTx.Delay != t.Expiration {
 		return errors.New("unmatched referred tx expiration time")
 	}
+	if referredTx.GasRatio != t.GasRatio {
+		return errors.New("unmatched referred tx gas ratio")
+	}
+	if referredTx.GasLimit != t.GasLimit {
+		return errors.New("unmatched referred tx gas limit")
+	}
 	if len(referredTx.Actions) != len(t.Actions) {
 		return errors.New("unmatched referred tx action length")
 	}
 	for i := 0; i < len(referredTx.Actions); i++ {
-		if *referredTx.Actions[i] != *t.Actions[i] {
+		if !referredTx.Actions[i].Equal(t.Actions[i]) {
 			return errors.New("unmatched referred tx action")
 		}
 	}
+	if len(referredTx.AmountLimit) != len(t.AmountLimit) {
+		return errors.New("unmatched referred tx amount limit length")
+	}
+	for i := 0; i < len(referredTx.AmountLimit); i++ {
+		if !referredTx.AmountLimit[i].Equal(t.AmountLimit[i]) {
+			return errors.New("unmatched referred tx amount limit")
+		}
+	}
 	return nil
+}
+
+func (t *Tx) verifyDeferSigFields(referredTx *Tx) error {
+	if referredTx.Publisher != t.Publisher {
+		return errors.New("unmatched referred tx publisher")
+	}
+	if len(referredTx.PublishSigns) != len(t.PublishSigns) {
+		return errors.New("unmatched referred tx publishsigns length")
+	}
+	for i := 0; i < len(referredTx.PublishSigns); i++ {
+		if !referredTx.PublishSigns[i].Equal(t.PublishSigns[i]) {
+			return errors.New("unmatched referred tx publishsign")
+		}
+	}
+	if len(referredTx.Signers) != len(t.Signers) {
+		return errors.New("unmatched referred tx signers length")
+	}
+	for i := 0; i < len(referredTx.Signers); i++ {
+		if referredTx.Signers[i] != t.Signers[i] {
+			return errors.New("unmatched referred tx signer")
+		}
+	}
+	if len(referredTx.Signs) != len(t.Signs) {
+		return errors.New("unmatched referred tx signs length")
+	}
+	for i := 0; i < len(referredTx.Signs); i++ {
+		if !referredTx.Signs[i].Equal(t.Signs[i]) {
+			return errors.New("unmatched referred tx sign")
+		}
+	}
+	return nil
+}
+
+// VerifyDefer verifes whether the defer tx is matched  with the referred tx.
+func (t *Tx) VerifyDefer(referredTx *Tx) error {
+	if err := t.verifyDeferBaseFields(referredTx); err != nil {
+		return err
+	}
+	return t.verifyDeferSigFields(referredTx)
 }
 
 // VerifySelf verify tx's signature

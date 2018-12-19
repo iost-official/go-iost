@@ -185,12 +185,13 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	i.tr = tx.NewTxReceipt(i.t.Hash())
 
 	if i.t.Delay > 0 {
-		i.h.DB().StoreDelaytx(string(i.t.Hash()))
+		txHash := string(i.t.Hash())
+		i.h.DB().StoreDelaytx(txHash, i.publisherID)
 		i.tr.Status = &tx.Status{
 			Code:    tx.Success,
 			Message: "",
 		}
-		cost := host.DelayTxCost(len(string(i.t.Hash())), i.publisherID)
+		cost := host.DelayTxCost(len(txHash)+len(i.publisherID), i.publisherID)
 		i.h.PayCost(cost, i.publisherID)
 		return i.tr, nil
 	}
@@ -205,11 +206,11 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		// use defer func so the delete operation would not be reverted by i.h.DB().Rollback().
 		defer func() {
 			i.h.DB().DelDelaytx(refTxHash)
-			cost := host.DelDelayTxCost(len(refTxHash), i.publisherID)
+			cost := host.DelDelayTxCost(len(refTxHash)+len(i.publisherID), i.publisherID)
 			i.h.PayCost(cost, i.publisherID)
 		}()
 
-		if !i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
+		if i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
 			i.tr.Status = &tx.Status{
 				Code:    tx.Success,
 				Message: "transaction expired",
@@ -285,7 +286,9 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 	}
 	i.tr.GasUsage = payedGas.Value
 	for k, v := range i.h.Costs() {
-		i.tr.RAMUsage[k] = v.Data
+		if v.Data != 0 {
+			i.tr.RAMUsage[k] = v.Data
+		}
 	}
 
 	return i.tr, nil
@@ -310,11 +313,7 @@ func (i *Isolator) ClearTx() {
 	i.h.DB().Rollback()
 }
 func checkTxParams(t *tx.Tx) error {
-	err := t.CheckGas()
-	if err != nil {
-		return err
-	}
-	return nil
+	return t.CheckGas()
 }
 
 func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {

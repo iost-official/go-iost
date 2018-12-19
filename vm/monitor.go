@@ -88,10 +88,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	if !ok {
 		vm = Factory(c.Info.Lang)
 		m.vms[c.Info.Lang] = vm
-		err := m.vms[c.Info.Lang].Init()
-		if err != nil {
-			panic(err)
-		}
 	}
 	// check amount limit
 	signerList := map[string]int{}

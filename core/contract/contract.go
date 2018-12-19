@@ -134,3 +134,8 @@ func (a *Amount) ToBytes() []byte {
 	sn.WriteString(a.Val, true)
 	return sn.Bytes()
 }
+
+// Equal returns whether two amount are equal.
+func (a *Amount) Equal(am *Amount) bool {
+	return a.Token == am.Token && a.Val == am.Val
+}

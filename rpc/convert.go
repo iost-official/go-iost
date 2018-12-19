@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/verifier"
 )
 
 func toPbAction(a *tx.Action) *rpcpb.Action {
@@ -88,7 +89,15 @@ func toPbBlock(blk *block.Block, complete bool) *rpcpb.Block {
 		GasUsage:            float64(blk.CalculateGasUsage()) / 100,
 		TxCount:             int64(len(blk.Txs)),
 	}
-	json.Unmarshal(blk.Head.Info, ret.Info)
+	var info verifier.Info
+	json.Unmarshal(blk.Head.Info, &info)
+	ret.Info = &rpcpb.Block_Info{
+		Mode:   int32(info.Mode),
+		Thread: int32(info.Thread),
+	}
+	for _, i := range info.Batch {
+		ret.Info.BatchIndex = append(ret.Info.BatchIndex, int32(i))
+	}
 	if complete {
 		for i, t := range blk.Txs {
 			ret.Transactions = append(ret.Transactions, toPbTx(t, blk.Receipts[i]))
