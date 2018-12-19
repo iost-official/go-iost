@@ -213,7 +213,7 @@ func (pm *PeerManager) connectBPs() {
 		if pm.GetNeighbor(bpID) == nil && bpID != pm.host.ID() && len(pm.peerStore.Addrs(bpID)) > 0 {
 			stream, err := pm.newStream(bpID)
 			if err != nil {
-				ilog.Errorf("create stream to bp failed. pid=%s, err=%v", bpID.Pretty(), err)
+				ilog.Warnf("create stream to bp failed. pid=%s, err=%v", bpID.Pretty(), err)
 				continue
 			}
 			pm.HandleStream(stream, outbound)
@@ -496,7 +496,7 @@ func (pm *PeerManager) routingQuery(ids []string) {
 		ilog.Debugf("dial peer: pid=%v", peerID.Pretty())
 		stream, err := pm.newStream(peerID)
 		if err != nil {
-			ilog.Errorf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
+			ilog.Warnf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
 			pm.recordDialFail(peerID)
 			if pm.isDead(peerID) {
 				pm.deletePeerInfo(peerID)

@@ -331,7 +331,7 @@ func (bc *BlockChain) AllDelaytx() ([]*tx.Tx, error) {
 	if err != nil {
 		return nil, err
 	}
-	ret := make([]*tx.Tx, 0)
+	ret := make([]*tx.Tx, 0, len(txBytes))
 	for _, txByte := range txBytes {
 		t := &tx.Tx{}
 		err = t.Decode(txByte)

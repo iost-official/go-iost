@@ -190,22 +190,30 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 			Code:    tx.Success,
 			Message: "",
 		}
-		i.tr.GasUsage = i.t.Delay / 1e9 // TODO: determine the price
+		cost := host.DelayTxCost(len(string(i.t.Hash())), i.publisherID)
+		i.h.PayCost(cost, i.publisherID)
 		return i.tr, nil
 	}
 
 	if i.t.IsDefer() {
-		if !i.h.DB().HasDelaytx(string(i.t.ReferredTx)) {
+		refTxHash := string(i.t.ReferredTx)
+		if !i.h.DB().HasDelaytx(refTxHash) {
 			return nil, fmt.Errorf("delay tx not found, hash=%v", i.t.ReferredTx)
 		}
-		i.h.DB().DelDelaytx(string(i.t.ReferredTx))
+
+		// the delaytx should be deleted even the tx is excuted failed.
+		// use defer func so the delete operation would not be reverted by i.h.DB().Rollback().
+		defer func() {
+			i.h.DB().DelDelaytx(refTxHash)
+			cost := host.DelDelayTxCost(len(refTxHash), i.publisherID)
+			i.h.PayCost(cost, i.publisherID)
+		}()
 
 		if !i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
 			i.tr.Status = &tx.Status{
 				Code:    tx.Success,
 				Message: "transaction expired",
 			}
-			i.tr.GasUsage = 1 // TODO: determine the price
 			return i.tr, nil
 		}
 	}
@@ -253,10 +261,6 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		vmGasLimit -= actionCost.ToGas()
 		i.h.Context().GSet("gas_limit", vmGasLimit)
 	}
-	for k, v := range i.h.Costs() {
-		i.tr.RAMUsage[k] = v.Data
-	}
-
 	return i.tr, nil
 }
 
@@ -280,6 +284,10 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 		}
 	}
 	i.tr.GasUsage = payedGas.Value
+	for k, v := range i.h.Costs() {
+		i.tr.RAMUsage[k] = v.Data
+	}
+
 	return i.tr, nil
 }
 

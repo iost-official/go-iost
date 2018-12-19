@@ -75,13 +75,14 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 		return err
 	}
 	t := &tx.Tx{
-		Actions:    referredTx.Actions,
-		Time:       referredTx.Time + referredTx.Delay,
-		Expiration: referredTx.Expiration + referredTx.Delay,
-		GasLimit:   referredTx.GasLimit,
-		GasRatio:   referredTx.GasRatio,
-		Publisher:  referredTx.Publisher,
-		ReferredTx: txHash,
+		Actions:     referredTx.Actions,
+		Time:        referredTx.Time + referredTx.Delay,
+		Expiration:  referredTx.Expiration + referredTx.Delay,
+		GasLimit:    referredTx.GasLimit,
+		GasRatio:    referredTx.GasRatio,
+		Publisher:   referredTx.Publisher,
+		ReferredTx:  txHash,
+		AmountLimit: referredTx.AmountLimit,
 	}
 	err = pool.verifyDuplicate(t)
 	if err != nil {
