@@ -760,7 +760,7 @@ func TestV8Safe(t *testing.T) {
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "CVE_2018_6065")
-	if !strings.Contains(err.Error(), "out of gas") {
+	if err == nil {
 		t.Fatalf("LoadAndCall V8Safe CVE_2018_6065 should return error")
 	}
 
@@ -769,7 +769,7 @@ func TestV8Safe(t *testing.T) {
 		t.Fatalf("LoadAndCall V8Safe CVE_2018_6056 should return error")
 	}
 }
-  
+
 func TestEngine_JSON(t *testing.T) {
 	Convey("test stringify1", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
