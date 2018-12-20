@@ -1,6 +1,7 @@
 package crypto
 
 import (
+	"bytes"
 	"errors"
 
 	"github.com/golang/protobuf/proto"
@@ -85,4 +86,9 @@ func (s *Signature) ToBytes() []byte {
 // Hash returns the hash code of signature
 func (s *Signature) Hash() []byte {
 	return common.Sha3(s.ToBytes())
+}
+
+// Equal returns whether two signatures are equal.
+func (s *Signature) Equal(sig *Signature) bool {
+	return s.Algorithm == sig.Algorithm && bytes.Equal(s.Pubkey, sig.Pubkey) && bytes.Equal(s.Sig, sig.Sig)
 }

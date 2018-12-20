@@ -50,33 +50,29 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 
 	h := host.NewHost(context, visitor, monitor, nil)
 
-	testAcc := "user1"
-	user1 := getAccount(testAcc, "4nXuDJdU9MfP1TBY1W75o6ePDZNFuQ563YdkqVeEjW92aBcE6QDtFKPFWRBeKP8uMZcP7MGjfGubCLtu75t4ntxD")
-	acc1, err := json.Marshal(user1)
+	acc0Bytes, err := json.Marshal(acc0.ToAccount())
 	if err != nil {
 		panic(err)
 	}
-	h.DB().MPut("auth.iost"+"-auth", testAcc, database.MustMarshal(string(acc1)))
+	h.DB().MPut("auth.iost"+"-auth", acc0.ID, database.MustMarshal(string(acc0Bytes)))
 
-	otherAcc := "user2"
-	user2 := getAccount(otherAcc, "5oyBNyBeMFUKndGF8E3xkxmS3qugdYbwntSu8NEYtvC2DMmVcXgtmBqRxCLUCjxcu9zdcH3RkfKec3Q2xeiG48RL")
-	acc2, err := json.Marshal(user2)
+	acc1Bytes, err := json.Marshal(acc1.ToAccount())
 	if err != nil {
 		panic(err)
 	}
-	h.DB().MPut("auth.iost"+"-auth", otherAcc, database.MustMarshal(string(acc2)))
+	h.DB().MPut("auth.iost"+"-auth", acc1.ID, database.MustMarshal(string(acc1Bytes)))
 
 	h.Context().Set("number", int64(1))
 	h.Context().Set("time", int64(1541576370*1e9))
 	h.Context().Set("stack_height", 0)
-	h.Context().Set("publisher", testAcc)
+	h.Context().Set("publisher", acc0.ID)
 
 	tokenContract := native.TokenABI()
 	h.SetCode(tokenContract, "")
 
 	authList := make(map[string]int)
 	h.Context().Set("auth_contract_list", authList)
-	authList[user1.Permissions["active"].Items[0].ID] = 2
+	authList[acc0.KeyPair.ID] = 2
 	h.Context().Set("auth_list", authList)
 
 	code := &contract.Contract{
@@ -89,34 +85,25 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	h.Context().Set("contract_name", "token.iost")
 	h.Context().Set("abi_name", "abi")
 	h.Context().GSet("receipts", []*tx.Receipt{})
-	_, _, err = e.LoadAndCall(h, tokenContract, "create", "iost", testAcc, int64(initCoin), []byte("{}"))
+	_, _, err = e.LoadAndCall(h, tokenContract, "create", "iost", acc0.ID, int64(initCoin), []byte("{}"))
 	if err != nil {
 		panic("create iost " + err.Error())
 	}
-	_, _, err = e.LoadAndCall(h, tokenContract, "issue", "iost", testAcc, fmt.Sprintf("%d", initCoin))
+	_, _, err = e.LoadAndCall(h, tokenContract, "issue", "iost", acc0.ID, fmt.Sprintf("%d", initCoin))
 	if err != nil {
 		panic("issue iost " + err.Error())
 	}
-	if initCoin*1e8 != visitor.TokenBalance("iost", testAcc) {
-		panic("set initial coins failed " + strconv.FormatInt(visitor.TokenBalance("iost", testAcc), 10))
+	if initCoin*1e8 != visitor.TokenBalance("iost", acc0.ID) {
+		panic("set initial coins failed " + strconv.FormatInt(visitor.TokenBalance("iost", acc0.ID), 10))
 	}
 
 	h.Context().Set("contract_name", contractName)
 
-	return e, h, code, testAcc, tmpDB
+	return e, h, code, acc0.ID, tmpDB
 }
 
 func timePass(h *host.Host, seconds int64) {
 	h.Context().Set("time", h.Context().Value("time").(int64)+seconds*1e9)
-}
-
-func getAccount(name string, k string) *account.Account {
-	key, err := account.NewKeyPair(common.Base58Decode(k), crypto.Ed25519)
-	if err != nil {
-		panic(err)
-	}
-	a := account.NewInitAccount(name, key.ID, key.ID)
-	return a
 }
 
 func TestGas_NoPledge(t *testing.T) {
@@ -303,7 +290,7 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			tmpDB.Close()
 			os.RemoveAll("mvcc")
 		}()
-		otherAcc := "user2"
+		otherAcc := acc1.ID
 		pledgeAmount := toIOSTFixed(200)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, otherAcc, pledgeAmount.ToString())
 		h.FlushCacheCost()
@@ -344,44 +331,44 @@ func TestGas_TGas(t *testing.T) {
 	}
 	s.SetContract(ca)
 	s.SetContract(native.GasABI())
-	kp := prepareAuth(t, s)
-	err = createToken(t, s, kp)
+	acc := prepareAuth(t, s)
+	err = createToken(t, s, acc)
 	if err != nil {
 		panic(err)
 	}
 	other, err := account.NewKeyPair(nil, crypto.Secp256k1)
 	otherID := "lispc0"
-	s.Visitor.MPut("vote_producer.iost-producerTable", kp.ID, "dummy")
+	s.Visitor.MPut("vote_producer.iost-producerTable", acc.ID, "dummy")
 	Convey("test tgas", t, func() {
 		Convey("account referrer should got 30000 tgas", func() {
-			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, other.ID, other.ID}), kp.ID, kp)
+			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, other.ID, other.ID}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TGas(kp.ID).ToString(), ShouldEqual, "30000")
-			r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{kp.ID, otherID, "199"}), kp.ID, kp)
+			So(s.Visitor.TGas(acc.ID).ToString(), ShouldEqual, "30000")
+			r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc.ID, otherID, "199"}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldBeEmpty)
 		})
 		Convey("tgas can be transferred", func() {
-			r, err := s.Call("gas.iost", "transfer", array2json([]interface{}{kp.ID, otherID, "10000"}), kp.ID, kp)
+			r, err := s.Call("gas.iost", "transfer", array2json([]interface{}{acc.ID, otherID, "10000"}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TGas(kp.ID).ToString(), ShouldEqual, "20000")
+			So(s.Visitor.TGas(acc.ID).ToString(), ShouldEqual, "20000")
 			So(s.Visitor.TGas(otherID).ToString(), ShouldEqual, "10000")
 		})
 		Convey("referrer get 15% reward", func() {
 			s.Visitor.Commit()
-			r, err := s.Call("token.iost", "transfer", array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}), otherID, other)
+			r, err := s.Call("token.iost", "transfer", array2json([]interface{}{"iost", otherID, acc.ID, "1", ""}), otherID, other)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldNotBeEmpty)
-			So(s.Visitor.TGas(kp.ID).ToFloat(), ShouldAlmostEqual, 20000+float64(r.GasUsage)/100*0.15)
+			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, 20000+float64(r.GasUsage)/100*0.15)
 		})
 		Convey("when pgas is used up, tgas will be used", func() {
 			s.SetGas(otherID, 123)
 			trx := tx.NewTx([]*tx.Action{{
 				Contract:   "token.iost",
 				ActionName: "transfer",
-				Data:       array2json([]interface{}{"iost", otherID, kp.ID, "1", ""}),
+				Data:       array2json([]interface{}{"iost", otherID, acc.ID, "1", ""}),
 			}}, nil, 1000000, 100, s.Head.Time+10000000, 0)
 			trx.Time = s.Head.Time
 			r, err := s.CallTx(trx, otherID, other)

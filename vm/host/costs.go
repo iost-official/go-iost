@@ -11,8 +11,6 @@ var (
 		"DelCost":             contract.NewCost(0, 0, 300),
 		"KeysCost":            contract.NewCost(0, 0, 300),
 		"ContextCost":         contract.NewCost(0, 0, 10),
-		"DelDelaytxCost":      contract.NewCost(0, 0, 10),
-		"DelaytxNotFoundCost": contract.NewCost(0, 0, 10),
 		"EventPrice":          contract.NewCost(0, 0, 1),
 		"ReceiptPrice":        contract.NewCost(0, 1, 0),
 		"CodePrice":           contract.NewCost(0, 0, 1),
@@ -44,4 +42,20 @@ func CommonErrorCost(layer int) contract.Cost {
 // CommonOpCost returns cost increased by stack layer
 func CommonOpCost(layer int) contract.Cost {
 	return Costs["OpPrice"].Multiply(int64(layer * 10))
+}
+
+// DelayTxCost returns cost of a delay transaction.
+func DelayTxCost(dataLen int, payer string) contract.Cost {
+	cost := Costs["PutCost"]
+	cost.Data = int64(dataLen)
+	cost.DataList = []contract.DataItem{{Payer: payer, Val: int64(dataLen)}}
+	return cost
+}
+
+// DelDelayTxCost returns cost of a delay transaction.
+func DelDelayTxCost(dataLen int, payer string) contract.Cost {
+	cost := Costs["DelCost"]
+	cost.Data = -int64(dataLen)
+	cost.DataList = []contract.DataItem{{Payer: payer, Val: -int64(dataLen)}}
+	return cost
 }

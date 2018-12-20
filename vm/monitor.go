@@ -88,10 +88,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	if !ok {
 		vm = Factory(c.Info.Lang)
 		m.vms[c.Info.Lang] = vm
-		err := m.vms[c.Info.Lang].Init()
-		if err != nil {
-			panic(err)
-		}
 	}
 	// check amount limit
 	signerList := map[string]int{}
@@ -117,14 +113,14 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			decimal := h.DB().Decimal(limit.Token)
 			fixedAmount, err := common.NewFixed(limit.Val, decimal)
 			if err == nil {
-				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
+				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{Token: limit.Token, Val: fixedAmount})
 			}
 		}
 		for _, limit := range userAmountLimit {
 			decimal := h.DB().Decimal(limit.Token)
 			fixedAmount, err := common.NewFixed(limit.Val, decimal)
 			if err == nil {
-				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
+				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{Token: limit.Token, Val: fixedAmount})
 			}
 		}
 		for acc := range signerList {
@@ -157,10 +153,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 					Decimal: fixedAmountLimit[i].Val.Decimal,
 				}
 				if delta.Value > fixedAmountLimit[i].Val.Value {
-					err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, need %s",
+					err = fmt.Errorf("token %s exceed amountLimit in abi. limit %s, need %s",
 						limit.Token,
 						fixedAmountLimit[i].Val.ToString(),
-						delta.ToString()))
+						delta.ToString())
 					return nil, cost, err
 				}
 			}

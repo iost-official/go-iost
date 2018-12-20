@@ -583,8 +583,8 @@ func TestEngine_Func(t *testing.T) {
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger", int64(1e12))
 	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
-	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr invalid gas") {
-		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr invalid gas, got %v\n", err)
+	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr gas overflow max int") {
+		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr gas overflow max int, got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
@@ -597,10 +597,14 @@ func TestEngine_Danger(t *testing.T) {
 		t.Fatalf("LoadAndCall visitUndefined should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
 	}
 
-	host, code = MyInit(t, "danger")
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
 	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
 		t.Fatalf("LoadAndCall throw should return error: Uncaught exception: test throw, but got %v\n", err)
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "putlong")
+	if err == nil || !strings.Contains(err.Error(), "input string too long") {
+		t.Fatalf("LoadAndCall putlong should return error: input string too long, but got %v\n", err)
 	}
 }
 

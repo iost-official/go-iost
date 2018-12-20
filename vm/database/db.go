@@ -25,6 +25,7 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 		TokenHandler:    TokenHandler{cachedDB},
 		Token721Handler: Token721Handler{cachedDB},
 		RAMHandler:      RAMHandler{cachedDB},
+		DelaytxHandler:  DelaytxHandler{cachedDB},
 	}
 	v.GasHandler = GasHandler{v.BasicHandler, v.MapHandler}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
@@ -54,6 +55,7 @@ func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
 		TokenHandler:    TokenHandler{watcher},
 		Token721Handler: Token721Handler{watcher},
 		RAMHandler:      RAMHandler{watcher},
+		DelaytxHandler:  DelaytxHandler{cachedDB},
 	}
 	v.GasHandler = GasHandler{v.BasicHandler, v.MapHandler}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
