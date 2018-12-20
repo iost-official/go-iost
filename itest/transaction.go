@@ -4,7 +4,6 @@ import (
 	"math"
 	"time"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -17,6 +16,7 @@ var (
 	Expiration = int64(math.MaxInt64)   // Max expired time is 90 seconds
 	Delay      = int64(0 * time.Second) // No delay
 	Signers    = make([]string, 0)      // No mutiple signers
+	AmountLimit 	= []*contract.Amount{&contract.Amount{Token:"iost", Val:"unlimited"}}
 )
 
 // Transaction is the transaction object
@@ -34,6 +34,7 @@ func NewTransaction(actions []*tx.Action) *Transaction {
 		Expiration,
 		Delay,
 	)
+	t.AmountLimit = AmountLimit
 
 	return &Transaction{t}
 }
@@ -84,13 +85,9 @@ func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
 		})
 	}
 	for _, a := range t.AmountLimit {
-		fixed, err := common.UnmarshalFixed(a.Val)
-		if err != nil {
-			continue
-		}
 		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
 			Token: a.Token,
-			Value: fixed.ToString(),
+			Value: a.Val,
 		})
 	}
 	for _, s := range t.Signs {
