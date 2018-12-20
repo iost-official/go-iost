@@ -19,7 +19,7 @@ import (
 const (
 	minGasRatio = 100
 	maxGasRatio = 10000
-	minGasLimit = 5000000
+	minGasLimit = 50000
 )
 
 // values
@@ -365,10 +365,10 @@ func (t *Tx) IsCreatedBefore(ct int64) bool {
 // CheckGas checks whether the transaction's gas is valid.
 func (t *Tx) CheckGas() error {
 	if t.GasRatio < minGasRatio || t.GasRatio > maxGasRatio {
-		return fmt.Errorf("gas ratio illegal, should in [%v, %v]", minGasRatio, maxGasRatio)
+		return fmt.Errorf("gas ratio illegal, should in [%v, %v]", minGasRatio/100, maxGasRatio/100)
 	}
 	if t.GasLimit < minGasLimit {
-		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit)
+		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit/100)
 	}
 	return nil
 }
