@@ -236,6 +236,9 @@ class Account {
     AssignPermissionToGroup(id, perm, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
+        if (acc.groups[group] === undefined) {
+            throw new Error("group does not exist");
+        }
         acc.permissions[perm].groups.push(group);
         this._saveAccount(acc);
     }
