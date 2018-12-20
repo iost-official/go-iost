@@ -2,22 +2,26 @@ class Account {
     constructor() {
 
     }
+
     init() {
 
     }
+
     _saveAccount(account, payer) {
         if (payer === undefined) {
             payer = account.id
         }
         storage.mapPut("auth", account.id, JSON.stringify(account), payer);
     }
+
     _loadAccount(id) {
         let a = storage.mapGet("auth", id);
         return JSON.parse(a);
     }
+
     static _find(items, name) {
-        for (let i = 0; i < items.length(); i ++) {
-            if (items[i].id === name ) {
+        for (let i = 0; i < items.length(); i++) {
+            if (items[i].id === name) {
                 return i
             }
         }
@@ -113,6 +117,7 @@ class Account {
         acc.referrer = referrer;
         this._saveAccount(acc);
     }
+
     AddPermission(id, perm, thres) {
         this._ra(id);
         this._checkPermValid(perm);
@@ -128,27 +133,29 @@ class Account {
         };
         this._saveAccount(acc);
     }
+
     DropPermission(id, perm) {
         this._ra(id);
         let acc = this._loadAccount(id);
         acc.permissions[perm] = undefined;
         this._saveAccount(acc);
     }
+
     AssignPermission(id, perm, un, weight) {
         this._ra(id);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[perm].items, un);
         if (index < 0) {
             const len = un.indexOf("@");
-            if (len < 0 && un.startsWith("IOST") ){
+            if (len < 0 && un.startsWith("IOST")) {
                 acc.permissions[perm].items.push({
-                    id : un,
+                    id: un,
                     is_key_pair: true,
                     weight: weight
                 });
             } else {
                 acc.permissions[perm].items.push({
-                    id : un.substring(0, len),
+                    id: un.substring(0, len),
                     permission: un.substring(len, un.length()),
                     is_key_pair: false,
                     weight: weight
@@ -159,6 +166,7 @@ class Account {
         }
         this._saveAccount(acc);
     }
+
     RevokePermission(id, perm, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
@@ -170,6 +178,7 @@ class Account {
         }
         this._saveAccount(acc);
     }
+
     AddGroup(id, grp) {
         this._ra(id);
         this._checkPermValid(grp);
@@ -178,24 +187,26 @@ class Account {
             throw new Error("group already exist");
         }
         acc.groups[grp] = {
-            name : grp,
-            items : [],
+            name: grp,
+            items: [],
         };
         this._saveAccount(acc);
     }
+
     DropGroup(id, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
         acc.groups[group] = undefined;
-        for (let i = 0; i < acc.permissions.length; i ++) {
-            for (let j = 0; j < acc.permissions[i].groups.length; j ++) {
-                if (acc.permissions[i].groups[j] === group ) {
-                    acc.permissions[i].groups .splice(j, 1)
+        for (let i = 0; i < acc.permissions.length; i++) {
+            for (let j = 0; j < acc.permissions[i].groups.length; j++) {
+                if (acc.permissions[i].groups[j] === group) {
+                    acc.permissions[i].groups.splice(j, 1)
                 }
             }
         }
         this._saveAccount(acc);
     }
+
     AssignGroup(id, group, un, weight) {
         this._ra(id);
         let acc = this._loadAccount(id);
@@ -222,6 +233,7 @@ class Account {
 
         this._saveAccount(acc);
     }
+
     RevokeGroup(id, grp, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
@@ -233,6 +245,7 @@ class Account {
         }
         this._saveAccount(acc);
     }
+
     AssignPermissionToGroup(id, perm, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
@@ -242,6 +255,7 @@ class Account {
         acc.permissions[perm].groups.push(group);
         this._saveAccount(acc);
     }
+
     RevokePermissionInGroup(id, perm, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
