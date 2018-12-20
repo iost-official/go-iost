@@ -30,5 +30,6 @@ var (
 	ErrTokenIssueRefused         = errors.New("token issue refused")
 	ErrMemoTooLarge              = errors.New("memo too large")
 
-	ErrDelaytxNotFound = errors.New("delaytx not exists")
+	ErrDelaytxNotFound   = errors.New("delaytx not exists")
+	ErrCancelDelayForbid = errors.New("cancel delaytx forbid")
 )

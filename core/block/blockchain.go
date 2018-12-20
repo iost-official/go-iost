@@ -107,6 +107,11 @@ func (bc *BlockChain) Push(block *Block) error {
 		if t.IsDefer() {
 			bc.blockChainDB.Delete(append(delaytxPrefix, t.ReferredTx...))
 		}
+		if cancelHash, exist := t.CanceledDelaytxHash(); exist {
+			if block.Receipts[i].Status.Code == tx.Success {
+				bc.blockChainDB.Delete(append(delaytxPrefix, cancelHash...))
+			}
+		}
 	}
 	err = bc.blockChainDB.CommitBatch()
 	if err != nil {
@@ -327,14 +332,11 @@ func (bc *BlockChain) Close() {
 
 // AllDelaytx returns all delay transactions.
 func (bc *BlockChain) AllDelaytx() ([]*tx.Tx, error) {
-	txBytes, err := bc.blockChainDB.Keys(delaytxPrefix)
-	if err != nil {
-		return nil, err
-	}
+	iter := bc.blockChainDB.NewIteratorByPrefix(delaytxPrefix)
 	ret := make([]*tx.Tx, 0)
-	for _, txByte := range txBytes {
+	for iter.Next() {
 		t := &tx.Tx{}
-		err = t.Decode(txByte)
+		err := t.Decode(iter.Value())
 		if err != nil {
 			continue
 		}
