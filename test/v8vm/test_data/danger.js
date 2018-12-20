@@ -34,6 +34,10 @@ class Danger {
         const fn = "test.js";
         return _native_run(src, fn);
     }
+
+    putlong() {
+        storage.put('x', 'x'.repeat(65537));
+    }
 };
 
 module.exports = function () {

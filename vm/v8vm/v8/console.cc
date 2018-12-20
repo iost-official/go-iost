@@ -47,8 +47,8 @@ void NewConsoleLog(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(levelStr, levelVal);
-    NewCStr(logStr, logVal);
+    NewCStrChecked(levelStr, levelVal, isolate);
+    NewCStrChecked(logStr, logVal, isolate);
 
     CConsole(sbxPtr, levelStr, logStr);
 }

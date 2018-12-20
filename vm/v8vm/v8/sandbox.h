@@ -11,8 +11,22 @@ using namespace v8;
 
 #ifndef NewCStr
 #define NewCStr(name, str) \
-	v8::String::Utf8Value __v8String_ ## name(str);\
-	CStr name = {*__v8String_ ## name, __v8String_ ## name.length()};
+  v8::String::Utf8Value __v8String_ ## name(str);\
+  CStr name = {*__v8String_ ## name, __v8String_ ## name.length()}
+#endif
+
+#ifndef NewCStrChecked
+#define INPUT_MAX_LENGTH  65536
+#define NewCStrChecked(name, str, isolate) \
+  v8::Local<String> __v8LocalString_ ## name = v8::Local<String>::Cast(str);\
+  if (__v8LocalString_ ## name->Length() > INPUT_MAX_LENGTH) {\
+    Local<Value> __v8LocalStringError_ ## name = Exception::Error(\
+        String::NewFromUtf8(isolate, "input string too long")\
+    );\
+    isolate->ThrowException(__v8LocalStringError_ ## name);\
+    return;\
+  }\
+  NewCStr(name, str)
 #endif
 
 typedef struct {

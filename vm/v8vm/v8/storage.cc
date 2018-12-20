@@ -231,9 +231,9 @@ void IOSTContractStorage_Put(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(valStr, val);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(valStr, val, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -284,9 +284,9 @@ void IOSTContractStorage_Has(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
-	bool result;
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
+    bool result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -337,8 +337,8 @@ void IOSTContractStorage_Get(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -395,8 +395,8 @@ void IOSTContractStorage_Del(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -465,10 +465,10 @@ void IOSTContractStorage_MapPut(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(fieldStr, field);
-    NewCStr(valStr, val);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(fieldStr, field, isolate);
+    NewCStrChecked(valStr, val, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -527,10 +527,10 @@ void IOSTContractStorage_MapHas(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(fieldStr, field);
-    NewCStr(ramPayerStr, ramPayer);
-	bool result;
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(fieldStr, field, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
+    bool result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -589,9 +589,9 @@ void IOSTContractStorage_MapGet(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(fieldStr, field);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(fieldStr, field, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -656,9 +656,9 @@ void IOSTContractStorage_MapDel(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(fieldStr, field);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(fieldStr, field, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -708,8 +708,8 @@ void IOSTContractStorage_MapKeys(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -761,9 +761,9 @@ void IOSTContractStorage_MapLen(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
-	size_t result;
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
+    size_t result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -823,10 +823,10 @@ void IOSTContractStorage_GlobalHas(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
-	bool result;
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
+    bool result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -886,9 +886,9 @@ void IOSTContractStorage_GlobalGet(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -963,10 +963,10 @@ void IOSTContractStorage_GlobalMapHas(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(keyStr, key);
-    NewCStr(fieldStr, field);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(fieldStr, field, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
     bool result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -1036,10 +1036,10 @@ void IOSTContractStorage_GlobalMapGet(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(keyStr, key);
-    NewCStr(fieldStr, field);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(fieldStr, field, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -1105,9 +1105,9 @@ void IOSTContractStorage_GlobalMapKeys(const FunctionCallbackInfo<Value> &args) 
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -1169,10 +1169,10 @@ void IOSTContractStorage_GlobalMapLen(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(keyStr, key);
-    NewCStr(ramPayerStr, ramPayer);
-	size_t result;
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(keyStr, key, isolate);
+    NewCStrChecked(ramPayerStr, ramPayer, isolate);
+    size_t result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
