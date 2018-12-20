@@ -14,7 +14,6 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 const (
@@ -227,7 +226,6 @@ func (t *Tx) CanceledDelaytxHash() ([]byte, bool) {
 		if action.Contract == "system.iost" && action.ActionName == "CancelDelaytx" {
 			var actionData []string
 			err := json.Unmarshal([]byte(action.Data), &actionData)
-			ilog.Errorln(err, actionData)
 			if err == nil && len(actionData) > 0 {
 				return common.Base58Decode(actionData[0]), true
 			}
