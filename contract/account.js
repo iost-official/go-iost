@@ -210,7 +210,7 @@ class Account {
     AssignGroup(id, group, un, weight) {
         this._ra(id);
         let acc = this._loadAccount(id);
-        const index = Account._find(acc.permissions[group].items, un);
+        const index = Account._find(acc.groups[group].items, un);
         if (index < 0) {
             let len = un.indexOf("@");
             if (len < 0 && un.startsWith("IOST")) {
