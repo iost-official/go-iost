@@ -487,7 +487,7 @@ func getOverviewTable() {
 }
 
 func main() {
-	//getOverview()
-	//getOpDetail()
+	getOverview()
+	getOpDetail()
 	getOverviewTable()
 }

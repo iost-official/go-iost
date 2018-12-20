@@ -88,7 +88,7 @@ class LibOp {
             ("redbluegreenredbluegreen").split("red")
         }
     }
-    
+
     doStringStartsWith(num) {
         for (let i = 0; i < num; i++) {
             ("redbluegreenredbluegreen").startsWith("red")
@@ -167,7 +167,7 @@ class LibOp {
             (["red", "blue", "green", "red", "blue", "green"]).every(function (x) { return true; })
         }
     }
-    
+
     doArrayFilter(num) {
         for (let i = 0; i < num; i++) {
             (["red", "blue", "green", "red", "blue", "green"]).filter(function (x) { return true; })
