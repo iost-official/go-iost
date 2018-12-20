@@ -405,6 +405,70 @@ func Test_SpecialChar(t *testing.T) {
 	})
 }
 
+func Test_LargeContract(t *testing.T) {
+	ilog.Stop()
+	longStr := strings.Repeat("x", 1024*64)
+	code := "class Test {" +
+		"	init() {" +
+		"		let longStr = '" + longStr + "';" +
+		"	}" +
+		"	transfer(from, to, amountJson) {" +
+		"		blockchain.transfer(from, to, amountJson.amount, '');" +
+		"	}" +
+		"};" +
+		"module.exports = Test;"
+
+	abi := `
+	{
+		"lang": "javascript",
+		"version": "1.0.0",
+		"abi": [
+			{
+				"name": "transfer",
+				"args": [
+					"string",
+					"string",
+					"json"
+				]
+			}
+		]
+	}
+	`
+	Convey("test large contract", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		acc := prepareAuth(t, s)
+		createAccountsWithResource(s)
+		createToken(t, s, acc)
+		s.SetGas(acc.ID, 1e12)
+		s.SetRAM(acc.ID, 1e12)
+		s.GasLimit = int64(1e12)
+
+		c, err := (&contract.Compiler{}).Parse("", code, abi)
+		So(err, ShouldBeNil)
+
+		sc, err := json.Marshal(c)
+		So(err, ShouldBeNil)
+
+		jargs, err := json.Marshal([]string{string(sc)})
+		So(err, ShouldBeNil)
+
+		trx := tx.NewTx([]*tx.Action{{
+			Contract:   "system.iost",
+			ActionName: "SetCode",
+			Data:       string(jargs),
+		}}, nil, int64(1e12), 100, s.Head.Time+100000000, 0)
+
+		trx.Time = s.Head.Time
+
+		r, err := s.CallTx(trx, acc.ID, acc.KeyPair)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		So(r.Status.Message, ShouldEqual, "code size invalid")
+	})
+}
+
 func Test_CallResult(t *testing.T) {
 	ilog.Stop()
 	Convey("test call result", t, func() {

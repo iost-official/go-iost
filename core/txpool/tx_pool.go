@@ -286,6 +286,9 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return ErrCacheFull
 	}
+	if err := t.CheckSize(); err != nil {
+		return err
+	}
 	if err := t.CheckGas(); err != nil {
 		return err
 	}
