@@ -68,7 +68,10 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	h.Context().Set("publisher", acc0.ID)
 
 	tokenContract := native.TokenABI()
-	h.SetCode(tokenContract, "")
+	_, err = h.SetCode(tokenContract, "")
+	if err != nil {
+		panic(err)
+	}
 
 	authList := make(map[string]int)
 	h.Context().Set("auth_contract_list", authList)
@@ -98,6 +101,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	}
 
 	h.Context().Set("contract_name", contractName)
+	h.Context().Set("amount_limit", []*contract.Amount{&contract.Amount{Token:"*", Val:"unlimited"}})
 
 	return e, h, code, acc0.ID, tmpDB
 }

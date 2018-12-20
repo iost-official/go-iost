@@ -23,7 +23,11 @@
             "args": [
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
         }
     ]
 }

@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/core/tx"
 )
 
 // Monitor monitor interface
@@ -123,20 +124,62 @@ func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error) {
 	cost := contract.Cost0()
 	for _, abi := range c.Info.Abi {
-		for _, limit := range abi.AmountLimit {
-			cost.AddAssign(CommonOpCost(1))
-			decimal := h.db.Decimal(limit.Token)
-			if decimal == -1 {
-				return cost, ErrAmountLimitTokenNotExists
-			}
-			_, err := common.NewFixed(limit.Val, decimal)
-			if err != nil {
-				return cost, err
-			}
+		cost.AddAssign(CommonOpCost(len(abi.AmountLimit)))
+		err := h.CheckAmountLimit(abi.AmountLimit)
+		if err != nil {
+			return cost, err
 		}
 	}
 	return cost, nil
 }
+
+// CheckPublisher check publisher of tx
+func (h *Host) CheckPublisher(t *tx.Tx) error {
+	b, c := h.RequireAuth(t.Publisher, "active")
+	if !b {
+		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
+	}
+	h.PayCost(c, t.Publisher)
+	return nil
+}
+
+// CheckSigners check signers of tx
+func (h *Host) CheckSigners(t *tx.Tx) error {
+	for _, item := range t.Signers {
+		ss := strings.Split(item, "@")
+		if len(ss) != 2 {
+			return fmt.Errorf("illegal signer: %v", item)
+		}
+		b, c := h.RequireAuth(ss[0], ss[1])
+		if !b {
+			return fmt.Errorf("unauthorized signer: %v", item)
+		}
+		h.PayCost(c, t.Publisher)
+	}
+	return nil
+}
+
+// CheckAmountLimit check amountLimit of tx valid
+func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
+	for _, limit := range amountLimit {
+		decimal := h.DB().Decimal(limit.Token)
+		if limit.Token == "*" {
+			decimal = 0
+		}
+		fmt.Println(limit)
+		if decimal == -1 {
+			return fmt.Errorf("token not exists in amountLimit, %v", limit)
+		}
+		if limit.Val != "unlimited" {
+			_, err := common.NewFixed(limit.Val, decimal)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 
 // SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {

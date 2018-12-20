@@ -62,9 +62,9 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 func checkLimit(amountLimit map[string]int64, token string, amount int64) bool {
 	if amount > 0 {
 		if limit, ok := amountLimit[token]; ok {
-			return amount < limit
+			return amount <= limit
 		} else if limit, ok := amountLimit["*"]; ok {
-			return amount < limit
+			return amount <= limit
 		}
 		return false
 	}
@@ -128,7 +128,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	h.ClearCacheCost()
 
 	// generate amount limit
-	oldReceiptLen := len(h.Context().GValue("receipts").([]*tx.Receipt))
+	oldReceiptLen := 0
+	if h.Context().GValue("receipts") != nil {
+		oldReceiptLen = len(h.Context().GValue("receipts").([]*tx.Receipt))
+	}
 	amountLimit := make(map[string]int64)
 	txAmountLimit := make(map[string]int64)
 
@@ -156,7 +159,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 
 	// check amount limit
 	if h.Context().Value("stack_height") == 1 {
-		receipts := h.Context().GValue("receipts").([]*tx.Receipt)
+		receipts := []*tx.Receipt{}
+		if h.Context().GValue("receipts") != nil {
+			receipts = h.Context().GValue("receipts").([]*tx.Receipt)
+		}
 		needLimit := make(map[string]int64)
 		for i := oldReceiptLen; i < len(receipts); i++ {
 			cost.AddAssign(host.CommonOpCost(1))
@@ -186,10 +192,18 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				needLimit[token] += amount
 			}
 		}
+		//fmt.Println(amountLimit)
+		//fmt.Println(txAmountLimit)
 		for token, amount:= range needLimit {
-			if !checkLimit(amountLimit, token, amount) || !checkLimit(txAmountLimit, token, amount) {
+			if !checkLimit(amountLimit, token, amount) {
 				return nil, cost,
-					fmt.Errorf("token %s exceed amountLimit in abi or tx. need %v", token, float64(amount) / math.Pow10(h.DB().Decimal(token)))
+					fmt.Errorf("token %s exceed amountLimit in abi. need %v, got %v",
+						token, float64(amount) / math.Pow10(h.DB().Decimal(token)), amountLimit)
+			}
+			if !checkLimit(txAmountLimit, token, amount) {
+				return nil, cost,
+					fmt.Errorf("token %s exceed amountLimit in tx. need %v, got %v",
+						token, float64(amount) / math.Pow10(h.DB().Decimal(token)), txAmountLimit)
 			}
 		}
 	}

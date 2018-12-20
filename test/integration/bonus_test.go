@@ -61,19 +61,23 @@ func Test_ExchangeIOST(t *testing.T) {
 			// gain contribute
 			s.Head.Witness = acc1.KeyPair.ID
 			s.Head.Number = 1
-			s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc1.ID, 1), acc1.ID, acc1.KeyPair)
+			r, err := s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc1.ID, 1), acc1.ID, acc1.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
 			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(900))
 
 			s.Head.Witness = acc2.KeyPair.ID
 			s.Head.Number = 2
-			s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc2.ID, 123456789), acc2.ID, acc2.KeyPair)
+			r, err = s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc2.ID, 123456789), acc2.ID, acc2.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
 			So(s.Visitor.TokenBalance("contribute", acc2.ID), ShouldEqual, int64(1000))
 
-			r, err := s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%v", "%v"]`, acc1.ID, "300"), acc1.ID, acc1.KeyPair)
+			r, err = s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%v", "%v"]`, acc1.ID, "300"), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)

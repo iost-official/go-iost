@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -88,32 +86,17 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 }
 
 func (i *Isolator) checkAuth(t *tx.Tx) error {
-	for _, item := range t.Signers {
-		ss := strings.Split(item, "@")
-		if len(ss) != 2 {
-			return fmt.Errorf("illegal signer: %v", item)
-		}
-		b, c := i.h.RequireAuth(ss[0], ss[1])
-		if !b {
-			return fmt.Errorf("unauthorized signer: %v", item)
-		}
-		i.h.PayCost(c, t.Publisher)
+	err := i.h.CheckSigners(t)
+	if err != nil {
+		return err
 	}
-	b, c := i.h.RequireAuth(t.Publisher, "active")
-	if !b {
-		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
+	err = i.h.CheckPublisher(t)
+	if err != nil {
+		return err
 	}
-	i.h.PayCost(c, t.Publisher)
-	// check amount limit
-	for _, limit := range t.AmountLimit {
-		decimal := i.h.DB().Decimal(limit.Token)
-		if decimal == -1 {
-			return errors.New("token in amountLimit not exists, " + limit.Token)
-		}
-		_, err := common.NewFixed(limit.Val, decimal)
-		if err != nil {
-			return err
-		}
+	err = i.h.CheckAmountLimit(t.AmountLimit)
+	if err != nil {
+		return err
 	}
 	return nil
 }
