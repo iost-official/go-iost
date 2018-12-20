@@ -9,15 +9,15 @@ import (
 
 	"time"
 
+	"encoding/json"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/iost-official/go-iost/vm/v8vm"
-	"github.com/iost-official/go-iost/core/tx"
 	"math"
-	"encoding/json"
 )
 
 // Monitor ...
@@ -194,16 +194,16 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 		//fmt.Println(amountLimit)
 		//fmt.Println(txAmountLimit)
-		for token, amount:= range needLimit {
+		for token, amount := range needLimit {
 			if !checkLimit(amountLimit, token, amount) {
 				return nil, cost,
 					fmt.Errorf("token %s exceed amountLimit in abi. need %v, got %v",
-						token, float64(amount) / math.Pow10(h.DB().Decimal(token)), amountLimit)
+						token, float64(amount)/math.Pow10(h.DB().Decimal(token)), amountLimit)
 			}
 			if !checkLimit(txAmountLimit, token, amount) {
 				return nil, cost,
 					fmt.Errorf("token %s exceed amountLimit in tx. need %v, got %v",
-						token, float64(amount) / math.Pow10(h.DB().Decimal(token)), txAmountLimit)
+						token, float64(amount)/math.Pow10(h.DB().Decimal(token)), txAmountLimit)
 			}
 		}
 	}

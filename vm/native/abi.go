@@ -42,8 +42,8 @@ func ABI(id string, abiSet *abiSet) *contract.Contract {
 		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
 			Name: v.name,
 			Args: v.args,
-			AmountLimit:[]*contract.Amount{
-				{Token:"*", Val:"unlimited"},
+			AmountLimit: []*contract.Amount{
+				{Token: "*", Val: "unlimited"},
 			},
 		})
 	}

@@ -168,7 +168,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	if err != nil {
 		return nil, nil, err
 	}
-	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"*", Val:"unlimited"})
+	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 	return trx, keyPair, nil
 }
 

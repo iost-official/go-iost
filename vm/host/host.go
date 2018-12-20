@@ -10,9 +10,9 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/core/tx"
 )
 
 // Monitor monitor interface
@@ -179,7 +179,6 @@ func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
 	}
 	return nil
 }
-
 
 // SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
