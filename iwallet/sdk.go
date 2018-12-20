@@ -81,13 +81,15 @@ func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 			return nil, fmt.Errorf("invalid amount limit %v", gram)
 		}
 		token := limit[0]
-		amountLimit, err := strconv.ParseFloat(limit[1], 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
+		if limit[1] != "unlimited" {
+			amountLimit, err := strconv.ParseFloat(limit[1], 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
+			}
 		}
 		tokenLimit := &rpcpb.AmountLimit{}
 		tokenLimit.Token = token
-		tokenLimit.Value = amountLimit
+		tokenLimit.Value = limit[1]
 		result = append(result, tokenLimit)
 	}
 	return result, nil
@@ -535,7 +537,7 @@ func actionToBytes(a *rpcpb.Action) []byte {
 func amountToBytes(a *rpcpb.AmountLimit) []byte {
 	sn := common.NewSimpleNotation()
 	sn.WriteString(a.Token, true)
-	sn.WriteString(strconv.FormatFloat(a.Value, 'f', -1, 64), true)
+	sn.WriteString(a.Value, true)
 	return sn.Bytes()
 }
 

@@ -2,7 +2,6 @@ package itest
 
 import (
 	"math"
-	"strconv"
 	"time"
 
 	"github.com/iost-official/go-iost/common"
@@ -60,7 +59,7 @@ func NewTransactionFromPb(t *rpcpb.Transaction) *Transaction {
 	for _, a := range t.AmountLimit {
 		ret.AmountLimit = append(ret.AmountLimit, &contract.Amount{
 			Token: a.Token,
-			Val:   strconv.FormatFloat(a.Value, 'f', -1, 64),
+			Val:   a.Value,
 		})
 	}
 	return &Transaction{ret}
@@ -91,7 +90,7 @@ func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
 		}
 		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
 			Token: a.Token,
-			Value: fixed.ToFloat(),
+			Value: fixed.ToString(),
 		})
 	}
 	for _, s := range t.Signs {

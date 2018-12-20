@@ -186,7 +186,7 @@ message AmountLimit {
     // token name
     string token = 1;
     // limit value
-    double value = 2;
+    string value = 2;
 }
 
 // The message defines transaction action struct.

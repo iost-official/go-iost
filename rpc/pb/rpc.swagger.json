@@ -854,8 +854,7 @@
           "title": "token name"
         },
         "value": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
           "title": "limit value"
         }
       },
