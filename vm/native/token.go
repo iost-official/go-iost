@@ -482,6 +482,7 @@ var (
 			cost0 = setBalance(h, tokenSym, from, fbalance, from)
 			cost.AddAssign(cost0)
 
+			// generate receipt
 			message, err := json.Marshal(args)
 			cost.AddAssign(host.CommonOpCost(1))
 			if err != nil {
@@ -576,6 +577,7 @@ var (
 				return nil, cost, err
 			}
 
+			// generate receipt
 			message, err := json.Marshal(args)
 			cost.AddAssign(host.CommonOpCost(1))
 			if err != nil {
@@ -659,6 +661,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
 		},

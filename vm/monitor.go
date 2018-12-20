@@ -15,6 +15,9 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/iost-official/go-iost/vm/v8vm"
+	"github.com/iost-official/go-iost/core/tx"
+	"math"
+	"encoding/json"
 )
 
 // Monitor ...
@@ -56,6 +59,35 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 	return
 }
 
+func checkLimit(amountLimit map[string]int64, token string, amount int64) bool {
+	if amount > 0 {
+		if limit, ok := amountLimit[token]; ok {
+			return amount < limit
+		} else if limit, ok := amountLimit["*"]; ok {
+			return amount < limit
+		}
+		return false
+	}
+	return true
+}
+
+func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]int64, error) {
+	amountLimit := make(map[string]int64)
+	for _, limit := range amountList {
+		if limit.Val == "unlimited" {
+			amountLimit[limit.Token] = math.MaxInt64
+		} else {
+			decimal := h.DB().Decimal(limit.Token)
+			v0, err := common.NewFixed(limit.Val, decimal)
+			if err != nil {
+				return nil, err
+			}
+			amountLimit[limit.Token] = v0.Value
+		}
+	}
+	return amountLimit, nil
+}
+
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
@@ -89,53 +121,32 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		vm = Factory(c.Info.Lang)
 		m.vms[c.Info.Lang] = vm
 	}
-	// check amount limit
-	signerList := map[string]int{}
-	if h.Context().Value("signer_list") != nil {
-		signerList = h.Context().Value("signer_list").(map[string]int)
-	}
-	amountLimit := abi.AmountLimit
-	if amountLimit == nil {
-		amountLimit = []*contract.Amount{}
-	}
-	var userAmountLimit []*contract.Amount
-	if h.Context().Value("amount_limit") != nil {
-		userAmountLimit = h.Context().Value("amount_limit").([]*contract.Amount)
-	}
-	var fixedAmountLimit []contract.FixedAmount
-	beforeBalance := make(map[string][]int64)
-
-	// only check amount limit when executing action, not system call
-	if h.Context().Value("stack_height") == 1 {
-		cost0 := host.CommonOpCost(len(signerList) * len(amountLimit))
-		cost.AddAssign(cost0)
-		for _, limit := range amountLimit {
-			decimal := h.DB().Decimal(limit.Token)
-			fixedAmount, err := common.NewFixed(limit.Val, decimal)
-			if err == nil {
-				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
-			}
-		}
-		for _, limit := range userAmountLimit {
-			decimal := h.DB().Decimal(limit.Token)
-			fixedAmount, err := common.NewFixed(limit.Val, decimal)
-			if err == nil {
-				fixedAmountLimit = append(fixedAmountLimit, contract.FixedAmount{limit.Token, fixedAmount})
-			}
-		}
-		for acc := range signerList {
-			beforeBalance[acc] = []int64{}
-			for _, limit := range fixedAmountLimit {
-				beforeBalance[acc] = append(beforeBalance[acc], h.DB().TokenBalance(limit.Token, acc))
-			}
-		}
-	}
-
 	currentDeadline := h.Deadline()
 	h.SetDeadline(currentDeadline.Add(time.Duration(-100 * time.Microsecond)))
 
 	oldCacheCost := h.CacheCost()
 	h.ClearCacheCost()
+
+	// generate amount limit
+	oldReceiptLen := len(h.Context().GValue("receipts").([]*tx.Receipt))
+	amountLimit := make(map[string]int64)
+	txAmountLimit := make(map[string]int64)
+
+	if h.Context().Value("stack_height") == 1 {
+		cost.AddAssign(host.CommonOpCost(len(abi.AmountLimit)))
+		amountLimit, err = getAmountLimitMap(h, abi.AmountLimit)
+		if err != nil {
+			return nil, cost, err
+		}
+
+		if h.Context().Value("amount_limit") != nil {
+			txLimit := h.Context().Value("amount_limit").([]*contract.Amount)
+			txAmountLimit, err = getAmountLimitMap(h, txLimit)
+			if err != nil {
+				return nil, cost, err
+			}
+		}
+	}
 
 	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
 	cost.AddAssign(cost0)
@@ -145,24 +156,43 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 
 	// check amount limit
 	if h.Context().Value("stack_height") == 1 {
-		for acc := range signerList {
-			for i, limit := range fixedAmountLimit {
-				afterBalance := h.DB().TokenBalance(limit.Token, acc)
-				delta := common.Fixed{
-					Value:   beforeBalance[acc][i] - afterBalance,
-					Decimal: fixedAmountLimit[i].Val.Decimal,
+		receipts := h.Context().GValue("receipts").([]*tx.Receipt)
+		needLimit := make(map[string]int64)
+		for i := oldReceiptLen; i < len(receipts); i++ {
+			cost.AddAssign(host.CommonOpCost(1))
+			receipt := receipts[i]
+			token := ""
+			amount := int64(0)
+			args := []interface{}{}
+			if receipt.FuncName == "token.iost/transfer" || receipt.FuncName == "token.iost/transferFreeze" {
+				_ = json.Unmarshal([]byte(receipt.Content), &args)
+				token = args[0].(string)
+				from := args[1].(string)
+				to := args[2].(string)
+				if from != to && !h.IsContract(from) {
+					v0, _ := common.NewFixed(args[3].(string), h.DB().Decimal(token))
+					amount = v0.Value
 				}
-				if delta.Value > fixedAmountLimit[i].Val.Value {
-					err = errors.New(fmt.Sprintf("token %s exceed amountLimit in abi. limit %s, need %s",
-						limit.Token,
-						fixedAmountLimit[i].Val.ToString(),
-						delta.ToString()))
-					return nil, cost, err
+			} else if receipt.FuncName == "token.iost/destroy" {
+				_ = json.Unmarshal([]byte(receipt.Content), &args)
+				token = args[0].(string)
+				from := args[1].(string)
+				if !h.IsContract(from) {
+					v0, _ := common.NewFixed(args[2].(string), h.DB().Decimal(token))
+					amount = v0.Value
 				}
+			}
+			if token != "" && amount >= 0 {
+				needLimit[token] += amount
+			}
+		}
+		for token, amount:= range needLimit {
+			if !checkLimit(amountLimit, token, amount) || !checkLimit(txAmountLimit, token, amount) {
+				return nil, cost,
+					fmt.Errorf("token %s exceed amountLimit in abi or tx. need %v", token, float64(amount) / math.Pow10(h.DB().Decimal(token)))
 			}
 		}
 	}
-
 	// check ram auth
 	cacheCost := h.CacheCost()
 	h.FlushCacheCost()
