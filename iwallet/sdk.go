@@ -141,6 +141,13 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
+func (s *SDK) checkID(ID string) bool {
+	if strings.HasPrefix(ID, "IOST") {
+		return true
+	}
+	return false
+}
+
 // GetContractStorage ...
 func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
@@ -342,7 +349,7 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 		return err
 	}
 
-	secFile, err := os.OpenFile(name, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0400)
+	secFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0400)
 	if err != nil {
 		return err
 	}
@@ -365,9 +372,6 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 		return err
 	}
 
-	fmt.Println("create account done")
-	fmt.Println("the iost account ID is:")
-	fmt.Println(name)
 	//fmt.Println("your account id is saved at:")
 	//fmt.Println(idFileName)
 	fmt.Println("your account private key is saved at:")
@@ -409,9 +413,9 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 }
 
 // CreateNewAccount ...
-func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
+func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*rpcpb.Action
-	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
+	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
 	}

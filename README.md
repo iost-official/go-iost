@@ -1,5 +1,5 @@
 <p>
-<img src="https://upload-images.jianshu.io/upload_images/2056014-5048d4a8c3d50faa.png?imageMogr2/auto-orient/" >
+<img src="https://upload-images.jianshu.io/upload_images/2056014-212ea02657bf0e35.png?imageMogr2/auto-orient/" >
 </p>
 
 # IOST - A Secure & Scalable Blockchain for Smart Services

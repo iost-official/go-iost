@@ -49,6 +49,7 @@ const tx = {
 };)";
 
 const int sandboxMemLimit = 100000000; // 100mb
+const int resultMaxLength = 65536; // 65536 char >= 65536 byte
 void copyString(CStr &cstr, const std::string &str) {
     cstr.size = str.length();
     cstr.data = new char[cstr.size + 1];
@@ -342,6 +343,14 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
         return;
     }
 
+    if (ret->IsString()) {
+        Local<String> str =  Local<String>::Cast(ret);
+        if (str->Length() > resultMaxLength) {
+            error = "result too long";
+            return;
+        }
+    }
+
     if (ret->IsString() || ret->IsNumber() || ret->IsBoolean()) {
         String::Utf8Value retV8Str(isolate, ret);
         result.assign(*retV8Str, retV8Str.length());
@@ -352,17 +361,26 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
     Local<Object> obj = ret.As<Object>();
     if (!obj->IsUndefined()) {
         MaybeLocal<String> jsonRet = JSON::Stringify(context, obj);
-        if (!jsonRet.IsEmpty()) {
-            isJson = true;
-            String::Utf8Value jsonRetStr(jsonRet.ToLocalChecked());
-            result.assign(*jsonRetStr, jsonRetStr.length());
-        }
 
         if (tryCatch.HasCaught()) {
             std::string exception = reportException(isolate, context, tryCatch);
             error = exception;
             return;
         }
+
+        if (jsonRet.IsEmpty()) {
+            isDone = true;
+            return;
+        }
+
+        isJson = true;
+        Local<String> jsonStr = jsonRet.ToLocalChecked();
+        if (jsonStr->Length() > resultMaxLength) {
+            error = "result too long";
+            return;
+        }
+        String::Utf8Value jsonRetStr(jsonStr);
+        result.assign(*jsonRetStr, jsonRetStr.length());
     }
     isDone = true;
     return;
