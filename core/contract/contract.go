@@ -2,6 +2,7 @@ package contract
 
 import (
 	"encoding/base64"
+	"errors"
 
 	"encoding/json"
 	"io/ioutil"
@@ -23,6 +24,8 @@ const (
 	SelfPay PaymentCode = iota
 	ContractPay
 )
+
+const codeSizeLimit = 65536
 
 // FixedAmount the limit amount of token used by contract
 type FixedAmount struct {
@@ -78,6 +81,14 @@ func (c *Contract) B64Decode(str string) error {
 		return err
 	}
 	return proto.Unmarshal(buf, c)
+}
+
+// VerifySelf verify contract's size
+func (c *Contract) VerifySelf() error {
+	if len(c.Code) > codeSizeLimit {
+		return errors.New("code size invalid")
+	}
+	return nil
 }
 
 // DecodeContract static method to decode contract from string

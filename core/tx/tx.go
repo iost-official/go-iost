@@ -20,6 +20,7 @@ const (
 	minGasRatio = 100
 	maxGasRatio = 10000
 	minGasLimit = 50000
+	txSizeLimit = 65536
 )
 
 // values
@@ -360,6 +361,14 @@ func (t *Tx) IsExpired(ct int64) bool {
 // ct may be time.Now().UnixNano() or block head time.
 func (t *Tx) IsCreatedBefore(ct int64) bool {
 	return t.Time <= ct
+}
+
+// CheckSize checks whether tx size is valid.
+func (t *Tx) CheckSize() error {
+	if len(t.ToBytes(Full)) > txSizeLimit {
+		return fmt.Errorf("tx size illegal, should <= %v", txSizeLimit)
+	}
+	return nil
 }
 
 // CheckGas checks whether the transaction's gas is valid.

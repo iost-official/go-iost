@@ -241,7 +241,7 @@ const obj = new module.exports;
 
 // run contract with specified function and args
 let rs = obj.%s(%s);
-if (rs !== null && (typeof rs === 'function') || (typeof rs === 'object')) {
+if ((typeof rs === 'function') || (typeof rs === 'object')) {
 	_IOSTInstruction_counter.incr(12);
 	rs = JSON.stringify(rs);
 }

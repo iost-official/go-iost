@@ -56,7 +56,7 @@ void IOSTCrypto_sha3(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(msgStr, msg);
+    NewCStrChecked(msgStr, msg, isolate);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {

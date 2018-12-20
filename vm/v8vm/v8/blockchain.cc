@@ -234,9 +234,9 @@ void IOSTBlockchain_call(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(apiStr, api);
-    NewCStr(argStr, arg);
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(apiStr, api, isolate);
+    NewCStrChecked(argStr, arg, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -296,9 +296,9 @@ void IOSTBlockchain_callWithAuth(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contractStr, contract);
-    NewCStr(apiStr, api);
-    NewCStr(argStr, arg);
+    NewCStrChecked(contractStr, contract, isolate);
+    NewCStrChecked(apiStr, api, isolate);
+    NewCStrChecked(argStr, arg, isolate);
     CStr resultStr = {nullptr, 0};
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -351,8 +351,8 @@ void IOSTBlockchain_requireAuth(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(accountIDStr, accountID);
-    NewCStr(permissionStr, permission);
+    NewCStrChecked(accountIDStr, accountID, isolate);
+    NewCStrChecked(permissionStr, permission, isolate);
     bool result;
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
@@ -395,7 +395,7 @@ void IOSTBlockchain_receipt(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contentStr, content);
+    NewCStrChecked(contentStr, content, isolate);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
@@ -437,7 +437,7 @@ void IOSTBlockchain_event(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    NewCStr(contentStr, content);
+    NewCStrChecked(contentStr, content, isolate);
 
     Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
     if (!extVal->IsExternal()) {
