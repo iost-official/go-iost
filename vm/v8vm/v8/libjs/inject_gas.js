@@ -20,9 +20,9 @@ const chargedExpression = {
     ObjectExpression: 0.1,
     ArrayExpression: 0.1,
     FunctionExpression: 1,
-    ArrowFunctionExpression: 1,
+    ArrowFunctionExpression: 3,
     // declaration
-    ClassDeclaration: 3,
+    ClassDeclaration: 150,
     FunctionDeclaration: 3,
     VariableDeclarator: 3,
     VariableDeclaratorWithoutInit: 3,
@@ -320,7 +320,7 @@ function processNode(node, parentNode, lastInjection) {
         let value = chargedExpression[node.type];
         if (value === null || value === undefined) {
             if (node.type === "Literal" && typeof node.value === "string") {
-                value = 1 + chargedExpression["StringLiteral"] * node.value.length;
+                value = 2 + chargedExpression["StringLiteral"] * node.value.length;
             } else {
                 return [newLastInjection, {}];
             }
