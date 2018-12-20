@@ -186,7 +186,14 @@ class Account {
     DropGroup(id, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
-        acc.permissions[group] = undefined;
+        acc.groups[group] = undefined;
+        for (let i = 0; i < acc.permissions.length; i ++) {
+            for (let j = 0; j < acc.permissions[i].groups.length; j ++) {
+                if (acc.permissions[i].groups[j] === group ) {
+                    acc.permissions[i].groups .splice(j, 1)
+                }
+            }
+        }
         this._saveAccount(acc);
     }
     AssignGroup(id, group, un, weight) {
@@ -218,11 +225,11 @@ class Account {
     RevokeGroup(id, grp, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
-        const index = Account._find(acc.permissions[grp].items, un);
+        const index = Account._find(acc.groups[grp].items, un);
         if (index < 0) {
             throw new Error("item not found");
         } else {
-            acc.permissions[grp].items.splice(index, 1)
+            acc.groups[grp].items.splice(index, 1)
         }
         this._saveAccount(acc);
     }
