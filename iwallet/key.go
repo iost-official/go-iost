@@ -22,6 +22,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
+type key struct {
+	ID        string
+	Algorithm string
+	Pubkey    string
+	Seckey    string
+}
+
 // keyCmd represents the keyPair command
 var keyCmd = &cobra.Command{
 	Use:   "key",
@@ -34,12 +41,6 @@ var keyCmd = &cobra.Command{
 			return
 		}
 
-		type key struct {
-			ID        string
-			Algorithm string
-			Pubkey    string
-			Seckey    string
-		}
 		var k key
 		k.ID = n.ID
 		k.Algorithm = n.Algorithm.String()
