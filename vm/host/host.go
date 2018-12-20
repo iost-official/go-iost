@@ -274,14 +274,24 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 }
 
 // CancelDelaytx deletes delaytx hash.
+//
+// The given argument txHash is from user's input. So we should Base58Decode it first.
 func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
 
-	if !h.db.HasDelaytx(txHash) {
-		return Costs["DelaytxNotFoundCost"], ErrDelaytxNotFound
+	hashString := string(common.Base58Decode(txHash))
+	cost := Costs["GetCost"]
+	publisher := h.db.GetDelaytx(hashString)
+
+	if publisher == database.NilPrefix {
+		return cost, ErrDelaytxNotFound
+	}
+	if publisher != h.Context().Value("publisher").(string) {
+		return cost, ErrCancelDelayForbid
 	}
 
-	h.db.DelDelaytx(txHash)
-	return Costs["DelDelaytxCost"], nil
+	h.db.DelDelaytx(hashString)
+	cost.AddAssign(DelDelayTxCost(len(hashString)+len(publisher), publisher))
+	return cost, nil
 }
 
 // Logger get a log in host
