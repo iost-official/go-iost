@@ -1,4 +1,5 @@
 #include "instruction.h"
+#include "limits.h"
 #include <iostream>
 
 void NewIOSTContractInstruction(const FunctionCallbackInfo<Value> &args) {
@@ -42,7 +43,14 @@ void IOSTContractInstruction_Incr(const FunctionCallbackInfo<Value> &args) {
         return;
     }
 
-    int32_t valInt = val->Int32Value();
+    double valInt = val->NumberValue();
+    if (valInt >= INT_MAX) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTContractInstruction_Incr gas overflow max int")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
     if (valInt < 0) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractInstruction_Incr invalid gas")
