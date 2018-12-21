@@ -144,28 +144,38 @@ func Test_Vote(t *testing.T) {
 		prepareVote(t, s, acc0)
 
 		Convey("test Vote", func() {
-			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+			rs, err := s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+			So(err, ShouldBeNil)
+			So(rs.Status.Message, ShouldEqual, "")
 
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option3")), ShouldEqual, `["5",false,-1]`)
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc1.ID)), ShouldEqual, `{"option3":["5",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p_1"), ShouldResemble, []string{})
 
-			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+			rs, err = s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+			So(err, ShouldBeNil)
+			So(rs.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option3")), ShouldEqual, `["10",false,-1]`)
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc1.ID)), ShouldEqual, `{"option3":["10",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p_1"), ShouldResemble, []string{"option3"})
 
-			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option1", "20"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+			rs, err = s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option1", "20"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+			So(err, ShouldBeNil)
+			So(rs.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")), ShouldEqual, `["20",false,-1]`)
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc1.ID)), ShouldEqual, `{"option3":["10",0,"0"],"option1":["20",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p_1"), ShouldResemble, []string{"option3", "option1"})
 
-			s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "100"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+			rs, err = s.Call("vote.iost", "Vote", fmt.Sprintf(`["1", "%v", "option3", "100"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(rs.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option3")), ShouldEqual, `["110",false,-1]`)
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)), ShouldEqual, `{"option3":["100",0,"0"]}`)
 			So(s.Visitor.MKeys("vote.iost-p_1"), ShouldResemble, []string{"option3", "option1"})
 
-			s.Call("Contractvoteresult", "GetResult", `["1"]`, acc0.ID, acc0.KeyPair)
+			rs, err = s.Call("Contractvoteresult", "GetResult", `["1"]`, acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(rs.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote_result", "1")), ShouldEqual, `[{"option":"option3","votes":"110"},{"option":"option1","votes":"20"}]`)
 
 			r, err := s.Call("vote.iost", "GetOption", `["1", "option3"]`, acc0.ID, acc0.KeyPair)

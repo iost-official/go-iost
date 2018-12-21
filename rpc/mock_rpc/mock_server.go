@@ -71,8 +71,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 			Publisher:  "publisher",
 			ReferredTx: "ccc",
 			AmountLimit: []*rpcpb.AmountLimit{
-				{Token: "iost", Value: 12.2},
-				{Token: "10st", Value: 21.1},
+				{Token: "iost", Value: "12.2"},
+				{Token: "10st", Value: "21.1"},
 			},
 			TxReceipt: &rpcpb.TxReceipt{
 				TxHash:     "xxx",
@@ -136,8 +136,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 					Publisher:  "publisher",
 					ReferredTx: "ccc",
 					AmountLimit: []*rpcpb.AmountLimit{
-						{Token: "iost", Value: 12.2},
-						{Token: "10st", Value: 21.1},
+						{Token: "iost", Value: "12.2"},
+						{Token: "10st", Value: "21.1"},
 					},
 					TxReceipt: &rpcpb.TxReceipt{
 						TxHash:     "xxx",
@@ -190,8 +190,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 					Publisher:  "publisher",
 					ReferredTx: "ccc",
 					AmountLimit: []*rpcpb.AmountLimit{
-						{Token: "iost", Value: 12.2},
-						{Token: "10st", Value: 21.1},
+						{Token: "iost", Value: "12.2"},
+						{Token: "10st", Value: "21.1"},
 					},
 					TxReceipt: &rpcpb.TxReceipt{
 						TxHash:     "xxx",
@@ -275,7 +275,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 				Name: "echo",
 				Args: []string{"a1", "a2"},
 				AmountLimit: []*rpcpb.AmountLimit{
-					{Token: "iost", Value: 1212.2},
+					{Token: "iost", Value: "1212.2"},
 				},
 			},
 		},

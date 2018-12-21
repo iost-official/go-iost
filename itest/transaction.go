@@ -2,10 +2,8 @@ package itest
 
 import (
 	"math"
-	"strconv"
 	"time"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -13,11 +11,12 @@ import (
 
 // Constant of Transaction
 var (
-	GasLimit   = int64(5000000)         // about 2000~10000 gas per tx
-	GasRatio   = int64(100)             // 1 mutiple gas
-	Expiration = int64(math.MaxInt64)   // Max expired time is 90 seconds
-	Delay      = int64(0 * time.Second) // No delay
-	Signers    = make([]string, 0)      // No mutiple signers
+	GasLimit    = int64(5000000)         // about 2000~10000 gas per tx
+	GasRatio    = int64(100)             // 1 mutiple gas
+	Expiration  = int64(math.MaxInt64)   // Max expired time is 90 seconds
+	Delay       = int64(0 * time.Second) // No delay
+	Signers     = make([]string, 0)      // No mutiple signers
+	AmountLimit = []*contract.Amount{{Token: "iost", Val: "unlimited"}}
 )
 
 // Transaction is the transaction object
@@ -35,6 +34,7 @@ func NewTransaction(actions []*tx.Action) *Transaction {
 		Expiration,
 		Delay,
 	)
+	t.AmountLimit = AmountLimit
 
 	return &Transaction{t}
 }
@@ -60,7 +60,7 @@ func NewTransactionFromPb(t *rpcpb.Transaction) *Transaction {
 	for _, a := range t.AmountLimit {
 		ret.AmountLimit = append(ret.AmountLimit, &contract.Amount{
 			Token: a.Token,
-			Val:   strconv.FormatFloat(a.Value, 'f', -1, 64),
+			Val:   a.Value,
 		})
 	}
 	return &Transaction{ret}
@@ -85,13 +85,9 @@ func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
 		})
 	}
 	for _, a := range t.AmountLimit {
-		fixed, err := common.UnmarshalFixed(a.Val)
-		if err != nil {
-			continue
-		}
 		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
 			Token: a.Token,
-			Value: fixed.ToFloat(),
+			Value: a.Val,
 		})
 	}
 	for _, s := range t.Signs {
