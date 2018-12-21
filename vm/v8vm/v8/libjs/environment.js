@@ -552,7 +552,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 10);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
         }
         return BigNumberdiv.call(this, ...arguments);
     };
@@ -562,7 +562,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 10);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
         }
         return BigNumberidiv.call(this, ...arguments);
     };
@@ -572,7 +572,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * arguments[0].length * 10);
+            _IOSTInstruction_counter.incr(20 + this.toString().length * arguments[0].toString().length * 10);
         }
         return BigNumberpow.call(this, ...arguments);
     };
@@ -588,7 +588,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 2);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
         }
         return BigNumbereq.call(this, ...arguments);
     };
@@ -604,7 +604,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 2);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
         }
         return BigNumbergt.call(this, ...arguments);
     };
@@ -614,7 +614,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 2);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
         }
         return BigNumbergte.call(this, ...arguments);
     };
@@ -630,7 +630,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 2);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
         }
         return BigNumberlt.call(this, ...arguments);
     };
@@ -640,7 +640,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 2);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
         }
         return BigNumberlte.call(this, ...arguments);
     };
@@ -674,7 +674,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 10);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
         }
         return BigNumberminus.call(this, ...arguments);
     };
@@ -684,7 +684,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 10);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
         }
         return BigNumbermod.call(this, ...arguments);
     };
@@ -694,7 +694,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 4);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 4);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 4);
         }
         return BigNumbertimes.call(this, ...arguments);
     };
@@ -710,7 +710,7 @@
         if (arguments[0] == null) {
             _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].length) * 10);
+            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
         }
         return BigNumberplus.call(this, ...arguments);
     };
