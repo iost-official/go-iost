@@ -11,6 +11,68 @@
       }]
     },
     {
+      "name": "transferFreeze",
+      "args": ["string", "string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "100"
+      }]
+    },
+    {
+      "name": "destroy",
+      "args": ["string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "100"
+      }]
+    },
+    {
+      "name": "transfer1",
+      "args": ["string", "string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "unlimited"
+      },{
+        "token": "*",
+        "val": "1"
+      }]
+    },
+    {
+      "name": "transfer2",
+      "args": ["string", "string", "string"],
+      "amountLimit": [{
+        "token": "*",
+        "val": "9.9"
+      }]
+    },
+    {
+      "name": "transfer3",
+      "args": ["string", "string", "string"],
+      "amountLimit": [{
+        "token": "*",
+        "val": "unlimited"
+      }]
+    },
+    {
+      "name": "transfer4",
+      "args": ["string", "string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "9.9"
+      },{
+        "token": "*",
+        "val": "10"
+      }]
+    },
+    {
+      "name": "transfermulti",
+      "args": ["string", "string", "string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "120"
+      }]
+    },
+    {
       "name": "withdraw",
       "args": ["string", "string"],
       "amountLimit": [{

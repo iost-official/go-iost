@@ -198,17 +198,105 @@ func TestAmountLimit(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
-			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance1 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "990")
-			So(balance2.ToString(), ShouldEqual, "10")
+			So(balance1.ToString(), ShouldEqual, "10")
+
+			r, err = s.Call("Contracttransfer", "transfer1", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			balance0 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance1 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "980")
+			So(balance1.ToString(), ShouldEqual, "20")
+
+			r, err = s.Call("Contracttransfer", "transfer2", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "9"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			balance0 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance1 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "971")
+			So(balance1.ToString(), ShouldEqual, "29")
+
+			r, err = s.Call("Contracttransfer", "transfer2", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "9.9"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+
+			r, err = s.Call("Contracttransfer", "transfer3", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10.1"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			balance0 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance1 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "960.9")
+			So(balance1.ToString(), ShouldEqual, "39.1")
+
+			r, err = s.Call("Contracttransfer", "transfer4", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+		})
+
+		Convey("test amount limit transfer to self", func() {
+			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc0.ID, "1000"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "1000")
+
+			r, err = s.Call("Contracttransfer", "transferFreeze", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc0.ID, "1000"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			balance0 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "0")
+		})
+
+		Convey("test amount limit transferFreeze", func() {
+			r, err := s.Call("Contracttransfer", "transferFreeze", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "110"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+
+			r, err = s.Call("Contracttransfer", "transferFreeze", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "100"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "900")
+		})
+
+		Convey("test amount limit destroy", func() {
+			r, err := s.Call("Contracttransfer", "destroy", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "110"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi")
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+
+			r, err = s.Call("Contracttransfer", "destroy", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "100"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "900")
 		})
 
 		Convey("test out of amount limit, use signers ID", func() {
-			s.SetAccount(acc0.ToAccount())
-			s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-			s.SetGas("test0", 1000000)
-			s.SetRAM("test0", 10000)
-
 			r, err := s.Call("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "200"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
@@ -233,9 +321,57 @@ func TestAmountLimit(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
-			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance1 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "880")
-			So(balance2.ToString(), ShouldEqual, "120")
+			So(balance1.ToString(), ShouldEqual, "120")
+		})
+
+		Convey("test amount limit transfer from multi signers", func() {
+			s.SetAccount(acc2.ToAccount())
+			s.Visitor.SetTokenBalanceFixed("iost", acc2.ID, "1000")
+
+			trx := tx.NewTx([]*tx.Action{{
+				Contract:   "Contracttransfer",
+				ActionName: "transfermulti",
+				Data:       fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, acc0.ID, acc2.ID, acc1.ID, "60"),
+			}}, []string{acc2.ID + "@active"}, s.GasLimit, 100, s.Head.Time+10000000, 0)
+			trx.Time = s.Head.Time
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
+			sign, err := tx.SignTxContent(trx, acc2.ID, acc2.KeyPair)
+			if err != nil {
+				t.Fatal(err)
+			}
+			trx.Signs = append(trx.Signs, sign)
+
+			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance1 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc2.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "940")
+			So(balance1.ToString(), ShouldEqual, "120")
+			So(balance2.ToString(), ShouldEqual, "940")
+
+			trx = tx.NewTx([]*tx.Action{{
+				Contract:   "Contracttransfer",
+				ActionName: "transfermulti",
+				Data:       fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, acc0.ID, acc2.ID, acc1.ID, "61"),
+			}}, []string{acc2.ID + "@active"}, s.GasLimit, 100, s.Head.Time+10000000, 0)
+			trx.Time = s.Head.Time
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
+			sign, err = tx.SignTxContent(trx, acc2.ID, acc2.KeyPair)
+			if err != nil {
+				t.Fatal(err)
+			}
+			trx.Signs = append(trx.Signs, sign)
+
+			r, err = s.CallTx(trx, acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in abi. need 122")
 		})
 
 		Convey("test invalid amount limit", func() {
