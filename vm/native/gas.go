@@ -26,10 +26,10 @@ var GasMinPledgePerAction = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
 // so gas production will resume again util the limit.
 
 // GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.Fixed{Value: 10000 * 100, Decimal: 2}
+var GasImmediateReward = &common.Fixed{Value: 200000 * 100, Decimal: 2}
 
 // GasLimit gas limit per IOST
-var GasLimit = &common.Fixed{Value: 30000 * 100, Decimal: 2}
+var GasLimit = &common.Fixed{Value: 600000 * 100, Decimal: 2}
 
 // GasFulfillSeconds it takes 2 days to fulfill the gas buffer.
 const GasFulfillSeconds int64 = 2 * 24 * 3600
