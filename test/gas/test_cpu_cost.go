@@ -41,6 +41,22 @@ var (
 			"UnaryExpressionNot",
 			"LogicalExpressionAnd",
 			"ConditionalExpression",
+			"SpreadElement",
+			"ObjectExpression",
+			"ArrayExpression",
+			"FunctionExpression",
+			"ArrowFunctionExpression",
+			"ClassDeclaration",
+			"FunctionDeclaration",
+			"VariableDeclarator",
+			"VariableDeclaratorWithoutInit",
+			"MethodDefinition",
+			"StringLiteral",
+			"ForStatement",
+			"ForInStatement",
+			"ForOfStatement",
+			"WhileStatement",
+			"DoWhileStatement",
 		},
 		"lib": {
 			"StringCharAt",
@@ -144,7 +160,7 @@ var (
 
 var vmPool *v8.VMPool
 var testDataPath = "./test_data/"
-var baseCPUCost = int64(2000)
+var baseCPUCost = int64(30000)
 
 func runOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
 	b, err := ioutil.ReadFile(path.Join(testDataPath, name))
@@ -152,17 +168,6 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 		log.Fatalf("Read file failed: %v", err)
 	}
 	code := string(b)
-
-	now := time.Now()
-
-	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
-	ctx.GSet("gas_limit", int64(100000000))
-	ctx.Set("contract_name", name)
-
-	host := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
-	expTime := time.Now().Add(time.Second * 10)
-	host.SetDeadline(expTime)
 
 	contract := &contract.Contract{
 		ID:   name,
@@ -173,6 +178,17 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 	if err != nil {
 		log.Fatalf("Compile contract failed: %v", err)
 	}
+
+	now := time.Now()
+
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", int64(1))
+	ctx.GSet("gas_limit", int64(1000000000))
+	ctx.Set("contract_name", name)
+
+	host := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
+	expTime := time.Now().Add(time.Second * 10)
+	host.SetDeadline(expTime)
 
 	_, cost, err := vmPool.LoadAndCall(host, contract, api, num)
 
@@ -185,7 +201,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 
 func init() {
 	// TODO The number of pool need adjust
-	vmPool = v8.NewVMPool(30, 30)
+	vmPool = v8.NewVMPool(10, 400)
 	vmPool.Init()
 }
 
@@ -401,12 +417,21 @@ func getOverviewTable() {
 
 	ttotal := float64(0)
 	ctotal := float64(0)
-	for i := 0; ; i++ {
-		tcost, ccost := runOp(
+	for i := 0; i < 200; i++ {
+		runOp(
 			vi,
 			fmt.Sprintf("%v_op.js", "empty"),
 			fmt.Sprintf("do%v", "StartUp"),
 			i,
+		)
+	}
+
+	for i := 1; ; i++ {
+		tcost, ccost := runOp(
+			vi,
+			fmt.Sprintf("%v_op.js", "empty"),
+			fmt.Sprintf("do%v", "StartUp"),
+			0,
 		)
 		ttotal = ttotal + tcost
 		ctotal = ctotal + float64(ccost)

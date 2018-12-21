@@ -46,4 +46,3 @@ func Test_Base(t *testing.T) {
 		So(re.Status.Message, ShouldEqual, "")
 	})
 }
-

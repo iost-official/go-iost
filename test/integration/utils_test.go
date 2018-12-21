@@ -19,7 +19,7 @@ import (
 
 // TestAccount used for writing test cases
 type TestAccount struct {
-	ID string
+	ID      string
 	KeyPair *account.KeyPair
 }
 

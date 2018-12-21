@@ -154,7 +154,7 @@ func Test_RamPayer(t *testing.T) {
 			//ram := s.GetRAM(acc0.ID)
 			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8482)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8488)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -171,7 +171,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8480)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8486)
 
 			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
@@ -186,7 +186,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8479)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8485)
 
 			//ram = s.GetRAM(acc0.ID)
 			ram1 := s.GetRAM(acc1.ID)
@@ -194,7 +194,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8545)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8551)
 			So(s.GetRAM(acc1.ID), ShouldEqual, 9933)
 
 			ram1 = s.GetRAM(acc1.ID)
@@ -233,7 +233,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-2553)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 5845)
 
 			ram0 = s.GetRAM(acc0.ID)
 			//ram4 := s.GetRAM(acc2.ID)

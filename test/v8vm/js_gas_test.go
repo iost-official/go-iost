@@ -187,14 +187,14 @@ func TestInjectGas(t *testing.T) {
 		rs, cost1, err := vmPool.LoadAndCall(host, code, "array2", 10)
 		So(err, ShouldBeNil)
 		t.Log(rs, cost0)
-		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas() + 9)
+		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas()+9)
 	})
 
 	Convey("test string0", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "string0", 1)
 		So(err, ShouldBeNil)
 		t.Log(rs, cost0)
-		rs, cost1, err := vmPool.LoadAndCall(host, code, "string0", 3)
+		rs, cost1, err := vmPool.LoadAndCall(host, code, "string0", 10)
 		So(err, ShouldBeNil)
 		t.Log(rs, cost1)
 		So(cost1.ToGas(), ShouldBeGreaterThan, cost0.ToGas())
@@ -223,6 +223,6 @@ func TestInjectGas(t *testing.T) {
 	Convey("test bignumber0", t, func() {
 		_, cost0, err := vmPool.LoadAndCall(host, code, "bignumber0", "")
 		So(err, ShouldBeNil)
-		So(cost0.ToGas(), ShouldEqual, int64(391))
+		So(cost0.ToGas(), ShouldEqual, int64(436))
 	})
 }
