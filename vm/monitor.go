@@ -65,10 +65,10 @@ func checkLimit(amountLimit map[string]*common.Fixed, token string, amount *comm
 			return amount.Value <= limit.Value
 		} else if limit, ok := amountLimit["*"]; ok {
 			val := amount.Value / int64(math.Pow10(amount.Decimal))
-			if amount.Value % int64(math.Pow10(amount.Decimal)) > 0 {
-				val += 1
+			if amount.Value%int64(math.Pow10(amount.Decimal)) > 0 {
+				val++
 			}
-			return  val <= limit.Value
+			return val <= limit.Value
 		}
 		fmt.Println("check amount limit return false.")
 		return false
@@ -80,7 +80,7 @@ func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]
 	amountLimit := make(map[string]*common.Fixed)
 	for _, limit := range amountList {
 		if limit.Val == "unlimited" {
-			amountLimit[limit.Token] = &common.Fixed{Value:math.MaxInt64, Decimal:h.DB().Decimal(limit.Token)}
+			amountLimit[limit.Token] = &common.Fixed{Value: math.MaxInt64, Decimal: h.DB().Decimal(limit.Token)}
 		} else {
 			decimal := h.DB().Decimal(limit.Token)
 			if limit.Token == "*" {

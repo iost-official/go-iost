@@ -11,12 +11,12 @@ import (
 
 // Constant of Transaction
 var (
-	GasLimit   = int64(5000000)         // about 2000~10000 gas per tx
-	GasRatio   = int64(100)             // 1 mutiple gas
-	Expiration = int64(math.MaxInt64)   // Max expired time is 90 seconds
-	Delay      = int64(0 * time.Second) // No delay
-	Signers    = make([]string, 0)      // No mutiple signers
-	AmountLimit 	= []*contract.Amount{&contract.Amount{Token:"iost", Val:"unlimited"}}
+	GasLimit    = int64(5000000)         // about 2000~10000 gas per tx
+	GasRatio    = int64(100)             // 1 mutiple gas
+	Expiration  = int64(math.MaxInt64)   // Max expired time is 90 seconds
+	Delay       = int64(0 * time.Second) // No delay
+	Signers     = make([]string, 0)      // No mutiple signers
+	AmountLimit = []*contract.Amount{{Token: "iost", Val: "unlimited"}}
 )
 
 // Transaction is the transaction object
