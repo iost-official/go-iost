@@ -70,7 +70,6 @@ func checkLimit(amountLimit map[string]*common.Fixed, token string, amount *comm
 			}
 			return val <= limit.Value
 		}
-		fmt.Println("check amount limit return false.")
 		return false
 	}
 	return true
@@ -202,8 +201,6 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				}
 			}
 		}
-		//fmt.Println(amountLimit)
-		//fmt.Println(txAmountLimit)
 		for token, amount := range needLimit {
 			if !checkLimit(amountLimit, token, amount) {
 				return nil, cost,
