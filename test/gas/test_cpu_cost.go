@@ -183,7 +183,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
-	ctx.GSet("gas_limit", int64(100000000))
+	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", name)
 
 	host := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
