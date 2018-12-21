@@ -41,7 +41,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 695400)
+			So(r.GasUsage, ShouldEqual, 713400)
 		})
 
 		Convey("test of token memo", func() {
@@ -79,7 +79,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractAhFA9ToFpBVg6hFgyRRf37XYh4w3e3a7TZUxGTSFdawA")
-		So(r.GasUsage, ShouldEqual, 3592500)
+		So(r.GasUsage, ShouldEqual, 3593500)
 		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2694))
 
 		r, err = s.Call(cname, "hello", "[]", acc.ID, acc.KeyPair)
@@ -520,12 +520,12 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 		Convey("normal case", func() {
 			s.SetGas(acc0.ID, 0)
 			tx0 := tx.NewTx([]*tx.Action{pledgeAction}, nil, txGasLimit*100, 100, 10000000, 0)
-			tx0.AmountLimit = append(tx0.AmountLimit, &contract.Amount{Token:"iost", Val:"unlimited"})
+			tx0.AmountLimit = append(tx0.AmountLimit, &contract.Amount{Token: "iost", Val: "unlimited"})
 			r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			txGasUsage := r.GasUsage/100
+			txGasUsage := r.GasUsage / 100
 			So(s.GetGas(acc0.ID), ShouldEqual, expectedGasAfterPlegde-txGasUsage)
 			So(s.Visitor.TokenBalanceFixed("iost", acc0.ID).ToString(), ShouldEqual, strconv.Itoa(int(initialBalance-pledgeAmount)))
 		})
@@ -652,14 +652,14 @@ func TestGasLimit2(t *testing.T) {
 				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
 			}
 			trx := tx.NewTx(acts, nil, 10000000, 100, s.Head.Time, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"*", Val:"unlimited"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
 			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(7232200))
+			So(r.GasUsage, ShouldEqual, int64(7250200))
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "980")
@@ -675,7 +675,7 @@ func TestGasLimit2(t *testing.T) {
 				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
 			}
 			trx = tx.NewTx(acts, nil, 2000000, 100, s.Head.Time, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"*", Val:"unlimited"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
 			r, err = s.CallTx(trx, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
