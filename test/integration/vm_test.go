@@ -365,7 +365,11 @@ func Test_SpecialChar(t *testing.T) {
 					"string",
 					"string",
 					"json"
-				]
+				],
+      			"amountLimit": [{
+      			  "token": "iost",
+      			  "val": "unlimited"
+      			}]
 			}
 		]
 	}
@@ -400,7 +404,7 @@ func Test_SpecialChar(t *testing.T) {
 		So(err, ShouldBeNil)
 		r, err := s.Call(cname, "transfer", string(paramsByte), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalanceFixed("iost", acc1.ID).ToString(), ShouldEqual, "2000")
 	})
 }

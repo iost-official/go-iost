@@ -4,7 +4,11 @@
   "abi": [
     {
       "name": "call",
-      "args": ["string", "string", "json"]
+      "args": ["string", "string", "json"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "unlimited"
+      }]
     },
     {
       "name": "sh0",
