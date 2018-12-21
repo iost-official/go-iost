@@ -33,8 +33,8 @@ const chargedExpression = {
     ForStatement: 1,
     ForInStatement: 4,
     ForOfStatement: 2,
-    IfStatement: 1,
-    WhileStatement: 1
+    WhileStatement: 1,
+    DoWhileStatement: 1
 };
 // statement before which can inject gas, used to find inject location
 const InjectableStatement = {
