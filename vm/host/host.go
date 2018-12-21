@@ -182,6 +182,9 @@ func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
 
 // SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
+	if err := c.VerifySelf(); err != nil {
+		return CommonErrorCost(1), err
+	}
 	cost, err := h.checkAbiValid(c)
 	if err != nil {
 		return cost, err
@@ -225,6 +228,9 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 
 // UpdateCode update code
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (contract.Cost, error) {
+	if err := c.VerifySelf(); err != nil {
+		return CommonErrorCost(1), err
+	}
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
 		return Costs["GetCost"], ErrContractNotFound
