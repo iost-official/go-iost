@@ -18,7 +18,6 @@ func init() {
 	systemABIs.Register(receipt)
 	systemABIs.Register(setCode)
 	systemABIs.Register(updateCode)
-	systemABIs.Register(destroyCode)
 	systemABIs.Register(initSetCode)
 	systemABIs.Register(cancelDelaytx)
 	systemABIs.Register(hostSettings)
@@ -104,24 +103,22 @@ var (
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
-			err = con.B64Decode(args[0].(string))
-			if err != nil {
-				return nil, host.CommonErrorCost(1), err
+			codeRaw := args[0].(string)
+
+			if codeRaw[0] == '{' {
+				err = json.Unmarshal([]byte(codeRaw), con)
+				if err != nil {
+					return nil, host.CommonErrorCost(1), err
+				}
+			} else {
+				err = con.B64Decode(codeRaw)
+				if err != nil {
+					return nil, host.CommonErrorCost(1), err
+				}
 			}
 
 			cost1, err := h.UpdateCode(con, []byte(args[1].(string)))
 			cost.AddAssign(cost1)
-			return []interface{}{}, cost, err
-		},
-	}
-	// todo deprecated
-	// destroyCode can only be invoked in native vm, avoid updating contract during running
-	destroyCode = &abi{
-		name: "DestroyCode",
-		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-
-			cost, err = h.DestroyCode(args[0].(string))
 			return []interface{}{}, cost, err
 		},
 	}
