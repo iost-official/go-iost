@@ -40,6 +40,16 @@ func New(c *Config, keys []*Key) *ITest {
 	}
 }
 
+// GetDefaultAccount return the bank account
+func (t *ITest) GetDefaultAccount() *Account {
+	return t.bank
+}
+
+// GetClients returns the clients
+func (t *ITest) GetClients() []*Client {
+	return t.clients
+}
+
 // Load will load the itest from file
 func Load(keysfile, configfile string) (*ITest, error) {
 	ilog.Infof("Load itest from file...")
@@ -153,7 +163,7 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 				B := producers[rand.Intn(len(producers))]
 
 				A.AddBalance(-amount)
-				ilog.Debugf("Vote %v -> %v, amount: %v", A.ID, B, fmt.Sprintf("%0.8f", amount))
+				ilog.Debugf("VoteProducer %v -> %v, amount: %v", A.ID, B, fmt.Sprintf("%0.8f", amount))
 
 				res <- t.Vote(A, B, fmt.Sprintf("%0.8f", amount))
 			}(res)
@@ -163,7 +173,7 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 	for i := 0; i < num; i++ {
 		switch value := (<-res).(type) {
 		case error:
-			return fmt.Errorf("Send vote transaction failed: %v", value)
+			return fmt.Errorf("send vote transaction failed: %v", value)
 		default:
 		}
 	}
@@ -200,7 +210,7 @@ func (t *ITest) TransferN(num int, accounts []*Account) error {
 	for i := 0; i < num; i++ {
 		switch value := (<-res).(type) {
 		case error:
-			return fmt.Errorf("Send transfer transaction failed: %v", value)
+			return fmt.Errorf("send transfer transaction failed: %v", value)
 		default:
 		}
 	}
@@ -237,7 +247,7 @@ func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account) erro
 	for i := 0; i < num; i++ {
 		switch value := (<-res).(type) {
 		case error:
-			return fmt.Errorf("Send contract transfer transaction failed: %v", value)
+			return fmt.Errorf("send contract transfer transaction failed: %v", value)
 		default:
 		}
 	}
@@ -322,12 +332,19 @@ func (t *ITest) Vote(sender *Account, recipient, amount string) error {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	err := client.Vote(sender, recipient, amount)
+	err := client.VoteProducer(sender, recipient, amount)
 	if err != nil {
 		return err
 	}
 
 	return nil
+}
+
+// CallActionWithRandClient randomly select one client and use it to send a tx
+func (t *ITest) CallActionWithRandClient(sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+	return client.CallAction(sender, contractName, actionName, args...)
 }
 
 // Transfer will transfer token from sender to recipient
