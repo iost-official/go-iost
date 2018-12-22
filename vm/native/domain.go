@@ -11,12 +11,13 @@ import (
 )
 
 // DomainABIs list of domain abi
-var DomainABIs *abiSet
+var domainABIs *abiSet
 
 func init() {
-	DomainABIs = newAbiSet()
-	DomainABIs.Register(link)
-	DomainABIs.Register(transferURL)
+	domainABIs = newAbiSet()
+	domainABIs.Register(initDomainABI, true)
+	domainABIs.Register(linkDomainABI)
+	domainABIs.Register(transferDomainABI)
 }
 
 func checkURLValid(name string) error {
@@ -32,7 +33,15 @@ func checkURLValid(name string) error {
 }
 
 var (
-	link = &abi{
+	initDomainABI = &abi{
+		name: "init",
+		args: []string{},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			return []interface{}{}, host.CommonErrorCost(1), nil
+		},
+	}
+
+	linkDomainABI = &abi{
 		name: "Link",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
@@ -77,7 +86,7 @@ var (
 			return nil, cost, nil
 		},
 	}
-	transferURL = &abi{
+	transferDomainABI = &abi{
 		name: "Transfer",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
