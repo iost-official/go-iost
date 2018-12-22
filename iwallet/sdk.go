@@ -97,7 +97,7 @@ func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 
 func (s *SDK) createTx(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
 	if s.amountLimit == "" {
-		return nil, fmt.Errorf("cmdline flag --amountLimit must be set like `iost:300.00|ram:2000`. You can set to `*:unlimited` to disable any limit")
+		return nil, fmt.Errorf("cmdline flag --amount_limit must be set like `iost:300.00|ram:2000`. You can set to `*:unlimited` to disable any limit")
 	}
 	amountLimits, err := s.parseAmountLimit(s.amountLimit)
 	if err != nil {
