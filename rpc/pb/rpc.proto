@@ -282,7 +282,7 @@ message TransactionResponse {
     // The enumeration defines transaction status.
     enum Status {
         // pending in transaction pool
-        PENDIND = 0;
+        PENDING = 0;
         // packed in a block that has not been confirmed
         PACKED = 1;
         // packed in a block that is irreversible
@@ -384,7 +384,7 @@ message BlockResponse {
     // The enumeration defines block status.
     enum Status {
         // pending in block cache
-        PENDIND = 0;
+        PENDING = 0;
         // irreversible
         IRREVERSIBLE = 1;
     }
