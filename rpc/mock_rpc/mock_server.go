@@ -55,7 +55,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 
 	api.EXPECT().GetTxByHash(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.TransactionResponse{
-		Status: rpcpb.TransactionResponse_PENDIND,
+		Status: rpcpb.TransactionResponse_PENDING,
 		Transaction: &rpcpb.Transaction{
 			Hash:       "xxxxx",
 			Time:       999,
@@ -103,7 +103,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 
 	api.EXPECT().GetBlockByHash(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.BlockResponse{
-		Status: rpcpb.BlockResponse_PENDIND,
+		Status: rpcpb.BlockResponse_PENDING,
 		Block: &rpcpb.Block{
 			Hash:                "hhh",
 			Version:             1,
@@ -157,7 +157,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 
 	api.EXPECT().GetBlockByNumber(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.BlockResponse{
-		Status: rpcpb.BlockResponse_PENDIND,
+		Status: rpcpb.BlockResponse_PENDING,
 		Block: &rpcpb.Block{
 			Hash:                "hhh",
 			Version:             1,
