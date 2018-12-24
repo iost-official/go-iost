@@ -175,5 +175,8 @@ func TestRAM2(t *testing.T) {
 		r, err = s.Call(ramContractName, "lend", array2json([]interface{}{acc3.ID, acc2.ID, 200}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldContainSubstring, "self ram amount 100, not enough for lend")
+		r, err = s.Call("token.iost", "transfer", array2json([]interface{}{"ram", acc3.ID, acc2.ID, "200", ""}), acc3.ID, acc3.KeyPair)
+		So(err, ShouldEqual, nil)
+		So(r.Status.Message, ShouldContainSubstring, "transfer need issuer permission")
 	})
 }

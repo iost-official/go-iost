@@ -109,7 +109,7 @@ class RAMContract {
             throw new Error("init out of genesis block");
         }
         const veryLarge = 100 * 64 * 1024 * 1024 * 1024;
-        const tokenInfo = {"decimal": 0, "fullName": "IOST system ram"};
+        const tokenInfo = {"decimal": 0, "fullName": "IOST system ram", "onlyIssuerCanTransfer": true};
         let data = [this._getTokenName(), blockchain.contractName(), veryLarge, tokenInfo];
         blockchain.callWithAuth("token.iost", "create", JSON.stringify(data));
         data = [this._getTokenName(), blockchain.contractName(), (initialTotal).toString()];
