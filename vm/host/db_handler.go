@@ -57,7 +57,12 @@ func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) (cont
 
 	h.payRAM(mk, sv, oldV, payer)
 	h.h.db.Put(mk, sv)
-	return Costs["PutCost"], nil
+
+	cost := contract.NewCost(0, 0, int64(len(sv) / 10))
+	if cost.ToGas() < Costs["PutCost"].ToGas() {
+		cost = Costs["PutCost"]
+	}
+	return cost, nil
 }
 
 // Get get value of key from db
@@ -111,7 +116,12 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 
 	h.payRAMForMap(mk, field, sv, oldV, payer)
 	h.h.db.MPut(mk, field, sv)
-	return Costs["PutCost"], nil
+
+	cost := contract.NewCost(0, 0, int64(len(sv) / 10))
+	if cost.ToGas() < Costs["PutCost"].ToGas() {
+		cost = Costs["PutCost"]
+	}
+	return cost, nil
 }
 
 // MapGet get value by kf from db
