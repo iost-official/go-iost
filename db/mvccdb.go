@@ -34,6 +34,7 @@ type MVCCDB interface {
 	CurrentTag() string
 	Fork() MVCCDB
 	Flush(t string) error
+	Size() (int64, error)
 	Close() error
 }
 
@@ -392,6 +393,11 @@ func (m *CacheMVCCDB) Flush(t string) error {
 	}
 	m.cm.FreeBefore(commit)
 	return nil
+}
+
+// Size returns the size of mvccdb
+func (m *CacheMVCCDB) Size() (int64, error) {
+	return m.storage.Size()
 }
 
 // Close will close the mvccdb

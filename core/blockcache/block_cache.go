@@ -534,16 +534,27 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		retain.SetParent(nil)
 		retain.LibWitnessHandle()
 		bc.SetLinkedRoot(retain)
+
 		metricsTxTotal.Add(float64(len(retain.Block.Txs)), nil)
 
-		blockchainDBSize, err := bc.baseVariable.BlockChain().Size()
-		if err != nil {
+		if blockchainDBSize, err := bc.baseVariable.BlockChain().Size(); err != nil {
 			ilog.Warnf("Get BlockChainDB size failed: %v", err)
 		} else {
 			metricsDBSize.Set(
 				float64(blockchainDBSize),
 				map[string]string{
 					"Name": "BlockChainDB",
+				},
+			)
+		}
+
+		if stateDBSize, err := bc.baseVariable.StateDB().Size(); err != nil {
+			ilog.Warnf("Get StateDB size failed: %v", err)
+		} else {
+			metricsDBSize.Set(
+				float64(stateDBSize),
+				map[string]string{
+					"Name": "StateDB",
 				},
 			)
 		}
