@@ -564,7 +564,7 @@ func TestDomain(t *testing.T) {
 
 		cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		s.Visitor.SetContract(native.ABI("domain.iost", native.DomainABIs))
+		s.Visitor.SetContract(native.DomainABI())
 		r1, err := s.Call("domain.iost", "Link", fmt.Sprintf(`["abc_0_de.io","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldEqual, "")
