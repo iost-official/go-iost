@@ -38,8 +38,7 @@ var callCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		argc := len(args)
 		if argc%3 != 0 {
-			fmt.Println(`Error: number of args should be a multiplier of 3`)
-			return
+			return fmt.Errorf(`number of args should be a multiplier of 3`)
 		}
 		var actions = make([]*rpcpb.Action, argc/3)
 		for i := 0; i < len(args); i += 3 {
@@ -48,25 +47,21 @@ var callCmd = &cobra.Command{
 		}
 		trx, err := sdk.createTx(actions)
 		if err != nil {
-			fmt.Printf(err.Error())
-			return
+			return err
 		}
 		err = sdk.loadAccount()
 		if err != nil {
-			fmt.Printf("load account err %v\n", err)
-			return
+			return fmt.Errorf("load account err %v", err)
 		}
 		stx, err := sdk.signTx(trx)
 		if err != nil {
-			fmt.Printf("sign tx error %v\n", err)
-			return
+			return fmt.Errorf("sign tx error %v", err)
 		}
 		var txHash string
 		fmt.Printf("sending tx %v", stx)
 		txHash, err = sdk.sendTx(stx)
 		if err != nil {
-			fmt.Printf("send tx error %v\n", err)
-			return
+			return fmt.Errorf("send tx error %v", err)
 		}
 		fmt.Println("send tx done")
 		fmt.Println("the transaction hash is:", txHash)
