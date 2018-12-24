@@ -15,7 +15,13 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/metrics"
 	"github.com/xlab/treeprint"
+)
+
+var (
+	metricsTxTotal = metrics.NewCounter("iost_tx_total", nil)
+	metricsDBSize  = metrics.NewGauge("iost_db_size", []string{"Name"})
 )
 
 // CacheStatus ...
@@ -528,6 +534,19 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		retain.SetParent(nil)
 		retain.LibWitnessHandle()
 		bc.SetLinkedRoot(retain)
+		metricsTxTotal.Add(float64(len(retain.Block.Txs)), nil)
+
+		blockchainDBSize, err := bc.baseVariable.BlockChain().Size()
+		if err != nil {
+			ilog.Warnf("Get BlockChainDB size failed: %v", err)
+		} else {
+			metricsDBSize.Set(
+				float64(blockchainDBSize),
+				map[string]string{
+					"Name": "BlockChainDB",
+				},
+			)
+		}
 	}
 	return nil
 }

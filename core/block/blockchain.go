@@ -325,6 +325,11 @@ func (bc *BlockChain) HasReceipt(hash []byte) (bool, error) {
 	return bc.blockChainDB.Has(append(receiptPrefix, hash...))
 }
 
+// Size returns the blockchain db size
+func (bc *BlockChain) Size() (int64, error) {
+	return bc.blockChainDB.Size()
+}
+
 // Close is close database
 func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
