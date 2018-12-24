@@ -20,7 +20,7 @@ import (
 )
 
 var (
-	metricsTxTotal = metrics.NewCounter("iost_tx_total", nil)
+	metricsTxTotal = metrics.NewGauge("iost_tx_total", nil)
 	metricsDBSize  = metrics.NewGauge("iost_db_size", []string{"Name"})
 )
 
@@ -535,7 +535,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		retain.LibWitnessHandle()
 		bc.SetLinkedRoot(retain)
 
-		metricsTxTotal.Add(float64(len(retain.Block.Txs)), nil)
+		metricsTxTotal.Set(float64(bc.baseVariable.BlockChain().TxTotal()), nil)
 
 		if blockchainDBSize, err := bc.baseVariable.BlockChain().Size(); err != nil {
 			ilog.Warnf("Get BlockChainDB size failed: %v", err)

@@ -8,6 +8,7 @@ import "github.com/iost-official/go-iost/core/tx"
 type Chain interface {
 	Push(block *Block) error
 	Length() int64
+	TxTotal() int64
 	CheckLength()
 	Top() (*Block, error)
 	GetHashByNumber(number int64) ([]byte, error)
