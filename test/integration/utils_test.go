@@ -93,6 +93,9 @@ func createAccountsWithResource(s *Simulator) {
 	}
 	// deploy token.iost
 	s.SetContract(native.TokenABI())
+	// used in ram contract
+	s.SetAccount(account.NewInitAccount("deadaddr", "hahaha", "hahaha"))
+	s.Visitor.SetTokenBalance("iost", "deadaddr", 0)
 	s.Visitor.Commit()
 }
 
