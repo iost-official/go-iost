@@ -35,7 +35,10 @@ func TestBlockSerialize(t *testing.T) {
 			},
 			Sign: &crypto.Signature{},
 		}
-		a1, _ := account.NewKeyPair(nil, crypto.Secp256k1)
+		a1, err := account.NewKeyPair(nil, crypto.Secp256k1)
+		if err != nil {
+			convey.So(err, convey.ShouldBeNil)
+		}
 		tx0 := tx.Tx{
 			Time: 1,
 			Actions: []*tx.Action{{
@@ -55,6 +58,12 @@ func TestBlockSerialize(t *testing.T) {
 			},
 		}
 		blk.Receipts = append(blk.Receipts, &receipt)
+		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+		blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
+		err = blk.CalculateHeadHash()
+		convey.So(err, convey.ShouldBeNil)
+		blk.Sign = a1.Sign(blk.HeadHash())
+		convey.So(blk.Sign, convey.ShouldNotBeNil)
 		convey.Convey("Test of block encode and decode", func() {
 			blkByte, _ := blk.Encode()
 			blkRead := Block{}
