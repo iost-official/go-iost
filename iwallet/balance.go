@@ -19,7 +19,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// balanceCmd represents the balance command
+// accountInfoCmd represents the balance command
 var accountInfoCmd = &cobra.Command{
 	Use:   "balance",
 	Short: "check information of specified account",
@@ -43,5 +43,4 @@ var accountInfoCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(accountInfoCmd)
-	accountInfoCmd.Flags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get balance on longest chain")
 }

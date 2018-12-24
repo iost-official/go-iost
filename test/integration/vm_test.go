@@ -302,7 +302,7 @@ func Test_Validate(t *testing.T) {
 		_, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
-		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
+		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: abi not defined in source code: c")
 
 		c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
 		So(err, ShouldBeNil)
@@ -469,7 +469,7 @@ func Test_LargeContract(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-		So(r.Status.Message, ShouldEqual, "code size invalid")
+		So(r.Status.Message, ShouldContainSubstring, "code size invalid")
 	})
 }
 
