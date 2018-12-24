@@ -7,6 +7,7 @@ const ADMIN_PERMISSION = "active";
 const PRODUCER_PERMISSION = "active";
 const VOTE_PERMISSION = "active";
 const STAT_PERMISSION = "active";
+const ACTIVE_PERMISSION = "active";
 
 const STATUS_APPLY = 0;
 const STATUS_APPROVED = 1;
@@ -343,6 +344,7 @@ class VoteContract {
     }
 
     // vote, need to pledge token
+    // TODO(ziran): change global vars
     Vote(voter, producer, amount) {
         this._requireAuth(voter, VOTE_PERMISSION);
 
@@ -360,6 +362,7 @@ class VoteContract {
     }
 
     // unvote
+    // TODO(ziran): change global vars
     Unvote(voter, producer, amount) {
         this._requireAuth(voter, VOTE_PERMISSION);
         const voteId = this._getVoteId();
@@ -377,6 +380,16 @@ class VoteContract {
             voteId,
             voter
         ]);
+    }
+
+    // TODO(ziran): topup producer's vote bonus
+    Topup(account) {
+        this._requireAuth(account, ACTIVE_PERMISSION);
+    }
+
+    // TODO(ziran): exchange bonus
+    ExchangeIOST(voter) {
+        this._requireAuth(voter, ACTIVE_PERMISSION);
     }
 
     _getScores() {

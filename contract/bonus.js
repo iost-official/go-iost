@@ -91,6 +91,14 @@ class BonusContract {
         return JSON.parse(val);
     }
 
+    /**
+     * TODO(ziran): top up two bonus pool
+     * @param {string} pbonus - producer bonus
+     * @param {string} vbonus - vote bonus
+     */
+    Topup(pbonus, vbonus) {
+    }
+
     // IssueContribute to witness
     IssueContribute(data) {
         if (!data || !data.parent || !Array.isArray(data.parent)
@@ -99,16 +107,7 @@ class BonusContract {
         }
         this._requireAuth("base.iost", activePermission);
         let witness = data.parent[0];
-        let gasUsage = new BigNumber(data.parent[1]);
-        if (!gasUsage.isFinite()) {
-            gasUsage = new BigNumber(0);
-        }
-        let blockContrib = new BigNumber("900");
-        if (gasUsage.lte(1e8)) {
-            blockContrib = blockContrib.plus(gasUsage.div(1e6));
-        } else {
-            blockContrib = new BigNumber("1000");
-        }
+        let blockContrib = new BigNumber("1000");
         // get account name of the witness
         const acc = this._globalMapGet("vote_producer.iost", "producerKeyToId", witness);
         if (acc) {
@@ -122,6 +121,8 @@ class BonusContract {
     }
 
     // ExchangeIOST with contribute
+    // TODO(ziran): exchange producer bonus and vote bonus
+    //              and Topup half of total bonus to vote_producer.iost
     ExchangeIOST(account, amount) {
         this._requireAuth(account, activePermission);
 

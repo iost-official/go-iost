@@ -112,6 +112,22 @@
             ]
         },
         {
+            "name": "Topup",
+            "args": [
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "ExchangeIOST",
+            "args": [
+                "string"
+            ]
+        },
+        {
             "name": "Stat",
             "args": []
         }
