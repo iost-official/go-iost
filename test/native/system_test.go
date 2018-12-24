@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
-	"github.com/iost-official/go-iost/vm"
 )
 
 var testDataPath = "./test_data/"
@@ -21,7 +21,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
-	var gasLimit = int64(10000)
+	var gasLimit = int64(100000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
 	}

@@ -129,13 +129,12 @@ const _IOSTBinaryOp = function(left, right, op) {
 };
 
 const _IOSTTemplateTag = function(strings, ...keys) {
-    _IOSTInstruction_counter.incr(8);
+    _IOSTInstruction_counter.incr(4);
     let res = new String("");
     for (let i = 0; i < strings.length - 1; i++) {
-        _IOSTInstruction_counter.incr(23);
+        _IOSTInstruction_counter.incr(8);
         res = res.concat(strings[i], keys[i]);
     }
-    _IOSTInstruction_counter.incr(26);
     res = res.concat(strings[strings.length - 1]);
     return res.toString();
 };

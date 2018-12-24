@@ -117,15 +117,19 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 	rtn, cost, err = staticMonitor.Call(i.h, action.Contract, action.ActionName, action.Data)
 
 	if err != nil {
+		actionDesc := action.String()
+		if len(actionDesc) > 100 {
+			actionDesc = actionDesc[:100] + "..."
+		}
 		if strings.Contains(err.Error(), "execution killed") {
 			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
-				Message: err.Error(),
+				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
 			}
 		} else {
 			status = &tx.Status{
 				Code:    tx.ErrorRuntime,
-				Message: err.Error(),
+				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
 			}
 		}
 

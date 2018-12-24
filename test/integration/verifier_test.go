@@ -41,7 +41,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 483400)
+			So(r.GasUsage, ShouldEqual, 713400)
 		})
 
 		Convey("test of token memo", func() {
@@ -79,8 +79,8 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractAhFA9ToFpBVg6hFgyRRf37XYh4w3e3a7TZUxGTSFdawA")
-		So(r.GasUsage, ShouldEqual, 764400)
-		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2697))
+		So(r.GasUsage, ShouldEqual, 3593500)
+		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2694))
 
 		r, err = s.Call(cname, "hello", "[]", acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
@@ -113,17 +113,17 @@ func TestStringGas(t *testing.T) {
 		r, err = s.Call(cname, "f2", "[]", acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 2700, 2900)
+		So(r.GasUsage-gas2, ShouldBeBetweenOrEqual, 1300, 1500)
 
 		r, err = s.Call(cname, "f3", "[]", acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldEqual, 3000)
+		So(r.GasUsage-gas2, ShouldEqual, 1400)
 
 		r, err = s.Call(cname, "f4", "[]", acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, 0)
-		So(r.GasUsage-gas2, ShouldBeGreaterThan, 3000)
+		So(r.GasUsage-gas2, ShouldBeGreaterThan, 1400)
 	})
 }
 
@@ -510,26 +510,26 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 		So(err, ShouldBeNil)
 		var pledgeAmount int64 = 100
 		var initialBalance int64 = 1000
-		var expectedGasAfterPlegde = pledgeAmount*int64(native.GasImmediateReward.ToFloat())
+		var expectedGasAfterPlegde = pledgeAmount * int64(native.GasImmediateReward.ToFloat())
 		pledgeAction := &tx.Action{
 			Contract:   "gas.iost",
 			ActionName: "pledge",
 			Data:       fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc0.ID, pledgeAmount),
 		}
-		var txGasLimit int64 = 10000
+		var txGasLimit int64 = 100000
 		Convey("normal case", func() {
 			s.SetGas(acc0.ID, 0)
-			tx0 := tx.NewTx([]*tx.Action{pledgeAction}, nil, txGasLimit * 100, 100, 10000000, 0)
-			tx0.AmountLimit = append(tx0.AmountLimit, &contract.Amount{Token:"iost", Val:"unlimited"})
+			tx0 := tx.NewTx([]*tx.Action{pledgeAction}, nil, txGasLimit*100, 100, 10000000, 0)
+			tx0.AmountLimit = append(tx0.AmountLimit, &contract.Amount{Token: "iost", Val: "unlimited"})
 			r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			txGasUsage := r.GasUsage/100
+			txGasUsage := r.GasUsage / 100
 			So(s.GetGas(acc0.ID), ShouldEqual, expectedGasAfterPlegde-txGasUsage)
-			So(s.Visitor.TokenBalanceFixed("iost", acc0.ID).ToString(), ShouldEqual, strconv.Itoa(int(initialBalance - pledgeAmount)))
+			So(s.Visitor.TokenBalanceFixed("iost", acc0.ID).ToString(), ShouldEqual, strconv.Itoa(int(initialBalance-pledgeAmount)))
 		})
-		SkipConvey("vm can kill tx if gas limit is not enough(TODO it is not possible in current code)", func(){
+		SkipConvey("vm can kill tx if gas limit is not enough(TODO it is not possible in current code)", func() {
 			s.SetGas(acc0.ID, 0)
 			anotherAction := &tx.Action{
 				Contract:   "token.iost",
@@ -537,7 +537,7 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, 5),
 			}
 			// the first action can run succ
-			tx0 := tx.NewTx([]*tx.Action{pledgeAction, anotherAction}, nil, txGasLimit * 100, 100, 10000000, 0)
+			tx0 := tx.NewTx([]*tx.Action{pledgeAction, anotherAction}, nil, txGasLimit*100, 100, 10000000, 0)
 			r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 			//txGasUsage := r.GasUsage/100
 			s.Visitor.Commit()
@@ -545,7 +545,7 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 			So(r.Status.Message, ShouldContainSubstring, "out of gas")
 			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 			So(s.GetGas(acc0.ID), ShouldEqual, expectedGasAfterPlegde-txGasLimit)
-			So(s.Visitor.TokenBalanceFixed("iost", acc0.ID).ToString(), ShouldEqual, strconv.Itoa(int(initialBalance - pledgeAmount)))
+			So(s.Visitor.TokenBalanceFixed("iost", acc0.ID).ToString(), ShouldEqual, strconv.Itoa(int(initialBalance-pledgeAmount)))
 		})
 	})
 }
@@ -651,15 +651,15 @@ func TestGasLimit2(t *testing.T) {
 			for i := 0; i < 2; i++ {
 				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
 			}
-			trx := tx.NewTx(acts, nil, 1355600, 100, s.Head.Time, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"*", Val:"unlimited"})
+			trx := tx.NewTx(acts, nil, 10000000, 100, s.Head.Time, 0)
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
 			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(1117200))
+			So(r.GasUsage, ShouldEqual, int64(7250200))
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "980")
@@ -675,7 +675,7 @@ func TestGasLimit2(t *testing.T) {
 				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
 			}
 			trx = tx.NewTx(acts, nil, 2000000, 100, s.Head.Time, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token:"*", Val:"unlimited"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
 			r, err = s.CallTx(trx, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()

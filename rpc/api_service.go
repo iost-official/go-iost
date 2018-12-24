@@ -111,7 +111,7 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 // GetTxByHash returns the transaction corresponding to the given hash.
 func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest) (*rpcpb.TransactionResponse, error) {
 	txHashBytes := common.Base58Decode(req.GetHash())
-	status := rpcpb.TransactionResponse_PENDIND
+	status := rpcpb.TransactionResponse_PENDING
 	var (
 		t         *tx.Tx
 		txReceipt *tx.TxReceipt
@@ -153,7 +153,7 @@ func (as *APIService) GetBlockByHash(ctx context.Context, req *rpcpb.GetBlockByH
 		blk *block.Block
 		err error
 	)
-	status := rpcpb.BlockResponse_PENDIND
+	status := rpcpb.BlockResponse_PENDING
 	blk, err = as.bc.GetBlockByHash(hashBytes)
 	if err != nil {
 		status = rpcpb.BlockResponse_IRREVERSIBLE
@@ -175,7 +175,7 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 		blk *block.Block
 		err error
 	)
-	status := rpcpb.BlockResponse_PENDIND
+	status := rpcpb.BlockResponse_PENDING
 	blk, err = as.bc.GetBlockByNumber(number)
 	if err != nil {
 		status = rpcpb.BlockResponse_IRREVERSIBLE

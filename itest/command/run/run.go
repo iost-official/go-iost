@@ -13,6 +13,7 @@ var Command = cli.Command{
 		AccountCaseCommand,
 		TransferCaseCommand,
 		ContractCaseCommand,
+		CommonVoteCaseCommand,
 		VoteCaseCommand,
 		BenchmarkCommand,
 	},
