@@ -2,6 +2,7 @@ package native
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/vm/database"
 
 	"github.com/iost-official/go-iost/common"
@@ -23,7 +24,7 @@ var GasMinPledge = &common.Fixed{Value: GasMinPledgeInIOST * IOSTRatio, Decimal:
 // Then it takes `GasFulfillSeconds` time to reach the limit.
 // Your gas production will stop when it reaches the limit.
 // When you use some gas later, the total amount will be less than the limit,
-// so gas production will resume again util the limit.
+// so gas production will resume again until the limit.
 
 // GasImmediateReward immediate reward per IOST
 var GasImmediateReward = &common.Fixed{Value: 10000 * 100, Decimal: 2}
@@ -239,7 +240,8 @@ var (
 			if unpledgeAmount.Value < minUnpledgeAmount {
 				return nil, cost, fmt.Errorf("min unpledge num is %d", minUnpledgeAmount)
 			}
-			pledged, cost := h.GasManager.GasPledge(gasUser, pledger)
+			pledged, cost0 := h.GasManager.GasPledge(gasUser, pledger)
+			cost.AddAssign(cost0)
 			if pledged.IsZero() {
 				return nil, cost, fmt.Errorf("%v did not pledge for %v", pledger, gasUser)
 			}

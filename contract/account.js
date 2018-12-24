@@ -196,14 +196,14 @@ class Account {
     DropGroup(id, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
-        acc.permissions[group] = undefined;
+        acc.groups[group] = undefined;
         this._saveAccount(acc);
     }
     AssignGroup(id, group, un, weight) {
         this._ra(id);
         this._checkWeight(weight);
         let acc = this._loadAccount(id);
-        const index = Account._find(acc.permissions[group].items, un);
+        const index = Account._find(acc.groups[group].items, un);
         if (index < 0) {
             let len = un.indexOf("@");
             if (len < 0 && un.startsWith("IOST")) {
@@ -229,11 +229,11 @@ class Account {
     RevokeGroup(id, grp, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
-        const index = Account._find(acc.permissions[grp].items, un);
+        const index = Account._find(acc.groups[grp].items, un);
         if (index < 0) {
             throw new Error("item not found");
         } else {
-            acc.permissions[grp].items.splice(index, 1)
+            acc.groups[grp].items.splice(index, 1)
         }
         this._saveAccount(acc);
     }
