@@ -12,10 +12,10 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:          "iwallet",
-	Short:        "IOST client",
-	Long:         `An IOST RPC client`,
-	SilenceUsage: true,
+	Use:           "iwallet",
+	Short:         "IOST client",
+	Long:          `An IOST RPC client`,
+	SilenceUsage:  true,
 	SilenceErrors: true,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
