@@ -938,11 +938,11 @@
     "rpcpbBlockResponseStatus": {
       "type": "string",
       "enum": [
-        "PENDIND",
+        "PENDING",
         "IRREVERSIBLE"
       ],
-      "default": "PENDIND",
-      "description": "The enumeration defines block status.\n\n - PENDIND: pending in block cache\n - IRREVERSIBLE: irreversible"
+      "default": "PENDING",
+      "description": "The enumeration defines block status.\n\n - PENDING: pending in block cache\n - IRREVERSIBLE: irreversible"
     },
     "rpcpbChainInfoResponse": {
       "type": "object",
@@ -1449,12 +1449,12 @@
     "rpcpbTransactionResponseStatus": {
       "type": "string",
       "enum": [
-        "PENDIND",
+        "PENDING",
         "PACKED",
         "IRREVERSIBLE"
       ],
-      "default": "PENDIND",
-      "description": "The enumeration defines transaction status.\n\n - PENDIND: pending in transaction pool\n - PACKED: packed in a block that has not been confirmed\n - IRREVERSIBLE: packed in a block that is irreversible"
+      "default": "PENDING",
+      "description": "The enumeration defines transaction status.\n\n - PENDING: pending in transaction pool\n - PACKED: packed in a block that has not been confirmed\n - IRREVERSIBLE: packed in a block that is irreversible"
     },
     "rpcpbTxReceipt": {
       "type": "object",

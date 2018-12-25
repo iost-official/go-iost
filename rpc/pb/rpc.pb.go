@@ -84,7 +84,7 @@ type TransactionResponse_Status int32
 
 const (
 	// pending in transaction pool
-	TransactionResponse_PENDIND TransactionResponse_Status = 0
+	TransactionResponse_PENDING TransactionResponse_Status = 0
 	// packed in a block that has not been confirmed
 	TransactionResponse_PACKED TransactionResponse_Status = 1
 	// packed in a block that is irreversible
@@ -92,13 +92,13 @@ const (
 )
 
 var TransactionResponse_Status_name = map[int32]string{
-	0: "PENDIND",
+	0: "PENDING",
 	1: "PACKED",
 	2: "IRREVERSIBLE",
 }
 
 var TransactionResponse_Status_value = map[string]int32{
-	"PENDIND":      0,
+	"PENDING":      0,
 	"PACKED":       1,
 	"IRREVERSIBLE": 2,
 }
@@ -148,18 +148,18 @@ type BlockResponse_Status int32
 
 const (
 	// pending in block cache
-	BlockResponse_PENDIND BlockResponse_Status = 0
+	BlockResponse_PENDING BlockResponse_Status = 0
 	// irreversible
 	BlockResponse_IRREVERSIBLE BlockResponse_Status = 1
 )
 
 var BlockResponse_Status_name = map[int32]string{
-	0: "PENDIND",
+	0: "PENDING",
 	1: "IRREVERSIBLE",
 }
 
 var BlockResponse_Status_value = map[string]int32{
-	"PENDIND":      0,
+	"PENDING":      0,
 	"IRREVERSIBLE": 1,
 }
 
@@ -918,7 +918,7 @@ func (m *TransactionResponse) GetStatus() TransactionResponse_Status {
 	if m != nil {
 		return m.Status
 	}
-	return TransactionResponse_PENDIND
+	return TransactionResponse_PENDING
 }
 
 func (m *TransactionResponse) GetTransaction() *Transaction {
@@ -1356,7 +1356,7 @@ func (m *BlockResponse) GetStatus() BlockResponse_Status {
 	if m != nil {
 		return m.Status
 	}
-	return BlockResponse_PENDIND
+	return BlockResponse_PENDING
 }
 
 func (m *BlockResponse) GetBlock() *Block {

@@ -46,6 +46,18 @@
                 "token": "*",
                 "val": "unlimited"
             }]
+        },
+        {
+            "name": "lend",
+            "args": [
+                "string",
+                "string",
+                "number"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
         }
     ]
 }
