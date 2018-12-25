@@ -59,11 +59,11 @@ func NewBlockChain(path string) (Chain, error) {
 	} else {
 		lengthByte := common.Int64ToBytes(0)
 		if err := levelDB.Put(blockLength, lengthByte); err != nil {
-			err = errors.New("fail to put blocklength")
+			return nil, errors.New("fail to put blocklength")
 		}
 		txTotalByte := common.Int64ToBytes(0)
 		if err := levelDB.Put(blockLength, txTotalByte); err != nil {
-			err = errors.New("fail to put tx total")
+			return nil, errors.New("fail to put tx total")
 		}
 	}
 	BC := &BlockChain{
