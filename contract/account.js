@@ -95,9 +95,11 @@ class Account {
             threshold: 1,
         };
         this._saveAccount(account, blockchain.publisher());
+        /*
         if (storage.globalMapHas("vote_producer.iost", "producerTable", blockchain.publisher())) {
             blockchain.callWithAuth("gas.iost", "reward", JSON.stringify([blockchain.publisher(), "30000"]));
         }
+        */
     }
 
     UpdateReferrer(id, referrer) {

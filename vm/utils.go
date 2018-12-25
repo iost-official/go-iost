@@ -31,7 +31,7 @@ func CheckTxGasLimitValid(t *tx.Tx, currentGas *common.Fixed, dbVisitor *databas
 	if err != nil {
 		return fmt.Errorf("invalid gas pledge amount %v %v", err, args[2].(string))
 	}
-	if pledgeAmount.LessThan(native.GasMinPledgeOfUser) {
+	if pledgeAmount.LessThan(native.GasMinPledgePerAction) {
 		return fmt.Errorf("invalid gas pledge amount %v %v", err, args[2].(string))
 	}
 	if balance.LessThan(pledgeAmount) {

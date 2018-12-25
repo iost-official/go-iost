@@ -26,10 +26,10 @@ var GasMinPledgePerAction = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
 // so gas production will resume again util the limit.
 
 // GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.Fixed{Value: 200000 * 100, Decimal: 2}
+var GasImmediateReward = &common.Fixed{Value: 100000 * 100, Decimal: 2}
 
 // GasLimit gas limit per IOST
-var GasLimit = &common.Fixed{Value: 600000 * 100, Decimal: 2}
+var GasLimit = &common.Fixed{Value: 300000 * 100, Decimal: 2}
 
 // GasFulfillSeconds it takes 2 days to fulfill the gas buffer.
 const GasFulfillSeconds int64 = 2 * 24 * 3600
@@ -282,7 +282,7 @@ var (
 			if err != nil {
 				return nil, cost, fmt.Errorf("invalid reward amount %v", err)
 			}
-			cost0 = h.ChangeTGas(user, f)
+			cost0 = h.ChangeTGas(user, f, true)
 			cost.AddAssign(cost0)
 			tgas, cost := h.TGas(user)
 			cost.AddAssign(cost)
@@ -311,14 +311,18 @@ var (
 			if err != nil {
 				return nil, cost, fmt.Errorf("invalid gas amount %v", err)
 			}
-			tGas, cost0 := h.TGas(from)
-			cost.AddAssign(cost0)
-			if tGas.LessThan(f) {
-				return nil, cost, fmt.Errorf("transferable gas not enough %v < %v", tGas.ToString(), f.ToString())
+			minTransferAmount := &common.Fixed{Value: 100 * 100, Decimal: database.GasDecimal}
+			if f.LessThan(minTransferAmount) {
+				return nil, cost, fmt.Errorf("min transfer amount is %v", minTransferAmount.ToString())
 			}
-			cost0 = h.ChangeTGas(from, f.Neg())
+			quota, cost0 := h.TGasQuota(from)
 			cost.AddAssign(cost0)
-			cost0 = h.ChangeTGas(to, f)
+			if quota.LessThan(f) {
+				return nil, cost, fmt.Errorf("transferable gas not enough %v < %v", quota.ToString(), f.ToString())
+			}
+			cost0 = h.ChangeTGas(from, f.Neg(), true)
+			cost.AddAssign(cost0)
+			cost0 = h.ChangeTGas(to, f, false)
 			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},

@@ -132,8 +132,8 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, 
 					ilog.Fatalf("invalid account %v", payer)
 				}
 				if acc.Referrer != "" && t.IsProducer(acc.Referrer) {
-					reward := gas.TimesF(0.15)
-					t.h.DB().ChangeTGas(acc.Referrer, reward)
+					reward := gas.TimesF(0.1)
+					t.h.ChangeTGas(acc.Referrer, reward, true)
 				}
 			}
 		}

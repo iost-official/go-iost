@@ -18,6 +18,8 @@ const (
 	GasPledgeKey = "gp"
 	// TransferableGasKey :
 	TransferableGasKey = "tg"
+	// TransferableGasQuotaKey :
+	TransferableGasQuotaKey = "tq"
 )
 
 // decimals of gas
