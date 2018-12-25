@@ -17,10 +17,12 @@ type BlockChain struct { //nolint:golint
 	blockChainDB *kv.Storage
 	rw           sync.RWMutex
 	length       int64
+	txTotal      int64
 }
 
 var (
 	blockLength       = []byte("BlockLength")
+	blockTxTotal      = []byte("BlockTxTotal")
 	blockNumberPrefix = []byte("n")
 	blockPrefix       = []byte("H")
 	txPrefix          = []byte("t")      // txPrefix + tx hash -> block hash + tx hash
@@ -38,6 +40,7 @@ func NewBlockChain(path string) (Chain, error) {
 		return nil, fmt.Errorf("fail to init blockchaindb, %v", err)
 	}
 	var length int64
+	var txTotal int64
 	ok, err := levelDB.Has(blockLength)
 	if err != nil {
 		return nil, fmt.Errorf("fail to check has(blocklength), %v", err)
@@ -48,14 +51,26 @@ func NewBlockChain(path string) (Chain, error) {
 			return nil, errors.New("fail to get blocklength")
 		}
 		length = common.BytesToInt64(lengthByte)
+		txTotalByte, err := levelDB.Get(blockTxTotal)
+		if err != nil || len(txTotalByte) == 0 {
+			return nil, errors.New("fail to get tx total")
+		}
+		txTotal = common.BytesToInt64(txTotalByte)
 	} else {
 		lengthByte := common.Int64ToBytes(0)
-		tempErr := levelDB.Put(blockLength, lengthByte)
-		if tempErr != nil {
-			err = errors.New("fail to put blocklength")
+		if err := levelDB.Put(blockLength, lengthByte); err != nil {
+			return nil, errors.New("fail to put blocklength")
+		}
+		txTotalByte := common.Int64ToBytes(0)
+		if err := levelDB.Put(blockLength, txTotalByte); err != nil {
+			return nil, errors.New("fail to put tx total")
 		}
 	}
-	BC := &BlockChain{blockChainDB: levelDB, length: length}
+	BC := &BlockChain{
+		blockChainDB: levelDB,
+		length:       length,
+		txTotal:      txTotal,
+	}
 	BC.CheckLength()
 	return BC, err
 }
@@ -67,11 +82,25 @@ func (bc *BlockChain) SetLength(i int64) {
 	bc.rw.Unlock()
 }
 
+// SetTxTotal sets blockchain's tx total.
+func (bc *BlockChain) SetTxTotal(i int64) {
+	bc.rw.Lock()
+	bc.txTotal = i
+	bc.rw.Unlock()
+}
+
 // Length return length of block chain
 func (bc *BlockChain) Length() int64 {
 	bc.rw.RLock()
 	defer bc.rw.RUnlock()
 	return bc.length
+}
+
+// TxTotal return tx total of block chain
+func (bc *BlockChain) TxTotal() int64 {
+	bc.rw.RLock()
+	defer bc.rw.RUnlock()
+	return bc.txTotal
 }
 
 // Push save the block to database
@@ -80,8 +109,10 @@ func (bc *BlockChain) Push(block *Block) error {
 	if err != nil {
 		return errors.New("fail to begin batch")
 	}
+
 	hash := block.HeadHash()
 	number := block.Head.Number
+	txTotal := bc.TxTotal()
 	bc.blockChainDB.Put(append(blockNumberPrefix, common.Int64ToBytes(number)...), hash)
 	blockByte, err := block.EncodeM()
 	if err != nil {
@@ -89,6 +120,7 @@ func (bc *BlockChain) Push(block *Block) error {
 	}
 	bc.blockChainDB.Put(append(blockPrefix, hash...), blockByte)
 	bc.blockChainDB.Put(blockLength, common.Int64ToBytes(number+1))
+	bc.blockChainDB.Put(blockTxTotal, common.Int64ToBytes(txTotal+int64(len(block.Txs))))
 	for i, t := range block.Txs {
 		tHash := t.Hash()
 		txBytes := t.Encode()
@@ -118,6 +150,7 @@ func (bc *BlockChain) Push(block *Block) error {
 		return fmt.Errorf("fail to put block, err:%s", err)
 	}
 	bc.SetLength(number + 1)
+	bc.SetTxTotal(txTotal + int64(len(block.Txs)))
 	return nil
 }
 
@@ -323,6 +356,11 @@ func (bc *BlockChain) GetReceiptByTxHash(hash []byte) (*tx.TxReceipt, error) {
 // HasReceipt checks if database has receipt.
 func (bc *BlockChain) HasReceipt(hash []byte) (bool, error) {
 	return bc.blockChainDB.Has(append(receiptPrefix, hash...))
+}
+
+// Size returns the blockchain db size
+func (bc *BlockChain) Size() (int64, error) {
+	return bc.blockChainDB.Size()
 }
 
 // Close is close database
