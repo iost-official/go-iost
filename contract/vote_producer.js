@@ -14,6 +14,9 @@ const STATUS_APPROVED = 1;
 const STATUS_UNAPPLY = 2;
 const STATUS_UNAPPLY_APPROVED = 3;
 
+const userVoteMaskPrefix = "u_";
+const producerMaskTable = "prodMask";
+
 class VoteContract {
     init() {
         this._put("currentProducerList", []);
@@ -343,6 +346,29 @@ class VoteContract {
         this._mapPut("producerTable", account, pro, account);
     }
 
+    _getProducerMask(producer) {
+        let producerMask = this._mapGet(producerMaskTable, producer);
+        if (!producerMask) {
+            producerMask = new Float64(0).toFixed();
+        }
+        return new Float64(producerMask);
+    }
+
+    _getVoterMask(voter, producer) {
+        let voterMask = this._mapGet(userVoteMaskPrefix + producer, voter);
+        if (!voterMask) {
+            voterMask = new Float64(0).toFixed();
+        }
+        return new Float64(voterMask);
+    }
+
+    _updateVoterMask(voter, producer, amount) {
+        let producerMask = this._getProducerMask(producer);
+        let voterMask = this._getVoterMask(voter, producer);
+        voterMask = voterMask.plus(producerMask.times(new Float64(amount)));
+        this._mapPut(userVoteMaskPrefix + producer, voter, voterMask.toFixed(), producer);
+    }
+
     // vote, need to pledge token
     // TODO(ziran): change global vars
     Vote(voter, producer, amount) {
@@ -359,6 +385,8 @@ class VoteContract {
             producer,
             amount,
         ]);
+
+        this._updateMask(voter, producer, amount);
     }
 
     // unvote
@@ -372,6 +400,8 @@ class VoteContract {
             producer,
             amount,
         ]);
+
+        this._updateMask(voter, producer, "-" + amount);
     }
 
     GetVote(voter) {
@@ -383,13 +413,42 @@ class VoteContract {
     }
 
     // TODO(ziran): topup producer's vote bonus
-    Topup(account) {
+    Topup(account, amount) {
         this._requireAuth(account, ACTIVE_PERMISSION);
+        const voteId = this._getVoteId();
+        let votes = new Float64(this._call("vote.iost", "GetOption", [
+           voteId,
+           account,
+        ]).votes);
+        if (!votes.gt(new Float64(0))) {
+           throw new Error("empty votes"); // TODO return?
+        }
+
+        let producerMask = this._getProducerMask(account);
+        producerMask = producerMask.plus(new Float64(amount).div(votes));
+        this._mapPut(producerMaskTable, account, producerMask.toFixed(), account);
     }
 
     // TODO(ziran): exchange bonus
     ExchangeIOST(voter) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
+        const voteId = this._getVoteId();
+        let userVotes = this._call("vote.iost", "GetVote", [
+           voteId,
+           voter,
+        ]);
+
+        let earnings = new Float64(0);
+        for (const v in userVotes) {
+           let producerMask = this._getProducerMask(v.option);
+           let voterMask = this._getVoterMask(voter, v.option);
+           let earning = earnings.plus(producerMask.times(new Float64(v.votes)).minus(voterMask));
+           earnings = earnings.plus(earning);
+           voterMask = voterMask.plus(earning);
+           this._mapPut(userVoteMaskPrefix + v.option, voter, voterMask.toFixed(), v.option);
+        }
+
+        // TODO transfer earnings to voter
     }
 
     _getScores() {
