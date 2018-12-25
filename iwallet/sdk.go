@@ -420,9 +420,14 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 // CreateNewAccount ...
 func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*rpcpb.Action
-	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
+	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v", ""]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
+	}
+	var registerInitialPledge int64 = 10
+	initialGasPledge -= registerInitialPledge
+	if initialGasPledge < 0 {
+		return fmt.Errorf("min gas pledge is 10")
 	}
 	if initialGasPledge > 0 {
 		acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))

@@ -51,7 +51,7 @@ func init() {
 	gasABIs.Register(constructor)
 	gasABIs.Register(pledgeGas)
 	gasABIs.Register(unpledgeGas)
-	gasABIs.Register(rewardTGas)
+	//gasABIs.Register(rewardTGas)
 	gasABIs.Register(transferTGas)
 }
 
@@ -261,32 +261,6 @@ var (
 				return nil, cost, err
 			}
 			return []interface{}{}, cost, nil
-		},
-	}
-	rewardTGas = &abi{
-		name: "reward",
-		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			cost = contract.Cost0()
-			//fmt.Println("context:" + h.Context().String())
-			ok, cost0 := h.RequireAuth("auth.iost", "active")
-			cost.AddAssign(cost0)
-			if !ok {
-				return nil, cost, fmt.Errorf("reward can only be called within auth.iost")
-			}
-			user := args[0].(string)
-			if !h.IsValidAccount(user) {
-				return nil, cost, fmt.Errorf("invalid user name %v", args[1])
-			}
-			f, err := common.NewFixed(args[1].(string), database.GasDecimal)
-			if err != nil {
-				return nil, cost, fmt.Errorf("invalid reward amount %v", err)
-			}
-			cost0 = h.ChangeTGas(user, f, true)
-			cost.AddAssign(cost0)
-			tgas, cost := h.TGas(user)
-			cost.AddAssign(cost)
-			return []interface{}{tgas.ToString()}, cost, nil
 		},
 	}
 	transferTGas = &abi{

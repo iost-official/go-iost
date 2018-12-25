@@ -333,6 +333,8 @@ func TestGas_TGas(t *testing.T) {
 		panic(err)
 	}
 	s.SetContract(ca)
+	// deploy issue.iost
+	setNonNativeContract(s, "issue.iost", "issue.js", ContractPath)
 	s.SetContract(native.GasABI())
 	acc := prepareAuth(t, s)
 	err = createToken(t, s, acc)
@@ -343,10 +345,12 @@ func TestGas_TGas(t *testing.T) {
 	otherID := "lispc0"
 	s.Visitor.MPut("vote_producer.iost-producerTable", acc.ID, "dummy")
 	Convey("test tgas", t, func() {
-		Convey("account referrer should got 30000 tgas", func() {
-			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, otherKp.ID, otherKp.ID}), acc.ID, acc.KeyPair)
+		Convey("account referrer should got 3 IOST", func() {
+			oldIOST := s.Visitor.TokenBalanceFixed("iost", acc.ID).Value
+			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, otherKp.ID, otherKp.ID, acc.ID}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
+			So(s.Visitor.TokenBalanceFixed("iost", acc.ID).Value, ShouldEqual, oldIOST - 7 * native.IOSTRatio)
 			SkipSo(s.Visitor.TGas(acc.ID).ToString(), ShouldEqual, "30000")
 			r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc.ID, otherID, "199"}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
@@ -360,17 +364,19 @@ func TestGas_TGas(t *testing.T) {
 			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, float64(r.GasUsage)/100*0.1)
 		})
 		Convey("tgas can be transferred once and only once", func() {
+			var testValue int64 = 100
+			var testValueStr = strconv.Itoa(int(testValue))
 			oldTGas := s.Visitor.TGas(acc.ID).ToFloat()
-			r, err := s.Call("gas.iost", "transfer", array2json([]interface{}{acc.ID, otherID, "100"}), acc.ID, acc.KeyPair)
+			r, err := s.Call("gas.iost", "transfer", array2json([]interface{}{acc.ID, otherID, testValueStr}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TGas(otherID).ToFloat(), ShouldAlmostEqual, 100)
-			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas - 100)
-			r, err = s.Call("gas.iost", "transfer", array2json([]interface{}{otherID, acc.ID, "100"}), otherID, otherKp)
+			So(s.Visitor.TGas(otherID).ToFloat(), ShouldAlmostEqual, testValue)
+			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas - float64(testValue))
+			r, err = s.Call("gas.iost", "transfer", array2json([]interface{}{otherID, acc.ID, testValueStr}), otherID, otherKp)
 			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldContainSubstring, "transferable gas not enough 0 < 100")
-			So(s.Visitor.TGas(otherID).ToFloat(), ShouldAlmostEqual, 100)
-			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas - 100 + float64(r.GasUsage)/100*0.1)
+			So(r.Status.Message, ShouldContainSubstring, "transferable gas not enough 0 < " + testValueStr)
+			So(s.Visitor.TGas(otherID).ToFloat(), ShouldAlmostEqual, testValue)
+			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas - float64(testValue) + float64(r.GasUsage)/100*0.1)
 		})
 		Convey("when pgas is used up, tgas will be used", func() {
 			var gas int64 = 123

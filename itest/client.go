@@ -20,7 +20,7 @@ var (
 	Timeout    = (90 + 30) * time.Second
 	InitToken  = "iost"
 	InitAmount = "1000000"
-	InitPledge = "1000000"
+	InitPledge = "999990"
 	InitRAM    = "1000000"
 )
 

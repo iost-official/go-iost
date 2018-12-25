@@ -4,7 +4,11 @@
   "abi": [
     {
       "name": "SignUp",
-      "args": ["string", "string", "string"]
+      "args": ["string", "string", "string", "string"],
+      "amountLimit": [{
+          "token": "iost",
+          "val": "10"
+      }]
     },
     {
       "name": "AddPermission",
@@ -45,10 +49,6 @@
     {
       "name": "RevokePermissionInGroup",
       "args": ["string", "string", "string"]
-    },
-    {
-      "name": "UpdateReferrer",
-      "args": ["string", "string"]
     }
   ]
 }
