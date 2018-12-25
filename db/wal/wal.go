@@ -818,3 +818,10 @@ func (w *WAL) CleanDir() error {
 	}
 	return nil
 }
+
+// Size return WAL used data size include current tmp file.
+func (w *WAL) Size() uint64{
+	size := uint64(len(w.files)) * uint64(SegmentSizeBytes)
+	return size
+}
+
