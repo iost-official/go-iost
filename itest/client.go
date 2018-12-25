@@ -163,7 +163,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	action1 := tx.NewAction(
 		"auth.iost",
 		"SignUp",
-		fmt.Sprintf(`["%v", "%v", "%v"]`, name, key.ID, key.ID),
+		fmt.Sprintf(`["%v", "%v", "%v", ""]`, name, key.ID, key.ID),
 	)
 
 	action2 := tx.NewAction(
