@@ -52,7 +52,6 @@ type BaseVariableImpl struct {
 }
 
 // New return a BaseVariable instance
-// nolint: gocyclo
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	blockChain, err := block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")
 	if err != nil {

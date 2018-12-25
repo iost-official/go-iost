@@ -176,6 +176,19 @@ func (mr *MockMVCCDBMockRecorder) Rollback() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockMVCCDB)(nil).Rollback))
 }
 
+// Size mocks base method
+func (m *MockMVCCDB) Size() (int64, error) {
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Size indicates an expected call of Size
+func (mr *MockMVCCDBMockRecorder) Size() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockMVCCDB)(nil).Size))
+}
+
 // Tag mocks base method
 func (m *MockMVCCDB) Tag(arg0 string) {
 	m.ctrl.Call(m, "Tag", arg0)

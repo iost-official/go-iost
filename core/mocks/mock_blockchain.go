@@ -207,6 +207,19 @@ func (mr *MockChainMockRecorder) Push(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockChain)(nil).Push), arg0)
 }
 
+// Size mocks base method
+func (m *MockChain) Size() (int64, error) {
+	ret := m.ctrl.Call(m, "Size")
+	ret0, _ := ret[0].(int64)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Size indicates an expected call of Size
+func (mr *MockChainMockRecorder) Size() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockChain)(nil).Size))
+}
+
 // Top mocks base method
 func (m *MockChain) Top() (*block.Block, error) {
 	ret := m.ctrl.Call(m, "Top")
@@ -218,4 +231,16 @@ func (m *MockChain) Top() (*block.Block, error) {
 // Top indicates an expected call of Top
 func (mr *MockChainMockRecorder) Top() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Top", reflect.TypeOf((*MockChain)(nil).Top))
+}
+
+// TxTotal mocks base method
+func (m *MockChain) TxTotal() int64 {
+	ret := m.ctrl.Call(m, "TxTotal")
+	ret0, _ := ret[0].(int64)
+	return ret0
+}
+
+// TxTotal indicates an expected call of TxTotal
+func (mr *MockChainMockRecorder) TxTotal() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "TxTotal", reflect.TypeOf((*MockChain)(nil).TxTotal))
 }
