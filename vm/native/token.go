@@ -17,16 +17,17 @@ var tokenABIs *abiSet
 
 // const prefix
 const (
-	TokenInfoMapPrefix    = "TI"
-	TokenBalanceMapPrefix = "TB"
-	TokenFreezeMapPrefix  = "TF"
-	IssuerMapField        = "issuer"
-	SupplyMapField        = "supply"
-	TotalSupplyMapField   = "totalSupply"
-	CanTransferMapField   = "canTransfer"
-	DefaultRateMapField   = "defaultRate"
-	DecimalMapField       = "decimal"
-	FullNameMapField      = "fullName"
+	TokenInfoMapPrefix            = "TI"
+	TokenBalanceMapPrefix         = "TB"
+	TokenFreezeMapPrefix          = "TF"
+	IssuerMapField                = "issuer"
+	SupplyMapField                = "supply"
+	TotalSupplyMapField           = "totalSupply"
+	CanTransferMapField           = "canTransfer"
+	OnlyIssuerCanTransferMapField = "onlyIssuerCanTransfer"
+	DefaultRateMapField           = "defaultRate"
+	DecimalMapField               = "decimal"
+	FullNameMapField              = "fullName"
 )
 
 func init() {
@@ -225,6 +226,7 @@ var (
 			defaultRate := "1.0"
 			fullName := tokenSym
 			cost.AddAssign(host.CommonOpCost(3))
+			onlyIssuerCanTransfer := false
 			if tmp, ok := config[DecimalMapField]; ok {
 				if _, ok = tmp.(float64); !ok {
 					return nil, cost, errors.New("decimal in config should be number")
@@ -235,6 +237,12 @@ var (
 				canTransfer, ok = tmp.(bool)
 				if !ok {
 					return nil, cost, errors.New("canTransfer in config should be bool")
+				}
+			}
+			if tmp, ok := config[OnlyIssuerCanTransferMapField]; ok {
+				onlyIssuerCanTransfer, ok = tmp.(bool)
+				if !ok {
+					return nil, cost, errors.New("onlyIssuerCanTransfer in config should be bool")
 				}
 			}
 			if tmp, ok := config[DefaultRateMapField]; ok {
@@ -290,6 +298,8 @@ var (
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, SupplyMapField, int64(0), issuer)
 			cost.AddAssign(cost0)
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, CanTransferMapField, canTransfer, issuer)
+			cost.AddAssign(cost0)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField, onlyIssuerCanTransfer, issuer)
 			cost.AddAssign(cost0)
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, DefaultRateMapField, defaultRate, issuer)
 			cost.AddAssign(cost0)
@@ -423,6 +433,17 @@ var (
 			if !(canTransfer.(bool)) {
 				return nil, cost, host.ErrTokenNoTransfer
 			}
+			onlyIssuerCanTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField)
+			cost.AddAssign(cost0)
+			if onlyIssuerCanTransfer.(bool) {
+				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
+				cost.AddAssign(cost0)
+				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				cost.AddAssign(cost0)
+				if !ok {
+					return nil, cost, fmt.Errorf("transfer need issuer permission")
+				}
+			}
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas
 			}
@@ -520,6 +541,17 @@ var (
 			cost.AddAssign(cost0)
 			if !(canTransfer.(bool)) {
 				return nil, cost, host.ErrTokenNoTransfer
+			}
+			onlyIssuerCanTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField)
+			cost.AddAssign(cost0)
+			if onlyIssuerCanTransfer.(bool) {
+				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
+				cost.AddAssign(cost0)
+				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				cost.AddAssign(cost0)
+				if !ok {
+					return nil, cost, fmt.Errorf("transfer need issuer permission")
+				}
 			}
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas

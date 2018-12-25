@@ -14,8 +14,8 @@ type RAMHandler struct {
 }
 
 const (
-	ramFeeRate          = 0.01
-	ramPriceCoefficient = 30 * 128 * 1024 * 1024
+	ramFeeRate = 0.02
+	ramF       = 1.0
 )
 
 func (r *RAMHandler) getInt64(k string) int64 {
@@ -61,10 +61,10 @@ func (r *RAMHandler) contractBalance() float64 {
 
 // BuyPrice ...
 func (r *RAMHandler) BuyPrice() float64 {
-	return (1 + ramFeeRate) * ramPriceCoefficient / float64(r.LeftRAM())
+	return (1 + ramFeeRate) * ramF * r.contractBalance() / float64(r.LeftRAM())
 }
 
 // SellPrice ...
 func (r *RAMHandler) SellPrice() float64 {
-	return r.contractBalance() / float64(r.UsedRAM())
+	return ramF * r.contractBalance() / float64(r.LeftRAM())
 }
