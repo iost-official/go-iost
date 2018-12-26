@@ -93,6 +93,28 @@ class IssueContract {
         storage.mapDel(k, f);
     }
 
+    _issueIOST(account, amount) {
+        const amountStr = ((typeof amount === "string") ? amount : amount.toFixed(this._get("IOSTDecimal")));
+        const args = ["iost", account, amountStr];
+        console.log("issueiost", args)
+        this._call("token.iost", "issue", args);
+    }
+
+    IssueIOSTTo(account, amount) {
+        const whitelist = ["auth.iost"];
+        let auth = false;
+        for (const c of whitelist) {
+            if (blockchain.requireAuth(c, "active")) {
+                auth = true;
+                break
+            }
+        }
+        if (!auth) {
+            throw new Error("issue iost permission denied")
+        }
+        this._issueIOST(account, amount)
+    }
+
     // IssueIOST to bonus.iost and iost foundation
     IssueIOST() {
         // TODO(hudongwen): multi issuer
@@ -119,21 +141,9 @@ class IssueContract {
         const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
         const issueAmount = supply.multi(iostIssueRate).multi(gap).div(oneYearNano);
         const bonus = issueAmount.multi("0.33");
-        this._call("token.iost", "issue", [
-            "iost",
-            foundationAcc,
-            issueAmount.minus(bonus).minus(bonus).toFixed(decimal)
-        ]);
-        this._call("token.iost", "issue", [
-            "iost",
-            "bonus.iost",
-            bonus.toFixed(decimal)
-        ]);
-        this._call("token.iost", "issue", [
-            "iost",
-            "vote_producer.iost",
-            bonus.toFixed(decimal)
-        ]);
+        this._issueIOST(foundationAcc, issueAmount.minus(bonus).minus(bonus).toFixed(decimal));
+        this._issueIOST("bonus.iost", bonus.toFixed(decimal));
+        this._issueIOST("vote_producer.iost", bonus.toFixed(decimal));
         this._call("vote_producer.iost", "TopupProducer", [
             bonus.toFixed(decimal)
         ]);

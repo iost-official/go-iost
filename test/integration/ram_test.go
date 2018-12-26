@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"fmt"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	"testing"
@@ -69,7 +68,6 @@ func TestRAM(t *testing.T) {
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", ramContractName)
 				s.Visitor.SetTokenBalance("iost", ramContractName, 0)
 				r, err := s.Call(ramContractName, "buy", array2json([]interface{}{acc.ID, acc.ID, buyAmount}), acc.ID, acc.KeyPair)
-				fmt.Println("rrrr", r.String())
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", acc.ID)
@@ -163,6 +161,9 @@ func TestRAM2(t *testing.T) {
 		r, err = s.Call(ramContractName, "buy", array2json([]interface{}{acc3.ID, acc3.ID, 300}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldEqual, "")
+		r, err = s.Call("token.iost", "transfer", array2json([]interface{}{"ram", acc3.ID, acc2.ID, "200", ""}), acc3.ID, acc3.KeyPair)
+		So(err, ShouldEqual, nil)
+		So(r.Status.Message, ShouldContainSubstring, "transfer need issuer permission")
 		r, err = s.Call(ramContractName, "lend", array2json([]interface{}{acc2.ID, acc3.ID, 500}), acc2.ID, acc2.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldEqual, "")
