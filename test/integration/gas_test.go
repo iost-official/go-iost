@@ -347,7 +347,7 @@ func TestGas_TGas(t *testing.T) {
 	Convey("test tgas", t, func() {
 		Convey("account referrer should got 3 IOST", func() {
 			oldIOST := s.Visitor.TokenBalanceFixed("iost", acc.ID).Value
-			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, otherKp.ID, otherKp.ID, acc.ID}), acc.ID, acc.KeyPair)
+			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, otherKp.ID, otherKp.ID}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalanceFixed("iost", acc.ID).Value, ShouldEqual, oldIOST - 7 * native.IOSTRatio)

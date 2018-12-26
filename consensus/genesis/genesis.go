@@ -82,18 +82,18 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "auth.iost", code.B64Encode())))
 
 	// new account
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v", ""]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
 	// new account
 	foundationInfo := gConf.FoundationInfo
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v", ""]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
 	// init account
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v", ""]`, "inituser", keyPair.ID, keyPair.ID)))
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "inituser", keyPair.ID, keyPair.ID)))
 
 	for _, v := range witnessInfo {
-		acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v", ""]`, v.ID, v.Owner, v.Active)))
+		acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
 	}
 	invalidPubKey := "11111111111111111111111111111111"
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v", ""]`, "deadaddr", invalidPubKey, invalidPubKey)))
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "deadaddr", invalidPubKey, invalidPubKey)))
 
 	// deploy bonus.iost
 	code, err = compile("bonus.iost", gConf.ContractPath, "bonus.js")

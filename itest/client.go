@@ -20,7 +20,7 @@ var (
 	Timeout    = (90 + 30) * time.Second
 	InitToken  = "iost"
 	InitAmount = "1000000"
-	InitPledge = "999990"
+	InitPledge = "1000000"
 	InitRAM    = "1000000"
 )
 
@@ -164,7 +164,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	action1 := tx.NewAction(
 		"auth.iost",
 		"SignUp",
-		fmt.Sprintf(`["%v", "%v", "%v", ""]`, name, key.ID, key.ID),
+		fmt.Sprintf(`["%v", "%v", "%v"]`, name, key.ID, key.ID),
 	)
 
 	action2 := tx.NewAction(

@@ -19,7 +19,7 @@ var GasMinPledgeOfUser = &common.Fixed{Value: 10 * IOSTRatio, Decimal: 8}
 var GasMinPledgePerAction = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
 
 // Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
-// Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
+// Then gas will be generated at a rate of `GasIncreaseRate` gas per second.
 // Then it takes `GasFulfillSeconds` time to reach the limit.
 // Your gas production will stop when it reaches the limit.
 // When you use some gas later, the total amount will be less than the limit,

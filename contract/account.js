@@ -64,11 +64,12 @@ class Account {
         }
     }
 
-    SignUp(id, owner, active, referrer) {
+    SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
         }
         this._checkIdValid(id);
+        const referrer = blockchain.publisher();
         let account = {};
         account.id = id;
         account.referrer = referrer;

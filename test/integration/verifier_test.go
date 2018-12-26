@@ -599,7 +599,7 @@ func TestAuthority(t *testing.T) {
 		err = createToken(t, s, acc)
 		So(err, ShouldBeNil)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID, ""}), acc.ID, acc.KeyPair)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
@@ -609,7 +609,7 @@ func TestAuthority(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 
-		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID, ""}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
 	})
