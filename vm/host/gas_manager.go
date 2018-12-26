@@ -181,7 +181,7 @@ func (g *GasManager) ChangeTGasQuota(name string, delta *common.Fixed) contract.
 // GasPledge ...
 func (g *GasManager) GasPledge(name string, pledger string) (*common.Fixed, contract.Cost) {
 	finalCost := contract.Cost0()
-	ok, cost := g.h.MapHas(name+database.GasPledgeKey, pledger)
+	ok, cost := g.h.MapHas(pledger+database.GasPledgeKey, name)
 	finalCost.AddAssign(cost)
 	if !ok {
 		return &common.Fixed{
@@ -189,7 +189,7 @@ func (g *GasManager) GasPledge(name string, pledger string) (*common.Fixed, cont
 			Decimal: 8,
 		}, finalCost
 	}
-	result, cost := g.h.MapGet(name+database.GasPledgeKey, pledger)
+	result, cost := g.h.MapGet(pledger+database.GasPledgeKey, name)
 	finalCost.AddAssign(cost)
 	value, ok := result.(*common.Fixed)
 	if !ok {
@@ -200,7 +200,7 @@ func (g *GasManager) GasPledge(name string, pledger string) (*common.Fixed, cont
 
 // SetGasPledge ...
 func (g *GasManager) SetGasPledge(name string, pledger string, p *common.Fixed) contract.Cost {
-	cost, err := g.h.MapPut(name+database.GasPledgeKey, pledger, p)
+	cost, err := g.h.MapPut(pledger+database.GasPledgeKey, name, p)
 	if err != nil {
 		panic(fmt.Errorf("gas manager set gas pledge err %v", err))
 	}
@@ -212,7 +212,7 @@ func (g *GasManager) DelGasPledge(name string, pledger string) contract.Cost {
 	if name == pledger {
 		ilog.Fatalf("delGasPledge for oneself %v", name)
 	}
-	cost, err := g.h.MapDel(name+database.GasPledgeKey, pledger)
+	cost, err := g.h.MapDel(pledger+database.GasPledgeKey, name)
 	if err != nil {
 		panic(fmt.Errorf("gas manager del gas pledge err %v", err))
 	}
