@@ -424,6 +424,11 @@ func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, 
 	if initialRAM > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
 	}
+	var registerInitialPledge int64 = 10
+	initialGasPledge -= registerInitialPledge
+	if initialGasPledge < 0 {
+		return fmt.Errorf("min gas pledge is 10")
+	}
 	if initialGasPledge > 0 {
 		acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
 	}

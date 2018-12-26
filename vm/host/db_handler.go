@@ -2,7 +2,6 @@ package host
 
 import (
 	"fmt"
-
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 )

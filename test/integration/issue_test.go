@@ -32,8 +32,6 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 			FoundationAccount: acc1.ID,
 			IOSTTotalSupply:   90000000000,
 			IOSTDecimal:       8,
-			RAMTotalSupply:    9000000000000000000,
-			RAMGenesisAmount:  128,
 		},
 		[]interface{}{witness},
 	}

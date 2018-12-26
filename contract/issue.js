@@ -31,24 +31,6 @@ class IssueContract {
         this._put("IOSTLastIssueTime", this._getBlockTime());
     }
 
-    _initRAM(config) {
-        this._call("token.iost", "create", [
-            "ram",
-            "issue.iost",
-            config.RAMTotalSupply,
-            {
-                "can_transfer": false,
-                "decimal": 0
-            }
-        ]);
-        this._call("token.iost", "issue", [
-            "ram",
-            "pledge.iost",
-            new BigNumber(config.RAMGenesisAmount).toFixed()
-        ]);
-        this._put("RAMLastIssueTime", this._getBlockTime());
-    }
-
     /**
      * genesisConfig = {
      *      FoundationAccount string
@@ -73,7 +55,6 @@ class IssueContract {
         this._put("FoundationAccount", genesisConfig.FoundationAccount);
 
         this._initIOST(genesisConfig, witnessInfo);
-        // this._initRAM(genesisConfig);
     }
 
     can_update(data) {
@@ -129,6 +110,28 @@ class IssueContract {
         storage.mapDel(k, f);
     }
 
+    _issueIOST(account, amount) {
+        const amountStr = ((typeof amount === "string") ? amount : amount.toFixed(this._get("IOSTDecimal")));
+        const args = ["iost", account, amountStr];
+        console.log("issueiost", args)
+        this._call("token.iost", "issue", args);
+    }
+
+    IssueIOSTTo(account, amount) {
+        const whitelist = ["auth.iost"];
+        let auth = false;
+        for (const c of whitelist) {
+            if (blockchain.requireAuth(c, "active")) {
+                auth = true;
+                break
+            }
+        }
+        if (!auth) {
+            throw new Error("issue iost permission denied")
+        }
+        this._issueIOST(account, amount)
+    }
+
     // IssueIOST to bonus.iost and iost foundation
     IssueIOST() {
         const lastIssueTime = this._get("IOSTLastIssueTime");
@@ -142,7 +145,6 @@ class IssueContract {
         }
 
         const foundationAcc = this._get("FoundationAccount");
-        const decimal = this._get("IOSTDecimal");
         if (!foundationAcc) {
             throw new Error("FoundationAccount not set.");
         }
@@ -152,37 +154,8 @@ class IssueContract {
         const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
         const issueAmount = supply.multi(iostIssueRate.pow(gap).minus(1));
         const bonus = issueAmount.multi(0.33);
-        this._call("token.iost", "issue", [
-            "iost",
-            "bonus.iost",
-            bonus.toFixed(decimal)
-        ]);
-        this._call("token.iost", "issue", [
-            "iost",
-            foundationAcc,
-            issueAmount.minus(bonus).toFixed(decimal)
-        ]);
-    }
-
-    // IssueRAM to pledge.iost
-    IssueRAM() {
-        // this._requireAuth("pledge.iost", activePermission);
-        const lastIssueTime = this._get("RAMLastIssueTime");
-        if (lastIssueTime === 0 || lastIssueTime === undefined) {
-            throw new Error("RAMLastIssueTime not set.");
-        }
-        const currentTime = this._getBlockTime();
-        const gap = currentTime - lastIssueTime;
-        if (gap < 86400 /* one day */) {
-            return;
-        }
-        this._put("RAMLastIssueTime", currentTime);
-        const issueAmount = 2179 * gap;
-        this._call("token.iost", "issue", [
-            "ram",
-            "pledge.iost",
-            JSON.stringify(issueAmount)
-        ]);
+        this._issueIOST("bonus.iost", bonus);
+        this._issueIOST(foundationAcc, issueAmount.minus(bonus));
     }
 }
 
