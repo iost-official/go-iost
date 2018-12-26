@@ -125,6 +125,7 @@ func (c *Client) SendTransaction(transaction *Transaction) (string, error) {
 	if err != nil {
 		return "", err
 	}
+	ilog.Debugf("transaction size: %vbytes", len(transaction.ToBytes(tx.Full)))
 
 	ilog.Debugf("Check transaction receipt for %v...", resp.GetHash())
 	if err := c.checkTransaction(resp.GetHash()); err != nil {
