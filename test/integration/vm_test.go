@@ -154,7 +154,7 @@ func Test_RamPayer(t *testing.T) {
 			//ram := s.GetRAM(acc0.ID)
 			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8488)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8420)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -171,7 +171,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8486)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8418)
 
 			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
@@ -186,7 +186,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8485)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8417)
 
 			//ram = s.GetRAM(acc0.ID)
 			ram1 := s.GetRAM(acc1.ID)
@@ -194,7 +194,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8551)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8483)
 			So(s.GetRAM(acc1.ID), ShouldEqual, 9933)
 
 			ram1 = s.GetRAM(acc1.ID)
@@ -233,7 +233,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(acc0.ID), ShouldEqual, 5845)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 5777)
 
 			ram0 = s.GetRAM(acc0.ID)
 			//ram4 := s.GetRAM(acc2.ID)
@@ -302,7 +302,7 @@ func Test_Validate(t *testing.T) {
 		_, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
-		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
+		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: abi not defined in source code: c")
 
 		c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
 		So(err, ShouldBeNil)
@@ -469,7 +469,7 @@ func Test_LargeContract(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-		So(r.Status.Message, ShouldEqual, "code size invalid")
+		So(r.Status.Message, ShouldContainSubstring, "code size invalid")
 	})
 }
 

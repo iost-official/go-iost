@@ -56,6 +56,7 @@ func TestBlockCache(t *testing.T) {
 	statedb.EXPECT().Flush(Any()).AnyTimes().Return(nil)
 	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
 	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
+	statedb.EXPECT().Size().AnyTimes().Return(int64(10000), nil)
 
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("1"), nil
@@ -71,6 +72,8 @@ func TestBlockCache(t *testing.T) {
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0, nil)
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
+	base.EXPECT().TxTotal().AnyTimes().Return(int64(10))
+	base.EXPECT().Size().AnyTimes().Return(int64(10000), nil)
 	global := core_mock.NewMockBaseVariable(ctl)
 	global.EXPECT().BlockChain().AnyTimes().Return(base)
 	global.EXPECT().StateDB().AnyTimes().Return(statedb)
