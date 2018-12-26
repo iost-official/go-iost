@@ -1077,6 +1077,10 @@
           "type": "string",
           "title": "get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)"
         },
+        "keys": {
+          "type": "string",
+          "title": "the keys in the StateDB"
+        },
         "by_longest_chain": {
           "type": "boolean",
           "format": "boolean",
