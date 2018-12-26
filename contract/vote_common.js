@@ -27,6 +27,14 @@ class VoteCommonContract {
         this._put("adminID", adminID);
     }
 
+    InitFundIDs(ids) {
+        const bn = block.number;
+        if(bn !== 0) {
+            throw new Error("init out of genesis block");
+        }
+        this._put("fundID", ids);
+    }
+
     can_update(data) {
         const admin = this._get("adminID");
         this._requireAuth(admin, adminPermission);
@@ -290,14 +298,26 @@ class VoteCommonContract {
         return new Float64(new BigNumber(amount).toFixed(iostDecimal));
     }
 
-    Vote(voteId, account, option, amount) {
+    _checkVoteAuth(account, payer) {
+        if (account === payer) {
+            this._requireAuth(payer, votePermission);
+        } else {
+            this._requireAuth(payer, votePermission);
+            const fundIDs = this._get("fundID");
+            if (!fundIDs.includes(payer)) {
+                throw new Error("payer is not allowed to call VoteFor.");
+            }
+        }
+    }
+
+    VoteFor(voteId, payer, account, option, amount) {
         this._checkVote(voteId);
         this._checkDel(voteId);
-        this._requireAuth(account, votePermission);
+        this._checkVoteAuth(account, payer);
 
         amount = this._fixAmount(amount);
 
-        this._call("token.iost", "transfer", ["iost", account, "vote.iost", amount.toFixed(), ""]);
+        this._call("token.iost", "transfer", ["iost", payer, "vote.iost", amount.toFixed(), ""]);
 
         if (!storage.mapHas(optionPrefix + voteId, option)) {
             throw new Error("option does not exist");
@@ -318,7 +338,7 @@ class VoteCommonContract {
         } else {
             userVotes[option] = this._clearUserVote(clearTime, [amount.toFixed(), block.number, "0"]);
         }
-        this._mapPut(userVotePrefix + voteId, account, userVotes, account);
+        this._mapPut(userVotePrefix + voteId, account, userVotes, payer);
         if (clearTime === block.number) {
             // vote in clear block will do nothing.
             return;
@@ -326,14 +346,18 @@ class VoteCommonContract {
 
         const votes = new Float64(optionProp[0]).plus(amount);
         optionProp[0]  = votes.toFixed();
-        this._mapPut(optionPrefix + voteId, option, optionProp, account);
+        this._mapPut(optionPrefix + voteId, option, optionProp, payer);
 
         const info = this._mapGet("voteInfo", voteId);
         if (votes.lt(info.minVote)) {
             return;
         }
 
-        this._mapPut(preResultPrefix + voteId, option, optionProp[0], account);
+        this._mapPut(preResultPrefix + voteId, option, optionProp[0], payer);
+    }
+
+    Vote(voteId, account, option, amount) {
+        this.VoteFor(voteId, account, account, option, amount);
     }
 
     Unvote(voteId, account, option, amount) {

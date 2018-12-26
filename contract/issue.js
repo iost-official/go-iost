@@ -95,6 +95,9 @@ class IssueContract {
 
     // IssueIOST to bonus.iost and iost foundation
     IssueIOST() {
+        // TODO(hudongwen): multi issuer
+        const admin = storage.get("adminID");
+        this._requireAuth(admin, activePermission);
         const lastIssueTime = storage.get("IOSTLastIssueTime");
         if (lastIssueTime === null || lastIssueTime === 0 || lastIssueTime === undefined) {
             throw new Error("IOSTLastIssueTime not set.");

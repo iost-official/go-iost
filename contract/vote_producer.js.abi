@@ -52,6 +52,12 @@
             ]
         },
         {
+            "name": "ForceUnregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
             "name": "Unregister",
             "args": [
                 "string"
@@ -84,6 +90,19 @@
             "args": [
                 "string"
             ]
+        },
+        {
+            "name": "VoteFor",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "Vote",

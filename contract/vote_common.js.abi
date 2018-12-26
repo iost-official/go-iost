@@ -48,6 +48,20 @@
             ]
         },
         {
+            "name": "VoteFor",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
             "name": "Vote",
             "args": [
                 "string",
