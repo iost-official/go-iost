@@ -14,8 +14,14 @@ const STATUS_APPROVED = 1;
 const STATUS_UNAPPLY = 2;
 const STATUS_UNAPPLY_APPROVED = 3;
 
-const userVoteMaskPrefix = "u_";
-const producerMaskTable = "prodMask";
+const voterMaskPrefix = "v_";
+const voterCoefTable = "voterCoef";
+
+const candidateMaskTable = "candMask";
+const candidateCoef = "candCoef";
+const candidateAllKey = "candAllKey";
+
+const voteThreshold = new Float64(21 * 1000 * 1000 * 1000 * 0.0005);
 
 class VoteContract {
     init() {
@@ -116,7 +122,7 @@ class VoteContract {
         return JSON.parse(val);
     }
 
-	_put(k, v, p) {
+	  _put(k, v, p) {
         storage.put(k, JSON.stringify(v), p);
     }
 
@@ -346,31 +352,94 @@ class VoteContract {
         this._mapPut("producerTable", account, pro, account);
     }
 
-    _getProducerMask(producer) {
-        let producerMask = this._mapGet(producerMaskTable, producer);
-        if (!producerMask) {
-            producerMask = new Float64(0).toFixed();
+    _getVoterCoef(producer) {
+        let voterCoef = this._mapGet(voterCoefTable, producer);
+        if (!voterCoef) {
+            voterCoef = "0";
         }
-        return new Float64(producerMask);
+        return new Float64(voterCoef);
     }
 
     _getVoterMask(voter, producer) {
-        let voterMask = this._mapGet(userVoteMaskPrefix + producer, voter);
+        let voterMask = this._mapGet(voterMaskPrefix + producer, voter);
         if (!voterMask) {
-            voterMask = new Float64(0).toFixed();
+            voterMask = "0";
         }
         return new Float64(voterMask);
     }
 
     _updateVoterMask(voter, producer, amount) {
-        let producerMask = this._getProducerMask(producer);
+        let voterCoef = this._getVoterCoef(producer);
         let voterMask = this._getVoterMask(voter, producer);
-        voterMask = voterMask.plus(producerMask.times(new Float64(amount)));
-        this._mapPut(userVoteMaskPrefix + producer, voter, voterMask.toFixed(), producer);
+        voterMask = voterMask.plus(voterCoef.multi(amount));
+        this._mapPut(voterMaskPrefix + producer, voter, voterMask.toFixed(), producer);
     }
 
-    // vote, need to pledge token
-    // TODO(ziran): change global vars
+    _getCandidateAllKey() {
+        let k = this._get(candidateAllKey);
+        if (!k) {
+            k = "0";
+        }
+        return new Float64(k);
+    }
+
+    _getCandCoef() {
+        let candCoef = this._get(candidateCoef);
+        if (!candCoef) {
+            candCoef = "0";
+        }
+        return new Float64(candCoef);
+    }
+
+    _getCandMask(account) {
+        let candMask = this._mapGet(candidateMaskTable, account)
+        if (!candMask) {
+            candMask = "0";
+        }
+        return new Float64(candMask);
+    }
+
+    _updateCandidateMask(account, key) {
+        let allKey = this._getCandidateAllKey().plus(key);
+        this._put(candidateAllKey, allKey.toFixed()); // payer?
+
+        let candCoef = this._getCandCoef();
+        let candMask = this._getCandMask(account);
+        candMask = candMask.plus(candCoef.multi(key));
+        this._mapPut(candidateMaskTable, account, candMask.toFixed(), account);
+    }
+
+    _updateCandidateVars(account, amount, voteId) {
+        let votes = new Float64(this._call("vote.iost", "GetOption", [
+           voteId,
+           account,
+        ]).votes);
+
+        if (amount.isPositive()) {
+            if (votes.lt(voteThreshold)) {
+                return;
+            }
+
+            if (votes.minus(amount).lt(voteThreshold)) {
+                this._updateCandidateMask(account, votes)
+            } else {
+                this._updateCandidateMask(account, amount)
+            }
+
+        } else if (amount.isNegative()) {
+            if (votes.minus(amount).lt(voteThreshold)) {
+                return;
+            }
+
+            if (votes.lt(voteThreshold)) {
+                this._updateCandidateMask(account, votes.negated())
+            } else {
+                this._updateCandidateMask(account, amount)
+            }
+        }
+
+    }
+
     Vote(voter, producer, amount) {
         this._requireAuth(voter, VOTE_PERMISSION);
 
@@ -386,13 +455,13 @@ class VoteContract {
             amount,
         ]);
 
-        this._updateMask(voter, producer, amount);
+        this._updateVoterMask(voter, producer, new Float64(amount));
+        this._updateCandidateVars(producer, new Float64(amount), voteId);
     }
 
-    // unvote
-    // TODO(ziran): change global vars
     Unvote(voter, producer, amount) {
         this._requireAuth(voter, VOTE_PERMISSION);
+
         const voteId = this._getVoteId();
         this._call("vote.iost", "Unvote", [
             voteId,
@@ -401,7 +470,8 @@ class VoteContract {
             amount,
         ]);
 
-        this._updateMask(voter, producer, "-" + amount);
+        this._updateVoterMask(voter, producer, new Float64(amount).negated());
+        this._updateCandidateVars(producer, new Float64(amount).negated(), voteId);
     }
 
     GetVote(voter) {
@@ -412,43 +482,97 @@ class VoteContract {
         ]);
     }
 
-    // TODO(ziran): topup producer's vote bonus
-    Topup(account, amount) {
+    TopupVoterBonus(account, amount) {
         this._requireAuth(account, ACTIVE_PERMISSION);
         const voteId = this._getVoteId();
         let votes = new Float64(this._call("vote.iost", "GetOption", [
            voteId,
            account,
         ]).votes);
-        if (!votes.gt(new Float64(0))) {
-           throw new Error("empty votes"); // TODO return?
+        if (!votes.isPositive()) {
+            return false;
         }
 
-        let producerMask = this._getProducerMask(account);
-        producerMask = producerMask.plus(new Float64(amount).div(votes));
-        this._mapPut(producerMaskTable, account, producerMask.toFixed(), account);
+        let voterCoef = this._getVoterCoef(account);
+        voterCoef = voterCoef.plus(new Float64(amount).div(votes));
+        this._mapPut(voterCoefTable, account, voterCoef.toFixed(), account);
+        return true;
     }
 
-    // TODO(ziran): exchange bonus
-    ExchangeIOST(voter) {
-        this._requireAuth(voter, ACTIVE_PERMISSION);
-        const voteId = this._getVoteId();
-        let userVotes = this._call("vote.iost", "GetVote", [
-           voteId,
-           voter,
-        ]);
-
-        let earnings = new Float64(0);
-        for (const v in userVotes) {
-           let producerMask = this._getProducerMask(v.option);
-           let voterMask = this._getVoterMask(voter, v.option);
-           let earning = earnings.plus(producerMask.times(new Float64(v.votes)).minus(voterMask));
-           earnings = earnings.plus(earning);
-           voterMask = voterMask.plus(earning);
-           this._mapPut(userVoteMaskPrefix + v.option, voter, voterMask.toFixed(), v.option);
+    TopupCandidateBonus(amount) {
+        // TODO requireAuth?
+        let allKey = this._getCandidateAllKey();
+        if (!allKey.isPositive()) {
+            return false;
         }
 
+        let candCoef = this._getCandCoef();
+        candCoef = candCoef.plus(new Float64(amount).div(allKey));
+        this._put(candidateCoef, candCoef.toFixed());
+        return true;
+    }
+
+    _calVoterBonus(voter, updateMask) {
+        let userVotes = this.GetVote(voter);
+        let earnings = new Float64(0);
+        for (const v in userVotes) {
+           let voterCoef = this._getVoterCoef(v.option);
+           let voterMask = this._getVoterMask(voter, v.option);
+           let earning = voterCoef.multi(new Float64(v.votes)).minus(voterMask);
+           earnings = earnings.plus(earning);
+           if (updateMask) {
+              voterMask = voterMask.plus(earning);
+              this._mapPut(voterMaskPrefix + v.option, voter, voterMask.toFixed(), v.option);
+           }
+        }
+        return earnings;
+    }
+
+    GetVoterBonus(voter) {
+        return this._calVoterBonus(voter, false).toFixed();
+    }
+
+    VoterWithdraw(voter) {
+        this._requireAuth(voter, ACTIVE_PERMISSION);
+
+        let earnings = this._calVoterBonus(voter, true);
         // TODO transfer earnings to voter
+    }
+
+    _calCandidateBonus(account, updateMask) {
+        const voteId = this._getVoteId();
+        let candKey = new Float64(this._call("vote.iost", "GetOption", [
+           voteId,
+           account,
+        ]).votes);
+
+        if (candKey.lt(voteThreshold)) {
+            candKey = new Float64(0);
+        }
+
+        let candCoef = this._getCandCoef();
+        let candMask = this._getCandMask(account);
+        let earning = candCoef.plus(candKey).minus(candMask);
+        if (updateMask) {
+            candMask = candMask.plus(earning);
+            this._mapGet(candidateMaskTable, account, candMask.toFixed(), account);
+        }
+        return earning;
+     }
+
+    GetCandidateBonus(account) {
+        return this._calCandidateBonus(account, false).toFixed();
+    }
+
+    CandidateWithdraw(account) {
+        this._requireAuth(account, ACTIVE_PERMISSION);
+
+        let earnings = this._calCandidateBonus(account, true);
+        let halfEarning = earnings.div(new Float64("0.5"));
+        // TODO: transfer half of earnings to account
+
+        this.TopupVoterBonus(account, halfEarning);
+        // TODO: earnings - halfEarning - halfEarning?
     }
 
     _getScores() {
