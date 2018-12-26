@@ -1,6 +1,7 @@
 const secondToNano = 1e9;
 const activePermission = "active";
 const totalSupply = 9 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000;
+const blockContribRadio = new Float64("9.6568764571e-11");
 
 class BonusContract {
     constructor() {
@@ -8,6 +9,8 @@ class BonusContract {
 
     init() {
         this._initContribute();
+        this._put("blockContrib", "1.98779440");
+        this._put("lastTime", block.time);
     }
 
     _initContribute() {
@@ -51,10 +54,6 @@ class BonusContract {
         return ret;
     }
 
-    _getBlockTime() {
-        return Math.floor(block.time / secondToNano);
-    }
-
     _get(k) {
         const val = storage.get(k);
         if (val === "") {
@@ -91,12 +90,15 @@ class BonusContract {
         return JSON.parse(val);
     }
 
-    /**
-     * TODO(ziran): top up two bonus pool
-     * @param {string} pbonus - producer bonus
-     * @param {string} vbonus - vote bonus
-     */
-    Topup(pbonus, vbonus) {
+    _updateRate() {
+        // update rate every 7 days
+        const lastTime = this._get("lastTime");
+        if (block.time < lastTime + 604800) {
+            return;
+        }
+        const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
+        const blockContrib = supply.multi(blockContribRadio).toFixed(8);
+        this._put("blockContrib", blockContrib);
     }
 
     // IssueContribute to witness
@@ -106,8 +108,9 @@ class BonusContract {
             return;
         }
         this._requireAuth("base.iost", activePermission);
+        this._updateRate();
         let witness = data.parent[0];
-        let blockContrib = new BigNumber("1000");
+        const blockContrib = this._get("blockContrib");
         // get account name of the witness
         const acc = this._globalMapGet("vote_producer.iost", "producerKeyToId", witness);
         if (acc) {
@@ -116,55 +119,59 @@ class BonusContract {
         this._call("token.iost", "issue", [
             "contribute",
             witness,
-            blockContrib.toFixed(0)
+            blockContrib
         ]);
     }
 
     // ExchangeIOST with contribute
-    // TODO(ziran): exchange producer bonus and vote bonus
-    //              and Topup half of total bonus to vote_producer.iost
     ExchangeIOST(account, amount) {
         this._requireAuth(account, activePermission);
 
         const lastExchangeTime = this._get(account) || 0;
-        const currentTime = this._getBlockTime();
-        if (currentTime - lastExchangeTime < 86400) {
+        const currentTime = block.time;
+        if (currentTime - lastExchangeTime < 86400000000000) {
             throw new Error("last exchange less than one day.");
         }
 
-        const ownContribute = this._call("token.iost", "balanceOf", [
+        const contribute = this._call("token.iost", "balanceOf", [
             "contribute",
             account
         ]);
-        amount = new BigNumber(amount);
+        amount = new Float64(amount);
+        if (amount.isZero()) {
+            amount = new Float64(contribute);
+        }
 
-        if (amount.gt(ownContribute)) {
-            throw new Error("contribute not enough. left contribute = " + ownContribute);
+        if (!amount.isPositive() || amount.gt(contribute)) {
+            throw new Error("invalid amount: negative or greater than contribute");
+        }
+
+        const totalBonus = new Float64(this._call("token.iost", "balanceOf", [
+            "iost",
+            blockchain.contractName()
+        ]));
+
+        if (amount.gt(totalBonus)) {
+            throw new Error("left bonus not enough, please wait");
         }
 
         this._put(account, currentTime, account);
-
-        this._call("issue.iost", "IssueIOST", []);
-
-        const totalBonus = new BigNumber(this._call("token.iost", "balanceOf", [
-            "iost",
-            "bonus.iost"
-        ]));
-
-        const totalContribute = new BigNumber(this._call("token.iost", "supply", ["contribute"]));
-        const bonus = totalBonus.times(amount).div(totalContribute);
 
         this._call("token.iost", "destroy", [
             "contribute",
             account,
             amount.toFixed()
         ]);
+        const voterBonus = amount.div(2);
         this._call("token.iost", "transfer", [
             "iost",
-            "bonus.iost",
+            blockchain.contractName(),
             account,
-            bonus.toFixed(),
+            amount.minus(voterBonus).toFixed(),
             ""
+        ]);
+        this._call("vote_producer.iost", "TopupVoter", [
+            voterBonus.toFixed()
         ]);
     }
 }

@@ -295,7 +295,11 @@ class VoteCommonContract {
     }
 
     _fixAmount(amount) {
-        return new Float64(new BigNumber(amount).toFixed(iostDecimal));
+        amount = new Float64(new Float64(amount).toFixed(iostDecimal));
+        if (amount.lte("0")) {
+            throw new Error("amount must be positive");
+        }
+        return amount;
     }
 
     _checkVoteAuth(account, payer) {

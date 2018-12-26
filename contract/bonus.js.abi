@@ -13,6 +13,11 @@
             ]
         },
         {
+            "name": "UpdateRate",
+            "args": [
+            ]
+        },
+        {
             "name": "IssueContribute",
             "args": [
                 "json"
@@ -26,17 +31,6 @@
             ],
             "amountLimit": [{
                 "token": "*",
-                "val": "unlimited"
-            }]
-        },
-        {
-            "name": "Topup",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [{
-                "token": "iost",
                 "val": "unlimited"
             }]
         }

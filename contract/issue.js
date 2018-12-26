@@ -118,21 +118,24 @@ class IssueContract {
 
         const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
         const issueAmount = supply.multi(iostIssueRate).multi(gap).div(oneYearNano);
-        const bonus = issueAmount.multi("0.66");
-        this._call("token.iost", "issue", [
-            "iost",
-            blockchain.contractName(),
-            bonus.toFixed(decimal)
-        ]);
+        const bonus = issueAmount.multi("0.33");
         this._call("token.iost", "issue", [
             "iost",
             foundationAcc,
             issueAmount.minus(bonus).minus(bonus).toFixed(decimal)
         ]);
-        const producerBonus = bonus.div("2");
-        this._call("bonus.iost", "Topup", [
-            producerBonus.toFixed(decimal),             // producer bonus
-            bonus.minus(producerBonus).toFixed(decimal) // vote bonus
+        this._call("token.iost", "issue", [
+            "iost",
+            "bonus.iost",
+            bonus.toFixed(decimal)
+        ]);
+        this._call("token.iost", "issue", [
+            "iost",
+            "vote_producer.iost",
+            bonus.toFixed(decimal)
+        ]);
+        this._call("vote_producer.iost", "TopupProducer", [
+            bonus.toFixed(decimal)
         ]);
     }
 }
