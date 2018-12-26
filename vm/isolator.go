@@ -67,7 +67,7 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 			return err
 		}
 		if i.h.GasPayed(t.Publisher)*t.GasRatio >= t.GasLimit {
-			return fmt.Errorf("gas limit should be larger")
+			return fmt.Errorf("gas limit should be larger, paid: %v, gas limit: %v, gas ratio: %v", i.h.GasPayed(t.Publisher), t.GasLimit, t.GasRatio)
 		}
 		gas := i.h.TotalGas(i.publisherID)
 		err = CheckTxGasLimitValid(t, gas, i.h.DB())
