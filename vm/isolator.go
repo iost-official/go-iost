@@ -189,7 +189,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 			return nil, fmt.Errorf("delay tx not found, hash=%v", i.t.ReferredTx)
 		}
 
-		// the delaytx should be deleted even the tx is excuted failed.
+		// the delaytx should be deleted even the tx is executed failed.
 		// use defer func so the delete operation would not be reverted by i.h.DB().Rollback().
 		defer func() {
 			i.h.DB().DelDelaytx(refTxHash)
