@@ -594,7 +594,11 @@ func TestAuthority(t *testing.T) {
 		s.SetRAM(acc.ID, 1000)
 		s.SetRAM("myidid", 1000)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "id shouldn't start with")
+
+		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)

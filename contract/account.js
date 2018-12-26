@@ -41,6 +41,9 @@ class Account {
         if (id.length < 5 || id.length > 11) {
             throw new Error("id invalid. id length should be between 5,11 > " + id)
         }
+        if (id.startsWith("Contract")) {
+            throw new Error("id invalid. id shouldn't start with 'Contract'.");
+        }
         for (let i in id) {
             let ch = id[i];
             if (!(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch === '_')) {

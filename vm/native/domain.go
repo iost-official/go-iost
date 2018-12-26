@@ -8,6 +8,7 @@ import (
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
+	"strings"
 )
 
 // DomainABIs list of domain abi
@@ -23,6 +24,9 @@ func init() {
 func checkURLValid(name string) error {
 	if len(name) < 5 || len(name) > 16 {
 		return fmt.Errorf("url invalid. url length should be between 5,16 got %v", name)
+	}
+	if !strings.Contains(name, ".") {
+		return fmt.Errorf("url invalid. url must contain '.'");
 	}
 	for _, ch := range name {
 		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_' || ch == '.') {
@@ -105,7 +109,12 @@ var (
 
 			owner := h.DNS.URLOwner(url)
 
-			if owner != "" && owner != applicant {
+			if owner == "" {
+				cost.AddAssign(host.CommonErrorCost(1))
+				return nil, cost, errors.New("url doesn't have owner. Link directly")
+			}
+
+			if owner != applicant {
 				cost.AddAssign(host.CommonErrorCost(1))
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
