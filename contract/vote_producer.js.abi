@@ -131,8 +131,19 @@
             ]
         },
         {
-            "name": "Topup",
+            "name": "TopupCandidateBonus",
             "args": [
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "TopupVoterBonus",
+            "args": [
+                "string",
                 "string"
             ],
             "amountLimit": [{
@@ -149,6 +160,24 @@
         {
             "name": "Stat",
             "args": []
+        },
+        {
+            "name": "GetCandidateBonus",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "CandidateWithdraw",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "VoterWithdraw",
+            "args": [
+                "string"
+            ]
         }
     ]
 }

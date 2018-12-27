@@ -144,7 +144,7 @@ class IssueContract {
         this._issueIOST(foundationAcc, issueAmount.minus(bonus).minus(bonus).toFixed(decimal));
         this._issueIOST("bonus.iost", bonus.toFixed(decimal));
         this._issueIOST("vote_producer.iost", bonus.toFixed(decimal));
-        this._call("vote_producer.iost", "TopupProducer", [
+        this._call("vote_producer.iost", "TopupCandidateBonus", [
             bonus.toFixed(decimal)
         ]);
     }

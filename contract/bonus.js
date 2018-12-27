@@ -170,7 +170,8 @@ class BonusContract {
             amount.minus(voterBonus).toFixed(),
             ""
         ]);
-        this._call("vote_producer.iost", "TopupVoter", [
+        this._call("vote_producer.iost", "TopupVoterBonus", [
+            account,
             voterBonus.toFixed()
         ]);
     }
