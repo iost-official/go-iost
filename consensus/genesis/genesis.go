@@ -65,7 +65,6 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "issue.iost", code.B64Encode())))
-	adminInfo := gConf.AdminInfo
 	tokenInfo := gConf.TokenInfo
 	tokenHolder := append(witnessInfo, adminInfo)
 	params := []interface{}{
