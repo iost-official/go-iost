@@ -489,7 +489,7 @@ class VoteContract {
     }
 
     Unvote(voter, producer, amount) {
-        this._requireAuth(voter, VOTE_PERMISSION);
+        this._requireAuth(voter, ACTIVE_PERMISSION);
 
         const voteId = this._getVoteId();
         this._call("vote.iost", "Unvote", [
@@ -511,8 +511,7 @@ class VoteContract {
         ]);
     }
 
-    TopupVoterBonus(account, amount) {
-        this._requireAuth(account, ACTIVE_PERMISSION);
+    TopupVoterBonus(account, amount, payer) {
         const voteId = this._getVoteId();
         let votes = new Float64(this._call("vote.iost", "GetOption", [
            voteId,
@@ -522,18 +521,21 @@ class VoteContract {
             return false;
         }
 
+        blockchain.deposit(payer, amount, "");
+
         let voterCoef = this._getVoterCoef(account);
         voterCoef = voterCoef.plus(new Float64(amount).div(votes));
         this._mapPut(voterCoefTable, account, voterCoef.toFixed(), account);
         return true;
     }
 
-    TopupCandidateBonus(amount) {
-        // TODO requireAuth?
+    TopupCandidateBonus(amount, payer) {
         let allKey = this._getCandidateAllKey();
         if (!allKey.isPositive()) {
             return false;
         }
+
+        blockchain.deposit(payer, amount, "");
 
         let candCoef = this._getCandCoef();
         candCoef = candCoef.plus(new Float64(amount).div(allKey));
@@ -565,7 +567,7 @@ class VoteContract {
         this._requireAuth(voter, ACTIVE_PERMISSION);
 
         let earnings = this._calVoterBonus(voter, true);
-        // TODO transfer earnings to voter
+        blockchain.withdraw(voter, earnings, "");
     }
 
     _calCandidateBonus(account, updateMask) {
@@ -597,11 +599,10 @@ class VoteContract {
         this._requireAuth(account, ACTIVE_PERMISSION);
 
         let earnings = this._calCandidateBonus(account, true);
-        let halfEarning = earnings.div(new Float64("0.5"));
-        // TODO: transfer half of earnings to account
+        let halfEarning = earnings.div("2");
+        blockchain.withdraw(account, halfEarning, "")
 
-        this.TopupVoterBonus(account, halfEarning);
-        // TODO: earnings - halfEarning - halfEarning?
+        this.TopupVoterBonus(account, halfEarning, blockchain.contractName());
     }
 
     _getScores() {

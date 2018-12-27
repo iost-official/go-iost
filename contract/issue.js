@@ -138,15 +138,22 @@ class IssueContract {
 
         storage.put("IOSTLastIssueTime", currentTime.toFixed());
 
+        const contractName = blockchain.contractName();
         const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
         const issueAmount = supply.multi(iostIssueRate).multi(gap).div(oneYearNano);
         const bonus = issueAmount.multi("0.33");
         this._issueIOST(foundationAcc, issueAmount.minus(bonus).minus(bonus).toFixed(decimal));
         this._issueIOST("bonus.iost", bonus.toFixed(decimal));
-        this._issueIOST("vote_producer.iost", bonus.toFixed(decimal));
-        this._call("vote_producer.iost", "TopupCandidateBonus", [
-            bonus.toFixed(decimal)
+        this._issueIOST(contractName, bonus.toFixed(decimal));
+
+        const succ = this._call("vote_producer.iost", "TopupCandidateBonus", [
+            bonus.toFixed(decimal),
+            contractName
         ]);
+        if (!succ) {
+            // transfer bonus to foundation if topup failed
+            blockchain.transfer(contractName, foundationAcc, bonus.toFixed(decimal), "");
+        }
     }
 }
 

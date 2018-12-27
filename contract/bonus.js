@@ -163,17 +163,17 @@ class BonusContract {
             amount.toFixed()
         ]);
         const voterBonus = amount.div(2);
-        this._call("token.iost", "transfer", [
-            "iost",
-            blockchain.contractName(),
+
+        blockchain.withdraw(account, amount.minus(voterBonus).toFixed(), "");
+        const succ = this._call("vote_producer.iost", "TopupVoterBonus", [
             account,
-            amount.minus(voterBonus).toFixed(),
-            ""
+            voterBonus.toFixed(),
+            blockchain.contractName()
         ]);
-        this._call("vote_producer.iost", "TopupVoterBonus", [
-            account,
-            voterBonus.toFixed()
-        ]);
+        if (!succ) {
+            // transfer voteBonus to account if topup failed
+            blockchain.withdraw(account, voterBonus.toFixed(), "");
+        }
     }
 }
 
