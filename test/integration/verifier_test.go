@@ -11,7 +11,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -41,7 +40,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 743400)
+			So(r.GasUsage, ShouldEqual, 738400)
 		})
 
 		Convey("test of token memo", func() {
@@ -79,7 +78,7 @@ func TestSetCode(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(cname, ShouldEqual, "ContractAhFA9ToFpBVg6hFgyRRf37XYh4w3e3a7TZUxGTSFdawA")
-		So(r.GasUsage, ShouldEqual, 3593500)
+		So(r.GasUsage, ShouldEqual, 3591000)
 		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2694))
 
 		r, err = s.Call(cname, "hello", "[]", acc.ID, acc.KeyPair)
@@ -587,12 +586,18 @@ func TestAuthority(t *testing.T) {
 		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
+		ca, err = s.Compile("issue.iost", "../../contract/issue", "../../contract/issue.js")
+		So(err, ShouldBeNil)
+		s.Visitor.SetContract(ca)
 		s.Visitor.SetContract(native.GasABI())
+		s.Visitor.SetContract(native.TokenABI())
 
 		acc := prepareAuth(t, s)
 		s.SetGas(acc.ID, 1e8)
 		s.SetRAM(acc.ID, 1000)
 		s.SetRAM("myidid", 1000)
+		err = createToken(t, s, acc)
+		So(err, ShouldBeNil)
 
 		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
@@ -611,22 +616,6 @@ func TestAuthority(t *testing.T) {
 		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
-
-		Convey("referrer can be updated 1 time per 30 days", func() {
-			accNew, _ := host.ReadAuth(s.Visitor, "myidid")
-			So(accNew.Referrer, ShouldEqual, acc.ID)
-			So(accNew.ReferrerUpdateTime, ShouldEqual, s.Head.Time)
-			s.SetGas("myidid", 10000000)
-			r, err = s.Call("auth.iost", "UpdateReferrer", array2json([]interface{}{"myidid", "hahaha"}), "myidid", acc.KeyPair)
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldContainSubstring, "referrer can only be updated one time per 30 days")
-			s.Head.Time += 30 * 24 * 3600 * 1e9
-			r, err = s.Call("auth.iost", "UpdateReferrer", array2json([]interface{}{"myidid", "hahaha"}), "myidid", acc.KeyPair)
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldEqual, "")
-			accNew, _ = host.ReadAuth(s.Visitor, "myidid")
-			So(accNew.Referrer, ShouldEqual, "hahaha")
-		})
 	})
 
 }
@@ -663,7 +652,7 @@ func TestGasLimit2(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(7310200))
+			So(r.GasUsage, ShouldEqual, int64(7302700))
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "980")
