@@ -10,7 +10,7 @@ import (
 )
 
 var (
-	MaxBlockGasLimit = int64(5000000)
+	MaxBlockGasLimit = int64(500000000)
 	MaxTxTimeLimit   = 100 * time.Millisecond
 )
 
