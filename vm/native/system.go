@@ -145,6 +145,10 @@ var (
 
 			cost2, err := h.SetCode(con, "")
 			cost.AddAssign(cost2)
+
+			cost2, err = h.MapPut("contract_owner", actID, "admin")
+			cost.AddAssign(cost2)
+
 			return []interface{}{actID}, cost, err
 		},
 	}

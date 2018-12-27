@@ -3,6 +3,14 @@
   "version": "1.0.0",
   "abi": [
     {
+        "name": "can_update",
+        "args": ["string"]
+    },
+    {
+        "name": "InitAdmin",
+        "args": ["string"]
+    },
+    {
       "name": "SignUp",
       "args": ["string", "string", "string"]
     },
