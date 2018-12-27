@@ -20,8 +20,8 @@ import (
 	"strings"
 )
 
-// balanceCmd represents the balance command
-var nodeCmd = &cobra.Command{
+// stateCmd prints the state of blockchain
+var stateCmd = &cobra.Command{
 	Use:   "state",
 	Short: "Get blockchain and node state",
 	Long:  `Get blockchain and node state`,
@@ -43,5 +43,5 @@ var nodeCmd = &cobra.Command{
 }
 
 func init() {
-	rootCmd.AddCommand(nodeCmd)
+	rootCmd.AddCommand(stateCmd)
 }

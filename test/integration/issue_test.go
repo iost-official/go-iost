@@ -8,39 +8,35 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func prepareIssue(s *Simulator, kp *account.KeyPair) (*tx.TxReceipt, error) {
+func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 	s.Head.Number = 0
 
 	// deploy issue.iost
 	setNonNativeContract(s, "issue.iost", "issue.js", ContractPath)
-	s.Call("issue.iost", "init", `[]`, kp.ID, kp)
+	s.Call("issue.iost", "init", `[]`, acc.ID, acc.KeyPair)
 
 	witness := common.Witness{
-		ID:      testID[0],
-		Owner:   testID[0],
-		Active:  testID[0],
+		ID:      acc0.ID,
+		Owner:   acc0.KeyPair.ID,
+		Active:  acc0.KeyPair.ID,
 		Balance: 123000,
 	}
 	params := []interface{}{
-		testID[0],
+		acc0.ID,
 		common.TokenInfo{
-			FoundationAccount: testID[2],
+			FoundationAccount: acc1.ID,
 			IOSTTotalSupply:   90000000000,
 			IOSTDecimal:       8,
-			RAMTotalSupply:    9000000000000000000,
-			RAMGenesisAmount:  128,
 		},
 		[]interface{}{witness},
 	}
 	b, _ := json.Marshal(params)
-	r, err := s.Call("issue.iost", "InitGenesis", string(b), kp.ID, kp)
+	r, err := s.Call("issue.iost", "InitGenesis", string(b), acc.ID, acc.KeyPair)
 	s.Visitor.Commit()
 	return r, err
 }
@@ -51,44 +47,25 @@ func Test_IOSTIssue(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		createAccountsWithResource(s)
-		r, err := prepareIssue(s, kp)
+		r, err := prepareIssue(s, acc0)
 
 		Convey("test init", func() {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TokenBalance("iost", testID[0]), ShouldEqual, int64(123000*1e8))
-			//So(s.Visitor.TokenBalance("ram", "pledge.iost"), ShouldEqual, int64(128))
+			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(123000*1e8))
 		})
 
 		Convey("test IssueIOST", func() {
 			s.Head.Time += 4 * 3 * 1e9
-			r, err := s.Call("issue.iost", "IssueIOST", `[]`, kp.ID, kp)
+			r, err := s.Call("issue.iost", "IssueIOST", `[]`, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 
 			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(45654))
-			So(s.Visitor.TokenBalance("iost", testID[2]), ShouldEqual, int64(92691))
+			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(92691))
 		})
-
-		/*
-			Convey("test IssueRAM", func() {
-				s.Head.Time += 28801 * 3 * 1e9
-
-				r, err := s.Call("issue.iost", "IssueRAM", `[]`, kp.ID, kp)
-				s.Visitor.Commit()
-
-				So(err, ShouldBeNil)
-				So(r.Status.Message, ShouldEqual, "")
-				So(s.Visitor.TokenBalance("ram", "pledge.iost"), ShouldEqual, int64(128+2179*3*28801))
-			})
-		*/
 	})
 }

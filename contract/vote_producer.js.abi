@@ -11,7 +11,11 @@
             "args": [
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "InitAdmin",
@@ -87,7 +91,11 @@
                 "string",
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "Unvote",

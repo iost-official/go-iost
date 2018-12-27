@@ -8,12 +8,10 @@ import (
 
 	. "github.com/smartystreets/goconvey/convey"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 )
@@ -24,25 +22,20 @@ func Test_callWithAuth(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		createAccountsWithResource(s)
-		createToken(t, s, kp)
+		createToken(t, s, acc0)
 
 		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		Convey("test of callWithAuth", func() {
 			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
-			r, err := s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, testID[0], "10"), testID[0], kp)
+			r, err := s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
@@ -59,24 +52,19 @@ func Test_VMMethod(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		createAccountsWithResource(s)
-		createToken(t, s, kp)
+		createToken(t, s, acc0)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		Convey("test of contract name", func() {
-			r, err := s.Call(cname, "contractName", "[]", testID[0], kp)
+			r, err := s.Call(cname, "contractName", "[]", acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
@@ -88,7 +76,7 @@ func Test_VMMethod(t *testing.T) {
 		})
 
 		Convey("test of receipt", func() {
-			r, err := s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receiptdata"), testID[0], kp)
+			r, err := s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receiptdata"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
@@ -107,18 +95,13 @@ func Test_VMMethod_Event(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		createAccountsWithResource(s)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -127,7 +110,7 @@ func Test_VMMethod_Event(t *testing.T) {
 		ch1 := eve.Subscribe(1, []event.Topic{event.ContractEvent}, nil)
 		ch2 := eve.Subscribe(2, []event.Topic{event.ContractReceipt}, nil)
 
-		r, err = s.Call(cname, "event", fmt.Sprintf(`["%v"]`, "eventdata"), testID[0], kp)
+		r, err = s.Call(cname, "event", fmt.Sprintf(`["%v"]`, "eventdata"), acc0.ID, acc0.KeyPair)
 		s.Visitor.Commit()
 
 		So(err, ShouldBeNil)
@@ -138,7 +121,7 @@ func Test_VMMethod_Event(t *testing.T) {
 		So(e.Topic, ShouldEqual, event.ContractEvent)
 
 		// receipt event
-		r, err = s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receipteventdata"), testID[0], kp)
+		r, err = s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receipteventdata"), acc0.ID, acc0.KeyPair)
 		s.Visitor.Commit()
 
 		So(err, ShouldBeNil)
@@ -156,31 +139,26 @@ func Test_RamPayer(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		createAccountsWithResource(s)
-		createToken(t, s, kp)
+		createToken(t, s, acc0)
 
 		ca, err := s.Compile("", "./test_data/vmmethod", "./test_data/vmmethod")
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		cname, r, err := s.DeployContract(ca, testID[0], kp)
+		cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		Convey("test of put and get", func() {
-			ram := s.GetRAM(testID[0])
-			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, testID[0]), testID[0], kp)
+			//ram := s.GetRAM(acc0.ID)
+			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
-			So(s.GetRAM(testID[0]), ShouldEqual, ram-111)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8420)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			r, err = s.Call(cname, "get", fmt.Sprintf(`["k"]`), testID[0], kp)
+			r, err = s.Call(cname, "get", fmt.Sprintf(`["k"]`), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(len(r.Returns), ShouldEqual, 1)
@@ -188,14 +166,14 @@ func Test_RamPayer(t *testing.T) {
 		})
 
 		Convey("test of map put and get", func() {
-			ram := s.GetRAM(testID[0])
-			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, testID[0]), testID[0], kp)
+			//ram := s.GetRAM(acc0.ID)
+			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram-113)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8418)
 
-			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), testID[0], kp)
+			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(len(r.Returns), ShouldEqual, 1)
@@ -203,45 +181,39 @@ func Test_RamPayer(t *testing.T) {
 		})
 
 		Convey("test of map put and get change payer", func() {
-			kp2, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			ram := s.GetRAM(testID[0])
-			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vv", "%v"]`, testID[0]), testID[0], kp)
+			//ram := s.GetRAM(acc0.ID)
+			r, err := s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vv", "%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram-114)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8417)
 
-			ram = s.GetRAM(testID[0])
-			ram1 := s.GetRAM(testID[2])
-			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvv", "%v"]`, testID[2]), testID[2], kp2)
+			//ram = s.GetRAM(acc0.ID)
+			ram1 := s.GetRAM(acc1.ID)
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvv", "%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram+114)
-			So(s.GetRAM(testID[2]), ShouldEqual, ram1-115)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8483)
+			So(s.GetRAM(acc1.ID), ShouldEqual, 9933)
 
-			ram1 = s.GetRAM(testID[2])
-			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, testID[2]), testID[2], kp2)
+			ram1 = s.GetRAM(acc1.ID)
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[2]), ShouldEqual, ram1+2)
+			So(s.GetRAM(acc1.ID), ShouldEqual, ram1+2)
 
-			ram1 = s.GetRAM(testID[2])
-			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvvvv", "%v"]`, testID[2]), testID[2], kp2)
+			ram1 = s.GetRAM(acc1.ID)
+			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvvvv", "%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(testID[2]), ShouldEqual, ram1-4)
+			So(s.GetRAM(acc1.ID), ShouldEqual, ram1-4)
 		})
 
 		Convey("test nested call check payer", func() {
-			ram0 := s.GetRAM(testID[0])
-			kp4, err := account.NewKeyPair(common.Base58Decode(testID[5]), crypto.Secp256k1)
+			ram0 := s.GetRAM(acc0.ID)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -249,7 +221,7 @@ func Test_RamPayer(t *testing.T) {
 			if err != nil || ca == nil {
 				t.Fatal(err)
 			}
-			cname0, r, err := s.DeployContract(ca, testID[0], kp)
+			cname0, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -257,25 +229,25 @@ func Test_RamPayer(t *testing.T) {
 			if err != nil || ca == nil {
 				t.Fatal(err)
 			}
-			cname1, r, err := s.DeployContract(ca, testID[0], kp)
+			cname1, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0-2533)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 5777)
 
-			ram0 = s.GetRAM(testID[0])
-			ram4 := s.GetRAM(testID[4])
-			ram6 := s.GetRAM(testID[6])
-			s.Visitor.SetTokenBalanceFixed("iost", testID[4], "100")
+			ram0 = s.GetRAM(acc0.ID)
+			//ram4 := s.GetRAM(acc2.ID)
+			ram6 := s.GetRAM(acc3.ID)
+			s.Visitor.SetTokenBalanceFixed("iost", acc2.ID, "100")
 			r, err = s.Call(cname0, "call", fmt.Sprintf(`["%v", "test", "%v"]`, cname1,
-				fmt.Sprintf(`[\"%v\", \"%v\"]`, testID[4], testID[6])), testID[4], kp4)
+				fmt.Sprintf(`[\"%v\", \"%v\"]`, acc2.ID, acc3.ID)), acc2.ID, acc2.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(testID[6]), ShouldEqual, ram6)
-			So(s.GetRAM(testID[4]), ShouldEqual, ram4-139)
-			So(s.GetRAM(testID[0]), ShouldEqual, ram0-6)
+			So(s.GetRAM(acc3.ID), ShouldEqual, ram6)
+			So(s.GetRAM(acc2.ID), ShouldEqual, 9957)
+			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-6)
 		})
 	})
 }
@@ -286,19 +258,14 @@ func Test_StackHeight(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		createAccountsWithResource(s)
-		createToken(t, s, kp)
+		createToken(t, s, acc0)
 
 		ca, err := s.Compile("", "./test_data/nest0", "./test_data/nest0")
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		cname0, r, err := s.DeployContract(ca, testID[0], kp)
+		cname0, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -306,12 +273,12 @@ func Test_StackHeight(t *testing.T) {
 		if err != nil || ca == nil {
 			t.Fatal(err)
 		}
-		cname1, r, err := s.DeployContract(ca, testID[0], kp)
+		cname1, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		Convey("test of out of stack height", func() {
-			r, err := s.Call(cname0, "sh0", fmt.Sprintf(`["%v"]`, cname1), testID[0], kp)
+			r, err := s.Call(cname0, "sh0", fmt.Sprintf(`["%v"]`, cname1), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldContainSubstring, "stack height exceed.")
@@ -324,22 +291,22 @@ func Test_Validate(t *testing.T) {
 	Convey("test validate", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		kp := prepareAuth(t, s)
-		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 10000000)
-		s.SetRAM(kp.ID, 300)
+		acc := prepareAuth(t, s)
+		s.SetAccount(acc.ToAccount())
+		s.SetGas(acc.ID, 10000000)
+		s.SetRAM(acc.ID, 300)
 
 		c, err := s.Compile("validate", "test_data/validate", "test_data/validate")
 		So(err, ShouldBeNil)
 		So(len(c.Encode()), ShouldEqual, 133)
-		_, r, err := s.DeployContract(c, kp.ID, kp)
+		_, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
-		So(r.Status.Message, ShouldEqual, "validate code error: , result: Error: abi not defined in source code: c")
+		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: abi not defined in source code: c")
 
 		c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
 		So(err, ShouldBeNil)
-		_, r, err = s.DeployContract(c, kp.ID, kp)
+		_, r, err = s.DeployContract(c, acc.ID, acc.KeyPair)
 		s.Visitor.Commit()
 		So(err.Error(), ShouldContainSubstring, "Error: args should be one of ")
 		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: args should be one of ")
@@ -398,7 +365,11 @@ func Test_SpecialChar(t *testing.T) {
 					"string",
 					"string",
 					"json"
-				]
+				],
+      			"amountLimit": [{
+      			  "token": "iost",
+      			  "val": "unlimited"
+      			}]
 			}
 		]
 	}
@@ -406,25 +377,24 @@ func Test_SpecialChar(t *testing.T) {
 	Convey("test validate", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		kp := prepareAuth(t, s)
+		acc := prepareAuth(t, s)
 		createAccountsWithResource(s)
-		createToken(t, s, kp)
-		s.SetGas(kp.ID, 10000000)
-		s.SetRAM(kp.ID, 100000)
+		createToken(t, s, acc)
+		s.SetGas(acc.ID, 10000000)
+		s.SetRAM(acc.ID, 100000)
 
 		c, err := (&contract.Compiler{}).Parse("", code, abi)
 		So(err, ShouldBeNil)
 
-		cname, _, err := s.DeployContract(c, kp.ID, kp)
+		cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 
-		kp2, _ := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
-		s.Visitor.SetTokenBalanceFixed("iost", kp.ID, "1000")
-		s.Visitor.SetTokenBalanceFixed("iost", kp2.ID, "1000")
+		s.Visitor.SetTokenBalanceFixed("iost", acc.ID, "1000")
+		s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "1000")
 		params := []interface{}{
-			kp.ID,
-			kp2.ID,
+			acc.ID,
+			acc1.ID,
 			map[string]string{
 				"amount": "1000",
 				"hack":   "\u2028\u2029\u0000",
@@ -432,10 +402,74 @@ func Test_SpecialChar(t *testing.T) {
 		}
 		paramsByte, err := json.Marshal(params)
 		So(err, ShouldBeNil)
-		r, err := s.Call(cname, "transfer", string(paramsByte), kp.ID, kp)
+		r, err := s.Call(cname, "transfer", string(paramsByte), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(s.Visitor.TokenBalanceFixed("iost", kp2.ID).ToString(), ShouldEqual, "2000")
+		So(r.Status.Message, ShouldEqual, "")
+		So(s.Visitor.TokenBalanceFixed("iost", acc1.ID).ToString(), ShouldEqual, "2000")
+	})
+}
+
+func Test_LargeContract(t *testing.T) {
+	ilog.Stop()
+	longStr := strings.Repeat("x", 1024*64)
+	code := "class Test {" +
+		"	init() {" +
+		"		let longStr = '" + longStr + "';" +
+		"	}" +
+		"	transfer(from, to, amountJson) {" +
+		"		blockchain.transfer(from, to, amountJson.amount, '');" +
+		"	}" +
+		"};" +
+		"module.exports = Test;"
+
+	abi := `
+	{
+		"lang": "javascript",
+		"version": "1.0.0",
+		"abi": [
+			{
+				"name": "transfer",
+				"args": [
+					"string",
+					"string",
+					"json"
+				]
+			}
+		]
+	}
+	`
+	Convey("test large contract", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		acc := prepareAuth(t, s)
+		createAccountsWithResource(s)
+		createToken(t, s, acc)
+		s.SetGas(acc.ID, 1e12)
+		s.SetRAM(acc.ID, 1e12)
+		s.GasLimit = int64(1e12)
+
+		c, err := (&contract.Compiler{}).Parse("", code, abi)
+		So(err, ShouldBeNil)
+
+		sc, err := json.Marshal(c)
+		So(err, ShouldBeNil)
+
+		jargs, err := json.Marshal([]string{string(sc)})
+		So(err, ShouldBeNil)
+
+		trx := tx.NewTx([]*tx.Action{{
+			Contract:   "system.iost",
+			ActionName: "SetCode",
+			Data:       string(jargs),
+		}}, nil, int64(1e12), 100, s.Head.Time+100000000, 0)
+
+		trx.Time = s.Head.Time
+
+		r, err := s.CallTx(trx, acc.ID, acc.KeyPair)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+		So(r.Status.Message, ShouldContainSubstring, "code size invalid")
 	})
 }
 
@@ -444,18 +478,18 @@ func Test_CallResult(t *testing.T) {
 	Convey("test call result", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		kp := prepareAuth(t, s)
-		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 2000000)
-		s.SetRAM(kp.ID, 10000)
+		acc := prepareAuth(t, s)
+		s.SetAccount(acc.ToAccount())
+		s.SetGas(acc.ID, 2000000)
+		s.SetRAM(acc.ID, 10000)
 
 		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
 		So(err, ShouldBeNil)
-		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		cname, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		//s.Visitor.Put(cname+"-ret", database.MustMarshal("ab\x00c"))
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
-		r, err = s.Call(cname, "ret_eof", `[]`, kp.ID, kp)
+		r, err = s.Call(cname, "ret_eof", `[]`, acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		a := s.Visitor.Get(cname + "-ret")
 		b := strings.NewReplacer("\x00", "\\x00").Replace(a)
@@ -470,18 +504,18 @@ func Test_ReturnObjectToJsonError(t *testing.T) {
 	Convey("test return object toJSON error", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
-		kp := prepareAuth(t, s)
-		s.SetAccount(account.NewInitAccount(kp.ID, kp.ID, kp.ID))
-		s.SetGas(kp.ID, 2000000)
-		s.SetRAM(kp.ID, 10000)
+		acc := prepareAuth(t, s)
+		s.SetAccount(acc.ToAccount())
+		s.SetGas(acc.ID, 2000000)
+		s.SetRAM(acc.ID, 10000)
 
 		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
 		So(err, ShouldBeNil)
-		cname, r, err := s.DeployContract(c, kp.ID, kp)
+		cname, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 
-		r, err = s.Call(cname, "ret_obj", `[]`, kp.ID, kp)
+		r, err = s.Call(cname, "ret_obj", `[]`, acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 		So(r.Status.Message, ShouldContainSubstring, "error in JSON.stringfy")

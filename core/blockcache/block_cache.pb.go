@@ -3,9 +3,11 @@
 
 package blockcache
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type BcMessageType int32
 
@@ -29,6 +31,7 @@ var BcMessageType_name = map[int32]string{
 	0: "LinkType",
 	1: "SetRootType",
 }
+
 var BcMessageType_value = map[string]int32{
 	"LinkType":    0,
 	"SetRootType": 1,
@@ -37,8 +40,9 @@ var BcMessageType_value = map[string]int32{
 func (x BcMessageType) String() string {
 	return proto.EnumName(BcMessageType_name, int32(x))
 }
+
 func (BcMessageType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_block_cache_4248821a1a8bc66d, []int{0}
+	return fileDescriptor_96d071d2d2082821, []int{0}
 }
 
 type BcMessage struct {
@@ -53,16 +57,17 @@ func (m *BcMessage) Reset()         { *m = BcMessage{} }
 func (m *BcMessage) String() string { return proto.CompactTextString(m) }
 func (*BcMessage) ProtoMessage()    {}
 func (*BcMessage) Descriptor() ([]byte, []int) {
-	return fileDescriptor_block_cache_4248821a1a8bc66d, []int{0}
+	return fileDescriptor_96d071d2d2082821, []int{0}
 }
+
 func (m *BcMessage) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BcMessage.Unmarshal(m, b)
 }
 func (m *BcMessage) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BcMessage.Marshal(b, m, deterministic)
 }
-func (dst *BcMessage) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BcMessage.Merge(dst, src)
+func (m *BcMessage) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BcMessage.Merge(m, src)
 }
 func (m *BcMessage) XXX_Size() int {
 	return xxx_messageInfo_BcMessage.Size(m)
@@ -99,16 +104,17 @@ func (m *BlockCacheRaw) Reset()         { *m = BlockCacheRaw{} }
 func (m *BlockCacheRaw) String() string { return proto.CompactTextString(m) }
 func (*BlockCacheRaw) ProtoMessage()    {}
 func (*BlockCacheRaw) Descriptor() ([]byte, []int) {
-	return fileDescriptor_block_cache_4248821a1a8bc66d, []int{1}
+	return fileDescriptor_96d071d2d2082821, []int{1}
 }
+
 func (m *BlockCacheRaw) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BlockCacheRaw.Unmarshal(m, b)
 }
 func (m *BlockCacheRaw) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BlockCacheRaw.Marshal(b, m, deterministic)
 }
-func (dst *BlockCacheRaw) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BlockCacheRaw.Merge(dst, src)
+func (m *BlockCacheRaw) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BlockCacheRaw.Merge(m, src)
 }
 func (m *BlockCacheRaw) XXX_Size() int {
 	return xxx_messageInfo_BlockCacheRaw.Size(m)
@@ -147,16 +153,17 @@ func (m *WitnessList) Reset()         { *m = WitnessList{} }
 func (m *WitnessList) String() string { return proto.CompactTextString(m) }
 func (*WitnessList) ProtoMessage()    {}
 func (*WitnessList) Descriptor() ([]byte, []int) {
-	return fileDescriptor_block_cache_4248821a1a8bc66d, []int{2}
+	return fileDescriptor_96d071d2d2082821, []int{2}
 }
+
 func (m *WitnessList) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WitnessList.Unmarshal(m, b)
 }
 func (m *WitnessList) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_WitnessList.Marshal(b, m, deterministic)
 }
-func (dst *WitnessList) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WitnessList.Merge(dst, src)
+func (m *WitnessList) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WitnessList.Merge(m, src)
 }
 func (m *WitnessList) XXX_Size() int {
 	return xxx_messageInfo_WitnessList.Size(m)
@@ -211,16 +218,17 @@ func (m *WitnessInfo) Reset()         { *m = WitnessInfo{} }
 func (m *WitnessInfo) String() string { return proto.CompactTextString(m) }
 func (*WitnessInfo) ProtoMessage()    {}
 func (*WitnessInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_block_cache_4248821a1a8bc66d, []int{3}
+	return fileDescriptor_96d071d2d2082821, []int{3}
 }
+
 func (m *WitnessInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WitnessInfo.Unmarshal(m, b)
 }
 func (m *WitnessInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_WitnessInfo.Marshal(b, m, deterministic)
 }
-func (dst *WitnessInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_WitnessInfo.Merge(dst, src)
+func (m *WitnessInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_WitnessInfo.Merge(m, src)
 }
 func (m *WitnessInfo) XXX_Size() int {
 	return xxx_messageInfo_WitnessInfo.Size(m)
@@ -274,19 +282,17 @@ func (m *WitnessInfo) GetVotes() int64 {
 }
 
 func init() {
+	proto.RegisterEnum("blockcache.BcMessageType", BcMessageType_name, BcMessageType_value)
 	proto.RegisterType((*BcMessage)(nil), "blockcache.bcMessage")
 	proto.RegisterType((*BlockCacheRaw)(nil), "blockcache.BlockCacheRaw")
 	proto.RegisterType((*WitnessList)(nil), "blockcache.WitnessList")
 	proto.RegisterMapType((map[string]*WitnessInfo)(nil), "blockcache.WitnessList.WitnessInfoEntry")
 	proto.RegisterType((*WitnessInfo)(nil), "blockcache.WitnessInfo")
-	proto.RegisterEnum("blockcache.BcMessageType", BcMessageType_name, BcMessageType_value)
 }
 
-func init() {
-	proto.RegisterFile("core/blockcache/block_cache.proto", fileDescriptor_block_cache_4248821a1a8bc66d)
-}
+func init() { proto.RegisterFile("core/blockcache/block_cache.proto", fileDescriptor_96d071d2d2082821) }
 
-var fileDescriptor_block_cache_4248821a1a8bc66d = []byte{
+var fileDescriptor_96d071d2d2082821 = []byte{
 	// 400 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x7c, 0x52, 0x4f, 0xef, 0xd2, 0x40,
 	0x10, 0x75, 0x69, 0x21, 0xbf, 0x4e, 0x41, 0x71, 0x42, 0xb4, 0x7a, 0x30, 0xb5, 0xa7, 0xc6, 0x48,

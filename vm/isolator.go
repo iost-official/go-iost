@@ -6,8 +6,6 @@ import (
 	"strings"
 	"time"
 
-	"errors"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -68,14 +66,13 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 		if err != nil {
 			return err
 		}
-		if i.h.GasPayed(t.Publisher)*t.GasRatio >= t.GasLimit {
-			return fmt.Errorf("gas limit should be larger")
+		if i.h.GasPaid(t.Publisher)*t.GasRatio >= t.GasLimit {
+			return fmt.Errorf("gas limit should be larger, paid: %v, gas limit: %v, gas ratio: %v", i.h.GasPaid(t.Publisher), t.GasLimit, t.GasRatio)
 		}
 		gas := i.h.TotalGas(i.publisherID)
-		gasLimit := &common.Fixed{Value: t.GasLimit, Decimal: 2}
-		if gas.LessThan(gasLimit) {
-			ilog.Infof("publisher's gas balance is less than gas limit: publisher %v current gas:%v, gas limit:%v\n", i.publisherID, gas.ToString(), gasLimit.ToString())
-			return fmt.Errorf("%v gas less than limit %v < %v", i.publisherID, gas.ToString(), gasLimit.ToString())
+		err = CheckTxGasLimitValid(t, gas, i.h.DB())
+		if err != nil {
+			return err
 		}
 	}
 	loadTxInfo(i.h, t, i.publisherID)
@@ -89,32 +86,17 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 }
 
 func (i *Isolator) checkAuth(t *tx.Tx) error {
-	for _, item := range t.Signers {
-		ss := strings.Split(item, "@")
-		if len(ss) != 2 {
-			return fmt.Errorf("illegal signer: %v", item)
-		}
-		b, c := i.h.RequireAuth(ss[0], ss[1])
-		if !b {
-			return fmt.Errorf("unauthorized signer: %v", item)
-		}
-		i.h.PayCost(c, t.Publisher)
+	err := i.h.CheckSigners(t)
+	if err != nil {
+		return err
 	}
-	b, c := i.h.RequireAuth(t.Publisher, "active")
-	if !b {
-		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
+	err = i.h.CheckPublisher(t)
+	if err != nil {
+		return err
 	}
-	i.h.PayCost(c, t.Publisher)
-	// check amount limit
-	for _, limit := range t.AmountLimit {
-		decimal := i.h.DB().Decimal(limit.Token)
-		if decimal == -1 {
-			return errors.New("token in amountLimit not exists, " + limit.Token)
-		}
-		_, err := common.NewFixed(limit.Val, decimal)
-		if err != nil {
-			return err
-		}
+	err = i.h.CheckAmountLimit(t.AmountLimit)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -135,15 +117,19 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 	rtn, cost, err = staticMonitor.Call(i.h, action.Contract, action.ActionName, action.Data)
 
 	if err != nil {
+		actionDesc := action.String()
+		if len(actionDesc) > 100 {
+			actionDesc = actionDesc[:100] + "..."
+		}
 		if strings.Contains(err.Error(), "execution killed") {
 			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
-				Message: err.Error(),
+				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
 			}
 		} else {
 			status = &tx.Status{
 				Code:    tx.ErrorRuntime,
-				Message: err.Error(),
+				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
 			}
 		}
 
@@ -175,10 +161,10 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 }
 
 // Run actions in tx
-func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
-	vmGasLimit := i.t.GasLimit/i.t.GasRatio - i.h.GasPayed()
+func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
+	vmGasLimit := i.t.GasLimit/i.t.GasRatio - i.h.GasPaid()
 	if vmGasLimit <= 0 {
-		ilog.Fatalf("vmGasLimit < 0. It should not happen. %v / %v < %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPayed())
+		ilog.Fatalf("vmGasLimit < 0. It should not happen. %v / %v < %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPaid())
 	}
 	i.h.Context().GSet("gas_limit", vmGasLimit)
 	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
@@ -186,27 +172,36 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 	i.tr = tx.NewTxReceipt(i.t.Hash())
 
 	if i.t.Delay > 0 {
-		i.h.DB().StoreDelaytx(string(i.t.Hash()))
+		txHash := string(i.t.Hash())
+		i.h.DB().StoreDelaytx(txHash, i.publisherID)
 		i.tr.Status = &tx.Status{
 			Code:    tx.Success,
 			Message: "",
 		}
-		i.tr.GasUsage = i.t.Delay / 1e9 // TODO: determine the price
+		cost := host.DelayTxCost(len(txHash)+len(i.publisherID), i.publisherID)
+		i.h.PayCost(cost, i.publisherID)
 		return i.tr, nil
 	}
 
 	if i.t.IsDefer() {
-		if !i.h.DB().HasDelaytx(string(i.t.ReferredTx)) {
+		refTxHash := string(i.t.ReferredTx)
+		if !i.h.DB().HasDelaytx(refTxHash) {
 			return nil, fmt.Errorf("delay tx not found, hash=%v", i.t.ReferredTx)
 		}
-		i.h.DB().DelDelaytx(string(i.t.ReferredTx))
 
-		if !i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
+		// the delaytx should be deleted even the tx is executed failed.
+		// use defer func so the delete operation would not be reverted by i.h.DB().Rollback().
+		defer func() {
+			i.h.DB().DelDelaytx(refTxHash)
+			cost := host.DelDelayTxCost(len(refTxHash)+len(i.publisherID), i.publisherID)
+			i.h.PayCost(cost, i.publisherID)
+		}()
+
+		if i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
 			i.tr.Status = &tx.Status{
 				Code:    tx.Success,
 				Message: "transaction expired",
 			}
-			i.tr.GasUsage = 1 // TODO: determine the price
 			return i.tr, nil
 		}
 	}
@@ -217,33 +212,27 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 		ilog.Debugf("used cost %v\n", actionCost)
 		ilog.Debugf("status %v\n", status)
 		ilog.Debugf("return value: %v\n", ret)
-
 		if err != nil {
 			return nil, err
 		}
 
 		i.tr.Status = status
-		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") || (status.Code == tx.ErrorTimeout) {
+		actionCost.AddAssign(contract.NewCost(0, int64(len(ret)), 0))
+		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") ||
+			(vmGasLimit < actionCost.ToGas()) ||
+			(!i.genesisMode && !i.blockBaseMode && i.h.TotalGas(i.t.Publisher).Value/i.t.GasRatio < i.h.GasPaid()+vmGasLimit) {
+			ilog.Errorf("out of gas vmGasLimit %v actionCost %v totalGas %v gasPaid %v", vmGasLimit, actionCost.ToGas(), i.h.TotalGas(i.t.Publisher).ToString(), i.h.GasPaid())
+			status.Code = tx.ErrorRuntime
+			status.Message = "out of gas"
 			actionCost.CPU = vmGasLimit
 			actionCost.Net = 0
-		}
-		actionCost.AddAssign(contract.NewCost(0, int64(len(ret)), 0))
-		if actionCost.ToGas() > vmGasLimit {
-			//ilog.Errorf("vm limit gas exceed %v(%v) > %v", actionCost.ToGas(), actionCost, vmGasLimit)
-			i.tr.Status = &tx.Status{Code: tx.ErrorRuntime, Message: host.ErrGasLimitExceeded.Error()}
+			ret = ""
+		} else if status.Code == tx.ErrorTimeout {
 			actionCost.CPU = vmGasLimit
 			actionCost.Net = 0
 			ret = ""
 		}
 
-		if status.Code == 0 {
-			for k, v := range i.h.Costs() {
-				i.tr.RAMUsage[k] = v.Data
-			}
-		}
-
-		vmGasLimit -= actionCost.ToGas()
-		i.h.Context().GSet("gas_limit", vmGasLimit)
 		i.h.PayCost(actionCost, i.publisherID)
 
 		if status.Code != tx.Success {
@@ -253,34 +242,42 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolinty
 			i.h.ClearRAMCosts()
 			i.tr.RAMUsage = make(map[string]int64)
 			break
-		} else {
-			i.tr.Receipts = append(i.tr.Receipts, receipts...)
 		}
-		i.tr.Returns = append(i.tr.Returns, ret)
-	}
 
+		i.tr.Receipts = append(i.tr.Receipts, receipts...)
+		i.tr.Returns = append(i.tr.Returns, ret)
+		vmGasLimit -= actionCost.ToGas()
+		i.h.Context().GSet("gas_limit", vmGasLimit)
+	}
 	return i.tr, nil
 }
 
 // PayCost as name
 func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
-	if i.t.GasLimit < i.h.GasPayed()*i.t.GasRatio {
-		ilog.Fatalf("total gas cost is above limit %v < %v * %v", i.t.GasLimit, i.h.GasPayed(), i.t.GasRatio)
+	if i.t.GasLimit < i.h.GasPaid()*i.t.GasRatio {
+		ilog.Fatalf("total gas cost is above limit %v < %v * %v", i.t.GasLimit, i.h.GasPaid(), i.t.GasRatio)
 	}
-	payedGas, err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
+	paidGas, err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 	if err != nil {
 		ilog.Errorf("DoPay failed, rollback %v", err)
 		i.h.DB().Rollback()
+
 		i.h.ClearRAMCosts()
 		i.tr.RAMUsage = make(map[string]int64)
 		i.tr.Status.Code = tx.ErrorBalanceNotEnough
 		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
-		payedGas, err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
+		paidGas, err = i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 		if err != nil {
-			panic(err)
+			return nil, err
 		}
 	}
-	i.tr.GasUsage = payedGas.Value
+	i.tr.GasUsage = paidGas.Value
+	for k, v := range i.h.Costs() {
+		if v.Data != 0 {
+			i.tr.RAMUsage[k] = v.Data
+		}
+	}
+
 	return i.tr, nil
 }
 
@@ -303,11 +300,7 @@ func (i *Isolator) ClearTx() {
 	i.h.DB().Rollback()
 }
 func checkTxParams(t *tx.Tx) error {
-	err := t.CheckGas()
-	if err != nil {
-		return err
-	}
-	return nil
+	return t.CheckGas()
 }
 
 func loadBlkInfo(ctx *host.Context, bh *block.BlockHead) *host.Context {

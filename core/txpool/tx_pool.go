@@ -56,12 +56,14 @@ func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache,
 
 // Start starts the jobs.
 func (pool *TxPImpl) Start() error {
+	go pool.deferServer.Start()
 	go pool.loop()
 	return nil
 }
 
 // Stop stops all the jobs.
 func (pool *TxPImpl) Stop() {
+	pool.deferServer.Stop()
 	close(pool.quitCh)
 }
 
@@ -75,13 +77,17 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 		return err
 	}
 	t := &tx.Tx{
-		Actions:    referredTx.Actions,
-		Time:       referredTx.Time + referredTx.Delay,
-		Expiration: referredTx.Expiration + referredTx.Delay,
-		GasLimit:   referredTx.GasLimit,
-		GasRatio:   referredTx.GasRatio,
-		Publisher:  referredTx.Publisher,
-		ReferredTx: txHash,
+		Actions:      referredTx.Actions,
+		Time:         referredTx.Time + referredTx.Delay,
+		Expiration:   referredTx.Expiration + referredTx.Delay,
+		GasLimit:     referredTx.GasLimit,
+		GasRatio:     referredTx.GasRatio,
+		Publisher:    referredTx.Publisher,
+		ReferredTx:   txHash,
+		AmountLimit:  referredTx.AmountLimit,
+		PublishSigns: referredTx.PublishSigns,
+		Signs:        referredTx.Signs,
+		Signers:      referredTx.Signers,
 	}
 	err = pool.verifyDuplicate(t)
 	if err != nil {
@@ -164,17 +170,22 @@ func (pool *TxPImpl) verifyWorkers() {
 		pool.pendingTx.Add(&t)
 		pool.mu.Unlock()
 		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
-		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage, true)
+		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
 	}
 }
 
 func (pool *TxPImpl) processDelaytx(blk *block.Block) {
-	for _, t := range blk.Txs {
+	for i, t := range blk.Txs {
 		if t.Delay > 0 {
 			pool.deferServer.StoreDeferTx(t)
 		}
 		if t.IsDefer() {
 			pool.deferServer.DelDeferTx(t)
+		}
+		if cancelHash, exist := t.CanceledDelaytxHash(); exist {
+			if blk.Receipts[i].Status.Code == tx.Success {
+				pool.deferServer.DelDeferTxByHash(cancelHash)
+			}
 		}
 	}
 }
@@ -225,7 +236,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 		pool.pendingTx.Size(),
 	)
 
-	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage, true)
+	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
 	return nil
 }
@@ -274,6 +285,9 @@ func (pool *TxPImpl) initBlockTx() {
 func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return ErrCacheFull
+	}
+	if err := t.CheckSize(); err != nil {
+		return err
 	}
 	if err := t.CheckGas(); err != nil {
 		return err

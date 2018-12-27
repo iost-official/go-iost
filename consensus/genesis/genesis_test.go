@@ -35,8 +35,6 @@ func TestGenGenesis(t *testing.T) {
 			FoundationAccount: "f8",
 			IOSTTotalSupply:   90000000000,
 			IOSTDecimal:       8,
-			RAMTotalSupply:    9000000000000000000,
-			RAMGenesisAmount:  137438953472,
 		},
 		InitialTimestamp: "2006-01-02T15:04:05Z",
 		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",

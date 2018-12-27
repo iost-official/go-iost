@@ -68,6 +68,24 @@ service ApiService {
         };
     }
 
+    // get token721 balance
+    rpc GetToken721Balance (GetTokenBalanceRequest) returns (GetToken721BalanceResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Balance/{account}/{token}/{by_longest_chain}"
+        };
+    }
+    // get token721 metadata
+    rpc GetToken721Metadata (GetToken721InfoRequest) returns (GetToken721MetadataResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Metadata/{token}/{token_id}/{by_longest_chain}"
+        };
+    }
+    // get token721 owner
+    rpc GetToken721Owner (GetToken721InfoRequest) returns (GetToken721OwnerResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Owner/{token}/{token_id}/{by_longest_chain}"
+        };
+    }
     // get gas ratio infomation
     rpc GetGasRatio (EmptyRequest) returns (GasRatioResponse) {
         option (google.api.http) = {
@@ -168,7 +186,7 @@ message AmountLimit {
     // token name
     string token = 1;
     // limit value
-    double value = 2;
+    string value = 2;
 }
 
 // The message defines transaction action struct.
@@ -264,7 +282,7 @@ message TransactionResponse {
     // The enumeration defines transaction status.
     enum Status {
         // pending in transaction pool
-        PENDIND = 0;
+        PENDING = 0;
         // packed in a block that has not been confirmed
         PACKED = 1;
         // packed in a block that is irreversible
@@ -366,7 +384,7 @@ message BlockResponse {
     // The enumeration defines block status.
     enum Status {
         // pending in block cache
-        PENDIND = 0;
+        PENDING = 0;
         // irreversible
         IRREVERSIBLE = 1;
     }
@@ -564,8 +582,10 @@ message GetContractStorageRequest {
     string key = 2;
     // get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
     string field = 3;
+    // the keys in the StateDB
+    string keys = 4;
     // get data by longest chain's head block or last irreversible block
-    bool by_longest_chain = 4;
+    bool by_longest_chain = 5;
 }
 
 // The message defines get contract storage response.
@@ -598,6 +618,34 @@ message GetTokenBalanceRequest {
     bool by_longest_chain = 3;
 }
 
+// The message defines get token721 balance response.
+message GetToken721BalanceResponse {
+    // token balance
+    int64 balance = 1;
+    // balance information
+    repeated string tokenIDs = 2;
+}
+
+// The message defines get token721 info request.
+message GetToken721InfoRequest {
+    // the token name
+    string token = 1;
+    // token id
+    string token_id = 2;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 3;
+}
+
+// The message defines get token721 metadata response.
+message GetToken721MetadataResponse {
+    // token metadata
+    string metadata = 1;
+}
+// The message defines get token721 owner response.
+message GetToken721OwnerResponse {
+    // token owner
+    string owner = 1;
+}
 // The message defines event struct.
 message Event {
     enum Topic {

@@ -14,6 +14,8 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
+	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 var testID = []string{
@@ -82,13 +84,17 @@ func TestCheckPublisher(t *testing.T) {
 	}
 	mock.EXPECT().Get("state", "m-auth.iost-auth-b").Return("s"+string(bx), nil)
 
-	err = CheckPublisher(mock, t2)
+	authList := make(map[string]int)
+	authList[kp.ID] = 2
+	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock), nil, ilog.DefaultLogger())
+	h.Context().Set("auth_list", authList)
+	err = h.CheckPublisher(t2)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t2.Publisher = "b"
-	err = CheckPublisher(mock, t2)
+	err = h.CheckPublisher(t2)
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -133,7 +139,11 @@ func TestCheckSigners(t *testing.T) {
 	}
 	tr.Signs = append(tr.Signs, sig1)
 
-	err = CheckSigners(mock, tr)
+	authList := make(map[string]int)
+	authList[kp.ID] = 1
+	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock), nil, ilog.DefaultLogger())
+	h.Context().Set("auth_list", authList)
+	err = h.CheckSigners(tr)
 	if err == nil {
 		t.Fatal(err)
 	}
@@ -143,8 +153,10 @@ func TestCheckSigners(t *testing.T) {
 		t.Fatal(err)
 	}
 	tr.Signs = append(tr.Signs, sig2)
+	authList[kp2.ID] = 1
+	h.Context().Set("auth_list", authList)
 
-	err = CheckSigners(mock, tr)
+	err = h.CheckSigners(tr)
 	if err != nil {
 		t.Fatal(err)
 	}

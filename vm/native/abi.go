@@ -21,6 +21,11 @@ func TokenABI() *contract.Contract {
 	return ABI("token.iost", tokenABIs)
 }
 
+// Token721ABI generate token.iost abi and contract
+func Token721ABI() *contract.Contract {
+	return ABI("token721.iost", token721ABIs)
+}
+
 // ABI generate native abis
 func ABI(id string, abiSet *abiSet) *contract.Contract {
 	c := &contract.Contract{
@@ -37,6 +42,9 @@ func ABI(id string, abiSet *abiSet) *contract.Contract {
 		c.Info.Abi = append(c.Info.Abi, &contract.ABI{
 			Name: v.name,
 			Args: v.args,
+			AmountLimit: []*contract.Amount{
+				{Token: "*", Val: "unlimited"},
+			},
 		})
 	}
 

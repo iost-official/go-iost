@@ -99,6 +99,19 @@ func (d *DB) CommitBatch() error {
 	return nil
 }
 
+// Size returns the size of leveldb
+func (d *DB) Size() (int64, error) {
+	stats := &leveldb.DBStats{}
+	if err := d.db.Stats(stats); err != nil {
+		return 0, err
+	}
+	total := int64(0)
+	for _, size := range stats.LevelSizes {
+		total += size
+	}
+	return total, nil
+}
+
 // Close will close the database
 func (d *DB) Close() error {
 	return d.db.Close()
