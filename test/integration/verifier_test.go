@@ -572,7 +572,7 @@ func TestDomain(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r2.Status.Message, ShouldEqual, "")
 
-		r1, err = s.Call("domain.iost", "Link", fmt.Sprintf(`["abcde#A","%v"]`, cname), acc.ID, acc.KeyPair)
+		r1, err = s.Call("domain.iost", "Link", fmt.Sprintf(`["ab.cde#A","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldContainSubstring, "url contains invalid character")
 	})

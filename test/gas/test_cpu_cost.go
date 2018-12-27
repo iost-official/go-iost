@@ -181,7 +181,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 
 	data := make([]byte, 5)
 	for i := range data {
-		data[i]	= 'k'
+		data[i] = 'k'
 	}
 	now := time.Now()
 

@@ -26,7 +26,7 @@ func checkURLValid(name string) error {
 		return fmt.Errorf("url invalid. url length should be between 5,16 got %v", name)
 	}
 	if !strings.Contains(name, ".") {
-		return fmt.Errorf("url invalid. url must contain '.'");
+		return fmt.Errorf("url invalid. url must contain '.'")
 	}
 	for _, ch := range name {
 		if !(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch == '_' || ch == '.') {
