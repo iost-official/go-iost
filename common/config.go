@@ -9,6 +9,7 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
+// Constant of limit
 var (
 	MaxBlockGasLimit = int64(500000000)
 	MaxTxTimeLimit   = 100 * time.Millisecond

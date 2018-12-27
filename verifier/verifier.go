@@ -141,6 +141,7 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 	return r, nil
 }
 
+// nolint:gocyclo
 func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
 	info := Info{
 		Mode: 0,
