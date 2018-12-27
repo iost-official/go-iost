@@ -223,6 +223,33 @@
         ]
       }
     },
+    "/getContractStorageFields": {
+      "post": {
+        "summary": "get contract fields storage",
+        "operationId": "GetContractStorageFields",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetContractStorageFieldsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetContractStorageFieldsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getGasRatio": {
       "get": {
         "summary": "get gas ratio infomation",
@@ -1062,6 +1089,35 @@
         }
       }
     },
+    "rpcpbGetContractStorageFieldsRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "contract id"
+        },
+        "fields": {
+          "type": "string",
+          "title": "get the fields from StateDB"
+        },
+        "by_longest_chain": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "get data by longest chain's head block or last irreversible block"
+        }
+      },
+      "description": "The message defines get contract storage request."
+    },
+    "rpcpbGetContractStorageFieldsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "title": "the json string data"
+        }
+      },
+      "description": "The message defines get contract storage response."
+    },
     "rpcpbGetContractStorageRequest": {
       "type": "object",
       "properties": {
@@ -1076,10 +1132,6 @@
         "field": {
           "type": "string",
           "title": "get the value from StateDB, field is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)"
-        },
-        "keys": {
-          "type": "string",
-          "title": "the keys in the StateDB"
         },
         "by_longest_chain": {
           "type": "boolean",
