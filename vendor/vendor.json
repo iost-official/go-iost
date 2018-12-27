@@ -233,20 +233,20 @@
 		{
 			"checksumSHA1": "3wzsPPMqn5TgyqyPBQ/G0sOa414=",
 			"path": "github.com/grpc-ecosystem/grpc-gateway/runtime",
-			"revision": "2cb2dfbd4c72b13c88abc7828f9b276bf7e66133",
-			"revisionTime": "2018-11-08T15:51:33Z"
+			"revision": "719aaadb1a4f7b11606d454e266fe5c5f789796f",
+			"revisionTime": "2018-12-21T14:38:24Z"
 		},
 		{
 			"checksumSHA1": "dKdNxuf5/Z1Oiz+7tXTeuyXqHgE=",
 			"path": "github.com/grpc-ecosystem/grpc-gateway/runtime/internal",
-			"revision": "2cb2dfbd4c72b13c88abc7828f9b276bf7e66133",
-			"revisionTime": "2018-11-08T15:51:33Z"
+			"revision": "719aaadb1a4f7b11606d454e266fe5c5f789796f",
+			"revisionTime": "2018-12-21T14:38:24Z"
 		},
 		{
 			"checksumSHA1": "yUJS5jJyNTvxHCUUXiK3xnKfN14=",
 			"path": "github.com/grpc-ecosystem/grpc-gateway/utilities",
-			"revision": "2cb2dfbd4c72b13c88abc7828f9b276bf7e66133",
-			"revisionTime": "2018-11-08T15:51:33Z"
+			"revision": "719aaadb1a4f7b11606d454e266fe5c5f789796f",
+			"revisionTime": "2018-12-21T14:38:24Z"
 		},
 		{
 			"checksumSHA1": "YtLKaK8Ht8bGfqs0JIbBKcTRkpg=",

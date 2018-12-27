@@ -90,8 +90,6 @@ func genconfig() {
 		FoundationAccount: "foundation",
 		IOSTTotalSupply:   90000000000,
 		IOSTDecimal:       8,
-		RAMTotalSupply:    9000000000000000000,
-		RAMGenesisAmount:  137438953472,
 	}
 
 	foundationInfo := &common.Witness{

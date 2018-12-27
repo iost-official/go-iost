@@ -5,6 +5,17 @@ class Account {
     init() {
 
     }
+    InitAdmin(adminID) {
+        const bn = block.number;
+        if(bn !== 0) {
+            throw new Error("init out of genesis block")
+        }
+        storage.put("adminID", adminID);
+    }
+    can_update(data) {
+        const admin = storage.get("adminID");
+        return blockchain.requireAuth(admin, "active");
+    }
     _saveAccount(account, payer) {
         if (payer === undefined) {
             payer = account.id
@@ -41,6 +52,9 @@ class Account {
         if (id.length < 5 || id.length > 11) {
             throw new Error("id invalid. id length should be between 5,11 > " + id)
         }
+        if (id.startsWith("Contract")) {
+            throw new Error("id invalid. id shouldn't start with 'Contract'.");
+        }
         for (let i in id) {
             let ch = id[i];
             if (!(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch === '_')) {
@@ -69,10 +83,10 @@ class Account {
             throw new Error("id existed > " + id);
         }
         this._checkIdValid(id);
+        const referrer = blockchain.publisher();
         let account = {};
         account.id = id;
-        account.referrer = blockchain.publisher();
-        account.referrer_update_time = block.time;
+        account.referrer = referrer;
         account.permissions = {};
         account.permissions.active = {
             name: "active",
@@ -95,24 +109,16 @@ class Account {
             threshold: 1,
         };
         this._saveAccount(account, blockchain.publisher());
-        if (storage.globalMapHas("vote_producer.iost", "producerTable", blockchain.publisher())) {
-            blockchain.callWithAuth("gas.iost", "reward", JSON.stringify([blockchain.publisher(), "30000"]));
+        if (block.number !== 0) {
+            const defaultGasPledge = "10";
+            const defaultRegisterReward = "3";
+            blockchain.callWithAuth("gas.iost", "pledge", JSON.stringify([blockchain.publisher(), id, defaultGasPledge]));
+            if (storage.globalMapHas("vote_producer.iost", "producerTable", blockchain.publisher())) {
+                blockchain.callWithAuth("issue.iost", "IssueIOSTTo", JSON.stringify([referrer, defaultRegisterReward]));
+            }
         }
     }
 
-    UpdateReferrer(id, referrer) {
-        this._ra(id);
-        if (referrer === id) {
-            throw new Error("referrer cannot be oneself");
-        }
-        let acc = this._loadAccount(id);
-        const one_month = 30 * 24 * 3600 * 1e9;
-        if (acc.referrer !== null && block.time < acc.referrer_update_time + one_month) {
-            throw new Error("referrer can only be updated one time per 30 days");
-        }
-        acc.referrer = referrer;
-        this._saveAccount(acc);
-    }
     AddPermission(id, perm, thres) {
         this._ra(id);
         this._checkPermValid(perm);

@@ -179,6 +179,10 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 		log.Fatalf("Compile contract failed: %v", err)
 	}
 
+	data := make([]byte, 5)
+	for i := range data {
+		data[i] = 'k'
+	}
 	now := time.Now()
 
 	ctx := host.NewContext(nil)
@@ -190,7 +194,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 	expTime := time.Now().Add(time.Second * 10)
 	host.SetDeadline(expTime)
 
-	_, cost, err := vmPool.LoadAndCall(host, contract, api, num)
+	_, cost, err := vmPool.LoadAndCall(host, contract, api, num, string(data))
 
 	if err != nil {
 		log.Fatalf("LoadAndCall %v.%v %v failed: %v", contract, api, num, err)
