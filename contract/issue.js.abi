@@ -17,6 +17,13 @@
         {
             "name": "IssueIOST",
             "args": []
+        },
+        {
+            "name": "IssueIOSTTo",
+            "args": [
+                "string",
+                "string"
+            ]
         }
     ]
 }

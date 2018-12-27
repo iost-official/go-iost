@@ -83,7 +83,7 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 	case "system.iost":
 		a, ok = systemABIs.Get(api)
 	case "domain.iost":
-		a, ok = DomainABIs.Get(api)
+		a, ok = domainABIs.Get(api)
 	case "gas.iost":
 		a, ok = gasABIs.Get(api)
 	case "token.iost":
