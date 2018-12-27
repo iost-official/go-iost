@@ -461,7 +461,7 @@ func Test_LargeContract(t *testing.T) {
 			Contract:   "system.iost",
 			ActionName: "SetCode",
 			Data:       string(jargs),
-		}}, nil, int64(1e12), 100, s.Head.Time+100000000, 0)
+		}}, nil, int64(200000000), 100, s.Head.Time+100000000, 0)
 
 		trx.Time = s.Head.Time
 

@@ -2,10 +2,16 @@ package common
 
 import (
 	"os"
+	"time"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+)
+
+var (
+	MaxBlockGasLimit = int64(5000000)
+	MaxTxTimeLimit   = 100 * time.Millisecond
 )
 
 // ACCConfig account of the system

@@ -147,6 +147,7 @@ func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isola
 	}
 	var tn time.Time
 	to := time.Now().Add(c.Timeout)
+	blockGasLimit := common.MaxBlockGasLimit
 
 L:
 	for tn.Before(to) {
@@ -182,6 +183,9 @@ L:
 			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
+		if t.GasLimit > blockGasLimit {
+			continue L
+		}
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
@@ -214,6 +218,7 @@ L:
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
+		blockGasLimit -= r.GasUsage
 	}
 	buf, err := json.Marshal(info)
 	if err != nil {
