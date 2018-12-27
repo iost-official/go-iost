@@ -3,6 +3,10 @@ class Account {
 
     }
 
+    /**
+     * @constructor
+     * @param
+     */
     init() {
 
     }
@@ -68,6 +72,10 @@ class Account {
         }
     }
 
+    /**
+     * @param  {string} id - this is a string
+     *
+     */
     SignUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);

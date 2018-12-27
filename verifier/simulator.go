@@ -185,7 +185,14 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 		return nil, err
 	}
 
+	return s.RunTx(stx)
+
+}
+
+// RunTx run tx with signed tx
+func (s *Simulator) RunTx(stx *tx.Tx) (*tx.TxReceipt, error) {
 	var isolator vm.Isolator
+	var err error
 
 	err = isolator.Prepare(s.Head, s.Visitor, s.Logger)
 	if err != nil {
