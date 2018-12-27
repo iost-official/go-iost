@@ -275,7 +275,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 
 	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
 	cost.AddAssign(co)
-	l := len(c.Encode()) // todo multi Encode call
+	l := len(c.Encode())
 	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
 		{Payer: owner.(string), Val: int64(l - oldL)},
 	}})
