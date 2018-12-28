@@ -1,8 +1,9 @@
 package host
 
 import (
-	"github.com/iost-official/go-iost/ilog"
 	"strings"
+
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // const table name
@@ -50,7 +51,7 @@ func (d *DNS) URLTransfer(url, to string) {
 	}
 }
 
-// URL git url of cid
+// URL get url of cid
 func (d *DNS) URL(cid string) string {
 	domain, _ := d.h.GlobalMapGet("domain.iost", DNSRTable, cid)
 	if s, ok := domain.(string); ok {
@@ -61,7 +62,7 @@ func (d *DNS) URL(cid string) string {
 
 // IsDomain determine if s is a domain
 func (d *DNS) IsDomain(s string) bool {
-	if strings.HasPrefix(s, "Contract") || strings.HasSuffix(s, ".iost") {
+	if strings.HasPrefix(s, "Contract") {
 		return false
 	}
 	return true
