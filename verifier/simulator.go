@@ -80,6 +80,11 @@ func (s *Simulator) SetGas(id string, i int64) {
 	s.Visitor.Commit()
 }
 
+// GetGas ...
+func (s *Simulator) GetGas(id string) int64 {
+	return s.Visitor.TotalGasAtTime(id, s.Head.Time).Value / 100
+}
+
 // SetRAM to id
 func (s *Simulator) SetRAM(id string, r int64) {
 	s.Visitor.SetTokenBalance("ram", id, r)
@@ -164,6 +169,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0)
 
 	trx.Time = s.Head.Time
+	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
 	return s.CallTx(trx, publisher, auth)
 }
@@ -200,7 +206,6 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
-
 	r, err := isolator.PayCost()
 	if err != nil {
 		return nil, err

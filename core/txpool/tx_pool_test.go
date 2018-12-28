@@ -49,7 +49,7 @@ func TestNewTxPImpl(t *testing.T) {
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any(), Any()).AnyTimes()
+		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
 		var accountList []*account.KeyPair
@@ -215,7 +215,7 @@ func TestNewTxPImplB(t *testing.T) {
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any(), Any()).AnyTimes()
+		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
 		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
 		var accountList []*account.KeyPair
@@ -678,7 +678,7 @@ func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 
 	ex := time.Now().UnixNano() + expirationIter
 
-	t := tx.NewTx(actions, []string{a.ID}, 100000, 100, ex, 0)
+	t := tx.NewTx(actions, []string{a.ID}, 1000000, 100, ex, 0)
 
 	sig1, err := tx.SignTxContent(t, a.ID, a)
 	if err != nil {

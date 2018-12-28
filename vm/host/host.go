@@ -10,6 +10,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 )
@@ -52,7 +53,7 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 	h.Info = NewInfo(h)
 	h.Teller = NewTeller(h)
 	h.APIDelegate = NewAPI(h)
-	h.EventPoster = EventPoster{}
+	h.EventPoster = NewEventPoster(h)
 	h.DNS = NewDNS(h)
 	h.Authority = Authority{h: h}
 	h.GasManager = NewGasManager(h)
@@ -123,23 +124,66 @@ func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error) {
 	cost := contract.Cost0()
 	for _, abi := range c.Info.Abi {
-		for _, limit := range abi.AmountLimit {
-			cost.AddAssign(CommonOpCost(1))
-			decimal := h.db.Decimal(limit.Token)
-			if decimal == -1 {
-				return cost, ErrAmountLimitTokenNotExists
-			}
-			_, err := common.NewFixed(limit.Val, decimal)
-			if err != nil {
-				return cost, err
-			}
+		cost.AddAssign(CommonOpCost(len(abi.AmountLimit)))
+		err := h.CheckAmountLimit(abi.AmountLimit)
+		if err != nil {
+			return cost, err
 		}
 	}
 	return cost, nil
 }
 
+// CheckPublisher check publisher of tx
+func (h *Host) CheckPublisher(t *tx.Tx) error {
+	b, c := h.RequireAuth(t.Publisher, "active")
+	if !b {
+		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
+	}
+	h.PayCost(c, t.Publisher)
+	return nil
+}
+
+// CheckSigners check signers of tx
+func (h *Host) CheckSigners(t *tx.Tx) error {
+	for _, item := range t.Signers {
+		ss := strings.Split(item, "@")
+		if len(ss) != 2 {
+			return fmt.Errorf("illegal signer: %v", item)
+		}
+		b, c := h.RequireAuth(ss[0], ss[1])
+		if !b {
+			return fmt.Errorf("unauthorized signer: %v", item)
+		}
+		h.PayCost(c, t.Publisher)
+	}
+	return nil
+}
+
+// CheckAmountLimit check amountLimit of tx valid
+func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
+	for _, limit := range amountLimit {
+		decimal := h.DB().Decimal(limit.Token)
+		if limit.Token == "*" {
+			decimal = 0
+		}
+		if decimal == -1 {
+			return fmt.Errorf("token not exists in amountLimit, %v", limit)
+		}
+		if limit.Val != "unlimited" {
+			_, err := common.NewFixed(limit.Val, decimal)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
 // SetCode set code to storage
 func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error) {
+	if err := c.VerifySelf(); err != nil {
+		return CommonErrorCost(1), err
+	}
 	cost, err := h.checkAbiValid(c)
 	if err != nil {
 		return cost, err
@@ -183,6 +227,9 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 
 // UpdateCode update code
 func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (contract.Cost, error) {
+	if err := c.VerifySelf(); err != nil {
+		return CommonErrorCost(1), err
+	}
 	oc := h.db.Contract(c.ID)
 	if oc == nil {
 		return Costs["GetCost"], ErrContractNotFound
@@ -228,7 +275,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 
 	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
 	cost.AddAssign(co)
-	l := len(c.Encode()) // todo multi Encode call
+	l := len(c.Encode())
 	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
 		{Payer: owner.(string), Val: int64(l - oldL)},
 	}})
@@ -274,14 +321,24 @@ func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
 }
 
 // CancelDelaytx deletes delaytx hash.
+//
+// The given argument txHash is from user's input. So we should Base58Decode it first.
 func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
 
-	if !h.db.HasDelaytx(txHash) {
-		return Costs["DelaytxNotFoundCost"], ErrDelaytxNotFound
+	hashString := string(common.Base58Decode(txHash))
+	cost := Costs["GetCost"]
+	publisher := h.db.GetDelaytx(hashString)
+
+	if publisher == database.NilPrefix {
+		return cost, ErrDelaytxNotFound
+	}
+	if publisher != h.Context().Value("publisher").(string) {
+		return cost, ErrCancelDelayForbid
 	}
 
-	h.db.DelDelaytx(txHash)
-	return Costs["DelDelaytxCost"], nil
+	h.db.DelDelaytx(hashString)
+	cost.AddAssign(DelDelayTxCost(len(hashString)+len(publisher), publisher))
+	return cost, nil
 }
 
 // Logger get a log in host

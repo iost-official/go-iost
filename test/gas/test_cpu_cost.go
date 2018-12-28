@@ -24,23 +24,45 @@ var (
 			"Empty",
 		},
 		"base": {
-			"Call",
-			"New",
-			"Throw",
-			"Yield",
-			"Member",
-			"Meta",
-			"Assignment",
-			"Plus",
-			"Add",
-			"Sub",
-			"Mutiple",
-			"Div",
-			"Not",
-			"And",
-			"Conditional",
+			"ThrowStatement",
+			"CallExpression",
+			"TemplateLiteral",
+			"TaggedTemplateExpression",
+			"NewExpression",
+			"YieldExpression",
+			"MemberExpression",
+			"MetaProperty",
+			"AssignmentExpression",
+			"UpdateExpression",
+			"BinaryExpressionAdd",
+			"BinaryExpressionSub",
+			"BinaryExpressionMutiple",
+			"BinaryExpressionDiv",
+			"UnaryExpressionNot",
+			"LogicalExpressionAnd",
+			"ConditionalExpression",
+			"SpreadElement",
+			"ObjectExpression",
+			"ArrayExpression",
+			"FunctionExpression",
+			"ArrowFunctionExpression",
+			"ClassDeclaration",
+			"FunctionDeclaration",
+			"VariableDeclarator",
+			"VariableDeclaratorWithoutInit",
+			"MethodDefinition",
+			"StringLiteral",
+			"ForStatement",
+			"ForInStatement",
+			"ForOfStatement",
+			"WhileStatement",
+			"DoWhileStatement",
 		},
 		"lib": {
+			"StringCharAt",
+			"StringCharCodeAt",
+			"StringLength",
+			"StringConstructor",
 			"StringToString",
 			"StringValueOf",
 			"StringConcat",
@@ -53,14 +75,15 @@ var (
 			"StringSplit",
 			"StringStartsWith",
 			"StringSlice",
+			"StringSubstring",
 			"StringToLowerCase",
 			"StringToUpperCase",
 			"StringTrim",
 			"StringTrimLeft",
 			"StringTrimRight",
 			"StringRepeat",
-			"ArrayIsArray",
-			"ArrayOf",
+			"ArrayConstructor",
+			"ArrayToString",
 			"ArrayConcat",
 			"ArrayEvery",
 			"ArrayFilter",
@@ -80,10 +103,45 @@ var (
 			"ArraySlice",
 			"ArraySort",
 			"ArraySplice",
-			"ArrayToString",
 			"ArrayUnshift",
 			"JSONParse",
 			"JSONStringify",
+			"MathAbs",
+			"MathCbrt",
+			"MathCeil",
+			"MathFloor",
+			"MathLog",
+			"MathLog10",
+			"MathLog1p",
+			"MathMax",
+			"MathMin",
+			"MathPow",
+			"MathRound",
+			"MathSqrt",
+			"BigNumberConstructor",
+			"BigNumberAbs",
+			"BigNumberDiv",
+			"BigNumberIdiv",
+			"BigNumberPow",
+			"BigNumberIntegerValue",
+			"BigNumberEq",
+			"BigNumberIsFinite",
+			"BigNumberGt",
+			"BigNumberGte",
+			"BigNumberIsInteger",
+			"BigNumberLt",
+			"BigNumberLte",
+			"BigNumberIsNaN",
+			"BigNumberIsNegative",
+			"BigNumberIsPositive",
+			"BigNumberIsZero",
+			"BigNumberMinus",
+			"BigNumberMod",
+			"BigNumberTimes",
+			"BigNumberNegated",
+			"BigNumberPlus",
+			"BigNumberSqrt",
+			"BigNumberToFixed",
 		},
 		"storage": {
 			"Put",
@@ -102,7 +160,7 @@ var (
 
 var vmPool *v8.VMPool
 var testDataPath = "./test_data/"
-var baseCPUCost = int64(2000)
+var baseCPUCost = int64(30000)
 
 func runOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
 	b, err := ioutil.ReadFile(path.Join(testDataPath, name))
@@ -110,17 +168,6 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 		log.Fatalf("Read file failed: %v", err)
 	}
 	code := string(b)
-
-	now := time.Now()
-
-	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
-	ctx.GSet("gas_limit", int64(100000000))
-	ctx.Set("contract_name", name)
-
-	host := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
-	expTime := time.Now().Add(time.Second * 10)
-	host.SetDeadline(expTime)
 
 	contract := &contract.Contract{
 		ID:   name,
@@ -132,7 +179,22 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 		log.Fatalf("Compile contract failed: %v", err)
 	}
 
-	_, cost, err := vmPool.LoadAndCall(host, contract, api, num)
+	data := make([]byte, 5)
+	for i := range data {
+		data[i] = 'k'
+	}
+	now := time.Now()
+
+	ctx := host.NewContext(nil)
+	ctx.Set("gas_price", int64(1))
+	ctx.GSet("gas_limit", int64(1000000000))
+	ctx.Set("contract_name", name)
+
+	host := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
+	expTime := time.Now().Add(time.Second * 10)
+	host.SetDeadline(expTime)
+
+	_, cost, err := vmPool.LoadAndCall(host, contract, api, num, string(data))
 
 	if err != nil {
 		log.Fatalf("LoadAndCall %v.%v %v failed: %v", contract, api, num, err)
@@ -143,7 +205,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 
 func init() {
 	// TODO The number of pool need adjust
-	vmPool = v8.NewVMPool(30, 30)
+	vmPool = v8.NewVMPool(10, 400)
 	vmPool.Init()
 }
 
@@ -350,7 +412,86 @@ func getOverview() {
 	os.RemoveAll("mvccdb")
 }
 
+func getOverviewTable() {
+	mvccdb, err := db.NewMVCCDB("mvccdb")
+	if err != nil {
+		log.Fatalf("New MVCC DB failed: %v", err)
+	}
+	vi := database.NewVisitor(100, mvccdb)
+
+	ttotal := float64(0)
+	ctotal := float64(0)
+	for i := 0; i < 200; i++ {
+		runOp(
+			vi,
+			fmt.Sprintf("%v_op.js", "empty"),
+			fmt.Sprintf("do%v", "StartUp"),
+			i,
+		)
+	}
+
+	for i := 1; ; i++ {
+		tcost, ccost := runOp(
+			vi,
+			fmt.Sprintf("%v_op.js", "empty"),
+			fmt.Sprintf("do%v", "StartUp"),
+			0,
+		)
+		ttotal = ttotal + tcost
+		ctotal = ctotal + float64(ccost)
+		if ttotal > 0.2 {
+			name := fmt.Sprintf("%v:%v", "empty", "StartUp")
+			gas := ctotal / float64(i)
+			time := ttotal * 1e9 / float64(i)
+			fmt.Printf(
+				"%35v    cost: %12.2fgas    time: %12.2fns    cost/time: %12.2fgas/us\n",
+				name,
+				gas,
+				time,
+				gas/time*1e3,
+			)
+			break
+		}
+	}
+
+	for _, opType := range []string{"base", "lib", "storage"} {
+		for _, op := range OpList[opType] {
+			for i := 0; ; i = i + 10000 {
+				tcost, ccost := runOp(
+					vi,
+					fmt.Sprintf("%v_op.js", opType),
+					fmt.Sprintf("do%v", op),
+					i,
+				)
+
+				if tcost > 0.2 {
+					emptyT, emptyC := runOp(
+						vi,
+						fmt.Sprintf("%v_op.js", "empty"),
+						fmt.Sprintf("do%v", "Empty"),
+						i,
+					)
+					name := fmt.Sprintf("%v:%v", opType, op)
+					gas := float64(ccost-emptyC) / float64(i)
+					time := (tcost - emptyT) * 1e9 / float64(i)
+					fmt.Printf(
+						"%35v    cost: %12.2fgas    time: %12.2fns    cost/time: %12.2fgas/us\n",
+						name,
+						gas,
+						time,
+						gas/time*1e3,
+					)
+					break
+				}
+			}
+		}
+	}
+
+	os.RemoveAll("mvccdb")
+}
+
 func main() {
 	getOverview()
 	getOpDetail()
+	getOverviewTable()
 }

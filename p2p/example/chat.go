@@ -93,7 +93,7 @@ func (ct *Chatter) handleMsgLoop() {
 			// ct.reprint()
 			ct.printPrompt()
 			ct.record(m.ID)
-			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage, true)
+			ct.p2pService.Broadcast(msg.Data(), chatData, p2p.UrgentMessage)
 		}
 	}
 }
@@ -120,7 +120,7 @@ func (ct *Chatter) readLoop() {
 			continue
 		}
 		ct.record(msg.ID)
-		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage, true)
+		ct.p2pService.Broadcast(bytes, chatData, p2p.UrgentMessage)
 		author := shortID(ct.p2pService.ID()) + ":"
 		ct.clearLastLine(1)
 		fmt.Println(color(author, yellow), color(sendData, blue))

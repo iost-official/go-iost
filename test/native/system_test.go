@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
-	"github.com/iost-official/go-iost/vm"
 )
 
 var testDataPath = "./test_data/"
@@ -21,7 +21,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_price", int64(1))
-	var gasLimit = int64(10000)
+	var gasLimit = int64(100000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
 	}
@@ -80,10 +80,10 @@ func TestEngine_SetCode(t *testing.T) {
 	}
 
 	con.ID = "Contractiamhash"
-	_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
-	if err == nil || err.Error() != "destroy refused" {
-		t.Fatalf("LoadAndCall for should return destroy refused, but got %v\n", err)
-	}
+	//_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
+	//if err == nil || err.Error() != "destroy refused" {
+	//	t.Fatalf("LoadAndCall for should return destroy refused, but got %v\n", err)
+	//}
 
 	rawCode, err = ioutil.ReadFile(testDataPath + "test_new.js")
 	if err != nil {
@@ -106,13 +106,13 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("LoadAndCall except 0 rtn"+", got %d\n", len(rs))
 	}
 
-	_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
-	if err != nil {
-		t.Fatalf("LoadAndCall destroy error: %v\n", err)
-	}
+	//_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
+	//if err != nil {
+	//	t.Fatalf("LoadAndCall destroy error: %v\n", err)
+	//}
 
-	_, _, err = e.LoadAndCall(host, code, "UpdateCode", con.B64Encode(), "")
-	if err == nil || err.Error() != "contract not exists" {
-		t.Fatalf("LoadAndCall for should return contract not exists, but got %v\n", err)
-	}
+	//_, _, err = e.LoadAndCall(host, code, "UpdateCode", con.B64Encode(), "")
+	//if err == nil || err.Error() != "contract not exists" {
+	//	t.Fatalf("LoadAndCall for should return contract not exists, but got %v\n", err)
+	//}
 }

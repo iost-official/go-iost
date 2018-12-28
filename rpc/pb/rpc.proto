@@ -12,10 +12,17 @@ service ApiService {
         };
     }
 
-    // get the chain information
+    // get blockchain information
     rpc GetChainInfo (EmptyRequest) returns (ChainInfoResponse) {
         option (google.api.http) = {
             get: "/getChainInfo"
+        };
+    }
+
+    // get current blockchain ram information
+    rpc GetRAMInfo (EmptyRequest) returns (RAMInfoResponse) {
+        option (google.api.http) = {
+            get: "/getRAMInfo"
         };
     }
 
@@ -61,6 +68,24 @@ service ApiService {
         };
     }
 
+    // get token721 balance
+    rpc GetToken721Balance (GetTokenBalanceRequest) returns (GetToken721BalanceResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Balance/{account}/{token}/{by_longest_chain}"
+        };
+    }
+    // get token721 metadata
+    rpc GetToken721Metadata (GetToken721InfoRequest) returns (GetToken721MetadataResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Metadata/{token}/{token_id}/{by_longest_chain}"
+        };
+    }
+    // get token721 owner
+    rpc GetToken721Owner (GetToken721InfoRequest) returns (GetToken721OwnerResponse) {
+        option (google.api.http) = {
+            get: "/getToken721Owner/{token}/{token_id}/{by_longest_chain}"
+        };
+    }
     // get gas ratio infomation
     rpc GetGasRatio (EmptyRequest) returns (GasRatioResponse) {
         option (google.api.http) = {
@@ -83,6 +108,14 @@ service ApiService {
         };
     }
 
+    // get contract fields storage
+    rpc GetContractStorageFields (GetContractStorageFieldsRequest) returns (GetContractStorageFieldsResponse) {
+        option (google.api.http) = {
+            post: "/getContractStorageFields"
+            body: "*"
+        };
+    }
+
     // send transaction
     rpc SendTransaction (TransactionRequest) returns (SendTransactionResponse) {
         option (google.api.http) = {
@@ -95,6 +128,14 @@ service ApiService {
     rpc ExecTransaction (TransactionRequest) returns (TxReceipt) {
         option (google.api.http) = {
             post: "/execTx"
+            body: "*"
+        };
+    }
+
+    // subscribe an event
+    rpc Subscribe (SubscribeRequest) returns (stream SubscribeResponse) {
+        option (google.api.http) = {
+            post: "/subscribe"
             body: "*"
         };
     }
@@ -122,6 +163,20 @@ message NetworkInfo {
     repeated PeerInfo peer_info = 3;
 }
 
+// The message containing blockchain's ram information.
+message RAMInfoResponse {
+    // how many bytes have been used
+    int64 used_ram = 1;
+    // how many bytes have not been used
+    int64 available_ram = 2;
+    // total ram byte
+    int64 total_ram = 3;
+    // User can sell NUM bytes RAM to system to get `NUM * sell_price` IOSTs
+    double sell_price = 4;
+    // User can spend approximate `NUM * buy_price` IOSTs for NUM bytes RAM
+    double buy_price = 5;
+}
+
 // The message containing the node's information.
 message NodeInfoResponse {
     // build time
@@ -139,7 +194,7 @@ message AmountLimit {
     // token name
     string token = 1;
     // limit value
-    double value = 2;
+    string value = 2;
 }
 
 // The message defines transaction action struct.
@@ -235,7 +290,7 @@ message TransactionResponse {
     // The enumeration defines transaction status.
     enum Status {
         // pending in transaction pool
-        PENDIND = 0;
+        PENDING = 0;
         // packed in a block that has not been confirmed
         PACKED = 1;
         // packed in a block that is irreversible
@@ -337,7 +392,7 @@ message BlockResponse {
     // The enumeration defines block status.
     enum Status {
         // pending in block cache
-        PENDIND = 0;
+        PENDING = 0;
         // irreversible
         IRREVERSIBLE = 1;
     }
@@ -399,9 +454,9 @@ message FrozenBalance {
 
 message GasRatioResponse {
     // lowest gas ratio in head block
-    double lowestGasRatio = 1;
+    double lowest_gas_ratio = 1;
     // median gas ratio in head block
-    double medianGasRatio = 2;
+    double median_gas_ratio = 2;
 }
 
 // The message defines account struct.
@@ -410,8 +465,6 @@ message Account {
     string name = 1;
     // account balance
     double balance = 2;
-    // account create timestamp
-    int64 create_time = 3;
 
     // The message defines account pledged coin information.
     message PledgeInfo {
@@ -436,7 +489,7 @@ message Account {
     }
 
     // gas information
-    GasInfo gas_info = 4;
+    GasInfo gas_info = 3;
 
     // The message defines account ram information.
     message RAMInfo {
@@ -445,7 +498,7 @@ message Account {
     }
 
     // ram information
-    RAMInfo ram_info = 5;
+    RAMInfo ram_info = 4;
 
     // The message defines permission item.
     message Item {
@@ -480,12 +533,12 @@ message Account {
     }
 
     // account permission
-    map<string, Permission> permissions = 6;
+    map<string, Permission> permissions = 5;
     // account groups
-    map<string, Group> groups = 7;
+    map<string, Group> groups = 6;
 
     // frozen balance information
-    repeated FrozenBalance frozen_balances = 8;
+    repeated FrozenBalance frozen_balances = 7;
 }
 
 // The message defines the get account request.
@@ -547,6 +600,22 @@ message GetContractStorageResponse {
     string data = 1;
 }
 
+// The message defines get contract storage request.
+message GetContractStorageFieldsRequest {
+    // contract id
+    string id = 1;
+    // get the fields from StateDB
+    string fields = 2;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 3;
+}
+
+// The message defines get contract storage response.
+message GetContractStorageFieldsResponse {
+    // the json string data
+    string data = 1;
+}
+
 // The message defines send transaction response.
 message SendTransactionResponse {
     // the final transaction hash
@@ -571,3 +640,62 @@ message GetTokenBalanceRequest {
     bool by_longest_chain = 3;
 }
 
+// The message defines get token721 balance response.
+message GetToken721BalanceResponse {
+    // token balance
+    int64 balance = 1;
+    // balance information
+    repeated string tokenIDs = 2;
+}
+
+// The message defines get token721 info request.
+message GetToken721InfoRequest {
+    // the token name
+    string token = 1;
+    // token id
+    string token_id = 2;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 3;
+}
+
+// The message defines get token721 metadata response.
+message GetToken721MetadataResponse {
+    // token metadata
+    string metadata = 1;
+}
+// The message defines get token721 owner response.
+message GetToken721OwnerResponse {
+    // token owner
+    string owner = 1;
+}
+// The message defines event struct.
+message Event {
+    enum Topic {
+        // contract receipt
+        CONTRACT_RECEIPT = 0;
+        // contract event
+        CONTRACT_EVENT = 1;
+    }
+    // event topic
+    Topic topic = 1;
+    // event data
+    string data = 2;
+    // event time
+    int64 time = 3;
+}
+
+// The message defines subscribe request.
+message SubscribeRequest {
+	repeated Event.Topic topics = 1;
+
+    message Filter {
+        // contract id
+        string contract_id = 1;
+    }
+    Filter filter = 2;
+}
+
+// The message defines subscribe response.
+message SubscribeResponse {
+	Event event = 1;
+}

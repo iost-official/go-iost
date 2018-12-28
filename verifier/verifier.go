@@ -17,8 +17,8 @@ import (
 
 // values
 var (
-	ErrExpiredTx    = errors.New("Expired tx")
-	ErrNotArrivedTx = errors.New("Not arrived tx")
+	ErrExpiredTx    = errors.New("expired tx")
+	ErrNotArrivedTx = errors.New("not arrived tx")
 )
 
 // Verifier ..
@@ -141,12 +141,14 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 	return r, nil
 }
 
+// nolint:gocyclo
 func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
 	info := Info{
 		Mode: 0,
 	}
 	var tn time.Time
 	to := time.Now().Add(c.Timeout)
+	blockGasLimit := common.MaxBlockGasLimit
 
 L:
 	for tn.Before(to) {
@@ -182,6 +184,9 @@ L:
 			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
+		if t.GasLimit > blockGasLimit {
+			continue L
+		}
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
@@ -191,7 +196,7 @@ L:
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
 		if err != nil {
-			ilog.Errorf("isolator run error %v", err)
+			ilog.Errorf("isolator run error %v %v", t.String(), err)
 			provider.Drop(t, err)
 			continue L
 		}
@@ -205,10 +210,16 @@ L:
 			break L
 		}
 		//ilog.Debugf("exec tx %v success", common.Base58Encode(t.Hash()))
-		r, _ = isolator.PayCost()
+		r, err = isolator.PayCost()
+		if err != nil {
+			ilog.Errorf("pay cost err %v %v", t.String(), err)
+			provider.Drop(t, err)
+			continue L
+		}
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
+		blockGasLimit -= r.GasUsage
 	}
 	buf, err := json.Marshal(info)
 	if err != nil {

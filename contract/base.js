@@ -15,7 +15,6 @@ class Base {
         }
         this._put("adminID", adminID);
     }
-
     can_update(data) {
         const admin = this._get("adminID");
         this._requireAuth(admin, producerPermission);

@@ -30,8 +30,8 @@ func (t *Teller) Costs() map[string]contract.Cost {
 	return t.cost
 }
 
-// GasPayed ...
-func (t *Teller) GasPayed(publishers ...string) int64 {
+// GasPaid ...
+func (t *Teller) GasPaid(publishers ...string) int64 {
 	var publisher string
 	if len(publishers) > 0 {
 		publisher = publishers[0]
@@ -114,7 +114,7 @@ func (t *Teller) IsProducer(acc string) bool {
 }
 
 // DoPay ...
-func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, err error) {
+func (t *Teller) DoPay(witness string, gasRatio int64) (paidGas *common.Fixed, err error) {
 	for payer, costOfPayer := range t.cost {
 		gas := &common.Fixed{
 			Value:   gasRatio * costOfPayer.ToGas(),
@@ -123,7 +123,7 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, 
 		if !gas.IsZero() {
 			err := t.h.CostGas(payer, gas)
 			if err != nil {
-				ilog.Fatalf("pay gas cost failed: %v %v %v", err, payer, gas)
+				return nil, fmt.Errorf("pay gas cost failed: %v %v %v", err, payer, gas)
 			}
 			// reward 15% gas to account referrer
 			if !t.h.IsContract(payer) {
@@ -132,13 +132,14 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (payedGas *common.Fixed, 
 					ilog.Fatalf("invalid account %v", payer)
 				}
 				if acc.Referrer != "" && t.IsProducer(acc.Referrer) {
-					reward := gas.TimesF(0.15)
-					t.h.DB().ChangeTGas(acc.Referrer, reward)
+					reward := gas.TimesF(0.1)
+					t.h.ChangeTGas(acc.Referrer, reward, true)
 				}
 			}
 		}
+
 		if payer == t.h.Context().Value("publisher").(string) {
-			payedGas = gas
+			paidGas = gas
 		}
 		// contracts in "iost" domain will not pay for ram
 		if !strings.HasSuffix(payer, ".iost") {

@@ -200,19 +200,14 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 }
 
 // SendMessage puts message into the corresponding channel.
-func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate, async bool) error {
+func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool) error {
 	if deduplicate && msg.needDedup() {
 		if p.hasMessage(msg) {
 			// ilog.Debug("ignore reduplicate message")
 			return ErrDuplicateMessage
 		}
 	}
-	if !async {
-		if msg.needDedup() {
-			p.recordMessage(msg)
-		}
-		return p.write(msg)
-	}
+
 	ch := p.urgentMsgCh
 	if mp == NormalMessage {
 		ch = p.normalMsgCh

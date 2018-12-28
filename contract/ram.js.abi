@@ -9,12 +9,6 @@
             ]
         },
         {
-            "name": "initContractName",
-            "args": [
-                "string"
-            ]
-        },
-        {
             "name": "initAdmin",
             "args": [
                 "string"
@@ -35,7 +29,11 @@
                 "string",
                 "string",
                 "number"
-            ]
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "sell",
@@ -43,7 +41,23 @@
                 "string",
                 "string",
                 "number"
-            ]
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "lend",
+            "args": [
+                "string",
+                "string",
+                "number"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
         }
     ]
 }

@@ -3,9 +3,11 @@
 
 package p2pb
 
-import proto "github.com/golang/protobuf/proto"
-import fmt "fmt"
-import math "math"
+import (
+	fmt "fmt"
+	proto "github.com/golang/protobuf/proto"
+	math "math"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -16,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
 type RoutingQuery struct {
 	Ids                  []string `protobuf:"bytes,1,rep,name=ids,proto3" json:"ids,omitempty"`
@@ -29,16 +31,17 @@ func (m *RoutingQuery) Reset()         { *m = RoutingQuery{} }
 func (m *RoutingQuery) String() string { return proto.CompactTextString(m) }
 func (*RoutingQuery) ProtoMessage()    {}
 func (*RoutingQuery) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_05b036241fc763b9, []int{0}
+	return fileDescriptor_737ef725a8334c0d, []int{0}
 }
+
 func (m *RoutingQuery) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RoutingQuery.Unmarshal(m, b)
 }
 func (m *RoutingQuery) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RoutingQuery.Marshal(b, m, deterministic)
 }
-func (dst *RoutingQuery) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RoutingQuery.Merge(dst, src)
+func (m *RoutingQuery) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RoutingQuery.Merge(m, src)
 }
 func (m *RoutingQuery) XXX_Size() int {
 	return xxx_messageInfo_RoutingQuery.Size(m)
@@ -68,16 +71,17 @@ func (m *PeerInfo) Reset()         { *m = PeerInfo{} }
 func (m *PeerInfo) String() string { return proto.CompactTextString(m) }
 func (*PeerInfo) ProtoMessage()    {}
 func (*PeerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_05b036241fc763b9, []int{1}
+	return fileDescriptor_737ef725a8334c0d, []int{1}
 }
+
 func (m *PeerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PeerInfo.Unmarshal(m, b)
 }
 func (m *PeerInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_PeerInfo.Marshal(b, m, deterministic)
 }
-func (dst *PeerInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_PeerInfo.Merge(dst, src)
+func (m *PeerInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PeerInfo.Merge(m, src)
 }
 func (m *PeerInfo) XXX_Size() int {
 	return xxx_messageInfo_PeerInfo.Size(m)
@@ -113,16 +117,17 @@ func (m *RoutingResponse) Reset()         { *m = RoutingResponse{} }
 func (m *RoutingResponse) String() string { return proto.CompactTextString(m) }
 func (*RoutingResponse) ProtoMessage()    {}
 func (*RoutingResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_message_05b036241fc763b9, []int{2}
+	return fileDescriptor_737ef725a8334c0d, []int{2}
 }
+
 func (m *RoutingResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_RoutingResponse.Unmarshal(m, b)
 }
 func (m *RoutingResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_RoutingResponse.Marshal(b, m, deterministic)
 }
-func (dst *RoutingResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_RoutingResponse.Merge(dst, src)
+func (m *RoutingResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_RoutingResponse.Merge(m, src)
 }
 func (m *RoutingResponse) XXX_Size() int {
 	return xxx_messageInfo_RoutingResponse.Size(m)
@@ -146,9 +151,9 @@ func init() {
 	proto.RegisterType((*RoutingResponse)(nil), "p2pb.RoutingResponse")
 }
 
-func init() { proto.RegisterFile("p2p/pb/message.proto", fileDescriptor_message_05b036241fc763b9) }
+func init() { proto.RegisterFile("p2p/pb/message.proto", fileDescriptor_737ef725a8334c0d) }
 
-var fileDescriptor_message_05b036241fc763b9 = []byte{
+var fileDescriptor_737ef725a8334c0d = []byte{
 	// 167 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x34, 0x8e, 0x31, 0x0f, 0x82, 0x30,
 	0x14, 0x84, 0x03, 0x88, 0x91, 0xa7, 0x41, 0xd3, 0x30, 0x30, 0x12, 0xe2, 0xc0, 0x04, 0x06, 0x07,

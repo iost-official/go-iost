@@ -22,6 +22,7 @@ type StorageBackend interface {
 	Keys(prefix []byte) ([][]byte, error)
 	BeginBatch() error
 	CommitBatch() error
+	Size() (int64, error)
 	Close() error
 	NewIteratorByPrefix(prefix []byte) interface{}
 }

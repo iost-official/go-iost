@@ -31,10 +31,7 @@ function genAbi(def) {
 	return {
 		"name": def.key.name,
 		"args": new Array(def.value.params.length).fill("string"),
-		"amountLimit": [{
-            "token": "iost",
-            "val": "0"
-        }]
+		"amountLimit": []
 	};
 }
 

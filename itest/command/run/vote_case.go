@@ -9,7 +9,7 @@ import (
 var VoteCaseCommand = cli.Command{
 	Name:      "vote_case",
 	ShortName: "v_case",
-	Usage:     "run Vote test case",
+	Usage:     "run VoteProducer test case",
 	Flags:     VoteCaseFlags,
 	Action:    VoteCaseAction,
 }

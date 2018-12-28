@@ -2,10 +2,17 @@ package common
 
 import (
 	"os"
+	"time"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+)
+
+// Constant of limit
+var (
+	MaxBlockGasLimit = int64(500000000)
+	MaxTxTimeLimit   = 100 * time.Millisecond
 )
 
 // ACCConfig account of the system
@@ -28,8 +35,6 @@ type TokenInfo struct {
 	FoundationAccount string
 	IOSTTotalSupply   int64
 	IOSTDecimal       int64
-	RAMTotalSupply    int64
-	RAMGenesisAmount  int64
 }
 
 // GenesisConfig config of the genesis bloc

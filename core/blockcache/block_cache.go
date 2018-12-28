@@ -15,7 +15,13 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/metrics"
 	"github.com/xlab/treeprint"
+)
+
+var (
+	metricsTxTotal = metrics.NewGauge("iost_tx_total", nil)
+	metricsDBSize  = metrics.NewGauge("iost_db_size", []string{"Name"})
 )
 
 // CacheStatus ...
@@ -288,7 +294,6 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 		}
 		ilog.Info("Recover block start")
 		for i, entry := range entries {
-			fmt.Printf("\r%v/%v", i+1, len(entries))
 			if i%2000 == 0 {
 				ilog.Infof("Recover block progress:%v/%v", i, len(entries))
 			}
@@ -529,6 +534,30 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		retain.SetParent(nil)
 		retain.LibWitnessHandle()
 		bc.SetLinkedRoot(retain)
+
+		metricsTxTotal.Set(float64(bc.baseVariable.BlockChain().TxTotal()), nil)
+
+		if blockchainDBSize, err := bc.baseVariable.BlockChain().Size(); err != nil {
+			ilog.Warnf("Get BlockChainDB size failed: %v", err)
+		} else {
+			metricsDBSize.Set(
+				float64(blockchainDBSize),
+				map[string]string{
+					"Name": "BlockChainDB",
+				},
+			)
+		}
+
+		if stateDBSize, err := bc.baseVariable.StateDB().Size(); err != nil {
+			ilog.Warnf("Get StateDB size failed: %v", err)
+		} else {
+			metricsDBSize.Set(
+				float64(stateDBSize),
+				map[string]string{
+					"Name": "StateDB",
+				},
+			)
+		}
 	}
 	return nil
 }

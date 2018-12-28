@@ -53,7 +53,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	dropList, _, err := v.Gen(&blk, topBlock, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
-		TxTimeLimit: time.Millisecond * 100,
+		TxTimeLimit: common.MaxTxTimeLimit,
 	})
 	t2 := time.Since(t1)
 	if len(blk.Txs) != 0 {

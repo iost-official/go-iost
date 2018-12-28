@@ -51,7 +51,7 @@ func (t *gobangHandle) Prepare() error {
 	if err != nil {
 		return err
 	}
-	err = sdk.CreateNewAccount(testID, testAcc, 1000000, 10000, 100000)
+	err = sdk.CreateNewAccount(testID, testAcc.ID, testAcc.ID, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}

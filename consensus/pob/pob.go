@@ -7,6 +7,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -190,7 +191,7 @@ func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 	p.blockReqMap.Store(string(blkInfo.Hash), time.AfterFunc(blockReqTimeout, func() {
 		p.blockReqMap.Delete(string(blkInfo.Hash))
 	}))
-	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage, true)
+	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
 }
 
 func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
@@ -208,7 +209,7 @@ func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
 		return
 	}
-	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage, true)
+	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
@@ -221,7 +222,7 @@ func (p *PoB) broadcastBlockHash(blk *block.Block) {
 		ilog.Error("fail to encode block hash")
 	} else {
 		if p.baseVariable.Mode() == global.ModeNormal {
-			p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage, true)
+			p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage)
 		}
 	}
 }
@@ -363,7 +364,7 @@ func (p *PoB) gen(num int) {
 		ilog.Error(err)
 		return
 	}
-	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage, true)
+	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 	metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
 	err = p.handleRecvBlock(blk)
 	if err != nil {
@@ -432,7 +433,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
-			ilog.Errorf("verify block failed. err=%v", err)
+			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
 			p.blockCache.Del(node)
 			return err
 		}

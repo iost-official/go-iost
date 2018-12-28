@@ -13,37 +13,38 @@ import (
 // IOSTRatio ...
 const IOSTRatio int64 = 100000000
 
-// GasMinPledgeInIOST Every user must pledge a minimum amount of IOST
-var GasMinPledgeInIOST int64 = 10
+// GasMinPledgeOfUser Each user must pledge a minimum amount of IOST
+var GasMinPledgeOfUser = &common.Fixed{Value: 10 * IOSTRatio, Decimal: 8}
 
-// GasMinPledge Every user must pledge a minimum amount of IOST (including GAS and RAM)
-var GasMinPledge = &common.Fixed{Value: GasMinPledgeInIOST * IOSTRatio, Decimal: 8}
+// GasMinPledgePerAction One must (un)pledge more than 1 IOST
+var GasMinPledgePerAction = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
 
 // Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
-// Then gas will be generated at a rate of `GasIncreaseRate` gas per block.
+// Then gas will be generated at a rate of `GasIncreaseRate` gas per second.
 // Then it takes `GasFulfillSeconds` time to reach the limit.
 // Your gas production will stop when it reaches the limit.
 // When you use some gas later, the total amount will be less than the limit,
 // so gas production will resume again until the limit.
 
 // GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.Fixed{Value: 10000 * 100, Decimal: 2}
+var GasImmediateReward = &common.Fixed{Value: 100000 * 100, Decimal: 2}
 
 // GasLimit gas limit per IOST
-var GasLimit = &common.Fixed{Value: 30000 * 100, Decimal: 2}
+var GasLimit = &common.Fixed{Value: 300000 * 100, Decimal: 2}
 
 // GasFulfillSeconds it takes 2 days to fulfill the gas buffer.
-var GasFulfillSeconds int64 = 2 * 24 * 3600
+const GasFulfillSeconds int64 = 2 * 24 * 3600
 
 // GasIncreaseRate gas increase per IOST per second
 var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillSeconds)
 
-//var GasIncreaseRate = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
-
 // UnpledgeFreezeSeconds coins will be frozen for 3 days after being unpledged
-var UnpledgeFreezeSeconds int64 = 3 * 24 * 3600
+const UnpledgeFreezeSeconds int64 = 3 * 24 * 3600
 
 var gasABIs *abiSet
+
+// GasContractName the contract name
+const GasContractName = "gas.iost"
 
 func init() {
 	gasABIs = newAbiSet()
@@ -51,7 +52,7 @@ func init() {
 	gasABIs.Register(constructor)
 	gasABIs.Register(pledgeGas)
 	gasABIs.Register(unpledgeGas)
-	gasABIs.Register(rewardTGas)
+	//gasABIs.Register(rewardTGas)
 	gasABIs.Register(transferTGas)
 }
 
@@ -67,8 +68,8 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 		unpledgeAmount := pledgeAmountF.Neg()
 		newPledge := pledged.Sub(unpledgeAmount)
 		if pledger == name {
-			if newPledge.LessThan(GasMinPledge) {
-				return finalCost, fmt.Errorf("unpledge to much %v - %v < %v", pledged.ToString(), unpledgeAmount.ToString(), GasMinPledge.ToString())
+			if newPledge.LessThan(GasMinPledgeOfUser) {
+				return finalCost, fmt.Errorf("unpledge to much %v - %v < %v", pledged.ToString(), unpledgeAmount.ToString(), GasMinPledgeOfUser.ToString())
 			}
 		}
 		if newPledge.Value <= 0 {
@@ -188,18 +189,17 @@ var (
 			if err != nil || pledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			var minPledgeAmount int64 = 1 * IOSTRatio
-			if pledgeAmount.Value < minPledgeAmount {
-				return nil, cost, fmt.Errorf("min pledge num is %d", minPledgeAmount)
+			if pledgeAmount.LessThan(GasMinPledgePerAction) {
+				return nil, cost, fmt.Errorf("min pledge num is %d", GasMinPledgePerAction)
 			}
-			contractName, cost0 := h.ContractName()
-			cost.AddAssign(cost0)
-			_, cost0, err = h.Call("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, pledger, contractName, pledgeAmountStr))
+			cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
+			contractName, cost0 := h.ContractName()
+			cost.AddAssign(cost0)
+			_, cost0, err = h.Call("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, pledger, contractName, pledgeAmountStr))
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -236,9 +236,8 @@ var (
 			if err != nil || unpledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			var minUnpledgeAmount int64 = 1 * IOSTRatio
-			if unpledgeAmount.Value < minUnpledgeAmount {
-				return nil, cost, fmt.Errorf("min unpledge num is %d", minUnpledgeAmount)
+			if unpledgeAmount.LessThan(GasMinPledgePerAction) {
+				return nil, cost, fmt.Errorf("min unpledge num is %d", GasMinPledgePerAction)
 			}
 			pledged, cost0 := h.GasManager.GasPledge(gasUser, pledger)
 			cost.AddAssign(cost0)
@@ -265,32 +264,6 @@ var (
 			return []interface{}{}, cost, nil
 		},
 	}
-	rewardTGas = &abi{
-		name: "reward",
-		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			cost = contract.Cost0()
-			//fmt.Println("context:" + h.Context().String())
-			ok, cost0 := h.RequireAuth("auth.iost", "active")
-			cost.AddAssign(cost0)
-			if !ok {
-				return nil, cost, fmt.Errorf("reward can only be called within auth.iost")
-			}
-			user := args[0].(string)
-			if !h.IsValidAccount(user) {
-				return nil, cost, fmt.Errorf("invalid user name %v", args[1])
-			}
-			f, err := common.NewFixed(args[1].(string), database.GasDecimal)
-			if err != nil {
-				return nil, cost, fmt.Errorf("invalid reward amount %v", err)
-			}
-			cost0 = h.ChangeTGas(user, f)
-			cost.AddAssign(cost0)
-			tgas, cost := h.TGas(user)
-			cost.AddAssign(cost)
-			return []interface{}{tgas.ToString()}, cost, nil
-		},
-	}
 	transferTGas = &abi{
 		name: "transfer",
 		args: []string{"string", "string", "string"},
@@ -313,14 +286,18 @@ var (
 			if err != nil {
 				return nil, cost, fmt.Errorf("invalid gas amount %v", err)
 			}
-			tGas, cost0 := h.TGas(from)
-			cost.AddAssign(cost0)
-			if tGas.LessThan(f) {
-				return nil, cost, fmt.Errorf("transferable gas not enough %v < %v", tGas.ToString(), f.ToString())
+			minTransferAmount := &common.Fixed{Value: 100 * 100, Decimal: database.GasDecimal}
+			if f.LessThan(minTransferAmount) {
+				return nil, cost, fmt.Errorf("min transfer amount is %v", minTransferAmount.ToString())
 			}
-			cost0 = h.ChangeTGas(from, f.Neg())
+			quota, cost0 := h.TGasQuota(from)
 			cost.AddAssign(cost0)
-			cost0 = h.ChangeTGas(to, f)
+			if quota.LessThan(f) {
+				return nil, cost, fmt.Errorf("transferable gas not enough %v < %v", quota.ToString(), f.ToString())
+			}
+			cost0 = h.ChangeTGas(from, f.Neg(), true)
+			cost.AddAssign(cost0)
+			cost0 = h.ChangeTGas(to, f, false)
 			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},

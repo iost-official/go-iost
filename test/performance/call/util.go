@@ -3,7 +3,6 @@ package call
 import (
 	"context"
 
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/rpc/pb"
 )
@@ -27,13 +26,9 @@ func ToTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 		})
 	}
 	for _, a := range t.AmountLimit {
-		fixed, err := common.UnmarshalFixed(a.Val)
-		if err != nil {
-			continue
-		}
 		ret.AmountLimit = append(ret.AmountLimit, &rpcpb.AmountLimit{
 			Token: a.Token,
-			Value: fixed.ToFloat(),
+			Value: a.Val,
 		})
 	}
 	for _, s := range t.Signs {

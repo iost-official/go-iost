@@ -10,7 +10,7 @@ var (
 	ErrPermissionLost   = errors.New("transaction has no permission")
 	ErrInvalidData      = errors.New("invalid data")
 	ErrInvalidAmount    = errors.New("invalid amount")
-	ErrGasLimitExceeded = errors.New("out of gas")
+	ErrOutOfGas         = errors.New("out of gas")
 
 	ErrContractNotFound   = errors.New("contract not exists")
 	ErrContractExists     = errors.New("contract exists")
@@ -30,5 +30,6 @@ var (
 	ErrTokenIssueRefused         = errors.New("token issue refused")
 	ErrMemoTooLarge              = errors.New("memo too large")
 
-	ErrDelaytxNotFound = errors.New("delaytx not exists")
+	ErrDelaytxNotFound   = errors.New("delaytx not exists")
+	ErrCancelDelayForbid = errors.New("cancel delaytx forbid")
 )
