@@ -3,13 +3,11 @@
 
 package blockpb
 
-import (
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	pb1 "github.com/iost-official/go-iost/core/tx/pb"
-	pb "github.com/iost-official/go-iost/crypto/pb"
-	math "math"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
+import pb1 "github.com/iost-official/go-iost/core/tx/pb"
+import pb "github.com/iost-official/go-iost/crypto/pb"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -20,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type BlockType int32
 
@@ -33,7 +31,6 @@ var BlockType_name = map[int32]string{
 	0: "NORMAL",
 	1: "ONLYHASH",
 }
-
 var BlockType_value = map[string]int32{
 	"NORMAL":   0,
 	"ONLYHASH": 1,
@@ -42,9 +39,8 @@ var BlockType_value = map[string]int32{
 func (x BlockType) String() string {
 	return proto.EnumName(BlockType_name, int32(x))
 }
-
 func (BlockType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_dc6664e18d413fc7, []int{0}
+	return fileDescriptor_block_3c5088db768621c9, []int{0}
 }
 
 type BlockHead struct {
@@ -65,17 +61,16 @@ func (m *BlockHead) Reset()         { *m = BlockHead{} }
 func (m *BlockHead) String() string { return proto.CompactTextString(m) }
 func (*BlockHead) ProtoMessage()    {}
 func (*BlockHead) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dc6664e18d413fc7, []int{0}
+	return fileDescriptor_block_3c5088db768621c9, []int{0}
 }
-
 func (m *BlockHead) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BlockHead.Unmarshal(m, b)
 }
 func (m *BlockHead) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BlockHead.Marshal(b, m, deterministic)
 }
-func (m *BlockHead) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BlockHead.Merge(m, src)
+func (dst *BlockHead) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BlockHead.Merge(dst, src)
 }
 func (m *BlockHead) XXX_Size() int {
 	return xxx_messageInfo_BlockHead.Size(m)
@@ -159,17 +154,16 @@ func (m *Block) Reset()         { *m = Block{} }
 func (m *Block) String() string { return proto.CompactTextString(m) }
 func (*Block) ProtoMessage()    {}
 func (*Block) Descriptor() ([]byte, []int) {
-	return fileDescriptor_dc6664e18d413fc7, []int{1}
+	return fileDescriptor_block_3c5088db768621c9, []int{1}
 }
-
 func (m *Block) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Block.Unmarshal(m, b)
 }
 func (m *Block) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Block.Marshal(b, m, deterministic)
 }
-func (m *Block) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Block.Merge(m, src)
+func (dst *Block) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Block.Merge(dst, src)
 }
 func (m *Block) XXX_Size() int {
 	return xxx_messageInfo_Block.Size(m)
@@ -230,14 +224,14 @@ func (m *Block) GetBlockType() BlockType {
 }
 
 func init() {
-	proto.RegisterEnum("blockpb.BlockType", BlockType_name, BlockType_value)
 	proto.RegisterType((*BlockHead)(nil), "blockpb.BlockHead")
 	proto.RegisterType((*Block)(nil), "blockpb.Block")
+	proto.RegisterEnum("blockpb.BlockType", BlockType_name, BlockType_value)
 }
 
-func init() { proto.RegisterFile("core/block/pb/block.proto", fileDescriptor_dc6664e18d413fc7) }
+func init() { proto.RegisterFile("core/block/pb/block.proto", fileDescriptor_block_3c5088db768621c9) }
 
-var fileDescriptor_dc6664e18d413fc7 = []byte{
+var fileDescriptor_block_3c5088db768621c9 = []byte{
 	// 427 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x92, 0x4f, 0x6f, 0xd3, 0x40,
 	0x10, 0xc5, 0x71, 0xed, 0x3a, 0xce, 0x24, 0x40, 0x34, 0x48, 0x68, 0xc9, 0x01, 0x59, 0x51, 0x41,

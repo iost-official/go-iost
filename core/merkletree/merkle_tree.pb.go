@@ -3,11 +3,9 @@
 
 package merkletree
 
-import (
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	math "math"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,7 +16,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type MerkleTree struct {
 	HashList             [][]byte         `protobuf:"bytes,1,rep,name=hash_list,json=hashList,proto3" json:"hash_list,omitempty"`
@@ -33,17 +31,16 @@ func (m *MerkleTree) Reset()         { *m = MerkleTree{} }
 func (m *MerkleTree) String() string { return proto.CompactTextString(m) }
 func (*MerkleTree) ProtoMessage()    {}
 func (*MerkleTree) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cafd901455e59c2f, []int{0}
+	return fileDescriptor_merkle_tree_5603045fef365b61, []int{0}
 }
-
 func (m *MerkleTree) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_MerkleTree.Unmarshal(m, b)
 }
 func (m *MerkleTree) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_MerkleTree.Marshal(b, m, deterministic)
 }
-func (m *MerkleTree) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_MerkleTree.Merge(m, src)
+func (dst *MerkleTree) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_MerkleTree.Merge(dst, src)
 }
 func (m *MerkleTree) XXX_Size() int {
 	return xxx_messageInfo_MerkleTree.Size(m)
@@ -87,17 +84,16 @@ func (m *TXRMerkleTree) Reset()         { *m = TXRMerkleTree{} }
 func (m *TXRMerkleTree) String() string { return proto.CompactTextString(m) }
 func (*TXRMerkleTree) ProtoMessage()    {}
 func (*TXRMerkleTree) Descriptor() ([]byte, []int) {
-	return fileDescriptor_cafd901455e59c2f, []int{1}
+	return fileDescriptor_merkle_tree_5603045fef365b61, []int{1}
 }
-
 func (m *TXRMerkleTree) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TXRMerkleTree.Unmarshal(m, b)
 }
 func (m *TXRMerkleTree) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_TXRMerkleTree.Marshal(b, m, deterministic)
 }
-func (m *TXRMerkleTree) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TXRMerkleTree.Merge(m, src)
+func (dst *TXRMerkleTree) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TXRMerkleTree.Merge(dst, src)
 }
 func (m *TXRMerkleTree) XXX_Size() int {
 	return xxx_messageInfo_TXRMerkleTree.Size(m)
@@ -129,9 +125,11 @@ func init() {
 	proto.RegisterMapType((map[string][]byte)(nil), "merkletree.TXRMerkleTree.Tx2TxrEntry")
 }
 
-func init() { proto.RegisterFile("core/merkletree/merkle_tree.proto", fileDescriptor_cafd901455e59c2f) }
+func init() {
+	proto.RegisterFile("core/merkletree/merkle_tree.proto", fileDescriptor_merkle_tree_5603045fef365b61)
+}
 
-var fileDescriptor_cafd901455e59c2f = []byte{
+var fileDescriptor_merkle_tree_5603045fef365b61 = []byte{
 	// 273 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x52, 0x4c, 0xce, 0x2f, 0x4a,
 	0xd5, 0xcf, 0x4d, 0x2d, 0xca, 0xce, 0x49, 0x2d, 0x29, 0x4a, 0x85, 0x31, 0xe3, 0x41, 0x6c, 0xbd,

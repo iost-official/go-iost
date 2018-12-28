@@ -3,11 +3,9 @@
 
 package msgpb
 
-import (
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	math "math"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,7 +16,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type RequireType int32
 
@@ -31,7 +29,6 @@ var RequireType_name = map[int32]string{
 	0: "GETBLOCKHASHES",
 	1: "GETBLOCKHASHESBYNUMBER",
 }
-
 var RequireType_value = map[string]int32{
 	"GETBLOCKHASHES":         0,
 	"GETBLOCKHASHESBYNUMBER": 1,
@@ -40,9 +37,8 @@ var RequireType_value = map[string]int32{
 func (x RequireType) String() string {
 	return proto.EnumName(RequireType_name, int32(x))
 }
-
 func (RequireType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_1e960d3736d18fa7, []int{0}
+	return fileDescriptor_message_de444989fea2c1cc, []int{0}
 }
 
 type BlockInfo struct {
@@ -57,17 +53,16 @@ func (m *BlockInfo) Reset()         { *m = BlockInfo{} }
 func (m *BlockInfo) String() string { return proto.CompactTextString(m) }
 func (*BlockInfo) ProtoMessage()    {}
 func (*BlockInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1e960d3736d18fa7, []int{0}
+	return fileDescriptor_message_de444989fea2c1cc, []int{0}
 }
-
 func (m *BlockInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BlockInfo.Unmarshal(m, b)
 }
 func (m *BlockInfo) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BlockInfo.Marshal(b, m, deterministic)
 }
-func (m *BlockInfo) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BlockInfo.Merge(m, src)
+func (dst *BlockInfo) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BlockInfo.Merge(dst, src)
 }
 func (m *BlockInfo) XXX_Size() int {
 	return xxx_messageInfo_BlockInfo.Size(m)
@@ -106,17 +101,16 @@ func (m *BlockHashQuery) Reset()         { *m = BlockHashQuery{} }
 func (m *BlockHashQuery) String() string { return proto.CompactTextString(m) }
 func (*BlockHashQuery) ProtoMessage()    {}
 func (*BlockHashQuery) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1e960d3736d18fa7, []int{1}
+	return fileDescriptor_message_de444989fea2c1cc, []int{1}
 }
-
 func (m *BlockHashQuery) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BlockHashQuery.Unmarshal(m, b)
 }
 func (m *BlockHashQuery) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BlockHashQuery.Marshal(b, m, deterministic)
 }
-func (m *BlockHashQuery) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BlockHashQuery.Merge(m, src)
+func (dst *BlockHashQuery) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BlockHashQuery.Merge(dst, src)
 }
 func (m *BlockHashQuery) XXX_Size() int {
 	return xxx_messageInfo_BlockHashQuery.Size(m)
@@ -166,17 +160,16 @@ func (m *BlockHashResponse) Reset()         { *m = BlockHashResponse{} }
 func (m *BlockHashResponse) String() string { return proto.CompactTextString(m) }
 func (*BlockHashResponse) ProtoMessage()    {}
 func (*BlockHashResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1e960d3736d18fa7, []int{2}
+	return fileDescriptor_message_de444989fea2c1cc, []int{2}
 }
-
 func (m *BlockHashResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BlockHashResponse.Unmarshal(m, b)
 }
 func (m *BlockHashResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_BlockHashResponse.Marshal(b, m, deterministic)
 }
-func (m *BlockHashResponse) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_BlockHashResponse.Merge(m, src)
+func (dst *BlockHashResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_BlockHashResponse.Merge(dst, src)
 }
 func (m *BlockHashResponse) XXX_Size() int {
 	return xxx_messageInfo_BlockHashResponse.Size(m)
@@ -206,17 +199,16 @@ func (m *SyncHeight) Reset()         { *m = SyncHeight{} }
 func (m *SyncHeight) String() string { return proto.CompactTextString(m) }
 func (*SyncHeight) ProtoMessage()    {}
 func (*SyncHeight) Descriptor() ([]byte, []int) {
-	return fileDescriptor_1e960d3736d18fa7, []int{3}
+	return fileDescriptor_message_de444989fea2c1cc, []int{3}
 }
-
 func (m *SyncHeight) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_SyncHeight.Unmarshal(m, b)
 }
 func (m *SyncHeight) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_SyncHeight.Marshal(b, m, deterministic)
 }
-func (m *SyncHeight) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_SyncHeight.Merge(m, src)
+func (dst *SyncHeight) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_SyncHeight.Merge(dst, src)
 }
 func (m *SyncHeight) XXX_Size() int {
 	return xxx_messageInfo_SyncHeight.Size(m)
@@ -242,18 +234,18 @@ func (m *SyncHeight) GetTime() int64 {
 }
 
 func init() {
-	proto.RegisterEnum("msgpb.RequireType", RequireType_name, RequireType_value)
 	proto.RegisterType((*BlockInfo)(nil), "msgpb.BlockInfo")
 	proto.RegisterType((*BlockHashQuery)(nil), "msgpb.BlockHashQuery")
 	proto.RegisterType((*BlockHashResponse)(nil), "msgpb.BlockHashResponse")
 	proto.RegisterType((*SyncHeight)(nil), "msgpb.SyncHeight")
+	proto.RegisterEnum("msgpb.RequireType", RequireType_name, RequireType_value)
 }
 
 func init() {
-	proto.RegisterFile("consensus/synchronizer/pb/message.proto", fileDescriptor_1e960d3736d18fa7)
+	proto.RegisterFile("consensus/synchronizer/pb/message.proto", fileDescriptor_message_de444989fea2c1cc)
 }
 
-var fileDescriptor_1e960d3736d18fa7 = []byte{
+var fileDescriptor_message_de444989fea2c1cc = []byte{
 	// 308 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x54, 0x91, 0xcd, 0x4f, 0x83, 0x40,
 	0x10, 0xc5, 0xc5, 0x6d, 0x6b, 0x9c, 0x9a, 0x06, 0x37, 0xa6, 0x21, 0x9e, 0x08, 0x17, 0x89, 0x31,

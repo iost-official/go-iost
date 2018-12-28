@@ -36,8 +36,6 @@ class IssueContract {
      *      FoundationAccount string
      *      IOSTTotalSupply   int64
      *      IOSTDecimal       int64
-     *      RAMTotalSupply    int64
-     *      RAMGenesisAmount  int64
      * }
      * witnessInfo = [{
      *      ID      string

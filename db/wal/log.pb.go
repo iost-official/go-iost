@@ -3,11 +3,9 @@
 
 package wal
 
-import (
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	math "math"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,7 +16,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type LogType int32
 
@@ -33,7 +31,6 @@ var LogType_name = map[int32]string{
 	2: "metaDataType",
 	3: "entryType",
 }
-
 var LogType_value = map[string]int32{
 	"crcType":      0,
 	"metaDataType": 2,
@@ -43,9 +40,8 @@ var LogType_value = map[string]int32{
 func (x LogType) String() string {
 	return proto.EnumName(LogType_name, int32(x))
 }
-
 func (LogType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_d01227d54ddec537, []int{0}
+	return fileDescriptor_log_2fece7c53653848f, []int{0}
 }
 
 type Log struct {
@@ -61,17 +57,16 @@ func (m *Log) Reset()         { *m = Log{} }
 func (m *Log) String() string { return proto.CompactTextString(m) }
 func (*Log) ProtoMessage()    {}
 func (*Log) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d01227d54ddec537, []int{0}
+	return fileDescriptor_log_2fece7c53653848f, []int{0}
 }
-
 func (m *Log) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Log.Unmarshal(m, b)
 }
 func (m *Log) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Log.Marshal(b, m, deterministic)
 }
-func (m *Log) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Log.Merge(m, src)
+func (dst *Log) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Log.Merge(dst, src)
 }
 func (m *Log) XXX_Size() int {
 	return xxx_messageInfo_Log.Size(m)
@@ -116,17 +111,16 @@ func (m *Entry) Reset()         { *m = Entry{} }
 func (m *Entry) String() string { return proto.CompactTextString(m) }
 func (*Entry) ProtoMessage()    {}
 func (*Entry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_d01227d54ddec537, []int{1}
+	return fileDescriptor_log_2fece7c53653848f, []int{1}
 }
-
 func (m *Entry) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Entry.Unmarshal(m, b)
 }
 func (m *Entry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Entry.Marshal(b, m, deterministic)
 }
-func (m *Entry) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Entry.Merge(m, src)
+func (dst *Entry) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Entry.Merge(dst, src)
 }
 func (m *Entry) XXX_Size() int {
 	return xxx_messageInfo_Entry.Size(m)
@@ -159,14 +153,14 @@ func (m *Entry) GetIndex() uint64 {
 }
 
 func init() {
-	proto.RegisterEnum("wal.LogType", LogType_name, LogType_value)
 	proto.RegisterType((*Log)(nil), "wal.Log")
 	proto.RegisterType((*Entry)(nil), "wal.Entry")
+	proto.RegisterEnum("wal.LogType", LogType_name, LogType_value)
 }
 
-func init() { proto.RegisterFile("db/wal/log.proto", fileDescriptor_d01227d54ddec537) }
+func init() { proto.RegisterFile("db/wal/log.proto", fileDescriptor_log_2fece7c53653848f) }
 
-var fileDescriptor_d01227d54ddec537 = []byte{
+var fileDescriptor_log_2fece7c53653848f = []byte{
 	// 210 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xe2, 0x12, 0x48, 0x49, 0xd2, 0x2f,
 	0x4f, 0xcc, 0xd1, 0xcf, 0xc9, 0x4f, 0xd7, 0x2b, 0x28, 0xca, 0x2f, 0xc9, 0x17, 0x62, 0x2e, 0x4f,

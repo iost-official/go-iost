@@ -3,11 +3,9 @@
 
 package contract
 
-import (
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	math "math"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -18,7 +16,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Info struct {
 	Lang                 string   `protobuf:"bytes,1,opt,name=lang,proto3" json:"lang,omitempty"`
@@ -33,17 +31,16 @@ func (m *Info) Reset()         { *m = Info{} }
 func (m *Info) String() string { return proto.CompactTextString(m) }
 func (*Info) ProtoMessage()    {}
 func (*Info) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f74c2661e7246774, []int{0}
+	return fileDescriptor_contract_9f9ccca2a22d1152, []int{0}
 }
-
 func (m *Info) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Info.Unmarshal(m, b)
 }
 func (m *Info) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Info.Marshal(b, m, deterministic)
 }
-func (m *Info) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Info.Merge(m, src)
+func (dst *Info) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Info.Merge(dst, src)
 }
 func (m *Info) XXX_Size() int {
 	return xxx_messageInfo_Info.Size(m)
@@ -88,17 +85,16 @@ func (m *ABI) Reset()         { *m = ABI{} }
 func (m *ABI) String() string { return proto.CompactTextString(m) }
 func (*ABI) ProtoMessage()    {}
 func (*ABI) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f74c2661e7246774, []int{1}
+	return fileDescriptor_contract_9f9ccca2a22d1152, []int{1}
 }
-
 func (m *ABI) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_ABI.Unmarshal(m, b)
 }
 func (m *ABI) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_ABI.Marshal(b, m, deterministic)
 }
-func (m *ABI) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_ABI.Merge(m, src)
+func (dst *ABI) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_ABI.Merge(dst, src)
 }
 func (m *ABI) XXX_Size() int {
 	return xxx_messageInfo_ABI.Size(m)
@@ -142,17 +138,16 @@ func (m *Amount) Reset()         { *m = Amount{} }
 func (m *Amount) String() string { return proto.CompactTextString(m) }
 func (*Amount) ProtoMessage()    {}
 func (*Amount) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f74c2661e7246774, []int{2}
+	return fileDescriptor_contract_9f9ccca2a22d1152, []int{2}
 }
-
 func (m *Amount) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Amount.Unmarshal(m, b)
 }
 func (m *Amount) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Amount.Marshal(b, m, deterministic)
 }
-func (m *Amount) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Amount.Merge(m, src)
+func (dst *Amount) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Amount.Merge(dst, src)
 }
 func (m *Amount) XXX_Size() int {
 	return xxx_messageInfo_Amount.Size(m)
@@ -190,17 +185,16 @@ func (m *Contract) Reset()         { *m = Contract{} }
 func (m *Contract) String() string { return proto.CompactTextString(m) }
 func (*Contract) ProtoMessage()    {}
 func (*Contract) Descriptor() ([]byte, []int) {
-	return fileDescriptor_f74c2661e7246774, []int{3}
+	return fileDescriptor_contract_9f9ccca2a22d1152, []int{3}
 }
-
 func (m *Contract) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Contract.Unmarshal(m, b)
 }
 func (m *Contract) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Contract.Marshal(b, m, deterministic)
 }
-func (m *Contract) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Contract.Merge(m, src)
+func (dst *Contract) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Contract.Merge(dst, src)
 }
 func (m *Contract) XXX_Size() int {
 	return xxx_messageInfo_Contract.Size(m)
@@ -239,9 +233,11 @@ func init() {
 	proto.RegisterType((*Contract)(nil), "contract.Contract")
 }
 
-func init() { proto.RegisterFile("core/contract/contract.proto", fileDescriptor_f74c2661e7246774) }
+func init() {
+	proto.RegisterFile("core/contract/contract.proto", fileDescriptor_contract_9f9ccca2a22d1152)
+}
 
-var fileDescriptor_f74c2661e7246774 = []byte{
+var fileDescriptor_contract_9f9ccca2a22d1152 = []byte{
 	// 245 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x4c, 0x90, 0xc1, 0x6e, 0xc2, 0x30,
 	0x0c, 0x86, 0x45, 0xd3, 0x31, 0xe6, 0x6a, 0x08, 0x59, 0x3b, 0xe4, 0x30, 0x69, 0x55, 0x4f, 0x9c,

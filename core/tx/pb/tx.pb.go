@@ -3,13 +3,11 @@
 
 package txpb
 
-import (
-	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
-	contract "github.com/iost-official/go-iost/core/contract"
-	pb "github.com/iost-official/go-iost/crypto/pb"
-	math "math"
-)
+import proto "github.com/golang/protobuf/proto"
+import fmt "fmt"
+import math "math"
+import contract "github.com/iost-official/go-iost/core/contract"
+import pb "github.com/iost-official/go-iost/crypto/pb"
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -20,7 +18,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
+const _ = proto.ProtoPackageIsVersion2 // please upgrade the proto package
 
 type Action struct {
 	Contract             string   `protobuf:"bytes,1,opt,name=contract,proto3" json:"contract,omitempty"`
@@ -35,17 +33,16 @@ func (m *Action) Reset()         { *m = Action{} }
 func (m *Action) String() string { return proto.CompactTextString(m) }
 func (*Action) ProtoMessage()    {}
 func (*Action) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a5cd2a43d9b9fb36, []int{0}
+	return fileDescriptor_tx_a26a6561a05cafed, []int{0}
 }
-
 func (m *Action) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Action.Unmarshal(m, b)
 }
 func (m *Action) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Action.Marshal(b, m, deterministic)
 }
-func (m *Action) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Action.Merge(m, src)
+func (dst *Action) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Action.Merge(dst, src)
 }
 func (m *Action) XXX_Size() int {
 	return xxx_messageInfo_Action.Size(m)
@@ -99,17 +96,16 @@ func (m *Tx) Reset()         { *m = Tx{} }
 func (m *Tx) String() string { return proto.CompactTextString(m) }
 func (*Tx) ProtoMessage()    {}
 func (*Tx) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a5cd2a43d9b9fb36, []int{1}
+	return fileDescriptor_tx_a26a6561a05cafed, []int{1}
 }
-
 func (m *Tx) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Tx.Unmarshal(m, b)
 }
 func (m *Tx) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Tx.Marshal(b, m, deterministic)
 }
-func (m *Tx) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Tx.Merge(m, src)
+func (dst *Tx) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Tx.Merge(dst, src)
 }
 func (m *Tx) XXX_Size() int {
 	return xxx_messageInfo_Tx.Size(m)
@@ -216,17 +212,16 @@ func (m *Receipt) Reset()         { *m = Receipt{} }
 func (m *Receipt) String() string { return proto.CompactTextString(m) }
 func (*Receipt) ProtoMessage()    {}
 func (*Receipt) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a5cd2a43d9b9fb36, []int{2}
+	return fileDescriptor_tx_a26a6561a05cafed, []int{2}
 }
-
 func (m *Receipt) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Receipt.Unmarshal(m, b)
 }
 func (m *Receipt) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Receipt.Marshal(b, m, deterministic)
 }
-func (m *Receipt) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Receipt.Merge(m, src)
+func (dst *Receipt) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Receipt.Merge(dst, src)
 }
 func (m *Receipt) XXX_Size() int {
 	return xxx_messageInfo_Receipt.Size(m)
@@ -263,17 +258,16 @@ func (m *Status) Reset()         { *m = Status{} }
 func (m *Status) String() string { return proto.CompactTextString(m) }
 func (*Status) ProtoMessage()    {}
 func (*Status) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a5cd2a43d9b9fb36, []int{3}
+	return fileDescriptor_tx_a26a6561a05cafed, []int{3}
 }
-
 func (m *Status) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Status.Unmarshal(m, b)
 }
 func (m *Status) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_Status.Marshal(b, m, deterministic)
 }
-func (m *Status) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_Status.Merge(m, src)
+func (dst *Status) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_Status.Merge(dst, src)
 }
 func (m *Status) XXX_Size() int {
 	return xxx_messageInfo_Status.Size(m)
@@ -314,17 +308,16 @@ func (m *TxReceipt) Reset()         { *m = TxReceipt{} }
 func (m *TxReceipt) String() string { return proto.CompactTextString(m) }
 func (*TxReceipt) ProtoMessage()    {}
 func (*TxReceipt) Descriptor() ([]byte, []int) {
-	return fileDescriptor_a5cd2a43d9b9fb36, []int{4}
+	return fileDescriptor_tx_a26a6561a05cafed, []int{4}
 }
-
 func (m *TxReceipt) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_TxReceipt.Unmarshal(m, b)
 }
 func (m *TxReceipt) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
 	return xxx_messageInfo_TxReceipt.Marshal(b, m, deterministic)
 }
-func (m *TxReceipt) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_TxReceipt.Merge(m, src)
+func (dst *TxReceipt) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_TxReceipt.Merge(dst, src)
 }
 func (m *TxReceipt) XXX_Size() int {
 	return xxx_messageInfo_TxReceipt.Size(m)
@@ -386,9 +379,9 @@ func init() {
 	proto.RegisterMapType((map[string]int64)(nil), "txpb.TxReceipt.RamUsageEntry")
 }
 
-func init() { proto.RegisterFile("core/tx/pb/tx.proto", fileDescriptor_a5cd2a43d9b9fb36) }
+func init() { proto.RegisterFile("core/tx/pb/tx.proto", fileDescriptor_tx_a26a6561a05cafed) }
 
-var fileDescriptor_a5cd2a43d9b9fb36 = []byte{
+var fileDescriptor_tx_a26a6561a05cafed = []byte{
 	// 546 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x84, 0x53, 0xcf, 0x8b, 0xd3, 0x40,
 	0x14, 0xa6, 0x4d, 0x9b, 0x36, 0xaf, 0x5d, 0x58, 0x46, 0x91, 0x50, 0x54, 0x4a, 0x91, 0xa5, 0x1e,
