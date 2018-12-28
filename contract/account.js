@@ -3,14 +3,20 @@ class Account {
 
     }
 
-    /**
-     * @constructor
-     * @param
-     */
     init() {
 
     }
-
+    InitAdmin(adminID) {
+        const bn = block.number;
+        if(bn !== 0) {
+            throw new Error("init out of genesis block")
+        }
+        storage.put("adminID", adminID);
+    }
+    can_update(data) {
+        const admin = storage.get("adminID");
+        return blockchain.requireAuth(admin, "active");
+    }
     _saveAccount(account, payer) {
         if (payer === undefined) {
             payer = account.id
@@ -48,6 +54,9 @@ class Account {
         }
         if (id.length < 5 || id.length > 11) {
             throw new Error("id invalid. id length should be between 5,11 > " + id)
+        }
+        if (id.startsWith("Contract")) {
+            throw new Error("id invalid. id shouldn't start with 'Contract'.");
         }
         for (let i in id) {
             let ch = id[i];

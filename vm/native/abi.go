@@ -26,6 +26,11 @@ func Token721ABI() *contract.Contract {
 	return ABI("token721.iost", token721ABIs)
 }
 
+// DomainABI generate domain.iost abi and contract
+func DomainABI() *contract.Contract {
+	return ABI("domain.iost", domainABIs)
+}
+
 // ABI generate native abis
 func ABI(id string, abiSet *abiSet) *contract.Contract {
 	c := &contract.Contract{

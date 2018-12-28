@@ -4,21 +4,30 @@ class StorageOp {
     constructor() {
     }
 
-    doPut(num) {
+    doPut(num, data) {
+        if (data === undefined || data === null) {
+            data = "value";
+        }
         for (let i = 0; i < num; i++) {
-            storage.put("key", "value")
+            storage.put("key" + i, data)
         }
     }
 
-    doGet(num) {
-        storage.put("key", "value")
+    doGet(num, data) {
+        if (data === undefined || data === null) {
+            data = "value";
+        }
+        storage.put("key", data)
         for (let i = 0; i < num; i++) {
             storage.get("key")
         }
     }
 
-    doHas(num) {
-        storage.put("key", "value")
+    doHas(num, data) {
+        if (data === undefined || data === null) {
+            data = "value";
+        }
+        storage.put("key", data)
         for (let i = 0; i < num; i++) {
             storage.has("key")
         }
@@ -30,21 +39,30 @@ class StorageOp {
         }
     }
 
-    doMapPut(num) {
+    doMapPut(num, data) {
+        if (data === undefined || data === null) {
+            data = "value";
+        }
         for (let i = 0; i < num; i++) {
-            storage.mapPut("key", "field", "value")
+            storage.mapPut("key", "field", data)
         }
     }
 
-    doMapGet(num) {
-        storage.mapPut("key", "field", "value")
+    doMapGet(num, data) {
+        if (data === undefined || data === null) {
+            data = "value";
+        }
+        storage.mapPut("key", "field", data)
         for (let i = 0; i < num; i++) {
             storage.mapGet("key", "field")
         }
     }
 
-    doMapHas(num) {
-        storage.mapPut("key", "field", "value")
+    doMapHas(num, data) {
+        if (data === undefined || data === null) {
+            data = "value";
+        }
+        storage.mapPut("key", "field", data)
         for (let i = 0; i < num; i++) {
             storage.mapHas("key", "field")
         }

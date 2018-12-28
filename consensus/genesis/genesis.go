@@ -52,6 +52,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 	// prepare actions
 	var acts []*tx.Action
+	adminInfo := gConf.AdminInfo
 
 	// deploy token.iost
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.TokenABI().B64Encode())))
@@ -64,7 +65,6 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "issue.iost", code.B64Encode())))
-	adminInfo := gConf.AdminInfo
 	tokenInfo := gConf.TokenInfo
 	tokenHolder := append(witnessInfo, adminInfo)
 	params := []interface{}{
@@ -80,6 +80,10 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "auth.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("auth.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+
+	// deploy domain.iost
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "domain.iost", native.DomainABI().B64Encode())))
 
 	// new account
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
@@ -117,6 +121,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "vote_producer.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("vote_producer.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy base.iost
 	code, err = compile("base.iost", gConf.ContractPath, "base.js")
@@ -129,7 +134,6 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, v.ID, v.Active)))
 	}
-	acts = append(acts, tx.NewAction("vote_producer.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// pledge gas for admin
 	gasPledgeAmount := 100
