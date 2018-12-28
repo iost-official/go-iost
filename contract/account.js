@@ -68,7 +68,7 @@ class Account {
             return
         }
         if (id.length < 1 || id.length > 32) {
-            throw new Error("id invalid. id length should be between 6,32 > " + id)
+            throw new Error("id invalid. id length should be between 1,32 > " + id)
         }
         for (let i in id) {
             let ch = id[i];
