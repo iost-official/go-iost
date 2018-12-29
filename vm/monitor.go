@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"encoding/json"
+	"math"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -17,7 +19,6 @@ import (
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	"github.com/iost-official/go-iost/vm/v8vm"
-	"math"
 )
 
 // Monitor ...
@@ -39,6 +40,9 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 	var cid string
 	if h.IsDomain(contractName) {
 		cid = h.ContractID(contractName)
+		if cid == "" {
+			cid = contractName
+		}
 	} else {
 		cid = contractName
 	}

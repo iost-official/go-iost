@@ -98,7 +98,10 @@ class VoteContract {
     }
 
     _requireAuth(account, permission) {
-        blockchain.requireAuth(account, permission);
+        const ret = blockchain.requireAuth(account, permission);
+        if (ret !== true) {
+            throw new Error("require auth failed. ret = " + ret);
+        }
     }
 
     _call(contract, api, args) {

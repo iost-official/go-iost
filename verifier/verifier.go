@@ -141,12 +141,14 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 	return r, nil
 }
 
+// nolint:gocyclo
 func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
 	info := Info{
 		Mode: 0,
 	}
 	var tn time.Time
 	to := time.Now().Add(c.Timeout)
+	blockGasLimit := common.MaxBlockGasLimit
 
 L:
 	for tn.Before(to) {
@@ -182,6 +184,9 @@ L:
 			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
+		if t.GasLimit > blockGasLimit {
+			continue L
+		}
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
@@ -214,6 +219,7 @@ L:
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
+		blockGasLimit -= r.GasUsage
 	}
 	buf, err := json.Marshal(info)
 	if err != nil {

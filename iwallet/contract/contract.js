@@ -27,28 +27,55 @@ function isPublicMethod(def) {
 	return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && !def.key.name.startsWith("_");
 }
 
-function genAbi(def) {
-	return {
-		"name": def.key.name,
-		"args": new Array(def.value.params.length).fill("string"),
-		"amountLimit": []
+function genAbi(def, lastPos, comments) {
+    for (let param of def.value.params) {
+        if (param.type !== "Identifier") {
+            throw new Error("invalid method parameter type. must be Identifier, got " + param.type);
+        }
+    }
+	let abi = {
+        "name": def.key.name,
+        "args": new Array(def.value.params.length).fill("string"),
+        "amountLimit": [],
+        "description": ""
 	};
+    for (let i = comments.length - 1; i >= 0; i--) {
+        let comment = comments[i];
+        if (comment.range[0] > lastPos && comment.range[1] < def.range[0]) {
+            abi.description = comment.value;
+            for (let i in def.value.params) {
+                let name = def.value.params[i].name;
+                let reg = new RegExp("@param\\s*{([a-zA-Z]+)}\\s*" + name);
+                let reg1 = new RegExp("@param\\s*" + name + "\\s*{([a-zA-Z]+)}");
+                let res = null;
+                if (res = comment.value.match(reg), res !== null) {
+                    abi.args[i] = res[1];
+                } else if (res = comment.value.match(reg1), res !== null) {
+                    abi.args[i] = res[1];
+                }
+            }
+            break;
+        }
+    }
+    return abi;
 }
 
-function genAbiArr(stat) {
+function genAbiArr(stat, comments) {
 	let abiArr = [];
 	if (!isClassDecl(stat) || stat.body.type !== "ClassBody") {
 		throw new Error("invalid statement for generate abi. stat = " + stat);
 		return null;
 	}
 	let initFound = false;
+	let lastPos = stat.body.range[0];
 	for (let def of stat.body.body) {
 		if (def.type === "MethodDefinition" && isPublicMethod(def)) {
 			if (def.key.name === "constructor") {
 			} else if (def.key.name === "init") {
 				initFound = true;
 			} else {
-				abiArr.push(genAbi(def));
+				abiArr.push(genAbi(def, lastPos, comments));
+				lastPos = def.range[1];
 			}
 		}
 	}
@@ -155,7 +182,8 @@ function handleOperator(ast) {
 function processContract(source) {
   let ast = esprima.parseModule(source, {
 		range: true,
-		loc: true,
+		loc: false,
+	  	comment: true,
 		tokens: true
 	});
 
@@ -167,22 +195,19 @@ function processContract(source) {
 
     checkInvalidKeyword(ast.tokens);
 	// checkOperator(ast.tokens);
-    let newSource = "use strict;\n" + handleOperator(ast);
+    let newSource = "'use strict';\n" + handleOperator(ast);
 
-	//let validRange = [];
 	let className;
 	for (let stat of ast.body) {
 		if (isClassDecl(stat)) {
-			//validRange.push(stat.range);
 		}
 		else if (stat.type === "ExpressionStatement" && isExport(stat.expression)) {
-			//validRange.push(stat.range);
 			className = getExportName(stat.expression);
 		}
 	}
 	for (let stat of ast.body) {
 		if (isClassDecl(stat) && stat.id.type === "Identifier" && stat.id.name === className) {
-			abiArr = genAbiArr(stat);
+			abiArr = genAbiArr(stat, ast.comments);
 		}
 	}
 

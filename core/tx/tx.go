@@ -19,7 +19,8 @@ import (
 const (
 	minGasRatio = 100
 	maxGasRatio = 10000
-	minGasLimit = 50000
+	minGasLimit = 500000
+	maxGasLimit = 200000000
 	txSizeLimit = 65536
 )
 
@@ -378,6 +379,9 @@ func (t *Tx) CheckGas() error {
 	}
 	if t.GasLimit < minGasLimit {
 		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit)
+	}
+	if t.GasLimit > maxGasLimit {
+		return fmt.Errorf("gas limit illegal, should <= %v", maxGasLimit)
 	}
 	return nil
 }

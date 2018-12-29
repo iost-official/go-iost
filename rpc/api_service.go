@@ -342,9 +342,10 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 	var value interface{}
-	if req.GetField() == "" {
+	switch {
+	case req.GetField() == "":
 		value, _ = h.GlobalGet(req.GetId(), req.GetKey())
-	} else {
+	default:
 		value, _ = h.GlobalMapGet(req.GetId(), req.GetKey(), req.GetField())
 	}
 	var data string
@@ -358,6 +359,30 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 		data = string(bytes)
 	}
 	return &rpcpb.GetContractStorageResponse{
+		Data: data,
+	}, nil
+}
+
+// GetContractStorageFields returns contract storage corresponding to the given fields.
+func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
+	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	var value interface{}
+
+	if req.GetFields() != "" {
+		value, _ = h.GlobalMapKeys(req.GetId(), req.GetFields())
+	}
+	var data string
+	if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
+		data = value.(string)
+	} else {
+		bytes, err := json.Marshal(value)
+		if err != nil {
+			return nil, fmt.Errorf("cannot unmarshal %v", value)
+		}
+		data = string(bytes)
+	}
+	return &rpcpb.GetContractStorageFieldsResponse{
 		Data: data,
 	}, nil
 }

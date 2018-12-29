@@ -486,7 +486,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			Contract:   "token.iost",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "10"),
-		}}, nil, 350000, 100, 10000000, 0)
+		}}, nil, 500000, 100, 10000000, 0)
 
 		r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 		t.Log(err, r, r.Status)
@@ -563,7 +563,7 @@ func TestDomain(t *testing.T) {
 
 		cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		s.Visitor.SetContract(native.ABI("domain.iost", native.DomainABIs))
+		s.Visitor.SetContract(native.DomainABI())
 		r1, err := s.Call("domain.iost", "Link", fmt.Sprintf(`["abc_0_de.io","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldEqual, "")
@@ -571,7 +571,7 @@ func TestDomain(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r2.Status.Message, ShouldEqual, "")
 
-		r1, err = s.Call("domain.iost", "Link", fmt.Sprintf(`["abcde#A","%v"]`, cname), acc.ID, acc.KeyPair)
+		r1, err = s.Call("domain.iost", "Link", fmt.Sprintf(`["ab.cde#A","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldContainSubstring, "url contains invalid character")
 	})
@@ -599,7 +599,11 @@ func TestAuthority(t *testing.T) {
 		err = createToken(t, s, acc)
 		So(err, ShouldBeNil)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "id shouldn't start with")
+
+		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
