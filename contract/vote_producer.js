@@ -201,6 +201,7 @@ class VoteContract {
         pro.status = STATUS_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._removeFromWaitList(admin, account);
+        this._initCandidateVars(admin, account, this._getVoteId());
     }
 
     // approve remove account from producer list
@@ -218,6 +219,7 @@ class VoteContract {
         pro.status = STATUS_UNAPPLY_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._tryRemoveProducer(admin, account, pro);
+        this._clearCandidateVars(admin, account, this._getVoteId());
     }
 
     // force approve remove account from producer list
@@ -232,6 +234,7 @@ class VoteContract {
         pro.status = STATUS_UNAPPLY_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._tryRemoveProducer(admin, account, pro);
+        this._clearCandidateVars(admin, account, this._getVoteId());
     }
 
     Unregister(account) {
@@ -447,9 +450,9 @@ class VoteContract {
             }
 
             if (votes.minus(amount).lt(PRE_PRODUCER_THRESHOLD)) {
-                this._updateCandidateMask(voter, account, votes)
+                this._updateCandidateMask(voter, account, votes);
             } else {
-                this._updateCandidateMask(voter, account, amount)
+                this._updateCandidateMask(voter, account, amount);
             }
 
         } else if (amount.lt("0")) {
@@ -458,10 +461,30 @@ class VoteContract {
             }
 
             if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
-                this._updateCandidateMask(voter, account, votes.negated())
+                this._updateCandidateMask(voter, account, votes.negated());
             } else {
-                this._updateCandidateMask(voter, account, amount)
+                this._updateCandidateMask(voter, account, amount);
             }
+        }
+    }
+
+    _clearCandidateVars(admin, account, voteId) {
+        let votes = new Float64(this._call("vote.iost", "GetOption", [
+           voteId,
+           account,
+        ]).votes);
+        if (votes && votes.isPositive()) {
+            this._updateCandidateMask(admin, account, votes.negated());
+        }
+    }
+
+    _initCandidateVars(admin, account, voteId) {
+        let votes = new Float64(this._call("vote.iost", "GetOption", [
+           voteId,
+           account,
+        ]).votes);
+        if (votes && votes.isPositive()) {
+            this._updateCandidateMask(admin, account, votes);
         }
     }
 
