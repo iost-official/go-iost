@@ -459,7 +459,7 @@ class VoteCommonContract {
 
         const deposit = new Float64(info.deposit);
         if (!deposit.isZero()) {
-            this._call("token.iost", "transfer", ["iost", owner, "vote.iost", deposit, ""]);
+            this._call("token.iost", "transfer", ["iost", "vote.iost", owner, deposit, ""]);
         }
         this._delVote(voteId);
     }

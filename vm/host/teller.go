@@ -162,6 +162,7 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (paidGas *common.Fixed, e
 				return
 			}
 			t.h.db.SetTokenBalance("ram", ramPayer, currentRAM-ram)
+			t.h.db.ChangeUsedRAMInfo(ramPayer, ram)
 		}
 	}
 	return
