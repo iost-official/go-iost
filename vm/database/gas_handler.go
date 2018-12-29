@@ -169,7 +169,7 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 	gasUpdateTime := g.GasUpdateTime(name)
 	var durationSeconds float64
 	if gasUpdateTime > 0 {
-		durationSeconds = float64(t - gasUpdateTime) / float64(1e9)
+		durationSeconds = float64(t-gasUpdateTime) / float64(1e9)
 		if durationSeconds > gasMaxIncreaseSeconds {
 			durationSeconds = gasMaxIncreaseSeconds
 		}
