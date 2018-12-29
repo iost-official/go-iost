@@ -167,9 +167,9 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 	}
 	result = g.GasStock(name)
 	gasUpdateTime := g.GasUpdateTime(name)
-	var durationSeconds int64
+	var durationSeconds float64
 	if gasUpdateTime > 0 {
-		durationSeconds = (t - gasUpdateTime) / 1e9
+		durationSeconds = float64(t - gasUpdateTime) / float64(1e9)
 		if durationSeconds > gasMaxIncreaseSeconds {
 			durationSeconds = gasMaxIncreaseSeconds
 		}
@@ -179,8 +179,8 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 	}
 	rate := g.GasRate(name)
 	limit := g.GasLimit(name)
-	//fmt.Printf("PGasAtTime user %v stock %v rate %v limit %v\n", name, result, rate, limit)
-	delta := rate.Times(durationSeconds)
+	//fmt.Printf("PGasAtTime user %v stock %v rate %v limit %v durationSeconds %v\n", name, result, rate, limit, durationSeconds)
+	delta := rate.TimesF(durationSeconds)
 	if delta == nil {
 		ilog.Errorf("PGasAtTime may overflow rate %v durationSeconds %v", rate, durationSeconds)
 		return
