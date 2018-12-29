@@ -429,8 +429,7 @@ func Test_Vote1(t *testing.T) {
 }
 
 func Test_Unregister2(t *testing.T) {
-	ilog.Start()
-	ilog.SetLevel(ilog.LevelDebug)
+	ilog.Stop()
 	Convey("test Unregister2", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
@@ -592,7 +591,7 @@ func Test_Unregister2(t *testing.T) {
 			r, err = s.Call("vote_producer.iost", "ForceUnregister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("vote_producer.iost", "Unregister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
+			r, err = s.Call("vote_producer.iost", "Unregister", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 		}
