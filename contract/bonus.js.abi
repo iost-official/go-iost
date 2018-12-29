@@ -13,11 +13,6 @@
             ]
         },
         {
-            "name": "UpdateRate",
-            "args": [
-            ]
-        },
-        {
             "name": "IssueContribute",
             "args": [
                 "json"

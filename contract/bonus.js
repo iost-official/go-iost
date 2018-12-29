@@ -1,6 +1,5 @@
-const secondToNano = 1e9;
 const activePermission = "active";
-const totalSupply = 9 * 1000 * 1000 * 1000 * 1000 * 1000 * 1000;
+const totalSupply = 90000000000;
 const blockContribRadio = new Float64("9.6568764571e-11");
 
 class BonusContract {
@@ -20,7 +19,7 @@ class BonusContract {
             totalSupply,
             {
                 "can_transfer": false,
-                "decimal": 0
+                "decimal": 8
             }
         ]);
     }
@@ -142,7 +141,7 @@ class BonusContract {
             amount = new Float64(contribute);
         }
 
-        if (!amount.isPositive() || amount.gt(contribute)) {
+        if (amount.lte("0") || amount.gt(contribute)) {
             throw new Error("invalid amount: negative or greater than contribute");
         }
 

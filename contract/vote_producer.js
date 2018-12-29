@@ -18,8 +18,6 @@ const candidateMaskTable = "candMask";
 const candidateCoef = "candCoef";
 const candidateAllKey = "candAllKey";
 
-const voteThreshold = new Float64(21 * 1000 * 1000 * 1000 * 0.0005);
-
 class VoteContract {
     init() {
         this._put("currentProducerList", []);
@@ -119,7 +117,7 @@ class VoteContract {
         return JSON.parse(val);
     }
 
-	  _put(k, v, p) {
+	_put(k, v, p) {
         storage.put(k, JSON.stringify(v), p);
     }
 
@@ -199,6 +197,7 @@ class VoteContract {
         const pro = this._mapGet("producerTable", account);
         pro.status = STATUS_APPROVED;
         this._mapPut("producerTable", account, pro);
+        this._removeFromWaitList(admin, account);
     }
 
     // approve remove account from producer list
@@ -250,7 +249,7 @@ class VoteContract {
         // will clear votes and score of the producer on stat
         pro.status = STATUS_UNAPPLY_APPROVED;
         this._mapPut("producerTable", account, pro);
-        this._doRemoveProducer(admin, account, pro);
+        this._doRemoveProducer(account, pro.pubkey, true);
     }
 
     _tryRemoveProducer(admin, account, pro) {
@@ -258,6 +257,21 @@ class VoteContract {
         const pendingList = this._get("pendingProducerList");
         if (currentList.includes(pro.pubkey) || pendingList.includes(pro.pubkey)) {
             this._waitRemoveProducer(admin, account);
+        } else {
+            let scores = this._getScores();
+            if (scores[account] !== undefined) {
+                delete(scores[account]);
+                this._putScores(scores);
+            }
+        }
+    }
+
+    _removeFromWaitList(admin, account) {
+        let waitList = this._get("waitingRemoveList") || [];
+        const idx = waitList.indexOf(account);
+        if (idx !== -1) {
+            waitList.splice(idx, 1);
+            this._put("waitingRemoveList", waitList, admin);
         }
     }
 
@@ -381,7 +395,7 @@ class VoteContract {
         let voterCoef = this._getVoterCoef(producer);
         let voterMask = this._getVoterMask(voter, producer);
         voterMask = voterMask.plus(voterCoef.multi(amount));
-        this._mapPut(voterMaskPrefix + producer, voter, voterMask.toFixed(), producer);
+        this._mapPut(voterMaskPrefix + producer, voter, voterMask.toFixed(), voter);
     }
 
     _getCandidateAllKey() {
@@ -408,45 +422,44 @@ class VoteContract {
         return new Float64(candMask);
     }
 
-    _updateCandidateMask(account, key) {
+    _updateCandidateMask(voter, account, key) {
         let allKey = this._getCandidateAllKey().plus(key);
         this._put(candidateAllKey, allKey.toFixed()); // payer?
 
         let candCoef = this._getCandCoef();
         let candMask = this._getCandMask(account);
         candMask = candMask.plus(candCoef.multi(key));
-        this._mapPut(candidateMaskTable, account, candMask.toFixed(), account);
+        this._mapPut(candidateMaskTable, account, candMask.toFixed(), voter);
     }
 
-    _updateCandidateVars(account, amount, voteId) {
+    _updateCandidateVars(voter, account, amount, voteId) {
         let votes = new Float64(this._call("vote.iost", "GetOption", [
            voteId,
            account,
         ]).votes);
 
-        if (amount.isPositive()) {
-            if (votes.lt(voteThreshold)) {
+        if (amount.gt("0")) {
+            if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
                 return;
             }
 
-            if (votes.minus(amount).lt(voteThreshold)) {
-                this._updateCandidateMask(account, votes)
+            if (votes.minus(amount).lt(PRE_PRODUCER_THRESHOLD)) {
+                this._updateCandidateMask(voter, account, votes)
             } else {
-                this._updateCandidateMask(account, amount)
+                this._updateCandidateMask(voter, account, amount)
             }
 
-        } else if (amount.isNegative()) {
-            if (votes.minus(amount).lt(voteThreshold)) {
+        } else if (amount.lt("0")) {
+            if (votes.minus(amount).lt(PRE_PRODUCER_THRESHOLD)) {
                 return;
             }
 
-            if (votes.lt(voteThreshold)) {
-                this._updateCandidateMask(account, votes.negated())
+            if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
+                this._updateCandidateMask(voter, account, votes.negated())
             } else {
-                this._updateCandidateMask(account, amount)
+                this._updateCandidateMask(voter, account, amount)
             }
         }
-
     }
 
     VoteFor(payer, voter, producer, amount) {
@@ -466,7 +479,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, new Float64(amount));
-        this._updateCandidateVars(producer, new Float64(amount), voteId);
+        this._updateCandidateVars(voter, producer, new Float64(amount), voteId);
     }
 
     Vote(voter, producer, amount) {
@@ -485,7 +498,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, new Float64(amount));
-        this._updateCandidateVars(producer, new Float64(amount), voteId);
+        this._updateCandidateVars(voter, producer, new Float64(amount), voteId);
     }
 
     Unvote(voter, producer, amount) {
@@ -500,7 +513,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, new Float64(amount).negated());
-        this._updateCandidateVars(producer, new Float64(amount).negated(), voteId);
+        this._updateCandidateVars(voter, producer, new Float64(amount).negated(), voteId);
     }
 
     GetVote(voter) {
@@ -514,10 +527,10 @@ class VoteContract {
     TopupVoterBonus(account, amount, payer) {
         const voteId = this._getVoteId();
         let votes = new Float64(this._call("vote.iost", "GetOption", [
-           voteId,
-           account,
+            voteId,
+            account,
         ]).votes);
-        if (!votes.isPositive()) {
+        if (votes.lte("0")) {
             return false;
         }
 
@@ -531,7 +544,7 @@ class VoteContract {
 
     TopupCandidateBonus(amount, payer) {
         let allKey = this._getCandidateAllKey();
-        if (!allKey.isPositive()) {
+        if (allKey.lte("0")) {
             return false;
         }
 
@@ -539,7 +552,7 @@ class VoteContract {
 
         let candCoef = this._getCandCoef();
         candCoef = candCoef.plus(new Float64(amount).div(allKey));
-        this._put(candidateCoef, candCoef.toFixed());
+        this._put(candidateCoef, candCoef.toFixed(), payer);
         return true;
     }
 
@@ -547,14 +560,14 @@ class VoteContract {
         let userVotes = this.GetVote(voter);
         let earnings = new Float64(0);
         for (const v in userVotes) {
-           let voterCoef = this._getVoterCoef(v.option);
-           let voterMask = this._getVoterMask(voter, v.option);
-           let earning = voterCoef.multi(new Float64(v.votes)).minus(voterMask);
-           earnings = earnings.plus(earning);
-           if (updateMask) {
-              voterMask = voterMask.plus(earning);
-              this._mapPut(voterMaskPrefix + v.option, voter, voterMask.toFixed(), v.option);
-           }
+            let voterCoef = this._getVoterCoef(v.option);
+            let voterMask = this._getVoterMask(voter, v.option);
+            let earning = voterCoef.multi(new Float64(v.votes)).minus(voterMask);
+            earnings = earnings.plus(earning);
+            if (updateMask) {
+                voterMask = voterMask.plus(earning);
+                this._mapPut(voterMaskPrefix + v.option, voter, voterMask.toFixed(), voter);
+            }
         }
         return earnings;
     }
@@ -573,11 +586,11 @@ class VoteContract {
     _calCandidateBonus(account, updateMask) {
         const voteId = this._getVoteId();
         let candKey = new Float64(this._call("vote.iost", "GetOption", [
-           voteId,
-           account,
+            voteId,
+            account,
         ]).votes);
 
-        if (candKey.lt(voteThreshold)) {
+        if (candKey.lt(PRE_PRODUCER_THRESHOLD)) {
             candKey = new Float64(0);
         }
 
@@ -589,7 +602,7 @@ class VoteContract {
             this._mapGet(candidateMaskTable, account, candMask.toFixed(), account);
         }
         return earning;
-     }
+    }
 
     GetCandidateBonus(account) {
         return this._calCandidateBonus(account, false).toFixed();
@@ -711,10 +724,13 @@ class VoteContract {
         this._put("pendingBlockNumber", block.number);
 
         if (scoreCount > 0) {
-            const scoreAvg = scoreTotal.div(scoreCount);
+            const scoreAvg = scoreTotal.div(scoreCount*10);
             for (const key of pendingList) {
                 const account = this._mapGet("producerKeyToId", key);
-                scores[account] = new Float64(scores[account] || "0").minus(scoreAvg).toFixed(IOST_DECIMAL);
+                const score = new Float64(scores[account] || "0").minus(scoreAvg);
+                if (score.gte("0")) {
+                    scores[account] = score.toFixed(IOST_DECIMAL);
+                }
             }
         } else {
             for (const key of pendingList) {
@@ -728,7 +744,6 @@ class VoteContract {
                 continue;
             }
             delete(scores[removed.account]);
-            this._doRemoveProducer(removed.account, removed.key, false);
         }
         const newWaitingRemoveList = waitingRemoveList.filter(function(value, index, arr) {
             return !removedList.includes(value);

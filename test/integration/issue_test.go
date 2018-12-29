@@ -56,6 +56,9 @@ func Test_IOSTIssue(t *testing.T) {
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(123000*1e8))
 		})
 
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
+
 		Convey("test IssueIOST", func() {
 			s.Head.Time += 4 * 3 * 1e9
 			r, err := s.Call("issue.iost", "IssueIOST", `[]`, acc0.ID, acc0.KeyPair)
@@ -64,8 +67,8 @@ func Test_IOSTIssue(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 
-			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(45654))
-			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(92691))
+			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(46089))
+			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(93575))
 		})
 	})
 }
