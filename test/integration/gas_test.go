@@ -324,6 +324,31 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 	})
 }
 
+func TestGas_Increase(t *testing.T) {
+	Convey("check gas increase rate", t, func() {
+		s := verifier.NewSimulator()
+		defer s.Clear()
+		createAccountsWithResource(s)
+		createToken(t, s, acc0)
+		s.SetContract(native.GasABI())
+		r, err := s.Call("gas.iost", "pledge", array2json([]interface{}{acc0.ID, acc0.ID, "10"}), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		oldGas := s.Visitor.PGasAtTime(acc0.ID, s.Head.Time)
+		var usage int64 = 0
+		for i := 0; i < 10; i += 1 {
+			s.Head.Time += 3*1e8
+			r, err = s.Call("token.iost", "transfer", array2json([]interface{}{"iost", acc0.ID, acc1.ID, "1", ""}), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			usage += r.GasUsage
+		}
+		newGas := s.Visitor.PGasAtTime(acc0.ID, s.Head.Time)
+		expectedIncrease := native.GasIncreaseRate.Times(10).Value * 3
+		actualIncrease := newGas.Value - oldGas.Value + usage
+		So(actualIncrease, ShouldEqual, expectedIncrease)
+	})
+}
+
 func TestGas_TGas(t *testing.T) {
 	s := verifier.NewSimulator()
 	defer s.Clear()

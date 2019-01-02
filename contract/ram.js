@@ -160,15 +160,25 @@ class RAMContract {
         }
     }
 
-    _getSelfRAM(acc) {
+    _getAccountSelfRAM(acc) {
         const result = this._get("SR" + acc);
         if (result === null) {
             return 0
         }
         return result
     }
-    _changeSelfRAM(acc, delta) {
-        this._put("SR" + acc, this._getSelfRAM(acc) + delta)
+    _changeAccountSelfRAM(acc, delta) {
+        this._put("SR" + acc, this._getAccountSelfRAM(acc) + delta)
+    }
+    _getAccountTotalRAM(acc) {
+        const result = this._get("TR" + acc);
+        if (result === null) {
+            return 0
+        }
+        return result
+    }
+    _changeAccountTotalRAM(acc, delta) {
+        this._put("TR" + acc, this._getAccountTotalRAM(acc) + delta)
     }
 
     _handle_fee(acc, fee) {
@@ -209,7 +219,8 @@ class RAMContract {
         this._changeLeftSpace(-amount);
         this._changeBalance(rawPrice);
         this._changeUsedSpace(amount);
-        this._changeSelfRAM(account, amount);
+        this._changeAccountSelfRAM(account, amount);
+        this._changeAccountTotalRAM(account, amount);
         return price;
     }
 
@@ -218,8 +229,8 @@ class RAMContract {
             throw new Error("minimum ram amount for trading is 10 byte");
         }
         this._requireAuth(account, transferPermission);
-        if (this._getSelfRAM(account) < amount) {
-            throw new Error("self ram amount " + this._getSelfRAM(account) + ", not enough for sell");
+        if (this._getAccountSelfRAM(account) < amount) {
+            throw new Error("self ram amount " + this._getAccountSelfRAM(account) + ", not enough for sell");
         }
         const data = [this._getTokenName(), account, blockchain.contractName(), amount.toString(), ""];
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
@@ -228,7 +239,8 @@ class RAMContract {
         this._changeLeftSpace(amount);
         this._changeBalance(-price);
         this._changeUsedSpace(-amount);
-        this._changeSelfRAM(account, -amount);
+        this._changeAccountSelfRAM(account, -amount);
+        this._changeAccountTotalRAM(account, -amount);
         return price;
     }
 
@@ -237,12 +249,14 @@ class RAMContract {
             throw new Error("minimum ram amount for trading is 10 byte");
         }
         this._requireAuth(from, transferPermission);
-        if (this._getSelfRAM(from) < amount) {
-            throw new Error("self ram amount " + this._getSelfRAM(from) + ", not enough for lend");
+        if (this._getAccountSelfRAM(from) < amount) {
+            throw new Error("self ram amount " + this._getAccountSelfRAM(from) + ", not enough for lend");
         }
         const data = [this._getTokenName(), from, to, amount.toString(), ""];
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
-        this._changeSelfRAM(from, -amount);
+        this._changeAccountSelfRAM(from, -amount);
+        this._changeAccountTotalRAM(from, -amount);
+        this._changeAccountTotalRAM(to, amount);
     }
 }
 
