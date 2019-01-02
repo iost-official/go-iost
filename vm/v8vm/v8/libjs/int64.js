@@ -119,7 +119,7 @@ class Int64 {
 
     // negated
     negated() {
-        return this.number.negated();
+        return new this.constructor(this.number.negated());
     }
 
     // Check is Zero
