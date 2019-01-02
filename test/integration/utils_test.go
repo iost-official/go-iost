@@ -40,12 +40,6 @@ var acc9 *TestAccount
 
 func init() {
 	var keys = []string{
-		// 0: IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn
-		// 1: IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY
-		// 2: IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs
-		// 3: IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd
-		// 4: IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh
-		// 5: IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN
 		"546aCDG9igGgZqVZeybajaorP5ZeF9ghLu2oLncXk3d6",
 		"GJt5WSSv5WZi1axd3qkb1vLEfxCEgKGupcXf45b5tERU",
 		"DXNYRwG7dRFkbWzMNEbKfBhuS8Yn51x9J6XuTdNwB11M",
@@ -54,7 +48,6 @@ func init() {
 		"8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
 		"AG8uECmAwFis8uxTdWqcgGD9tGDwoP6CxqhkhpuCdSeC",
 		"Bk8bAyG4VLBcrsoRErPuQGhwCy4C1VxfKE4jjX9oLhv",
-		// 9: IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4
 		"7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
 		"EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
 	}
