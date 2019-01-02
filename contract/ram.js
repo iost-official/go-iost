@@ -196,10 +196,10 @@ class RAMContract {
             destroyAmount -= rewardAmount;
         }
         if (rewardAmount.toFixed(2) !== "0.00") {
-            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", acc, referrer, rewardAmount.toFixed(2), ""]));
+            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), referrer, rewardAmount.toFixed(2), ""]));
         }
         if (destroyAmount.toFixed(2) !== "0.00") {
-            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", acc, "deadaddr", destroyAmount.toFixed(2), ""]));
+            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), "deadaddr", destroyAmount.toFixed(2), ""]));
         }
     }
 
@@ -216,7 +216,7 @@ class RAMContract {
             fee = 0.01;
         }
         const price = rawPrice + fee;
-        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, blockchain.contractName(), rawPrice.toFixed(2), ""]));
+        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, blockchain.contractName(), price.toFixed(2), ""]));
         this._handle_fee(payer, fee);
         const data = [this._getTokenName(), blockchain.contractName(), account, amount.toString(), ""];
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
