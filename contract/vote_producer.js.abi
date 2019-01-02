@@ -154,12 +154,6 @@
             }]
         },
         {
-            "name": "ExchangeIOST",
-            "args": [
-                "string"
-            ]
-        },
-        {
             "name": "Stat",
             "args": []
         },
@@ -171,6 +165,12 @@
         },
         {
             "name": "CandidateWithdraw",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "GetVoterBonus",
             "args": [
                 "string"
             ]
