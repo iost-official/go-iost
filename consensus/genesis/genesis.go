@@ -91,7 +91,8 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	foundationInfo := gConf.FoundationInfo
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
 	// init account
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "inituser", keyPair.ID, keyPair.ID)))
+	k := keyPair.ReadablePubkey()
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "inituser", k, k)))
 
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
@@ -191,7 +192,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Version:    0,
 		ParentHash: nil,
 		Number:     0,
-		Witness:    acc.ID,
+		Witness:    acc.ReadablePubkey(),
 		Time:       t.UnixNano(),
 	}
 	v := verifier.Verifier{}

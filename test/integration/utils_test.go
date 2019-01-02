@@ -3,10 +3,6 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"path/filepath"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -15,6 +11,9 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/native"
+	"io/ioutil"
+	"os"
+	"path/filepath"
 )
 
 // TestAccount used for writing test cases
@@ -24,7 +23,7 @@ type TestAccount struct {
 }
 
 func (t *TestAccount) ToAccount() *account.Account {
-	return account.NewInitAccount(t.ID, t.KeyPair.ID, t.KeyPair.ID)
+	return account.NewInitAccount(t.ID, t.KeyPair.ReadablePubkey(), t.KeyPair.ReadablePubkey())
 }
 
 var testAccounts = make([]*TestAccount, 0)
@@ -41,17 +40,18 @@ var acc9 *TestAccount
 
 func init() {
 	var keys = []string{
-		"EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
-		"8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
+		"546aCDG9igGgZqVZeybajaorP5ZeF9ghLu2oLncXk3d6",
+		"GJt5WSSv5WZi1axd3qkb1vLEfxCEgKGupcXf45b5tERU",
+		"DXNYRwG7dRFkbWzMNEbKfBhuS8Yn51x9J6XuTdNwB11M",
 		"7CnwT7BXkEFAVx6QZqC7gkDhQwbvC3d2CkMZvXHZdDMN",
 		"Htarc5Sp4trjqY4WrTLtZ85CF6qx87v7CRwtV4RRGnbF",
-		"Bk8bAyG4VLBcrsoRErPuQGhwCy4C1VxfKE4jjX9oLhv",
-		"546aCDG9igGgZqVZeybajaorP5ZeF9ghLu2oLncXk3d6",
-		"DXNYRwG7dRFkbWzMNEbKfBhuS8Yn51x9J6XuTdNwB11M",
+		"8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
 		"AG8uECmAwFis8uxTdWqcgGD9tGDwoP6CxqhkhpuCdSeC",
-		"GJt5WSSv5WZi1axd3qkb1vLEfxCEgKGupcXf45b5tERU",
+		"Bk8bAyG4VLBcrsoRErPuQGhwCy4C1VxfKE4jjX9oLhv",
 		"7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
+		"EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
 	}
+
 	for idx, k := range keys {
 		kp, err := account.NewKeyPair(common.Base58Decode(k), crypto.Secp256k1)
 		if err != nil {

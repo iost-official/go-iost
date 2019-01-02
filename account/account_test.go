@@ -21,7 +21,7 @@ func TestMember(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(len(m.Pubkey), ShouldEqual, 33)
 			So(len(m.Seckey), ShouldEqual, 32)
-			//So(len(m.ID), ShouldEqual, len(GetIDByPubkey(m.Pubkey)))
+			//So(len(m.ID), ShouldEqual, len(EncodePubkey(m.Pubkey)))
 		})
 
 		Convey("sign and verify: ", func() {
@@ -45,10 +45,9 @@ func TestPubkeyAndID(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		seckey := crypto.Secp256k1.GenSeckey()
 		pubkey := crypto.Secp256k1.GetPubkey(seckey)
-		id := GetIDByPubkey(pubkey)
-		fmt.Println(`"`, id, `", "`, Base58Encode(seckey), `"`)
-		pub2 := GetPubkeyByID(id)
-		id2 := GetIDByPubkey(pub2)
+		id := EncodePubkey(pubkey)
+		pub2 := DecodePubkey(id)
+		id2 := EncodePubkey(pub2)
 		if !strings.HasPrefix(id, "IOST") {
 			t.Failed()
 		}
@@ -61,5 +60,5 @@ func TestPubkeyAndID(t *testing.T) {
 func TestID_Platform(t *testing.T) {
 	seckey := Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB")
 	pubkey := crypto.Ed25519.GetPubkey(seckey)
-	fmt.Println("id >", GetIDByPubkey(pubkey))
+	fmt.Println("id >", EncodePubkey(pubkey))
 }

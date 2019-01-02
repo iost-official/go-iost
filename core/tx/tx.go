@@ -323,7 +323,7 @@ func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
-		//signerSet[account.GetIDByPubkey(sign.Pubkey)] = true
+		//signerSet[account.EncodePubkey(sign.Pubkey)] = true
 	}
 	//for _, signer := range t.Signers {
 	//	if _, ok := signerSet[signer]; !ok {

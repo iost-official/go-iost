@@ -161,10 +161,11 @@ func (c *Client) checkTransaction(hash string) error {
 
 // CreateAccount will create account by sending transaction
 func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Account, error) {
+	k := key.ReadablePubkey()
 	action1 := tx.NewAction(
 		"auth.iost",
 		"SignUp",
-		fmt.Sprintf(`["%v", "%v", "%v"]`, name, key.ID, key.ID),
+		fmt.Sprintf(`["%v", "%v", "%v"]`, name, k, k),
 	)
 
 	action2 := tx.NewAction(

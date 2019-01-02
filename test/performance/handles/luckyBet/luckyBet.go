@@ -86,7 +86,8 @@ func (t *luckyBetHandler) Prepare() error {
 		return err
 	}
 	testID := "i" + strconv.FormatInt(time.Now().Unix(), 10)
-	err = sdk.CreateNewAccount(testID, t.testKp.ID, t.testKp.ID, 900000000, 100000000, 100000)
+	k := t.testKp.ReadablePubkey()
+	err = sdk.CreateNewAccount(testID, k, k, 900000000, 100000000, 100000)
 	if err != nil {
 		return err
 	}
