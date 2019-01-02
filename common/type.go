@@ -2,6 +2,6 @@ package common
 
 // consts
 const (
-	VoteInterval = 200
+	VoteInterval = 2000
 	SlotLength   = 3
 )
