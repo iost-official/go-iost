@@ -69,6 +69,11 @@ func (s *SDK) SetServer(server string) {
 	s.server = server
 }
 
+// SetAmountLimit ...
+func (s *SDK) SetAmountLimit(amountLimit string) {
+	s.amountLimit = amountLimit
+}
+
 func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 	result := make([]*rpcpb.AmountLimit, 0)
 	if limitStr == "" {
