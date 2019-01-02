@@ -148,6 +148,10 @@ class RAMContract {
 
     }
 
+    _round(f) {
+        return Math.round(f * 100)/100;
+    }
+
     _checkIssue() {
         const increaseInterval = this._get("increaseInterval");
         const slotNum = Math.floor(block.time/1e9/increaseInterval) - Math.floor(this._get("lastUpdateBlockTime")/1e9/increaseInterval);
@@ -205,9 +209,9 @@ class RAMContract {
         }
         this._requireAuth(payer, transferPermission);
         this._checkIssue();
-        const rawPrice = this._price("buy", amount);
+        const rawPrice = this._round(this._price("buy", amount));
         const feeRate = 0.02;
-        let fee = feeRate * rawPrice;
+        let fee = this._round(feeRate * rawPrice);
         if (fee < 0.01) {
             fee = 0.01;
         }
@@ -221,7 +225,7 @@ class RAMContract {
         this._changeUsedSpace(amount);
         this._changeAccountSelfRAM(account, amount);
         this._changeAccountTotalRAM(account, amount);
-        return price;
+        return price.toFixed(2);
     }
 
     sell(account, receiver, amount) {
@@ -234,14 +238,14 @@ class RAMContract {
         }
         const data = [this._getTokenName(), account, blockchain.contractName(), amount.toString(), ""];
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
-        const price = this._price("sell", amount);
+        const price = this._round(this._price("sell", amount));
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), receiver, price.toFixed(2), ""]));
         this._changeLeftSpace(amount);
         this._changeBalance(-price);
         this._changeUsedSpace(-amount);
         this._changeAccountSelfRAM(account, -amount);
         this._changeAccountTotalRAM(account, -amount);
-        return price;
+        return price.toFixed(2);
     }
 
     lend(from, to, amount) {
