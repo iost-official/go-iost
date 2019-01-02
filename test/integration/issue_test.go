@@ -24,7 +24,7 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 		ID:      acc0.ID,
 		Owner:   acc0.KeyPair.ReadablePubkey(),
 		Active:  acc0.KeyPair.ReadablePubkey(),
-		Balance: 123000,
+		Balance: 21000000000,
 	}
 	params := []interface{}{
 		acc0.ID,
@@ -53,8 +53,11 @@ func Test_IOSTIssue(t *testing.T) {
 		Convey("test init", func() {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(123000*1e8))
+			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(210*1e16))
 		})
+
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
 
 		Convey("test IssueIOST", func() {
 			s.Head.Time += 4 * 3 * 1e9
@@ -64,8 +67,8 @@ func Test_IOSTIssue(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 
-			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(45654))
-			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(92691))
+			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(7805479823))
+			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(15847489338))
 		})
 	})
 }

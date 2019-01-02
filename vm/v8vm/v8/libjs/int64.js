@@ -118,10 +118,8 @@ class Int64 {
     }
 
     // negated
-    negated(n) {
-        let arg = this._checkArgument(n);
-        arg.number = arg.number.negated();
-        return arg;
+    negated() {
+        return new this.constructor(this.number.negated());
     }
 
     // Check is Zero

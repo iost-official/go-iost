@@ -1,5 +1,5 @@
 const producerPermission = "active";
-const voteStatInterval = 200;
+const voteStatInterval = 2000;
 
 class Base {
     constructor() {

@@ -33,7 +33,7 @@ func Test_IssueBonus(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(912))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(198779440))
 		})
 	})
 }
@@ -44,8 +44,11 @@ func Test_ExchangeIOST(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
+		s.Head.Number = 0
 		createAccountsWithResource(s)
 		prepareIssue(s, acc0)
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
 		prepareFakeBase(t, s)
 
 		// deploy bonus.iost
@@ -66,7 +69,7 @@ func Test_ExchangeIOST(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
-			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(900))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(198779440))
 
 			s.Head.Witness = acc2.KeyPair.ReadablePubkey()
 			s.Head.Number = 2
@@ -75,16 +78,16 @@ func Test_ExchangeIOST(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
-			So(s.Visitor.TokenBalance("contribute", acc2.ID), ShouldEqual, int64(1000))
+			So(s.Visitor.TokenBalance("contribute", acc2.ID), ShouldEqual, int64(198779440))
 
-			r, err = s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%v", "%v"]`, acc1.ID, "300"), acc1.ID, acc1.KeyPair)
+			r, err = s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%v", "%v"]`, acc1.ID, "1.9"), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(600))
-			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(15789473684))
-			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(84210526316))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(8779440))
+			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(190000000))
+			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(99810000000))
 		})
 	})
 }
