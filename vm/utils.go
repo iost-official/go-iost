@@ -31,15 +31,15 @@ func CheckTxGasLimitValid(t *tx.Tx, currentGas *common.Fixed, dbVisitor *databas
 	if err != nil {
 		return fmt.Errorf("invalid gas pledge amount %v %v", err, args[2].(string))
 	}
-	if pledgeAmount.LessThan(native.GasMinPledgePerAction) {
+	if pledgeAmount.LessThan(database.GasMinPledgePerAction) {
 		return fmt.Errorf("invalid gas pledge amount %v %v", err, args[2].(string))
 	}
 	if balance.LessThan(pledgeAmount) {
 		return fmt.Errorf("iost token amount not enough for pledgement %v < %v", balance.ToString(), pledgeAmount.ToString())
 	}
-	if currentGas.Add(pledgeAmount.Multiply(native.GasImmediateReward)).LessThan(gasLimit) {
+	if currentGas.Add(pledgeAmount.Multiply(database.GasImmediateReward)).LessThan(gasLimit) {
 		return fmt.Errorf("gas not enough even if considering the new gas pledgement %v + %v < %v",
-			currentGas.ToString(), pledgeAmount.Multiply(native.GasImmediateReward).ToString(), gasLimit.ToString())
+			currentGas.ToString(), pledgeAmount.Multiply(database.GasImmediateReward).ToString(), gasLimit.ToString())
 	}
 	return nil
 }

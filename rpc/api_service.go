@@ -221,7 +221,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	tGas := dbVisitor.TGas(req.GetName())
 	totalGas := pGas.Add(tGas)
 	gasLimit := dbVisitor.GasLimit(req.GetName())
-	gasRate := dbVisitor.GasRate(req.GetName())
+	gasRate := dbVisitor.GasPledgeTotal(req.GetName()).Multiply(database.GasIncreaseRate)
 	pledgedInfo := dbVisitor.PledgerInfo(req.GetName())
 	ret.GasInfo = &rpcpb.Account_GasInfo{
 		CurrentTotal:    totalGas.ToFloat(),
