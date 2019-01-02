@@ -1,5 +1,5 @@
-const iostIssueRate = new Float64("0.0296");
 const oneYearNano = new Float64("31536000000000000");
+const iostIssueRate = new Float64("0.0296").div(oneYearNano);
 const activePermission = "active";
 
 class IssueContract {
@@ -140,7 +140,7 @@ class IssueContract {
 
         const contractName = blockchain.contractName();
         const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
-        const issueAmount = supply.multi(iostIssueRate).multi(gap).div(oneYearNano);
+        const issueAmount = supply.multi(iostIssueRate).multi(gap);
         const bonus = issueAmount.multi("0.33");
         this._issueIOST(foundationAcc, issueAmount.minus(bonus).minus(bonus).toFixed(decimal));
         this._issueIOST("bonus.iost", bonus.toFixed(decimal));

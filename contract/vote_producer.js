@@ -454,12 +454,7 @@ class VoteContract {
             } else {
                 this._updateCandidateMask(voter, account, amount);
             }
-
         } else if (amount.lt("0")) {
-            if (votes.minus(amount).lt(PRE_PRODUCER_THRESHOLD)) {
-                return;
-            }
-
             if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
                 this._updateCandidateMask(voter, account, votes.negated());
             } else {
@@ -488,6 +483,14 @@ class VoteContract {
         }
     }
 
+    _fixAmount(amount) {
+        amount = new Float64(new Float64(amount).toFixed(IOST_DECIMAL));
+        if (amount.lte("0")) {
+            throw new Error("amount must be positive");
+        }
+        return amount;
+    }
+
     VoteFor(payer, voter, producer, amount) {
         this._requireAuth(payer, ACTIVE_PERMISSION);
 
@@ -495,17 +498,19 @@ class VoteContract {
             throw new Error("producer not exists");
         }
 
+        amount = this._fixAmount(amount);
+
         const voteId = this._getVoteId();
         this._call("vote.iost", "VoteFor", [
             voteId,
             payer,
             voter,
             producer,
-            amount,
+            amount.toFixed(),
         ]);
 
-        this._updateVoterMask(voter, producer, new Float64(amount));
-        this._updateCandidateVars(voter, producer, new Float64(amount), voteId);
+        this._updateVoterMask(voter, producer, amount);
+        this._updateCandidateVars(voter, producer, amount, voteId);
     }
 
     Vote(voter, producer, amount) {
@@ -515,31 +520,35 @@ class VoteContract {
             throw new Error("producer not exists");
         }
 
+        amount = this._fixAmount(amount);
+
         const voteId = this._getVoteId();
         this._call("vote.iost", "Vote", [
             voteId,
             voter,
             producer,
-            amount,
+            amount.toFixed(),
         ]);
 
-        this._updateVoterMask(voter, producer, new Float64(amount));
-        this._updateCandidateVars(voter, producer, new Float64(amount), voteId);
+        this._updateVoterMask(voter, producer, amount);
+        this._updateCandidateVars(voter, producer, amount, voteId);
     }
 
     Unvote(voter, producer, amount) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
+
+        amount = this._fixAmount(amount);
 
         const voteId = this._getVoteId();
         this._call("vote.iost", "Unvote", [
             voteId,
             voter,
             producer,
-            amount,
+            amount.toFixed(),
         ]);
 
-        this._updateVoterMask(voter, producer, new Float64(amount).negated());
-        this._updateCandidateVars(voter, producer, new Float64(amount).negated(), voteId);
+        this._updateVoterMask(voter, producer, amount.negated());
+        this._updateCandidateVars(voter, producer, amount.negated(), voteId);
     }
 
     GetVote(voter) {
@@ -560,10 +569,12 @@ class VoteContract {
             return false;
         }
 
-        blockchain.deposit(payer, amount, "");
+        amount = this._fixAmount(amount);
+
+        blockchain.deposit(payer, amount.toFixed(), "");
 
         let voterCoef = this._getVoterCoef(account);
-        voterCoef = voterCoef.plus(new Float64(amount).div(votes));
+        voterCoef = voterCoef.plus(amount.div(votes));
         this._mapPut(voterCoefTable, account, voterCoef.toFixed(), account);
         return true;
     }
@@ -574,10 +585,12 @@ class VoteContract {
             return false;
         }
 
-        blockchain.deposit(payer, amount, "");
+        amount = this._fixAmount(amount);
+
+        blockchain.deposit(payer, amount.toFixed(), "");
 
         let candCoef = this._getCandCoef();
-        candCoef = candCoef.plus(new Float64(amount).div(allKey));
+        candCoef = candCoef.plus(amount.div(allKey));
         this._put(candidateCoef, candCoef.toFixed(), payer);
         return true;
     }
@@ -585,10 +598,10 @@ class VoteContract {
     _calVoterBonus(voter, updateMask) {
         let userVotes = this.GetVote(voter);
         let earnings = new Float64(0);
-        for (const v in userVotes) {
+        for (const v of userVotes) {
             let voterCoef = this._getVoterCoef(v.option);
             let voterMask = this._getVoterMask(voter, v.option);
-            let earning = voterCoef.multi(new Float64(v.votes)).minus(voterMask);
+            let earning = voterCoef.multi(v.votes).minus(voterMask);
             earnings = earnings.plus(earning);
             if (updateMask) {
                 voterMask = voterMask.plus(earning);
@@ -606,7 +619,10 @@ class VoteContract {
         this._requireAuth(voter, ACTIVE_PERMISSION);
 
         let earnings = this._calVoterBonus(voter, true);
-        blockchain.withdraw(voter, earnings, "");
+        if (earnings.lte("0")) {
+            return;
+        }
+        blockchain.withdraw(voter, earnings.toFixed(), "");
     }
 
     _calCandidateBonus(account, updateMask) {
@@ -622,10 +638,10 @@ class VoteContract {
 
         let candCoef = this._getCandCoef();
         let candMask = this._getCandMask(account);
-        let earning = candCoef.plus(candKey).minus(candMask);
+        let earning = candCoef.multi(candKey).minus(candMask);
         if (updateMask) {
             candMask = candMask.plus(earning);
-            this._mapGet(candidateMaskTable, account, candMask.toFixed(), account);
+            this._mapPut(candidateMaskTable, account, candMask.toFixed(), account);
         }
         return earning;
     }
@@ -638,10 +654,13 @@ class VoteContract {
         this._requireAuth(account, ACTIVE_PERMISSION);
 
         let earnings = this._calCandidateBonus(account, true);
+        if (earnings.lte("0")) {
+            return;
+        }
         let halfEarning = earnings.div("2");
-        blockchain.withdraw(account, halfEarning, "")
+        blockchain.withdraw(account, halfEarning.toFixed(), "");
 
-        this.TopupVoterBonus(account, halfEarning, blockchain.contractName());
+        this.TopupVoterBonus(account, earnings.minus(halfEarning).toFixed(), blockchain.contractName());
     }
 
     _getScores() {

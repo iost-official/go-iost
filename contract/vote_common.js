@@ -357,7 +357,6 @@ class VoteCommonContract {
         }
 
         const votes = new Float64(this._mapGet(optionPrefix + voteId, id)).plus(amount);
-        console.log("---------------------" + votes.toFixed());
         this._mapPut(optionPrefix + voteId, id, votes.toFixed(), payer);
 
         if (votes.gte(info.minVote)) {
