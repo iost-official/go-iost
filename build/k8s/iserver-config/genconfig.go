@@ -81,8 +81,8 @@ func genconfig() {
 
 	adminInfo := &common.Witness{
 		ID:      "admin",
-		Owner:   "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
-		Active:  "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
+		Owner:   "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto",
+		Active:  "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto",
 		Balance: int64(21000000000) - int64(1000000000)*int64(*master),
 	}
 
@@ -94,8 +94,8 @@ func genconfig() {
 
 	foundationInfo := &common.Witness{
 		ID:      "foundation",
-		Owner:   "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
-		Active:  "IOST2mCzj85xkSvMf1eoGtrexQcwE6gK8z5xr6Kc48DwxXPCqQJva4",
+		Owner:   "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto",
+		Active:  "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto",
 		Balance: 0,
 	}
 
