@@ -148,6 +148,10 @@ class RAMContract {
 
     }
 
+    _round(f) {
+        return Math.round(f * 100)/100;
+    }
+
     _checkIssue() {
         const increaseInterval = this._get("increaseInterval");
         const slotNum = Math.floor(block.time/1e9/increaseInterval) - Math.floor(this._get("lastUpdateBlockTime")/1e9/increaseInterval);
@@ -160,15 +164,25 @@ class RAMContract {
         }
     }
 
-    _getSelfRAM(acc) {
+    _getAccountSelfRAM(acc) {
         const result = this._get("SR" + acc);
         if (result === null) {
             return 0
         }
         return result
     }
-    _changeSelfRAM(acc, delta) {
-        this._put("SR" + acc, this._getSelfRAM(acc) + delta)
+    _changeAccountSelfRAM(acc, delta) {
+        this._put("SR" + acc, this._getAccountSelfRAM(acc) + delta)
+    }
+    _getAccountTotalRAM(acc) {
+        const result = this._get("TR" + acc);
+        if (result === null) {
+            return 0
+        }
+        return result
+    }
+    _changeAccountTotalRAM(acc, delta) {
+        this._put("TR" + acc, this._getAccountTotalRAM(acc) + delta)
     }
 
     _handle_fee(acc, fee) {
@@ -182,10 +196,10 @@ class RAMContract {
             destroyAmount -= rewardAmount;
         }
         if (rewardAmount.toFixed(2) !== "0.00") {
-            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", acc, referrer, rewardAmount.toFixed(2), ""]));
+            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), referrer, rewardAmount.toFixed(2), ""]));
         }
         if (destroyAmount.toFixed(2) !== "0.00") {
-            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", acc, "deadaddr", destroyAmount.toFixed(2), ""]));
+            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), "deadaddr", destroyAmount.toFixed(2), ""]));
         }
     }
 
@@ -195,22 +209,23 @@ class RAMContract {
         }
         this._requireAuth(payer, transferPermission);
         this._checkIssue();
-        const rawPrice = this._price("buy", amount);
+        const rawPrice = this._round(this._price("buy", amount));
         const feeRate = 0.02;
-        let fee = feeRate * rawPrice;
+        let fee = this._round(feeRate * rawPrice);
         if (fee < 0.01) {
             fee = 0.01;
         }
         const price = rawPrice + fee;
-        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, blockchain.contractName(), rawPrice.toFixed(2), ""]));
+        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, blockchain.contractName(), price.toFixed(2), ""]));
         this._handle_fee(payer, fee);
         const data = [this._getTokenName(), blockchain.contractName(), account, amount.toString(), ""];
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
         this._changeLeftSpace(-amount);
         this._changeBalance(rawPrice);
         this._changeUsedSpace(amount);
-        this._changeSelfRAM(account, amount);
-        return price;
+        this._changeAccountSelfRAM(account, amount);
+        this._changeAccountTotalRAM(account, amount);
+        return price.toFixed(2);
     }
 
     sell(account, receiver, amount) {
@@ -218,18 +233,19 @@ class RAMContract {
             throw new Error("minimum ram amount for trading is 10 byte");
         }
         this._requireAuth(account, transferPermission);
-        if (this._getSelfRAM(account) < amount) {
-            throw new Error("self ram amount " + this._getSelfRAM(account) + ", not enough for sell");
+        if (this._getAccountSelfRAM(account) < amount) {
+            throw new Error("self ram amount " + this._getAccountSelfRAM(account) + ", not enough for sell");
         }
         const data = [this._getTokenName(), account, blockchain.contractName(), amount.toString(), ""];
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
-        const price = this._price("sell", amount);
+        const price = this._round(this._price("sell", amount));
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), receiver, price.toFixed(2), ""]));
         this._changeLeftSpace(amount);
         this._changeBalance(-price);
         this._changeUsedSpace(-amount);
-        this._changeSelfRAM(account, -amount);
-        return price;
+        this._changeAccountSelfRAM(account, -amount);
+        this._changeAccountTotalRAM(account, -amount);
+        return price.toFixed(2);
     }
 
     lend(from, to, amount) {
@@ -237,12 +253,14 @@ class RAMContract {
             throw new Error("minimum ram amount for trading is 10 byte");
         }
         this._requireAuth(from, transferPermission);
-        if (this._getSelfRAM(from) < amount) {
-            throw new Error("self ram amount " + this._getSelfRAM(from) + ", not enough for lend");
+        if (this._getAccountSelfRAM(from) < amount) {
+            throw new Error("self ram amount " + this._getAccountSelfRAM(from) + ", not enough for lend");
         }
         const data = [this._getTokenName(), from, to, amount.toString(), ""];
         blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
-        this._changeSelfRAM(from, -amount);
+        this._changeAccountSelfRAM(from, -amount);
+        this._changeAccountTotalRAM(from, -amount);
+        this._changeAccountTotalRAM(to, amount);
     }
 }
 

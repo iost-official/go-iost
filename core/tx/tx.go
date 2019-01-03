@@ -374,14 +374,15 @@ func (t *Tx) CheckSize() error {
 
 // CheckGas checks whether the transaction's gas is valid.
 func (t *Tx) CheckGas() error {
+	ratio := 100
 	if t.GasRatio < minGasRatio || t.GasRatio > maxGasRatio {
-		return fmt.Errorf("gas ratio illegal, should in [%v, %v]", minGasRatio, maxGasRatio)
+		return fmt.Errorf("gas ratio illegal, should in [%v, %v]", minGasRatio/ratio, maxGasRatio/ratio)
 	}
 	if t.GasLimit < minGasLimit {
-		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit)
+		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit/ratio)
 	}
 	if t.GasLimit > maxGasLimit {
-		return fmt.Errorf("gas limit illegal, should <= %v", maxGasLimit)
+		return fmt.Errorf("gas limit illegal, should <= %v", maxGasLimit/ratio)
 	}
 	return nil
 }

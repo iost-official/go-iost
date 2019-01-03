@@ -49,7 +49,10 @@ func getOrCreateKey(path string) (crypto.PrivKey, error) {
 		return nil, err
 	}
 	if path != "" {
-		writeKeyToFile(path, privKey)
+		err = writeKeyToFile(path, privKey)
+		if err != nil {
+			return nil, err
+		}
 	}
 	return privKey, nil
 }

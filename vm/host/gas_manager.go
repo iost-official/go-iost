@@ -56,18 +56,18 @@ func (g *GasManager) putFixed(key string, value *common.Fixed) contract.Cost {
 	return cost
 }
 
-// GasRate ...
-func (g *GasManager) GasRate(name string) (*common.Fixed, contract.Cost) {
-	f, cost := g.getFixed(name + database.GasRateKey)
+// GasPledgeTotal ...
+func (g *GasManager) GasPledgeTotal(name string) (*common.Fixed, contract.Cost) {
+	f, cost := g.getFixed(name + database.GasPledgeTotalKey)
 	if f == nil {
 		return emptyGas(), cost
 	}
 	return f, cost
 }
 
-// SetGasRate ...
-func (g *GasManager) SetGasRate(name string, r *common.Fixed) contract.Cost {
-	return g.putFixed(name+database.GasRateKey, r)
+// SetGasPledgeTotal ...
+func (g *GasManager) SetGasPledgeTotal(name string, r *common.Fixed) contract.Cost {
+	return g.putFixed(name+database.GasPledgeTotalKey, r)
 }
 
 // GasLimit ...
@@ -209,9 +209,6 @@ func (g *GasManager) SetGasPledge(name string, pledger string, p *common.Fixed) 
 
 // DelGasPledge ...
 func (g *GasManager) DelGasPledge(name string, pledger string) contract.Cost {
-	if name == pledger {
-		ilog.Fatalf("delGasPledge for oneself %v", name)
-	}
 	cost, err := g.h.MapDel(pledger+database.GasPledgeKey, name)
 	if err != nil {
 		panic(fmt.Errorf("gas manager del gas pledge err %v", err))

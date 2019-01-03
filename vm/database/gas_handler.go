@@ -6,12 +6,12 @@ import (
 )
 
 const (
-	// GasRateKey : how much gas is generated per IOST per second
-	GasRateKey = "gr"
+	// GasPledgeTotalKey : how many IOST is pledged
+	GasPledgeTotalKey = "gt"
 	// GasLimitKey : how much gas can be generated max per IOST
 	GasLimitKey = "gl"
 	// GasUpdateTimeKey : when the gas state is refreshed last time, for internal use
-	GasUpdateTimeKey = "gt"
+	GasUpdateTimeKey = "gu"
 	// GasStockKey : how much gas is there when last time refreshed
 	GasStockKey = "gs"
 	// GasPledgeKey : i pledge how much coins for others
@@ -27,6 +27,34 @@ const (
 	GasDecimal = 2
 )
 const gasMaxIncreaseSeconds = 3 * 24 * 3600
+
+// Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
+// Then gas will be generated at a rate of `GasIncreaseRate` gas per second.
+// Then it takes `GasFulfillSeconds` time to reach the limit.
+// Your gas production will stop when it reaches the limit.
+// When you use some gas later, the total amount will be less than the limit,
+// so gas production will resume again util the limit.
+
+// GasMinPledgeOfUser Each user must pledge a minimum amount of IOST
+var GasMinPledgeOfUser = &common.Fixed{Value: 10 * IOSTRatio, Decimal: 8}
+
+// GasMinPledgePerAction One must (un)pledge more than 1 IOST
+var GasMinPledgePerAction = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
+
+// GasImmediateReward immediate reward per IOST
+var GasImmediateReward = &common.Fixed{Value: 100000 * 100, Decimal: 2}
+
+// GasLimit gas limit per IOST
+var GasLimit = &common.Fixed{Value: 300000 * 100, Decimal: 2}
+
+// GasFulfillSeconds it takes 2 days to fulfill the gas buffer.
+const GasFulfillSeconds int64 = 2 * 24 * 3600
+
+// GasIncreaseRate gas increase per IOST per second
+var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillSeconds)
+
+// IOSTRatio ...
+const IOSTRatio int64 = 100000000
 
 // PledgerInfo ...
 type PledgerInfo struct {
@@ -75,9 +103,9 @@ func (g *GasHandler) putFixed(key string, value *common.Fixed) {
 	g.BasicHandler.Put(GasContractName+Separator+key, MustMarshal(value))
 }
 
-// GasRate ...
-func (g *GasHandler) GasRate(name string) *common.Fixed {
-	f := g.getFixed(name + GasRateKey)
+// GasPledgeTotal ...
+func (g *GasHandler) GasPledgeTotal(name string) *common.Fixed {
+	f := g.getFixed(name + GasPledgeTotalKey)
 	if f == nil {
 		return EmptyGas()
 	}
@@ -167,9 +195,9 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 	}
 	result = g.GasStock(name)
 	gasUpdateTime := g.GasUpdateTime(name)
-	var durationSeconds int64
+	var durationSeconds float64
 	if gasUpdateTime > 0 {
-		durationSeconds = (t - gasUpdateTime) / 1e9
+		durationSeconds = float64(t-gasUpdateTime) / float64(1e9)
 		if durationSeconds > gasMaxIncreaseSeconds {
 			durationSeconds = gasMaxIncreaseSeconds
 		}
@@ -177,10 +205,10 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 	if durationSeconds < 0 {
 		ilog.Fatalf("PGasAtTime durationSeconds invalid %v = %v - %v", durationSeconds, t, gasUpdateTime)
 	}
-	rate := g.GasRate(name)
+	rate := g.GasPledgeTotal(name).Multiply(GasIncreaseRate)
 	limit := g.GasLimit(name)
-	//fmt.Printf("PGasAtTime user %v stock %v rate %v limit %v\n", name, result, rate, limit)
-	delta := rate.Times(durationSeconds)
+	//fmt.Printf("PGasAtTime user %v stock %v rate %v limit %v durationSeconds %v\n", name, result, rate, limit, durationSeconds)
+	delta := rate.TimesF(durationSeconds)
 	if delta == nil {
 		ilog.Errorf("PGasAtTime may overflow rate %v durationSeconds %v", rate, durationSeconds)
 		return

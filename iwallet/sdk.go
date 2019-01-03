@@ -69,6 +69,11 @@ func (s *SDK) SetServer(server string) {
 	s.server = server
 }
 
+// SetAmountLimit ...
+func (s *SDK) SetAmountLimit(amountLimit string) {
+	s.amountLimit = amountLimit
+}
+
 func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 	result := make([]*rpcpb.AmountLimit, 0)
 	if limitStr == "" {
@@ -270,7 +275,7 @@ func (s *SDK) sendTx(stx *rpcpb.TransactionRequest) (string, error) {
 	return resp.Hash, nil
 }
 
-func (s *SDK) checkTransaction(txHash string) bool {
+func (s *SDK) checkTransaction(txHash string) error {
 	// It may be better to to create a grpc client and reuse it. TODO later
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
@@ -286,16 +291,17 @@ func (s *SDK) checkTransaction(txHash string) bool {
 		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
 			fmt.Println("exec tx failed: ", txReceipt.Message)
 			fmt.Println("full error information: ", marshalTextString(txReceipt))
-		} else {
-			fmt.Println("exec tx done")
-			if s.verbose {
-				fmt.Println(marshalTextString(txReceipt))
-			}
-			return true
+			return fmt.Errorf(txReceipt.Message) //failed
 		}
-		break
+
+		// success
+		fmt.Println("exec tx done")
+		if s.verbose {
+			fmt.Println(marshalTextString(txReceipt))
+		}
+		return nil
 	}
-	return false
+	return fmt.Errorf("max retries exceeded")
 }
 
 func (s *SDK) getAccountDir() (string, error) {
@@ -451,8 +457,8 @@ func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, 
 	fmt.Println("send tx done")
 	fmt.Println("the create user transaction hash is:", txHash)
 	if s.checkResult {
-		if !s.checkTransaction(txHash) {
-			return fmt.Errorf("create new account %v transaction failed", newID)
+		if err := s.checkTransaction(txHash); err != nil {
+			return err
 		}
 	}
 	fmt.Printf("balance of %v\n", newID)

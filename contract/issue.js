@@ -1,13 +1,10 @@
-const secondToNano = 1e9;
-const iostIssueRate = new BigNumber("1.0000000028119105");
+const oneYearNano = new Float64("31536000000000000");
+const iostIssueRate = new Float64("0.0296").div(oneYearNano);
 const activePermission = "active";
 
 class IssueContract {
-    constructor() {
-    }
-
     init() {
-        this._put("FoundationAccount", "");
+        storage.put("FoundationAccount", "");
     }
 
     _initIOST(config, witnessInfo) {
@@ -27,8 +24,8 @@ class IssueContract {
                 new BigNumber(info.Balance).toFixed()
             ]);
         }
-        this._put("IOSTDecimal", config.IOSTDecimal);
-        this._put("IOSTLastIssueTime", this._getBlockTime());
+        storage.put("IOSTDecimal", new Int64(config.IOSTDecimal).toFixed());
+        storage.put("IOSTLastIssueTime", this._getBlockTime().toFixed());
     }
 
     /**
@@ -36,8 +33,6 @@ class IssueContract {
      *      FoundationAccount string
      *      IOSTTotalSupply   int64
      *      IOSTDecimal       int64
-     *      RAMTotalSupply    int64
-     *      RAMGenesisAmount  int64
      * }
      * witnessInfo = [{
      *      ID      string
@@ -51,14 +46,14 @@ class IssueContract {
         if(bn !== 0) {
             throw new Error("init out of genesis block")
         }
-        this._put("adminID", adminID);
-        this._put("FoundationAccount", genesisConfig.FoundationAccount);
+        storage.put("adminID", adminID);
+        storage.put("FoundationAccount", genesisConfig.FoundationAccount);
 
         this._initIOST(genesisConfig, witnessInfo);
     }
 
     can_update(data) {
-        const admin = this._get("adminID");
+        const admin = storage.get("adminID");
         this._requireAuth(admin, activePermission);
         return true;
     }
@@ -79,19 +74,7 @@ class IssueContract {
     }
 
     _getBlockTime() {
-        return Math.floor(block.time / secondToNano);
-    }
-
-    _get(k) {
-        const val = storage.get(k);
-        if (val === "") {
-            return null;
-        }
-        return JSON.parse(val);
-    }
-
-    _put(k, v, p) {
-        storage.put(k, JSON.stringify(v), p);
+        return new Float64(block.time);
     }
 
     _mapGet(k, f) {
@@ -134,28 +117,43 @@ class IssueContract {
 
     // IssueIOST to bonus.iost and iost foundation
     IssueIOST() {
-        const lastIssueTime = this._get("IOSTLastIssueTime");
-        if (lastIssueTime === 0 || lastIssueTime === undefined) {
+        // TODO(hudongwen): multi issuer
+        const admin = storage.get("adminID");
+        this._requireAuth(admin, activePermission);
+        const lastIssueTime = storage.get("IOSTLastIssueTime");
+        if (lastIssueTime === null || lastIssueTime === 0 || lastIssueTime === undefined) {
             throw new Error("IOSTLastIssueTime not set.");
         }
         const currentTime = this._getBlockTime();
-        const gap = Math.floor((currentTime - lastIssueTime) / 3);
-        if (gap <= 0) {
+        const gap = currentTime.minus(lastIssueTime);
+        if (gap.lte(0)) {
             return;
         }
 
-        const foundationAcc = this._get("FoundationAccount");
+        const foundationAcc = storage.get("FoundationAccount");
+        const decimal = JSON.parse(storage.get("IOSTDecimal"));
         if (!foundationAcc) {
             throw new Error("FoundationAccount not set.");
         }
 
-        this._put("IOSTLastIssueTime", currentTime);
+        storage.put("IOSTLastIssueTime", currentTime.toFixed());
 
+        const contractName = blockchain.contractName();
         const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
-        const issueAmount = supply.multi(iostIssueRate.pow(gap).minus(1));
-        const bonus = issueAmount.multi(0.33);
-        this._issueIOST("bonus.iost", bonus);
-        this._issueIOST(foundationAcc, issueAmount.minus(bonus));
+        const issueAmount = supply.multi(iostIssueRate).multi(gap);
+        const bonus = issueAmount.multi("0.33");
+        this._issueIOST(foundationAcc, issueAmount.minus(bonus).minus(bonus).toFixed(decimal));
+        this._issueIOST("bonus.iost", bonus.toFixed(decimal));
+        this._issueIOST(contractName, bonus.toFixed(decimal));
+
+        const succ = this._call("vote_producer.iost", "TopupCandidateBonus", [
+            bonus.toFixed(decimal),
+            contractName
+        ]);
+        if (!succ) {
+            // transfer bonus to foundation if topup failed
+            blockchain.transfer(contractName, foundationAcc, bonus.toFixed(decimal), "");
+        }
     }
 }
 
