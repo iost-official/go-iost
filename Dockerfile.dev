@@ -19,6 +19,9 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
 # Install Gometalinter
 RUN curl -L https://git.io/vp6lP | sh
+# Install nodejs
+RUN curl -sL https://deb.nodesource.com/setup_11.x | bash -
+RUN apt install -y nodejs
 
 WORKDIR $GOPATH/src/github.com/iost-official/go-iost
 
