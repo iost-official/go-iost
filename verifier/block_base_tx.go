@@ -23,6 +23,7 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 		GasLimit:  100000000,
 		GasRatio:  100,
 		Actions:   acts,
+		Time:      blk.Head.Time,
 	}
 	return tx, nil
 }
