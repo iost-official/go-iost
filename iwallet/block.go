@@ -28,8 +28,8 @@ var complete bool
 // blockCmd represents the block command
 var blockCmd = &cobra.Command{
 	Use:   "block",
-	Short: "print block info, default find by block number",
-	Long:  `print block info, default find by block number`,
+	Short: "print block info",
+	Long:  `print block info, find by block number or hash`,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
