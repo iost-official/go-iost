@@ -32,7 +32,8 @@ func (m *TXRMerkleTree) MerklePath(hash []byte) ([][]byte, error) {
 
 // MerkleProve return prove of the merkle tree
 func (m *TXRMerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (bool, error) {
-	return m.Mt.MerkleProve(hash, rootHash, mp)
+	//return m.Mt.MerkleProve(hash, rootHash, mp)
+	return false, nil
 }
 
 // Encode is marshal of the merkle tree
