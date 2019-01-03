@@ -27,6 +27,8 @@ const (
 	bloomErrRate      = 0.001
 
 	msgChanSize = 1024
+
+	maxDataLength = 10000000 // 10MB
 )
 
 // Peer represents a neighbor which we connect directily.
@@ -180,6 +182,10 @@ func (p *Peer) readLoop(stream libnet.Stream) {
 			return
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
+		if length > maxDataLength {
+			ilog.Warnf("data length too large: %d", length)
+			return
+		}
 		data := make([]byte, dataBegin+length)
 		_, err = io.ReadFull(stream, data[dataBegin:])
 		if err != nil {
