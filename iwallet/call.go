@@ -66,8 +66,8 @@ var callCmd = &cobra.Command{
 		fmt.Println("send tx done")
 		fmt.Println("the transaction hash is:", txHash)
 		if sdk.checkResult {
-			if !sdk.checkTransaction(txHash) {
-				return fmt.Errorf("check transaction failed")
+			if err := sdk.checkTransaction(txHash); err != nil {
+				return err
 			}
 		}
 		return nil

@@ -61,12 +61,10 @@ var publishCmd = &cobra.Command{
 			return
 		}
 		if sdk.checkResult {
-			succ := sdk.checkTransaction(txHash)
-			if succ {
-				fmt.Println("The contract id is Contract" + txHash)
-			} else {
-				return fmt.Errorf("check transaction failed")
+			if err := sdk.checkTransaction(txHash); err != nil {
+				return err
 			}
+			fmt.Println("The contract id is Contract" + txHash)
 		}
 		return nil
 	},
