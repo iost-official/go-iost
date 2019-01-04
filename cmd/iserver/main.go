@@ -77,6 +77,7 @@ func main() {
 	}
 
 	conf := common.NewConfig(*configfile)
+	global.SetGlobalConf(conf)
 
 	initLogger(conf.Log)
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
@@ -88,12 +89,12 @@ func main() {
 		ilog.Errorf("init metrics failed. err=%v", err)
 	}
 
-	iserver := iserver.New(conf)
-	iserver.Start()
+	server := iserver.New(conf)
+	server.Start()
 
 	waitExit()
 
-	iserver.Stop()
+	server.Stop()
 	ilog.Stop()
 }
 

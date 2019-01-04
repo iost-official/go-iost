@@ -34,6 +34,7 @@ log:
     level: info
     enable: true
   asyncwrite: true
+  enablecontractlog: true
 metrics:
   pushAddr:
   username:
