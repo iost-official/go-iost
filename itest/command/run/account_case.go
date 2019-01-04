@@ -10,28 +10,13 @@ var AccountCaseCommand = cli.Command{
 	Name:      "account_case",
 	ShortName: "a_case",
 	Usage:     "run account test case",
-	Flags:     AccountCaseFlags,
 	Action:    AccountCaseAction,
-}
-
-// AccountCaseFlags is the flags of account test case
-var AccountCaseFlags = []cli.Flag{
-	cli.IntFlag{
-		Name:  "number, n",
-		Value: 10,
-		Usage: "number of account",
-	},
-	cli.StringFlag{
-		Name:  "output, o",
-		Value: "accounts.json",
-		Usage: "output of account information",
-	},
 }
 
 // AccountCaseAction is the action of account test case
 var AccountCaseAction = func(c *cli.Context) error {
-	anum := c.Int("number")
-	output := c.String("output")
+	anum := c.GlobalInt("anum")
+	output := c.GlobalString("account")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
 
