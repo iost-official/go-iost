@@ -70,7 +70,7 @@ var BenchmarkAction = func(c *cli.Context) error {
 		case <-ticker.C:
 		}
 
-		counter += 1
+		counter++
 		total += num
 		if counter == 10 {
 			ilog.Warnf("Current tps: %v", float64(total)/time.Now().Sub(startTime).Seconds())
@@ -79,5 +79,4 @@ var BenchmarkAction = func(c *cli.Context) error {
 			startTime = time.Now()
 		}
 	}
-	return nil
 }

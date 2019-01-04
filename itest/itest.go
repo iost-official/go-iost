@@ -223,7 +223,7 @@ func (t *ITest) TransferN(num int, accounts []*Account, check bool) (successNum 
 				firstErr = fmt.Errorf("Failed to send transfer transactions: %v", value)
 			}
 		default:
-			successNum += 1
+			successNum++
 		}
 	}
 
