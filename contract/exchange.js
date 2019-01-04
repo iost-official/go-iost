@@ -4,13 +4,15 @@ class Exchange {
 
     /**
      *
-     * @param tokenSym  {string}
-     * @param from      {string}
-     * @param to        {string}
-     * @param amount    {string}
-     * @param memo      {string}
+     * @param tokenSym  {string}  token symbol
+     * @param from      {string}  from account, use publisher if empty
+     * @param to        {string}  to account, create new account if empty
+     * @param amount    {string}  token amount
+     * @param memo      {string}  userName:ownerKey:activeKey if create account
      *
+     * // 1. normal transfer
      * transfer("iost", "user0", "user1", "100.1", "")
+     * // 2. create an account, buy initialRAM and pledge initialGas, then transfer
      * transfer("iost", "user0", "", "100.1", "newUser2:OWNERKEY:ACTIVEKEY")
      */
     transfer(tokenSym, from, to, amount, memo) {
@@ -49,7 +51,7 @@ class Exchange {
                 throw new Error("amount not enough to buy 1kB RAM and pledge 10 IOST Gas. need " + bamount.toString())
             }
 
-            blockchain.transfer(from, args[0], bamount.minus(paid), "");
+            blockchain.transfer(from, args[0], bamount.minus(paid), memo);
         }
     }
 
