@@ -8,13 +8,11 @@
                 "string",
                 "string",
                 "string",
-                "string",
                 "string"
             ],
             "amountLimit": [
                 {"token": "*", "val": "unlimited"}
-            ],
-            "description": "*\n     *\n     * @param tokenSym  {string}\n     * @param from      {string}\n     * @param to        {string}\n     * @param amount    {string}\n     * @param memo      {string}\n     *\n     * transfer(\"iost\", \"user0\", \"user1\", \"100.1\", \"\")\n     * transfer(\"iost\", \"user0\", \"\", \"100.1\", \"newUser2:OWNERKEY:ACTIVEKEY\")\n     "
+            ]
         }
     ]
 }

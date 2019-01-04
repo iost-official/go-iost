@@ -5,17 +5,16 @@ class Exchange {
     /**
      *
      * @param tokenSym  {string}  token symbol
-     * @param from      {string}  from account, use publisher if empty
      * @param to        {string}  to account, create new account if empty
      * @param amount    {string}  token amount
-     * @param memo      {string}  userName:ownerKey:activeKey if create account
+     * @param memo      {string}  command:args, e.g. create:userName:ownerKey:activeKey
      *
      * // 1. normal transfer
-     * transfer("iost", "user0", "user1", "100.1", "")
+     * transfer("iost", "user1", "100.1", "")
      * // 2. create an account, buy initialRAM and pledge initialGas, then transfer
-     * transfer("iost", "user0", "", "100.1", "newUser2:OWNERKEY:ACTIVEKEY")
+     * transfer("iost", "", "100.1", "create:newUser2:OWNERKEY:ACTIVEKEY")
      */
-    transfer(tokenSym, from, to, amount, memo) {
+    transfer(tokenSym, to, amount, memo) {
         const minAmount = 100;
         const initialRAM = 1000;
         const initialGasPledged = 10;
@@ -25,33 +24,35 @@ class Exchange {
             throw new Error("transfer amount should be greater or equal to " + minAmount);
         }
 
-        if (from === "") {
-            from = blockchain.publisher();
-        }
+        let from = blockchain.publisher();
         if (to !== "") {
             // transfer to an exist account
             blockchain.call("token.iost", "transfer", JSON.stringify([tokenSym, from, to, amount, memo]));
 
         } else if (to == "") {
-            if (tokenSym !== "iost") {
-                throw new Error("must transfer iost if you want to create a new account");
-            }
-            // create account and then transfer to account
-            let args = memo.split(":");
-            if (args.length !== 3) {
-                throw new Error("memo of transferring to a new account should be of format name:ownerKey:activeKey");
-            }
-            // Attention: SignUp will use publisher() asset, so publisher should be equal to from
-            blockchain.call("auth.iost", "SignUp", JSON.stringify(args));
-            let rets = blockchain.call("ram.iost", "buy", JSON.stringify([from, args[0], initialRAM]));
-            let price = rets[0];
+            if (memo.startsWith("create:")) {
+                if (tokenSym !== "iost") {
+                    throw new Error("must transfer iost if you want to create a new account");
+                }
+                // create account and then transfer to account
+                let args = memo.split(":").slice(1);
+                if (args.length !== 3) {
+                    throw new Error("memo of transferring to a new account should be of format name:ownerKey:activeKey");
+                }
+                // Attention: SignUp will use publisher() asset, so publisher should be equal to from
+                blockchain.call("auth.iost", "SignUp", JSON.stringify(args));
+                let rets = blockchain.call("ram.iost", "buy", JSON.stringify([from, args[0], initialRAM]));
+                let price = rets[0];
 
-            let paid = new BigNumber(price).plus(new BigNumber(initialGasPledged));
-            if (bamount.lt(paid)) {
-                throw new Error("amount not enough to buy 1kB RAM and pledge 10 IOST Gas. need " + bamount.toString())
-            }
+                let paid = new BigNumber(price).plus(new BigNumber(initialGasPledged));
+                if (bamount.lt(paid)) {
+                    throw new Error("amount not enough to buy 1kB RAM and pledge 10 IOST Gas. need " + bamount.toString())
+                }
 
-            blockchain.transfer(from, args[0], bamount.minus(paid), memo);
+                blockchain.transfer(from, args[0], bamount.minus(paid), memo);
+            } else {
+                throw new Error("unsupported command : " + memo + ", use create:XX")
+            }
         }
     }
 
