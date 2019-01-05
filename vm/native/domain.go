@@ -58,6 +58,13 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+			if strings.HasSuffix(url, ".iost") {
+				ok, c := h.RequireAuth("admin", "domain.iost")
+				cost.AddAssign(c)
+				if !ok {
+					return nil, cost, errors.New("only admin has permission to claim url .iost")
+				}
+			}
 
 			txInfo, c := h.TxInfo()
 			cost.AddAssign(c)
