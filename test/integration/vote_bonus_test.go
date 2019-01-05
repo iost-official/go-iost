@@ -86,8 +86,8 @@ func Test_VoteBonus(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(0))
-		So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(198779440))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103498779549))
+		So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(397558880))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103300000109))
 
 		s.Head.Time += 86400 * 1e9
 		r, err = s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%s","%s"]`, acc1.ID, "0.00000001"), acc1.ID, acc1.KeyPair)
@@ -97,26 +97,26 @@ func Test_VoteBonus(t *testing.T) {
 		r, err = s.Call("vote_producer.iost", "CandidateWithdraw", fmt.Sprintf(`["%s"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(198779440+60000001))                 // 60000001 = (3300000109*(2/55))/2
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103498779549-60000001)) // half to voterBonus
+		So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(397558880+60000001))                 // 60000001 = (3300000109*(2/55))/2
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103300000109-60000001)) // half to voterBonus
 
 		r, err = s.Call("vote_producer.iost", "CandidateWithdraw", fmt.Sprintf(`["%s"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(198779440+60000001)) // not change
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103498779549-60000001))
+		So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(397558880+60000001)) // not change
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103300000109-60000001))
 
 		r, err = s.Call("vote_producer.iost", "VoterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(129389720))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103309389828))
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(30000000))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103210000108))
 
 		r, err = s.Call("vote_producer.iost", "VoterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(129389720))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103309389828))
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(30000000))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103210000108))
 
 		// 1. unregistered withdraw
 		r, err = s.Call("vote_producer.iost", "ForceUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
@@ -130,8 +130,8 @@ func Test_VoteBonus(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("contribute", acc3.ID), ShouldEqual, int64(0))
-		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(397558880))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103706948708))
+		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(795117760))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103210000108))
 
 		s.Head.Time += 86400 * 1e9
 		r, err = s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%s","%s"]`, acc3.ID, "0.00000001"), acc3.ID, acc3.KeyPair)
@@ -141,26 +141,26 @@ func Test_VoteBonus(t *testing.T) {
 		r, err = s.Call("vote_producer.iost", "CandidateWithdraw", fmt.Sprintf(`["%s"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(397558880+240000007))                 // 240000007 = (3300000109*(8/55))/2
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103706948708-240000007)) // =103466948701. half to voterBonus
+		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(795117760+240000007))                 // 240000007 = (3300000109*(8/55))/2
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103210000108-240000007)) // =102970000101. half to voterBonus
 
 		r, err = s.Call("vote_producer.iost", "CandidateWithdraw", fmt.Sprintf(`["%s"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(397558880+240000007)) // not change
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103706948708-240000007))
+		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(795117760+240000007)) // not change
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103210000108-240000007))
 
 		r, err = s.Call("vote_producer.iost", "VoterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(129389720+478169165))                 // =100607558885
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103466948701-478169165)) // =102988779536
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(30000000+180000005))                  // 210000005
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(102970000101-180000005)) // 102790000096
 
 		r, err = s.Call("vote_producer.iost", "VoterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(129389720+478169165))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103466948701-478169165))
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(30000000+180000005))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(102970000101-180000005))
 
 		// 2. re-register withdraw
 		ilog.Start()
@@ -180,7 +180,7 @@ func Test_VoteBonus(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		b, _ := json.Marshal(r.Receipts)
 		So(string(b), ShouldContainSubstring, "1123989.09997150")
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(112501898776686))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(112501699997246))
 		So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(112401017320619))
 
 		r, err = s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%s","%s"]`, acc3.ID, "0.00000001"), acc3.ID, acc3.KeyPair)
@@ -190,25 +190,25 @@ func Test_VoteBonus(t *testing.T) {
 		r, err = s.Call("vote_producer.iost", "CandidateWithdraw", fmt.Sprintf(`["%s"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(637558887+4087113090801))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(112501898776686-4087113090801))
+		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(1035117767+4087113090801))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(112501699997246-4087113090801))
 
 		r, err = s.Call("vote_producer.iost", "CandidateWithdraw", fmt.Sprintf(`["%s"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(637558887+4087113090801)) // not change
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(112501898776686-4087113090801))
+		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(1035117767+4087113090801)) // not change
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(112501699997246-4087113090801))
 
 		r, err = s.Call("vote_producer.iost", "VoterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(3065942376985))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(105349450867785))
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(3065544818105))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(105349252088345))
 
 		r, err = s.Call("vote_producer.iost", "VoterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(3065942376985))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(105349450867785))
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(3065544818105))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(105349252088345))
 	})
 }
