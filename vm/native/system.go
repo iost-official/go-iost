@@ -169,7 +169,15 @@ var (
 		name: "hostSettings",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			cost, _ = h.MapPut("settings", "host", args[0])
+			// check auth
+			ok, cost0 := h.RequireAuth("admin", "active")
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, errors.New("set host settings need admin@active permission")
+			}
+
+			cost0, _ = h.MapPut("settings", "host", args[0])
+			cost.AddAssign(cost0)
 			return nil, cost, nil
 		},
 	}
