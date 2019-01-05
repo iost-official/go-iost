@@ -622,13 +622,13 @@ func Test_Unregister2(t *testing.T) {
 		for _, acc := range []*TestAccount{acc3, acc4, acc8, acc9} {
 			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 		}
 
 		// do stat
