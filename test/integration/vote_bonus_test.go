@@ -32,7 +32,7 @@ func Test_VoteBonus(t *testing.T) {
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
-			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
+			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
@@ -165,7 +165,7 @@ func Test_VoteBonus(t *testing.T) {
 		// 2. re-register withdraw
 		ilog.Start()
 		ilog.SetLevel(ilog.LevelDebug)
-		r, err = s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc3.ID, acc3.KeyPair.ID), acc3.ID, acc3.KeyPair)
+		r, err = s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc3.ID, acc3.KeyPair.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)

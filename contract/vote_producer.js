@@ -77,6 +77,7 @@ class VoteContract {
             "loc": "",
             "url": "",
             "netId": "",
+            "isProducer": true,
             "status": STATUS_APPROVED,
             "online": true,
         }, proID);
@@ -145,7 +146,7 @@ class VoteContract {
     }
 
     // register account as a producer
-    ApplyRegister(account, pubkey, loc, url, netId) {
+    ApplyRegister(account, pubkey, loc, url, netId, isProducer) {
         this._requireAuth(account, VOTE_PERMISSION);
         if (storage.mapHas("producerTable", account)) {
             throw new Error("producer exists");
@@ -159,6 +160,7 @@ class VoteContract {
             "loc": loc,
             "url": url,
             "netId": netId,
+            "isProducer": isProducer,
             "status": STATUS_APPLY,
             "online": false,
         }, account);
@@ -697,7 +699,7 @@ class VoteContract {
         for (const res of voteRes) {
             const id = res.option;
             const pro = this._mapGet("producerTable", id);
-            if (pro.online === false || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
+            if (!pro.online || !pro.isProducer || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
                 continue;
             }
             const score = new Float64(res.votes).plus(scores[id] || "0");
