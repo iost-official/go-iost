@@ -54,11 +54,12 @@ var BenchmarkAction = func(c *cli.Context) error {
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
+	startTime := time.Now()
+	ticker := time.NewTicker(time.Second)
 	counter := 0
 	total := 0
-	startTime := time.Now()
-
-	ticker := time.NewTicker(time.Second)
+	slotTotal := 0
+	slotStartTime := startTime
 	for {
 		num, err := it.TransferN(tps, accounts, false)
 		if err != nil {
@@ -71,12 +72,15 @@ var BenchmarkAction = func(c *cli.Context) error {
 		}
 
 		counter++
-		total += num
+		slotTotal += num
 		if counter == 10 {
-			ilog.Warnf("Current tps: %v", float64(total)/time.Now().Sub(startTime).Seconds())
+			total += slotTotal
+			currentTps := float64(slotTotal) / time.Now().Sub(slotStartTime).Seconds()
+			averageTps := float64(total) / time.Now().Sub(startTime).Seconds()
+			ilog.Warnf("Current tps %v, Average tps %v, Total tx %v", currentTps, averageTps, total)
 			counter = 0
-			total = 0
-			startTime = time.Now()
+			slotTotal = 0
+			slotStartTime = time.Now()
 		}
 	}
 }
