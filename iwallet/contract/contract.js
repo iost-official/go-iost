@@ -42,7 +42,6 @@ function genAbi(def, lastPos, comments) {
     for (let i = comments.length - 1; i >= 0; i--) {
         let comment = comments[i];
         if (comment.range[0] > lastPos && comment.range[1] < def.range[0]) {
-            abi.description = comment.value;
             for (let i in def.value.params) {
                 let name = def.value.params[i].name;
                 let reg = new RegExp("@param\\s*{([a-zA-Z]+)}\\s*" + name);

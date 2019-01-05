@@ -225,7 +225,7 @@ class RAMContract {
         this._changeUsedSpace(amount);
         this._changeAccountSelfRAM(account, amount);
         this._changeAccountTotalRAM(account, amount);
-        return price.toFixed(2);
+        return price.toFixed(8);
     }
 
     sell(account, receiver, amount) {
