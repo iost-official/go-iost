@@ -194,7 +194,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8483)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8087)
 			So(s.GetRAM(acc1.ID), ShouldEqual, 9933)
 
 			ram1 = s.GetRAM(acc1.ID)

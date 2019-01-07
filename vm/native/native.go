@@ -2,8 +2,9 @@ package native
 
 import (
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
+	"fmt"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 type abi struct {
@@ -79,22 +80,17 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		a  *abi
 		ok bool
 	)
-	switch con.ID {
-	case "system.iost":
-		a, ok = systemABIs.Get(api)
-	case "domain.iost":
-		a, ok = domainABIs.Get(api)
-	case "gas.iost":
-		a, ok = gasABIs.Get(api)
-	case "token.iost":
-		a, ok = tokenABIs.Get(api)
-	case "token721.iost":
-		a, ok = token721ABIs.Get(api)
-	default:
-		ilog.Fatalf("invalid contract name: %v, please check `Monitor.prepareContract`", con.ID)
+	cost = host.CommonErrorCost(1)
+	aset, err := GetABISetByVersion(con.ID, con.Info.Version)
+	if err != nil {
+		return nil, cost, err
 	}
+
+	cost = host.CommonErrorCost(1)
+	a, ok = aset.Get(api)
 	if !ok {
-		ilog.Fatalf("invalid api name: %v of %v, please check `Monitor.prepareContract`", api, con.ID)
+		ilog.Fatalf("invalid api name %v %v %v, please check `Monitor.prepareContract`", con.ID, con.Info.Version, api)
+		return nil, cost, fmt.Errorf("invalid api name: %v %v %v", con.ID, con.Info.Version, api)
 	}
 
 	rtn, cost, err = a.do(h, args...)

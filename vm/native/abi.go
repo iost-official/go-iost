@@ -4,31 +4,67 @@ import (
 	"sort"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/ilog"
+	"fmt"
 )
 
 // SystemABI generate system.iost abi and contract
 func SystemABI() *contract.Contract {
-	return ABI("system.iost", systemABIs)
+	return SystemContractABI("system.iost", "1.0.0")
 }
 
 // GasABI generate gas.iost abi and contract
 func GasABI() *contract.Contract {
-	return ABI("gas.iost", gasABIs)
+	return SystemContractABI("gas.iost", "1.0.0")
 }
 
 // TokenABI generate token.iost abi and contract
 func TokenABI() *contract.Contract {
-	return ABI("token.iost", tokenABIs)
+	return SystemContractABI("token.iost", "1.0.0")
 }
 
 // Token721ABI generate token.iost abi and contract
 func Token721ABI() *contract.Contract {
-	return ABI("token721.iost", token721ABIs)
+	return SystemContractABI("token721.iost", "1.0.0")
 }
 
 // DomainABI generate domain.iost abi and contract
 func DomainABI() *contract.Contract {
-	return ABI("domain.iost", domainABIs)
+	return SystemContractABI("domain.iost", "1.0.0")
+}
+
+// SystemContractABI return system contract abi
+func SystemContractABI(conID, version string) *contract.Contract {
+	aset, _ := GetABISetByVersion(conID, version)
+	return ABI(conID, aset)
+}
+
+// GetABISetByVersion return the corrent abi set according to contract ID and version
+func GetABISetByVersion(conID string, version string) (aset *abiSet, err error) {
+	abiMap := make(map[string]map[string]*abiSet)
+	abiMap["system.iost"] = make(map[string]*abiSet)
+	abiMap["system.iost"]["1.0.0"] = systemABIs
+	abiMap["domain.iost"] = make(map[string]*abiSet)
+	abiMap["domain.iost"]["0.0.0"] = domain0ABIs
+	abiMap["domain.iost"]["1.0.0"] = domainABIs
+	abiMap["gas.iost"] = make(map[string]*abiSet)
+	abiMap["gas.iost"]["1.0.0"] = gasABIs
+	abiMap["token.iost"] = make(map[string]*abiSet)
+	abiMap["token.iost"]["1.0.0"] = tokenABIs
+	abiMap["token721.iost"] = make(map[string]*abiSet)
+	abiMap["token721.iost"]["1.0.0"] = token721ABIs
+
+	var amap map[string]*abiSet
+	var ok bool
+	if amap, ok = abiMap[conID]; !ok {
+		ilog.Fatalf("invalid contract name: %v %v, please check `Monitor.prepareContract`", conID, version)
+		return nil, fmt.Errorf("invalid contract name: %v %v", conID, version)
+	}
+	if aset, ok = amap[version]; !ok {
+		ilog.Fatalf("invalid contract version: %v %v, please check `Monitor.prepareContract`", conID, version)
+		return nil, fmt.Errorf("invalid contract version: %v %v", conID, version)
+	}
+	return aset, nil
 }
 
 // ABI generate native abis

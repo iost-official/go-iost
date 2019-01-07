@@ -13,12 +13,17 @@ import (
 
 // DomainABIs list of domain abi
 var domainABIs *abiSet
+var domain0ABIs *abiSet
 
 func init() {
 	domainABIs = newAbiSet()
 	domainABIs.Register(initDomainABI, true)
 	domainABIs.Register(linkDomainABI)
 	domainABIs.Register(transferDomainABI)
+	domainABIs.Register(canUpdateDomainABI)
+	domain0ABIs = newAbiSet()
+	domain0ABIs.Register(initDomainABI, true)
+	domain0ABIs.Register(canUpdateDomainABI)
 }
 
 func checkURLValid(name string) error {
@@ -37,6 +42,14 @@ func checkURLValid(name string) error {
 }
 
 var (
+	canUpdateDomainABI = &abi{
+		name: "can_update",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			ok, cost := h.RequireAuth("admin", "system.iost")
+			return []interface{}{ok}, cost, nil
+		},
+	}
 	initDomainABI = &abi{
 		name: "init",
 		args: []string{},

@@ -14,6 +14,7 @@ var systemABIs *abiSet
 
 func init() {
 	systemABIs = newAbiSet()
+	systemABIs.Register(canUpdateSystemABI)
 	systemABIs.Register(requireAuth)
 	systemABIs.Register(receipt)
 	systemABIs.Register(setCode)
@@ -25,6 +26,14 @@ func init() {
 
 // var .
 var (
+	canUpdateSystemABI = &abi{
+		name: "can_update",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			ok, cost := h.RequireAuth("admin", "system.iost")
+			return []interface{}{ok}, cost, nil
+		},
+	}
 	requireAuth = &abi{
 		name: "RequireAuth",
 		args: []string{"string", "string"},

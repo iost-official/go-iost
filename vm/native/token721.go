@@ -26,6 +26,7 @@ const (
 func init() {
 	token721ABIs = newAbiSet()
 	token721ABIs.Register(initToken721ABI, true)
+	token721ABIs.Register(canUpdateToken721ABI)
 	token721ABIs.Register(createToken721ABI)
 	token721ABIs.Register(issueToken721ABI)
 	token721ABIs.Register(transferToken721ABI)
@@ -67,7 +68,14 @@ var (
 			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
-
+	canUpdateToken721ABI = &abi{
+		name: "can_update",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			ok, cost := h.RequireAuth("admin", "system.iost")
+			return []interface{}{ok}, cost, nil
+		},
+	}
 	createToken721ABI = &abi{
 		name: "create",
 		args: []string{"string", "string", "number"},
