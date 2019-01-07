@@ -2,6 +2,7 @@ package native
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 
