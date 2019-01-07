@@ -42,7 +42,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 	vi := database.NewVisitor(100, db)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(10000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
@@ -76,7 +76,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 func TestEngine_LoadAndCall(t *testing.T) {
 	vi := Init(t)
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", "contractName")
 	tHost := host.NewHost(ctx, vi, nil, nil)

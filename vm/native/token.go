@@ -308,6 +308,15 @@ var (
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, FullNameMapField, fullName, issuer)
 			cost.AddAssign(cost0)
 
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
+
 			return []interface{}{}, cost, nil
 		},
 	}
