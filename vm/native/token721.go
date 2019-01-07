@@ -310,14 +310,6 @@ var (
 				return nil, cost, err
 			}
 
-			// generate receipt
-			message, err := json.Marshal(args)
-			cost.AddAssign(host.CommonOpCost(1))
-			if err != nil {
-				return nil, cost, err
-			}
-			cost0 = h.Receipt(string(message))
-			cost.AddAssign(cost0)
 			return []interface{}{tbalance}, cost, nil
 		},
 	}
