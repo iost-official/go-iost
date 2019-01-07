@@ -41,4 +41,14 @@ var Flags = []cli.Flag{
 		Value: "",
 		Usage: "Load contract abi from `FILE`",
 	},
+	cli.StringFlag{
+		Name:  "account, a",
+		Value: "accounts.json",
+		Usage: "The account file that itest would load from if exists",
+	},
+	cli.IntFlag{
+		Name:  "anum",
+		Value: 100,
+		Usage: "The number of accounts to generated if no given account file",
+	},
 }

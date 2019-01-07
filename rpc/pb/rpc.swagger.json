@@ -701,6 +701,16 @@
           "type": "string",
           "format": "int64",
           "title": "available ram bytes"
+        },
+        "used": {
+          "type": "string",
+          "format": "int64",
+          "title": "used ram bytes"
+        },
+        "total": {
+          "type": "string",
+          "format": "int64",
+          "title": "total ram bytes"
         }
       },
       "description": "The message defines account ram information."

@@ -495,6 +495,10 @@ message Account {
     message RAMInfo {
         // available ram bytes
         int64 available = 1;
+        // used ram bytes
+        int64 used = 2;
+        // total ram bytes
+        int64 total = 3;
     }
 
     // ram information

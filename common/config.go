@@ -96,9 +96,10 @@ type ConsoleLogConfig struct {
 
 // LogConfig is the config of ilog.
 type LogConfig struct {
-	FileLog    *FileLogConfig
-	ConsoleLog *ConsoleLogConfig
-	AsyncWrite bool
+	FileLog           *FileLogConfig
+	ConsoleLog        *ConsoleLogConfig
+	AsyncWrite        bool
+	EnableContractLog bool
 }
 
 // MetricsConfig is the config of metrics.

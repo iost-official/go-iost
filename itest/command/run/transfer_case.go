@@ -22,11 +22,6 @@ var TransferCaseFlags = []cli.Flag{
 		Usage: "number of transaction",
 	},
 	cli.StringFlag{
-		Name:  "account, a",
-		Value: "accounts.json",
-		Usage: "load accounts from `FILE`",
-	},
-	cli.StringFlag{
 		Name:  "output, o",
 		Value: "accounts.json",
 		Usage: "output of account information",
@@ -35,7 +30,7 @@ var TransferCaseFlags = []cli.Flag{
 
 // TransferCaseAction is the action of transfer test case
 var TransferCaseAction = func(c *cli.Context) error {
-	afile := c.String("account")
+	afile := c.GlobalString("account")
 	output := c.String("output")
 	tnum := c.Int("number")
 	keysfile := c.GlobalString("keys")
@@ -51,7 +46,7 @@ var TransferCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	if err := it.TransferN(tnum, accounts); err != nil {
+	if _, err := it.TransferN(tnum, accounts, true); err != nil {
 		return err
 	}
 
