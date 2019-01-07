@@ -16,7 +16,6 @@ import (
 	"github.com/iost-official/go-iost/core/txpool/mock"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
@@ -43,7 +42,6 @@ func MakeTx(act *tx.Action) (*tx.Tx, error) {
 }
 
 func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 466ms(3000tx)
-	ilog.Stop()
 	account, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	topBlock := &block.Block{
 		Head: &block.BlockHead{
