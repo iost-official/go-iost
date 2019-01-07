@@ -70,7 +70,7 @@ class Account {
         if (block.number === 0) {
             return
         }
-        if (id.length < 1 || id.length > 32) {
+        if (perm.length < 1 || perm.length > 32) {
             throw new Error("id invalid. id length should be between 1,32 > " + id)
         }
         for (let i in perm) {
