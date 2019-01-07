@@ -35,6 +35,7 @@ var TransferCaseAction = func(c *cli.Context) error {
 	tnum := c.Int("number")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
+	memoSize := c.Int("memo")
 
 	it, err := itest.Load(keysfile, configfile)
 	if err != nil {
@@ -46,7 +47,7 @@ var TransferCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := it.TransferN(tnum, accounts, true); err != nil {
+	if _, err := it.TransferN(tnum, accounts, memoSize, true); err != nil {
 		return err
 	}
 

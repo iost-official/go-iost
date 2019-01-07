@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"sync"
 	"time"
@@ -211,11 +212,13 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 }
 
 // ContractTransfer will contract transfer token by sending transaction
-func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount string) error {
+func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount string, memoSize int, check bool) error {
+	memo := make([]byte, memoSize)
+	rand.Read(memo)
 	action := tx.NewAction(
 		cid,
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v"]`, sender.ID, recipient.ID, amount),
+		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, sender.ID, recipient.ID, amount, memo),
 	)
 
 	actions := []*tx.Action{action}
@@ -226,7 +229,7 @@ func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount
 		return err
 	}
 
-	if _, err := c.SendTransaction(st, true); err != nil {
+	if _, err := c.SendTransaction(st, check); err != nil {
 		return err
 	}
 
@@ -274,11 +277,13 @@ func (c *Client) Vote(sender *Account, voteID, recipient, amount string) error {
 }
 
 // Transfer will transfer token by sending transaction
-func (c *Client) Transfer(sender, recipient *Account, token, amount string, check bool) error {
+func (c *Client) Transfer(sender, recipient *Account, token, amount string, memoSize int, check bool) error {
+	memo := make([]byte, memoSize)
+	rand.Read(memo)
 	action := tx.NewAction(
 		"token.iost",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v", "%v", ""]`, token, sender.ID, recipient.ID, amount),
+		fmt.Sprintf(`["%v", "%v", "%v", "%v", "%v"]`, token, sender.ID, recipient.ID, amount, memo),
 	)
 
 	actions := []*tx.Action{action}
