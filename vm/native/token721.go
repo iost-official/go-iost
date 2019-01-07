@@ -1,11 +1,13 @@
 package native
 
 import (
+	"encoding/json"
 	"errors"
 	"math"
 	"strconv"
 
 	"fmt"
+
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 )
@@ -105,6 +107,14 @@ var (
 			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenName, SupplyMapField, int64(0), issuer)
 			cost.AddAssign(cost0)
 
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -174,6 +184,15 @@ var (
 			cost.AddAssign(cost0)
 
 			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, issuer.(string))
+			cost.AddAssign(cost0)
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 
 			return []interface{}{tokenID}, cost, err
@@ -257,6 +276,14 @@ var (
 			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, from)
 			cost.AddAssign(cost0)
 
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, err
 		},
 	}
@@ -283,6 +310,14 @@ var (
 				return nil, cost, err
 			}
 
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{tbalance}, cost, nil
 		},
 	}
