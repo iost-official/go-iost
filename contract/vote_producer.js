@@ -431,17 +431,17 @@ class VoteContract {
         return new Float64(candMask);
     }
 
-    _updateCandidateMask(account, key) {
+    _updateCandidateMask(account, key, payer) {
         let allKey = this._getCandidateAllKey().plus(key);
         this._put(candidateAllKey, allKey.toFixed());
 
         let candCoef = this._getCandCoef();
         let candMask = this._getCandMask(account);
         candMask = candMask.plus(candCoef.multi(key));
-        this._mapPut(candidateMaskTable, account, candMask.toFixed(), account);
+        this._mapPut(candidateMaskTable, account, candMask.toFixed(), payer);
     }
 
-    _updateCandidateVars(account, amount, voteId, votes, pro) {
+    _updateCandidateVars(account, amount, voteId, payer, votes, pro) {
         if (typeof pro === 'undefined') {
             pro = this._mapGet("producerTable", account);
         }
@@ -458,7 +458,7 @@ class VoteContract {
         }
 
         let threshold = PRE_PRODUCER_THRESHOLD;
-        if (isPartner) {
+        if (!pro.isProducer) {
             threshold = PARTNER_THRESHOLD;
         }
 
@@ -468,15 +468,15 @@ class VoteContract {
             }
 
             if (votes.minus(amount).lt(threshold)) {
-                this._updateCandidateMask(account, votes);
+                this._updateCandidateMask(account, votes, payer);
             } else {
-                this._updateCandidateMask(account, amount);
+                this._updateCandidateMask(account, amount, payer);
             }
         } else if (amount.lt("0")) {
             if (votes.lt(threshold)) {
-                this._updateCandidateMask(account, votes.negated());
+                this._updateCandidateMask(account, votes.negated(), payer);
             } else {
-                this._updateCandidateMask(account, amount);
+                this._updateCandidateMask(account, amount, payer);
             }
         }
     }
@@ -487,7 +487,7 @@ class VoteContract {
            account,
         ]).votes);
         if (votes && votes.isPositive()) {
-            this._updateCandidateVars(account, votes.negated(), voteId, votes, pro);
+            this._updateCandidateVars(account, votes.negated(), voteId, admin, votes, pro);
         }
     }
 
@@ -497,7 +497,7 @@ class VoteContract {
            account,
         ]).votes);
         if (votes && votes.isPositive()) {
-            this._updateCandidateVars(account, votes, voteId, votes);
+            this._updateCandidateVars(account, votes, voteId, admin, votes);
         }
     }
 
@@ -528,7 +528,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount);
-        this._updateCandidateVars(producer, amount, voteId);
+        this._updateCandidateVars(producer, amount, voteId, payer);
     }
 
     Vote(voter, producer, amount) {
@@ -549,7 +549,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount);
-        this._updateCandidateVars(producer, amount, voteId);
+        this._updateCandidateVars(producer, amount, voteId, voter);
     }
 
     Unvote(voter, producer, amount) {
@@ -566,7 +566,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount.negated());
-        this._updateCandidateVars(producer, amount.negated(), voteId);
+        this._updateCandidateVars(producer, amount.negated(), voteId, voter);
     }
 
     GetVote(voter) {

@@ -446,16 +446,19 @@ func Test_Unregister2(t *testing.T) {
 		for _, acc := range testAccounts[6:] {
 			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 		}
+		// So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", fmt.Sprintf(`%d`, 1))), ShouldEqual, "")
 		for idx, acc := range testAccounts {
-			s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
+			r, err := s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", fmt.Sprintf(`%d`, idx))), ShouldEqual, fmt.Sprintf(`"%d"`, (idx+2)*1e7))
 		}
 
