@@ -1,4 +1,5 @@
 const PRE_PRODUCER_THRESHOLD = "10500000";
+const PARTNER_THRESHOLD = "2100000";
 const VOTE_LOCKTIME = 604800;
 const VOTE_STAT_INTERVAL = 2000;
 const IOST_DECIMAL = 8;
@@ -203,7 +204,7 @@ class VoteContract {
         pro.status = STATUS_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._removeFromWaitList(admin, account);
-        this._initCandidateVars(admin, account, this._getVoteId());
+        this._initCandidateVars(admin, account, this._getVoteId(), pro);
     }
 
     // approve remove account from producer list
@@ -218,10 +219,10 @@ class VoteContract {
             throw new Error("producer not unapplied");
         }
         // will clear votes and score of the producer on stat
+        this._clearCandidateVars(admin, account, this._getVoteId(), pro);
         pro.status = STATUS_UNAPPLY_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._tryRemoveProducer(admin, account, pro);
-        this._clearCandidateVars(admin, account, this._getVoteId());
     }
 
     // force approve remove account from producer list
@@ -430,58 +431,73 @@ class VoteContract {
         return new Float64(candMask);
     }
 
-    _updateCandidateMask(voter, account, key) {
+    _updateCandidateMask(account, key) {
         let allKey = this._getCandidateAllKey().plus(key);
-        this._put(candidateAllKey, allKey.toFixed()); // payer?
+        this._put(candidateAllKey, allKey.toFixed());
 
         let candCoef = this._getCandCoef();
         let candMask = this._getCandMask(account);
         candMask = candMask.plus(candCoef.multi(key));
-        this._mapPut(candidateMaskTable, account, candMask.toFixed(), voter);
+        this._mapPut(candidateMaskTable, account, candMask.toFixed(), account);
     }
 
-    _updateCandidateVars(voter, account, amount, voteId) {
-        let votes = new Float64(this._call("vote.iost", "GetOption", [
-           voteId,
-           account,
-        ]).votes);
+    _updateCandidateVars(account, amount, voteId, votes, pro) {
+        if (typeof pro === 'undefined') {
+            pro = this._mapGet("producerTable", account);
+        }
+
+        if (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY) {
+            return;
+        }
+
+        if (typeof votes === 'undefined') {
+            votes = new Float64(this._call("vote.iost", "GetOption", [
+                voteId,
+               account,
+            ]).votes);
+        }
+
+        let threshold = PRE_PRODUCER_THRESHOLD;
+        if (isPartner) {
+            threshold = PARTNER_THRESHOLD;
+        }
 
         if (amount.gt("0")) {
-            if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
+            if (votes.lt(threshold)) {
                 return;
             }
 
-            if (votes.minus(amount).lt(PRE_PRODUCER_THRESHOLD)) {
-                this._updateCandidateMask(voter, account, votes);
+            if (votes.minus(amount).lt(threshold)) {
+                this._updateCandidateMask(account, votes);
             } else {
-                this._updateCandidateMask(voter, account, amount);
+                this._updateCandidateMask(account, amount);
             }
         } else if (amount.lt("0")) {
-            if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
-                this._updateCandidateMask(voter, account, votes.negated());
+            if (votes.lt(threshold)) {
+                this._updateCandidateMask(account, votes.negated());
             } else {
-                this._updateCandidateMask(voter, account, amount);
+                this._updateCandidateMask(account, amount);
             }
         }
     }
 
-    _clearCandidateVars(admin, account, voteId) {
+    _clearCandidateVars(admin, account, voteId, pro) {
         let votes = new Float64(this._call("vote.iost", "GetOption", [
            voteId,
            account,
         ]).votes);
         if (votes && votes.isPositive()) {
-            this._updateCandidateMask(admin, account, votes.negated());
+            this._updateCandidateVars(account, votes.negated(), voteId, votes, pro);
         }
     }
 
-    _initCandidateVars(admin, account, voteId) {
+    _initCandidateVars(admin, account, voteId, pro) {
         let votes = new Float64(this._call("vote.iost", "GetOption", [
            voteId,
            account,
         ]).votes);
         if (votes && votes.isPositive()) {
-            this._updateCandidateMask(admin, account, votes);
+            this._updateCandidateVars(account, votes, voteId, votes);
         }
     }
 
@@ -512,7 +528,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount);
-        this._updateCandidateVars(voter, producer, amount, voteId);
+        this._updateCandidateVars(producer, amount, voteId);
     }
 
     Vote(voter, producer, amount) {
@@ -533,7 +549,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount);
-        this._updateCandidateVars(voter, producer, amount, voteId);
+        this._updateCandidateVars(producer, amount, voteId);
     }
 
     Unvote(voter, producer, amount) {
@@ -550,7 +566,7 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount.negated());
-        this._updateCandidateVars(voter, producer, amount.negated(), voteId);
+        this._updateCandidateVars(producer, amount.negated(), voteId);
     }
 
     GetVote(voter) {
