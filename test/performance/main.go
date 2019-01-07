@@ -21,8 +21,8 @@ func init() {
 var (
 	defaultAmount  = 9999999999
 	defaultTPS     = 9999999999
-	defaultServers = []string{"3.0.81.219:30002", "3.0.192.236:30002"}
-	defaultJob     = "gobang"
+	defaultServers = []string{"localhost:30002"}
+	defaultJob     = "transfer"
 )
 
 func main() {

@@ -577,6 +577,49 @@ func TestDomain(t *testing.T) {
 	})
 }
 
+func TestAuthority(t *testing.T) {
+	ilog.SetLevel(ilog.LevelInfo)
+	s := NewSimulator()
+	defer s.Clear()
+	Convey("test of Auth", t, func() {
+
+		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
+		So(err, ShouldBeNil)
+		s.Visitor.SetContract(ca)
+		ca, err = s.Compile("issue.iost", "../../contract/issue", "../../contract/issue.js")
+		So(err, ShouldBeNil)
+		s.Visitor.SetContract(ca)
+		s.Visitor.SetContract(native.GasABI())
+		s.Visitor.SetContract(native.TokenABI())
+
+		acc := prepareAuth(t, s)
+		s.SetGas(acc.ID, 1e8)
+		s.SetRAM(acc.ID, 1000)
+		s.SetRAM("myidid", 1000)
+		err = createToken(t, s, acc)
+		So(err, ShouldBeNil)
+
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "id shouldn't start with")
+
+		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
+
+		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myidid", "perm1", 1}), acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
+
+		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID}), acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
+	})
+
+}
+
 func TestGasLimit2(t *testing.T) {
 	ilog.Stop()
 	Convey("test of gas limit 2", t, func() {
