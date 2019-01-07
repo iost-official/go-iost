@@ -38,6 +38,8 @@ type Server struct {
 	allowOrigins  []string
 
 	quitCh chan struct{}
+
+	enable bool
 }
 
 func p(pp interface{}) error {
@@ -51,6 +53,7 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 		gatewayAddr:  bv.Config().RPC.GatewayAddr,
 		allowOrigins: bv.Config().RPC.AllowOrigins,
 		quitCh:       make(chan struct{}),
+		enable:       bv.Config().RPC.Enable,
 	}
 	s.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(
@@ -73,6 +76,9 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 
 // Start starts the rpc server.
 func (s *Server) Start() error {
+	if !s.enable {
+		return nil
+	}
 	if err := s.startGrpc(); err != nil {
 		return err
 	}
@@ -130,6 +136,9 @@ func errorHandler(_ context.Context, _ *runtime.ServeMux, _ runtime.Marshaler, w
 
 // Stop stops the rpc server.
 func (s *Server) Stop() {
+	if !s.enable {
+		return
+	}
 	close(s.quitCh)
 	ctx, _ := context.WithTimeout(context.Background(), time.Second) // nolint
 	s.gatewayServer.Shutdown(ctx)
