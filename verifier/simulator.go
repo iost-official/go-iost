@@ -218,6 +218,7 @@ func (s *Simulator) RunTx(stx *tx.Tx) (*tx.TxReceipt, error) {
 		return nil, err
 	}
 	isolator.Commit()
+
 	return r, nil
 }
 
