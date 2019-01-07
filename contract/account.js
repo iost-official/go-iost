@@ -30,7 +30,7 @@ class Account {
     }
 
     static _find(items, name) {
-        for (let i = 0; i < items.length(); i++) {
+        for (let i = 0; i < items.length; i++) {
             if (items[i].id === name) {
                 return i
             }
@@ -78,6 +78,12 @@ class Account {
             if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
                 throw new Error("id invalid. id contains invalid character > " + ch);
             }
+        }
+    }
+
+    _checkWeight(weight) {
+        if (weight <= 0) {
+            throw "weight less than zero"
         }
     }
 
@@ -166,7 +172,7 @@ class Account {
             } else if (len > 0 ) {
                 acc.permissions[perm].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len, un.length()),
+                    permission: un.substring(len, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
