@@ -30,7 +30,7 @@ class Account {
     }
 
     static _find(items, name) {
-        for (let i = 0; i < items.length(); i++) {
+        for (let i = 0; i < items.length; i++) {
             if (items[i].id === name) {
                 return i
             }
@@ -66,18 +66,24 @@ class Account {
         }
     }
 
-    _checkPermValid(id) {
+    _checkPermValid(perm) {
         if (block.number === 0) {
             return
         }
-        if (id.length < 1 || id.length > 32) {
+        if (perm.length < 1 || perm.length > 32) {
             throw new Error("id invalid. id length should be between 1,32 > " + id)
         }
-        for (let i in id) {
-            let ch = id[i];
+        for (let i in perm) {
+            let ch = perm[i];
             if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
                 throw new Error("id invalid. id contains invalid character > " + ch);
             }
+        }
+    }
+
+    _checkWeight(weight) {
+        if (weight <= 0) {
+            throw "weight less than zero"
         }
     }
 
@@ -115,6 +121,7 @@ class Account {
             }],
             threshold: 1,
         };
+        account.groups = {}
         this._saveAccount(account, blockchain.publisher());
         if (block.number !== 0) {
             const defaultGasPledge = "10";
@@ -151,6 +158,7 @@ class Account {
 
     AssignPermission(id, perm, un, weight) {
         this._ra(id);
+        this._checkWeight(weight);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[perm].items, un);
         if (index < 0) {
@@ -161,13 +169,15 @@ class Account {
                     is_key_pair: true,
                     weight: weight
                 });
-            } else {
+            } else if (len > 0 ) {
                 acc.permissions[perm].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len, un.length()),
+                    permission: un.substring(len, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
+            } else {
+                throw "unexpected item"
             }
         } else {
             acc.permissions[perm].items[index].weight = weight
@@ -217,6 +227,7 @@ class Account {
 
     AssignGroup(id, group, un, weight) {
         this._ra(id);
+        this._checkWeight(weight);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.groups[group].items, un);
         if (index < 0) {
@@ -230,7 +241,7 @@ class Account {
             } else {
                 acc.groups[group].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len, un.length()),
+                    permission: un.substring(len, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
