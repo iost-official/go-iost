@@ -122,15 +122,17 @@ class Account {
             threshold: 1,
         };
         account.groups = {}
-        this._saveAccount(account, blockchain.publisher());
+        this._saveAccount(account, referrer);
         if (block.number !== 0) {
             const defaultGasPledge = "10";
             const defaultRegisterReward = "3";
-            blockchain.callWithAuth("gas.iost", "pledge", JSON.stringify([blockchain.publisher(), id, defaultGasPledge]));
-            if (storage.globalMapHas("vote_producer.iost", "producerTable", blockchain.publisher())) {
+            blockchain.callWithAuth("gas.iost", "pledge", JSON.stringify([referrer, id, defaultGasPledge]));
+            if (storage.globalMapHas("vote_producer.iost", "producerTable", referrer)) {
                 blockchain.callWithAuth("issue.iost", "IssueIOSTTo", JSON.stringify([referrer, defaultRegisterReward]));
             }
         }
+
+        blockchain.receipt(JSON.stringify([id, owner, active]));
     }
 
     AddPermission(id, perm, thres) {
@@ -147,6 +149,8 @@ class Account {
             threshold: thres,
         };
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, perm, thres]));
     }
 
     DropPermission(id, perm) {
@@ -154,6 +158,8 @@ class Account {
         let acc = this._loadAccount(id);
         acc.permissions[perm] = undefined;
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, perm]));
     }
 
     AssignPermission(id, perm, un, weight) {
@@ -183,6 +189,8 @@ class Account {
             acc.permissions[perm].items[index].weight = weight
         }
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, perm, un, weight]));
     }
 
     RevokePermission(id, perm, un) {
@@ -195,6 +203,8 @@ class Account {
             acc.permissions[perm].items.splice(index, 1)
         }
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, perm, un]));
     }
 
     AddGroup(id, grp) {
@@ -209,6 +219,8 @@ class Account {
             items: [],
         };
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, grp]));
     }
 
     DropGroup(id, group) {
@@ -223,6 +235,8 @@ class Account {
             }
         }
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, group]));
     }
 
     AssignGroup(id, group, un, weight) {
@@ -251,6 +265,8 @@ class Account {
         }
 
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, group, un, weight]));
     }
 
     RevokeGroup(id, grp, un) {
@@ -263,6 +279,8 @@ class Account {
             acc.groups[grp].items.splice(index, 1)
         }
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, grp, un]));
     }
 
     AssignPermissionToGroup(id, perm, group) {
@@ -273,6 +291,8 @@ class Account {
         }
         acc.permissions[perm].groups.push(group);
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, perm, group]));
     }
 
     RevokePermissionInGroup(id, perm, group) {
@@ -283,6 +303,8 @@ class Account {
             acc.permissions[perm].groups.splice(index, 1);
         }
         this._saveAccount(acc);
+
+        blockchain.receipt(JSON.stringify([id, perm, group]));
     }
 }
 

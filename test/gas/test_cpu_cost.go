@@ -186,7 +186,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 	now := time.Now()
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", name)
 
