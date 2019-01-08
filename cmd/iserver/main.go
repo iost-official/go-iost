@@ -77,7 +77,7 @@ func main() {
 		*configFile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
 	}
 
-	conf := common.NewConfig(*configfile)
+	conf := common.NewConfig(*configFile)
 
 	if *snapshotFile != "" {
 		conf.Snapshot.FilePath = *snapshotFile

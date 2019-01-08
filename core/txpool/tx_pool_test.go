@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -46,6 +47,15 @@ func (pool *TxPImpl) testBlockListNum() int64 {
 func TestNewTxPImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
+		b0 := &block.Block{
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+				Number:     0,
+			},
+		}
+		b0.CalculateHeadHash()
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
@@ -92,6 +102,10 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
+		statedb.EXPECT().Get("state", "b-currentBlockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			bhJson, _ := json.Marshal(b0.Head)
+			return string(bhJson), nil
+		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 		})
@@ -110,9 +124,10 @@ func TestNewTxPImpl(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
-				LdbPath: "./",
+				LdbPath: "DB/",
 			},
 		}
+		defer os.RemoveAll("DB/")
 		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
@@ -212,6 +227,15 @@ func TestNewTxPImpl(t *testing.T) {
 func TestNewTxPImplB(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
+		b0 := &block.Block{
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+				Number:     0,
+			},
+		}
+		b0.CalculateHeadHash()
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
@@ -258,6 +282,10 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
+		statedb.EXPECT().Get("state", "b-currentBlockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			bhJson, _ := json.Marshal(b0.Head)
+			return string(bhJson), nil
+		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 		})
@@ -276,9 +304,10 @@ func TestNewTxPImplB(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
-				LdbPath: "./",
+				LdbPath: "DB/",
 			},
 		}
+		defer os.RemoveAll("DB/")
 		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)

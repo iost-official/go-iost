@@ -393,7 +393,7 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 	if err == nil {
 		return errDuplicate
 	}
-	err = verifyBasics(blk.Head, blk.Sign)
+	err = verifyBasics(blk, blk.Sign)
 	if err != nil {
 		return err
 	}
@@ -412,7 +412,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	if err == nil {
 		return errDuplicate
 	}
-	err = verifyBasics(blk.Head, blk.Sign)
+	err = verifyBasics(blk, blk.Sign)
 	if err != nil {
 		return err
 	}

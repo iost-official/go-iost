@@ -77,13 +77,10 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	return &blk, nil
 }
 
-func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
+func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
 
-	signature.SetPubkey(account.GetPubkeyByID(head.Witness))
-	hash, err := head.Hash()
-	if err != nil {
-		return errHeadHash
-	}
+	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
+	hash := blk.HeadHash()
 	if !signature.Verify(hash) {
 		return errSignature
 	}

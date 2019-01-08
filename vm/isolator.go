@@ -47,7 +47,11 @@ func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 	}
 
 	bhJson, err := json.Marshal(bh)
-	db.Put("currentBlockHead", string(bhJson))
+	if err == nil {
+		db.Put("currentBlockHead", string(bhJson))
+	} else {
+		ilog.Errorf("block head can't marshal to json, err:%v", err)
+	}
 
 	i.blockBaseCtx = host.NewContext(nil)
 	i.blockBaseCtx = loadBlkInfo(i.blockBaseCtx, bh)

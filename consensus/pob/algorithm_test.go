@@ -265,10 +265,11 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account1.ID,
 				},
 			}
+			blk.CalculateHeadHash()
 			//info := generateHeadInfo(blk.Head)
-			hash, _ := blk.Head.Hash()
+			hash := blk.HeadHash()
 			blk.Sign = account1.Sign(hash)
-			err := verifyBasics(blk.Head, blk.Sign)
+			err := verifyBasics(blk, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 		})
 
@@ -279,9 +280,10 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account0.ID,
 				},
 			}
-			hash, _ := blk.Head.Hash()
+			blk.CalculateHeadHash()
+			hash := blk.HeadHash()
 			blk.Sign = account0.Sign(hash)
-			err := verifyBasics(blk.Head, blk.Sign)
+			err := verifyBasics(blk, blk.Sign)
 			convey.So(err, convey.ShouldBeNil)
 		})
 
@@ -292,13 +294,14 @@ func TestVerifyBasics(t *testing.T) {
 					Witness: account0.ID,
 				},
 			}
+			blk.CalculateHeadHash()
 			//err := verifyBasics(blk.Head, blk.Sign)
 			//convey.So(err, convey.ShouldEqual, errWitness)
 
 			blk.Head.Witness = account1.ID
-			hash, _ := blk.Head.Hash()
+			hash := blk.HeadHash()
 			blk.Sign = account0.Sign(hash)
-			err := verifyBasics(blk.Head, blk.Sign)
+			err := verifyBasics(blk, blk.Sign)
 			convey.So(err, convey.ShouldEqual, errSignature)
 		})
 		/*
@@ -309,7 +312,8 @@ func TestVerifyBasics(t *testing.T) {
 						Witness: account0.ID,
 					},
 				}
-				hash, _ := blk.Head.Hash()
+				blk.CalculateHeadHash()
+				hash, _ := blk.HeadHash()
 				blk.Sign = account0.Sign(crypto.Secp256k1, hash)
 				err := verifyBasics(blk.Head, blk.Sign)
 				convey.So(err, convey.ShouldBeNil)
@@ -321,7 +325,8 @@ func TestVerifyBasics(t *testing.T) {
 						Witness: account0.ID,
 					},
 				}
-				hash, _ = blk.Head.Hash()
+			blk.CalculateHeadHash()
+				hash, _ = blk.HeadHash()
 				blk.Sign = account0.Sign(crypto.Secp256k1, hash)
 				err = verifyBasics(blk.Head, blk.Sign)
 				convey.So(err, convey.ShouldEqual, errSlot)
@@ -360,7 +365,7 @@ func TestVerifyBlock(t *testing.T) {
 			TxHash: tx0.Hash(),
 		}
 		curTime := time.Now().UnixNano()
-		hash, _ := rootBlk.Head.Hash()
+		hash := rootBlk.HeadHash()
 		witness := witnessOfSlot(curTime)
 		blk := &block.Block{
 			Head: &block.BlockHead{
@@ -374,7 +379,7 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 		blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
-		info, _ := blk.Head.Hash()
+		info := blk.HeadHash()
 		var sig *crypto.Signature
 		if witness == account0.ID {
 			sig = account0.Sign(info)

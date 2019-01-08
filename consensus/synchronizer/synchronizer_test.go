@@ -1,18 +1,24 @@
 package synchronizer
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/golang/mock/gomock"
+	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
+	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/mocks"
+	"github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/p2p/mocks"
+	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -63,21 +69,46 @@ func TestDownloadController(t *testing.T) {
 
 func TestSynchronizer(t *testing.T) {
 	ilog.Stop()
+	ctl := NewController(t)
+	b0 := &block.Block{
+		Head: &block.BlockHead{
+			Version:    0,
+			ParentHash: []byte("nothing"),
+			Witness:    "w0",
+			Number:     0,
+		},
+	}
+	b0.CalculateHeadHash()
+	tpl := "[\"a1\",\"a2\",\"a3\",\"a4\",\"a5\"]"
+	statedb := db_mock.NewMockMVCCDB(ctl)
+	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("5"), nil
+	})
+	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(tpl), nil
+	})
+	statedb.EXPECT().Get("state", "b-currentBlockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		bhJson, _ := json.Marshal(b0.Head)
+		return string(bhJson), nil
+	})
+	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
+	})
+	statedb.EXPECT().Fork().AnyTimes().Return(statedb)
+	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
+	baseVariable := core_mock.NewMockBaseVariable(ctl)
+	baseVariable.EXPECT().StateDB().AnyTimes().Return(statedb)
+
+	config := common.Config{
+		DB: &common.DBConfig{
+			LdbPath: "DB/",
+		},
+	}
+	baseVariable.EXPECT().Config().AnyTimes().Return(&config)
+	baseVariable.EXPECT().Continuous().AnyTimes().Return(0)
+	baseVariable.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 	Convey("Test Synchronizer", t, func() {
-		baseVariable, err := global.New(&common.Config{
-			DB: &common.DBConfig{
-				LdbPath: "Fakedb/",
-			},
-		})
 		genesis.FakeBv(baseVariable)
-
-		So(err, ShouldBeNil)
-		So(baseVariable, ShouldNotBeNil)
-		defer func() {
-			os.RemoveAll("Fakedb")
-		}()
-
-		// vi := database.NewVisitor(0, baseVariable.StateDB())
 
 		blockcache.CleanBlockCacheWAL()
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
@@ -97,5 +128,7 @@ func TestSynchronizer(t *testing.T) {
 		So(err, ShouldBeNil)
 		time.Sleep(200 * time.Millisecond)
 		blockcache.CleanBlockCacheWAL()
+
+		os.RemoveAll("DB/")
 	})
 }

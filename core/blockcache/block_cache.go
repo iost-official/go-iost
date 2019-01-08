@@ -250,34 +250,34 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	}
 	bc.linkedRoot.Head.Number = -1
 
-	vi := database.NewVisitor(0, mv)
+	vi := database.NewVisitor(0, bc.stateDB)
 	bhJson := vi.Get("currentBlockHead")
 	bh := &block.BlockHead{}
-	err := json.Unmarshal(bhJson, bh)
+	err = json.Unmarshal([]byte(bhJson), bh)
 	if err != nil {
-		return fmt.Errorf("get current block head from state db failed. err: %v", err)
+		return nil, fmt.Errorf("get current block head from state db failed. err: %v", err)
 	}
-	lib := &block{Head: bh}
+	lib := &block.Block{Head: bh}
 	lib.CalculateHeadHash()
-	if err == nil {
-		ilog.Info("Got LIB: ", lib.Head.Number)
-		bc.linkedRoot = NewBCN(nil, lib)
-		bc.linkedRoot.Type = Linked
-		bc.singleRoot.Type = Virtual
-		bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
-		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
+	fmt.Println(common.Base58Encode(lib.HeadHash()))
 
-		if err := bc.updatePending(bc.linkedRoot); err != nil {
-			return nil, err
-		}
-		bc.linkedRoot.LibWitnessHandle()
-		ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
-		for _, v := range bc.linkedRoot.Active() {
-			ilog.Info("ActiveWitness:", v)
-		}
-		for _, v := range bc.linkedRoot.Pending() {
-			ilog.Info("PendingWitness:", v)
-		}
+	ilog.Info("Got LIB: ", lib.Head.Number)
+	bc.linkedRoot = NewBCN(nil, lib)
+	bc.linkedRoot.Type = Linked
+	bc.singleRoot.Type = Virtual
+	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
+	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
+
+	if err := bc.updatePending(bc.linkedRoot); err != nil {
+		return nil, err
+	}
+	bc.linkedRoot.LibWitnessHandle()
+	ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
+	for _, v := range bc.linkedRoot.Active() {
+		ilog.Info("ActiveWitness:", v)
+	}
+	for _, v := range bc.linkedRoot.Pending() {
+		ilog.Info("PendingWitness:", v)
 	}
 	bc.head = bc.linkedRoot
 

@@ -27,7 +27,7 @@ func checkGenesis(bv global.BaseVariable) error {
 			return fmt.Errorf("blockchaindb is empty, but statedb is not")
 		}
 
-		blk, err = genesis.GenGenesisByFile(stateDB, conf.Genesis)
+		blk, err := genesis.GenGenesisByFile(stateDB, conf.Genesis)
 		if err != nil {
 			return fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
 		}
@@ -53,10 +53,10 @@ func recoverDB(bv global.BaseVariable) error {
 	conf := bv.Config()
 
 	if conf.Snapshot.FilePath != "" {
-		vi := database.NewVisitor(0, mv)
+		vi := database.NewVisitor(0, stateDB)
 		bhJson := vi.Get("currentBlockHead")
 		bh := &block.BlockHead{}
-		err := json.Unmarshal(bhJson, bh)
+		err := json.Unmarshal([]byte(bhJson), bh)
 		if err != nil {
 			return fmt.Errorf("get current block head from state db failed. err: %v", err)
 		}
