@@ -40,6 +40,7 @@ var BenchmarkFlags = []cli.Flag{
 	},
 }
 
+// The type of transaction.
 const (
 	None int = iota
 	TransferTx
