@@ -20,6 +20,7 @@ p2p:
   blackIP:
   adminPort: 30005
 rpc:
+  enable: true
   gatewayaddr: 0.0.0.0:30001
   grpcaddr: 0.0.0.0:30002
   trytx: false

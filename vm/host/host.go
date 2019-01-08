@@ -283,43 +283,6 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	return cost, nil
 }
 
-// DestroyCode delete code
-func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
-	// todo free kv
-
-	oc := h.db.Contract(contractName)
-	if oc == nil {
-		return Costs["GetCost"], ErrContractNotFound
-	}
-	abi := oc.ABI("can_destroy")
-	if abi == nil {
-		return Costs["GetCost"], ErrDestroyRefused
-	}
-
-	oldL := len(oc.Encode())
-
-	rtn, cost, err := h.Call(contractName, "can_destroy", "[]")
-
-	if err != nil {
-		return cost, err
-	}
-
-	if t, ok := rtn[0].(string); !ok || t != "true" {
-		return cost, ErrDestroyRefused
-	}
-
-	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
-	cost.AddAssign(co)
-	cost.AddAssign(contract.Cost{Data: int64(-oldL), DataList: []contract.DataItem{
-		{Payer: owner.(string), Val: int64(-oldL)},
-	}})
-
-	h.db.MDel("system.iost-contract_owner", oc.ID)
-
-	h.db.DelContract(contractName)
-	return Costs["PutCost"], nil
-}
-
 // CancelDelaytx deletes delaytx hash.
 //
 // The given argument txHash is from user's input. So we should Base58Decode it first.
