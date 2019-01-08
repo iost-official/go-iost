@@ -2,11 +2,13 @@ package global
 
 import (
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // TMode type of mode
@@ -54,6 +56,21 @@ type BaseVariableImpl struct {
 // New return a BaseVariable instance
 // nolint: gocyclo
 func New(conf *common.Config) (*BaseVariableImpl, error) {
+	if conf.Snapshot.FilePath != "" {
+		s, err := os.Stat(conf.DB.LdbPath + "BlockChainDB")
+		if err == nil && s.IsDir() {
+			ilog.Fatal("start iserver with the snapshot failed, blockchain db already has.")
+		}
+
+		s, err = os.Stat(conf.DB.LdbPath + "StateDB")
+		if err == nil && s.IsDir() {
+			ilog.Fatal("start iserver with the snapshot failed, state db already has.")
+		}
+
+		// TODO: tar to statDB
+
+	}
+
 	blockChain, err := block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")
 	if err != nil {
 		return nil, fmt.Errorf("new blockchain failed, stop the program. err: %v", err)

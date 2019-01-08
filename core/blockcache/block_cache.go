@@ -1,6 +1,7 @@
 package blockcache
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -15,6 +16,7 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
 	"github.com/xlab/treeprint"
 )
 
@@ -70,7 +72,6 @@ func (bcn *BlockCacheNode) SetParent(p *BlockCacheNode) {
 	bcn.parent = p
 	bcn.rw.Unlock()
 }
-
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	if child != nil {
 		bcn.Children[child] = true
@@ -242,7 +243,16 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		wal:          w,
 	}
 	bc.linkedRoot.Head.Number = -1
-	lib, err := baseVariable.BlockChain().Top()
+
+	vi := database.NewVisitor(0, mv)
+	bhJson := vi.Get("currentBlockHead")
+	bh := &block.BlockHead{}
+	err := json.Unmarshal(bhJson, bh)
+	if err != nil {
+		return fmt.Errorf("get current block head from state db failed. err: %v", err)
+	}
+	lib := &block{Head: bh}
+	lib.CalculateHeadHash()
 	if err == nil {
 		ilog.Info("Got LIB: ", lib.Head.Number)
 		bc.linkedRoot = NewBCN(nil, lib)

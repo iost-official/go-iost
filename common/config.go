@@ -105,6 +105,11 @@ type MetricsConfig struct {
 	ID       string
 }
 
+// SnapshotConfig is the config of snapshot
+type SnapshotConfig struct {
+	FilePath string
+}
+
 // DebugConfig is the config of debug.
 type DebugConfig struct {
 	ListenAddr string
@@ -118,16 +123,17 @@ type VersionConfig struct {
 
 // Config provide all configuration for the application
 type Config struct {
-	ACC     *ACCConfig
-	Genesis string
-	VM      *VMConfig
-	DB      *DBConfig
-	P2P     *P2PConfig
-	RPC     *RPCConfig
-	Log     *LogConfig
-	Metrics *MetricsConfig
-	Debug   *DebugConfig
-	Version *VersionConfig
+	ACC      *ACCConfig
+	Genesis  string
+	VM       *VMConfig
+	DB       *DBConfig
+	P2P      *P2PConfig
+	RPC      *RPCConfig
+	Log      *LogConfig
+	Metrics  *MetricsConfig
+	Debug    *DebugConfig
+	Version  *VersionConfig
+	Snapshot *SnapshotConfig
 }
 
 // LoadYamlAsViper load yaml file as viper object

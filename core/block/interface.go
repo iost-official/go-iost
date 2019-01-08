@@ -9,6 +9,7 @@ type Chain interface {
 	Push(block *Block) error
 	Length() int64
 	CheckLength()
+	SetLength(i int64)
 	Top() (*Block, error)
 	GetHashByNumber(number int64) ([]byte, error)
 	GetBlockByNumber(number int64) (*Block, error)

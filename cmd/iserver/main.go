@@ -29,8 +29,9 @@ import (
 )
 
 var (
-	configfile = flag.StringP("config", "f", "", "Configuration `file`")
-	help       = flag.BoolP("help", "h", false, "Display available options")
+	configFile   = flag.StringP("config", "f", "", "Configuration `file`")
+	snapshotFile = flag.StringP("snapshot", "s", "", "Snapshot file")
+	help         = flag.BoolP("help", "h", false, "Display available options")
 )
 
 func initMetrics(metricsConfig *common.MetricsConfig) error {
@@ -72,11 +73,15 @@ func main() {
 		flag.Usage()
 	}
 
-	if *configfile == "" {
-		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
+	if *configFile == "" {
+		*configFile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
 	}
 
-	conf := common.NewConfig(*configfile)
+	conf := common.NewConfig(*configFile)
+
+	if *snapshotFile != "" {
+		conf.Snapshot.FilePath = *snapshotFile
+	}
 
 	initLogger(conf.Log)
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
