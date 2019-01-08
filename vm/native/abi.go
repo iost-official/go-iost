@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
+	"strconv"
 )
 
 var (
@@ -15,7 +16,7 @@ var (
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			ok, cost := h.RequireAuth(AdminAccount, SystemPermission)
-			return []interface{}{ok}, cost, nil
+			return []interface{}{strconv.FormatBool(ok)}, cost, nil
 		},
 	}
 )

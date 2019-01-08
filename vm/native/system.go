@@ -175,7 +175,7 @@ var (
 			ok, cost0 := h.RequireAuth(AdminAccount, SystemPermission)
 			cost.AddAssign(cost0)
 			if !ok {
-				return nil, cost, errors.New("set host settings need admin@system permission")
+				return nil, cost, errors.New("update native code need admin@system permission")
 			}
 
 			cost.AddAssign(host.CommonOpCost(1))
