@@ -26,6 +26,11 @@ var TransferCaseFlags = []cli.Flag{
 		Value: "accounts.json",
 		Usage: "output of account information",
 	},
+	cli.IntFlag{
+		Name:  "memo, m",
+		Value: 0,
+		Usage: "The size of a random memo message that would be contained in the transaction",
+	},
 }
 
 // TransferCaseAction is the action of transfer test case
