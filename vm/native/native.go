@@ -23,8 +23,8 @@ var (
 	SystemPermission   = "system"
 	TokenPermission    = "token"
 	TransferPermission = "transfer"
-	ActivePermission   = "active"
-	DomainPermission   = "domain"
+	//ActivePermission   = "active"
+	DomainPermission = "domain"
 
 	AdminAccount = "admin"
 )

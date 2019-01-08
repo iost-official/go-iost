@@ -231,7 +231,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		if strings.HasSuffix(p, ".iost") {
 			continue
 		}
-		ok, _ := h.RequireAuth(p, native.ActivePermission)
+		ok, _ := h.RequireAuth(p, "active")
 		if !ok {
 			return nil, cost, errors.New("pay ram failed. no permission. need " + p + "@active")
 		}

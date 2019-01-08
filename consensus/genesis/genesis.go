@@ -225,7 +225,11 @@ func FakeBv(bv global.BaseVariable) error {
 			WitnessInfo: []*common.Witness{
 				{ID: "a1", Owner: "a1", Active: "a1", Balance: 11111111111},
 				{ID: "a2", Owner: "a2", Active: "a2", Balance: 222222},
-				{ID: "a3", Owner: "a3", Active: "a3", Balance: 333333333}},
+				{ID: "a3", Owner: "a3", Active: "a3", Balance: 333333333},
+			},
+			AdminInfo: &common.Witness{
+				ID: "admin", Owner: "admin", Active: "admin", Balance: 11111111111,
+			},
 			InitialTimestamp: "2006-01-02T15:04:05Z",
 			ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
 		},

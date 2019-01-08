@@ -13,7 +13,6 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/native"
 )
 
 // Monitor monitor interface
@@ -136,7 +135,7 @@ func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error
 
 // CheckPublisher check publisher of tx
 func (h *Host) CheckPublisher(t *tx.Tx) error {
-	b, c := h.RequireAuth(t.Publisher, native.ActivePermission)
+	b, c := h.RequireAuth(t.Publisher, "active")
 	if !b {
 		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
 	}
