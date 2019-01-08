@@ -175,15 +175,13 @@ class Account {
                     is_key_pair: true,
                     weight: weight
                 });
-            } else if (len > 0 ) {
+            } else {
                 acc.permissions[perm].items.push({
                     id: un.substring(0, len),
                     permission: un.substring(len, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
-            } else {
-                throw "unexpected item"
             }
         } else {
             acc.permissions[perm].items[index].weight = weight

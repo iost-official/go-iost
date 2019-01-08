@@ -324,7 +324,7 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 		Convey("Test unpledge amount", func() {
 			authList := make(map[string]int)
 			h.Context().Set("auth_contract_list", authList)
-			authList[acc1.KeyPair.ID] = 2
+			authList[acc1.KeyPair.ReadablePubkey()] = 2
 			h.Context().Set("auth_list", authList)
 			h.DB().SetTokenBalanceFixed("iost", otherAcc, "20")
 			_, _, err = e.LoadAndCall(h, code, "pledge", otherAcc, otherAcc, "20")
