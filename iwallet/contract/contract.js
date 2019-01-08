@@ -7,24 +7,24 @@ const lang = "javascript";
 const version = "1.0.0";
 
 function isClassDecl(stat) {
-	return !!(stat && stat.type === "ClassDeclaration");
+    return !!(stat && stat.type === "ClassDeclaration");
 }
 
 function isExport(stat) {
-	return !!(stat && stat.type === "AssignmentExpression" && stat.left && stat.left.type === "MemberExpression"
+    return !!(stat && stat.type === "AssignmentExpression" && stat.left && stat.left.type === "MemberExpression"
     && stat.left.object && stat.left.object.type === "Identifier" && stat.left.object.name === "module"
     && stat.left.property && stat.left.property.type === "Identifier" && stat.left.property.name === "exports");
 }
 
 function getExportName(stat) {
-	if (stat.right.type !== "Identifier") {
-		throw new Error("module.exports should be assigned to an identifier");
-	}
-	return stat.right.name;
+    if (stat.right.type !== "Identifier") {
+        throw new Error("module.exports should be assigned to an identifier");
+    }
+    return stat.right.name;
 }
 
 function isPublicMethod(def) {
-	return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && !def.key.name.startsWith("_");
+    return def.key.type === "Identifier" && def.value.type === "FunctionExpression" && !def.key.name.startsWith("_");
 }
 
 function genAbi(def, lastPos, comments) {
@@ -33,12 +33,12 @@ function genAbi(def, lastPos, comments) {
             throw new Error("invalid method parameter type. must be Identifier, got " + param.type);
         }
     }
-	let abi = {
+    let abi = {
         "name": def.key.name,
         "args": new Array(def.value.params.length).fill("string"),
         "amountLimit": [],
         "description": ""
-	};
+    };
     for (let i = comments.length - 1; i >= 0; i--) {
         let comment = comments[i];
         if (comment.range[0] > lastPos && comment.range[1] < def.range[0]) {
@@ -60,29 +60,29 @@ function genAbi(def, lastPos, comments) {
 }
 
 function genAbiArr(stat, comments) {
-	let abiArr = [];
-	if (!isClassDecl(stat) || stat.body.type !== "ClassBody") {
-		throw new Error("invalid statement for generate abi. stat = " + stat);
-		return null;
-	}
-	let initFound = false;
-	let lastPos = stat.body.range[0];
-	for (let def of stat.body.body) {
-		if (def.type === "MethodDefinition" && isPublicMethod(def)) {
-			if (def.key.name === "constructor") {
-			} else if (def.key.name === "init") {
-				initFound = true;
-			} else {
-				abiArr.push(genAbi(def, lastPos, comments));
-				lastPos = def.range[1];
-			}
-		}
-	}
-	if (!initFound) {
-		throw new Error("init not found!");
-		return null;
-	}
-	return abiArr;
+    let abiArr = [];
+    if (!isClassDecl(stat) || stat.body.type !== "ClassBody") {
+        throw new Error("invalid statement for generate abi. stat = " + stat);
+        return null;
+    }
+    let initFound = false;
+    let lastPos = stat.body.range[0];
+    for (let def of stat.body.body) {
+        if (def.type === "MethodDefinition" && isPublicMethod(def)) {
+            if (def.key.name === "constructor") {
+            } else if (def.key.name === "init") {
+                initFound = true;
+            } else {
+                abiArr.push(genAbi(def, lastPos, comments));
+                lastPos = def.range[1];
+            }
+        }
+    }
+    if (!initFound) {
+        throw new Error("init not found!");
+        return null;
+    }
+    return abiArr;
 }
 
 function checkInvalidKeyword(tokens) {
@@ -180,43 +180,43 @@ function handleOperator(ast) {
 
 function processContract(source) {
   let ast = esprima.parseModule(source, {
-		range: true,
-		loc: false,
-	  	comment: true,
-		tokens: true
-	});
+        range: true,
+        loc: false,
+          comment: true,
+        tokens: true
+    });
 
-	let abiArr = [];
-	if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
-		throw new Error("invalid source! ast = " + ast);
-		return ["", ""];
-	}
+    let abiArr = [];
+    if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
+        throw new Error("invalid source! ast = " + ast);
+        return ["", ""];
+    }
 
     checkInvalidKeyword(ast.tokens);
-	// checkOperator(ast.tokens);
+    // checkOperator(ast.tokens);
     let newSource = "'use strict';\n" + handleOperator(ast);
 
-	let className;
-	for (let stat of ast.body) {
-		if (isClassDecl(stat)) {
-		}
-		else if (stat.type === "ExpressionStatement" && isExport(stat.expression)) {
-			className = getExportName(stat.expression);
-		}
-	}
-	for (let stat of ast.body) {
-		if (isClassDecl(stat) && stat.id.type === "Identifier" && stat.id.name === className) {
-			abiArr = genAbiArr(stat, ast.comments);
-		}
-	}
+    let className;
+    for (let stat of ast.body) {
+        if (isClassDecl(stat)) {
+        }
+        else if (stat.type === "ExpressionStatement" && isExport(stat.expression)) {
+            className = getExportName(stat.expression);
+        }
+    }
+    for (let stat of ast.body) {
+        if (isClassDecl(stat) && stat.id.type === "Identifier" && stat.id.name === className) {
+            abiArr = genAbiArr(stat, ast.comments);
+        }
+    }
 
-	let abi = {};
-	abi["lang"] = lang;
-	abi["version"] = version;
-	abi["abi"] = abiArr;
-	let abiStr = JSON.stringify(abi, null, 4);
+    let abi = {};
+    abi["lang"] = lang;
+    abi["version"] = version;
+    abi["abi"] = abiArr;
+    let abiStr = JSON.stringify(abi, null, 4);
 
-	return [newSource, abiStr]
+    return [newSource, abiStr]
 }
 module.exports = processContract;
 
@@ -225,21 +225,24 @@ let fs = require('fs');
 
 let file = process.argv[2];
 fs.readFile(file, 'utf8', function(err, contents) {
-	console.log('before calling process, len = ' + contents.length);
-	let [newSource, abi] = processContract(contents);
-	console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
+    if (contents === undefined) {
+        throw new Error("invalid file content. Is " + file + " exists?")
+    }
+    console.log('before calling process, len = ' + contents.length);
+    let [newSource, abi] = processContract(contents);
+    console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
 
-	fs.writeFile(file + ".after", newSource, function(err) {
-    	if(err) {
-    	    return console.log(err);
-    	}
-    	console.log("The new contract file was saved as " + file + ".after");
-	});
+    fs.writeFile(file + ".after", newSource, function(err) {
+        if(err) {
+            return console.log(err);
+        }
+        console.log("The new contract file was saved as " + file + ".after");
+    });
 
-	fs.writeFile(file + ".abi", abi, function(err) {
-    	if(err) {
-    	    return console.log(err);
-    	}
-    	console.log("The new abi file was saved as " + file + ".abi");
-	});
+    fs.writeFile(file + ".abi", abi, function(err) {
+        if(err) {
+            return console.log(err);
+        }
+        console.log("The new abi file was saved as " + file + ".abi");
+    });
 });

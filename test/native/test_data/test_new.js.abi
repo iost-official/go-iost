@@ -25,17 +25,6 @@
                 1
             ],
             "price_limit": 1
-        },
-        {
-            "name": "can_destroy",
-            "args": [],
-            "payment": 0,
-            "cost_limit": [
-                1,
-                1,
-                1
-            ],
-            "price_limit": 1
         }
     ]
 }
