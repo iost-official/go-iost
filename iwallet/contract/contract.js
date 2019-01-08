@@ -228,16 +228,16 @@ fs.readFile(file, 'utf8', function(err, contents) {
     if (contents === undefined) {
         throw new Error("invalid file content. Is " + file + " exists?")
     }
-    console.log('before calling process, len = ' + contents.length);
+    //console.log('before calling process, len = ' + contents.length);
     let [newSource, abi] = processContract(contents);
-    console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
+    //console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
 
-    fs.writeFile(file + ".after", newSource, function(err) {
-        if(err) {
-            return console.log(err);
-        }
-        console.log("The new contract file was saved as " + file + ".after");
-    });
+    //fs.writeFile(file + ".after", newSource, function(err) {
+    //    if(err) {
+    //        return console.log(err);
+    //    }
+    //    console.log("The new contract file was saved as " + file + ".after");
+    //});
 
     fs.writeFile(file + ".abi", abi, function(err) {
         if(err) {
