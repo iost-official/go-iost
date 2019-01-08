@@ -18,7 +18,11 @@
                 "string",
                 "string",
                 "json"
-            ]
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "AddOption",
@@ -44,13 +48,31 @@
             ]
         },
         {
+            "name": "VoteFor",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
             "name": "Vote",
             "args": [
                 "string",
                 "string",
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
         },
         {
             "name": "Unvote",

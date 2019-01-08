@@ -223,6 +223,33 @@
         ]
       }
     },
+    "/getContractStorageFields": {
+      "post": {
+        "summary": "get contract fields storage",
+        "operationId": "GetContractStorageFields",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetContractStorageFieldsResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetContractStorageFieldsRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getGasRatio": {
       "get": {
         "summary": "get gas ratio infomation",
@@ -269,6 +296,129 @@
             }
           }
         },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getToken721Balance/{account}/{token}/{by_longest_chain}": {
+      "get": {
+        "summary": "get token721 balance",
+        "operationId": "GetToken721Balance",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetToken721BalanceResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account",
+            "description": "account name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "token",
+            "description": "the token name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getToken721Metadata/{token}/{token_id}/{by_longest_chain}": {
+      "get": {
+        "summary": "get token721 metadata",
+        "operationId": "GetToken721Metadata",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetToken721MetadataResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "description": "the token name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "token_id",
+            "description": "token id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getToken721Owner/{token}/{token_id}/{by_longest_chain}": {
+      "get": {
+        "summary": "get token721 owner",
+        "operationId": "GetToken721Owner",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetToken721OwnerResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "token",
+            "description": "the token name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "token_id",
+            "description": "token id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
         "tags": [
           "ApiService"
         ]
@@ -551,6 +701,16 @@
           "type": "string",
           "format": "int64",
           "title": "available ram bytes"
+        },
+        "used": {
+          "type": "string",
+          "format": "int64",
+          "title": "used ram bytes"
+        },
+        "total": {
+          "type": "string",
+          "format": "int64",
+          "title": "total ram bytes"
         }
       },
       "description": "The message defines account ram information."
@@ -731,8 +891,7 @@
           "title": "token name"
         },
         "value": {
-          "type": "number",
-          "format": "double",
+          "type": "string",
           "title": "limit value"
         }
       },
@@ -816,11 +975,11 @@
     "rpcpbBlockResponseStatus": {
       "type": "string",
       "enum": [
-        "PENDIND",
+        "PENDING",
         "IRREVERSIBLE"
       ],
-      "default": "PENDIND",
-      "description": "The enumeration defines block status.\n\n - PENDIND: pending in block cache\n - IRREVERSIBLE: irreversible"
+      "default": "PENDING",
+      "description": "The enumeration defines block status.\n\n - PENDING: pending in block cache\n - IRREVERSIBLE: irreversible"
     },
     "rpcpbChainInfoResponse": {
       "type": "object",
@@ -940,6 +1099,35 @@
         }
       }
     },
+    "rpcpbGetContractStorageFieldsRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "contract id"
+        },
+        "fields": {
+          "type": "string",
+          "title": "get the fields from StateDB"
+        },
+        "by_longest_chain": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "get data by longest chain's head block or last irreversible block"
+        }
+      },
+      "description": "The message defines get contract storage request."
+    },
+    "rpcpbGetContractStorageFieldsResponse": {
+      "type": "object",
+      "properties": {
+        "data": {
+          "type": "string",
+          "title": "the json string data"
+        }
+      },
+      "description": "The message defines get contract storage response."
+    },
     "rpcpbGetContractStorageRequest": {
       "type": "object",
       "properties": {
@@ -972,6 +1160,44 @@
         }
       },
       "description": "The message defines get contract storage response."
+    },
+    "rpcpbGetToken721BalanceResponse": {
+      "type": "object",
+      "properties": {
+        "balance": {
+          "type": "string",
+          "format": "int64",
+          "title": "token balance"
+        },
+        "tokenIDs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "balance information"
+        }
+      },
+      "description": "The message defines get token721 balance response."
+    },
+    "rpcpbGetToken721MetadataResponse": {
+      "type": "object",
+      "properties": {
+        "metadata": {
+          "type": "string",
+          "title": "token metadata"
+        }
+      },
+      "description": "The message defines get token721 metadata response."
+    },
+    "rpcpbGetToken721OwnerResponse": {
+      "type": "object",
+      "properties": {
+        "owner": {
+          "type": "string",
+          "title": "token owner"
+        }
+      },
+      "description": "The message defines get token721 owner response."
     },
     "rpcpbGetTokenBalanceResponse": {
       "type": "object",
@@ -1289,12 +1515,12 @@
     "rpcpbTransactionResponseStatus": {
       "type": "string",
       "enum": [
-        "PENDIND",
+        "PENDING",
         "PACKED",
         "IRREVERSIBLE"
       ],
-      "default": "PENDIND",
-      "description": "The enumeration defines transaction status.\n\n - PENDIND: pending in transaction pool\n - PACKED: packed in a block that has not been confirmed\n - IRREVERSIBLE: packed in a block that is irreversible"
+      "default": "PENDING",
+      "description": "The enumeration defines transaction status.\n\n - PENDING: pending in transaction pool\n - PACKED: packed in a block that has not been confirmed\n - IRREVERSIBLE: packed in a block that is irreversible"
     },
     "rpcpbTxReceipt": {
       "type": "object",

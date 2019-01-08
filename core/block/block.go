@@ -165,9 +165,7 @@ func (b *Block) Decode(blockByte []byte) error {
 	b.TxHashes = nil
 	sig := &crypto.Signature{}
 	b.Sign = sig.FromPb(br.Sign)
-	if err != nil {
-		return errors.New("fail to decode signature")
-	}
+
 	switch br.BlockType {
 	case blockpb.BlockType_NORMAL:
 		for _, t := range br.Txs {

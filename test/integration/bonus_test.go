@@ -6,10 +6,7 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -20,32 +17,23 @@ func Test_IssueBonus(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
 		createAccountsWithResource(s)
 		prepareFakeBase(t, s)
 
 		// deploy issue.iost
 		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		s.Call("bonus.iost", "init", `[]`, kp.ID, kp)
+		s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
 
 		Convey("test IssueContribute", func() {
-			s.Head.Witness = testID[4]
+			s.Head.Witness = acc1.KeyPair.ID
 			s.Head.Number = 1
-			wkp, err := account.NewKeyPair(common.Base58Decode(testID[5]), crypto.Secp256k1)
-			if err != nil {
-				t.Fatal(err)
-			}
 
-			r, err := s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","12345678"]}]`, wkp.ID), wkp.ID, wkp)
+			r, err := s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","12345678"]}]`, acc1.ID), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.TokenBalance("contribute", testID[4]), ShouldEqual, int64(912))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(198779440))
 		})
 	})
 }
@@ -56,50 +44,50 @@ func Test_ExchangeIOST(t *testing.T) {
 		s := NewSimulator()
 		defer s.Clear()
 
-		kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-		if err != nil {
-			t.Fatal(err)
-		}
-
+		s.Head.Number = 0
 		createAccountsWithResource(s)
-		prepareIssue(s, kp)
+		prepareIssue(s, acc0)
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
 		prepareFakeBase(t, s)
 
 		// deploy bonus.iost
 		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		s.Call("bonus.iost", "init", `[]`, kp.ID, kp)
+		s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
 
 		Convey("test ExchangeIOST", func() {
-			createToken(t, s, kp)
+			createToken(t, s, acc0)
 
 			// set bonus pool
-			s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "bonus.iost", "1000"), kp.ID, kp)
+			s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "bonus.iost", "1000"), acc0.ID, acc0.KeyPair)
 
 			// gain contribute
-			s.Head.Witness = testID[6]
+			s.Head.Witness = acc1.KeyPair.ID
 			s.Head.Number = 1
-			wkp, _ := account.NewKeyPair(common.Base58Decode(testID[7]), crypto.Secp256k1)
-			s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, wkp.ID, 1), wkp.ID, wkp)
+			r, err := s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc1.ID, 1), acc1.ID, acc1.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
-			So(s.Visitor.TokenBalance("contribute", testID[6]), ShouldEqual, int64(900))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(198779440))
 
-			s.Head.Witness = testID[8]
+			s.Head.Witness = acc2.KeyPair.ID
 			s.Head.Number = 2
-			wkp2, _ := account.NewKeyPair(common.Base58Decode(testID[9]), crypto.Secp256k1)
-			s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, wkp2.ID, 123456789), wkp2.ID, wkp2)
+			r, err = s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc2.ID, 123456789), acc2.ID, acc2.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
-			So(s.Visitor.TokenBalance("contribute", testID[8]), ShouldEqual, int64(1000))
+			So(s.Visitor.TokenBalance("contribute", acc2.ID), ShouldEqual, int64(198779440))
 
-			r, err := s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%v", "%v"]`, testID[6], "300"), wkp.ID, wkp)
+			r, err = s.Call("bonus.iost", "ExchangeIOST", fmt.Sprintf(`["%v", "%v"]`, acc1.ID, "1.9"), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TokenBalance("contribute", testID[6]), ShouldEqual, int64(600))
-			So(s.Visitor.TokenBalance("iost", testID[6]), ShouldEqual, int64(15789473684))
-			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(84210526316))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(8779440))
+			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(190000000))
+			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(99810000000))
 		})
 	})
 }

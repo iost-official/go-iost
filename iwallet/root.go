@@ -12,10 +12,11 @@ var cfgFile string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:          "iwallet",
-	Short:        "IOST client",
-	Long:         `An IOST RPC client`,
-	SilenceUsage: true,
+	Use:           "iwallet",
+	Short:         "IOST client",
+	Long:          `An IOST RPC client`,
+	SilenceUsage:  true,
+	SilenceErrors: true,
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
@@ -42,13 +43,14 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&sdk.verbose, "verbose", "", true, "print verbose information")
 	rootCmd.PersistentFlags().StringVarP(&sdk.accountName, "account", "", "", "which account to use")
 	rootCmd.PersistentFlags().StringVarP(&sdk.server, "server", "s", "localhost:30002", "Set server of this client")
-	rootCmd.PersistentFlags().BoolVarP(&sdk.checkResult, "checkResult", "", true, "Check publish/call status after sending to chain")
-	rootCmd.PersistentFlags().Float32VarP(&sdk.checkResultDelay, "checkResultDelay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
-	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "checkResultMaxRetry", "", 10, "Max times to call grpc to check tx status")
-	rootCmd.PersistentFlags().StringVarP(&sdk.signAlgo, "signAlgo", "", "ed25519", "Sign algorithm")
-	rootCmd.PersistentFlags().Float64VarP(&sdk.gasLimit, "gaslimit", "l", 50000, "gasLimit for a transaction")
-	rootCmd.PersistentFlags().Float64VarP(&sdk.gasRatio, "gasratio", "p", 1.0, "gasRatio for a transaction")
-	rootCmd.PersistentFlags().StringVarP(&sdk.amountLimit, "amountLimit", "", "", "amount limit for one transaction, eg iost:300.00|ram:2000")
+	rootCmd.PersistentFlags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get balance on longest chain")
+	rootCmd.PersistentFlags().BoolVarP(&sdk.checkResult, "check_result", "", true, "Check publish/call status after sending to chain")
+	rootCmd.PersistentFlags().Float32VarP(&sdk.checkResultDelay, "check_result_delay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
+	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "check_result_max_retry", "", 10, "Max times to call grpc to check tx status")
+	rootCmd.PersistentFlags().StringVarP(&sdk.signAlgo, "sign_algo", "", "ed25519", "Sign algorithm")
+	rootCmd.PersistentFlags().Float64VarP(&sdk.gasLimit, "gas_limit", "l", 1000000, "gasLimit for a transaction")
+	rootCmd.PersistentFlags().Float64VarP(&sdk.gasRatio, "gas_ratio", "p", 1.0, "gasRatio for a transaction")
+	rootCmd.PersistentFlags().StringVarP(&sdk.amountLimit, "amount_limit", "", "*:unlimited", "amount limit for one transaction, eg iost:300.00|ram:2000")
 	rootCmd.PersistentFlags().Int64VarP(&sdk.expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
 
 	//rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")

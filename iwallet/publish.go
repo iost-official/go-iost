@@ -14,117 +14,65 @@
 
 package iwallet
 
-/*
-// publishCmd represents the publish command
+import (
+	"fmt"
+	"github.com/spf13/cobra"
+)
+
+var update bool
+
+// publishCmd represents the compile command
 var publishCmd = &cobra.Command{
 	Use:   "publish",
-	Short: "sign a .sc file with .sig files, and publish it",
-	Long:  `sign a .sc file with .sig files, and publish it`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println(`invalid input, check
-	iwallet publish -h`)
-			return
-		}
+	Short: "publish a contract",
+	Long: `publish a contract by a contract and an abi file
+	example:iwallet publish ./example.js ./example.js.abi
+	`,
 
-		sc, err := readFile(args[0])
-		if err != nil {
-			fmt.Println("Read file failed: ", err.Error())
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		if len(args) < 2 {
+			fmt.Println(`usage: iwallet publish ./example.js ./example.js.abi [contractID [updateID]]`)
 			return
 		}
+		codePath := args[0]
+		abiPath := args[1]
 
-		var mtx tx.Tx
-		err = mtx.Decode(sc)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		signs := make([]*crypto.Signature, 0)
-		for i, v := range args {
-			if i == 0 {
-				continue
-			}
-			sig, err := readFile(v)
-			if err != nil {
-				fmt.Println("Read file failed: ", err.Error())
+		conID := ""
+		if update {
+			if len(args) < 3 {
+				fmt.Println(`Error: contract id not given`)
 				return
 			}
-			var sign crypto.Signature
-			err = sign.Decode(sig)
-			if err != nil {
-				fmt.Println("Error: Illegal sig file", err)
-				return
-			}
-			if !mtx.VerifySigner(&sign) {
-				fmt.Printf("Error: Sign %v wrong\n", v)
-				return
-			}
-			signs = append(signs, &sign)
+			conID = args[2]
 		}
-		fsk, err := readFile(kpPath)
+		updateID := ""
+		if update && len(args) >= 4 {
+			updateID = args[3]
+		}
+
+		err = sdk.loadAccount()
 		if err != nil {
-			fmt.Println("Read file failed: ", err.Error())
+			fmt.Printf("load account failed %v\n", err)
 			return
 		}
-
-		acc, err := account.NewKeyPair(loadBytes(string(fsk)), getSignAlgo(signAlgo))
+		_, txHash, err := sdk.PublishContract(codePath, abiPath, conID, update, updateID)
 		if err != nil {
-			fmt.Println(err.Error())
+			fmt.Printf("create tx failed %v\n", err)
 			return
 		}
-
-		stx, err := tx.SignTx(&mtx, acc.ID, []*account.KeyPair{acc}, signs...)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		dest = changeSuffix(args[0], ".tx")
-
-		saveTo(dest, stx.Encode())
-
-		if !isLocal {
-			var txHash string
-			txHash, err = sendTx(stx)
-			if err != nil {
-				fmt.Println(err.Error())
-				return
+		if sdk.checkResult {
+			if err := sdk.checkTransaction(txHash); err != nil {
+				return err
 			}
-			fmt.Println("iost node:receive your tx!")
-			fmt.Println("the transaction hash is:", txHash)
-			if checkResult {
-				checkTransaction(txHash)
+			if !update {
+				fmt.Println("The contract id is Contract" + txHash)
 			}
 		}
+		return nil
 	},
 }
 
-
 func init() {
 	rootCmd.AddCommand(publishCmd)
-
-	home, err := homedir.Dir()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	publishCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
-	publishCmd.Flags().BoolVar(&isLocal, "local", false, "Set to not send tx to server")
-	publishCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// publishCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// publishCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	publishCmd.Flags().BoolVarP(&update, "update", "u", false, "update contract")
 }
-
-// SetServer set the server.
-func SetServer(s string) {
-	server = s
-}
-*/

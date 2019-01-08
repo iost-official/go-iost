@@ -55,7 +55,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 
 	api.EXPECT().GetTxByHash(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.TransactionResponse{
-		Status: rpcpb.TransactionResponse_PENDIND,
+		Status: rpcpb.TransactionResponse_PENDING,
 		Transaction: &rpcpb.Transaction{
 			Hash:       "xxxxx",
 			Time:       999,
@@ -71,8 +71,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 			Publisher:  "publisher",
 			ReferredTx: "ccc",
 			AmountLimit: []*rpcpb.AmountLimit{
-				{Token: "iost", Value: 12.2},
-				{Token: "10st", Value: 21.1},
+				{Token: "iost", Value: "12.2"},
+				{Token: "10st", Value: "21.1"},
 			},
 			TxReceipt: &rpcpb.TxReceipt{
 				TxHash:     "xxx",
@@ -103,7 +103,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 
 	api.EXPECT().GetBlockByHash(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.BlockResponse{
-		Status: rpcpb.BlockResponse_PENDIND,
+		Status: rpcpb.BlockResponse_PENDING,
 		Block: &rpcpb.Block{
 			Hash:                "hhh",
 			Version:             1,
@@ -136,8 +136,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 					Publisher:  "publisher",
 					ReferredTx: "ccc",
 					AmountLimit: []*rpcpb.AmountLimit{
-						{Token: "iost", Value: 12.2},
-						{Token: "10st", Value: 21.1},
+						{Token: "iost", Value: "12.2"},
+						{Token: "10st", Value: "21.1"},
 					},
 					TxReceipt: &rpcpb.TxReceipt{
 						TxHash:     "xxx",
@@ -157,7 +157,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 
 	api.EXPECT().GetBlockByNumber(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.BlockResponse{
-		Status: rpcpb.BlockResponse_PENDIND,
+		Status: rpcpb.BlockResponse_PENDING,
 		Block: &rpcpb.Block{
 			Hash:                "hhh",
 			Version:             1,
@@ -190,8 +190,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 					Publisher:  "publisher",
 					ReferredTx: "ccc",
 					AmountLimit: []*rpcpb.AmountLimit{
-						{Token: "iost", Value: 12.2},
-						{Token: "10st", Value: 21.1},
+						{Token: "iost", Value: "12.2"},
+						{Token: "10st", Value: "21.1"},
 					},
 					TxReceipt: &rpcpb.TxReceipt{
 						TxHash:     "xxx",
@@ -254,6 +254,16 @@ func newMockAPI() rpcpb.ApiServiceServer {
 			{Amount: 111.2, Time: 2343242},
 		},
 	}, nil)
+	api.EXPECT().GetToken721Balance(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetToken721BalanceResponse{
+		Balance:  2,
+		TokenIDs: []string{"2", "0"},
+	}, nil)
+	api.EXPECT().GetToken721Metadata(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetToken721MetadataResponse{
+		Metadata: `{"name": "pikaqiu", "hp": 100}`,
+	}, nil)
+	api.EXPECT().GetToken721Owner(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetToken721OwnerResponse{
+		Owner: "myaccount",
+	}, nil)
 
 	api.EXPECT().GetContract(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.Contract{
 		Id:       "Contract12312131",
@@ -265,7 +275,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 				Name: "echo",
 				Args: []string{"a1", "a2"},
 				AmountLimit: []*rpcpb.AmountLimit{
-					{Token: "iost", Value: 1212.2},
+					{Token: "iost", Value: "1212.2"},
 				},
 			},
 		},

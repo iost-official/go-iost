@@ -17,16 +17,17 @@ var tokenABIs *abiSet
 
 // const prefix
 const (
-	TokenInfoMapPrefix    = "TI"
-	TokenBalanceMapPrefix = "TB"
-	TokenFreezeMapPrefix  = "TF"
-	IssuerMapField        = "issuer"
-	SupplyMapField        = "supply"
-	TotalSupplyMapField   = "totalSupply"
-	CanTransferMapField   = "canTransfer"
-	DefaultRateMapField   = "defaultRate"
-	DecimalMapField       = "decimal"
-	FullNameMapField      = "fullName"
+	TokenInfoMapPrefix            = "TI"
+	TokenBalanceMapPrefix         = "TB"
+	TokenFreezeMapPrefix          = "TF"
+	IssuerMapField                = "issuer"
+	SupplyMapField                = "supply"
+	TotalSupplyMapField           = "totalSupply"
+	CanTransferMapField           = "canTransfer"
+	OnlyIssuerCanTransferMapField = "onlyIssuerCanTransfer"
+	DefaultRateMapField           = "defaultRate"
+	DecimalMapField               = "decimal"
+	FullNameMapField              = "fullName"
 )
 
 func init() {
@@ -225,6 +226,7 @@ var (
 			defaultRate := "1.0"
 			fullName := tokenSym
 			cost.AddAssign(host.CommonOpCost(3))
+			onlyIssuerCanTransfer := false
 			if tmp, ok := config[DecimalMapField]; ok {
 				if _, ok = tmp.(float64); !ok {
 					return nil, cost, errors.New("decimal in config should be number")
@@ -235,6 +237,12 @@ var (
 				canTransfer, ok = tmp.(bool)
 				if !ok {
 					return nil, cost, errors.New("canTransfer in config should be bool")
+				}
+			}
+			if tmp, ok := config[OnlyIssuerCanTransferMapField]; ok {
+				onlyIssuerCanTransfer, ok = tmp.(bool)
+				if !ok {
+					return nil, cost, errors.New("onlyIssuerCanTransfer in config should be bool")
 				}
 			}
 			if tmp, ok := config[DefaultRateMapField]; ok {
@@ -253,7 +261,7 @@ var (
 				}
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -263,7 +271,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check exists
@@ -291,11 +299,22 @@ var (
 			cost.AddAssign(cost0)
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, CanTransferMapField, canTransfer, issuer)
 			cost.AddAssign(cost0)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField, onlyIssuerCanTransfer, issuer)
+			cost.AddAssign(cost0)
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, DefaultRateMapField, defaultRate, issuer)
 			cost.AddAssign(cost0)
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, DecimalMapField, int64(decimal), issuer)
 			cost.AddAssign(cost0)
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, FullNameMapField, fullName, issuer)
+			cost.AddAssign(cost0)
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -325,7 +344,7 @@ var (
 			totalSupply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, TotalSupplyMapField)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -335,7 +354,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -353,7 +372,7 @@ var (
 				return nil, cost, errors.New("supply too much")
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set supply, set balance
@@ -423,8 +442,19 @@ var (
 			if !(canTransfer.(bool)) {
 				return nil, cost, host.ErrTokenNoTransfer
 			}
+			onlyIssuerCanTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField)
+			cost.AddAssign(cost0)
+			if onlyIssuerCanTransfer.(bool) {
+				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
+				cost.AddAssign(cost0)
+				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				cost.AddAssign(cost0)
+				if !ok {
+					return nil, cost, fmt.Errorf("transfer need issuer permission")
+				}
+			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -434,7 +464,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -447,7 +477,7 @@ var (
 				return nil, cost, host.ErrInvalidAmount
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set balance
@@ -470,7 +500,7 @@ var (
 				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			fbalance -= amount
@@ -482,6 +512,7 @@ var (
 			cost0 = setBalance(h, tokenSym, from, fbalance, from)
 			cost.AddAssign(cost0)
 
+			// generate receipt
 			message, err := json.Marshal(args)
 			cost.AddAssign(host.CommonOpCost(1))
 			if err != nil {
@@ -520,8 +551,19 @@ var (
 			if !(canTransfer.(bool)) {
 				return nil, cost, host.ErrTokenNoTransfer
 			}
+			onlyIssuerCanTransfer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField)
+			cost.AddAssign(cost0)
+			if onlyIssuerCanTransfer.(bool) {
+				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
+				cost.AddAssign(cost0)
+				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				cost.AddAssign(cost0)
+				if !ok {
+					return nil, cost, fmt.Errorf("transfer need issuer permission")
+				}
+			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check auth
@@ -531,7 +573,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -544,7 +586,7 @@ var (
 				return nil, cost, host.ErrInvalidAmount
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// sub balance of from
@@ -566,7 +608,7 @@ var (
 			cost0 = setBalance(h, tokenSym, from, fbalance, from)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// freeze token of to
@@ -576,6 +618,7 @@ var (
 				return nil, cost, err
 			}
 
+			// generate receipt
 			message, err := json.Marshal(args)
 			cost.AddAssign(host.CommonOpCost(1))
 			if err != nil {
@@ -611,7 +654,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// get amount by fixed point number
@@ -624,7 +667,7 @@ var (
 				return nil, cost, host.ErrInvalidAmount
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set balance
@@ -645,7 +688,7 @@ var (
 			cost0 = setBalance(h, tokenSym, from, fbalance, from)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set supply
@@ -659,6 +702,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
 		},
@@ -686,7 +738,7 @@ var (
 				return nil, cost, err
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			balanceStr, cost0 := genAmount(h, tokenSym, balance)
@@ -712,7 +764,7 @@ var (
 				return nil, cost, host.ErrTokenNotExists
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			supply, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, SupplyMapField)

@@ -1,8 +1,6 @@
 package native
 
 import (
-	"errors"
-
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
@@ -81,25 +79,29 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		a  *abi
 		ok bool
 	)
-
 	switch con.ID {
 	case "system.iost":
 		a, ok = systemABIs.Get(api)
 	case "domain.iost":
-		a, ok = DomainABIs.Get(api)
+		a, ok = domainABIs.Get(api)
 	case "gas.iost":
 		a, ok = gasABIs.Get(api)
 	case "token.iost":
 		a, ok = tokenABIs.Get(api)
 	case "token721.iost":
 		a, ok = token721ABIs.Get(api)
+	default:
+		ilog.Fatalf("invalid contract name: %v, please check `Monitor.prepareContract`", con.ID)
 	}
 	if !ok {
-		ilog.Fatal("error", con.ID, api, systemABIs)
-		return nil, host.CommonErrorCost(1), errors.New("unknown api name")
+		ilog.Fatalf("invalid api name: %v of %v, please check `Monitor.prepareContract`", api, con.ID)
 	}
 
-	return a.do(h, args...)
+	rtn, cost, err = a.do(h, args...)
+	if cost.ToGas() > h.Context().GValue("gas_limit").(int64) {
+		err = host.ErrOutOfGas
+	}
+	return
 }
 
 // CheckCost check if cost exceed gas_limit

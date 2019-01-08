@@ -1,5 +1,5 @@
 const producerPermission = "active";
-const voteStatInterval = 200;
+const voteStatInterval = 2000;
 
 class Base {
     constructor() {
@@ -15,7 +15,6 @@ class Base {
         }
         this._put("adminID", adminID);
     }
-
     can_update(data) {
         const admin = this._get("adminID");
         this._requireAuth(admin, producerPermission);

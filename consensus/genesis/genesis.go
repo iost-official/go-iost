@@ -42,42 +42,55 @@ func compile(id string, path string, name string) (*contract.Contract, error) {
 	return contract.Compile(id, cFilePath, cAbiPath)
 }
 
-func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error) {
+func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error) {
 	witnessInfo := gConf.WitnessInfo
-	// new account
-	keyPair, err := account.NewKeyPair(common.Base58Decode("2vj2Ab8Taz1TT2MSQHxmSffGnvsc9EVrmjx1W7SBQthCpuykhbRn2it8DgNkcm4T9tdBgsue3uBiAzxLpLJoDUbc"), crypto.Ed25519)
+	// prepare actions
+	var acts []*tx.Action
+	adminInfo := gConf.AdminInfo
+
+	// deploy token.iost
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.TokenABI().B64Encode())))
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token721.iost", native.Token721ABI().B64Encode())))
+	// deploy iost.gas
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "gas.iost", native.GasABI().B64Encode())))
+	// deploy issue.iost and create iost
+	code, err := compile("issue.iost", gConf.ContractPath, "issue.js")
 	if err != nil {
 		return nil, nil, err
 	}
-
-	// prepare actions
-	var acts []*tx.Action
-
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "issue.iost", code.B64Encode())))
+	tokenInfo := gConf.TokenInfo
+	tokenHolder := append(witnessInfo, adminInfo)
+	params := []interface{}{
+		adminInfo.ID,
+		tokenInfo,
+		tokenHolder,
+	}
+	b, _ := json.Marshal(params)
+	acts = append(acts, tx.NewAction("issue.iost", "InitGenesis", string(b)))
 	// deploy account.iost
-	code, err := compile("auth.iost", gConf.ContractPath, "account.js")
+	code, err = compile("auth.iost", gConf.ContractPath, "account.js")
 	if err != nil {
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "auth.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("auth.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
-	// deploy iost.gas
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "gas.iost", native.GasABI().B64Encode())))
+	// deploy domain.iost
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "domain.iost", native.DomainABI().B64Encode())))
 
 	// new account
-	adminInfo := gConf.AdminInfo
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
 	// new account
 	foundationInfo := gConf.FoundationInfo
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
-	// init account
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "inituser", keyPair.ID, keyPair.ID)))
 
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
 	}
-
-	// deploy token.iost
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.TokenABI().B64Encode())))
+	invalidPubKey := "11111111111111111111111111111111"
+	deadAccount := account.NewAccount("deadaddr")
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, deadAccount.ID, invalidPubKey, invalidPubKey)))
 
 	// deploy bonus.iost
 	code, err = compile("bonus.iost", gConf.ContractPath, "bonus.js")
@@ -86,22 +99,6 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "bonus.iost", code.B64Encode())))
 	acts = append(acts, tx.NewAction("bonus.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
-
-	// deploy issue.iost and create iost
-	code, err = compile("issue.iost", gConf.ContractPath, "issue.js")
-	if err != nil {
-		return nil, nil, err
-	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "issue.iost", code.B64Encode())))
-	genesisConfig := gConf.TokenInfo
-	tokenHolder := append(witnessInfo, adminInfo)
-	params := []interface{}{
-		adminInfo.ID,
-		genesisConfig,
-		tokenHolder,
-	}
-	b, _ := json.Marshal(params)
-	acts = append(acts, tx.NewAction("issue.iost", "InitGenesis", string(b)))
 
 	// deploy vote.iost
 	code, err = compile("vote.iost", gConf.ContractPath, "vote_common.js")
@@ -112,11 +109,12 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("vote.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy vote_producer.iost
-	code, err = compile("vote_producer.iost", gConf.ContractPath, "vote.js")
+	code, err = compile("vote_producer.iost", gConf.ContractPath, "vote_producer.js")
 	if err != nil {
 		return nil, nil, err
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "vote_producer.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("vote_producer.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy base.iost
 	code, err = compile("base.iost", gConf.ContractPath, "base.js")
@@ -129,7 +127,6 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, v.ID, v.Active)))
 	}
-	acts = append(acts, tx.NewAction("vote_producer.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// pledge gas for admin
 	gasPledgeAmount := 100
@@ -142,10 +139,10 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	}
 	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "ram.iost", code.B64Encode())))
 	acts = append(acts, tx.NewAction("ram.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
-	var initialTotal int64 = 128 * 1024 * 1024 * 1024        // 128GB at first
-	var increaseInterval int64 = 24 * 3600                   // increase every day
-	var increaseAmount int64 = 64 * 1024 * 1024 * 1024 / 365 // 64GB per year
-	var reserveRAM = initialTotal * 3 / 10                   // reserve for foundation
+	var initialTotal int64 = 128 * 1024 * 1024 * 1024                           // 128GB at first
+	var increaseInterval int64 = 10 * 60                                        // increase every 10 mins
+	var increaseAmount int64 = 10 * (64 * 1024 * 1024 * 1024) / (365 * 24 * 60) // 64GB per year
+	var reserveRAM = initialTotal * 3 / 10                                      // reserve for foundation
 	acts = append(acts, tx.NewAction("ram.iost", "issue", fmt.Sprintf(`[%v, %v, %v, %v]`, initialTotal, increaseInterval, increaseAmount, reserveRAM)))
 
 	adminInitialRAM := 100000
@@ -163,11 +160,12 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 	trx := tx.NewTx(acts, nil, 1000000000, 100, 0, 0)
 	trx.Time = 0
-	trx, err = tx.SignTx(trx, "inituser", []*account.KeyPair{keyPair})
+	trx, err = tx.SignTx(trx, deadAccount.ID, []*account.KeyPair{})
 	if err != nil {
 		return nil, nil, err
 	}
-	return trx, keyPair, nil
+	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
+	return trx, deadAccount, nil
 }
 
 // GenGenesis is create a genesis block

@@ -6,6 +6,8 @@ import (
 	"math"
 	"strconv"
 
+	"fmt"
+
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 )
@@ -82,7 +84,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check exists
@@ -105,26 +107,27 @@ var (
 			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenName, SupplyMapField, int64(0), issuer)
 			cost.AddAssign(cost0)
 
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
 
 	issueToken721ABI = &abi{
 		name: "issue",
-		args: []string{"string", "string", "json"},
+		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenName := args[0].(string)
 			to := args[1].(string)
-			metaDateJSON := args[2].(string)
-
-			metaDate := make(map[string]interface{})
-			err = json.Unmarshal([]byte(metaDateJSON), &metaDate)
-			cost.AddAssign(host.CommonOpCost(2))
-			if err != nil {
-				return nil, cost, err
-			}
+			metaDataJSON := args[2].(string)
 
 			// get token info
 			ok, cost0 := checkToken721Exists(h, tokenName)
@@ -139,7 +142,7 @@ var (
 			totalSupply, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, TotalSupplyMapField)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// check supply
@@ -155,7 +158,7 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			// set supply, set balance
@@ -180,10 +183,19 @@ var (
 			cost0 = setToken721Balance(h, tokenName, to, tbalance, issuer.(string))
 			cost.AddAssign(cost0)
 
-			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, issuer.(string))
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, issuer.(string))
 			cost.AddAssign(cost0)
 
-			return []interface{}{}, cost, err
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
+
+			return []interface{}{tokenID}, cost, err
 		},
 	}
 
@@ -216,17 +228,17 @@ var (
 				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
-				return nil, cost, host.ErrGasLimitExceeded
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			tmp, cost0 := h.MapGet(Token721InfoMapPrefix+tokenName, tokenID)
 			cost.AddAssign(cost0)
 			if tmp == nil {
-				return nil, cost, host.ErrInvalidData
+				return nil, cost, fmt.Errorf("error tokenID not exists. %v %v", tokenName, tokenID)
 			}
 			owner := tmp.(string)
 			if owner != from {
-				return nil, cost, host.ErrInvalidData
+				return nil, cost, fmt.Errorf("error token owner isn't from. owner: %v, from: %v", owner, from)
 			}
 
 			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenName, tokenID, to, from)
@@ -254,16 +266,24 @@ var (
 			cost0 = setToken721Balance(h, tokenName, to, tbalance, from)
 			cost.AddAssign(cost0)
 
-			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
+			metaDataJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
 			cost0, err = h.MapDel(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+from, tokenID)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDateJSON, from)
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, from)
 			cost.AddAssign(cost0)
 
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, err
 		},
 	}
@@ -375,9 +395,9 @@ var (
 				return nil, cost, host.ErrTokenExists
 			}
 
-			metaDateJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+owner, tokenID)
+			metaDataJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenName+Token721MetadataKeySeparator+owner, tokenID)
 			cost.AddAssign(cost0)
-			return []interface{}{metaDateJSON.(string)}, cost, nil
+			return []interface{}{metaDataJSON.(string)}, cost, nil
 		},
 	}
 )

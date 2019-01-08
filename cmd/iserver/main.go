@@ -77,11 +77,13 @@ func main() {
 		*configFile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
 	}
 
-	conf := common.NewConfig(*configFile)
+	conf := common.NewConfig(*configfile)
 
 	if *snapshotFile != "" {
 		conf.Snapshot.FilePath = *snapshotFile
 	}
+
+	global.SetGlobalConf(conf)
 
 	initLogger(conf.Log)
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
@@ -93,12 +95,12 @@ func main() {
 		ilog.Errorf("init metrics failed. err=%v", err)
 	}
 
-	iserver := iserver.New(conf)
-	iserver.Start()
+	server := iserver.New(conf)
+	server.Start()
 
 	waitExit()
 
-	iserver.Stop()
+	server.Stop()
 	ilog.Stop()
 }
 

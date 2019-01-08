@@ -24,9 +24,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var genABI bool
-var update bool
-
 //var setContractPath string
 //var resetContractPath bool
 
@@ -39,10 +36,11 @@ func generateABI(codePath string) (string, error) {
 	contractPath := gopath + "/src/github.com/iost-official/go-iost/iwallet/contract"
 	fmt.Println("node " + contractPath + "/contract.js " + codePath)
 	cmd := exec.Command("node", contractPath+"/contract.js", codePath)
-	err := cmd.Run()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("run ", "node", contractPath, "/contract.js ", codePath, " Failed, error: ", err.Error())
-		fmt.Println("Please make sure node.js has been installed")
+		fmt.Printf("compile failed, error: %v\n", err)
+		fmt.Println(string(output))
+		fmt.Printf("Please make sure node.js has been installed and `npm install` has been executed inside %v\n", contractPath)
 		return "", err
 	}
 
@@ -52,9 +50,9 @@ func generateABI(codePath string) (string, error) {
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
 	Use:   "compile",
-	Short: "Generate tx",
-	Long: `Generate a tx by a contract and an abi file
-	example:iwallet compile ./example.js ./example.js.abi
+	Short: "Generate contract abi",
+	Long: `Generate abi from contract javascript code
+	example:iwallet compile ./example.js
 	`,
 
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
@@ -63,60 +61,15 @@ var compileCmd = &cobra.Command{
 			return
 		}
 		codePath := args[0]
-		var abiPath string
-		if genABI {
-			abiPath, err := generateABI(codePath)
-			if err != nil {
-				return fmt.Errorf("failed to gen abi %v", err)
-			}
-			fmt.Printf("gen abi done. abi: %v\n", abiPath)
-			return nil
-		}
-
-		if len(args) < 2 {
-			fmt.Println(`Error: source code file or abi file not given`)
-			return
-		}
-
-		abiPath = args[1]
-
-		conID := ""
-		if update {
-			if len(args) < 3 {
-				fmt.Println(`Error: contract id not given`)
-				return
-			}
-			conID = args[2]
-		}
-		updateID := ""
-		if update && len(args) >= 4 {
-			updateID = args[3]
-		}
-
-		err = sdk.loadAccount()
+		abiPath, err := generateABI(codePath)
 		if err != nil {
-			fmt.Printf("load account failed %v\n", err)
-			return
+			return fmt.Errorf("failed to gen abi %v", err)
 		}
-		_, txHash, err := sdk.PublishContract(codePath, abiPath, conID, update, updateID)
-		if err != nil {
-			fmt.Printf("create tx failed %v\n", err)
-			return
-		}
-		if sdk.checkResult {
-			succ := sdk.checkTransaction(txHash)
-			if succ {
-				fmt.Println("The contract id is Contract" + txHash)
-			} else {
-				return fmt.Errorf("check transaction failed")
-			}
-		}
+		fmt.Printf("gen abi done. abi: %v\n", abiPath)
 		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(compileCmd)
-	compileCmd.Flags().BoolVarP(&genABI, "genABI", "g", false, "generate abi file")
-	compileCmd.Flags().BoolVarP(&update, "update", "u", false, "update contract")
 }

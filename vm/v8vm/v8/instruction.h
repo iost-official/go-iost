@@ -25,6 +25,14 @@ public:
     }
 
     size_t Incr(size_t num) {
+        if (sbxPtr->gasUsed > SIZE_MAX - num) {
+            Local<Value> err = Exception::Error(
+                String::NewFromUtf8(isolate, "IOSTContractInstruction_Incr gas overflow size_t")
+            );
+            isolate->ThrowException(err);
+            return 0;
+        }
+
         sbxPtr->gasUsed += num;
         count ++;
         return sbxPtr->gasUsed;
@@ -36,7 +44,7 @@ public:
         size_t usedMem = MemoryUsage(isolate, sbxPtr->allocator);
         if (usedMem > sbxPtr->memLimit){
             Local<Value> err = Exception::Error(
-                String::NewFromUtf8(isolate, strdup( ("IOSTContractInstruction_Incr Memory Using too much! used: " + std::to_string(usedMem) + " Limit: " +std::to_string(sbxPtr->memLimit)).c_str() ) )
+                String::NewFromUtf8(isolate, ("IOSTContractInstruction_Incr Memory Using too much! used: " + std::to_string(usedMem) + " Limit: " + std::to_string(sbxPtr->memLimit)).c_str())
             );
             isolate->ThrowException(err);
         }

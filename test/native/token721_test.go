@@ -5,7 +5,10 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
@@ -22,7 +25,7 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	vi.MPut("auth.iost-auth", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(1000000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
@@ -32,6 +35,8 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.Set("tx_hash", []byte("iamhash"))
 	ctx.Set("auth_list", make(map[string]int))
 	ctx.Set("time", int64(0))
+	ctx.Set("abi_name", "abi")
+	ctx.GSet("receipts", []*tx.Receipt{})
 
 	// pm := NewMonitor()
 	h := host.NewHost(ctx, vi, nil, nil)
@@ -49,15 +54,17 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 
 func TestToken721_Create(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := initVM(t, "token")
+	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
+	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	Convey("Test of Token create", t, func() {
 		Reset(func() {
-			e, host, code = initVM(t, "token")
+			e, host, code = initVM(t, "token721.iost")
 			code.ID = "token721.iost"
+			host.Context().Set("contract_name", "token721.iost")
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})
@@ -96,15 +103,16 @@ func TestToken721_Create(t *testing.T) {
 
 func TestToken721_Issue(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := initVM(t, "token")
+	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
+	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	Convey("Test of Token issue", t, func() {
 
 		Reset(func() {
-			e, host, code = initVM(t, "token")
+			e, host, code = initVM(t, "token721.iost")
 			code.ID = "token721.iost"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
@@ -155,14 +163,15 @@ func TestToken721_Issue(t *testing.T) {
 
 func TestToken721_Transfer(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := initVM(t, "token")
+	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
+	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	Convey("Test of Token transfer", t, func() {
 		Reset(func() {
-			e, host, code = initVM(t, "token")
+			e, host, code = initVM(t, "token721.iost")
 			code.ID = "token721.iost"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
@@ -175,10 +184,22 @@ func TestToken721_Transfer(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			for i := 0; i < 10; i++ {
-				e.LoadAndCall(host, code, "issue", "iost", "issuer0", "{}")
+				rs, _, err := e.LoadAndCall(host, code, "issue", "iost", "issuer0", `{"hp": 100}`)
+				So(err, ShouldBeNil)
+				So(rs[0].(string), ShouldEqual, fmt.Sprintf(`%v`, i))
 			}
 			_, _, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "3")
 			So(err, ShouldBeNil)
+
+			So(host.DB().Token721Balance("iost", "user0"), ShouldEqual, 1)
+			So(fmt.Sprintf("%v", host.DB().Token721IDList("iost", "user0")), ShouldEqual, fmt.Sprintf("%v", []string{"3"}))
+			rs, err := host.DB().Token721Owner("iost", "3")
+			So(err, ShouldBeNil)
+			So(rs, ShouldEqual, "user0")
+			rs, err = host.DB().Token721Metadata("iost", "3")
+			So(err, ShouldBeNil)
+			So(rs, ShouldEqual, "{\"hp\": 100}")
+
 			tokenID, _, err := e.LoadAndCall(host, code, "tokenOfOwnerByIndex", "iost", "user0", int64(0))
 			So(err, ShouldBeNil)
 			So(tokenID[0], ShouldEqual, "3")
@@ -212,10 +233,10 @@ func TestToken721_Transfer(t *testing.T) {
 			}
 
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "user0", "issuer0", "1")
-			So(err.Error(), ShouldEqual, "invalid data")
+			So(err.Error(), ShouldContainSubstring, "error token owner isn't from")
 
 			_, cost, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "10")
-			So(err.Error(), ShouldEqual, "invalid data")
+			So(err.Error(), ShouldContainSubstring, "error tokenID not exists")
 			So(cost.ToGas(), ShouldBeGreaterThan, 0)
 
 			rs, cost, err := e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
@@ -235,14 +256,14 @@ func TestToken721_Transfer(t *testing.T) {
 
 func TestToken721_Metadate(t *testing.T) {
 	issuer0 := "issuer0"
-	e, host, code := initVM(t, "token")
+	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
 	Convey("Test of Token transfer", t, func() {
 		Reset(func() {
-			e, host, code = initVM(t, "token")
+			e, host, code = initVM(t, "token721.iost")
 			code.ID = "token721.iost"
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)

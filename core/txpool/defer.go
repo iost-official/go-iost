@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
 	"github.com/uber-go/atomic"
@@ -26,9 +27,10 @@ func compareDeferTx(a, b interface{}) int {
 	return int(txa.Time - txb.Time)
 }
 
-// DeferServer manages defer transaction and sends them to txpool on time.
+// DeferServer manages defer transaction index and sends them to txpool on time.
 type DeferServer struct {
 	pool             *redblacktree.Tree
+	idxMap           map[string]*tx.Tx
 	rw               *sync.RWMutex
 	nextScheduleTime atomic.Int64
 
@@ -41,6 +43,7 @@ type DeferServer struct {
 func NewDeferServer(txpool *TxPImpl) (*DeferServer, error) {
 	deferServer := &DeferServer{
 		pool:   redblacktree.NewWith(compareDeferTx),
+		idxMap: make(map[string]*tx.Tx),
 		rw:     new(sync.RWMutex),
 		txpool: txpool,
 		quitCh: make(chan struct{}),
@@ -55,11 +58,14 @@ func NewDeferServer(txpool *TxPImpl) (*DeferServer, error) {
 
 func (d *DeferServer) buildIndex() error {
 	txs, err := d.txpool.global.BlockChain().AllDelaytx()
+	ilog.Info("defer index num: ", len(txs))
 	if err != nil {
 		return err
 	}
 	for _, t := range txs {
-		d.pool.Put(d.toIndex(t), true)
+		idx := d.toIndex(t)
+		d.pool.Put(idx, true)
+		d.idxMap[string(idx.ReferredTx)] = idx
 	}
 	return nil
 }
@@ -79,8 +85,22 @@ func (d *DeferServer) DelDeferTx(deferTx *tx.Tx) error {
 	}
 	d.rw.Lock()
 	d.pool.Remove(idx)
+	delete(d.idxMap, string(idx.ReferredTx))
 	d.rw.Unlock()
 	return nil
+}
+
+// DelDeferTxByHash deletes a tx in defer server by referredTx hash.
+func (d *DeferServer) DelDeferTxByHash(txHash []byte) {
+	hashString := string(txHash)
+
+	d.rw.Lock()
+	defer d.rw.Unlock()
+	idx := d.idxMap[hashString]
+	if idx != nil {
+		d.pool.Remove(idx)
+		delete(d.idxMap, hashString)
+	}
 }
 
 // StoreDeferTx stores a tx in defer server.
@@ -88,6 +108,7 @@ func (d *DeferServer) StoreDeferTx(delayTx *tx.Tx) {
 	idx := d.toIndex(delayTx)
 	d.rw.Lock()
 	d.pool.Put(idx, true)
+	d.idxMap[string(idx.ReferredTx)] = idx
 	d.rw.Unlock()
 	if idx.Time < d.nextScheduleTime.Load() {
 		d.nextScheduleTime.Store(idx.Time)
@@ -137,6 +158,7 @@ func (d *DeferServer) deferTicker() {
 		if scheduled < minTickerTime {
 			scheduled = minTickerTime
 		}
+		ilog.Info("next defer schedule: ", scheduled)
 		select {
 		case <-d.quitCh:
 			d.quitCh <- struct{}{}
@@ -147,19 +169,20 @@ func (d *DeferServer) deferTicker() {
 			ok := iter.Next()
 			d.rw.RUnlock()
 			for ok {
-				deferTx := iter.Key().(*tx.Tx)
-				if deferTx.Time > time.Now().UnixNano() {
-					d.nextScheduleTime.Store(deferTx.Time)
+				idx := iter.Key().(*tx.Tx)
+				if idx.Time > time.Now().UnixNano() {
+					d.nextScheduleTime.Store(idx.Time)
 					break
 				}
-				err := d.txpool.AddDefertx(deferTx.ReferredTx)
+				err := d.txpool.AddDefertx(idx.ReferredTx)
 				if err == ErrCacheFull {
-					d.nextScheduleTime.Store(deferTx.Time)
+					d.nextScheduleTime.Store(idx.Time)
 					break
 				}
 				if err == nil || err == ErrDupChainTx || err == ErrDupPendingTx {
 					d.rw.Lock()
-					d.pool.Remove(deferTx)
+					d.pool.Remove(idx)
+					delete(d.idxMap, string(idx.ReferredTx))
 					d.rw.Unlock()
 				}
 				d.rw.RLock()

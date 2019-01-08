@@ -1,10 +1,12 @@
 package iserver
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -78,7 +80,8 @@ func (d *DebugServer) Start() error {
 func (d *DebugServer) Stop() {
 	ilog.Infof("Stopping debug server...")
 
-	if err := d.srv.Shutdown(nil); err != nil {
+	ctx, _ := context.WithTimeout(context.Background(), time.Second) // nolint
+	if err := d.srv.Shutdown(ctx); err != nil {
 		ilog.Errorf("Stop debug server failed: %v", err)
 	} else {
 		ilog.Infof("Stopped debug server.")

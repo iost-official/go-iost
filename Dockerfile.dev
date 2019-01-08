@@ -3,8 +3,14 @@ FROM ubuntu:16.04
 ENV GOVERSION 1.11
 
 # Install Base Tools
-RUN apt update
-RUN apt install -y git make vim curl wget g++
+RUN apt update && \
+        apt install -y git make vim curl wget g++ && \
+        rm -rf /var/lib/apt/lists
+
+# Install nodejs
+RUN curl -sL https://deb.nodesource.com/setup_11.x | bash - && \
+        apt install -y nodejs && \
+        rm -rf /var/lib/apt/lists
 
 # Install Go
 RUN mkdir /goroot && \

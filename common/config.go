@@ -2,10 +2,17 @@ package common
 
 import (
 	"os"
+	"time"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
+)
+
+// Constant of limit
+var (
+	MaxBlockGasLimit = int64(500000000)
+	MaxTxTimeLimit   = 100 * time.Millisecond
 )
 
 // ACCConfig account of the system
@@ -28,8 +35,6 @@ type TokenInfo struct {
 	FoundationAccount string
 	IOSTTotalSupply   int64
 	IOSTDecimal       int64
-	RAMTotalSupply    int64
-	RAMGenesisAmount  int64
 }
 
 // GenesisConfig config of the genesis bloc
@@ -70,6 +75,7 @@ type P2PConfig struct {
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
+	Enable       bool
 	GatewayAddr  string
 	GRPCAddr     string
 	AllowOrigins []string
@@ -91,9 +97,10 @@ type ConsoleLogConfig struct {
 
 // LogConfig is the config of ilog.
 type LogConfig struct {
-	FileLog    *FileLogConfig
-	ConsoleLog *ConsoleLogConfig
-	AsyncWrite bool
+	FileLog           *FileLogConfig
+	ConsoleLog        *ConsoleLogConfig
+	AsyncWrite        bool
+	EnableContractLog bool
 }
 
 // MetricsConfig is the config of metrics.

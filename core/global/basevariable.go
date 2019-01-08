@@ -23,12 +23,6 @@ const (
 	ModeInit
 )
 
-// BuildTime build time
-var BuildTime string
-
-// GitHash git hash
-var GitHash string
-
 // String return string of mode
 func (m TMode) String() string {
 	switch m {
@@ -54,7 +48,6 @@ type BaseVariableImpl struct {
 }
 
 // New return a BaseVariable instance
-// nolint: gocyclo
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if conf.Snapshot.FilePath != "" {
 		s, err := os.Stat(conf.DB.LdbPath + "BlockChainDB")

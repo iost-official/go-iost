@@ -125,6 +125,19 @@ func (mr *MockApiServiceServerMockRecorder) GetContractStorage(arg0, arg1 interf
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractStorage", reflect.TypeOf((*MockApiServiceServer)(nil).GetContractStorage), arg0, arg1)
 }
 
+// GetContractStorageFields mocks base method
+func (m *MockApiServiceServer) GetContractStorageFields(arg0 context.Context, arg1 *pb.GetContractStorageFieldsRequest) (*pb.GetContractStorageFieldsResponse, error) {
+	ret := m.ctrl.Call(m, "GetContractStorageFields", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetContractStorageFieldsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetContractStorageFields indicates an expected call of GetContractStorageFields
+func (mr *MockApiServiceServerMockRecorder) GetContractStorageFields(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractStorageFields", reflect.TypeOf((*MockApiServiceServer)(nil).GetContractStorageFields), arg0, arg1)
+}
+
 // GetGasRatio mocks base method
 func (m *MockApiServiceServer) GetGasRatio(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.GasRatioResponse, error) {
 	ret := m.ctrl.Call(m, "GetGasRatio", arg0, arg1)
@@ -162,6 +175,45 @@ func (m *MockApiServiceServer) GetRAMInfo(arg0 context.Context, arg1 *pb.EmptyRe
 // GetRAMInfo indicates an expected call of GetRAMInfo
 func (mr *MockApiServiceServerMockRecorder) GetRAMInfo(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRAMInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetRAMInfo), arg0, arg1)
+}
+
+// GetToken721Balance mocks base method
+func (m *MockApiServiceServer) GetToken721Balance(arg0 context.Context, arg1 *pb.GetTokenBalanceRequest) (*pb.GetToken721BalanceResponse, error) {
+	ret := m.ctrl.Call(m, "GetToken721Balance", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetToken721BalanceResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetToken721Balance indicates an expected call of GetToken721Balance
+func (mr *MockApiServiceServerMockRecorder) GetToken721Balance(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToken721Balance", reflect.TypeOf((*MockApiServiceServer)(nil).GetToken721Balance), arg0, arg1)
+}
+
+// GetToken721Metadata mocks base method
+func (m *MockApiServiceServer) GetToken721Metadata(arg0 context.Context, arg1 *pb.GetToken721InfoRequest) (*pb.GetToken721MetadataResponse, error) {
+	ret := m.ctrl.Call(m, "GetToken721Metadata", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetToken721MetadataResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetToken721Metadata indicates an expected call of GetToken721Metadata
+func (mr *MockApiServiceServerMockRecorder) GetToken721Metadata(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToken721Metadata", reflect.TypeOf((*MockApiServiceServer)(nil).GetToken721Metadata), arg0, arg1)
+}
+
+// GetToken721Owner mocks base method
+func (m *MockApiServiceServer) GetToken721Owner(arg0 context.Context, arg1 *pb.GetToken721InfoRequest) (*pb.GetToken721OwnerResponse, error) {
+	ret := m.ctrl.Call(m, "GetToken721Owner", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetToken721OwnerResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetToken721Owner indicates an expected call of GetToken721Owner
+func (mr *MockApiServiceServerMockRecorder) GetToken721Owner(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToken721Owner", reflect.TypeOf((*MockApiServiceServer)(nil).GetToken721Owner), arg0, arg1)
 }
 
 // GetTokenBalance mocks base method

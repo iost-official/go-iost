@@ -69,6 +69,11 @@ func (s *SDK) SetServer(server string) {
 	s.server = server
 }
 
+// SetAmountLimit ...
+func (s *SDK) SetAmountLimit(amountLimit string) {
+	s.amountLimit = amountLimit
+}
+
 func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 	result := make([]*rpcpb.AmountLimit, 0)
 	if limitStr == "" {
@@ -81,19 +86,24 @@ func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 			return nil, fmt.Errorf("invalid amount limit %v", gram)
 		}
 		token := limit[0]
-		amountLimit, err := strconv.ParseFloat(limit[1], 64)
-		if err != nil {
-			return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
+		if limit[1] != "unlimited" {
+			amountLimit, err := strconv.ParseFloat(limit[1], 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
+			}
 		}
 		tokenLimit := &rpcpb.AmountLimit{}
 		tokenLimit.Token = token
-		tokenLimit.Value = amountLimit
+		tokenLimit.Value = limit[1]
 		result = append(result, tokenLimit)
 	}
 	return result, nil
 }
 
 func (s *SDK) createTx(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
+	if s.amountLimit == "" {
+		return nil, fmt.Errorf("cmdline flag --amount_limit must be set like `iost:300.00|ram:2000`. You can set to `*:unlimited` to disable any limit")
+	}
 	amountLimits, err := s.parseAmountLimit(s.amountLimit)
 	if err != nil {
 		return nil, err
@@ -139,6 +149,13 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	default:
 		return crypto.Ed25519
 	}
+}
+
+func (s *SDK) checkID(ID string) bool {
+	if strings.HasPrefix(ID, "IOST") {
+		return true
+	}
+	return false
 }
 
 // GetContractStorage ...
@@ -243,7 +260,7 @@ func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 func (s *SDK) sendTx(stx *rpcpb.TransactionRequest) (string, error) {
 	fmt.Println("sending tx")
 	if sdk.verbose {
-		fmt.Println(stx.String())
+		fmt.Println(stx)
 	}
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
@@ -258,7 +275,7 @@ func (s *SDK) sendTx(stx *rpcpb.TransactionRequest) (string, error) {
 	return resp.Hash, nil
 }
 
-func (s *SDK) checkTransaction(txHash string) bool {
+func (s *SDK) checkTransaction(txHash string) error {
 	// It may be better to to create a grpc client and reuse it. TODO later
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
@@ -274,16 +291,17 @@ func (s *SDK) checkTransaction(txHash string) bool {
 		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
 			fmt.Println("exec tx failed: ", txReceipt.Message)
 			fmt.Println("full error information: ", marshalTextString(txReceipt))
-		} else {
-			fmt.Println("exec tx done")
-			if s.verbose {
-				fmt.Println(marshalTextString(txReceipt))
-			}
-			return true
+			return fmt.Errorf(txReceipt.Message) //failed
 		}
-		break
+
+		// success
+		fmt.Println("exec tx done")
+		if s.verbose {
+			fmt.Println(marshalTextString(txReceipt))
+		}
+		return nil
 	}
-	return false
+	return fmt.Errorf("max retries exceeded")
 }
 
 func (s *SDK) getAccountDir() (string, error) {
@@ -303,7 +321,7 @@ func (s *SDK) loadAccount() error {
 		return fmt.Errorf("you must provide account name")
 	}
 	kpPath := fmt.Sprintf("%s/%s_%s", dir, s.accountName, s.getSignAlgoName())
-	fsk, err := readFile(kpPath)
+	fsk, err := loadKey(kpPath)
 	if err != nil {
 		return fmt.Errorf("read file failed: %v", err)
 	}
@@ -342,7 +360,7 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 		return err
 	}
 
-	secFile, err := os.Create(fileName)
+	secFile, err := os.OpenFile(fileName, os.O_RDWR|os.O_CREATE|os.O_TRUNC, 0400)
 	if err != nil {
 		return err
 	}
@@ -365,9 +383,6 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 		return err
 	}
 
-	fmt.Println("create account done")
-	fmt.Println("the iost account ID is:")
-	fmt.Println(name)
 	//fmt.Println("your account id is saved at:")
 	//fmt.Println(idFileName)
 	fmt.Println("your account private key is saved at:")
@@ -409,13 +424,20 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 }
 
 // CreateNewAccount ...
-func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
+func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*rpcpb.Action
-	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, newKp.ID, newKp.ID)))
+	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
 	}
-	acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	var registerInitialPledge int64 = 10
+	initialGasPledge -= registerInitialPledge
+	if initialGasPledge < 0 {
+		return fmt.Errorf("min gas pledge is 10")
+	}
+	if initialGasPledge > 0 {
+		acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	}
 	if initialCoins > 0 {
 		acts = append(acts, NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
 	}
@@ -435,8 +457,8 @@ func (s *SDK) CreateNewAccount(newID string, newKp *account.KeyPair, initialGasP
 	fmt.Println("send tx done")
 	fmt.Println("the create user transaction hash is:", txHash)
 	if s.checkResult {
-		if !s.checkTransaction(txHash) {
-			return fmt.Errorf("create new account %v transaction failed", newID)
+		if err := s.checkTransaction(txHash); err != nil {
+			return err
 		}
 	}
 	fmt.Printf("balance of %v\n", newID)
@@ -529,7 +551,7 @@ func actionToBytes(a *rpcpb.Action) []byte {
 func amountToBytes(a *rpcpb.AmountLimit) []byte {
 	sn := common.NewSimpleNotation()
 	sn.WriteString(a.Token, true)
-	sn.WriteString(strconv.FormatFloat(a.Value, 'f', -1, 64), true)
+	sn.WriteString(a.Value, true)
 	return sn.Bytes()
 }
 

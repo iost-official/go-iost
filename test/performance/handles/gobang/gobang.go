@@ -45,13 +45,13 @@ func (t *gobangHandle) Prepare() error {
 	abiPath := codePath + ".abi"
 	sdk.SetServer(call.GetClient(0).Addr())
 	sdk.SetAccount("admin", rootAcc)
-	sdk.SetTxInfo(10000000, 100, 90, 0)
+	sdk.SetTxInfo(100000, 1, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
 	testAcc, err = account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		return err
 	}
-	err = sdk.CreateNewAccount(testID, testAcc, 1000000, 10000, 100000)
+	err = sdk.CreateNewAccount(testID, testAcc.ID, testAcc.ID, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}
@@ -64,7 +64,7 @@ func (t *gobangHandle) Prepare() error {
 	if err != nil {
 		return err
 	}
-	time.Sleep(time.Duration(30) * time.Second)
+	time.Sleep(time.Duration(50) * time.Second)
 	client := call.GetClient(0)
 	resp, err := client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHash})
 	if err != nil {
