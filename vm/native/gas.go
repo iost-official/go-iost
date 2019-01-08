@@ -158,7 +158,7 @@ var (
 			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
-			auth, cost0 := h.RequireAuth(pledger, transferPermission)
+			auth, cost0 := h.RequireAuth(pledger, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -214,7 +214,7 @@ var (
 			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
-			auth, cost0 := h.RequireAuth(pledger, transferPermission)
+			auth, cost0 := h.RequireAuth(pledger, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -281,7 +281,7 @@ var (
 			if !h.IsValidAccount(to) {
 				return nil, cost, fmt.Errorf("invalid user name %v", to)
 			}
-			auth, cost0 := h.RequireAuth(from, transferPermission)
+			auth, cost0 := h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost

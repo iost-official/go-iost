@@ -18,12 +18,16 @@ type abiSet struct {
 	privateMap map[string]bool
 }
 
-var systemPermission = "system"
-var tokenPermission = "token"
-var transferPermission = "transfer"
-var activePermission = "active"
-var domainPermission = "domain"
+// permission used by native contract
+var (
+	SystemPermission   = "system"
+	TokenPermission    = "token"
+	TransferPermission = "transfer"
+	ActivePermission   = "active"
+	DomainPermission   = "domain"
 
+	AdminAccount = "admin"
+)
 
 func newAbiSet() *abiSet {
 	return &abiSet{

@@ -62,7 +62,7 @@ var (
 				return nil, cost, err
 			}
 			if strings.HasSuffix(url, ".iost") {
-				ok, c := h.RequireAuth("admin", domainPermission)
+				ok, c := h.RequireAuth(AdminAccount, DomainPermission)
 				cost.AddAssign(c)
 				if !ok {
 					return nil, cost, errors.New("only admin has permission to claim url .iost")
@@ -85,7 +85,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant, domainPermission)
+			ok, c := h.RequireAuth(applicant, DomainPermission)
 			cost.AddAssign(c)
 
 			if !ok {
@@ -129,7 +129,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant, domainPermission)
+			ok, c := h.RequireAuth(applicant, DomainPermission)
 			cost.AddAssign(c)
 
 			if !ok {

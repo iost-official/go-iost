@@ -264,7 +264,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 := h.RequireAuth(issuer, tokenPermission)
+			ok, cost0 := h.RequireAuth(issuer, TokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -347,7 +347,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string), tokenPermission)
+			ok, cost0 = h.RequireAuth(issuer.(string), TokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -446,7 +446,7 @@ var (
 			if onlyIssuerCanTransfer.(bool) {
 				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
 				cost.AddAssign(cost0)
-				ok, cost0 = h.RequireAuth(issuer.(string), transferPermission)
+				ok, cost0 = h.RequireAuth(issuer.(string), TransferPermission)
 				cost.AddAssign(cost0)
 				if !ok {
 					return nil, cost, fmt.Errorf("transfer need issuer permission")
@@ -457,7 +457,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, transferPermission)
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -555,7 +555,7 @@ var (
 			if onlyIssuerCanTransfer.(bool) {
 				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
 				cost.AddAssign(cost0)
-				ok, cost0 = h.RequireAuth(issuer.(string), transferPermission)
+				ok, cost0 = h.RequireAuth(issuer.(string), TransferPermission)
 				cost.AddAssign(cost0)
 				if !ok {
 					return nil, cost, fmt.Errorf("transfer need issuer permission")
@@ -566,7 +566,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, transferPermission)
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -647,7 +647,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, transferPermission)
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost

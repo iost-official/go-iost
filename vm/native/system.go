@@ -11,6 +11,7 @@ import (
 )
 
 var systemABIs *abiSet
+
 func init() {
 	systemABIs = newAbiSet()
 	systemABIs.Register(requireAuth)
@@ -20,6 +21,7 @@ func init() {
 	systemABIs.Register(initSetCode)
 	systemABIs.Register(cancelDelaytx)
 	systemABIs.Register(hostSettings)
+	systemABIs.Register(updateNativeCode)
 }
 
 // var .
@@ -151,7 +153,7 @@ var (
 			cost2, err := h.SetCode(con, "")
 			cost.AddAssign(cost2)
 
-			cost2, err = h.MapPut("contract_owner", actID, "admin")
+			cost2, err = h.MapPut("contract_owner", actID, AdminAccount)
 			cost.AddAssign(cost2)
 
 			return []interface{}{actID}, cost, err
@@ -170,7 +172,7 @@ var (
 			codeRaw := args[2].(string)
 
 			// check auth
-			ok, cost0 := h.RequireAuth("admin", systemPermission)
+			ok, cost0 := h.RequireAuth(AdminAccount, SystemPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, errors.New("set host settings need admin@system permission")
@@ -216,7 +218,7 @@ var (
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			// check auth
-			ok, cost0 := h.RequireAuth("admin", systemPermission)
+			ok, cost0 := h.RequireAuth(AdminAccount, SystemPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, errors.New("set host settings need admin@system permission")

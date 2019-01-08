@@ -14,7 +14,7 @@ var (
 		name: "can_update",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			ok, cost := h.RequireAuth("admin", systemPermission)
+			ok, cost := h.RequireAuth(AdminAccount, SystemPermission)
 			return []interface{}{ok}, cost, nil
 		},
 	}
