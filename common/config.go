@@ -75,6 +75,7 @@ type P2PConfig struct {
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
+	Enable       bool
 	GatewayAddr  string
 	GRPCAddr     string
 	AllowOrigins []string

@@ -131,7 +131,7 @@ class VoteCommonContract {
         }
 
         const resultNumber = info.resultNumber;
-        if (!resultNumber || !Number.isInteger(resultNumber) || resultNumber <= 0 || resultNumber > 100) {
+        if (!resultNumber || !Number.isInteger(resultNumber) || resultNumber <= 0 || resultNumber > 2000) {
             throw new Error("resultNumber not valid.");
         }
 
