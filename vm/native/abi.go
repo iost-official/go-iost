@@ -48,7 +48,7 @@ func DomainABI() *contract.Contract {
 // SystemContractABI return system contract abi
 func SystemContractABI(conID, version string) *contract.Contract {
 	aset, _ := getABISetByVersion(conID, version)
-	return ABI(conID, aset)
+	return ABI(conID, aset, version)
 }
 
 // GetABISetByVersion return the corrent abi set according to contract ID and version
@@ -84,13 +84,13 @@ func getABISetByVersion(conID string, version string) (aset *abiSet, err error) 
 }
 
 // ABI generate native abis
-func ABI(id string, abiSet *abiSet) *contract.Contract {
+func ABI(id string, abiSet *abiSet, version string) *contract.Contract {
 	c := &contract.Contract{
 		ID:   id,
 		Code: "codes",
 		Info: &contract.Info{
 			Lang:    "native",
-			Version: "1.0.0",
+			Version: version,
 			Abi:     make([]*contract.ABI, 0),
 		},
 	}

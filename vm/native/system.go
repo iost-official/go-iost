@@ -165,7 +165,7 @@ var (
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
-			id := args[0].(string)
+			conID := args[0].(string)
 			version := args[1].(string)
 			codeRaw := args[2].(string)
 
@@ -176,24 +176,25 @@ var (
 				return nil, cost, errors.New("set host settings need admin@system permission")
 			}
 
+			cost.AddAssign(host.CommonOpCost(1))
 			if version != "" {
-
-			}
-
-			if codeRaw[0] == '{' {
-				err = json.Unmarshal([]byte(codeRaw), con)
-				if err != nil {
-					return nil, host.CommonErrorCost(1), err
-				}
+				con = SystemContractABI(conID, version)
 			} else {
-				err = con.B64Decode(codeRaw)
-				if err != nil {
-					return nil, host.CommonErrorCost(1), err
+				if codeRaw[0] == '{' {
+					err = json.Unmarshal([]byte(codeRaw), con)
+					if err != nil {
+						return nil, host.CommonErrorCost(1), err
+					}
+				} else {
+					err = con.B64Decode(codeRaw)
+					if err != nil {
+						return nil, host.CommonErrorCost(1), err
+					}
 				}
 			}
 
-			cost1, err := h.UpdateCode(con, []byte(args[1].(string)))
-			cost.AddAssign(cost1)
+			cost0, err = h.UpdateCode(con, []byte(""))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, err
 		},
 	}
