@@ -1,41 +1,16 @@
 package native
 
 import (
+	"encoding/json"
 	"fmt"
+
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
 )
-
-// IOSTRatio ...
-const IOSTRatio int64 = 100000000
-
-// GasMinPledgeOfUser Each user must pledge a minimum amount of IOST
-var GasMinPledgeOfUser = &common.Fixed{Value: 10 * IOSTRatio, Decimal: 8}
-
-// GasMinPledgePerAction One must (un)pledge more than 1 IOST
-var GasMinPledgePerAction = &common.Fixed{Value: 1 * IOSTRatio, Decimal: 8}
-
-// Each IOST you pledge, you will get `GasImmediateReward` gas immediately.
-// Then gas will be generated at a rate of `GasIncreaseRate` gas per second.
-// Then it takes `GasFulfillSeconds` time to reach the limit.
-// Your gas production will stop when it reaches the limit.
-// When you use some gas later, the total amount will be less than the limit,
-// so gas production will resume again util the limit.
-
-// GasImmediateReward immediate reward per IOST
-var GasImmediateReward = &common.Fixed{Value: 100000 * 100, Decimal: 2}
-
-// GasLimit gas limit per IOST
-var GasLimit = &common.Fixed{Value: 300000 * 100, Decimal: 2}
-
-// GasFulfillSeconds it takes 2 days to fulfill the gas buffer.
-const GasFulfillSeconds int64 = 2 * 24 * 3600
-
-// GasIncreaseRate gas increase per IOST per second
-var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).Div(GasFulfillSeconds)
 
 // UnpledgeFreezeSeconds coins will be frozen for 3 days after being unpledged
 const UnpledgeFreezeSeconds int64 = 3 * 24 * 3600
@@ -51,7 +26,6 @@ func init() {
 	gasABIs.Register(constructor)
 	gasABIs.Register(pledgeGas)
 	gasABIs.Register(unpledgeGas)
-	//gasABIs.Register(rewardTGas)
 	gasABIs.Register(transferTGas)
 }
 
@@ -61,32 +35,32 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 	if pledgeAmountF.IsZero() {
 		return finalCost, fmt.Errorf("invalid pledge amount %v", pledgeAmountF.ToString())
 	}
-	pledged, cost := h.GasManager.GasPledge(name, pledger)
-	finalCost.AddAssign(cost)
 	if pledgeAmountF.IsNegative() {
+		// do some checking
 		unpledgeAmount := pledgeAmountF.Neg()
-		newPledge := pledged.Sub(unpledgeAmount)
-		if pledger == name {
-			if newPledge.LessThan(GasMinPledgeOfUser) {
-				return finalCost, fmt.Errorf("unpledge to much %v - %v < %v", pledged.ToString(), unpledgeAmount.ToString(), GasMinPledgeOfUser.ToString())
-			}
+		// check total pledge is valid
+		oldTotalPledge, cost := h.GasPledgeTotal(name)
+		finalCost.AddAssign(cost)
+		if oldTotalPledge.Sub(unpledgeAmount).LessThan(database.GasMinPledgeOfUser) {
+			return finalCost, fmt.Errorf("unpledge to much %v - %v less than %v", oldTotalPledge.ToString(), unpledgeAmount.ToString(), database.GasMinPledgeOfUser.ToString())
 		}
-		if newPledge.Value <= 0 {
-			pledgeAmountF = pledged.Neg()
-			cost = h.GasManager.DelGasPledge(name, pledger)
-			finalCost.AddAssign(cost)
-			//return fmt.Errorf("unpledge to much %v > %v", unpledgeAmount.ToString(), pledged.ToString()), finalCost
+		// check personal pledge
+		pledged, cost := h.GasManager.GasPledge(name, pledger)
+		finalCost.AddAssign(cost)
+		newPledge := pledged.Sub(unpledgeAmount)
+		if newPledge.IsNegative() {
+			return finalCost, fmt.Errorf("you cannot unpledge more than your pledge %v > %v", unpledgeAmount, pledged)
 		}
 	}
 
-	limitDelta := pledgeAmountF.Multiply(GasLimit)
-	rateDelta := pledgeAmountF.Multiply(GasIncreaseRate)
-	gasDelta := pledgeAmountF.Multiply(GasImmediateReward)
+	limitDelta := pledgeAmountF.Multiply(database.GasLimit)
+	totalDelta := pledgeAmountF
+	gasDelta := pledgeAmountF.Multiply(database.GasImmediateReward)
 	if pledgeAmountF.IsNegative() {
 		// unpledge should not change current generated gas
-		gasDelta.Value = 0
+		gasDelta = database.EmptyGas()
 	}
-	//fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, rateDelta, gasDelta)
+	//fmt.Printf("limitd rated gasd %v %v %v\n", limitDelta, totalDelta, gasDelta)
 
 	// pledge first time
 	t, cost := h.GasManager.GasUpdateTime(name)
@@ -99,7 +73,7 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 		finalCost.AddAssign(cost)
 		cost = h.GasManager.SetGasUpdateTime(name, h.Context().Value("time").(int64))
 		finalCost.AddAssign(cost)
-		cost = h.GasManager.SetGasRate(name, rateDelta)
+		cost = h.GasManager.SetGasPledgeTotal(name, totalDelta)
 		finalCost.AddAssign(cost)
 		cost = h.GasManager.SetGasLimit(name, limitDelta)
 		finalCost.AddAssign(cost)
@@ -109,18 +83,26 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 	}
 	cost, _ = h.GasManager.RefreshPGas(name)
 	finalCost.AddAssign(cost)
-	rateOld, cost := h.GasManager.GasRate(name)
+
+	// change pledge total
+	totalOld, cost := h.GasManager.GasPledgeTotal(name)
 	finalCost.AddAssign(cost)
-	rateNew := rateOld.Add(rateDelta)
-	if rateNew.Value <= 0 {
-		return finalCost, fmt.Errorf("change gasRate failed! current: %v, delta %v", rateOld.ToString(), rateDelta.ToString())
+	totalNew := totalOld.Add(totalDelta)
+	if totalNew.Value <= 0 {
+		return finalCost, fmt.Errorf("change gasPledgeTotal failed! current: %v, delta %v", totalOld.ToString(), totalDelta.ToString())
 	}
+	cost = h.GasManager.SetGasPledgeTotal(name, totalNew)
+	finalCost.AddAssign(cost)
+	// change limit
 	limitOld, cost := h.GasManager.GasLimit(name)
 	finalCost.AddAssign(cost)
 	limitNew := limitOld.Add(limitDelta)
 	if limitNew.Value <= 0 {
 		return finalCost, fmt.Errorf("change gasLimit failed! current: %v, delta %v", limitOld.ToString(), limitDelta.ToString())
 	}
+	cost = h.GasManager.SetGasLimit(name, limitNew)
+	finalCost.AddAssign(cost)
+	// change stock
 	gasOld, cost := h.GasManager.GasStock(name)
 	finalCost.AddAssign(cost)
 	gasNew := gasOld.Add(gasDelta)
@@ -128,19 +110,21 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 		// clear the gas above the new limit.
 		gasNew = limitNew
 	}
-
-	//fmt.Printf("Pledge %v", pledgeAmountF)
-	newPledge := pledged.Add(pledgeAmountF)
-	if !newPledge.IsZero() {
-		cost = h.GasManager.SetGasPledge(name, pledger, newPledge)
-		finalCost.AddAssign(cost)
-	}
-	cost = h.GasManager.SetGasRate(name, rateNew)
-	finalCost.AddAssign(cost)
-	cost = h.GasManager.SetGasLimit(name, limitNew)
-	finalCost.AddAssign(cost)
 	cost = h.GasManager.SetGasStock(name, gasNew)
 	finalCost.AddAssign(cost)
+	// change personal pledge
+	pledged, cost := h.GasManager.GasPledge(name, pledger)
+	finalCost.AddAssign(cost)
+	newPledge := pledged.Add(totalDelta)
+	if newPledge.IsZero() {
+		cost = h.GasManager.DelGasPledge(name, pledger)
+		finalCost.AddAssign(cost)
+	} else if newPledge.IsPositive() {
+		cost = h.GasManager.SetGasPledge(name, pledger, newPledge)
+		finalCost.AddAssign(cost)
+	} else {
+		ilog.Fatalf("should not reach here pledger %v name %v pledgeAmountF %v pledged %v", pledger, name, pledgeAmountF, pledged)
+	}
 	return finalCost, nil
 }
 
@@ -188,8 +172,8 @@ var (
 			if err != nil || pledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			if pledgeAmount.LessThan(GasMinPledgePerAction) {
-				return nil, cost, fmt.Errorf("min pledge num is %d", GasMinPledgePerAction)
+			if pledgeAmount.LessThan(database.GasMinPledgePerAction) {
+				return nil, cost, fmt.Errorf("min pledge num is %d", database.GasMinPledgePerAction)
 			}
 			cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
 			cost.AddAssign(cost0)
@@ -203,6 +187,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -235,8 +228,8 @@ var (
 			if err != nil || unpledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			if unpledgeAmount.LessThan(GasMinPledgePerAction) {
-				return nil, cost, fmt.Errorf("min unpledge num is %d", GasMinPledgePerAction)
+			if unpledgeAmount.LessThan(database.GasMinPledgePerAction) {
+				return nil, cost, fmt.Errorf("min unpledge num is %d", database.GasMinPledgePerAction)
 			}
 			pledged, cost0 := h.GasManager.GasPledge(gasUser, pledger)
 			cost.AddAssign(cost0)
@@ -246,20 +239,32 @@ var (
 			if pledged.LessThan(unpledgeAmount) {
 				unpledgeAmount = pledged.Neg()
 			}
+
 			cost0, err = pledge(h, pledger, gasUser, unpledgeAmount.Neg())
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
+
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
 			freezeTime := h.Context().Value("time").(int64) + UnpledgeFreezeSeconds*1e9
 			_, cost0, err = h.CallWithAuth("token.iost", "transferFreeze",
 				fmt.Sprintf(`["iost", "%v", "%v", "%v", %v, ""]`, contractName, pledger, unpledgeAmount.ToString(), freezeTime))
 			cost.AddAssign(cost0)
+
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -297,6 +302,15 @@ var (
 			cost0 = h.ChangeTGas(from, f.Neg(), true)
 			cost.AddAssign(cost0)
 			cost0 = h.ChangeTGas(to, f, false)
+			cost.AddAssign(cost0)
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},

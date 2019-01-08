@@ -33,7 +33,9 @@ func (r *RAMHandler) getInt64(k string) int64 {
 	val := r.BasicHandler.Get(finalKey)
 	resultRaw, ok := Unmarshal(val).(string)
 	if !ok {
-		ilog.Warnf("invalid key, key:%v value:%v", finalKey, val)
+		if val != NilPrefix {
+			ilog.Errorf("invalid key %v %v", finalKey, val)
+		}
 		return 0
 	}
 	result, err := strconv.ParseInt(resultRaw, 10, 64)

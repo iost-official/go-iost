@@ -1,10 +1,8 @@
 package merkletree
 
 import (
-	"bytes"
 	"encoding/hex"
 	"errors"
-
 	"github.com/iost-official/go-iost/common"
 
 	"math"
@@ -29,11 +27,7 @@ func (m *MerkleTree) Build(data [][]byte) {
 			if m.HashList[i+1] == nil {
 				m.HashList[p] = common.Sha3(append(m.HashList[i], m.HashList[i]...))
 			} else {
-				if bytes.Compare(m.HashList[i], m.HashList[i+1]) < 0 {
-					m.HashList[p] = common.Sha3(append(m.HashList[i], m.HashList[i+1]...))
-				} else {
-					m.HashList[p] = common.Sha3(append(m.HashList[i+1], m.HashList[i]...))
-				}
+				m.HashList[p] = common.Sha3(append(m.HashList[i], m.HashList[i+1]...))
 			}
 		}
 		start = (start - 1) / 2
@@ -76,19 +70,19 @@ func (m *MerkleTree) MerklePath(hash []byte) ([][]byte, error) {
 }
 
 // MerkleProve is prove of the merkle tree
-func (m *MerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (bool, error) {
-	if hash == nil {
-		return false, errors.New("hash input error")
-	}
-	if rootHash == nil {
-		return false, errors.New("rootHash input error")
-	}
-	for _, p := range mp {
-		if bytes.Compare(hash, p) < 0 {
-			hash = common.Sha3(append(hash, p...))
-		} else {
-			hash = common.Sha3(append(p, hash...))
-		}
-	}
-	return bytes.Equal(hash, rootHash), nil
-}
+//func (m *MerkleTree) MerkleProve(hash []byte, rootHash []byte, mp [][]byte) (bool, error) {
+//	if hash == nil {
+//		return false, errors.New("hash input error")
+//	}
+//	if rootHash == nil {
+//		return false, errors.New("rootHash input error")
+//	}
+//	for _, p := range mp {
+//		if bytes.Compare(hash, p) < 0 {
+//			hash = common.Sha3(append(hash, p...))
+//		} else {
+//			hash = common.Sha3(append(p, hash...))
+//		}
+//	}
+//	return bytes.Equal(hash, rootHash), nil
+//}

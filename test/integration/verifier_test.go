@@ -509,7 +509,7 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 		So(err, ShouldBeNil)
 		var pledgeAmount int64 = 100
 		var initialBalance int64 = 1000
-		var expectedGasAfterPlegde = pledgeAmount * int64(native.GasImmediateReward.ToFloat())
+		var expectedGasAfterPlegde = pledgeAmount * int64(database.GasImmediateReward.ToFloat())
 		pledgeAction := &tx.Action{
 			Contract:   "gas.iost",
 			ActionName: "pledge",

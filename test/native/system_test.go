@@ -20,7 +20,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 	vi := database.NewVisitor(100, db)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(100000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
@@ -80,10 +80,6 @@ func TestEngine_SetCode(t *testing.T) {
 	}
 
 	con.ID = "Contractiamhash"
-	//_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
-	//if err == nil || err.Error() != "destroy refused" {
-	//	t.Fatalf("LoadAndCall for should return destroy refused, but got %v\n", err)
-	//}
 
 	rawCode, err = ioutil.ReadFile(testDataPath + "test_new.js")
 	if err != nil {
@@ -105,14 +101,4 @@ func TestEngine_SetCode(t *testing.T) {
 	if len(rs) != 0 {
 		t.Fatalf("LoadAndCall except 0 rtn"+", got %d\n", len(rs))
 	}
-
-	//_, _, err = e.LoadAndCall(host, code, "DestroyCode", con.ID)
-	//if err != nil {
-	//	t.Fatalf("LoadAndCall destroy error: %v\n", err)
-	//}
-
-	//_, _, err = e.LoadAndCall(host, code, "UpdateCode", con.B64Encode(), "")
-	//if err == nil || err.Error() != "contract not exists" {
-	//	t.Fatalf("LoadAndCall for should return contract not exists, but got %v\n", err)
-	//}
 }

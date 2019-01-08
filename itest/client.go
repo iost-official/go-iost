@@ -112,7 +112,7 @@ func (c *Client) GetAccount(name string) (*Account, error) {
 }
 
 // SendTransaction will send transaction to blockchain
-func (c *Client) SendTransaction(transaction *Transaction) (string, error) {
+func (c *Client) SendTransaction(transaction *Transaction, check bool) (string, error) {
 	grpc, err := c.getGRPC()
 	if err != nil {
 		return "", err
@@ -125,13 +125,15 @@ func (c *Client) SendTransaction(transaction *Transaction) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	ilog.Debugf("transaction size: %vbytes", len(transaction.ToBytes(tx.Full)))
+	if check {
+		ilog.Debugf("transaction size: %vbytes", len(transaction.ToBytes(tx.Full)))
 
-	ilog.Debugf("Check transaction receipt for %v...", resp.GetHash())
-	if err := c.checkTransaction(resp.GetHash()); err != nil {
-		return "", err
+		ilog.Debugf("Check transaction receipt for %v...", resp.GetHash())
+		if err := c.checkTransaction(resp.GetHash()); err != nil {
+			return "", err
+		}
+		ilog.Debugf("Check transaction receipt for %v successful!", resp.GetHash())
 	}
-	ilog.Debugf("Check transaction receipt for %v successful!", resp.GetHash())
 
 	return resp.GetHash(), nil
 }
@@ -195,7 +197,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	}
 
 	ilog.Debugf("Sending create account transaction for %v...", name)
-	if _, err := c.SendTransaction(st); err != nil {
+	if _, err := c.SendTransaction(st, true); err != nil {
 		return nil, err
 	}
 	ilog.Debugf("Sended create account transaction for %v!", name)
@@ -225,7 +227,7 @@ func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount
 		return err
 	}
 
-	if _, err := c.SendTransaction(st); err != nil {
+	if _, err := c.SendTransaction(st, true); err != nil {
 		return err
 	}
 
@@ -252,7 +254,7 @@ func (c *Client) CallAction(sender *Account, contractName, actionName string, ar
 		return "", err
 	}
 
-	hash, err := c.SendTransaction(st)
+	hash, err := c.SendTransaction(st, true)
 	if err != nil {
 		return "", err
 	}
@@ -273,7 +275,7 @@ func (c *Client) Vote(sender *Account, voteID, recipient, amount string) error {
 }
 
 // Transfer will transfer token by sending transaction
-func (c *Client) Transfer(sender, recipient *Account, token, amount string) error {
+func (c *Client) Transfer(sender, recipient *Account, token, amount string, check bool) error {
 	action := tx.NewAction(
 		"token.iost",
 		"transfer",
@@ -288,7 +290,7 @@ func (c *Client) Transfer(sender, recipient *Account, token, amount string) erro
 		return err
 	}
 
-	if _, err := c.SendTransaction(st); err != nil {
+	if _, err := c.SendTransaction(st, check); err != nil {
 		return err
 	}
 
@@ -311,7 +313,7 @@ func (c *Client) SetContract(creator *Account, contract *Contract) (string, erro
 		return "", err
 	}
 
-	hash, err := c.SendTransaction(st)
+	hash, err := c.SendTransaction(st, true)
 	if err != nil {
 		return "", err
 	}

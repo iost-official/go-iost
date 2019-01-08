@@ -36,10 +36,11 @@ func generateABI(codePath string) (string, error) {
 	contractPath := gopath + "/src/github.com/iost-official/go-iost/iwallet/contract"
 	fmt.Println("node " + contractPath + "/contract.js " + codePath)
 	cmd := exec.Command("node", contractPath+"/contract.js", codePath)
-	err := cmd.Run()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
-		fmt.Println("run ", "node", contractPath, "/contract.js ", codePath, " Failed, error: ", err.Error())
-		fmt.Println("Please make sure node.js has been installed")
+		fmt.Printf("compile failed, error: %v\n", err)
+		fmt.Println(string(output))
+		fmt.Printf("Please make sure node.js has been installed and `npm install` has been executed inside %v\n", contractPath)
 		return "", err
 	}
 
@@ -49,9 +50,9 @@ func generateABI(codePath string) (string, error) {
 // compileCmd represents the compile command
 var compileCmd = &cobra.Command{
 	Use:   "compile",
-	Short: "Generate tx",
-	Long: `Generate a tx by a contract and an abi file
-	example:iwallet compile ./example.js ./example.js.abi
+	Short: "Generate contract abi",
+	Long: `Generate abi from contract javascript code
+	example:iwallet compile ./example.js
 	`,
 
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
