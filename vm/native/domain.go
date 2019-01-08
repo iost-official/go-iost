@@ -40,14 +40,6 @@ func checkURLValid(name string) error {
 }
 
 var (
-	onlyAdminCanUpdateABI = &abi{
-		name: "can_update",
-		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			ok, cost := h.RequireAuth("admin", "system.iost")
-			return []interface{}{ok}, cost, nil
-		},
-	}
 	initDomainABI = &abi{
 		name: "init",
 		args: []string{},
@@ -70,7 +62,7 @@ var (
 				return nil, cost, err
 			}
 			if strings.HasSuffix(url, ".iost") {
-				ok, c := h.RequireAuth("admin", "domain.iost")
+				ok, c := h.RequireAuth("admin", domainPermission)
 				cost.AddAssign(c)
 				if !ok {
 					return nil, cost, errors.New("only admin has permission to claim url .iost")
@@ -93,7 +85,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant, "domain.iost")
+			ok, c := h.RequireAuth(applicant, domainPermission)
 			cost.AddAssign(c)
 
 			if !ok {
@@ -137,7 +129,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant, "domain.iost")
+			ok, c := h.RequireAuth(applicant, domainPermission)
 			cost.AddAssign(c)
 
 			if !ok {

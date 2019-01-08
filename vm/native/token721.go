@@ -83,7 +83,7 @@ var (
 				return nil, cost, err
 			}
 			// check auth
-			ok, cost0 := h.RequireAuth(issuer, "token721.iost")
+			ok, cost0 := h.RequireAuth(issuer, tokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -157,7 +157,7 @@ var (
 
 			tokenID := strconv.FormatInt(supply.(int64), 10)
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string), "token.iost")
+			ok, cost0 = h.RequireAuth(issuer.(string), tokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -227,7 +227,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, "transfer")
+			ok, cost0 = h.RequireAuth(from, transferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost

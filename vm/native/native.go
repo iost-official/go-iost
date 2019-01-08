@@ -18,6 +18,13 @@ type abiSet struct {
 	privateMap map[string]bool
 }
 
+var systemPermission = "system"
+var tokenPermission = "token"
+var transferPermission = "transfer"
+var activePermission = "active"
+var domainPermission = "domain"
+
+
 func newAbiSet() *abiSet {
 	return &abiSet{
 		abi:        make(map[string]*abi),

@@ -6,6 +6,18 @@ import (
 	"fmt"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/host"
+)
+
+var (
+	onlyAdminCanUpdateABI = &abi{
+		name: "can_update",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			ok, cost := h.RequireAuth("admin", systemPermission)
+			return []interface{}{ok}, cost, nil
+		},
+	}
 )
 
 // SystemABI generate system.iost abi and contract

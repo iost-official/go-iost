@@ -11,7 +11,6 @@ import (
 )
 
 var systemABIs *abiSet
-
 func init() {
 	systemABIs = newAbiSet()
 	systemABIs.Register(requireAuth)
@@ -105,6 +104,12 @@ var (
 			con := &contract.Contract{}
 			codeRaw := args[0].(string)
 
+			cost.AddAssign(host.CommonOpCost(1))
+			stackHeight := h.Context().Value("stack_height").(int)
+			if stackHeight != 1 {
+				return nil, cost, errors.New("can't call UpdateCode from other contract")
+			}
+
 			if codeRaw[0] == '{' {
 				err = json.Unmarshal([]byte(codeRaw), con)
 				if err != nil {
@@ -153,6 +158,46 @@ var (
 		},
 	}
 
+	// updateNativeCode can only be invoked in native vm, avoid updating contract during running
+	updateNativeCode = &abi{
+		name: "UpdateNativeCode",
+		args: []string{"string", "string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			cost = contract.Cost0()
+			con := &contract.Contract{}
+			id := args[0].(string)
+			version := args[1].(string)
+			codeRaw := args[2].(string)
+
+			// check auth
+			ok, cost0 := h.RequireAuth("admin", systemPermission)
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, errors.New("set host settings need admin@system permission")
+			}
+
+			if version != "" {
+
+			}
+
+			if codeRaw[0] == '{' {
+				err = json.Unmarshal([]byte(codeRaw), con)
+				if err != nil {
+					return nil, host.CommonErrorCost(1), err
+				}
+			} else {
+				err = con.B64Decode(codeRaw)
+				if err != nil {
+					return nil, host.CommonErrorCost(1), err
+				}
+			}
+
+			cost1, err := h.UpdateCode(con, []byte(args[1].(string)))
+			cost.AddAssign(cost1)
+			return []interface{}{}, cost, err
+		},
+	}
+
 	// cancelDelaytx cancels a delay transaction.
 	cancelDelaytx = &abi{
 		name: "CancelDelaytx",
@@ -170,10 +215,10 @@ var (
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			// check auth
-			ok, cost0 := h.RequireAuth("admin", "active")
+			ok, cost0 := h.RequireAuth("admin", systemPermission)
 			cost.AddAssign(cost0)
 			if !ok {
-				return nil, cost, errors.New("set host settings need admin@active permission")
+				return nil, cost, errors.New("set host settings need admin@system permission")
 			}
 
 			cost0, _ = h.MapPut("settings", "host", args[0])
