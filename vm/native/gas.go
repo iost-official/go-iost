@@ -23,7 +23,6 @@ const GasContractName = "gas.iost"
 func init() {
 	gasABIs = newAbiSet()
 	gasABIs.Register(initFunc, true)
-	gasABIs.Register(canUpdateGasABI)
 	gasABIs.Register(constructor)
 	gasABIs.Register(pledgeGas)
 	gasABIs.Register(unpledgeGas)
@@ -142,14 +141,6 @@ var (
 		args: []string{},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			return []interface{}{}, host.CommonErrorCost(1), nil
-		},
-	}
-	canUpdateGasABI = &abi{
-		name: "can_update",
-		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			ok, cost := h.RequireAuth("admin", "system.iost")
-			return []interface{}{ok}, cost, nil
 		},
 	}
 	pledgeGas = &abi{

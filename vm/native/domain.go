@@ -20,10 +20,8 @@ func init() {
 	domainABIs.Register(initDomainABI, true)
 	domainABIs.Register(linkDomainABI)
 	domainABIs.Register(transferDomainABI)
-	domainABIs.Register(canUpdateDomainABI)
 	domain0ABIs = newAbiSet()
 	domain0ABIs.Register(initDomainABI, true)
-	domain0ABIs.Register(canUpdateDomainABI)
 }
 
 func checkURLValid(name string) error {
@@ -42,7 +40,7 @@ func checkURLValid(name string) error {
 }
 
 var (
-	canUpdateDomainABI = &abi{
+	onlyAdminCanUpdateABI = &abi{
 		name: "can_update",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {

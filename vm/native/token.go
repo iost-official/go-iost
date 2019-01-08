@@ -33,7 +33,6 @@ const (
 func init() {
 	tokenABIs = newAbiSet()
 	tokenABIs.Register(initTokenABI, true)
-	tokenABIs.Register(canUpdateTokenABI)
 	tokenABIs.Register(createTokenABI)
 	tokenABIs.Register(issueTokenABI)
 	tokenABIs.Register(transferTokenABI)
@@ -197,15 +196,6 @@ var (
 			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
-	canUpdateTokenABI = &abi{
-		name: "can_update",
-		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			ok, cost := h.RequireAuth("admin", "system.iost")
-			return []interface{}{ok}, cost, nil
-		},
-	}
-
 	createTokenABI = &abi{
 		name: "create",
 		args: []string{"string", "string", "number", "json"},

@@ -64,6 +64,10 @@ func GetABISetByVersion(conID string, version string) (aset *abiSet, err error) 
 		ilog.Fatalf("invalid contract version: %v %v, please check `Monitor.prepareContract`", conID, version)
 		return nil, fmt.Errorf("invalid contract version: %v %v", conID, version)
 	}
+
+	if _, ok = aset.Get("can_update"); !ok {
+		aset.Register(onlyAdminCanUpdateABI)
+	}
 	return aset, nil
 }
 
