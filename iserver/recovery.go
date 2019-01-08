@@ -11,7 +11,6 @@ import (
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
-	"github.com/iost-official/go-iost/vm/database"
 )
 
 func checkGenesis(bv global.BaseVariable) error {
@@ -35,6 +34,7 @@ func checkGenesis(bv global.BaseVariable) error {
 		if err != nil {
 			return fmt.Errorf("push block in blockChain failed, stop the program. err: %v", err)
 		}
+
 		err = stateDB.Flush(string(blk.HeadHash()))
 		if err != nil {
 			return fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
@@ -53,17 +53,20 @@ func recoverDB(bv global.BaseVariable) error {
 	conf := bv.Config()
 
 	if conf.Snapshot.FilePath != "" {
-		vi := database.NewVisitor(0, stateDB)
-		bhJson := vi.Get("currentBlockHead")
-		bh := &block.BlockHead{}
-		err := json.Unmarshal([]byte(bhJson), bh)
+		bhJson, err := stateDB.Get("snapshot", "blockHead")
 		if err != nil {
 			return fmt.Errorf("get current block head from state db failed. err: %v", err)
+		}
+		bh := &block.BlockHead{}
+		err = json.Unmarshal([]byte(bhJson), bh)
+		if err != nil {
+			return fmt.Errorf("decode block head failed. err: %v", err)
 		}
 		blockChain.SetLength(bh.Number + 1)
 	} else {
 		startNumebr := int64(0)
 		hash := stateDB.CurrentTag()
+		ilog.Infoln("current Tag:", common.Base58Encode([]byte(hash)))
 		var parent *block.Block
 		if hash != "" {
 			blk, err := blockChain.GetBlockByHash([]byte(hash))
@@ -88,6 +91,15 @@ func recoverDB(bv global.BaseVariable) error {
 				return fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
 			}
 			parent = blk
+			bhJson, err := json.Marshal(blk.Head)
+			if err != nil {
+				return fmt.Errorf("json fail: %v", err)
+			}
+			ilog.Infoln(string(bhJson))
+			err = stateDB.Put("snapshot", "blockHead", string(bhJson))
+			if err != nil {
+				return fmt.Errorf("state db put fail: %v", err)
+			}
 			stateDB.Tag(string(blk.HeadHash()))
 			err = stateDB.Flush(string(blk.HeadHash()))
 			if err != nil {

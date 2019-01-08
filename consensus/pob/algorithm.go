@@ -1,6 +1,7 @@
 package pob
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -27,6 +28,18 @@ var (
 	errHeadHash    = errors.New("wrong head hash")
 	generateTxsNum = 0
 )
+
+func saveBlockHead(db db.MVCCDB, bh *block.BlockHead) error {
+	bhJson, err := json.Marshal(bh)
+	if err != nil {
+		return fmt.Errorf("json fail: %v", err)
+	}
+	err = db.Put("snapshot", "blockHead", string(bhJson))
+	if err != nil {
+		return fmt.Errorf("state db put fail: %v", err)
+	}
+	return nil
+}
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
 	ilog.Debug("generate Block start")
@@ -71,6 +84,10 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		return nil, err
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
+	err = saveBlockHead(db, blk.Head)
+	if err != nil {
+		return nil, err
+	}
 	db.Tag(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)

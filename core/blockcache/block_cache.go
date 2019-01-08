@@ -17,7 +17,6 @@ import (
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
-	"github.com/iost-official/go-iost/vm/database"
 	"github.com/xlab/treeprint"
 )
 
@@ -192,16 +191,16 @@ type BlockCache interface {
 
 // BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct { //nolint:golint
-	linkRW       sync.RWMutex
-	linkedRoot   *BlockCacheNode
-	singleRoot   *BlockCacheNode
-	headRW       sync.RWMutex
-	head         *BlockCacheNode
-	hash2node    *sync.Map // map[string]*BlockCacheNode
-	leaf         map[*BlockCacheNode]int64
-	baseVariable global.BaseVariable
-	stateDB      db.MVCCDB
-	wal          *wal.WAL
+	linkRW     sync.RWMutex
+	linkedRoot *BlockCacheNode
+	singleRoot *BlockCacheNode
+	headRW     sync.RWMutex
+	head       *BlockCacheNode
+	hash2node  *sync.Map // map[string]*BlockCacheNode
+	leaf       map[*BlockCacheNode]int64
+	blockChain block.Chain
+	stateDB    db.MVCCDB
+	wal        *wal.WAL
 }
 
 // CleanDir used in test to clean dir
@@ -240,26 +239,32 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		return nil, err
 	}
 	bc := BlockCacheImpl{
-		linkedRoot:   NewBCN(nil, nil),
-		singleRoot:   NewBCN(nil, nil),
-		hash2node:    new(sync.Map),
-		leaf:         make(map[*BlockCacheNode]int64),
-		baseVariable: baseVariable,
-		stateDB:      baseVariable.StateDB().Fork(),
-		wal:          w,
+		linkedRoot: NewBCN(nil, nil),
+		singleRoot: NewBCN(nil, nil),
+		hash2node:  new(sync.Map),
+		leaf:       make(map[*BlockCacheNode]int64),
+		blockChain: baseVariable.BlockChain(),
+		stateDB:    baseVariable.StateDB().Fork(),
+		wal:        w,
 	}
 	bc.linkedRoot.Head.Number = -1
 
-	vi := database.NewVisitor(0, bc.stateDB)
-	bhJson := vi.Get("currentBlockHead")
-	bh := &block.BlockHead{}
-	err = json.Unmarshal([]byte(bhJson), bh)
+	bhJson, err := bc.stateDB.Get("snapshot", "blockHead")
+	ilog.Infoln(bhJson)
 	if err != nil {
 		return nil, fmt.Errorf("get current block head from state db failed. err: %v", err)
 	}
+	bh := &block.BlockHead{}
+	err = json.Unmarshal([]byte(bhJson), bh)
+	if err != nil {
+		return nil, fmt.Errorf("block head decode failed. err: %v", err)
+	}
+
+	fmt.Print(bh)
+
 	lib := &block.Block{Head: bh}
 	lib.CalculateHeadHash()
-	fmt.Println(common.Base58Encode(lib.HeadHash()))
+	ilog.Infoln(common.Base58Encode(lib.HeadHash()))
 
 	ilog.Info("Got LIB: ", lib.Head.Number)
 	bc.linkedRoot = NewBCN(nil, lib)
@@ -390,7 +395,6 @@ func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
-
 	ok := bc.stateDB.Checkout(string(h.HeadHash()))
 	if ok {
 		if err := h.UpdatePending(bc.stateDB); err != nil {
@@ -402,7 +406,7 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 			return err
 		}
 	} else {
-		return errors.New("failed to state db")
+		return errors.New("failed to checkout state db")
 	}
 	return nil
 }
@@ -528,13 +532,14 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	}
 	//confirm retain to db
 	if retain.Block != nil {
-		err := bc.baseVariable.BlockChain().Push(retain.Block)
+		err := bc.blockChain.Push(retain.Block)
 		if err != nil {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
+
 		ilog.Debug("confirm: ", retain.Head.Number)
-		err = bc.baseVariable.StateDB().Flush(string(retain.HeadHash()))
+		err = bc.stateDB.Flush(string(retain.HeadHash()))
 
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
@@ -545,9 +550,9 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		retain.LibWitnessHandle()
 		bc.SetLinkedRoot(retain)
 
-		metricsTxTotal.Set(float64(bc.baseVariable.BlockChain().TxTotal()), nil)
+		metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
 
-		if blockchainDBSize, err := bc.baseVariable.BlockChain().Size(); err != nil {
+		if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
 			ilog.Warnf("Get BlockChainDB size failed: %v", err)
 		} else {
 			metricsDBSize.Set(
@@ -558,7 +563,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			)
 		}
 
-		if stateDBSize, err := bc.baseVariable.StateDB().Size(); err != nil {
+		if stateDBSize, err := bc.stateDB.Size(); err != nil {
 			ilog.Warnf("Get StateDB size failed: %v", err)
 		} else {
 			metricsDBSize.Set(

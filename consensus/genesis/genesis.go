@@ -204,6 +204,15 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		return nil, err
 	}
+	bhJson, err := json.Marshal(blk.Head)
+	if err != nil {
+		return nil, fmt.Errorf("json fail: %v", err)
+	}
+	ilog.Infoln(string(bhJson))
+	err = db.Put("snapshot", "blockHead", string(bhJson))
+	if err != nil {
+		return nil, fmt.Errorf("state db put fail: %v", err)
+	}
 	db.Tag(string(blk.HeadHash()))
 	return &blk, nil
 }
@@ -235,6 +244,7 @@ func FakeBv(bv global.BaseVariable) error {
 	if err != nil {
 		return err
 	}
+
 	err = bv.StateDB().Flush(string(blk.HeadHash()))
 	if err != nil {
 		return err
