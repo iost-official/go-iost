@@ -1,10 +1,10 @@
 package native
 
 import (
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm/host"
 	"fmt"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/host"
 )
 
 type abi struct {
@@ -81,7 +81,7 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 		ok bool
 	)
 	cost = host.CommonErrorCost(1)
-	aset, err := GetABISetByVersion(con.ID, con.Info.Version)
+	aset, err := getABISetByVersion(con.ID, con.Info.Version)
 	if err != nil {
 		return nil, cost, err
 	}

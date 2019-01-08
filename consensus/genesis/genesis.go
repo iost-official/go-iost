@@ -49,10 +49,13 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	adminInfo := gConf.AdminInfo
 
 	// deploy token.iost
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.SystemContractABI("token.iost", "1.0.0"))))
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "token721.iost", native.SystemContractABI("token721.iost", "1.0.0"))))
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+		fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.SystemContractABI("token.iost", "1.0.0").B64Encode())))
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+		fmt.Sprintf(`["%v", "%v"]`, "token721.iost", native.SystemContractABI("token721.iost", "1.0.0").B64Encode())))
 	// deploy iost.gas
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "gas.iost", native.SystemContractABI("gas.iost", "1.0.0"))))
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+		fmt.Sprintf(`["%v", "%v"]`, "gas.iost", native.SystemContractABI("gas.iost", "1.0.0").B64Encode())))
 	// deploy issue.iost and create iost
 	code, err := compile("issue.iost", gConf.ContractPath, "issue.js")
 	if err != nil {
@@ -77,7 +80,8 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	acts = append(acts, tx.NewAction("auth.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy domain.iost
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "domain.iost", native.SystemContractABI("domain.iost", "0.0.0"))))
+	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+		fmt.Sprintf(`["%v", "%v"]`, "domain.iost", native.SystemContractABI("domain.iost", "0.0.0").B64Encode())))
 
 	// new account
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))

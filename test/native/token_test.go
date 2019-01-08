@@ -40,6 +40,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 
 	code := &contract.Contract{
 		ID: "system.iost",
+		Info: &contract.Info{Version:"1.0.0"},
 	}
 
 	e := &native.Impl{}

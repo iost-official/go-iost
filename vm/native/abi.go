@@ -3,9 +3,9 @@ package native
 import (
 	"sort"
 
+	"fmt"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
-	"fmt"
 )
 
 // SystemABI generate system.iost abi and contract
@@ -35,12 +35,12 @@ func DomainABI() *contract.Contract {
 
 // SystemContractABI return system contract abi
 func SystemContractABI(conID, version string) *contract.Contract {
-	aset, _ := GetABISetByVersion(conID, version)
+	aset, _ := getABISetByVersion(conID, version)
 	return ABI(conID, aset)
 }
 
 // GetABISetByVersion return the corrent abi set according to contract ID and version
-func GetABISetByVersion(conID string, version string) (aset *abiSet, err error) {
+func getABISetByVersion(conID string, version string) (aset *abiSet, err error) {
 	abiMap := make(map[string]map[string]*abiSet)
 	abiMap["system.iost"] = make(map[string]*abiSet)
 	abiMap["system.iost"]["1.0.0"] = systemABIs
