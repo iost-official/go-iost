@@ -1,6 +1,7 @@
 package run
 
 import (
+	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
@@ -27,15 +28,49 @@ var BenchmarkFlags = []cli.Flag{
 		Value: 100,
 		Usage: "The expected ratio of transactions per second",
 	},
+	cli.StringFlag{
+		Name:  "type",
+		Value: "t",
+		Usage: "The type of transaction, should be one of ['t'/'transfer', 'c'/'contract']",
+	},
+	cli.IntFlag{
+		Name:  "memo, m",
+		Value: 0,
+		Usage: "The size of a random memo message that would be contained in the transaction",
+	},
 }
+
+// The type of transaction.
+const (
+	None int = iota
+	TransferTx
+	ContractTransferTx
+)
 
 // BenchmarkAction is the action of benchmark.
 var BenchmarkAction = func(c *cli.Context) error {
-	keyFile := c.GlobalString("keys")
-	configFile := c.GlobalString("config")
-	it, err := itest.Load(keyFile, configFile)
+	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
 	if err != nil {
 		return err
+	}
+
+	txType := None
+	cid := ""
+	switch c.String("type") {
+	case "t", "transfer":
+		txType = TransferTx
+	case "c", "contract":
+		txType = ContractTransferTx
+		contract, err := itest.LoadContract(c.GlobalString("code"), c.GlobalString("abi"))
+		if err != nil {
+			return err
+		}
+		cid, err = it.SetContract(contract)
+		if err != nil {
+			return err
+		}
+	default:
+		return fmt.Errorf("Wrong transaction type: %v", txType)
 	}
 
 	accountFile := c.GlobalString("account")
@@ -50,6 +85,7 @@ var BenchmarkAction = func(c *cli.Context) error {
 	}
 
 	tps := c.Int("tps")
+	memoSize := c.Int("memo")
 
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
@@ -61,7 +97,12 @@ var BenchmarkAction = func(c *cli.Context) error {
 	slotTotal := 0
 	slotStartTime := startTime
 	for {
-		num, err := it.TransferN(tps, accounts, false)
+		num := 0
+		if txType == TransferTx {
+			num, err = it.TransferN(tps, accounts, memoSize, false)
+		} else {
+			num, err = it.ContractTransferN(cid, tps, accounts, memoSize, false)
+		}
 		if err != nil {
 			ilog.Infoln(err)
 		}
