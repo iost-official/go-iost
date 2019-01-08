@@ -42,14 +42,8 @@ func compile(id string, path string, name string) (*contract.Contract, error) {
 	return contract.Compile(id, cFilePath, cAbiPath)
 }
 
-func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error) {
+func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error) {
 	witnessInfo := gConf.WitnessInfo
-	// new account
-	keyPair, err := account.NewKeyPair(common.Base58Decode("2vj2Ab8Taz1TT2MSQHxmSffGnvsc9EVrmjx1W7SBQthCpuykhbRn2it8DgNkcm4T9tdBgsue3uBiAzxLpLJoDUbc"), crypto.Ed25519)
-	if err != nil {
-		return nil, nil, err
-	}
-
 	// prepare actions
 	var acts []*tx.Action
 	adminInfo := gConf.AdminInfo
@@ -90,14 +84,13 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	// new account
 	foundationInfo := gConf.FoundationInfo
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
-	// init account
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "inituser", keyPair.ID, keyPair.ID)))
 
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
 	}
 	invalidPubKey := "11111111111111111111111111111111"
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, "deadaddr", invalidPubKey, invalidPubKey)))
+	deadAccount := account.NewAccount("deadaddr")
+	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, deadAccount.ID, invalidPubKey, invalidPubKey)))
 
 	// deploy bonus.iost
 	code, err = compile("bonus.iost", gConf.ContractPath, "bonus.js")
@@ -116,7 +109,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 	acts = append(acts, tx.NewAction("vote.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy vote_producer.iost
-	code, err = compile("vote_producer.iost", gConf.ContractPath, "vote.js")
+	code, err = compile("vote_producer.iost", gConf.ContractPath, "vote_producer.js")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -167,12 +160,12 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.KeyPair, error)
 
 	trx := tx.NewTx(acts, nil, 1000000000, 100, 0, 0)
 	trx.Time = 0
-	trx, err = tx.SignTx(trx, "inituser", []*account.KeyPair{keyPair})
+	trx, err = tx.SignTx(trx, deadAccount.ID, []*account.KeyPair{})
 	if err != nil {
 		return nil, nil, err
 	}
 	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
-	return trx, keyPair, nil
+	return trx, deadAccount, nil
 }
 
 // GenGenesis is create a genesis block

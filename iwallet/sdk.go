@@ -260,7 +260,7 @@ func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 func (s *SDK) sendTx(stx *rpcpb.TransactionRequest) (string, error) {
 	fmt.Println("sending tx")
 	if sdk.verbose {
-		fmt.Println(stx.String())
+		fmt.Println(stx)
 	}
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {

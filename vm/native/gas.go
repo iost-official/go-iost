@@ -1,7 +1,9 @@
 package native
 
 import (
+	"encoding/json"
 	"fmt"
+
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 
@@ -185,6 +187,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -245,6 +256,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -282,6 +302,15 @@ var (
 			cost0 = h.ChangeTGas(from, f.Neg(), true)
 			cost.AddAssign(cost0)
 			cost0 = h.ChangeTGas(to, f, false)
+			cost.AddAssign(cost0)
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},

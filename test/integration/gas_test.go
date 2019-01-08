@@ -44,7 +44,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 		panic(err)
 	}
 	context := host.NewContext(nil)
-	context.Set("gas_price", int64(1))
+	context.Set("gas_ratio", int64(100))
 	context.GSet("gas_limit", int64(100000))
 
 	h := host.NewHost(context, visitor, monitor, nil)
@@ -100,7 +100,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	}
 
 	h.Context().Set("contract_name", native.GasContractName)
-	h.Context().Set("amount_limit", []*contract.Amount{&contract.Amount{Token:"*", Val:"unlimited"}})
+	h.Context().Set("amount_limit", []*contract.Amount{&contract.Amount{Token: "*", Val: "unlimited"}})
 
 	return e, h, code, acc0.ID, tmpDB
 }
@@ -321,7 +321,7 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			expected := initCoinFN.Sub(pledgeAmount).Add(unpledgeAmount)
 			So(rs[0], ShouldEqual, expected.ToString())
 		})
-		Convey("Test unpledge amount", func(){
+		Convey("Test unpledge amount", func() {
 			authList := make(map[string]int)
 			h.Context().Set("auth_contract_list", authList)
 			authList[acc1.KeyPair.ID] = 2
@@ -348,7 +348,7 @@ func TestGas_Increase(t *testing.T) {
 		oldGas := s.Visitor.PGasAtTime(acc0.ID, s.Head.Time)
 		var usage int64 = 0
 		for i := 0; i < 10; i += 1 {
-			s.Head.Time += 3*1e8
+			s.Head.Time += 3 * 1e8
 			r, err = s.Call("token.iost", "transfer", array2json([]interface{}{"iost", acc0.ID, acc1.ID, "1", ""}), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			usage += r.GasUsage
@@ -386,7 +386,7 @@ func TestGas_TGas(t *testing.T) {
 			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, otherKp.ID, otherKp.ID}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TokenBalanceFixed("iost", acc.ID).Value, ShouldEqual, oldIOST - 7 *database.IOSTRatio)
+			So(s.Visitor.TokenBalanceFixed("iost", acc.ID).Value, ShouldEqual, oldIOST-7*database.IOSTRatio)
 			SkipSo(s.Visitor.TGas(acc.ID).ToString(), ShouldEqual, "30000")
 			r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc.ID, otherID, "199"}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
@@ -407,12 +407,12 @@ func TestGas_TGas(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TGas(otherID).ToFloat(), ShouldAlmostEqual, testValue)
-			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas - float64(testValue))
+			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas-float64(testValue))
 			r, err = s.Call("gas.iost", "transfer", array2json([]interface{}{otherID, acc.ID, testValueStr}), otherID, otherKp)
 			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldContainSubstring, "transferable gas not enough 0 < " + testValueStr)
+			So(r.Status.Message, ShouldContainSubstring, "transferable gas not enough 0 < "+testValueStr)
 			So(s.Visitor.TGas(otherID).ToFloat(), ShouldAlmostEqual, testValue)
-			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas - float64(testValue) + float64(r.GasUsage)/100*0.1)
+			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, oldTGas-float64(testValue)+float64(r.GasUsage)/100*0.1)
 		})
 		Convey("when pgas is used up, tgas will be used", func() {
 			var gas int64 = 123
