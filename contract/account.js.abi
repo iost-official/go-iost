@@ -7,11 +7,11 @@
         "args": ["string"]
     },
     {
-        "name": "InitAdmin",
+        "name": "initAdmin",
         "args": ["string"]
     },
     {
-      "name": "SignUp",
+      "name": "signUp",
       "args": ["string", "string", "string"],
       "amountLimit": [{
           "token": "iost",
@@ -19,43 +19,43 @@
       }]
     },
     {
-      "name": "AddPermission",
+      "name": "addPermission",
       "args": ["string", "string", "number"]
     },
     {
-      "name": "DropPermission",
+      "name": "dropPermission",
       "args": ["string", "string"]
     },
     {
-      "name": "AssignPermission",
+      "name": "assignPermission",
       "args": ["string", "string", "string","number"]
     },
     {
-      "name": "RevokePermission",
+      "name": "revokePermission",
       "args": ["string", "string", "string"]
     },
     {
-      "name": "AddGroup",
+      "name": "addGroup",
       "args": ["string", "string"]
     },
     {
-      "name": "DropGroup",
+      "name": "dropGroup",
       "args": ["string", "string"]
     },
     {
-      "name": "AssignGroup",
+      "name": "assignGroup",
       "args": ["string", "string", "string", "number"]
     },
     {
-      "name": "RevokeGroup",
+      "name": "revokeGroup",
       "args": ["string", "string", "string"]
     },
     {
-      "name": "AssignPermissionToGroup",
+      "name": "assignPermissionToGroup",
       "args": ["string", "string", "string"]
     },
     {
-      "name": "RevokePermissionInGroup",
+      "name": "revokePermissionInGroup",
       "args": ["string", "string", "string"]
     }
   ]

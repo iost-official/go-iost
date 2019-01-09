@@ -46,7 +46,7 @@ class VoteContract {
         }
     }
 
-    InitProducer(proID) {
+    initProducer(proID) {
     	const bn = this._getBlockNumber();
     	if(bn !== 0) {
     		throw new Error("init out of genesis block")
@@ -122,7 +122,7 @@ class VoteContract {
     }
 
 	// register account as a producer, need to pledge token
-    RegisterProducer(account, loc, url, netId) {
+    registerProducer(account, loc, url, netId) {
 		this._requireAuth(account);
 		if (storage.mapHas("producerTable", account)) {
 			throw new Error("producer exists");
@@ -142,7 +142,7 @@ class VoteContract {
     }
 
 	// update the information of a producer
-    UpdateProducer(account, loc, url, netId) {
+    updateProducer(account, loc, url, netId) {
 		this._requireAuth(account);
 		if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists");
@@ -155,7 +155,7 @@ class VoteContract {
     }
 
 	// producer log in as online state
-    LogInProducer(account) {
+    logInProducer(account) {
 		this._requireAuth(account);
         if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists, " + account);
@@ -166,7 +166,7 @@ class VoteContract {
     }
 
 	// producer log out as offline state
-    LogOutProducer(account) {
+    logOutProducer(account) {
 		this._requireAuth(account);
         if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists");
@@ -181,7 +181,7 @@ class VoteContract {
     }
 
 	// remove account from producer list
-	UnregisterProducer(account) {
+	unregisterProducer(account) {
 		this._requireAuth(account);
         if (!storage.mapHas("producerTable", account)) {
 			throw new Error("producer not exists");
@@ -202,7 +202,7 @@ class VoteContract {
 	}
 
 	// vote, need to pledge token
-	Vote(producer, voter, amount) {
+	vote(producer, voter, amount) {
 		this._requireAuth(voter);
 		amount = Math.floor(amount);
 
@@ -240,7 +240,7 @@ class VoteContract {
 	}
 
 	// unvote
-	Unvote(producer, voter, amount) {
+	unvote(producer, voter, amount) {
         amount = Math.floor(amount);
 		this._requireAuth(voter);
 
@@ -287,7 +287,7 @@ class VoteContract {
 	}
 
 	// calculate the vote result, modify pendingProducerList
-	Stat() {
+	stat() {
 		// controll auth
 		const bn = this._getBlockNumber();
 		const pendingBlockNumber = this._get("pendingBlockNumber");

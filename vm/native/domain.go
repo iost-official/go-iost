@@ -49,7 +49,7 @@ var (
 	}
 
 	linkDomainABI = &abi{
-		name: "Link",
+		name: "link",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
@@ -101,7 +101,7 @@ var (
 		},
 	}
 	transferDomainABI = &abi{
-		name: "Transfer",
+		name: "transfer",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()

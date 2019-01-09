@@ -167,7 +167,7 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	k := key.ReadablePubkey()
 	action1 := tx.NewAction(
 		"auth.iost",
-		"SignUp",
+		"signUp",
 		fmt.Sprintf(`["%v", "%v", "%v"]`, name, k, k),
 	)
 
@@ -275,9 +275,9 @@ func (c *Client) VoteProducer(sender *Account, recipient, amount string) error {
 	return err
 }
 
-// Vote ...
-func (c *Client) Vote(sender *Account, voteID, recipient, amount string) error {
-	_, err := c.CallAction(sender, "vote.iost", "Vote", voteID, sender.ID, recipient, amount)
+// vote ...
+func (c *Client) vote(sender *Account, voteID, recipient, amount string) error {
+	_, err := c.CallAction(sender, "vote.iost", "vote", voteID, sender.ID, recipient, amount)
 	return err
 }
 
@@ -314,7 +314,7 @@ func (c *Client) Transfer(sender, recipient *Account, token, amount string, memo
 func (c *Client) SetContract(creator *Account, contract *Contract) (string, error) {
 	action := tx.NewAction(
 		"system.iost",
-		"SetCode",
+		"setCode",
 		fmt.Sprintf(`["%v"]`, contract),
 	)
 

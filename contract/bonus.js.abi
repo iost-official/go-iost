@@ -7,19 +7,19 @@
             "args": ["string"]
         },
         {
-            "name": "InitAdmin",
+            "name": "initAdmin",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "IssueContribute",
+            "name": "issueContribute",
             "args": [
                 "json"
             ]
         },
         {
-            "name": "ExchangeIOST",
+            "name": "exchangeIOST",
             "args": [
                 "string",
                 "string"

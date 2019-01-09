@@ -96,7 +96,7 @@ func createAccount(name string) (err error) {
 		return fmt.Errorf("invalid account name")
 	}
 
-	if sdk.checkID(ownerKey) && sdk.checkID(activeKey) {
+	if sdk.checkPubKey(ownerKey) && sdk.checkPubKey(activeKey) {
 		okey, akey = ownerKey, activeKey
 	} else {
 		aLgo := sdk.getSignAlgo()

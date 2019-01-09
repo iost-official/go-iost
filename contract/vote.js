@@ -20,7 +20,7 @@ class VoteContract {
     }
 
     _initVote() {
-        const voteId = this._call("vote.iost", "NewVote", [
+        const voteId = this._call("vote.iost", "newVote", [
             "vote_producer.iost",
             "vote for producer",
             {
@@ -34,7 +34,7 @@ class VoteContract {
         this._put("voteId", JSON.stringify(voteId));
     }
 
-    InitProducer(proID, proPubkey) {
+    initProducer(proID, proPubkey) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
@@ -61,7 +61,7 @@ class VoteContract {
         this._call("token.iost", "transfer", ["iost", proID, "vote_producer.iost", producerRegisterFee, ""]);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "AddOption", [
+        this._call("vote.iost", "addOption", [
             voteId,
             proID,
             false
@@ -78,7 +78,7 @@ class VoteContract {
         this._mapPut("producerKeyToId", proPubkey, proID, proID);
     }
 
-    InitAdmin(adminID) {
+    initAdmin(adminID) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
@@ -140,7 +140,7 @@ class VoteContract {
     }
 
     // register account as a producer, need to pledge token
-    RegisterProducer(account, pubkey, loc, url, netId) {
+    registerProducer(account, pubkey, loc, url, netId) {
         this._requireAuth(account, producerPermission);
         if (storage.mapHas("producerTable", account)) {
             throw new Error("producer exists");
@@ -152,7 +152,7 @@ class VoteContract {
         this._call("token.iost", "transfer", ["iost", account, "vote_producer.iost", producerRegisterFee, ""]);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "AddOption", [
+        this._call("vote.iost", "addOption", [
             voteId,
             account,
             false
@@ -170,7 +170,7 @@ class VoteContract {
     }
 
     // update the information of a producer
-    UpdateProducer(account, pubkey, loc, url, netId) {
+    updateProducer(account, pubkey, loc, url, netId) {
         this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
@@ -196,13 +196,13 @@ class VoteContract {
         this._mapPut("producerTable", account, pro, account);
     }
 
-    GetProducer(account) {
+    getProducer(account) {
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
         const voteId = this._getVoteId();
-        pro["voteInfo"] = this._call("vote.iost", "GetOption", [
+        pro["voteInfo"] = this._call("vote.iost", "getOption", [
             voteId,
             account
         ]);
@@ -210,7 +210,7 @@ class VoteContract {
     }
 
     // producer log in as online state
-    LogInProducer(account) {
+    logInProducer(account) {
         this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists, " + account);
@@ -221,7 +221,7 @@ class VoteContract {
     }
 
     // producer log out as offline state
-    LogOutProducer(account) {
+    logOutProducer(account) {
         this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
@@ -237,7 +237,7 @@ class VoteContract {
     }
 
     // remove account from producer list
-    UnregisterProducer(account) {
+    unregisterProducer(account) {
         this._requireAuth(account, producerPermission);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
@@ -247,7 +247,7 @@ class VoteContract {
             throw new Error("producer in pending list or in current list, can't unregist");
         }
         const voteId = this._getVoteId();
-        this._call("vote.iost", "RemoveOption", [
+        this._call("vote.iost", "removeOption", [
             voteId,
             account,
             true,
@@ -262,7 +262,7 @@ class VoteContract {
     }
 
     // vote, need to pledge token
-    Vote(voter, producer, amount) {
+    vote(voter, producer, amount) {
         this._requireAuth(voter, votePermission);
 
         if (!storage.mapHas("producerTable", producer)) {
@@ -270,7 +270,7 @@ class VoteContract {
         }
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "Vote", [
+        this._call("vote.iost", "vote", [
             voteId,
             voter,
             producer,
@@ -279,10 +279,10 @@ class VoteContract {
     }
 
     // unvote
-    Unvote(voter, producer, amount) {
+    unvote(voter, producer, amount) {
         this._requireAuth(voter, votePermission);
         const voteId = this._getVoteId();
-        this._call("vote.iost", "Unvote", [
+        this._call("vote.iost", "unvote", [
             voteId,
             voter,
             producer,
@@ -290,9 +290,9 @@ class VoteContract {
         ]);
     }
 
-    GetVote(voter) {
+    getVote(voter) {
         const voteId = this._getVoteId();
-        return this._call("vote.iost", "GetVote", [
+        return this._call("vote.iost", "getVote", [
             voteId,
             voter
         ]);
@@ -311,7 +311,7 @@ class VoteContract {
     }
 
     // calculate the vote result, modify pendingProducerList
-    Stat() {
+    stat() {
         this._requireAuth("base.iost", statPermission);
         const bn = block.number;
         const pendingBlockNumber = this._get("pendingBlockNumber");
@@ -320,7 +320,7 @@ class VoteContract {
         }
 
         const voteId = this._getVoteId();
-        const voteRes = this._call("vote.iost", "GetResult", [voteId]);
+        const voteRes = this._call("vote.iost", "getResult", [voteId]);
         const preList = [];    // list of producers whose vote > threshold
         let scores = this._getScores();
 
