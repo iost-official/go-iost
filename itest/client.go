@@ -314,7 +314,7 @@ func (c *Client) Transfer(sender, recipient *Account, token, amount string, memo
 func (c *Client) SetContract(creator *Account, contract *Contract) (string, error) {
 	action := tx.NewAction(
 		"system.iost",
-		"SetCode",
+		"setCode",
 		fmt.Sprintf(`["%v"]`, contract),
 	)
 

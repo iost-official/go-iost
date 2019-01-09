@@ -70,7 +70,7 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("compiler parse error: %v\n", err)
 	}
 
-	rs, _, err := e.LoadAndCall(host, code, "SetCode", con.B64Encode())
+	rs, _, err := e.LoadAndCall(host, code, "setCode", con.B64Encode())
 
 	if err != nil {
 		t.Fatalf("LoadAndCall setcode error: %v\n", err)
@@ -94,7 +94,7 @@ func TestEngine_SetCode(t *testing.T) {
 		t.Fatalf("compiler parse error: %v\n", err)
 	}
 
-	rs, _, err = e.LoadAndCall(host, code, "UpdateCode", con.B64Encode(), "")
+	rs, _, err = e.LoadAndCall(host, code, "updateCode", con.B64Encode(), "")
 	if err != nil {
 		t.Fatalf("LoadAndCall update error: %v\n", err)
 	}

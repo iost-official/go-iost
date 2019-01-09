@@ -151,11 +151,11 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
-func (s *SDK) checkID(ID string) bool {
-	if strings.HasPrefix(ID, "IOST") {
-		return true
+func (s *SDK) checkPubKey(k string) bool {
+	if k == "" {
+		return false
 	}
-	return false
+	return true
 }
 
 // GetContractStorage ...
@@ -481,9 +481,9 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 		Code: code,
 		Info: info,
 	}
-	methodName := "SetCode"
+	methodName := "setCode"
 	if update {
-		methodName = "UpdateCode"
+		methodName = "updateCode"
 	}
 	marshalMethod := "json"
 	var contractStr string

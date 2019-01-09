@@ -26,7 +26,7 @@ func init() {
 // var .
 var (
 	requireAuth = &abi{
-		name: "RequireAuth",
+		name: "requireAuth",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			var b bool
@@ -38,7 +38,7 @@ var (
 		},
 	}
 	receipt = &abi{
-		name: "Receipt",
+		name: "receipt",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
@@ -47,7 +47,7 @@ var (
 	}
 	// setcode can only be invoked in native vm, avoid updating contract during running
 	setCode = &abi{
-		name: "SetCode",
+		name: "setCode",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
@@ -98,7 +98,7 @@ var (
 	}
 	// updateCode can only be invoked in native vm, avoid updating contract during running
 	updateCode = &abi{
-		name: "UpdateCode",
+		name: "updateCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
