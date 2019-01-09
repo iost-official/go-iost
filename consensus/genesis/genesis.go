@@ -93,7 +93,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
 	}
-	invalidPubKey := "11111111111111111111111111111111"
+	invalidPubKey := "0"
 	deadAccount := account.NewAccount("deadaddr")
 	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, deadAccount.ID, invalidPubKey, invalidPubKey)))
 
