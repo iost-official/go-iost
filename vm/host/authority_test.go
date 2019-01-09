@@ -216,6 +216,19 @@ func TestAuthority_Owner(t *testing.T) {
 			},
 			Threshold: 1,
 		}
+		ac.Permissions["active"] = &account.Permission{
+			Name:   "active",
+			Groups: []string{},
+			Items: []*account.Item{
+				{
+					ID:         "keyactive",
+					Permission: "",
+					IsKeyPair:  true,
+					Weight:     1,
+				},
+			},
+			Threshold: 1,
+		}
 		j, err := json.Marshal(ac)
 		if err != nil {
 			t.Fatal(err)
