@@ -1,7 +1,6 @@
 package synchronizer
 
 import (
-	"os"
 	"testing"
 	"time"
 
@@ -14,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/p2p/mocks"
 	. "github.com/smartystreets/goconvey/convey"
+	"os"
 )
 
 func TestDownloadController(t *testing.T) {
@@ -69,13 +69,16 @@ func TestSynchronizer(t *testing.T) {
 				LdbPath: "Fakedb/",
 			},
 		})
+		defer func() {
+			os.RemoveAll("Fakedb")
+		}()
+		if err != nil {
+			t.Fatalf("new base variable failed, err %v", err)
+		}
 		genesis.FakeBv(baseVariable)
 
 		So(err, ShouldBeNil)
 		So(baseVariable, ShouldNotBeNil)
-		defer func() {
-			os.RemoveAll("Fakedb")
-		}()
 
 		// vi := database.NewVisitor(0, baseVariable.StateDB())
 
