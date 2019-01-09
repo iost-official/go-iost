@@ -23,7 +23,6 @@ import (
 )
 
 type key struct {
-	ID        string
 	Algorithm string
 	Pubkey    string
 	Seckey    string
@@ -42,7 +41,6 @@ var keyCmd = &cobra.Command{
 		}
 
 		var k key
-		k.ID = n.ID
 		k.Algorithm = n.Algorithm.String()
 		k.Pubkey = common.Base58Encode(n.Pubkey)
 		k.Seckey = common.Base58Encode(n.Seckey)

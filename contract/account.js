@@ -6,7 +6,7 @@ class Account {
     init() {
 
     }
-    InitAdmin(adminID) {
+    initAdmin(adminID) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
@@ -91,7 +91,7 @@ class Account {
      * @param  {string} id - this is a string
      *
      */
-    SignUp(id, owner, active) {
+    signUp(id, owner, active) {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
         }
@@ -128,14 +128,14 @@ class Account {
             const defaultRegisterReward = "3";
             blockchain.callWithAuth("gas.iost", "pledge", JSON.stringify([referrer, id, defaultGasPledge]));
             if (storage.globalMapHas("vote_producer.iost", "producerTable", referrer)) {
-                blockchain.callWithAuth("issue.iost", "IssueIOSTTo", JSON.stringify([referrer, defaultRegisterReward]));
+                blockchain.callWithAuth("issue.iost", "issueIOSTTo", JSON.stringify([referrer, defaultRegisterReward]));
             }
         }
 
         blockchain.receipt(JSON.stringify([id, owner, active]));
     }
 
-    AddPermission(id, perm, thres) {
+    addPermission(id, perm, thres) {
         this._ra(id);
         this._checkPermValid(perm);
         let acc = this._loadAccount(id);
@@ -153,7 +153,7 @@ class Account {
         blockchain.receipt(JSON.stringify([id, perm, thres]));
     }
 
-    DropPermission(id, perm) {
+    dropPermission(id, perm) {
         this._ra(id);
         let acc = this._loadAccount(id);
         acc.permissions[perm] = undefined;
@@ -162,20 +162,20 @@ class Account {
         blockchain.receipt(JSON.stringify([id, perm]));
     }
 
-    AssignPermission(id, perm, un, weight) {
+    assignPermission(id, perm, un, weight) {
         this._ra(id);
         this._checkWeight(weight);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[perm].items, un);
         if (index < 0) {
             const len = un.indexOf("@");
-            if (len < 0 && un.startsWith("IOST")) {
+            if (len < 0) {
                 acc.permissions[perm].items.push({
                     id: un,
                     is_key_pair: true,
                     weight: weight
                 });
-            } else if (len > 0 ) {
+            } else if (len > 0) {
                 acc.permissions[perm].items.push({
                     id: un.substring(0, len),
                     permission: un.substring(len, un.length),
@@ -193,7 +193,7 @@ class Account {
         blockchain.receipt(JSON.stringify([id, perm, un, weight]));
     }
 
-    RevokePermission(id, perm, un) {
+    revokePermission(id, perm, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.permissions[perm].items, un);
@@ -207,7 +207,7 @@ class Account {
         blockchain.receipt(JSON.stringify([id, perm, un]));
     }
 
-    AddGroup(id, grp) {
+    addGroup(id, grp) {
         this._ra(id);
         this._checkPermValid(grp);
         let acc = this._loadAccount(id);
@@ -223,7 +223,7 @@ class Account {
         blockchain.receipt(JSON.stringify([id, grp]));
     }
 
-    DropGroup(id, group) {
+    dropGroup(id, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
         acc.groups[group] = undefined;
@@ -239,14 +239,14 @@ class Account {
         blockchain.receipt(JSON.stringify([id, group]));
     }
 
-    AssignGroup(id, group, un, weight) {
+    assignGroup(id, group, un, weight) {
         this._ra(id);
         this._checkWeight(weight);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.groups[group].items, un);
         if (index < 0) {
             let len = un.indexOf("@");
-            if (len < 0 && un.startsWith("IOST")) {
+            if (len < 0) {
                 acc.groups[group].items.push({
                     id: un,
                     is_key_pair: true,
@@ -269,7 +269,7 @@ class Account {
         blockchain.receipt(JSON.stringify([id, group, un, weight]));
     }
 
-    RevokeGroup(id, grp, un) {
+    revokeGroup(id, grp, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
         const index = Account._find(acc.groups[grp].items, un);
@@ -283,7 +283,7 @@ class Account {
         blockchain.receipt(JSON.stringify([id, grp, un]));
     }
 
-    AssignPermissionToGroup(id, perm, group) {
+    assignPermissionToGroup(id, perm, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
         if (acc.groups[group] === undefined) {
@@ -295,7 +295,7 @@ class Account {
         blockchain.receipt(JSON.stringify([id, perm, group]));
     }
 
-    RevokePermissionInGroup(id, perm, group) {
+    revokePermissionInGroup(id, perm, group) {
         this._ra(id);
         let acc = this._loadAccount(id);
         let index = acc.permissions[perm].groups.indexOf(group);

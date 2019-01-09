@@ -151,11 +151,11 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
-func (s *SDK) checkID(ID string) bool {
-	if strings.HasPrefix(ID, "IOST") {
-		return true
+func (s *SDK) checkPubKey(k string) bool {
+	if k == "" {
+		return false
 	}
-	return false
+	return true
 }
 
 // GetContractStorage ...
@@ -355,7 +355,7 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	}
 	defer pubfile.Close()
 
-	_, err = pubfile.WriteString(saveBytes(kp.Pubkey))
+	_, err = pubfile.WriteString(common.Base58Encode(kp.Pubkey))
 	if err != nil {
 		return err
 	}
@@ -366,25 +366,11 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	}
 	defer secFile.Close()
 
-	_, err = secFile.WriteString(saveBytes(kp.Seckey))
+	_, err = secFile.WriteString(common.Base58Encode(kp.Seckey))
 	if err != nil {
 		return err
 	}
 
-	idFileName := fileName + ".id"
-	idFile, err := os.Create(idFileName)
-	if err != nil {
-		return err
-	}
-	defer idFile.Close()
-	id := account.GetIDByPubkey(kp.Pubkey)
-	_, err = idFile.WriteString(id)
-	if err != nil {
-		return err
-	}
-
-	//fmt.Println("your account id is saved at:")
-	//fmt.Println(idFileName)
 	fmt.Println("your account private key is saved at:")
 	fmt.Println(fileName)
 	return nil
@@ -426,7 +412,7 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 // CreateNewAccount ...
 func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*rpcpb.Action
-	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
+	acts = append(acts, NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
 	}
@@ -495,9 +481,9 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 		Code: code,
 		Info: info,
 	}
-	methodName := "SetCode"
+	methodName := "setCode"
 	if update {
-		methodName = "UpdateCode"
+		methodName = "updateCode"
 	}
 	marshalMethod := "json"
 	var contractStr string

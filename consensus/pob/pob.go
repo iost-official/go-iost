@@ -317,7 +317,8 @@ func (p *PoB) scheduleLoop() {
 			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			t := time.Now()
-			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == p.account.ID {
+			pubkey := p.account.ReadablePubkey()
+			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == pubkey {
 				staticProperty.SlotUsed[t.Unix()] = true
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
@@ -330,7 +331,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					if witnessOfNanoSec(t.UnixNano()) != p.account.ID {
+					if witnessOfNanoSec(t.UnixNano()) != pubkey {
 						break
 					}
 				}
@@ -377,7 +378,7 @@ func (p *PoB) printStatistics(num int, blk *block.Block) {
 	ptx, _ := p.txPool.PendingTx()
 	ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
 		num,
-		p.account.ID[:10],
+		p.account.ReadablePubkey()[:10],
 		blk.Head.Time,
 		blk.Head.Number,
 		p.blockCache.LinkedRoot().Head.Number,
@@ -446,7 +447,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
 	p.updateInfo(node)
-	if node.Head.Witness != p.account.ID {
+	if node.Head.Witness != p.account.ReadablePubkey() {
 		if tWitness != node.Head.Witness {
 			tWitness = node.Head.Witness
 			tContinuousNum = 0
@@ -469,7 +470,7 @@ func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateWaterMark(node)
 	updateLib(node, p.blockCache)
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
-	if staticProperty.isWitness(p.account.ID) {
+	if staticProperty.isWitness(p.account.ReadablePubkey()) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
 	}
 }

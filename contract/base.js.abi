@@ -3,7 +3,7 @@
     "version": "1.0.0",
     "abi": [
         {
-            "name": "Exec",
+            "name": "exec",
             "args": [
                 "json"
             ]
@@ -15,7 +15,7 @@
             ]
         },
         {
-            "name": "InitAdmin",
+            "name": "initAdmin",
             "args": [
                 "string"
             ]

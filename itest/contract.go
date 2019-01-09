@@ -18,9 +18,9 @@ const (
 			//Execute everytime the contract class is called
 		}
 
-		transfer(from, to, amount) {
+		transfer(from, to, amount, memo) {
 			//Function called by other
-			blockchain.transfer(from, to, amount, "")
+			blockchain.transfer(from, to, amount, memo)
 		}
 
 	};
@@ -34,6 +34,7 @@ const (
 			{
 				"name": "transfer",
 				"args": [
+					"string",
 					"string",
 					"string",
 					"string"

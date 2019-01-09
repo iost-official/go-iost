@@ -1,6 +1,7 @@
 package database
 
 import (
+	"github.com/iost-official/go-iost/account"
 	"os"
 
 	"io/ioutil"
@@ -14,7 +15,6 @@ import (
 	"errors"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -182,7 +182,7 @@ func LoadTxInfo(path string) (*tx.Tx, error) {
 		return nil, err
 	}
 	t.PublishSigns = append(t.PublishSigns, &crypto.Signature{
-		Pubkey: account.GetPubkeyByID(p),
+		Pubkey: account.DecodePubkey(p),
 	})
 	t.GasLimit, err = json.Get("gas_limit").Int64()
 	if err != nil {

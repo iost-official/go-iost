@@ -52,7 +52,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 			ParentHash: topBlock.HeadHash(),
 			Info:       make([]byte, 0),
 			Number:     topBlock.Head.Number + 1,
-			Witness:    acc.ID,
+			Witness:    acc.ReadablePubkey(),
 			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
@@ -95,8 +95,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 }
 
 func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
-
-	signature.SetPubkey(account.GetPubkeyByID(blk.Head.Witness))
+	signature.SetPubkey(account.DecodePubkey(blk.Head.Witness))
 	hash := blk.HeadHash()
 	if !signature.Verify(hash) {
 		return errSignature

@@ -40,7 +40,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 738400)
+			So(r.GasUsage, ShouldEqual, 734800)
 		})
 
 		Convey("test of token memo", func() {
@@ -77,8 +77,8 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "ContractAhFA9ToFpBVg6hFgyRRf37XYh4w3e3a7TZUxGTSFdawA")
-		So(r.GasUsage, ShouldEqual, 3591000)
+		So(cname, ShouldEqual, "Contract9j1XVMmPeiHoN2usE543My82cnM8g7S6erD1sFjuiXS6")
+		So(r.GasUsage, ShouldEqual, 3589200)
 		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2694))
 
 		r, err = s.Call(cname, "hello", "[]", acc.ID, acc.KeyPair)
@@ -564,14 +564,14 @@ func TestDomain(t *testing.T) {
 		cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(native.DomainABI())
-		r1, err := s.Call("domain.iost", "Link", fmt.Sprintf(`["abc_0_de.io","%v"]`, cname), acc.ID, acc.KeyPair)
+		r1, err := s.Call("domain.iost", "link", fmt.Sprintf(`["abc_0_de.io","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldEqual, "")
 		r2, err := s.Call("abc_0_de.io", "read", "[]", acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r2.Status.Message, ShouldEqual, "")
 
-		r1, err = s.Call("domain.iost", "Link", fmt.Sprintf(`["ab.cde#A","%v"]`, cname), acc.ID, acc.KeyPair)
+		r1, err = s.Call("domain.iost", "link", fmt.Sprintf(`["ab.cde#A","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldContainSubstring, "url contains invalid character")
 	})
@@ -599,21 +599,21 @@ func TestAuthority(t *testing.T) {
 		err = createToken(t, s, acc)
 		So(err, ShouldBeNil)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err := s.Call("auth.iost", "signUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ReadablePubkey(), acc.KeyPair.ReadablePubkey()}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id shouldn't start with")
 
-		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "signUp", array2json([]interface{}{"myidid", acc.KeyPair.ReadablePubkey(), acc.KeyPair.ReadablePubkey()}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
 
-		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myidid", "perm1", 1}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "addPermission", array2json([]interface{}{"myidid", "perm1", 1}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 
-		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "signUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
 	})
@@ -652,7 +652,7 @@ func TestGasLimit2(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(7302700))
+			So(r.GasUsage, ShouldEqual, int64(7297300))
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "980")

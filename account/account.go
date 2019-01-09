@@ -2,14 +2,12 @@ package account
 
 import (
 	"fmt"
-
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 )
 
 // KeyPair account of the ios
 type KeyPair struct {
-	ID        string
 	Algorithm crypto.Algorithm
 	Pubkey    []byte
 	Seckey    []byte
@@ -25,10 +23,8 @@ func NewKeyPair(seckey []byte, algo crypto.Algorithm) (*KeyPair, error) {
 		return nil, fmt.Errorf("seckey length error")
 	}
 	pubkey := algo.GetPubkey(seckey)
-	id := GetIDByPubkey(pubkey)
 
 	account := &KeyPair{
-		ID:        id,
 		Algorithm: algo,
 		Pubkey:    pubkey,
 		Seckey:    seckey,
@@ -41,13 +37,17 @@ func (a *KeyPair) Sign(info []byte) *crypto.Signature {
 	return crypto.NewSignature(a.Algorithm, info, a.Seckey)
 }
 
-// GetIDByPubkey ...
-func GetIDByPubkey(pubkey []byte) string {
-	return "IOST" + common.Base58Encode(append(pubkey, common.Parity(pubkey)...))
+// ReadablePubkey ...
+func (a *KeyPair) ReadablePubkey() string {
+	return EncodePubkey(a.Pubkey)
 }
 
-// GetPubkeyByID ...
-func GetPubkeyByID(ID string) []byte {
-	b := common.Base58Decode(ID[4:])
-	return b[:len(b)-4]
+// EncodePubkey ...
+func EncodePubkey(pubkey []byte) string {
+	return common.Base58Encode(pubkey)
+}
+
+// DecodePubkey ...
+func DecodePubkey(readablePubKey string) []byte {
+	return common.Base58Decode(readablePubKey)
 }

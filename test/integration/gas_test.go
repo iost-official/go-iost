@@ -74,11 +74,12 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 
 	authList := make(map[string]int)
 	h.Context().Set("auth_contract_list", authList)
-	authList[acc0.KeyPair.ID] = 2
+	authList[acc0.KeyPair.ReadablePubkey()] = 2
 	h.Context().Set("auth_list", authList)
 
 	code := &contract.Contract{
 		ID: native.GasContractName,
+		Info: &contract.Info{Version:"1.0.0"},
 	}
 
 	e := &native.Impl{}
@@ -324,7 +325,7 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 		Convey("Test unpledge amount", func() {
 			authList := make(map[string]int)
 			h.Context().Set("auth_contract_list", authList)
-			authList[acc1.KeyPair.ID] = 2
+			authList[acc1.KeyPair.ReadablePubkey()] = 2
 			h.Context().Set("auth_list", authList)
 			h.DB().SetTokenBalanceFixed("iost", otherAcc, "20")
 			_, _, err = e.LoadAndCall(h, code, "pledge", otherAcc, otherAcc, "20")
@@ -383,7 +384,7 @@ func TestGas_TGas(t *testing.T) {
 	Convey("test tgas", t, func() {
 		Convey("account referrer should got 3 IOST", func() {
 			oldIOST := s.Visitor.TokenBalanceFixed("iost", acc.ID).Value
-			r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{otherID, otherKp.ID, otherKp.ID}), acc.ID, acc.KeyPair)
+			r, err := s.Call("auth.iost", "signUp", array2json([]interface{}{otherID, otherKp.ReadablePubkey(), otherKp.ReadablePubkey()}), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalanceFixed("iost", acc.ID).Value, ShouldEqual, oldIOST-7*database.IOSTRatio)

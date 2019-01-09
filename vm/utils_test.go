@@ -12,23 +12,33 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/native"
-	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/vm/native"
 )
 
-var testID = []string{
-	"IOST4wQ6HPkSrtDRYi2TGkyMJZAB3em26fx79qR3UJC7fcxpL87wTn", "EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
-	"IOST558jUpQvBD7F3WTKpnDAWg6HwKrfFiZ7AqhPFf4QSrmjdmBGeY", "8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
-	"IOST7ZNDWeh8pHytAZdpgvp7vMpjZSSe5mUUKxDm6AXPsbdgDMAYhs", "7CnwT7BXkEFAVx6QZqC7gkDhQwbvC3d2CkMZvXHZdDMN",
-	"IOST54ETA3q5eC8jAoEpfRAToiuc6Fjs5oqEahzghWkmEYs9S9CMKd", "Htarc5Sp4trjqY4WrTLtZ85CF6qx87v7CRwtV4RRGnbF",
-	"IOST7GmPn8xC1RESMRS6a62RmBcCdwKbKvk2ZpxZpcXdUPoJdapnnh", "Bk8bAyG4VLBcrsoRErPuQGhwCy4C1VxfKE4jjX9oLhv",
-	"IOST7ZGQL4k85v4wAxWngmow7JcX4QFQ4mtLNjgvRrEnEuCkGSBEHN", "546aCDG9igGgZqVZeybajaorP5ZeF9ghLu2oLncXk3d6",
-	"IOST59uMX3Y4ab5dcq8p1wMXodANccJcj2efbcDThtkw6egvcni5L9", "DXNYRwG7dRFkbWzMNEbKfBhuS8Yn51x9J6XuTdNwB11M",
-	"IOST8mFxe4kq9XciDtURFZJ8E76B8UssBgRVFA5gZN9HF5kLUVZ1BB", "AG8uECmAwFis8uxTdWqcgGD9tGDwoP6CxqhkhpuCdSeC",
-	"IOST7uqa5UQPVT9ongTv6KmqDYKdVYSx4DV2reui4nuC5mm5vBt3D9", "GJt5WSSv5WZi1axd3qkb1vLEfxCEgKGupcXf45b5tERU",
-	"IOST6wYBsLZmzJv22FmHAYBBsTzmV1p1mtHQwkTK9AjCH9Tg5Le4i4", "7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
+var testKps = make([]*account.KeyPair, 0)
+func init() {
+	privKeys := []string{
+		"EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
+		"8dJ9YKovJ5E7hkebAQaScaG1BA8snRUHPUbVcArcTVq6",
+		"7CnwT7BXkEFAVx6QZqC7gkDhQwbvC3d2CkMZvXHZdDMN",
+		"Htarc5Sp4trjqY4WrTLtZ85CF6qx87v7CRwtV4RRGnbF",
+		"Bk8bAyG4VLBcrsoRErPuQGhwCy4C1VxfKE4jjX9oLhv",
+		"546aCDG9igGgZqVZeybajaorP5ZeF9ghLu2oLncXk3d6",
+		"DXNYRwG7dRFkbWzMNEbKfBhuS8Yn51x9J6XuTdNwB11M",
+		"AG8uECmAwFis8uxTdWqcgGD9tGDwoP6CxqhkhpuCdSeC",
+		"GJt5WSSv5WZi1axd3qkb1vLEfxCEgKGupcXf45b5tERU",
+		"7U3uwEeGc2TF3Xde2oT66eTx1Uw15qRqYuTnMd3NNjai",
+	}
+	for _, k := range privKeys {
+		kp, err := account.NewKeyPair(common.Base58Decode(k), crypto.Secp256k1)
+		if err != nil {
+			panic(err)
+		}
+		testKps = append(testKps, kp)
+	}
 }
 
 var systemContract = native.SystemABI()
@@ -40,7 +50,7 @@ func ininit(t *testing.T) (*database.Visitor, db.MVCCDB) {
 	}
 	//mvccdb := replaceDB(t)
 	vi := database.NewVisitor(0, mvccdb)
-	vi.SetTokenBalance("iost", testID[0], 1000000)
+	vi.SetTokenBalance("iost", testKps[0].ReadablePubkey(), 1000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
 	return vi, mvccdb
@@ -58,10 +68,7 @@ func TestCheckPublisher(t *testing.T) {
 		"[]",
 	}}, []string{}, 10000, 1, 10000, 0)
 
-	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	kp := testKps[0]
 	t2, err := tx.SignTx(tr, "a", []*account.KeyPair{kp})
 	if err != nil {
 		t.Fatal(err)
@@ -69,7 +76,8 @@ func TestCheckPublisher(t *testing.T) {
 
 	ctl := gomock.NewController(t)
 
-	a := account.NewInitAccount("a", testID[0], testID[0])
+	k0 := testKps[0].ReadablePubkey()
+	a := account.NewInitAccount("a", k0, k0)
 	ax, err := json.Marshal(a)
 	if err != nil {
 		t.Fatal(err)
@@ -77,7 +85,8 @@ func TestCheckPublisher(t *testing.T) {
 	mock := database.NewMockIMultiValue(ctl)
 	mock.EXPECT().Get("state", "m-auth.iost-auth-a").Return("s"+string(ax), nil)
 
-	b := account.NewInitAccount("b", testID[2], testID[2])
+	k1 := testKps[1].ReadablePubkey()
+	b := account.NewInitAccount("b", k1, k1)
 	bx, err := json.Marshal(b)
 	if err != nil {
 		t.Fatal(err)
@@ -85,7 +94,7 @@ func TestCheckPublisher(t *testing.T) {
 	mock.EXPECT().Get("state", "m-auth.iost-auth-b").Return("s"+string(bx), nil)
 
 	authList := make(map[string]int)
-	authList[kp.ID] = 2
+	authList[kp.ReadablePubkey()] = 2
 	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock), nil, ilog.DefaultLogger())
 	h.Context().Set("auth_list", authList)
 	err = h.CheckPublisher(t2)
@@ -104,28 +113,26 @@ func TestCheckSigners(t *testing.T) {
 	ctl := gomock.NewController(t)
 	mock := database.NewMockIMultiValue(ctl)
 
-	a := account.NewInitAccount("a", testID[0], testID[0])
+
+	k0 := testKps[0].ReadablePubkey()
+	a := account.NewInitAccount("a", k0, k0)
 	ax, err := json.Marshal(a)
 	if err != nil {
 		t.Fatal(err)
 	}
 	mock.EXPECT().Get("state", "m-auth.iost-auth-a").AnyTimes().Return("s"+string(ax), nil)
 
-	b := account.NewInitAccount("b", testID[2], testID[2])
+
+	k1 := testKps[1].ReadablePubkey()
+	b := account.NewInitAccount("b", k1, k1)
 	bx, err := json.Marshal(b)
 	if err != nil {
 		t.Fatal(err)
 	}
 	mock.EXPECT().Get("state", "m-auth.iost-auth-b").AnyTimes().Return("s"+string(bx), nil)
 
-	kp, err := account.NewKeyPair(common.Base58Decode(testID[1]), crypto.Secp256k1)
-	if err != nil {
-		t.Fatal(err)
-	}
-	kp2, err := account.NewKeyPair(common.Base58Decode(testID[3]), crypto.Secp256k1)
-	if err != nil {
-		t.Fatal(err)
-	}
+	kp := testKps[0]
+	kp2 := testKps[1]
 
 	tr := tx.NewTx([]*tx.Action{{
 		"system.iost",
@@ -140,7 +147,7 @@ func TestCheckSigners(t *testing.T) {
 	tr.Signs = append(tr.Signs, sig1)
 
 	authList := make(map[string]int)
-	authList[kp.ID] = 1
+	authList[kp.ReadablePubkey()] = 1
 	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock), nil, ilog.DefaultLogger())
 	h.Context().Set("auth_list", authList)
 	err = h.CheckSigners(tr)
@@ -153,7 +160,7 @@ func TestCheckSigners(t *testing.T) {
 		t.Fatal(err)
 	}
 	tr.Signs = append(tr.Signs, sig2)
-	authList[kp2.ID] = 1
+	authList[kp2.ReadablePubkey()] = 1
 	h.Context().Set("auth_list", authList)
 
 	err = h.CheckSigners(tr)
