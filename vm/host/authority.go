@@ -66,6 +66,36 @@ func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost)
 	return &a, c
 }
 
+func checkSuper(a *account.Account, auth map[string]int) bool {
+	owner, ok := a.Permissions["owner"]
+	if !ok {
+		return false
+	}
+	var weight int
+	for _, item := range owner.Items {
+		if _, ok := auth[item.ID]; ok {
+			weight += item.Weight
+			if weight >= owner.Threshold {
+				return true
+			}
+		}
+	}
+	weight = 0
+	active, ok := a.Permissions["active"]
+	if !ok {
+		return false
+	}
+	for _, item := range active.Items {
+		if _, ok := auth[item.ID]; ok {
+			weight += item.Weight
+			if weight >= active.Threshold {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // Auth check auth
 func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int) (bool, contract.Cost) {
 	if _, ok := reenter[id+"@"+permission]; ok {
@@ -77,6 +107,10 @@ func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 
 	if a == nil {
 		return false, c
+	}
+
+	if checkSuper(a, auth) {
+		return true, c
 	}
 
 	p, ok := a.Permissions[permission]
