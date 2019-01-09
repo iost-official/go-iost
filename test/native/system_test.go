@@ -33,10 +33,12 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 
 	pm := vm.NewMonitor()
 	h := host.NewHost(ctx, vi, pm, nil)
-	h.Context().Set("stack_height", 0)
+	h.Context().Set("stack_height", 1)
+	h.Context().Set("stack0", "direct_call")
 
 	code := &contract.Contract{
 		ID: "system.iost",
+		Info: &contract.Info{Version:"1.0.0"},
 	}
 
 	e := &native.Impl{}
