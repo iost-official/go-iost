@@ -14,7 +14,7 @@ import (
 
 func randWitness(idx int) *common.Witness {
 	k := account.EncodePubkey(crypto.Ed25519.GetPubkey(crypto.Ed25519.GenSeckey()))
-	return &common.Witness{ID:fmt.Sprintf("a%d", idx), Owner:k, Active:k, Balance:3 * 1e8}
+	return &common.Witness{ID: fmt.Sprintf("a%d", idx), Owner: k, Active: k, SignatureBlock: k, Balance: 3 * 1e8}
 }
 
 func TestGenGenesis(t *testing.T) {
@@ -47,7 +47,7 @@ func TestGenGenesis(t *testing.T) {
 		InitialTimestamp: "2006-01-02T15:04:05Z",
 		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",
 		AdminInfo:        randWitness(8),
-		FoundationInfo:   &common.Witness{ID:"f8", Owner:k, Active:k, Balance:0},
+		FoundationInfo:   &common.Witness{ID: "f8", Owner: k, Active: k, Balance: 0},
 	})
 	if err != nil {
 		t.Fatal(err)

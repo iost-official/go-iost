@@ -6,9 +6,10 @@ tokeninfo:
   ramtotalsupply: 9000000000000000000
   ramgenesisamount: 137438953472
 witnessinfo:
-  - id: producer00001
+  - id: producer01
     owner: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b 
     active: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b
+    signatureblock: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b
     balance: 20000000000
 contractpath: contract/
 admininfo:
