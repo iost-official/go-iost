@@ -17,7 +17,8 @@ func checkGenesis(bv global.BaseVariable) error {
 	blockChain := bv.BlockChain()
 	stateDB := bv.StateDB()
 	conf := bv.Config()
-	if conf.Snapshot.FilePath == "" && blockChain.Length() == int64(0) { //blockchaindb is empty
+	// if conf.Snapshot.FilePath == "" && blockChain.Length() == int64(0) { //blockchaindb is empty
+	if false {
 		// TODO: remove the module of starting iserver from yaml.
 
 		ilog.Infof("Genesis is not exist.")
@@ -50,8 +51,9 @@ func checkGenesis(bv global.BaseVariable) error {
 func recoverDB(bv global.BaseVariable) error {
 	blockChain := bv.BlockChain()
 	stateDB := bv.StateDB()
-	conf := bv.Config()
+	// conf := bv.Config()
 
+	// if conf.Snapshot.FilePath != "" {
 	if blockChain.Length() == int64(0) {
 		bhJson, err := stateDB.Get("snapshot", "blockHead")
 		if err != nil {
