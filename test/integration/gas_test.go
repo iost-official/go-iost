@@ -79,6 +79,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 
 	code := &contract.Contract{
 		ID: native.GasContractName,
+		Info: &contract.Info{Version:"1.0.0"},
 	}
 
 	e := &native.Impl{}

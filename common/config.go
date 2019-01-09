@@ -24,10 +24,11 @@ type ACCConfig struct {
 
 // Witness config of the genesis block
 type Witness struct {
-	ID      string
-	Owner   string
-	Active  string
-	Balance int64
+	ID             string
+	Owner          string
+	Active         string
+	SignatureBlock string
+	Balance        int64
 }
 
 // TokenInfo config of the genesis block
