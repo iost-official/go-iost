@@ -52,7 +52,7 @@ func recoverDB(bv global.BaseVariable) error {
 	stateDB := bv.StateDB()
 	conf := bv.Config()
 
-	if conf.Snapshot.FilePath != "" {
+	if blockChain.Length() == int64(0) {
 		bhJson, err := stateDB.Get("snapshot", "blockHead")
 		if err != nil {
 			return fmt.Errorf("get current block head from state db failed. err: %v", err)
