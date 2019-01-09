@@ -67,7 +67,7 @@ func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost)
 }
 
 // Auth check auth
-func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int) (bool, contract.Cost) {
+func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int) (bool, contract.Cost) { // nolint
 	if _, ok := reenter[id+"@"+permission]; ok {
 		return false, CommonErrorCost(1)
 	}
@@ -83,9 +83,8 @@ func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 	if !ok {
 		if permission == "owner" || permission == "active" {
 			return false, c
-		} else {
-			return Auth(vi, id, "active", auth, reenter)
 		}
+		return Auth(vi, id, "active", auth, reenter)
 	}
 
 	u := p.Items
