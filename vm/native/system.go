@@ -125,13 +125,13 @@ var (
 
 	// initSetCode can only be invoked in genesis block, use specific id for deploying contract
 	initSetCode = &abi{
-		name: "InitSetCode",
+		name: "initSetCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 
 			if h.Context().Value("number").(int64) != 0 {
-				return []interface{}{}, cost, errors.New("InitSetCode in normal block")
+				return []interface{}{}, cost, errors.New("initSetCode in normal block")
 			}
 
 			con := &contract.Contract{}
@@ -155,7 +155,7 @@ var (
 
 	// cancelDelaytx cancels a delay transaction.
 	cancelDelaytx = &abi{
-		name: "CancelDelaytx",
+		name: "cancelDelaytx",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 

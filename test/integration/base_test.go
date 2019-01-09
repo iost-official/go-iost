@@ -31,7 +31,7 @@ func Test_Base(t *testing.T) {
 		prepareToken(t, s, acc0)
 		prepareProducerVote(t, s, acc0)
 		for _, acc := range testAccounts[:6] {
-			s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
+			s.Call("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
 		}
 
 		// deploy bonus.iost
@@ -41,7 +41,7 @@ func Test_Base(t *testing.T) {
 		prepareBase(t, s, acc0)
 
 		s.Head.Number = 200
-		re, err := s.Call("base.iost", "Exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc0.ID, 12345678), acc0.ID, acc0.KeyPair)
+		re, err := s.Call("base.iost", "exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc0.ID, 12345678), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(re.Status.Message, ShouldEqual, "")
 	})

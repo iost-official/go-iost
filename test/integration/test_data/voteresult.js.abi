@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "abi": [
     {
-      "name": "GetResult",
+      "name": "getResult",
       "args": ["string"],
       "amountLimit": [{
         "token": "iost",

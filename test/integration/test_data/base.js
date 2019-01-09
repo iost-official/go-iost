@@ -2,12 +2,12 @@ class Base {
     init() {
     }
 
-    Stat() {
-        blockchain.callWithAuth("vote_producer.iost", "Stat", '[]');
+    stat() {
+        blockchain.callWithAuth("vote_producer.iost", "stat", '[]');
     }
 
-    IssueContribute(data) {
-        blockchain.callWithAuth("bonus.iost", "IssueContribute", JSON.stringify([data]));
+    issueContribute(data) {
+        blockchain.callWithAuth("bonus.iost", "issueContribute", JSON.stringify([data]));
     }
 }
 
