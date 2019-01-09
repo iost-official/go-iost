@@ -87,7 +87,7 @@ func TestSynchronizer(t *testing.T) {
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(tpl), nil
 	})
-	statedb.EXPECT().Get("state", "b-currentBlockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+	statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		bhJson, _ := json.Marshal(b0.Head)
 		return string(bhJson), nil
 	})
@@ -105,26 +105,11 @@ func TestSynchronizer(t *testing.T) {
 		},
 	}
 	baseVariable.EXPECT().Config().AnyTimes().Return(&config)
+	baseVariable.EXPECT().BlockChain().AnyTimes().Return(nil)
 	baseVariable.EXPECT().Continuous().AnyTimes().Return(0)
 	baseVariable.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 	Convey("Test Synchronizer", t, func() {
-		baseVariable, err := global.New(&common.Config{
-			DB: &common.DBConfig{
-				LdbPath: "Fakedb/",
-			},
-		})
-		defer func() {
-			os.RemoveAll("Fakedb")
-		}()
-		if err != nil {
-			t.Fatalf("new base variable failed, err %v", err)
-		}
 		genesis.FakeBv(baseVariable)
-
-		So(err, ShouldBeNil)
-		So(baseVariable, ShouldNotBeNil)
-
-		// vi := database.NewVisitor(0, baseVariable.StateDB())
 
 		blockcache.CleanBlockCacheWAL()
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
@@ -144,5 +129,7 @@ func TestSynchronizer(t *testing.T) {
 		So(err, ShouldBeNil)
 		time.Sleep(200 * time.Millisecond)
 		blockcache.CleanBlockCacheWAL()
+
+		os.RemoveAll("DB/")
 	})
 }

@@ -102,7 +102,7 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
-		statedb.EXPECT().Get("state", "b-currentBlockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			bhJson, _ := json.Marshal(b0.Head)
 			return string(bhJson), nil
 		})
@@ -282,7 +282,7 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
-		statedb.EXPECT().Get("state", "b-currentBlockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			bhJson, _ := json.Marshal(b0.Head)
 			return string(bhJson), nil
 		})
