@@ -31,6 +31,11 @@ var ContractCaseFlags = []cli.Flag{
 		Value: "accounts.json",
 		Usage: "output of account information",
 	},
+	cli.IntFlag{
+		Name:  "memo, m",
+		Value: 0,
+		Usage: "The size of a random memo message that would be contained in the transaction",
+	},
 }
 
 // ContractCaseAction is the action of contract test case
@@ -42,6 +47,7 @@ var ContractCaseAction = func(c *cli.Context) error {
 	configfile := c.GlobalString("config")
 	codefile := c.GlobalString("code")
 	abifile := c.GlobalString("abi")
+	memoSize := c.Int("memo")
 
 	it, err := itest.Load(keysfile, configfile)
 	if err != nil {
@@ -63,7 +69,7 @@ var ContractCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	if err := it.ContractTransferN(cid, tnum, accounts); err != nil {
+	if _, err := it.ContractTransferN(cid, tnum, accounts, memoSize, true); err != nil {
 		return err
 	}
 

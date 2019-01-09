@@ -104,7 +104,9 @@ func createAccount(name string) (err error) {
 		if err != nil {
 			return fmt.Errorf("create key pair failed %v", err)
 		}
-		okey, akey = newKp.ID, newKp.ID
+		k := newKp.ReadablePubkey()
+		okey = k
+		akey = k
 		autoKey = true
 	}
 
@@ -166,7 +168,6 @@ func viewAccount(name string) {
 
 				}
 				var k key
-				k.ID = keyPair.ID
 				k.Algorithm = keyPair.Algorithm.String()
 				k.Pubkey = common.Base58Encode(keyPair.Pubkey)
 				k.Seckey = common.Base58Encode(keyPair.Seckey)
@@ -196,7 +197,6 @@ func viewAccount(name string) {
 				continue
 			}
 			var k key
-			k.ID = keyPair.ID
 			k.Algorithm = keyPair.Algorithm.String()
 			k.Pubkey = common.Base58Encode(keyPair.Pubkey)
 			k.Seckey = common.Base58Encode(keyPair.Seckey)
@@ -230,7 +230,7 @@ func importAcc(name string, args []string) {
 
 	fmt.Println("import account done")
 	fmt.Println("the iost account ID is:", name)
-	fmt.Println("active permission:", keyPair.ID)
+	fmt.Println("active permission:", keyPair.ReadablePubkey())
 }
 
 func delAccount(name string) error {

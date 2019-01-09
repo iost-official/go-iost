@@ -61,17 +61,17 @@ func TestNewTxPImpl(t *testing.T) {
 			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
-		witnessInfo = append(witnessInfo, newAccount.ID)
+		witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 		witnessInfo = append(witnessInfo, "100000")
-		witnessList = append(witnessList, newAccount.ID)
+		witnessList = append(witnessList, newAccount.ReadablePubkey())
 		for i := 1; i < 3; i++ {
 			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
 				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
-			witnessList = append(witnessList, newAccount.ID)
-			witnessInfo = append(witnessInfo, newAccount.ID)
+			witnessList = append(witnessList, newAccount.ReadablePubkey())
+			witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 			witnessInfo = append(witnessInfo, "100000")
 		}
 		//conf := &common.Config{
@@ -227,17 +227,17 @@ func TestNewTxPImplB(t *testing.T) {
 			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
-		witnessInfo = append(witnessInfo, newAccount.ID)
+		witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 		witnessInfo = append(witnessInfo, "100000")
-		witnessList = append(witnessList, newAccount.ID)
+		witnessList = append(witnessList, newAccount.ReadablePubkey())
 		for i := 1; i < 3; i++ {
 			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
 				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
-			witnessList = append(witnessList, newAccount.ID)
-			witnessInfo = append(witnessInfo, newAccount.ID)
+			witnessList = append(witnessList, newAccount.ReadablePubkey())
+			witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 			witnessInfo = append(witnessInfo, "100000")
 		}
 		//conf := &common.Config{
@@ -355,34 +355,34 @@ func TestNewTxPImplB(t *testing.T) {
 			t4.GasRatio = 400
 			t5.GasRatio = 500
 
-			sig1, err := tx.SignTxContent(t1, newAccount.ID, newAccount)
+			sig1, err := tx.SignTxContent(t1, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t1.Signs = []*crypto.Signature{sig1}
-			t1, err = tx.SignTx(t1, newAccount.ID, []*account.KeyPair{newAccount})
+			t1, err = tx.SignTx(t1, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig2, err := tx.SignTxContent(t2, newAccount.ID, newAccount)
+			sig2, err := tx.SignTxContent(t2, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t2.Signs = []*crypto.Signature{sig2}
-			t2, err = tx.SignTx(t2, newAccount.ID, []*account.KeyPair{newAccount})
+			t2, err = tx.SignTx(t2, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig3, err := tx.SignTxContent(t3, newAccount.ID, newAccount)
+			sig3, err := tx.SignTxContent(t3, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t3.Signs = []*crypto.Signature{sig3}
-			t3, err = tx.SignTx(t3, newAccount.ID, []*account.KeyPair{newAccount})
+			t3, err = tx.SignTx(t3, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig4, err := tx.SignTxContent(t4, newAccount.ID, newAccount)
+			sig4, err := tx.SignTxContent(t4, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t4.Signs = []*crypto.Signature{sig4}
-			t4, err = tx.SignTx(t4, newAccount.ID, []*account.KeyPair{newAccount})
+			t4, err = tx.SignTx(t4, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig5, err := tx.SignTxContent(t5, newAccount.ID, newAccount)
+			sig5, err := tx.SignTxContent(t5, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t5.Signs = []*crypto.Signature{sig5}
-			t5, err = tx.SignTx(t5, newAccount.ID, []*account.KeyPair{newAccount})
+			t5, err = tx.SignTx(t5, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
 			println("before add tx")
@@ -614,7 +614,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 		panic("account.NewKeyPair error")
 	}
 	accountList = append(accountList, newAccount)
-	witnessList = append(witnessList, newAccount.ID)
+	witnessList = append(witnessList, newAccount.ReadablePubkey())
 	//_accId := newAccount.ID
 
 	for i := 1; i < 3; i++ {
@@ -623,7 +623,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
-		witnessList = append(witnessList, newAccount.ID)
+		witnessList = append(witnessList, newAccount.ReadablePubkey())
 	}
 
 	config := &common.P2PConfig{
@@ -678,16 +678,16 @@ func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 
 	ex := time.Now().UnixNano() + expirationIter
 
-	t := tx.NewTx(actions, []string{a.ID}, 1000000, 100, ex, 0)
+	t := tx.NewTx(actions, []string{a.ReadablePubkey()}, 1000000, 100, ex, 0)
 
-	sig1, err := tx.SignTxContent(t, a.ID, a)
+	sig1, err := tx.SignTxContent(t, a.ReadablePubkey(), a)
 	if err != nil {
 		ilog.Debug("failed to SignTxContent")
 	}
 
 	t.Signs = append(t.Signs, sig1)
 
-	t1, err := tx.SignTx(t, a.ID, []*account.KeyPair{a})
+	t1, err := tx.SignTx(t, a.ReadablePubkey(), []*account.KeyPair{a})
 	if err != nil {
 		ilog.Debug("failed to SignTx")
 	}

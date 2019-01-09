@@ -5,10 +5,11 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/iost-official/go-iost/vm"
 	"reflect"
 	"sort"
 	"time"
+
+	"github.com/iost-official/go-iost/vm"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
@@ -126,6 +127,10 @@ func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest)
 			t, err = as.blockchain.GetTx(txHashBytes)
 			if err != nil {
 				return nil, errors.New("tx not found")
+			}
+			txReceipt, err = as.blockchain.GetReceiptByTxHash(txHashBytes)
+			if err != nil {
+				return nil, errors.New("txreceipt not found")
 			}
 		}
 	}

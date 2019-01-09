@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"strconv"
 	"sync"
 	"time"
@@ -163,10 +164,11 @@ func (c *Client) checkTransaction(hash string) error {
 
 // CreateAccount will create account by sending transaction
 func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Account, error) {
+	k := key.ReadablePubkey()
 	action1 := tx.NewAction(
 		"auth.iost",
 		"SignUp",
-		fmt.Sprintf(`["%v", "%v", "%v"]`, name, key.ID, key.ID),
+		fmt.Sprintf(`["%v", "%v", "%v"]`, name, k, k),
 	)
 
 	action2 := tx.NewAction(
@@ -211,11 +213,17 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 }
 
 // ContractTransfer will contract transfer token by sending transaction
-func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount string) error {
+func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount string, memoSize int, check bool) error {
+	memo := make([]byte, memoSize)
+	rand.Read(memo)
+	// Convert to base64.
+	memo, _ = json.Marshal(memo)
+	// Get rid of the beginning quote and cut to the string of given size.
+	memo = memo[1 : memoSize+1]
 	action := tx.NewAction(
 		cid,
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v"]`, sender.ID, recipient.ID, amount),
+		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, sender.ID, recipient.ID, amount, string(memo)),
 	)
 
 	actions := []*tx.Action{action}
@@ -226,7 +234,7 @@ func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount
 		return err
 	}
 
-	if _, err := c.SendTransaction(st, true); err != nil {
+	if _, err := c.SendTransaction(st, check); err != nil {
 		return err
 	}
 
@@ -274,11 +282,17 @@ func (c *Client) Vote(sender *Account, voteID, recipient, amount string) error {
 }
 
 // Transfer will transfer token by sending transaction
-func (c *Client) Transfer(sender, recipient *Account, token, amount string, check bool) error {
+func (c *Client) Transfer(sender, recipient *Account, token, amount string, memoSize int, check bool) error {
+	memo := make([]byte, memoSize)
+	rand.Read(memo)
+	// Convert to base64.
+	memo, _ = json.Marshal(memo)
+	// Get rid of the beginning quote and cut to the string of given size.
+	memo = memo[1 : memoSize+1]
 	action := tx.NewAction(
 		"token.iost",
 		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v", "%v", ""]`, token, sender.ID, recipient.ID, amount),
+		fmt.Sprintf(`["%v", "%v", "%v", "%v", "%v"]`, token, sender.ID, recipient.ID, amount, string(memo)),
 	)
 
 	actions := []*tx.Action{action}

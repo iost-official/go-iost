@@ -46,7 +46,7 @@ func TestBlockSerialize(t *testing.T) {
 				ActionName: "actionname1",
 				Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 			}},
-			Signers: []string{a1.ID},
+			Signers: []string{a1.ReadablePubkey()},
 		}
 		blk.Txs = append(blk.Txs, &tx0)
 		receipt := tx.TxReceipt{

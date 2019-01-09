@@ -26,6 +26,11 @@ var TransferCaseFlags = []cli.Flag{
 		Value: "accounts.json",
 		Usage: "output of account information",
 	},
+	cli.IntFlag{
+		Name:  "memo, m",
+		Value: 0,
+		Usage: "The size of a random memo message that would be contained in the transaction",
+	},
 }
 
 // TransferCaseAction is the action of transfer test case
@@ -35,6 +40,7 @@ var TransferCaseAction = func(c *cli.Context) error {
 	tnum := c.Int("number")
 	keysfile := c.GlobalString("keys")
 	configfile := c.GlobalString("config")
+	memoSize := c.Int("memo")
 
 	it, err := itest.Load(keysfile, configfile)
 	if err != nil {
@@ -46,7 +52,7 @@ var TransferCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	if _, err := it.TransferN(tnum, accounts, true); err != nil {
+	if _, err := it.TransferN(tnum, accounts, memoSize, true); err != nil {
 		return err
 	}
 
