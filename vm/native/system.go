@@ -27,7 +27,7 @@ func init() {
 // var .
 var (
 	requireAuth = &abi{
-		name: "RequireAuth",
+		name: "requireAuth",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			var b bool
@@ -39,7 +39,7 @@ var (
 		},
 	}
 	receipt = &abi{
-		name: "Receipt",
+		name: "receipt",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
@@ -48,7 +48,7 @@ var (
 	}
 	// setcode can only be invoked in native vm, avoid updating contract during running
 	setCode = &abi{
-		name: "SetCode",
+		name: "setCode",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
@@ -99,7 +99,7 @@ var (
 	}
 	// updateCode can only be invoked in native vm, avoid updating contract during running
 	updateCode = &abi{
-		name: "UpdateCode",
+		name: "updateCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
@@ -132,13 +132,13 @@ var (
 
 	// initSetCode can only be invoked in genesis block, use specific id for deploying contract
 	initSetCode = &abi{
-		name: "InitSetCode",
+		name: "initSetCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 
 			if h.Context().Value("number").(int64) != 0 {
-				return []interface{}{}, cost, errors.New("InitSetCode in normal block")
+				return []interface{}{}, cost, errors.New("initSetCode in normal block")
 			}
 
 			con := &contract.Contract{}
@@ -162,7 +162,7 @@ var (
 
 	// updateNativeCode can only be invoked in native vm, avoid updating contract during running
 	updateNativeCode = &abi{
-		name: "UpdateNativeCode",
+		name: "updateNativeCode",
 		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
@@ -203,7 +203,7 @@ var (
 
 	// cancelDelaytx cancels a delay transaction.
 	cancelDelaytx = &abi{
-		name: "CancelDelaytx",
+		name: "cancelDelaytx",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 

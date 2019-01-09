@@ -225,7 +225,7 @@ func (t *Tx) IsDefer() bool {
 // CanceledDelaytxHash returns the delay transaction hash that is canceled.
 func (t *Tx) CanceledDelaytxHash() ([]byte, bool) {
 	for _, action := range t.Actions {
-		if action.Contract == "system.iost" && action.ActionName == "CancelDelaytx" {
+		if action.Contract == "system.iost" && action.ActionName == "cancelDelaytx" {
 			var actionData []string
 			err := json.Unmarshal([]byte(action.Data), &actionData)
 			if err == nil && len(actionData) > 0 {

@@ -23,7 +23,6 @@ import (
 )
 
 type key struct {
-	ID        string
 	Algorithm string
 	Pubkey    string
 	Seckey    string

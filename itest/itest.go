@@ -166,7 +166,7 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 				A.AddBalance(-amount)
 				ilog.Debugf("VoteProducer %v -> %v, amount: %v", A.ID, B, fmt.Sprintf("%0.8f", amount))
 
-				res <- t.Vote(A, B, fmt.Sprintf("%0.8f", amount))
+				res <- t.vote(A, B, fmt.Sprintf("%0.8f", amount))
 			}(res)
 		}
 	}()
@@ -348,8 +348,8 @@ func (t *ITest) ContractTransfer(cid string, sender, recipient *Account, amount 
 	return nil
 }
 
-// Vote will vote producer from sender to recipient
-func (t *ITest) Vote(sender *Account, recipient, amount string) error {
+// vote will vote producer from sender to recipient
+func (t *ITest) vote(sender *Account, recipient, amount string) error {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
