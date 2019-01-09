@@ -59,6 +59,10 @@ func TestAccountInfo(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 
+		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "@acc1", 1}), acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "unexpected item")
+
 		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "IOST1234", 1}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `{"id":"IOST1234","is_key_pair":true,"weight":1}`)
