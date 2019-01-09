@@ -80,11 +80,15 @@ func checkSuper(a *account.Account, auth map[string]int) bool {
 			}
 		}
 	}
-	weight = 0
+	return false
+}
+
+func checkActive(a *account.Account, auth map[string]int) bool {
 	active, ok := a.Permissions["active"]
 	if !ok {
 		return false
 	}
+	var weight int
 	for _, item := range active.Items {
 		if _, ok := auth[item.ID]; ok {
 			weight += item.Weight
@@ -113,9 +117,13 @@ func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 		return true, c
 	}
 
+	if permission != "owner" && checkActive(a, auth) {
+		return true, c
+	}
+
 	p, ok := a.Permissions[permission]
 	if !ok {
-		p = a.Permissions["active"]
+		return false, c
 	}
 
 	u := p.Items
