@@ -100,7 +100,7 @@ func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, arg
 	cost = host.CommonErrorCost(1)
 	a, ok = aset.Get(api)
 	if !ok {
-		ilog.Fatalf("invalid api name %v %v %v, please check `Monitor.prepareContract`", con.ID, con.Info.Version, api)
+		ilog.Errorf("invalid api name %v %v %v, please check `Monitor.prepareContract`", con.ID, con.Info.Version, api)
 		return nil, cost, fmt.Errorf("invalid api name: %v %v %v", con.ID, con.Info.Version, api)
 	}
 

@@ -70,11 +70,11 @@ func getABISetByVersion(conID string, version string) (aset *abiSet, err error) 
 	var amap map[string]*abiSet
 	var ok bool
 	if amap, ok = abiMap[conID]; !ok {
-		ilog.Fatalf("invalid contract name: %v %v, please check `Monitor.prepareContract`", conID, version)
+		ilog.Errorf("invalid contract name: %v %v, please check `Monitor.prepareContract`", conID, version)
 		return nil, fmt.Errorf("invalid contract name: %v %v", conID, version)
 	}
 	if aset, ok = amap[version]; !ok {
-		ilog.Fatalf("invalid contract version: %v %v, please check `Monitor.prepareContract`", conID, version)
+		ilog.Errorf("invalid contract version: %v %v, please check `Monitor.prepareContract`", conID, version)
 		return nil, fmt.Errorf("invalid contract version: %v %v", conID, version)
 	}
 
