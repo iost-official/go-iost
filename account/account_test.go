@@ -7,8 +7,6 @@ import (
 
 	"fmt"
 
-	"strings"
-
 	. "github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/smartystreets/goconvey/convey"
@@ -48,11 +46,8 @@ func TestPubkeyAndID(t *testing.T) {
 		id := EncodePubkey(pubkey)
 		pub2 := DecodePubkey(id)
 		id2 := EncodePubkey(pub2)
-		if !strings.HasPrefix(id, "IOST") {
-			t.Failed()
-		}
 		if id != id2 {
-			t.Failed()
+			t.Fail()
 		}
 	}
 }

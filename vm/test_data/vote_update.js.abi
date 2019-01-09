@@ -15,22 +15,13 @@
             "args": ["string"]
         },
         {
-            "name": "InitProducer",
+            "name": "initProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "RegisterProducer",
-            "args": [
-                "string",
-                "string",
-                "string",
-                "string"
-            ]
-        },
-        {
-            "name": "UpdateProducer",
+            "name": "registerProducer",
             "args": [
                 "string",
                 "string",
@@ -39,25 +30,34 @@
             ]
         },
         {
-            "name": "LogInProducer",
+            "name": "updateProducer",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "logInProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "LogOutProducer",
+            "name": "logOutProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "UnregisterProducer",
+            "name": "unregisterProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "Vote",
+            "name": "vote",
             "args": [
                 "string",
                 "string",
@@ -65,7 +65,7 @@
             ]
         },
         {
-            "name": "Unvote",
+            "name": "unvote",
             "args": [
                 "string",
                 "string",
@@ -73,7 +73,7 @@
             ]
         },
         {
-            "name": "Stat",
+            "name": "stat",
             "args": []
         }
     ]

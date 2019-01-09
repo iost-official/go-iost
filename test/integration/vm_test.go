@@ -459,7 +459,7 @@ func Test_LargeContract(t *testing.T) {
 
 		trx := tx.NewTx([]*tx.Action{{
 			Contract:   "system.iost",
-			ActionName: "SetCode",
+			ActionName: "setCode",
 			Data:       string(jargs),
 		}}, nil, int64(200000000), 100, s.Head.Time+100000000, 0)
 

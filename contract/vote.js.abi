@@ -7,7 +7,7 @@
             "args": ["string"]
         },
         {
-            "name": "InitProducer",
+            "name": "initProducer",
             "args": [
                 "string",
                 "string"
@@ -18,13 +18,13 @@
             }]
         },
         {
-            "name": "InitAdmin",
+            "name": "initAdmin",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "RegisterProducer",
+            "name": "registerProducer",
             "args": [
                 "string",
                 "string",
@@ -38,7 +38,7 @@
             }]
         },
         {
-            "name": "UpdateProducer",
+            "name": "updateProducer",
             "args": [
                 "string",
                 "string",
@@ -48,31 +48,31 @@
             ]
         },
         {
-            "name": "GetProducer",
+            "name": "getProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "LogInProducer",
+            "name": "logInProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "LogOutProducer",
+            "name": "logOutProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "UnregisterProducer",
+            "name": "unregisterProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "Vote",
+            "name": "vote",
             "args": [
                 "string",
                 "string",
@@ -84,7 +84,7 @@
             }]
         },
         {
-            "name": "Unvote",
+            "name": "unvote",
             "args": [
                 "string",
                 "string",
@@ -92,13 +92,13 @@
             ]
         },
         {
-            "name": "GetVote",
+            "name": "getVote",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "Stat",
+            "name": "stat",
             "args": []
         }
     ]

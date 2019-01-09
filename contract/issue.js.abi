@@ -7,7 +7,7 @@
             "args": ["string"]
         },
         {
-            "name": "InitGenesis",
+            "name": "initGenesis",
             "args": [
                 "string",
                 "json",
@@ -15,11 +15,11 @@
             ]
         },
         {
-            "name": "IssueIOST",
+            "name": "issueIOST",
             "args": []
         },
         {
-            "name": "IssueIOSTTo",
+            "name": "issueIOSTTo",
             "args": [
                 "string",
                 "string"

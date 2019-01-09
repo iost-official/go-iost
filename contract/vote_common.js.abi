@@ -7,13 +7,13 @@
             "args": ["string"]
         },
         {
-            "name": "InitAdmin",
+            "name": "initAdmin",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "NewVote",
+            "name": "newVote",
             "args": [
                 "string",
                 "string",
@@ -25,7 +25,7 @@
             }]
         },
         {
-            "name": "AddOption",
+            "name": "addOption",
             "args": [
                 "string",
                 "string",
@@ -33,7 +33,7 @@
             ]
         },
         {
-            "name": "RemoveOption",
+            "name": "removeOption",
             "args": [
                 "string",
                 "string",
@@ -41,14 +41,14 @@
             ]
         },
         {
-            "name": "GetOption",
+            "name": "getOption",
             "args": [
                 "string",
                 "string"
             ]
         },
         {
-            "name": "VoteFor",
+            "name": "voteFor",
             "args": [
                 "string",
                 "string",
@@ -62,7 +62,7 @@
             }]
         },
         {
-            "name": "Vote",
+            "name": "vote",
             "args": [
                 "string",
                 "string",
@@ -75,7 +75,7 @@
             }]
         },
         {
-            "name": "Unvote",
+            "name": "unvote",
             "args": [
                 "string",
                 "string",
@@ -84,20 +84,20 @@
             ]
         },
         {
-            "name": "GetVote",
+            "name": "getVote",
             "args": [
                 "string",
                 "string"
             ]
         },
         {
-            "name": "GetResult",
+            "name": "getResult",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "DelVote",
+            "name": "delVote",
             "args": [
                 "string"
             ]

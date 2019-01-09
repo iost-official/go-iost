@@ -36,7 +36,7 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 		[]interface{}{witness},
 	}
 	b, _ := json.Marshal(params)
-	r, err := s.Call("issue.iost", "InitGenesis", string(b), acc.ID, acc.KeyPair)
+	r, err := s.Call("issue.iost", "initGenesis", string(b), acc.ID, acc.KeyPair)
 	s.Visitor.Commit()
 	return r, err
 }
@@ -59,9 +59,9 @@ func Test_IOSTIssue(t *testing.T) {
 		prepareNewProducerVote(t, s, acc0)
 		initProducer(s)
 
-		Convey("test IssueIOST", func() {
+		Convey("test issueIOST", func() {
 			s.Head.Time += 4 * 3 * 1e9
-			r, err := s.Call("issue.iost", "IssueIOST", `[]`, acc0.ID, acc0.KeyPair)
+			r, err := s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)

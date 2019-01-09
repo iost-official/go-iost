@@ -14,7 +14,7 @@ import (
 
 func initProducer(s *Simulator) {
 	for _, acc := range testAccounts[:6] {
-		r, err := s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc0.ID, acc0.KeyPair)
+		r, err := s.Call("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 	}
@@ -63,7 +63,7 @@ func prepareNewProducerVote(t *testing.T, s *Simulator, acc1 *TestAccount) {
 
 	// deploy vote_producer.iost
 	setNonNativeContract(s, "vote_producer.iost", "vote_producer.js", ContractPath)
-	r, err = s.Call("vote_producer.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+	r, err = s.Call("vote_producer.iost", "initAdmin", fmt.Sprintf(`["%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 	if err != nil || r.Status.Code != tx.Success {
 		t.Fatal(err, r)
 	}
@@ -83,7 +83,7 @@ func prepareNewProducerVote(t *testing.T, s *Simulator, acc1 *TestAccount) {
 
 func Test_InitProducer(t *testing.T) {
 	ilog.Stop()
-	Convey("test InitProducer", t, func() {
+	Convey("test initProducer", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 
@@ -107,7 +107,7 @@ func Test_InitProducer(t *testing.T) {
 
 func Test_RegisterProducer(t *testing.T) {
 	ilog.Stop()
-	Convey("test RegisterProducer", t, func() {
+	Convey("test registerProducer", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 
@@ -119,14 +119,14 @@ func Test_RegisterProducer(t *testing.T) {
 		initProducer(s)
 
 		Convey("test register/unregister", func() {
-			r, err := s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
+			r, err := s.Call("vote_producer.iost", "registerProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", acc6.ID)), ShouldEqual, fmt.Sprintf(`{"pubkey":"%s","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000"}`, acc6.KeyPair.ReadablePubkey()))
 			So(s.Visitor.TokenBalance("iost", acc6.ID), ShouldEqual, int64(1800000000*1e8))
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"0"`)
 
-			r, err = s.Call("vote_producer.iost", "UnregisterProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
+			r, err = s.Call("vote_producer.iost", "unregisterProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.MHas("vote_producer.iost-producerTable", acc6.ID), ShouldEqual, false)
@@ -137,7 +137,7 @@ func Test_RegisterProducer(t *testing.T) {
 
 func Test_LogInOut(t *testing.T) {
 	ilog.Stop()
-	Convey("test RegisterProducer", t, func() {
+	Convey("test registerProducer", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 
@@ -149,20 +149,20 @@ func Test_LogInOut(t *testing.T) {
 		initProducer(s)
 
 		Convey("test login/logout", func() {
-			r, err := s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
+			r, err := s.Call("vote_producer.iost", "registerProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
+			r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", acc6.ID)), ShouldEqual, fmt.Sprintf(`{"pubkey":"%s","loc":"loc","url":"url","netId":"netId","online":true,"registerFee":"200000000"}`, acc6.KeyPair.ReadablePubkey()))
 
-			r, err = s.Call("vote_producer.iost", "LogOutProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
+			r, err = s.Call("vote_producer.iost", "logOutProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", acc6.ID)), ShouldEqual, fmt.Sprintf(`{"pubkey":"%s","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000"}`, acc6.KeyPair.ReadablePubkey()))
 
-			r, _ = s.Call("vote_producer.iost", "LogOutProducer", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+			r, _ = s.Call("vote_producer.iost", "logOutProducer", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			So(r.Status.Message, ShouldNotEqual, "")
 			So(r.Status.Code, ShouldEqual, 4)
 			So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't logout")
@@ -173,7 +173,7 @@ func Test_LogInOut(t *testing.T) {
 func Test_Vote1(t *testing.T) {
 	t.Skip()
 	ilog.Stop()
-	Convey("test Vote", t, func() {
+	Convey("test vote", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 
@@ -186,27 +186,27 @@ func Test_Vote1(t *testing.T) {
 		initProducer(s)
 
 		s.Head.Number = 1
-		r, err := s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
+		r, err := s.Call("vote_producer.iost", "registerProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc7.ID, acc7.KeyPair.ReadablePubkey()), acc7.ID, acc7.KeyPair)
+		r, err = s.Call("vote_producer.iost", "registerProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc7.ID, acc7.KeyPair.ReadablePubkey()), acc7.ID, acc7.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "RegisterProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc8.ID, acc8.KeyPair.ReadablePubkey()), acc8.ID, acc8.KeyPair)
+		r, err = s.Call("vote_producer.iost", "registerProducer", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId"]`, acc8.ID, acc8.KeyPair.ReadablePubkey()), acc8.ID, acc8.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
+		r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc7.ID), acc7.ID, acc7.KeyPair)
+		r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc7.ID), acc7.ID, acc7.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
+		r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(r.Status.Code, ShouldEqual, tx.Success)
@@ -214,35 +214,35 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "7")), ShouldEqual, `"0"`)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "8")), ShouldEqual, `"0"`)
 
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc6.ID, "100000000"), acc0.ID, acc0.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc6.ID, "100000000"), acc0.ID, acc0.KeyPair)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"100000000"`)
 
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc7.ID, acc6.ID, "100000000"), acc7.ID, acc7.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc7.ID, acc6.ID, "100000000"), acc7.ID, acc7.KeyPair)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"200000000"`)
 		info := database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1"))
 		So(info, ShouldContainSubstring, `"0":0,"1":0,"2":0,"3":0,"4":0,"5":0,"6":1,"7":0,"8":0`)
 
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc8.ID, acc6.ID, "100000000"), acc8.ID, acc8.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc8.ID, acc6.ID, "100000000"), acc8.ID, acc8.KeyPair)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"300000000"`)
 		info = database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1"))
 		So(info, ShouldContainSubstring, `"0":0,"1":0,"2":0,"3":0,"4":0,"5":0,"6":1,"7":0,"8":0`)
 
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc7.ID, "215000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc8.ID, "220000000"), acc0.ID, acc0.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc7.ID, "215000000"), acc0.ID, acc0.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc8.ID, "220000000"), acc0.ID, acc0.KeyPair)
 
-		r, err = s.Call("vote_producer.iost", "GetProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
+		r, err = s.Call("vote_producer.iost", "getProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(r.Returns[0], ShouldEqual, fmt.Sprintf(`["{\"pubkey\":\"%s\",\"loc\":\"loc\",\"url\":\"url\",\"netId\":\"netId\",\"online\":true,\"registerFee\":\"200000000\",\"voteInfo\":{\"votes\":\"300000000\",\"deleted\":0,\"clearTime\":-1}}"]`, acc6.KeyPair.ReadablePubkey()))
 
-		r, err = s.Call("vote_producer.iost", "GetVote", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "getVote", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(r.Returns[0], ShouldEqual, `["[{\"option\":\"user_6\",\"votes\":\"100000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"user_7\",\"votes\":\"215000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"user_8\",\"votes\":\"220000000\",\"voteTime\":1,\"clearedVotes\":\"0\"}]"]`)
 
 		// do stat
 		s.Head.Number = 2000
-		r, err = s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
@@ -263,12 +263,12 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "240000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc2.ID, "230000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc3.ID, "260000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc4.ID, "250000000"), acc0.ID, acc0.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "240000000"), acc0.ID, acc0.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc2.ID, "230000000"), acc0.ID, acc0.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc3.ID, "260000000"), acc0.ID, acc0.KeyPair)
+		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc4.ID, "250000000"), acc0.ID, acc0.KeyPair)
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: 0				, 240000000
@@ -288,7 +288,7 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: 0				, 240000000
@@ -308,7 +308,7 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: 0				, 240000000
@@ -328,7 +328,7 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^1*30000000	, 240000000
@@ -348,7 +348,7 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^2*30000000	, 240000000
@@ -368,7 +368,7 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^3*30000000	, 240000000
@@ -388,7 +388,7 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^4*30000000	, 240000000
@@ -408,7 +408,7 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^5*30000000	, 240000000
@@ -444,19 +444,19 @@ func Test_Unregister2(t *testing.T) {
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
-			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
+			r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
+			r, err = s.Call("vote_producer.iost", "approveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
+			r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 		}
 		// So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", fmt.Sprintf(`%d`, 1))), ShouldEqual, "")
 		for idx, acc := range testAccounts {
-			r, err := s.Call("vote_producer.iost", "Vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
+			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", fmt.Sprintf(`%d`, idx))), ShouldEqual, fmt.Sprintf(`"%d"`, (idx+2)*1e7))
@@ -464,7 +464,7 @@ func Test_Unregister2(t *testing.T) {
 
 		// do stat
 		s.Head.Number = 2000
-		r, err := s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err := s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
@@ -487,13 +487,13 @@ func Test_Unregister2(t *testing.T) {
 		scores := `{"user_9":"103500000.00000000","user_8":"93500000.00000000","user_7":"83500000.00000000","user_6":"73500000.00000000","user_5":"63500000.00000000","user_4":"53500000.00000000","user_3":"50000000","user_2":"40000000","user_1":"30000000","user_0":"20000000"}`
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
 
-		r, err = s.Call("vote_producer.iost", "ApplyUnregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc9.ID, acc9.KeyPair)
+		r, err = s.Call("vote_producer.iost", "applyUnregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc9.ID, acc9.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 4				, 2
 		// 1	: 6				, 3
@@ -514,16 +514,16 @@ func Test_Unregister2(t *testing.T) {
 		scores = `{"user_9":"200890000.00000000","user_8":"180890000.00000000","user_7":"160890000.00000000","user_6":"140890000.00000000","user_5":"120890000.00000000","user_4":"100890000.00000000","user_3":"100000000","user_2":"80000000","user_1":"60000000","user_0":"40000000"}`
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
 
-		r, err = s.Call("vote_producer.iost", "ApproveUnregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "approveUnregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "Unregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc9.ID, acc9.KeyPair)
+		r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc9.ID, acc9.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score				, votes
 		// 0	: 6					, 2
 		// 1	: 9					, 3
@@ -545,30 +545,30 @@ func Test_Unregister2(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
 
 		// unregister 8
-		r, err = s.Call("vote_producer.iost", "ApplyUnregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
+		r, err = s.Call("vote_producer.iost", "applyUnregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "ApproveUnregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "approveUnregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "Unregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
+		r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		// unregister 3
-		r, err = s.Call("vote_producer.iost", "ApplyUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
+		r, err = s.Call("vote_producer.iost", "applyUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "ApproveUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "approveUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		r, err = s.Call("vote_producer.iost", "Unregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
+		r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score			, votes
 		// 0	: 8					, 2
 		// 1	: 12 - 2.02258095	, 3
@@ -591,17 +591,17 @@ func Test_Unregister2(t *testing.T) {
 
 		// force unregister all left except for 2 (or acc2.ID)
 		for _, acc := range []*TestAccount{acc0, acc1, acc4, acc5, acc6, acc7} {
-			r, err = s.Call("vote_producer.iost", "ForceUnregister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
+			r, err = s.Call("vote_producer.iost", "forceUnregister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("vote_producer.iost", "Unregister", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
+			r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 		}
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score				, votes
 		// 0 X	: X					, 2
 		// 1 W	: X					, 3
@@ -623,20 +623,20 @@ func Test_Unregister2(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
 
 		for _, acc := range []*TestAccount{acc3, acc4, acc8, acc9} {
-			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
+			r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
+			r, err = s.Call("vote_producer.iost", "approveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			r, err = s.Call("vote_producer.iost", "LogInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
+			r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 		}
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "Stat", `[]`, acc0.ID, acc0.KeyPair)
+		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		// acc	: score				, votes
 		// 0 X	: X					, 2
 		// 1 W	: X					, 3

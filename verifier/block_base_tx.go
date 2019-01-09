@@ -15,7 +15,7 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 		if err != nil {
 			return nil, err
 		}
-		act := tx.NewAction("base.iost", "Exec", txData)
+		act := tx.NewAction("base.iost", "exec", txData)
 		acts = append(acts, act)
 	}
 	tx := &tx.Tx{

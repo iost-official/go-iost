@@ -47,7 +47,7 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 	newVoteConfig["anyOption"] = false
 	newVoteConfig["freezeTime"] = 0
 	bank := it.GetDefaultAccount()
-	hash, err := it.CallActionWithRandClient(it.GetDefaultAccount(), "vote.iost", "NewVote", bank.ID, "test vote", newVoteConfig)
+	hash, err := it.CallActionWithRandClient(it.GetDefaultAccount(), "vote.iost", "newVote", bank.ID, "test vote", newVoteConfig)
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 	go func() {
 		for idx := range allArgs {
 			go func(i int, res chan interface{}) {
-				_, err := it.CallActionWithRandClient(callingAccounts[i], "vote.iost", "Vote", allArgs[i]...)
+				_, err := it.CallActionWithRandClient(callingAccounts[i], "vote.iost", "vote", allArgs[i]...)
 				res <- err
 			}(idx, res)
 		}
@@ -111,13 +111,13 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 	}
 	res2 := make(chan error)
 	go func() {
-		res2 <- checkReturn("GetResult", `[{"option":"option3","votes":"110"},{"option":"option1","votes":"20"}]`, voteID)
+		res2 <- checkReturn("getResult", `[{"option":"option3","votes":"110"},{"option":"option1","votes":"20"}]`, voteID)
 	}()
 	go func() {
-		res2 <- checkReturn("GetOption", `{"votes":"110","deleted":false,"clearTime":-1}`, voteID, "option3")
+		res2 <- checkReturn("getOption", `{"votes":"110","deleted":false,"clearTime":-1}`, voteID, "option3")
 	}()
 	//go func() {
-	//	res2 <- checkReturn("GetVote", `["[{\"option\":\"option3\",\"votes\":\"10\",\"voteTime\":0,\"clearedVotes\":\"0\"},{\"option\":\"option1\",\"votes\":\"20\",\"voteTime\":0,\"clearedVotes\":\"0\"}]"]`, voteID, accounts[1].ID)
+	//	res2 <- checkReturn("getVote", `["[{\"option\":\"option3\",\"votes\":\"10\",\"voteTime\":0,\"clearedVotes\":\"0\"},{\"option\":\"option1\",\"votes\":\"20\",\"voteTime\":0,\"clearedVotes\":\"0\"}]"]`, voteID, accounts[1].ID)
 	//} ()
 	for i := 0; i < 2; i++ {
 		if err := <-res2; err != nil {

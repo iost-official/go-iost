@@ -21,7 +21,7 @@ class VoteCommonContract {
         this._put("current_id", "0");
     }
 
-    InitAdmin(adminID) {
+    initAdmin(adminID) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
@@ -123,7 +123,7 @@ class VoteCommonContract {
         }
     }
 
-    NewVote(owner, description, info) {
+    newVote(owner, description, info) {
         this._requireAuth(owner, adminPermission);
 
         if (description.length > descriptionMaxLength) {
@@ -202,7 +202,7 @@ class VoteCommonContract {
         return voteId;
     }
 
-    AddOption(voteId, option, clearVote) {
+    addOption(voteId, option, clearVote) {
         const owner = this._requireOwner(voteId);
         this._checkDel(voteId);
 
@@ -243,7 +243,7 @@ class VoteCommonContract {
         this._mapPut("voteInfo", voteId, info, owner);
     }
 
-    RemoveOption(voteId, option, force) {
+    removeOption(voteId, option, force) {
         const owner = this._requireOwner(voteId);
         this._checkDel(voteId);
 
@@ -278,7 +278,7 @@ class VoteCommonContract {
         this._mapPut("voteInfo", voteId, info, owner);
     }
 
-    GetOption(voteId, option) {
+    getOption(voteId, option) {
         this._checkVote(voteId);
         this._checkDel(voteId);
 
@@ -317,12 +317,12 @@ class VoteCommonContract {
             this._requireAuth(payer, votePermission);
             const fundIDs = this._get("fundID");
             if (!fundIDs.includes(payer)) {
-                throw new Error("payer is not allowed to call VoteFor.");
+                throw new Error("payer is not allowed to call voteFor.");
             }
         }
     }
 
-    VoteFor(voteId, payer, account, option, amount) {
+    voteFor(voteId, payer, account, option, amount) {
         this._checkVote(voteId);
         this._checkDel(voteId);
         this._checkVoteAuth(account, payer);
@@ -366,11 +366,11 @@ class VoteCommonContract {
         this._mapPut("voteInfo", voteId, info);
     }
 
-    Vote(voteId, account, option, amount) {
-        this.VoteFor(voteId, account, account, option, amount);
+    vote(voteId, account, option, amount) {
+        this.voteFor(voteId, account, account, option, amount);
     }
 
-    Unvote(voteId, account, option, amount) {
+    unvote(voteId, account, option, amount) {
         this._checkVote(voteId);
         this._requireAuth(account, votePermission);
 
@@ -432,7 +432,7 @@ class VoteCommonContract {
         }
     }
 
-    GetVote(voteId, account) {
+    getVote(voteId, account) {
         this._checkVote(voteId);
 
         let userVotes = this._mapGet(userVotePrefix + voteId, account);
@@ -459,7 +459,7 @@ class VoteCommonContract {
         return votes;
     }
 
-    GetResult(voteId) {
+    getResult(voteId) {
         this._checkVote(voteId);
         const info = this._mapGet("voteInfo", voteId);
         let preResult = [];
@@ -481,7 +481,7 @@ class VoteCommonContract {
         return preResult.slice(0, info.resultNumber);
     }
 
-    DelVote(voteId) {
+    delVote(voteId) {
         this._requireOwner(voteId);
         this._checkDel(voteId);
 
