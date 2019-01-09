@@ -249,13 +249,13 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	}
 	bc.linkedRoot.Head.Number = -1
 
-	bhJson, err := bc.stateDB.Get("snapshot", "blockHead")
-	ilog.Infoln(bhJson)
+	bhJSON, err := bc.stateDB.Get("snapshot", "blockHead")
+	ilog.Infoln(bhJSON)
 	if err != nil {
 		return nil, fmt.Errorf("get current block head from state db failed. err: %v", err)
 	}
 	bh := &block.BlockHead{}
-	err = json.Unmarshal([]byte(bhJson), bh)
+	err = json.Unmarshal([]byte(bhJSON), bh)
 	if err != nil {
 		return nil, fmt.Errorf("block head decode failed. err: %v", err)
 	}

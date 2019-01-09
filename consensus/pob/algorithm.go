@@ -25,16 +25,15 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errDoubleTx    = errors.New("double tx in block")
 	errTxSignature = errors.New("tx wrong signature")
-	errHeadHash    = errors.New("wrong head hash")
 	generateTxsNum = 0
 )
 
 func saveBlockHead(db db.MVCCDB, bh *block.BlockHead) error {
-	bhJson, err := json.Marshal(bh)
+	bhJSON, err := json.Marshal(bh)
 	if err != nil {
 		return fmt.Errorf("json fail: %v", err)
 	}
-	err = db.Put("snapshot", "blockHead", string(bhJson))
+	err = db.Put("snapshot", "blockHead", string(bhJSON))
 	if err != nil {
 		return fmt.Errorf("state db put fail: %v", err)
 	}

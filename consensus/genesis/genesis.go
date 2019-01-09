@@ -209,12 +209,12 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		return nil, err
 	}
-	bhJson, err := json.Marshal(blk.Head)
+	bhJSON, err := json.Marshal(blk.Head)
 	if err != nil {
 		return nil, fmt.Errorf("json fail: %v", err)
 	}
-	ilog.Infoln(string(bhJson))
-	err = db.Put("snapshot", "blockHead", string(bhJson))
+	ilog.Infoln(string(bhJSON))
+	err = db.Put("snapshot", "blockHead", string(bhJSON))
 	if err != nil {
 		return nil, fmt.Errorf("state db put fail: %v", err)
 	}

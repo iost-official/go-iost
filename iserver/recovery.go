@@ -17,8 +17,7 @@ func checkGenesis(bv global.BaseVariable) error {
 	blockChain := bv.BlockChain()
 	stateDB := bv.StateDB()
 	conf := bv.Config()
-	// if conf.Snapshot.FilePath == "" && blockChain.Length() == int64(0) { //blockchaindb is empty
-	if false {
+	if conf.Snapshot.FilePath == "" && blockChain.Length() == int64(0) { //blockchaindb is empty
 		// TODO: remove the module of starting iserver from yaml.
 
 		ilog.Infof("Genesis is not exist.")
@@ -55,12 +54,12 @@ func recoverDB(bv global.BaseVariable) error {
 
 	// if conf.Snapshot.FilePath != "" {
 	if blockChain.Length() == int64(0) {
-		bhJson, err := stateDB.Get("snapshot", "blockHead")
+		bhJSON, err := stateDB.Get("snapshot", "blockHead")
 		if err != nil {
 			return fmt.Errorf("get current block head from state db failed. err: %v", err)
 		}
 		bh := &block.BlockHead{}
-		err = json.Unmarshal([]byte(bhJson), bh)
+		err = json.Unmarshal([]byte(bhJSON), bh)
 		if err != nil {
 			return fmt.Errorf("decode block head failed. err: %v", err)
 		}
@@ -93,12 +92,12 @@ func recoverDB(bv global.BaseVariable) error {
 				return fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
 			}
 			parent = blk
-			bhJson, err := json.Marshal(blk.Head)
+			bhJSON, err := json.Marshal(blk.Head)
 			if err != nil {
 				return fmt.Errorf("json fail: %v", err)
 			}
-			ilog.Infoln(string(bhJson))
-			err = stateDB.Put("snapshot", "blockHead", string(bhJson))
+			ilog.Infoln(string(bhJSON))
+			err = stateDB.Put("snapshot", "blockHead", string(bhJSON))
 			if err != nil {
 				return fmt.Errorf("state db put fail: %v", err)
 			}
