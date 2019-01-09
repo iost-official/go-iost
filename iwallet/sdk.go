@@ -151,11 +151,11 @@ func (s *SDK) getSignAlgo() crypto.Algorithm {
 	}
 }
 
-func (s *SDK) checkID(ID string) bool {
-	if strings.HasPrefix(ID, "IOST") {
-		return true
+func (s *SDK) checkPubKey(k string) bool {
+	if k == "" {
+		return false
 	}
-	return false
+	return true
 }
 
 // GetContractStorage ...
@@ -412,7 +412,7 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 // CreateNewAccount ...
 func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
 	var acts []*rpcpb.Action
-	acts = append(acts, NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
+	acts = append(acts, NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
 	}
@@ -481,9 +481,9 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 		Code: code,
 		Info: info,
 	}
-	methodName := "SetCode"
+	methodName := "setCode"
 	if update {
-		methodName = "UpdateCode"
+		methodName = "updateCode"
 	}
 	marshalMethod := "json"
 	var contractStr string

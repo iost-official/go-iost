@@ -7,7 +7,7 @@
             "args": ["string"]
         },
         {
-            "name": "InitProducer",
+            "name": "initProducer",
             "args": [
                 "string",
                 "string"
@@ -18,13 +18,13 @@
             }]
         },
         {
-            "name": "InitAdmin",
+            "name": "initAdmin",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ApplyRegister",
+            "name": "applyRegister",
             "args": [
                 "string",
                 "string",
@@ -35,37 +35,37 @@
             ]
         },
         {
-            "name": "ApplyUnregister",
+            "name": "applyUnregister",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ApproveRegister",
+            "name": "approveRegister",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ApproveUnregister",
+            "name": "approveUnregister",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ForceUnregister",
+            "name": "forceUnregister",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "Unregister",
+            "name": "unregister",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "UpdateProducer",
+            "name": "updateProducer",
             "args": [
                 "string",
                 "string",
@@ -75,25 +75,25 @@
             ]
         },
         {
-            "name": "GetProducer",
+            "name": "getProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "LogInProducer",
+            "name": "logInProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "LogOutProducer",
+            "name": "logOutProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "VoteFor",
+            "name": "voteFor",
             "args": [
                 "string",
                 "string",
@@ -106,7 +106,7 @@
             }]
         },
         {
-            "name": "Vote",
+            "name": "vote",
             "args": [
                 "string",
                 "string",
@@ -118,7 +118,7 @@
             }]
         },
         {
-            "name": "Unvote",
+            "name": "unvote",
             "args": [
                 "string",
                 "string",
@@ -126,13 +126,13 @@
             ]
         },
         {
-            "name": "GetVote",
+            "name": "getVote",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "TopupCandidateBonus",
+            "name": "topupCandidateBonus",
             "args": [
                 "string",
                 "string"
@@ -143,7 +143,7 @@
             }]
         },
         {
-            "name": "TopupVoterBonus",
+            "name": "topupVoterBonus",
             "args": [
                 "string",
                 "string",
@@ -155,29 +155,29 @@
             }]
         },
         {
-            "name": "Stat",
+            "name": "stat",
             "args": []
         },
         {
-            "name": "GetCandidateBonus",
+            "name": "getCandidateBonus",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "CandidateWithdraw",
+            "name": "candidateWithdraw",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "GetVoterBonus",
+            "name": "getVoterBonus",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "VoterWithdraw",
+            "name": "voterWithdraw",
             "args": [
                 "string"
             ]

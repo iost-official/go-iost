@@ -8,7 +8,7 @@ class Base {
         this._put("execBlockNumber", 0);
     }
 
-    InitAdmin(adminID) {
+    initAdmin(adminID) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
@@ -41,11 +41,11 @@ class Base {
     }
 
     _vote() {
-        blockchain.callWithAuth("vote_producer.iost", "Stat", `[]`);
+        blockchain.callWithAuth("vote_producer.iost", "stat", `[]`);
     }
 
     _bonus(data) {
-        blockchain.callWithAuth("bonus.iost", "IssueContribute", JSON.stringify([data]));
+        blockchain.callWithAuth("bonus.iost", "issueContribute", JSON.stringify([data]));
     }
 
     _saveBlockInfo() {
@@ -55,7 +55,7 @@ class Base {
     }
 
     // The first contract executed
-    Exec(data) {
+    exec(data) {
         this._saveBlockInfo();
         const bn = block.number;
         const execBlockNumber = this._get("execBlockNumber");

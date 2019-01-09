@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "abi": [
     {
-      "name": "Stat",
+      "name": "stat",
       "args": []
     },
     {
-      "name": "IssueContribute",
+      "name": "issueContribute",
       "args": [
           "json"
       ]

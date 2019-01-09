@@ -50,19 +50,19 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	native.AdminAccount = adminInfo.ID
 
 	// deploy token.iost
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
 		fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.SystemContractABI("token.iost", "1.0.0").B64Encode())))
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
 		fmt.Sprintf(`["%v", "%v"]`, "token721.iost", native.SystemContractABI("token721.iost", "1.0.0").B64Encode())))
 	// deploy iost.gas
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
 		fmt.Sprintf(`["%v", "%v"]`, "gas.iost", native.SystemContractABI("gas.iost", "1.0.0").B64Encode())))
 	// deploy issue.iost and create iost
 	code, err := compile("issue.iost", gConf.ContractPath, "issue.js")
 	if err != nil {
 		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "issue.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "issue.iost", code.B64Encode())))
 	tokenInfo := gConf.TokenInfo
 	tokenHolder := append(witnessInfo, adminInfo)
 	params := []interface{}{
@@ -71,66 +71,66 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 		tokenHolder,
 	}
 	b, _ := json.Marshal(params)
-	acts = append(acts, tx.NewAction("issue.iost", "InitGenesis", string(b)))
+	acts = append(acts, tx.NewAction("issue.iost", "initGenesis", string(b)))
 	// deploy account.iost
 	code, err = compile("auth.iost", gConf.ContractPath, "account.js")
 	if err != nil {
 		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "auth.iost", code.B64Encode())))
-	acts = append(acts, tx.NewAction("auth.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "auth.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("auth.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy domain.iost
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode",
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
 		fmt.Sprintf(`["%v", "%v"]`, "domain.iost", native.SystemContractABI("domain.iost", "0.0.0").B64Encode())))
 
 	// new account
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
+	acts = append(acts, tx.NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, adminInfo.Owner, adminInfo.Active)))
 	// new account
 	foundationInfo := gConf.FoundationInfo
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
+	acts = append(acts, tx.NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, foundationInfo.ID, foundationInfo.Owner, foundationInfo.Active)))
 
 	for _, v := range witnessInfo {
-		acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
+		acts = append(acts, tx.NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, v.ID, v.Owner, v.Active)))
 	}
 	invalidPubKey := "0"
 	deadAccount := account.NewAccount("deadaddr")
-	acts = append(acts, tx.NewAction("auth.iost", "SignUp", fmt.Sprintf(`["%v", "%v", "%v"]`, deadAccount.ID, invalidPubKey, invalidPubKey)))
+	acts = append(acts, tx.NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, deadAccount.ID, invalidPubKey, invalidPubKey)))
 
 	// deploy bonus.iost
 	code, err = compile("bonus.iost", gConf.ContractPath, "bonus.js")
 	if err != nil {
 		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "bonus.iost", code.B64Encode())))
-	acts = append(acts, tx.NewAction("bonus.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "bonus.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("bonus.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy vote.iost
 	code, err = compile("vote.iost", gConf.ContractPath, "vote_common.js")
 	if err != nil {
 		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "vote.iost", code.B64Encode())))
-	acts = append(acts, tx.NewAction("vote.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "vote.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("vote.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy vote_producer.iost
 	code, err = compile("vote_producer.iost", gConf.ContractPath, "vote_producer.js")
 	if err != nil {
 		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "vote_producer.iost", code.B64Encode())))
-	acts = append(acts, tx.NewAction("vote_producer.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "vote_producer.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("vote_producer.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	// deploy base.iost
 	code, err = compile("base.iost", gConf.ContractPath, "base.js")
 	if err != nil {
 		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "base.iost", code.B64Encode())))
-	acts = append(acts, tx.NewAction("base.iost", "InitAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "base.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("base.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
 	for _, v := range witnessInfo {
-		acts = append(acts, tx.NewAction("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, v.ID, v.SignatureBlock)))
+		acts = append(acts, tx.NewAction("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, v.ID, v.SignatureBlock)))
 	}
 
 	// pledge gas for admin
@@ -142,7 +142,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	if err != nil {
 		return nil, nil, err
 	}
-	acts = append(acts, tx.NewAction("system.iost", "InitSetCode", fmt.Sprintf(`["%v", "%v"]`, "ram.iost", code.B64Encode())))
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "ram.iost", code.B64Encode())))
 	acts = append(acts, tx.NewAction("ram.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 	var initialTotal int64 = 128 * 1024 * 1024 * 1024                           // 128GB at first
 	var increaseInterval int64 = 10 * 60                                        // increase every 10 mins

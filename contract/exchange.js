@@ -39,8 +39,8 @@ class Exchange {
                 if (args.length !== 3) {
                     throw new Error("memo of transferring to a new account should be of format name:ownerKey:activeKey");
                 }
-                // Attention: SignUp will use publisher() asset, so publisher should be equal to from
-                blockchain.call("auth.iost", "SignUp", JSON.stringify(args));
+                // Attention: signUp will use publisher() asset, so publisher should be equal to from
+                blockchain.call("auth.iost", "signUp", JSON.stringify(args));
                 let rets = blockchain.call("ram.iost", "buy", JSON.stringify([from, args[0], initialRAM]));
                 let price = rets[0];
 
