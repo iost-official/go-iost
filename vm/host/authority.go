@@ -122,10 +122,14 @@ func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 		return true, c
 	}
 	if permission == "active" {
-		return Auth(vi, id, "owner", auth, reenter)
+		ok, c2 := Auth(vi, id, "owner", auth, reenter)
+		c.AddAssign(c2)
+		return ok, c
 	} else if permission == "owner" {
 		return false, c
 	} else {
-		return Auth(vi, id, "active", auth, reenter)
+		ok, c2 := Auth(vi, id, "active", auth, reenter)
+		c.AddAssign(c2)
+		return ok, c
 	}
 }
