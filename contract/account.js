@@ -155,6 +155,9 @@ class Account {
 
     DropPermission(id, perm) {
         this._ra(id);
+        if (perm === "active" || perm === "owner") {
+            throw "drop active or owner is forbidden"
+        }
         let acc = this._loadAccount(id);
         acc.permissions[perm] = undefined;
         this._saveAccount(acc);
