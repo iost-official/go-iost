@@ -65,7 +65,7 @@ func TestTx(t *testing.T) {
 					ActionName: "actionname1",
 					Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 				}},
-				Signers: []string{a1.ID},
+				Signers: []string{a1.ReadablePubkey()},
 			}
 			b, err := proto.Marshal(tx)
 			So(err, ShouldEqual, nil)
@@ -79,7 +79,7 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("encode and decode", func() {
-			tx := NewTx(actions, []string{a1.ID}, 100000, 100, 11, 0)
+			tx := NewTx(actions, []string{a1.ReadablePubkey()}, 100000, 100, 11, 0)
 			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0, 0)
 			hash := tx.Hash()
 
@@ -90,10 +90,10 @@ func TestTx(t *testing.T) {
 			hash1 := tx1.Hash()
 			So(bytes.Equal(hash, hash1), ShouldEqual, true)
 
-			sig, err := SignTxContent(tx, a1.ID, a1)
+			sig, err := SignTxContent(tx, a1.ReadablePubkey(), a1)
 			So(err, ShouldEqual, nil)
 
-			_, err = SignTx(tx, a1.ID, []*account.KeyPair{a1}, sig)
+			_, err = SignTx(tx, a1.ReadablePubkey(), []*account.KeyPair{a1}, sig)
 			So(err, ShouldEqual, nil)
 
 			hash = tx.Hash()
@@ -133,19 +133,19 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("sign and verify", func() {
-			tx := NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1, 0)
-			sig1, err := SignTxContent(tx, a1.ID, a1)
+			tx := NewTx(actions, []string{a1.ReadablePubkey(), a2.ReadablePubkey()}, 9999, 1, 1, 0)
+			sig1, err := SignTxContent(tx, a1.ReadablePubkey(), a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
 
-			sig2, err := SignTxContent(tx, a2.ID, a2)
+			sig2, err := SignTxContent(tx, a2.ReadablePubkey(), a2)
 			So(tx.VerifySigner(sig2), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig2)
 
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher empty error")
 
-			tx3, err := SignTx(tx, a3.ID, []*account.KeyPair{a3})
+			tx3, err := SignTx(tx, a3.ReadablePubkey(), []*account.KeyPair{a3})
 			So(err, ShouldBeNil)
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)

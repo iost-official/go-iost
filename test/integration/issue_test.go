@@ -22,8 +22,8 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 
 	witness := common.Witness{
 		ID:      acc0.ID,
-		Owner:   acc0.KeyPair.ID,
-		Active:  acc0.KeyPair.ID,
+		Owner:   acc0.KeyPair.ReadablePubkey(),
+		Active:  acc0.KeyPair.ReadablePubkey(),
 		Balance: 21000000000,
 	}
 	params := []interface{}{

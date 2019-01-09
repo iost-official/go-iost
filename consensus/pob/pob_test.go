@@ -31,9 +31,9 @@ func testRun(t *testing.T) {
 	account2, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	account3, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	id2Seckey := make(map[string][]byte)
-	id2Seckey[account1.ID] = account1.Seckey
-	id2Seckey[account2.ID] = account2.Seckey
-	id2Seckey[account3.ID] = account3.Seckey
+	id2Seckey[account1.ReadablePubkey()] = account1.Seckey
+	id2Seckey[account2.ReadablePubkey()] = account2.Seckey
+	id2Seckey[account3.ReadablePubkey()] = account3.Seckey
 	baseVariable, err := global.New(&common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "Fakedb/",

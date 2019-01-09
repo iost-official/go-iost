@@ -355,7 +355,7 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	}
 	defer pubfile.Close()
 
-	_, err = pubfile.WriteString(saveBytes(kp.Pubkey))
+	_, err = pubfile.WriteString(common.Base58Encode(kp.Pubkey))
 	if err != nil {
 		return err
 	}
@@ -366,25 +366,11 @@ func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
 	}
 	defer secFile.Close()
 
-	_, err = secFile.WriteString(saveBytes(kp.Seckey))
+	_, err = secFile.WriteString(common.Base58Encode(kp.Seckey))
 	if err != nil {
 		return err
 	}
 
-	idFileName := fileName + ".id"
-	idFile, err := os.Create(idFileName)
-	if err != nil {
-		return err
-	}
-	defer idFile.Close()
-	id := account.GetIDByPubkey(kp.Pubkey)
-	_, err = idFile.WriteString(id)
-	if err != nil {
-		return err
-	}
-
-	//fmt.Println("your account id is saved at:")
-	//fmt.Println(idFileName)
 	fmt.Println("your account private key is saved at:")
 	fmt.Println(fileName)
 	return nil

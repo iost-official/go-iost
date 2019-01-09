@@ -32,7 +32,7 @@ func Test_VoteBonus(t *testing.T) {
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
-			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
+			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
@@ -59,7 +59,7 @@ func Test_VoteBonus(t *testing.T) {
 		}
 
 		for idx, acc := range testAccounts {
-			s.Head.Witness = acc.KeyPair.ID
+			s.Head.Witness = acc.KeyPair.ReadablePubkey()
 			for i := 0; i <= idx; i++ {
 				s.Head.Number++
 				r, err := s.Call("base.iost", "IssueContribute", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc.ID, 1), acc.ID, acc.KeyPair)
@@ -163,7 +163,7 @@ func Test_VoteBonus(t *testing.T) {
 		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103090000105-90000002))
 
 		// 2. re-register withdraw
-		r, err = s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc3.ID, acc3.KeyPair.ID), acc3.ID, acc3.KeyPair)
+		r, err = s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc3.ID, acc3.KeyPair.ReadablePubkey()), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
@@ -231,7 +231,7 @@ func Test_PartnerBonus(t *testing.T) {
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
-			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", false]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
+			r, err := s.Call("vote_producer.iost", "ApplyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", false]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			r, err = s.Call("vote_producer.iost", "ApproveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)

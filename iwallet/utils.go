@@ -9,10 +9,6 @@ import (
 	"os"
 )
 
-func saveBytes(buf []byte) string {
-	return common.Base58Encode(buf)
-}
-
 func loadBytes(s string) []byte {
 	if s[len(s)-1] == 10 {
 		s = s[:len(s)-1]
@@ -22,6 +18,9 @@ func loadBytes(s string) []byte {
 }
 
 /*
+func saveBytes(buf []byte) string {
+	return common.Base58Encode(buf)
+}
 func changeSuffix(filename, suffix string) string {
 	dist := filename[:strings.LastIndex(filename, ".")]
 	dist = dist + suffix

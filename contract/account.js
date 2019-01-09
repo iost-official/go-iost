@@ -169,13 +169,13 @@ class Account {
         const index = Account._find(acc.permissions[perm].items, un);
         if (index < 0) {
             const len = un.indexOf("@");
-            if (len < 0 && un.startsWith("IOST")) {
+            if (len < 0) {
                 acc.permissions[perm].items.push({
                     id: un,
                     is_key_pair: true,
                     weight: weight
                 });
-            } else if (len > 0 ) {
+            } else if (len > 0) {
                 acc.permissions[perm].items.push({
                     id: un.substring(0, len),
                     permission: un.substring(len, un.length),
@@ -246,7 +246,7 @@ class Account {
         const index = Account._find(acc.groups[group].items, un);
         if (index < 0) {
             let len = un.indexOf("@");
-            if (len < 0 && un.startsWith("IOST")) {
+            if (len < 0) {
                 acc.groups[group].items.push({
                     id: un,
                     is_key_pair: true,

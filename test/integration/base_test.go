@@ -31,7 +31,7 @@ func Test_Base(t *testing.T) {
 		prepareToken(t, s, acc0)
 		prepareProducerVote(t, s, acc0)
 		for _, acc := range testAccounts[:6] {
-			s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ID), acc.ID, acc.KeyPair)
+			s.Call("vote_producer.iost", "InitProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
 		}
 
 		// deploy bonus.iost

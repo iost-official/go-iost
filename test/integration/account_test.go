@@ -32,12 +32,12 @@ func TestAccountInfo(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		ilog.Info(acc.ID, acc.KeyPair)
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ReadablePubkey(), acc.KeyPair.ReadablePubkey()}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
 
-		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.KeyPair.ReadablePubkey(), acc.KeyPair.ReadablePubkey()}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		ilog.Info(r.Status.Message)
 		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
@@ -59,7 +59,7 @@ func TestAccountInfo(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 
-		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "acc1", 1}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "AssignPermission", array2json([]interface{}{"myidid", "active", "@acc1", 1}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "unexpected item")
 

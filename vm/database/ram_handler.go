@@ -40,7 +40,7 @@ func (r *RAMHandler) getInt64(k string) int64 {
 	}
 	result, err := strconv.ParseInt(resultRaw, 10, 64)
 	if err != nil {
-		ilog.Errorf("invalid %v %v", k, resultRaw)
+		ilog.Warnf("invalid value string, key:%v value:%v", k, resultRaw)
 		return 0
 	}
 	return result
