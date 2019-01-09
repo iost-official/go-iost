@@ -162,7 +162,7 @@ var (
 
 	// updateNativeCode can only be invoked in native vm, avoid updating contract during running
 	updateNativeCode = &abi{
-		name: "UpdateNativeCode",
+		name: "updateNativeCode",
 		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
