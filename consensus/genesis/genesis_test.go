@@ -45,7 +45,7 @@ func TestGenGenesis(t *testing.T) {
 			IOSTDecimal:       8,
 		},
 		InitialTimestamp: "2006-01-02T15:04:05Z",
-		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/",
+		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/genesis/contract/",
 		AdminInfo:        randWitness(8),
 		FoundationInfo:   &common.Witness{ID: "f8", Owner: k, Active: k, Balance: 0},
 	})
