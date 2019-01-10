@@ -19,6 +19,7 @@ import (
 )
 
 var testKps = make([]*account.KeyPair, 0)
+
 func init() {
 	privKeys := []string{
 		"EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE",
@@ -83,7 +84,7 @@ func TestCheckPublisher(t *testing.T) {
 		t.Fatal(err)
 	}
 	mock := database.NewMockIMultiValue(ctl)
-	mock.EXPECT().Get("state", "m-auth.iost-auth-a").Return("s"+string(ax), nil)
+	mock.EXPECT().Get("state", "m-auth.iost-auth-a").AnyTimes().Return("s"+string(ax), nil)
 
 	k1 := testKps[1].ReadablePubkey()
 	b := account.NewInitAccount("b", k1, k1)
@@ -91,7 +92,7 @@ func TestCheckPublisher(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	mock.EXPECT().Get("state", "m-auth.iost-auth-b").Return("s"+string(bx), nil)
+	mock.EXPECT().Get("state", "m-auth.iost-auth-b").AnyTimes().Return("s"+string(bx), nil)
 
 	authList := make(map[string]int)
 	authList[kp.ReadablePubkey()] = 2
@@ -113,7 +114,6 @@ func TestCheckSigners(t *testing.T) {
 	ctl := gomock.NewController(t)
 	mock := database.NewMockIMultiValue(ctl)
 
-
 	k0 := testKps[0].ReadablePubkey()
 	a := account.NewInitAccount("a", k0, k0)
 	ax, err := json.Marshal(a)
@@ -121,7 +121,6 @@ func TestCheckSigners(t *testing.T) {
 		t.Fatal(err)
 	}
 	mock.EXPECT().Get("state", "m-auth.iost-auth-a").AnyTimes().Return("s"+string(ax), nil)
-
 
 	k1 := testKps[1].ReadablePubkey()
 	b := account.NewInitAccount("b", k1, k1)
