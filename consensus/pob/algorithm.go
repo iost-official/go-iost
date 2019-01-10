@@ -1,7 +1,6 @@
 package pob
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"time"
@@ -9,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -27,18 +27,6 @@ var (
 	errTxSignature = errors.New("tx wrong signature")
 	generateTxsNum = 0
 )
-
-func saveBlockHead(db db.MVCCDB, bh *block.BlockHead) error {
-	bhJSON, err := json.Marshal(bh)
-	if err != nil {
-		return fmt.Errorf("json fail: %v", err)
-	}
-	err = db.Put("snapshot", "blockHead", string(bhJSON))
-	if err != nil {
-		return fmt.Errorf("state db put fail: %v", err)
-	}
-	return nil
-}
 
 func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
 	ilog.Debug("generate Block start")
@@ -83,10 +71,11 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		return nil, err
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
-	err = saveBlockHead(db, blk.Head)
+	err = snapshot.SaveBlockHead(db, blk.Head)
 	if err != nil {
 		return nil, err
 	}
+
 	db.Tag(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
