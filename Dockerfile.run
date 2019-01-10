@@ -1,10 +1,10 @@
 FROM iostio/iost-dev
 
 # Install project
-RUN mkdir -p /workdir /var/lib/iserver /var/lib/iserver/genesis /workdir/vm/v8vm/v8/libjs
 COPY target/iserver target/iwallet target/itest /workdir/
 COPY config/docker/iserver.yml /var/lib/iserver/
-COPY config/genesis/* /var/lib/iserver/genesis/
+COPY config/genesis/genesis.yml /var/lib/iserver/genesis/
+COPY config/genesis/contract/* /var/lib/iserver/genesis/contract/
 COPY vm/v8vm/v8/libjs/* /workdir/vm/v8vm/v8/libjs/
 COPY vm/v8vm/v8/libv8/_linux_amd64/* /lib/x86_64-linux-gnu/
 
