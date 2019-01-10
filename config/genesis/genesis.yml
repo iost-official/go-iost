@@ -11,7 +11,6 @@ witnessinfo:
     active: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b
     signatureblock: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b
     balance: 20000000000
-contractpath: config/genesis/contract/
 admininfo:
   id: admin
   owner: Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto 

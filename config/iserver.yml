@@ -2,7 +2,7 @@ acc:
   id: producer01
   seckey: 1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB
   algorithm: ed25519
-genesis: config/genesis/genesis.yml
+genesis: config/genesis
 vm:
   jspath: vm/v8vm/v8/libjs/
   loglevel: ""
