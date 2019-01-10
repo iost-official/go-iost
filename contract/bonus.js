@@ -24,7 +24,7 @@ class BonusContract {
         ]);
     }
 
-    InitAdmin(adminID) {
+    initAdmin(adminID) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
@@ -100,8 +100,8 @@ class BonusContract {
         this._put("blockContrib", blockContrib);
     }
 
-    // IssueContribute to witness
-    IssueContribute(data) {
+    // issueContribute to witness
+    issueContribute(data) {
         if (!data || !data.parent || !Array.isArray(data.parent)
             || data.parent.length !== 2 || !data.parent[0]) {
             return;
@@ -122,8 +122,8 @@ class BonusContract {
         ]);
     }
 
-    // ExchangeIOST with contribute
-    ExchangeIOST(account, amount) {
+    // exchangeIOST with contribute
+    exchangeIOST(account, amount) {
         this._requireAuth(account, activePermission);
 
         const lastExchangeTime = this._get(account) || 0;
@@ -161,18 +161,8 @@ class BonusContract {
             account,
             amount.toFixed()
         ]);
-        const voterBonus = amount.div(2);
 
-        blockchain.withdraw(account, amount.minus(voterBonus).toFixed(), "");
-        const succ = this._call("vote_producer.iost", "TopupVoterBonus", [
-            account,
-            voterBonus.toFixed(),
-            blockchain.contractName()
-        ]);
-        if (!succ) {
-            // transfer voteBonus to account if topup failed
-            blockchain.withdraw(account, voterBonus.toFixed(), "");
-        }
+        blockchain.withdraw(account, amount.toFixed(), "");
     }
 }
 

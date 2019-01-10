@@ -154,7 +154,7 @@ func Test_RamPayer(t *testing.T) {
 			//ram := s.GetRAM(acc0.ID)
 			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8420)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8024)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -171,7 +171,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8418)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8022)
 
 			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
@@ -186,7 +186,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8417)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8021)
 
 			//ram = s.GetRAM(acc0.ID)
 			ram1 := s.GetRAM(acc1.ID)
@@ -194,7 +194,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, 8483)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 8087)
 			So(s.GetRAM(acc1.ID), ShouldEqual, 9933)
 
 			ram1 = s.GetRAM(acc1.ID)
@@ -233,7 +233,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(acc0.ID), ShouldEqual, 5777)
+			So(s.GetRAM(acc0.ID), ShouldEqual, 5381)
 
 			ram0 = s.GetRAM(acc0.ID)
 			//ram4 := s.GetRAM(acc2.ID)
@@ -459,7 +459,7 @@ func Test_LargeContract(t *testing.T) {
 
 		trx := tx.NewTx([]*tx.Action{{
 			Contract:   "system.iost",
-			ActionName: "SetCode",
+			ActionName: "setCode",
 			Data:       string(jargs),
 		}}, nil, int64(200000000), 100, s.Head.Time+100000000, 0)
 
@@ -519,5 +519,29 @@ func Test_ReturnObjectToJsonError(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 		So(r.Status.Message, ShouldContainSubstring, "error in JSON.stringfy")
+	})
+}
+
+func Test_Exception(t *testing.T) {
+	ilog.Stop()
+	Convey("test throw exception", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+		acc := prepareAuth(t, s)
+		s.SetAccount(acc.ToAccount())
+		s.SetGas(acc.ID, 2000000)
+		s.SetRAM(acc.ID, 10000)
+
+		c, err := s.Compile("", "test_data/vmmethod", "test_data/vmmethod")
+		So(err, ShouldBeNil)
+		cname, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
+		s.Visitor.Commit()
+		So(err, ShouldBeNil)
+
+		r, err = s.Call(cname, "testException0", `[]`, acc.ID, acc.KeyPair)
+		So(err, ShouldBeNil)
+		// todo
+		So(r.Status.Code, ShouldEqual, tx.Success)
+		//So(r.Status.Message, ShouldContainSubstring, "test exception")
 	})
 }

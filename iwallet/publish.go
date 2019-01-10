@@ -64,7 +64,9 @@ var publishCmd = &cobra.Command{
 			if err := sdk.checkTransaction(txHash); err != nil {
 				return err
 			}
-			fmt.Println("The contract id is Contract" + txHash)
+			if !update {
+				fmt.Println("The contract id is Contract" + txHash)
+			}
 		}
 		return nil
 	},

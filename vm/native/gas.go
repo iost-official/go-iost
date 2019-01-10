@@ -1,7 +1,9 @@
 package native
 
 import (
+	"encoding/json"
 	"fmt"
+
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 
@@ -156,7 +158,7 @@ var (
 			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
-			auth, cost0 := h.RequireAuth(pledger, "transfer")
+			auth, cost0 := h.RequireAuth(pledger, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -185,6 +187,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -203,7 +214,7 @@ var (
 			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
-			auth, cost0 := h.RequireAuth(pledger, "transfer")
+			auth, cost0 := h.RequireAuth(pledger, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -245,6 +256,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -261,7 +281,7 @@ var (
 			if !h.IsValidAccount(to) {
 				return nil, cost, fmt.Errorf("invalid user name %v", to)
 			}
-			auth, cost0 := h.RequireAuth(from, "transfer")
+			auth, cost0 := h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -282,6 +302,15 @@ var (
 			cost0 = h.ChangeTGas(from, f.Neg(), true)
 			cost.AddAssign(cost0)
 			cost0 = h.ChangeTGas(to, f, false)
+			cost.AddAssign(cost0)
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},

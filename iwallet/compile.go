@@ -36,9 +36,10 @@ func generateABI(codePath string) (string, error) {
 	contractPath := gopath + "/src/github.com/iost-official/go-iost/iwallet/contract"
 	fmt.Println("node " + contractPath + "/contract.js " + codePath)
 	cmd := exec.Command("node", contractPath+"/contract.js", codePath)
-	err := cmd.Run()
+	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("compile failed, error: %v\n", err)
+		fmt.Println(string(output))
 		fmt.Printf("Please make sure node.js has been installed and `npm install` has been executed inside %v\n", contractPath)
 		return "", err
 	}

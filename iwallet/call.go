@@ -58,7 +58,6 @@ var callCmd = &cobra.Command{
 			return fmt.Errorf("sign tx error %v", err)
 		}
 		var txHash string
-		fmt.Printf("sending tx %v", stx)
 		txHash, err = sdk.sendTx(stx)
 		if err != nil {
 			return fmt.Errorf("send tx error %v", err)

@@ -21,12 +21,13 @@ func init() {
 	systemABIs.Register(initSetCode)
 	systemABIs.Register(cancelDelaytx)
 	systemABIs.Register(hostSettings)
+	systemABIs.Register(updateNativeCode)
 }
 
 // var .
 var (
 	requireAuth = &abi{
-		name: "RequireAuth",
+		name: "requireAuth",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			var b bool
@@ -38,7 +39,7 @@ var (
 		},
 	}
 	receipt = &abi{
-		name: "Receipt",
+		name: "receipt",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
@@ -47,7 +48,7 @@ var (
 	}
 	// setcode can only be invoked in native vm, avoid updating contract during running
 	setCode = &abi{
-		name: "SetCode",
+		name: "setCode",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
@@ -98,12 +99,18 @@ var (
 	}
 	// updateCode can only be invoked in native vm, avoid updating contract during running
 	updateCode = &abi{
-		name: "UpdateCode",
+		name: "updateCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			codeRaw := args[0].(string)
+
+			cost.AddAssign(host.CommonOpCost(1))
+			stackHeight := h.Context().Value("stack_height").(int)
+			if stackHeight != 1 {
+				return nil, cost, errors.New("can't call UpdateCode from other contract")
+			}
 
 			if codeRaw[0] == '{' {
 				err = json.Unmarshal([]byte(codeRaw), con)
@@ -125,13 +132,13 @@ var (
 
 	// initSetCode can only be invoked in genesis block, use specific id for deploying contract
 	initSetCode = &abi{
-		name: "InitSetCode",
+		name: "initSetCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 
 			if h.Context().Value("number").(int64) != 0 {
-				return []interface{}{}, cost, errors.New("InitSetCode in normal block")
+				return []interface{}{}, cost, errors.New("initSetCode in normal block")
 			}
 
 			con := &contract.Contract{}
@@ -146,16 +153,57 @@ var (
 			cost2, err := h.SetCode(con, "")
 			cost.AddAssign(cost2)
 
-			cost2, err = h.MapPut("contract_owner", actID, "admin")
+			cost2, err = h.MapPut("contract_owner", actID, AdminAccount)
 			cost.AddAssign(cost2)
 
 			return []interface{}{actID}, cost, err
 		},
 	}
 
+	// updateNativeCode can only be invoked in native vm, avoid updating contract during running
+	updateNativeCode = &abi{
+		name: "updateNativeCode",
+		args: []string{"string", "string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			cost = contract.Cost0()
+			con := &contract.Contract{}
+			conID := args[0].(string)
+			version := args[1].(string)
+			codeRaw := args[2].(string)
+
+			// check auth
+			ok, cost0 := h.RequireAuth(AdminAccount, SystemPermission)
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, errors.New("update native code need admin@system permission")
+			}
+
+			cost.AddAssign(host.CommonOpCost(1))
+			if version != "" {
+				con = SystemContractABI(conID, version)
+			} else {
+				if codeRaw[0] == '{' {
+					err = json.Unmarshal([]byte(codeRaw), con)
+					if err != nil {
+						return nil, host.CommonErrorCost(1), err
+					}
+				} else {
+					err = con.B64Decode(codeRaw)
+					if err != nil {
+						return nil, host.CommonErrorCost(1), err
+					}
+				}
+			}
+
+			cost0, err = h.UpdateCode(con, []byte(""))
+			cost.AddAssign(cost0)
+			return []interface{}{}, cost, err
+		},
+	}
+
 	// cancelDelaytx cancels a delay transaction.
 	cancelDelaytx = &abi{
-		name: "CancelDelaytx",
+		name: "cancelDelaytx",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
@@ -169,7 +217,15 @@ var (
 		name: "hostSettings",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			cost, _ = h.MapPut("settings", "host", args[0])
+			// check auth
+			ok, cost0 := h.RequireAuth(AdminAccount, SystemPermission)
+			cost.AddAssign(cost0)
+			if !ok {
+				return nil, cost, errors.New("set host settings need admin@system permission")
+			}
+
+			cost0, _ = h.MapPut("settings", "host", args[0])
+			cost.AddAssign(cost0)
 			return nil, cost, nil
 		},
 	}

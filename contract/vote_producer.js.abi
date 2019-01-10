@@ -7,7 +7,7 @@
             "args": ["string"]
         },
         {
-            "name": "InitProducer",
+            "name": "initProducer",
             "args": [
                 "string",
                 "string"
@@ -18,13 +18,54 @@
             }]
         },
         {
-            "name": "InitAdmin",
+            "name": "initAdmin",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ApplyRegister",
+            "name": "applyRegister",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "applyUnregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "approveRegister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "approveUnregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "forceUnregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "unregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "updateProducer",
             "args": [
                 "string",
                 "string",
@@ -34,65 +75,25 @@
             ]
         },
         {
-            "name": "ApplyUnregister",
+            "name": "getProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ApproveRegister",
+            "name": "logInProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ApproveUnregister",
+            "name": "logOutProducer",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "ForceUnregister",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "Unregister",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "UpdateProducer",
-            "args": [
-                "string",
-                "string",
-                "string",
-                "string",
-                "string"
-            ]
-        },
-        {
-            "name": "GetProducer",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "LogInProducer",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "LogOutProducer",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "VoteFor",
+            "name": "voteFor",
             "args": [
                 "string",
                 "string",
@@ -105,44 +106,7 @@
             }]
         },
         {
-            "name": "Vote",
-            "args": [
-                "string",
-                "string",
-                "string"
-            ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
-        },
-        {
-            "name": "Unvote",
-            "args": [
-                "string",
-                "string",
-                "string"
-            ]
-        },
-        {
-            "name": "GetVote",
-            "args": [
-                "string"
-            ]
-        },
-        {
-            "name": "TopupCandidateBonus",
-            "args": [
-                "string",
-                "string"
-            ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
-        },
-        {
-            "name": "TopupVoterBonus",
+            "name": "vote",
             "args": [
                 "string",
                 "string",
@@ -154,29 +118,66 @@
             }]
         },
         {
-            "name": "Stat",
+            "name": "unvote",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "getVote",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "topupCandidateBonus",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "topupVoterBonus",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "stat",
             "args": []
         },
         {
-            "name": "GetCandidateBonus",
+            "name": "getCandidateBonus",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "CandidateWithdraw",
+            "name": "candidateWithdraw",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "GetVoterBonus",
+            "name": "getVoterBonus",
             "args": [
                 "string"
             ]
         },
         {
-            "name": "VoterWithdraw",
+            "name": "voterWithdraw",
             "args": [
                 "string"
             ]

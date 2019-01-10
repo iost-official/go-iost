@@ -78,7 +78,8 @@ func (t *transferHandler) Prepare() error {
 		return err
 	}
 	testID := "i" + strconv.FormatInt(time.Now().Unix(), 10)
-	err = sdk.CreateNewAccount(testID, testKp.ID, testKp.ID, 1000000, 10000, 100000)
+	k := testKp.ReadablePubkey()
+	err = sdk.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}

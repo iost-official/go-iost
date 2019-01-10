@@ -41,7 +41,7 @@ class IssueContract {
      *      Balance int64
      * }]
      */
-    InitGenesis(adminID, genesisConfig, witnessInfo) {
+    initGenesis(adminID, genesisConfig, witnessInfo) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
@@ -100,7 +100,7 @@ class IssueContract {
         this._call("token.iost", "issue", args);
     }
 
-    IssueIOSTTo(account, amount) {
+    issueIOSTTo(account, amount) {
         const whitelist = ["auth.iost"];
         let auth = false;
         for (const c of whitelist) {
@@ -115,8 +115,8 @@ class IssueContract {
         this._issueIOST(account, amount)
     }
 
-    // IssueIOST to bonus.iost and iost foundation
-    IssueIOST() {
+    // issueIOST to bonus.iost and iost foundation
+    issueIOST() {
         // TODO(hudongwen): multi issuer
         const admin = storage.get("adminID");
         this._requireAuth(admin, activePermission);
@@ -146,7 +146,7 @@ class IssueContract {
         this._issueIOST("bonus.iost", bonus.toFixed(decimal));
         this._issueIOST(contractName, bonus.toFixed(decimal));
 
-        const succ = this._call("vote_producer.iost", "TopupCandidateBonus", [
+        const succ = this._call("vote_producer.iost", "topupCandidateBonus", [
             bonus.toFixed(decimal),
             contractName
         ]);

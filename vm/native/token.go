@@ -196,7 +196,6 @@ var (
 			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
-
 	createTokenABI = &abi{
 		name: "create",
 		args: []string{"string", "string", "number", "json"},
@@ -265,7 +264,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 := h.RequireAuth(issuer, "token.iost")
+			ok, cost0 := h.RequireAuth(issuer, TokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -308,6 +307,15 @@ var (
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, FullNameMapField, fullName, issuer)
 			cost.AddAssign(cost0)
 
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
+
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -339,7 +347,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string), "token.iost")
+			ok, cost0 = h.RequireAuth(issuer.(string), TokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -438,7 +446,7 @@ var (
 			if onlyIssuerCanTransfer.(bool) {
 				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
 				cost.AddAssign(cost0)
-				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				ok, cost0 = h.RequireAuth(issuer.(string), TransferPermission)
 				cost.AddAssign(cost0)
 				if !ok {
 					return nil, cost, fmt.Errorf("transfer need issuer permission")
@@ -449,7 +457,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, "transfer")
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -547,7 +555,7 @@ var (
 			if onlyIssuerCanTransfer.(bool) {
 				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
 				cost.AddAssign(cost0)
-				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				ok, cost0 = h.RequireAuth(issuer.(string), TransferPermission)
 				cost.AddAssign(cost0)
 				if !ok {
 					return nil, cost, fmt.Errorf("transfer need issuer permission")
@@ -558,7 +566,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, "transfer")
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -639,7 +647,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, "transfer")
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost

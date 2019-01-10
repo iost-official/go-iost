@@ -1,5 +1,5 @@
 acc:
-  id: producer00001
+  id: producer01
   seckey: 1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB
   algorithm: ed25519
 genesis: config/genesis.yml
@@ -20,6 +20,7 @@ p2p:
   blackIP:
   adminPort: 30005
 rpc:
+  enable: true
   gatewayaddr: 0.0.0.0:30001
   grpcaddr: 0.0.0.0:30002
   trytx: false
@@ -34,6 +35,7 @@ log:
     level: info
     enable: true
   asyncwrite: true
+  enablecontractlog: true
 metrics:
   pushAddr:
   username:

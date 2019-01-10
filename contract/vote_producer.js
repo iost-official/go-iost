@@ -1,4 +1,5 @@
-const PRE_PRODUCER_THRESHOLD = "10500000";
+const PRE_PRODUCER_THRESHOLD = "2100000";
+const PARTNER_THRESHOLD = "2100000";
 const VOTE_LOCKTIME = 604800;
 const VOTE_STAT_INTERVAL = 2000;
 const IOST_DECIMAL = 8;
@@ -27,7 +28,7 @@ class VoteContract {
     }
 
     _initVote() {
-        const voteId = this._call("vote.iost", "NewVote", [
+        const voteId = this._call("vote.iost", "newVote", [
             "vote_producer.iost",
             "vote for producer",
             {
@@ -41,7 +42,7 @@ class VoteContract {
         this._put("voteId", JSON.stringify(voteId));
     }
 
-    InitProducer(proID, proPubkey) {
+    initProducer(proID, proPubkey) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block");
@@ -66,7 +67,7 @@ class VoteContract {
         this._put("producerNumber", producerNumber);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "AddOption", [
+        this._call("vote.iost", "addOption", [
             voteId,
             proID,
             false
@@ -77,13 +78,14 @@ class VoteContract {
             "loc": "",
             "url": "",
             "netId": "",
+            "isProducer": true,
             "status": STATUS_APPROVED,
             "online": true,
         }, proID);
         this._mapPut("producerKeyToId", proPubkey, proID, proID);
     }
 
-    InitAdmin(adminID) {
+    initAdmin(adminID) {
         const bn = block.number;
         if(bn !== 0) {
             throw new Error("init out of genesis block")
@@ -145,7 +147,7 @@ class VoteContract {
     }
 
     // register account as a producer
-    ApplyRegister(account, pubkey, loc, url, netId) {
+    applyRegister(account, pubkey, loc, url, netId, isProducer) {
         this._requireAuth(account, VOTE_PERMISSION);
         if (storage.mapHas("producerTable", account)) {
             throw new Error("producer exists");
@@ -159,13 +161,14 @@ class VoteContract {
             "loc": loc,
             "url": url,
             "netId": netId,
+            "isProducer": isProducer,
             "status": STATUS_APPLY,
             "online": false,
         }, account);
         this._mapPut("producerKeyToId", pubkey, account, account);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "AddOption", [
+        this._call("vote.iost", "addOption", [
             voteId,
             account,
             false
@@ -173,7 +176,7 @@ class VoteContract {
     }
 
     // apply remove account from producer list
-    ApplyUnregister(account) {
+    applyUnregister(account) {
         this._requireAuth(account, VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
@@ -191,7 +194,7 @@ class VoteContract {
     }
 
     // approve account as a producer
-    ApproveRegister(account) {
+    approveRegister(account) {
         const admin = this._get("adminID");
         this._requireAuth(admin, ADMIN_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
@@ -201,11 +204,11 @@ class VoteContract {
         pro.status = STATUS_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._removeFromWaitList(admin, account);
-        this._initCandidateVars(admin, account, this._getVoteId());
+        this._initCandidateVars(admin, account, this._getVoteId(), pro);
     }
 
     // approve remove account from producer list
-    ApproveUnregister(account) {
+    approveUnregister(account) {
         const admin = this._get("adminID");
         this._requireAuth(admin, ADMIN_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
@@ -216,14 +219,14 @@ class VoteContract {
             throw new Error("producer not unapplied");
         }
         // will clear votes and score of the producer on stat
+        this._clearCandidateVars(admin, account, this._getVoteId(), pro);
         pro.status = STATUS_UNAPPLY_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._tryRemoveProducer(admin, account, pro);
-        this._clearCandidateVars(admin, account, this._getVoteId());
     }
 
     // force approve remove account from producer list
-    ForceUnregister(account) {
+    forceUnregister(account) {
         const admin = this._get("adminID");
         this._requireAuth(admin, ADMIN_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
@@ -237,7 +240,7 @@ class VoteContract {
         this._clearCandidateVars(admin, account, this._getVoteId());
     }
 
-    Unregister(account) {
+    unregister(account) {
         this._requireAuth(account, VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
@@ -247,7 +250,7 @@ class VoteContract {
             throw new Error("producer can not unregister");
         }
         const voteId = this._getVoteId();
-        this._call("vote.iost", "RemoveOption", [
+        this._call("vote.iost", "removeOption", [
             voteId,
             account,
             true,
@@ -308,7 +311,7 @@ class VoteContract {
     }
 
     // update the information of a producer
-    UpdateProducer(account, pubkey, loc, url, netId) {
+    updateProducer(account, pubkey, loc, url, netId) {
         this._requireAuth(account, VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
@@ -334,14 +337,14 @@ class VoteContract {
         this._mapPut("producerTable", account, pro, account);
     }
 
-    GetProducer(account) {
+    getProducer(account) {
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
         if (pro.status === STATUS_APPROVED || pro.status === STATUS_UNAPPLY) {
             const voteId = this._getVoteId();
-            pro["voteInfo"] = this._call("vote.iost", "GetOption", [
+            pro["voteInfo"] = this._call("vote.iost", "getOption", [
                 voteId,
                 account
             ]);
@@ -350,7 +353,7 @@ class VoteContract {
     }
 
     // producer log in as online state
-    LogInProducer(account) {
+    logInProducer(account) {
         this._requireAuth(account, VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists, " + account);
@@ -364,7 +367,7 @@ class VoteContract {
     }
 
     // producer log out as offline state
-    LogOutProducer(account) {
+    logOutProducer(account) {
         this._requireAuth(account, VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
@@ -428,58 +431,73 @@ class VoteContract {
         return new Float64(candMask);
     }
 
-    _updateCandidateMask(voter, account, key) {
+    _updateCandidateMask(account, key, payer) {
         let allKey = this._getCandidateAllKey().plus(key);
-        this._put(candidateAllKey, allKey.toFixed()); // payer?
+        this._put(candidateAllKey, allKey.toFixed());
 
         let candCoef = this._getCandCoef();
         let candMask = this._getCandMask(account);
         candMask = candMask.plus(candCoef.multi(key));
-        this._mapPut(candidateMaskTable, account, candMask.toFixed(), voter);
+        this._mapPut(candidateMaskTable, account, candMask.toFixed(), payer);
     }
 
-    _updateCandidateVars(voter, account, amount, voteId) {
-        let votes = new Float64(this._call("vote.iost", "GetOption", [
-           voteId,
-           account,
-        ]).votes);
+    _updateCandidateVars(account, amount, voteId, payer, votes, pro) {
+        if (typeof pro === 'undefined') {
+            pro = this._mapGet("producerTable", account);
+        }
+
+        if (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY) {
+            return;
+        }
+
+        if (typeof votes === 'undefined') {
+            votes = new Float64(this._call("vote.iost", "getOption", [
+                voteId,
+               account,
+            ]).votes);
+        }
+
+        let threshold = PRE_PRODUCER_THRESHOLD;
+        if (!pro.isProducer) {
+            threshold = PARTNER_THRESHOLD;
+        }
 
         if (amount.gt("0")) {
-            if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
+            if (votes.lt(threshold)) {
                 return;
             }
 
-            if (votes.minus(amount).lt(PRE_PRODUCER_THRESHOLD)) {
-                this._updateCandidateMask(voter, account, votes);
+            if (votes.minus(amount).lt(threshold)) {
+                this._updateCandidateMask(account, votes, payer);
             } else {
-                this._updateCandidateMask(voter, account, amount);
+                this._updateCandidateMask(account, amount, payer);
             }
         } else if (amount.lt("0")) {
-            if (votes.lt(PRE_PRODUCER_THRESHOLD)) {
-                this._updateCandidateMask(voter, account, votes.negated());
+            if (votes.lt(threshold)) {
+                this._updateCandidateMask(account, votes.negated(), payer);
             } else {
-                this._updateCandidateMask(voter, account, amount);
+                this._updateCandidateMask(account, amount, payer);
             }
         }
     }
 
-    _clearCandidateVars(admin, account, voteId) {
-        let votes = new Float64(this._call("vote.iost", "GetOption", [
+    _clearCandidateVars(admin, account, voteId, pro) {
+        let votes = new Float64(this._call("vote.iost", "getOption", [
            voteId,
            account,
         ]).votes);
         if (votes && votes.isPositive()) {
-            this._updateCandidateMask(admin, account, votes.negated());
+            this._updateCandidateVars(account, votes.negated(), voteId, admin, votes, pro);
         }
     }
 
-    _initCandidateVars(admin, account, voteId) {
-        let votes = new Float64(this._call("vote.iost", "GetOption", [
+    _initCandidateVars(admin, account, voteId, pro) {
+        let votes = new Float64(this._call("vote.iost", "getOption", [
            voteId,
            account,
         ]).votes);
         if (votes && votes.isPositive()) {
-            this._updateCandidateMask(admin, account, votes);
+            this._updateCandidateVars(account, votes, voteId, admin, votes);
         }
     }
 
@@ -491,7 +509,7 @@ class VoteContract {
         return amount;
     }
 
-    VoteFor(payer, voter, producer, amount) {
+    voteFor(payer, voter, producer, amount) {
         this._requireAuth(payer, ACTIVE_PERMISSION);
 
         if (!storage.mapHas("producerTable", producer)) {
@@ -501,7 +519,7 @@ class VoteContract {
         amount = this._fixAmount(amount);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "VoteFor", [
+        this._call("vote.iost", "voteFor", [
             voteId,
             payer,
             voter,
@@ -510,10 +528,10 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount);
-        this._updateCandidateVars(voter, producer, amount, voteId);
+        this._updateCandidateVars(producer, amount, voteId, payer);
     }
 
-    Vote(voter, producer, amount) {
+    vote(voter, producer, amount) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
 
         if (!storage.mapHas("producerTable", producer)) {
@@ -523,7 +541,7 @@ class VoteContract {
         amount = this._fixAmount(amount);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "Vote", [
+        this._call("vote.iost", "vote", [
             voteId,
             voter,
             producer,
@@ -531,16 +549,16 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount);
-        this._updateCandidateVars(voter, producer, amount, voteId);
+        this._updateCandidateVars(producer, amount, voteId, voter);
     }
 
-    Unvote(voter, producer, amount) {
+    unvote(voter, producer, amount) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
 
         amount = this._fixAmount(amount);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "Unvote", [
+        this._call("vote.iost", "unvote", [
             voteId,
             voter,
             producer,
@@ -548,20 +566,20 @@ class VoteContract {
         ]);
 
         this._updateVoterMask(voter, producer, amount.negated());
-        this._updateCandidateVars(voter, producer, amount.negated(), voteId);
+        this._updateCandidateVars(producer, amount.negated(), voteId, voter);
     }
 
-    GetVote(voter) {
+    getVote(voter) {
         const voteId = this._getVoteId();
-        return this._call("vote.iost", "GetVote", [
+        return this._call("vote.iost", "getVote", [
             voteId,
             voter
         ]);
     }
 
-    TopupVoterBonus(account, amount, payer) {
+    topupVoterBonus(account, amount, payer) {
         const voteId = this._getVoteId();
-        let votes = new Float64(this._call("vote.iost", "GetOption", [
+        let votes = new Float64(this._call("vote.iost", "getOption", [
             voteId,
             account,
         ]).votes);
@@ -579,7 +597,7 @@ class VoteContract {
         return true;
     }
 
-    TopupCandidateBonus(amount, payer) {
+    topupCandidateBonus(amount, payer) {
         let allKey = this._getCandidateAllKey();
         if (allKey.lte("0")) {
             return false;
@@ -596,7 +614,7 @@ class VoteContract {
     }
 
     _calVoterBonus(voter, updateMask) {
-        let userVotes = this.GetVote(voter);
+        let userVotes = this.getVote(voter);
         let earnings = new Float64(0);
         for (const v of userVotes) {
             let voterCoef = this._getVoterCoef(v.option);
@@ -611,11 +629,11 @@ class VoteContract {
         return earnings;
     }
 
-    GetVoterBonus(voter) {
+    getVoterBonus(voter) {
         return this._calVoterBonus(voter, false).toFixed();
     }
 
-    VoterWithdraw(voter) {
+    voterWithdraw(voter) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
 
         let earnings = this._calVoterBonus(voter, true);
@@ -627,7 +645,7 @@ class VoteContract {
 
     _calCandidateBonus(account, updateMask) {
         const voteId = this._getVoteId();
-        let candKey = new Float64(this._call("vote.iost", "GetOption", [
+        let candKey = new Float64(this._call("vote.iost", "getOption", [
             voteId,
             account,
         ]).votes);
@@ -646,11 +664,11 @@ class VoteContract {
         return earning;
     }
 
-    GetCandidateBonus(account) {
+    getCandidateBonus(account) {
         return this._calCandidateBonus(account, false).toFixed();
     }
 
-    CandidateWithdraw(account) {
+    candidateWithdraw(account) {
         this._requireAuth(account, ACTIVE_PERMISSION);
 
         let earnings = this._calCandidateBonus(account, true);
@@ -660,7 +678,7 @@ class VoteContract {
         let halfEarning = earnings.div("2");
         blockchain.withdraw(account, halfEarning.toFixed(), "");
 
-        this.TopupVoterBonus(account, earnings.minus(halfEarning).toFixed(), blockchain.contractName());
+        this.topupVoterBonus(account, earnings.minus(halfEarning).toFixed(), blockchain.contractName());
     }
 
     _getScores() {
@@ -676,7 +694,7 @@ class VoteContract {
     }
 
     // calculate the vote result, modify pendingProducerList
-    Stat() {
+    stat() {
         this._requireAuth("base.iost", ACTIVE_PERMISSION);
         const bn = block.number;
         const pendingBlockNumber = this._get("pendingBlockNumber");
@@ -685,7 +703,7 @@ class VoteContract {
         }
 
         const voteId = this._getVoteId();
-        const voteRes = this._call("vote.iost", "GetResult", [voteId]);
+        const voteRes = this._call("vote.iost", "getResult", [voteId]);
         const preList = [];    // list of producers whose vote > threshold
         const waitingRemoveList = this._get("waitingRemoveList") || [];
         let scores = this._getScores();
@@ -697,7 +715,7 @@ class VoteContract {
         for (const res of voteRes) {
             const id = res.option;
             const pro = this._mapGet("producerTable", id);
-            if (pro.online === false || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
+            if (!pro.online || !pro.isProducer || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
                 continue;
             }
             const score = new Float64(res.votes).plus(scores[id] || "0");
