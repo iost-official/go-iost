@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/rpc/pb"
 
 	"github.com/spf13/cobra"
@@ -45,31 +46,12 @@ var callCmd = &cobra.Command{
 			act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
 			actions[i] = act
 		}
-		trx, err := sdk.createTx(actions)
-		if err != nil {
-			return err
-		}
-		err = sdk.loadAccount()
+		err = sdk.LoadAccount()
 		if err != nil {
 			return fmt.Errorf("load account err %v", err)
 		}
-		stx, err := sdk.signTx(trx)
-		if err != nil {
-			return fmt.Errorf("sign tx error %v", err)
-		}
-		var txHash string
-		txHash, err = sdk.sendTx(stx)
-		if err != nil {
-			return fmt.Errorf("send tx error %v", err)
-		}
-		fmt.Println("send tx done")
-		fmt.Println("the transaction hash is:", txHash)
-		if sdk.checkResult {
-			if err := sdk.checkTransaction(txHash); err != nil {
-				return err
-			}
-		}
-		return nil
+		_, err = sdk.SendTx(actions)
+		return
 	},
 }
 

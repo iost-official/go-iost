@@ -74,6 +74,16 @@ func (s *SDK) SetAmountLimit(amountLimit string) {
 	s.amountLimit = amountLimit
 }
 
+// SetSignAlgo ...
+func (s *SDK) SetSignAlgo(signAlgo string) {
+	s.signAlgo = signAlgo
+}
+
+// SetVerbose ...
+func (s *SDK) SetVerbose(verbose bool) {
+	s.verbose = verbose
+}
+
 func (s *SDK) parseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 	result := make([]*rpcpb.AmountLimit, 0)
 	if limitStr == "" {
@@ -127,9 +137,9 @@ func (s *SDK) createTx(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, erro
 
 func (s *SDK) signTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, error) {
 	sig := &rpcpb.Signature{
-		Algorithm: rpcpb.Signature_Algorithm(s.getSignAlgo()),
-		Signature: s.getSignAlgo().Sign(common.Sha3(txToBytes(t)), s.keyPair.Seckey),
-		PublicKey: s.getSignAlgo().GetPubkey(s.keyPair.Seckey),
+		Algorithm: rpcpb.Signature_Algorithm(s.GetSignAlgo()),
+		Signature: s.GetSignAlgo().Sign(common.Sha3(txToBytes(t)), s.keyPair.Seckey),
+		PublicKey: s.GetSignAlgo().GetPubkey(s.keyPair.Seckey),
 	}
 	t.PublisherSigs = []*rpcpb.Signature{sig}
 	t.Publisher = s.accountName
@@ -140,7 +150,8 @@ func (s *SDK) getSignAlgoName() string {
 	return s.signAlgo
 }
 
-func (s *SDK) getSignAlgo() crypto.Algorithm {
+// GetSignAlgo ...
+func (s *SDK) GetSignAlgo() crypto.Algorithm {
 	switch s.getSignAlgoName() {
 	case "secp256k1":
 		return crypto.Secp256k1
@@ -312,27 +323,32 @@ func (s *SDK) getAccountDir() (string, error) {
 	return home + "/.iwallet", nil
 }
 
-func (s *SDK) loadAccount() error {
+// LoadAccount load account from file
+func (s *SDK) LoadAccount() error {
+	if s.accountName == "" {
+		return fmt.Errorf("you must provide account name")
+	}
+	if s.keyPair != nil {
+		return nil
+	}
 	dir, err := s.getAccountDir()
 	if err != nil {
 		return err
-	}
-	if s.accountName == "" {
-		return fmt.Errorf("you must provide account name")
 	}
 	kpPath := fmt.Sprintf("%s/%s_%s", dir, s.accountName, s.getSignAlgoName())
 	fsk, err := loadKey(kpPath)
 	if err != nil {
 		return fmt.Errorf("read file failed: %v", err)
 	}
-	s.keyPair, err = account.NewKeyPair(loadBytes(string(fsk)), s.getSignAlgo())
+	s.keyPair, err = account.NewKeyPair(loadBytes(string(fsk)), s.GetSignAlgo())
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func (s *SDK) saveAccount(name string, kp *account.KeyPair) error {
+// SaveAccount save account to file
+func (s *SDK) SaveAccount(name string, kp *account.KeyPair) error {
 	dir, err := s.getAccountDir()
 	if err != nil {
 		return err
@@ -524,6 +540,31 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	}
 	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", hash)
 	return trx, hash, nil
+}
+
+// SendTx send transaction and check result if sdk.checkResult is set
+func (s *SDK) SendTx(actions []*rpcpb.Action) (txHash string, err error) {
+	trx, err := s.createTx(actions)
+	if err != nil {
+		return "", err
+	}
+	stx, err := s.signTx(trx)
+	if err != nil {
+		return "", fmt.Errorf("sign tx error %v", err)
+	}
+	fmt.Printf("sending tx %v", stx)
+	txHash, err = s.sendTx(stx)
+	if err != nil {
+		return "", fmt.Errorf("send tx error %v", err)
+	}
+	fmt.Println("send tx done")
+	fmt.Println("the transaction hash is:", txHash)
+	if s.checkResult {
+		if err = s.checkTransaction(txHash); err != nil {
+			return
+		}
+	}
+	return
 }
 
 func actionToBytes(a *rpcpb.Action) []byte {
