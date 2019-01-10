@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/ilog"
+	multiaddr "github.com/multiformats/go-multiaddr"
 
 	libnet "github.com/libp2p/go-libp2p-net"
-	"github.com/libp2p/go-libp2p-peer"
-	"github.com/multiformats/go-multiaddr"
+	peer "github.com/libp2p/go-libp2p-peer"
 	"github.com/willf/bloom"
 )
 
@@ -179,6 +179,28 @@ func (p *Peer) getStream() (libnet.Stream, error) {
 	}
 }
 
+func (p *Peer) doWrite(stream libnet.Stream, m *p2pMessage) {
+	// 5 kB/s
+	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
+	if err := stream.SetWriteDeadline(deadline); err != nil {
+		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.id.Pretty())
+		p.CloseStream(stream)
+		return
+	}
+	_, err := stream.Write(m.content())
+	if err != nil {
+		ilog.Warnf("writing message failed. err=%v, pid=%v", err, p.id.Pretty())
+		p.CloseStream(stream)
+		return
+	}
+	tagkv := map[string]string{"mtype": m.messageType().String()}
+	byteOutCounter.Add(float64(len(m.content())), tagkv)
+	packetOutCounter.Add(1, tagkv)
+
+	p.streams <- stream
+
+}
+
 func (p *Peer) write(m *p2pMessage) error {
 	stream, err := p.getStream()
 	// if creating stream fails, the TCP connection may be broken and we should stop the peer.
@@ -187,24 +209,11 @@ func (p *Peer) write(m *p2pMessage) error {
 		return err
 	}
 
-	// 5 kB/s
-	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
-	if err := stream.SetWriteDeadline(deadline); err != nil {
-		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.id.Pretty())
-		p.CloseStream(stream)
-		return err
-	}
-	_, err = stream.Write(m.content())
 	if err != nil {
-		ilog.Warnf("writing message failed. err=%v, pid=%v", err, p.id.Pretty())
-		p.CloseStream(stream)
 		return err
 	}
-	tagkv := map[string]string{"mtype": m.messageType().String()}
-	byteOutCounter.Add(float64(len(m.content())), tagkv)
-	packetOutCounter.Add(1, tagkv)
 
-	p.streams <- stream
+	go p.doWrite(stream, m)
 
 	return nil
 }

@@ -449,7 +449,7 @@ func (pm *PeerManager) LoadRoutingTable() {
 		if err != nil {
 			break
 		}
-		if strings.HasPrefix(line, "#") {
+		if len(line) == 0 || strings.HasPrefix(line, "#") {
 			continue
 		}
 		peerID, addr, err := parseMultiaddr(line[:len(line)-1])

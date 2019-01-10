@@ -12,7 +12,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx/pb"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 )
 
@@ -27,6 +27,7 @@ const (
 // values
 var (
 	MaxExpiration = int64(90 * time.Second)
+	MaxDelay      = int64(720 * time.Hour) // 30 days
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
@@ -307,11 +308,24 @@ func (t *Tx) VerifyDefer(referredTx *Tx) error {
 	return t.verifyDeferSigFields(referredTx)
 }
 
-// VerifySelf verify tx's signature
-func (t *Tx) VerifySelf() error { // only check whether sigs are legal
+// VerifySelf verify tx's signature and some base fields.
+func (t *Tx) VerifySelf() error {
+	if !(t.Time > 0 && t.Expiration > t.Time) {
+		return errors.New("invalid time and expiration")
+	}
+	if t.Delay < 0 || t.Delay > MaxDelay {
+		return errors.New("invalid delay time")
+	}
 	if t.Delay > 0 && t.IsDefer() {
 		return errors.New("invalid tx. including both delay and referredtx field")
 	}
+	if err := t.CheckSize(); err != nil {
+		return err
+	}
+	if err := t.CheckGas(); err != nil {
+		return err
+	}
+
 	// Defer tx does not need to verify signature.
 	if t.IsDefer() {
 		return nil
@@ -378,11 +392,8 @@ func (t *Tx) CheckGas() error {
 	if t.GasRatio < minGasRatio || t.GasRatio > maxGasRatio {
 		return fmt.Errorf("gas ratio illegal, should in [%v, %v]", minGasRatio/ratio, maxGasRatio/ratio)
 	}
-	if t.GasLimit < minGasLimit {
-		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit/ratio)
-	}
-	if t.GasLimit > maxGasLimit {
-		return fmt.Errorf("gas limit illegal, should <= %v", maxGasLimit/ratio)
+	if t.GasLimit < minGasLimit || t.GasLimit > maxGasLimit {
+		return fmt.Errorf("gas limit illegal, should in [%v, %v]", minGasLimit/ratio, maxGasLimit/ratio)
 	}
 	return nil
 }
