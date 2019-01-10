@@ -17,7 +17,7 @@ func TestAccountInfo(t *testing.T) {
 	s := verifier.NewSimulator()
 	defer s.Clear()
 	Convey("test of Auth", t, func() {
-		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
+		ca, err := s.Compile("auth.iost", "../../config/genesis/contract/account", "../../config/genesis/contract/account.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
 		s.Visitor.SetContract(native.GasABI())

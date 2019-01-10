@@ -93,7 +93,7 @@ install:
 	go install ./cmd/iserver/
 
 clean:
-	rm -f ${TARGET_DIR}
+	rm -rf ${TARGET_DIR}
 
 debug: build
 	target/iserver -f config/iserver.yml

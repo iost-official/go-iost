@@ -25,11 +25,12 @@ var GenesisTxExecTime = 3 * time.Second
 
 // GenGenesisByFile is create a genesis block by config file
 func GenGenesisByFile(db db.MVCCDB, path string) (*block.Block, error) {
-	v := common.LoadYamlAsViper(path)
+	v := common.LoadYamlAsViper(filepath.Join(path, "genesis.yml"))
 	genesisConfig := &common.GenesisConfig{}
 	if err := v.Unmarshal(genesisConfig); err != nil {
 		ilog.Fatalf("Unable to decode into struct, %v", err)
 	}
+	genesisConfig.ContractPath = filepath.Join(path, "contract")
 	return GenGenesis(db, genesisConfig)
 }
 
