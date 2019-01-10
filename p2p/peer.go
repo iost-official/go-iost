@@ -17,9 +17,14 @@ import (
 
 // errors
 var (
-	ErrStreamCountExceed  = errors.New("stream count exceed")
 	ErrMessageChannelFull = errors.New("message channel is full")
 	ErrDuplicateMessage   = errors.New("reduplicate message")
+
+	errStreamCountExceed    = errors.New("stream count exceeds")
+	errCreateStream         = errors.New("creating stream fails")
+	errWaitingStreamTimeout = errors.New("waiting stream timeout")
+
+	streamWaitingTime = 3 * time.Second
 )
 
 const (
@@ -27,6 +32,8 @@ const (
 	bloomErrRate      = 0.001
 
 	msgChanSize = 1024
+
+	maxStreamCount = 8
 
 	maxDataLength = 10000000 // 10MB
 )
@@ -43,7 +50,9 @@ type Peer struct {
 	conn        libnet.Conn
 	peerManager *PeerManager
 
-	stream libnet.Stream
+	streams     chan libnet.Stream
+	streamCount int
+	streamMutex sync.Mutex
 
 	recentMsg      *bloom.BloomFilter
 	bloomMutex     sync.Mutex
@@ -64,7 +73,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Pe
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
 		conn:        stream.Conn(),
-		stream:      stream,
+		streams:     make(chan libnet.Stream, maxStreamCount),
 		peerManager: pm,
 		recentMsg:   bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
@@ -72,7 +81,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Pe
 		quitWriteCh: make(chan struct{}),
 		direction:   direction,
 	}
-	go peer.readLoop(stream)
+	peer.AddStream(stream)
 	return peer
 }
 
@@ -105,40 +114,97 @@ func (p *Peer) Stop() {
 
 // AddStream tries to add a Stream in stream pool.
 func (p *Peer) AddStream(stream libnet.Stream) error {
-	/*  if err := p.streamPool.Put(stream); err != nil { */
-	// return err
-	/* } */
+	p.streamMutex.Lock()
+	defer p.streamMutex.Unlock()
+
+	if p.streamCount >= maxStreamCount {
+		return errStreamCountExceed
+	}
+	p.streams <- stream
+	p.streamCount++
 	go p.readLoop(stream)
 	return nil
 }
 
+// CloseStream closes a stream and decrease the stream count.
+//
+// Notice that it only closes the stream for writing. Reading will still work (that
+// is, the remote side can still write).
+func (p *Peer) CloseStream(stream libnet.Stream) {
+	p.streamMutex.Lock()
+	defer p.streamMutex.Unlock()
+
+	stream.Close()
+	p.streamCount--
+}
+
+func (p *Peer) newStream() (libnet.Stream, error) {
+	p.streamMutex.Lock()
+	defer p.streamMutex.Unlock()
+
+	if p.streamCount >= maxStreamCount {
+		return nil, errStreamCountExceed
+	}
+	stream, err := p.conn.NewStream()
+	if err != nil {
+		ilog.Warnf("creating stream failed. pid=%v, err=%v", p.id.Pretty(), err)
+		return nil, errCreateStream
+	}
+	p.streamCount++
+	go p.readLoop(stream)
+	return stream, nil
+}
+
+// getStream tries to get a stream from the stream pool.
+//
+// If the stream chan is empty and the stream count is less than maxStreamCount, it would create a
+// new stream and use it. Otherwise it would wait for a free stream.
+func (p *Peer) getStream() (libnet.Stream, error) {
+	select {
+	case stream := <-p.streams:
+		return stream, nil
+	default:
+		stream, err := p.newStream()
+		if err == errStreamCountExceed {
+			break
+		}
+		return stream, err
+	}
+
+	select {
+	case stream := <-p.streams:
+		return stream, nil
+	case <-time.After(streamWaitingTime):
+		return nil, errWaitingStreamTimeout
+	}
+}
+
 func (p *Peer) write(m *p2pMessage) error {
-	// s, err := p.streamPool.Get()
-	// if getStream fails, the TCP connection may be broken and we should stop the peer.
-	/* if err != nil { */
-	// ilog.Errorf("get stream fails. err=%v", err)
-	// p.peerManager.RemoveNeighbor(p.id)
-	// return err
-	// }
-	/* stream := s.(libnet.Stream) */
+	stream, err := p.getStream()
+	// if creating stream fails, the TCP connection may be broken and we should stop the peer.
+	if err == errCreateStream {
+		p.peerManager.RemoveNeighbor(p.id)
+		return err
+	}
 
 	// 5 kB/s
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
-	if err := p.stream.SetWriteDeadline(deadline); err != nil {
-		ilog.Warnf("set write deadline failed. err=%v", err)
-		p.stream.Close()
+	if err := stream.SetWriteDeadline(deadline); err != nil {
+		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.id.Pretty())
+		p.CloseStream(stream)
 		return err
 	}
-	_, err := p.stream.Write(m.content())
+	_, err = stream.Write(m.content())
 	if err != nil {
-		ilog.Warnf("write message failed. err=%v", err)
-		// p.stream.Close()
-		p.peerManager.RemoveNeighbor(p.id)
+		ilog.Warnf("writing message failed. err=%v, pid=%v", err, p.id.Pretty())
+		p.CloseStream(stream)
 		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
 	byteOutCounter.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)
+
+	p.streams <- stream
 
 	return nil
 }
