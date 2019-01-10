@@ -652,7 +652,7 @@ func TestGasLimit2(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(7297300))
+			So(r.GasUsage, ShouldEqual, int64(7442900))
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "980")
