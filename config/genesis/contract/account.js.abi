@@ -1,0 +1,62 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+        "name": "can_update",
+        "args": ["string"]
+    },
+    {
+        "name": "initAdmin",
+        "args": ["string"]
+    },
+    {
+      "name": "signUp",
+      "args": ["string", "string", "string"],
+      "amountLimit": [{
+          "token": "iost",
+          "val": "10"
+      }]
+    },
+    {
+      "name": "addPermission",
+      "args": ["string", "string", "number"]
+    },
+    {
+      "name": "dropPermission",
+      "args": ["string", "string"]
+    },
+    {
+      "name": "assignPermission",
+      "args": ["string", "string", "string","number"]
+    },
+    {
+      "name": "revokePermission",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "addGroup",
+      "args": ["string", "string"]
+    },
+    {
+      "name": "dropGroup",
+      "args": ["string", "string"]
+    },
+    {
+      "name": "assignGroup",
+      "args": ["string", "string", "string", "number"]
+    },
+    {
+      "name": "revokeGroup",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "assignPermissionToGroup",
+      "args": ["string", "string", "string"]
+    },
+    {
+      "name": "revokePermissionInGroup",
+      "args": ["string", "string", "string"]
+    }
+  ]
+}

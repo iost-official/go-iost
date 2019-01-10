@@ -1,0 +1,186 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "can_update",
+            "args": ["string"]
+        },
+        {
+            "name": "initProducer",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "initAdmin",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "applyRegister",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "applyUnregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "approveRegister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "approveUnregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "forceUnregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "unregister",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "updateProducer",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "getProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "logInProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "logOutProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "voteFor",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "vote",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "unvote",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "getVote",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "topupCandidateBonus",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "topupVoterBonus",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "stat",
+            "args": []
+        },
+        {
+            "name": "getCandidateBonus",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "candidateWithdraw",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "getVoterBonus",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "voterWithdraw",
+            "args": [
+                "string"
+            ]
+        }
+    ]
+}

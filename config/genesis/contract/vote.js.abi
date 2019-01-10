@@ -1,0 +1,105 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "can_update",
+            "args": ["string"]
+        },
+        {
+            "name": "initProducer",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "initAdmin",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "registerProducer",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "updateProducer",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "getProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "logInProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "logOutProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "unregisterProducer",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "vote",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "unvote",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "getVote",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "stat",
+            "args": []
+        }
+    ]
+}
