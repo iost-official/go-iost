@@ -1,5 +1,6 @@
 const producerPermission = "active";
 const voteStatInterval = 2000;
+const issueInterval = 288000;
 
 class Base {
     constructor() {
@@ -45,7 +46,11 @@ class Base {
     }
 
     _bonus(data) {
-        blockchain.callWithAuth("bonus.iost", "issueContribute", JSON.stringify([data]));
+        blockchain.callWithAuth("bonus.iost", "issueContribute", [data]);
+    }
+
+    _issue() {
+        blockchain.callWithAuth("issue.iost", "issueIOST", `[]`);
     }
 
     _saveBlockInfo() {
@@ -66,6 +71,9 @@ class Base {
 
         if (bn%voteStatInterval === 0){
             this._vote();
+        }
+        if (bn%issueInterval === 0) {
+            this._issue();
         }
         this._bonus(data);
     }

@@ -100,7 +100,7 @@ class VoteContract {
     }
 
     _call(contract, api, args) {
-        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
+        const ret = blockchain.callWithAuth(contract, api, args);
         if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }

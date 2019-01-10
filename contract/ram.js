@@ -111,9 +111,9 @@ class RAMContract {
         const veryLarge = 100 * 64 * 1024 * 1024 * 1024;
         const tokenInfo = {"decimal": 0, "fullName": "IOST system ram", "onlyIssuerCanTransfer": true};
         let data = [this._getTokenName(), blockchain.contractName(), veryLarge, tokenInfo];
-        blockchain.callWithAuth("token.iost", "create", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "create", data);
         data = [this._getTokenName(), blockchain.contractName(), (initialTotal).toString()];
-        blockchain.callWithAuth("token.iost", "issue", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "issue", data);
         this._put("lastUpdateBlockTime", block.time);
         this._put("increaseInterval", increaseInterval);
         this._put("increaseAmount", increaseAmount);
@@ -158,7 +158,7 @@ class RAMContract {
         if (slotNum > 0) {
             const increaseAmount = this._get("increaseAmount") * slotNum;
             const data = [this._getTokenName(), blockchain.contractName(), increaseAmount.toString()];
-            blockchain.callWithAuth("token.iost", "issue", JSON.stringify(data));
+            blockchain.callWithAuth("token.iost", "issue", data);
             this._put("lastUpdateBlockTime", block.time);
             this._changeLeftSpace(increaseAmount);
         }
@@ -196,10 +196,10 @@ class RAMContract {
             destroyAmount -= rewardAmount;
         }
         if (rewardAmount.toFixed(2) !== "0.00") {
-            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), referrer, rewardAmount.toFixed(2), ""]));
+            blockchain.callWithAuth("token.iost", "transfer", ["iost", blockchain.contractName(), referrer, rewardAmount.toFixed(2), ""]);
         }
         if (destroyAmount.toFixed(2) !== "0.00") {
-            blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), "deadaddr", destroyAmount.toFixed(2), ""]));
+            blockchain.callWithAuth("token.iost", "transfer", ["iost", blockchain.contractName(), "deadaddr", destroyAmount.toFixed(2), ""]);
         }
     }
 
@@ -216,10 +216,10 @@ class RAMContract {
             fee = 0.01;
         }
         const price = rawPrice + fee;
-        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", payer, blockchain.contractName(), price.toFixed(2), ""]));
+        blockchain.callWithAuth("token.iost", "transfer", ["iost", payer, blockchain.contractName(), price.toFixed(2), ""]);
         this._handle_fee(payer, fee);
         const data = [this._getTokenName(), blockchain.contractName(), account, amount.toString(), ""];
-        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "transfer", data);
         this._changeLeftSpace(-amount);
         this._changeBalance(rawPrice);
         this._changeUsedSpace(amount);
@@ -237,9 +237,9 @@ class RAMContract {
             throw new Error("self ram amount " + this._getAccountSelfRAM(account) + ", not enough for sell");
         }
         const data = [this._getTokenName(), account, blockchain.contractName(), amount.toString(), ""];
-        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "transfer", data);
         const price = this._round(this._price("sell", amount));
-        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(["iost", blockchain.contractName(), receiver, price.toFixed(2), ""]));
+        blockchain.callWithAuth("token.iost", "transfer", ["iost", blockchain.contractName(), receiver, price.toFixed(2), ""]);
         this._changeLeftSpace(amount);
         this._changeBalance(-price);
         this._changeUsedSpace(-amount);
@@ -257,7 +257,7 @@ class RAMContract {
             throw new Error("self ram amount " + this._getAccountSelfRAM(from) + ", not enough for lend");
         }
         const data = [this._getTokenName(), from, to, amount.toString(), ""];
-        blockchain.callWithAuth("token.iost", "transfer", JSON.stringify(data));
+        blockchain.callWithAuth("token.iost", "transfer", data);
         this._changeAccountSelfRAM(from, -amount);
         this._changeAccountTotalRAM(from, -amount);
         this._changeAccountTotalRAM(to, amount);
