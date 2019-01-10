@@ -18,7 +18,7 @@ class IssueContract {
             }
         ]);
         for (const info of witnessInfo) {
-            if (info.Balance !== 0) {
+            if ( info.Balance !== 0 ) {
                 this._call("token.iost", "issue", [
                     "iost",
                     info.ID,
