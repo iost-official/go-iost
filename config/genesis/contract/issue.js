@@ -18,11 +18,13 @@ class IssueContract {
             }
         ]);
         for (const info of witnessInfo) {
-            this._call("token.iost", "issue", [
-                "iost",
-                info.ID,
-                new BigNumber(info.Balance).toFixed()
-            ]);
+            if(info.Balance !== 0){
+                this._call("token.iost", "issue", [
+                    "iost",
+                    info.ID,
+                    new BigNumber(info.Balance).toFixed()
+                ]);
+            }
         }
         storage.put("IOSTDecimal", new Int64(config.IOSTDecimal).toFixed());
         storage.put("IOSTLastIssueTime", this._getBlockTime().toFixed());
