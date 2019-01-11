@@ -143,7 +143,7 @@ class IssueContract {
         const contractName = blockchain.contractName();
         const supply = new Float64(blockchain.callWithAuth("token.iost", "supply", ["iost"])[0]);
         const issueAmount = supply.multi(iostIssueRate).multi(gap);
-        const bonus = issueAmount.multi("0.33");
+        const bonus = issueAmount.multi("0.33333333");
         this._issueIOST(foundationAcc, issueAmount.minus(bonus).minus(bonus).toFixed(decimal));
         this._issueIOST("bonus.iost", bonus.toFixed(decimal));
         this._issueIOST(contractName, bonus.toFixed(decimal));
