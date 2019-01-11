@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
+	"time"
 
 	"encoding/base64"
 
@@ -133,7 +134,7 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("sign and verify", func() {
-			tx := NewTx(actions, []string{a1.ReadablePubkey(), a2.ReadablePubkey()}, 9999, 1, 1, 0)
+			tx := NewTx(actions, []string{a1.ReadablePubkey(), a2.ReadablePubkey()}, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0)
 			sig1, err := SignTxContent(tx, a1.ReadablePubkey(), a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
@@ -167,6 +168,24 @@ func TestTx(t *testing.T) {
 			}
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer error")
+
+			tx = NewTx(actions, nil, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0)
+			tx.Time = -1
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid time and expiration")
+			tx.Time = time.Now().UnixNano()
+			tx.Expiration = tx.Time
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid time and expiration")
+			tx.Expiration = tx.Time + 1
+			tx.Delay = -1
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid delay time")
+			tx.Delay = 999999999999999999
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid delay time")
+			tx.Delay = 1000
+			tx.ReferredTx = []byte("b")
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid tx. including both delay and referredtx field")
+			tx.ReferredTx = nil
+			tx.Actions = []*Action{{"", "", string(make([]byte, 1000000))}}
+			So(tx.VerifySelf().Error(), ShouldEqual, "tx size illegal, should <= 65536")
 		})
 
 	})

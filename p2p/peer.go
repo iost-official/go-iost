@@ -12,6 +12,7 @@ import (
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/uber-go/atomic"
 	"github.com/willf/bloom"
 )
 
@@ -31,11 +32,10 @@ const (
 	bloomMaxItemCount = 100000
 	bloomErrRate      = 0.001
 
-	msgChanSize = 1024
-
-	maxStreamCount = 8
-
-	maxDataLength = 10000000 // 10MB
+	msgChanSize         = 1024
+	maxStreamCount      = 8
+	maxDataLength       = 10000000 // 10MB
+	routingQueryTimeout = 10
 )
 
 // Peer represents a neighbor which we connect directily.
@@ -52,7 +52,7 @@ type Peer struct {
 
 	streams     chan libnet.Stream
 	streamCount int
-	streamMutex sync.Mutex
+	streamMutex sync.RWMutex
 
 	recentMsg      *bloom.BloomFilter
 	bloomMutex     sync.Mutex
@@ -65,6 +65,8 @@ type Peer struct {
 
 	quitWriteCh chan struct{}
 	once        sync.Once
+
+	lastRoutingQueryTime atomic.Int64
 }
 
 // NewPeer returns a new instance of Peer struct.
@@ -81,6 +83,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Pe
 		quitWriteCh: make(chan struct{}),
 		direction:   direction,
 	}
+	peer.lastRoutingQueryTime.Store(time.Now().Unix())
 	peer.AddStream(stream)
 	return peer
 }
@@ -97,14 +100,14 @@ func (p *Peer) Addr() string {
 
 // Start starts peer's loop.
 func (p *Peer) Start() {
-	ilog.Infof("peer is started. id=%s", p.id.Pretty())
+	ilog.Infof("peer is started. id=%s", p.ID())
 
 	go p.writeLoop()
 }
 
 // Stop stops peer's loop and cuts off the TCP connection.
 func (p *Peer) Stop() {
-	ilog.Infof("peer is stopped. id=%s", p.id.Pretty())
+	ilog.Infof("peer is stopped. id=%s", p.ID())
 
 	p.once.Do(func() {
 		close(p.quitWriteCh)
@@ -138,6 +141,14 @@ func (p *Peer) CloseStream(stream libnet.Stream) {
 	p.streamCount--
 }
 
+// StreamCount returns the amount of stream.
+func (p *Peer) StreamCount() int {
+	p.streamMutex.RLock()
+	defer p.streamMutex.RUnlock()
+
+	return p.streamCount
+}
+
 func (p *Peer) newStream() (libnet.Stream, error) {
 	p.streamMutex.Lock()
 	defer p.streamMutex.Unlock()
@@ -147,7 +158,7 @@ func (p *Peer) newStream() (libnet.Stream, error) {
 	}
 	stream, err := p.conn.NewStream()
 	if err != nil {
-		ilog.Warnf("creating stream failed. pid=%v, err=%v", p.id.Pretty(), err)
+		ilog.Warnf("creating stream failed. pid=%v, err=%v", p.ID(), err)
 		return nil, errCreateStream
 	}
 	p.streamCount++
@@ -183,13 +194,13 @@ func (p *Peer) doWrite(stream libnet.Stream, m *p2pMessage) {
 	// 5 kB/s
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
 	if err := stream.SetWriteDeadline(deadline); err != nil {
-		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.id.Pretty())
+		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.ID())
 		p.CloseStream(stream)
 		return
 	}
 	_, err := stream.Write(m.content())
 	if err != nil {
-		ilog.Warnf("writing message failed. err=%v, pid=%v", err, p.id.Pretty())
+		ilog.Warnf("writing message failed. err=%v, pid=%v", err, p.ID())
 		p.CloseStream(stream)
 		return
 	}
@@ -222,7 +233,7 @@ func (p *Peer) writeLoop() {
 	for {
 		select {
 		case <-p.quitWriteCh:
-			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
+			ilog.Infof("peer is stopped. pid=%v, addr=%v", p.ID(), p.addr)
 			return
 		case um := <-p.urgentMsgCh:
 			p.write(um)
@@ -230,7 +241,7 @@ func (p *Peer) writeLoop() {
 			for done := false; !done; {
 				select {
 				case <-p.quitWriteCh:
-					ilog.Infof("peer is stopped. pid=%v, addr=%v", p.id.Pretty(), p.addr)
+					ilog.Infof("peer is stopped. pid=%v, addr=%v", p.ID(), p.addr)
 					return
 				case um := <-p.urgentMsgCh:
 					p.write(um)
@@ -302,6 +313,9 @@ func (p *Peer) SendMessage(msg *p2pMessage, mp MessagePriority, deduplicate bool
 	if msg.needDedup() {
 		p.recordMessage(msg)
 	}
+	if msg.messageType() == RoutingTableQuery {
+		p.routingQueryNow()
+	}
 	return nil
 }
 
@@ -309,6 +323,13 @@ func (p *Peer) handleMessage(msg *p2pMessage) error {
 	if msg.needDedup() {
 		p.recordMessage(msg)
 	}
+	if msg.messageType() == RoutingTableResponse {
+		if p.isRoutingQueryTimeout() {
+			ilog.Debugf("receive timeout routing response. pid=%v", p.ID())
+			return nil
+		}
+	}
+	p.resetRoutingQueryTime()
 	p.peerManager.HandleMessage(msg, p.id)
 	return nil
 }
@@ -331,4 +352,19 @@ func (p *Peer) hasMessage(msg *p2pMessage) bool {
 	defer p.bloomMutex.Unlock()
 
 	return p.recentMsg.Test(msg.content())
+}
+
+// resetRoutingQueryTime resets last routing query time.
+func (p *Peer) resetRoutingQueryTime() {
+	p.lastRoutingQueryTime.Store(-1)
+}
+
+// isRoutingQueryTimeout returns whether the last routing query time is too old.
+func (p *Peer) isRoutingQueryTimeout() bool {
+	return time.Now().Unix()-p.lastRoutingQueryTime.Load() > routingQueryTimeout
+}
+
+// routingQueryNow sets the routing query time to the current timestamp.
+func (p *Peer) routingQueryNow() {
+	p.lastRoutingQueryTime.Store(time.Now().Unix())
 }

@@ -254,13 +254,17 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 
 	if pm.NeighborCount(direction) >= pm.neighborCap[direction] {
 		if !pm.isBP(remotePID) {
-			ilog.Infof("neighbor count exceeds, close stream. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
-			bytes, _ := pm.getRoutingResponse([]string{remotePID.Pretty()})
-			if len(bytes) > 0 {
-				msg := newP2PMessage(pm.config.ChainID, RoutingTableResponse, pm.config.Version, defaultReservedFlag, bytes)
-				s.Write(msg.content())
+			ilog.Infof("neighbor count exceeds, close connection. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+			if direction == inbound {
+				bytes, _ := pm.getRoutingResponse([]string{remotePID.Pretty()})
+				if len(bytes) > 0 {
+					msg := newP2PMessage(pm.config.ChainID, RoutingTableResponse, pm.config.Version, defaultReservedFlag, bytes)
+					s.Write(msg.content())
+				}
+				time.AfterFunc(time.Second, func() { s.Conn().Close() })
+			} else {
+				s.Conn().Close()
 			}
-			time.AfterFunc(time.Second, func() { s.Conn().Close() })
 			return
 		}
 		pm.kickNormalNeighbors(direction)
@@ -664,7 +668,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage) {
 		ilog.Errorf("pb decode failed. err=%v, bytes=%v", err, data)
 		return
 	}
-	//ilog.Debugf("receiving peer infos: %v", resp)
+	ilog.Debugf("receiving peer infos: %v", resp)
 	for _, peerInfo := range resp.Peers {
 		if len(peerInfo.Addrs) > 0 {
 			pid, err := peer.IDB58Decode(peerInfo.Id)
@@ -755,11 +759,11 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 		"inbound":  pm.NeighborCount(inbound),
 	}
 
-	/*  for _, p := range pm.GetAllNeighbors() { */
-	// ret[p.ID()] = map[string]interface{}{
-	// "stream": p.streamPool.Len(),
-	// }
-	/* } */
+	for _, p := range pm.GetAllNeighbors() {
+		ret[p.ID()] = map[string]interface{}{
+			"stream": p.StreamCount(),
+		}
+	}
 
 	return ret
 }
