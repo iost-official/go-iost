@@ -9,7 +9,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/snapshot"
-	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -439,7 +439,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 			p.blockCache.Del(node)
 			return err
 		}
-		err = snapshot.SaveBlockHead(p.verifyDB, blk.Head)
+		err = snapshot.Save(p.verifyDB, blk)
 		if err != nil {
 			return err
 		}

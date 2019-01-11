@@ -9,6 +9,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/global"
@@ -197,7 +198,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil || txr.Status.Code != tx.Success {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
 	}
-	blk := block.Block{
+	blk := &block.Block{
 		Head:     &blockHead,
 		Sign:     &crypto.Signature{},
 		Txs:      []*tx.Tx{trx},
@@ -209,17 +210,12 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		return nil, err
 	}
-	bhJSON, err := json.Marshal(blk.Head)
+	err = snapshot.Save(db, blk)
 	if err != nil {
-		return nil, fmt.Errorf("json fail: %v", err)
-	}
-	ilog.Infoln(string(bhJSON))
-	err = db.Put("snapshot", "blockHead", string(bhJSON))
-	if err != nil {
-		return nil, fmt.Errorf("state db put fail: %v", err)
+		return nil, err
 	}
 	db.Tag(string(blk.HeadHash()))
-	return &blk, nil
+	return blk, nil
 }
 
 // FakeBv is fake BaseVariable
@@ -254,6 +250,11 @@ func FakeBv(bv global.BaseVariable) error {
 		return err
 	}
 
+	err = snapshot.Save(bv.StateDB(), blk)
+	if err != nil {
+		return err
+	}
+	bv.StateDB().Tag(string(blk.HeadHash()))
 	err = bv.StateDB().Flush(string(blk.HeadHash()))
 	if err != nil {
 		return err

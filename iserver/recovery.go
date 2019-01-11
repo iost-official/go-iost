@@ -1,12 +1,12 @@
 package iserver
 
 import (
-	"encoding/json"
 	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
@@ -50,20 +50,14 @@ func checkGenesis(bv global.BaseVariable) error {
 func recoverDB(bv global.BaseVariable) error {
 	blockChain := bv.BlockChain()
 	stateDB := bv.StateDB()
-	// conf := bv.Config()
+	conf := bv.Config()
 
-	// if conf.Snapshot.FilePath != "" {
-	if blockChain.Length() == int64(0) {
-		bhJSON, err := stateDB.Get("snapshot", "blockHead")
+	if conf.Snapshot.FilePath != "" {
+		blk, err := snapshot.Load(stateDB)
 		if err != nil {
-			return fmt.Errorf("get current block head from state db failed. err: %v", err)
+			return fmt.Errorf("load block from snapshot failed. err: %v", err)
 		}
-		bh := &block.BlockHead{}
-		err = json.Unmarshal([]byte(bhJSON), bh)
-		if err != nil {
-			return fmt.Errorf("decode block head failed. err: %v", err)
-		}
-		blockChain.SetLength(bh.Number + 1)
+		blockChain.SetLength(blk.Head.Number + 1)
 	} else {
 		startNumebr := int64(0)
 		hash := stateDB.CurrentTag()
@@ -92,14 +86,9 @@ func recoverDB(bv global.BaseVariable) error {
 				return fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
 			}
 			parent = blk
-			bhJSON, err := json.Marshal(blk.Head)
+			err = snapshot.Save(stateDB, blk)
 			if err != nil {
-				return fmt.Errorf("json fail: %v", err)
-			}
-			ilog.Infoln(string(bhJSON))
-			err = stateDB.Put("snapshot", "blockHead", string(bhJSON))
-			if err != nil {
-				return fmt.Errorf("state db put fail: %v", err)
+				return err
 			}
 			stateDB.Tag(string(blk.HeadHash()))
 			err = stateDB.Flush(string(blk.HeadHash()))

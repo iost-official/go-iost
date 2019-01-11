@@ -33,7 +33,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	st := time.Now()
 	pTx, head := txPool.PendingTx()
 	topBlock := head.Block
-	blk := block.Block{
+	blk := &block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
@@ -50,7 +50,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
-	dropList, _, err := v.Gen(&blk, topBlock, db, pTx, &verifier.Config{
+	dropList, _, err := v.Gen(blk, topBlock, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: common.MaxTxTimeLimit,
@@ -71,15 +71,14 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		return nil, err
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
-	err = snapshot.SaveBlockHead(db, blk.Head)
+	err = snapshot.Save(db, blk)
 	if err != nil {
 		return nil, err
 	}
-
 	db.Tag(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
-	return &blk, nil
+	return blk, nil
 }
 
 func verifyBasics(blk *block.Block, signature *crypto.Signature) error {

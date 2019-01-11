@@ -1,7 +1,6 @@
 package blockcache
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strconv"
@@ -11,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
@@ -249,22 +249,16 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	}
 	bc.linkedRoot.Head.Number = -1
 
-	bhJSON, err := bc.stateDB.Get("snapshot", "blockHead")
-	ilog.Infoln(bhJSON)
-	if err != nil {
-		return nil, fmt.Errorf("get current block head from state db failed. err: %v", err)
-	}
-	bh := &block.BlockHead{}
-	err = json.Unmarshal([]byte(bhJSON), bh)
-	if err != nil {
-		return nil, fmt.Errorf("block head decode failed. err: %v", err)
+	var lib *block.Block
+	if baseVariable.Config().Snapshot.FilePath == "" {
+		lib, err = bc.blockChain.Top()
+	} else {
+		lib, err = snapshot.Load(bc.stateDB)
 	}
 
-	fmt.Print(bh)
-
-	lib := &block.Block{Head: bh}
-	lib.CalculateHeadHash()
-	ilog.Infoln(common.Base58Encode(lib.HeadHash()))
+	if err != nil {
+		ilog.Errorf("lib not found. err:%v", err)
+	}
 
 	ilog.Info("Got LIB: ", lib.Head.Number)
 	bc.linkedRoot = NewBCN(nil, lib)
