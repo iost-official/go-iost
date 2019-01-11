@@ -16,7 +16,8 @@ let BlockChain = (function () {
         if (!(amount instanceof Float64)) {
             amount = new Float64(amount);
         }
-        return JSON.parse(bc.callWithAuth("token.iost", "transfer", "[\"iost\", \"" + from + "\",\"" + to + "\",\"" + amount.toString() + "\", \"" + memo.toString() + "\"]"));
+        const args = ["iost", from, to, amount.toString(), memo.toString()];
+        return JSON.parse(bc.callWithAuth("token.iost", "transfer", JSON.stringify(args)));
     };
     return {
         // transfer IOSToken
@@ -51,10 +52,16 @@ let BlockChain = (function () {
         },
         // call contract's api using args
         call: function (contract, api, args) {
+            if (typeof args == "object") {
+                args = JSON.stringify(args);
+            }
             return JSON.parse(bc.call(contract, api, args));
         },
         // call contract's api using args with auth
         callWithAuth: function (contract, api, args) {
+            if (typeof args == "object") {
+                args = JSON.stringify(args);
+            }
             return JSON.parse(bc.callWithAuth(contract, api, args));
         },
         // check account's permission
