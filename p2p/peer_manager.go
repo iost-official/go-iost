@@ -248,7 +248,7 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer != nil {
-		peer.AddStream(s)
+		s.Reset()
 		return
 	}
 
@@ -714,7 +714,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
-					ilog.Debugf("sending incoming message failed. type=%s", msg.messageType())
+					ilog.Warnf("sending incoming message failed. type=%s", msg.messageType())
 				}
 				return true
 			})
@@ -757,12 +757,6 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 	ret["neighbor_count"] = map[string]interface{}{
 		"outbound": pm.NeighborCount(outbound),
 		"inbound":  pm.NeighborCount(inbound),
-	}
-
-	for _, p := range pm.GetAllNeighbors() {
-		ret[p.ID()] = map[string]interface{}{
-			"stream": p.StreamCount(),
-		}
 	}
 
 	return ret

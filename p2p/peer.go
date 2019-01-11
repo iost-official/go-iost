@@ -50,9 +50,7 @@ type Peer struct {
 	conn        libnet.Conn
 	peerManager *PeerManager
 
-	streams     chan libnet.Stream
-	streamCount int
-	streamMutex sync.RWMutex
+	stream libnet.Stream
 
 	recentMsg      *bloom.BloomFilter
 	bloomMutex     sync.Mutex
@@ -75,7 +73,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Pe
 		id:          stream.Conn().RemotePeer(),
 		addr:        stream.Conn().RemoteMultiaddr(),
 		conn:        stream.Conn(),
-		streams:     make(chan libnet.Stream, maxStreamCount),
+		stream:      stream,
 		peerManager: pm,
 		recentMsg:   bloom.NewWithEstimates(bloomMaxItemCount, bloomErrRate),
 		urgentMsgCh: make(chan *p2pMessage, msgChanSize),
@@ -84,7 +82,6 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Pe
 		direction:   direction,
 	}
 	peer.lastRoutingQueryTime.Store(time.Now().Unix())
-	peer.AddStream(stream)
 	return peer
 }
 
@@ -102,6 +99,7 @@ func (p *Peer) Addr() string {
 func (p *Peer) Start() {
 	ilog.Infof("peer is started. id=%s", p.ID())
 
+	go p.readLoop()
 	go p.writeLoop()
 }
 
@@ -115,116 +113,24 @@ func (p *Peer) Stop() {
 	p.conn.Close()
 }
 
-// AddStream tries to add a Stream in stream pool.
-func (p *Peer) AddStream(stream libnet.Stream) error {
-	p.streamMutex.Lock()
-	defer p.streamMutex.Unlock()
+func (p *Peer) write(m *p2pMessage) error {
 
-	if p.streamCount >= maxStreamCount {
-		return errStreamCountExceed
-	}
-	p.streams <- stream
-	p.streamCount++
-	go p.readLoop(stream)
-	return nil
-}
-
-// CloseStream closes a stream and decrease the stream count.
-//
-// Notice that it only closes the stream for writing. Reading will still work (that
-// is, the remote side can still write).
-func (p *Peer) CloseStream(stream libnet.Stream) {
-	p.streamMutex.Lock()
-	defer p.streamMutex.Unlock()
-
-	stream.Close()
-	p.streamCount--
-}
-
-// StreamCount returns the amount of stream.
-func (p *Peer) StreamCount() int {
-	p.streamMutex.RLock()
-	defer p.streamMutex.RUnlock()
-
-	return p.streamCount
-}
-
-func (p *Peer) newStream() (libnet.Stream, error) {
-	p.streamMutex.Lock()
-	defer p.streamMutex.Unlock()
-
-	if p.streamCount >= maxStreamCount {
-		return nil, errStreamCountExceed
-	}
-	stream, err := p.conn.NewStream()
-	if err != nil {
-		ilog.Warnf("creating stream failed. pid=%v, err=%v", p.ID(), err)
-		return nil, errCreateStream
-	}
-	p.streamCount++
-	go p.readLoop(stream)
-	return stream, nil
-}
-
-// getStream tries to get a stream from the stream pool.
-//
-// If the stream chan is empty and the stream count is less than maxStreamCount, it would create a
-// new stream and use it. Otherwise it would wait for a free stream.
-func (p *Peer) getStream() (libnet.Stream, error) {
-	select {
-	case stream := <-p.streams:
-		return stream, nil
-	default:
-		stream, err := p.newStream()
-		if err == errStreamCountExceed {
-			break
-		}
-		return stream, err
-	}
-
-	select {
-	case stream := <-p.streams:
-		return stream, nil
-	case <-time.After(streamWaitingTime):
-		return nil, errWaitingStreamTimeout
-	}
-}
-
-func (p *Peer) doWrite(stream libnet.Stream, m *p2pMessage) {
 	// 5 kB/s
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
-	if err := stream.SetWriteDeadline(deadline); err != nil {
+	if err := p.stream.SetWriteDeadline(deadline); err != nil {
 		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.ID())
-		p.CloseStream(stream)
-		return
+		p.peerManager.RemoveNeighbor(p.id)
+		return err
 	}
-	_, err := stream.Write(m.content())
+	_, err := p.stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("writing message failed. err=%v, pid=%v", err, p.ID())
-		p.CloseStream(stream)
-		return
+		p.peerManager.RemoveNeighbor(p.id)
+		return err
 	}
 	tagkv := map[string]string{"mtype": m.messageType().String()}
 	byteOutCounter.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)
-
-	p.streams <- stream
-
-}
-
-func (p *Peer) write(m *p2pMessage) error {
-	stream, err := p.getStream()
-	// if creating stream fails, the TCP connection may be broken and we should stop the peer.
-	if err == errCreateStream {
-		p.peerManager.RemoveNeighbor(p.id)
-		return err
-	}
-
-	if err != nil {
-		return err
-	}
-
-	go p.doWrite(stream, m)
 
 	return nil
 }
@@ -254,41 +160,43 @@ func (p *Peer) writeLoop() {
 	}
 }
 
-func (p *Peer) readLoop(stream libnet.Stream) {
+func (p *Peer) readLoop() {
 	header := make([]byte, dataBegin)
 	for {
-		_, err := io.ReadFull(stream, header)
+		_, err := io.ReadFull(p.stream, header)
 		if err != nil {
 			ilog.Warnf("read header failed. err=%v", err)
-			return
+			break
 		}
 		chainID := binary.BigEndian.Uint32(header[chainIDBegin:chainIDEnd])
 		if chainID != p.peerManager.config.ChainID {
 			ilog.Warnf("mismatched chainID. chainID=%d", chainID)
-			return
+			break
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		if length > maxDataLength {
 			ilog.Warnf("data length too large: %d", length)
-			return
+			break
 		}
 		data := make([]byte, dataBegin+length)
-		_, err = io.ReadFull(stream, data[dataBegin:])
+		_, err = io.ReadFull(p.stream, data[dataBegin:])
 		if err != nil {
 			ilog.Warnf("read message failed. err=%v", err)
-			return
+			break
 		}
 		copy(data[0:dataBegin], header)
 		msg, err := parseP2PMessage(data)
 		if err != nil {
 			ilog.Errorf("parse p2pmessage failed. err=%v", err)
-			return
+			break
 		}
 		tagkv := map[string]string{"mtype": msg.messageType().String()}
 		byteInCounter.Add(float64(len(msg.content())), tagkv)
 		packetInCounter.Add(1, tagkv)
 		p.handleMessage(msg)
 	}
+
+	p.peerManager.RemoveNeighbor(p.id)
 }
 
 // SendMessage puts message into the corresponding channel.
