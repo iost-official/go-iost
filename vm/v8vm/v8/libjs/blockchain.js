@@ -1,5 +1,6 @@
 let BlockChain = (function () {
     let bc = new IOSTBlockchain;
+    let storage = new IOSTStorage;
     // get contractName
     let contractName = function () {
         let ctxInfo = JSON.parse(bc.contextInfo());
@@ -44,6 +45,10 @@ let BlockChain = (function () {
         contractName: contractName,
         // get publisher
         publisher: publisher,
+        // get contractOwner
+        contractOwner: function() {
+            return storage.globalMapGet("system.iost", "contract_owner", contractName(), "")
+        },
         // call contract's api using args
         call: function (contract, api, args) {
             return JSON.parse(bc.call(contract, api, args));
