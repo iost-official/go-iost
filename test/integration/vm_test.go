@@ -82,7 +82,7 @@ func Test_VMMethod(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(len(r.Returns), ShouldEqual, 1)
-			So(r.Returns[0], ShouldEqual, "user_0")
+			So(r.Returns[0], ShouldEqual, "[\"user_0\"]")
 		})
 
 		Convey("test of receipt", func() {
