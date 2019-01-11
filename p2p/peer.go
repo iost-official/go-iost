@@ -8,10 +8,10 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/ilog"
-	multiaddr "github.com/multiformats/go-multiaddr"
 
 	libnet "github.com/libp2p/go-libp2p-net"
 	peer "github.com/libp2p/go-libp2p-peer"
+	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/uber-go/atomic"
 	"github.com/willf/bloom"
 )

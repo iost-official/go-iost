@@ -309,7 +309,7 @@ func (t *Tx) VerifyDefer(referredTx *Tx) error {
 }
 
 // VerifySelf verify tx's signature and some base fields.
-func (t *Tx) VerifySelf() error {
+func (t *Tx) VerifySelf() error { // nolint
 	if !(t.Time > 0 && t.Expiration > t.Time) {
 		return errors.New("invalid time and expiration")
 	}
