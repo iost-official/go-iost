@@ -20,12 +20,6 @@ import (
 var (
 	ErrMessageChannelFull = errors.New("message channel is full")
 	ErrDuplicateMessage   = errors.New("reduplicate message")
-
-	errStreamCountExceed    = errors.New("stream count exceeds")
-	errCreateStream         = errors.New("creating stream fails")
-	errWaitingStreamTimeout = errors.New("waiting stream timeout")
-
-	streamWaitingTime = 3 * time.Second
 )
 
 const (
