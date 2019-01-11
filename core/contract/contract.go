@@ -140,10 +140,10 @@ func Compile(id, src, abi string) (*Contract, error) {
 
 // ToBytes converts Amount to bytes.
 func (a *Amount) ToBytes() []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteString(a.Token, true)
-	sn.WriteString(a.Val, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteString(a.Token)
+	se.WriteString(a.Val)
+	return se.Bytes()
 }
 
 // Equal returns whether two amount are equal.
