@@ -50,14 +50,6 @@ class VoteCommonContract {
         }
     }
 
-    _call(contract, api, args) {
-        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length === 1) {
-            return ret[0] === "" ? "" : JSON.parse(ret[0]);
-        }
-        return ret;
-    }
-
     _get(k) {
         const val = storage.get(k);
         if (val === "") {
@@ -166,7 +158,7 @@ class VoteCommonContract {
         const bn = block.number;
 
         if (bn > 0) {
-            this._call("token.iost", "transfer", ["iost", owner, "vote.iost", newVoteFee, ""]);
+            blockchain.callWithAuth("token.iost", "transfer", ["iost", owner, "vote.iost", newVoteFee, ""]);
         }
 
         const voteId = this._nextId();
@@ -395,7 +387,7 @@ class VoteCommonContract {
         if (info.deleted === FALSE) {
             freezeTime += info.freezeTime*1e9;
         }
-        this._call("token.iost", "transferFreeze", ["iost", "vote.iost", account, amount.toFixed(), freezeTime, ""]);
+        blockchain.callWithAuth("token.iost", "transferFreeze", ["iost", "vote.iost", account, amount.toFixed(), freezeTime, ""]);
 
         const leftVoteNum = votes.minus(amount);
         userVotes[id][0] = leftVoteNum.toFixed();

@@ -27,7 +27,7 @@ class Exchange {
         let from = blockchain.publisher();
         if (to !== "") {
             // transfer to an exist account
-            blockchain.call("token.iost", "transfer", JSON.stringify([tokenSym, from, to, amount, memo]));
+            blockchain.call("token.iost", "transfer", [tokenSym, from, to, amount, memo]);
 
         } else if (to == "") {
             if (memo.startsWith("create:")) {
@@ -40,8 +40,8 @@ class Exchange {
                     throw new Error("memo of transferring to a new account should be of format name:ownerKey:activeKey");
                 }
                 // Attention: signUp will use publisher() asset, so publisher should be equal to from
-                blockchain.call("auth.iost", "signUp", JSON.stringify(args));
-                let rets = blockchain.call("ram.iost", "buy", JSON.stringify([from, args[0], initialRAM]));
+                blockchain.call("auth.iost", "signUp", args);
+                let rets = blockchain.call("ram.iost", "buy", [from, args[0], initialRAM]);
                 let price = rets[0];
 
                 let paid = new BigNumber(price).plus(new BigNumber(initialGasPledged));

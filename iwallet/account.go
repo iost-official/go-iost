@@ -17,13 +17,14 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/spf13/cobra"
-	"io/ioutil"
-	"os"
-	"strings"
 )
 
 var (
@@ -99,7 +100,7 @@ func createAccount(name string) (err error) {
 	if sdk.checkPubKey(ownerKey) && sdk.checkPubKey(activeKey) {
 		okey, akey = ownerKey, activeKey
 	} else {
-		aLgo := sdk.getSignAlgo()
+		aLgo := sdk.GetSignAlgo()
 		newKp, err = account.NewKeyPair(nil, aLgo)
 		if err != nil {
 			return fmt.Errorf("create key pair failed %v", err)
@@ -110,16 +111,16 @@ func createAccount(name string) (err error) {
 		autoKey = true
 	}
 
-	err = sdk.loadAccount()
+	err = sdk.LoadAccount()
 	if err != nil {
 		return fmt.Errorf("load account failed. Is ~/.iwallet/%v_%v exists", sdk.accountName, sdk.signAlgo)
 	}
-	err = sdk.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
+	_, err = sdk.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
 	if err != nil {
 		return fmt.Errorf("create new account error %v", err)
 	}
 	if autoKey {
-		err = sdk.saveAccount(newName, newKp)
+		err = sdk.SaveAccount(newName, newKp)
 		if err != nil {
 			return fmt.Errorf("saveAccount failed %v", err)
 		}
@@ -218,12 +219,12 @@ func importAcc(name string, args []string) {
 		fmt.Println("Error: private key not given")
 		return
 	}
-	keyPair, err := account.NewKeyPair(loadBytes(args[0]), sdk.getSignAlgo())
+	keyPair, err := account.NewKeyPair(loadBytes(args[0]), sdk.GetSignAlgo())
 	if err != nil {
 		fmt.Println("private key error: ", err)
 		return
 	}
-	err = sdk.saveAccount(name, keyPair)
+	err = sdk.SaveAccount(name, keyPair)
 	if err != nil {
 		fmt.Printf("saveAccount failed %v\n", err)
 	}

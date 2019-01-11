@@ -52,7 +52,7 @@ func (t *gobangHandle) Prepare() error {
 		return err
 	}
 	k := testAcc.ReadablePubkey()
-	err = sdk.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
+	_, err = sdk.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}

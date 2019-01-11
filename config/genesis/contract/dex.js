@@ -29,7 +29,7 @@ class DexContract {
     place_order(sellType, sellAmount, buyType, buyAmount) {
         let orderID = this._new_order_id();
         blockchain.callWithAuth("token.iost", "transfer",
-            JSON.stringify([sellType, blockchain.publisher(), blockchain.contractName(), sellAmount, "put" + orderID]));
+            [sellType, blockchain.publisher(), blockchain.contractName(), sellAmount, "put" + orderID]);
         this._put_order(orderID, {"sell_type": sellType,
             "sell_amount": sellAmount,
             "buy_type": buyType,
@@ -45,7 +45,7 @@ class DexContract {
         }
         this._requireAuth(orderJSON["seller"], "active");
         blockchain.callWithAuth("token.iost", "transfer",
-            JSON.stringify([orderJSON["sell_type"], blockchain.contractName(), orderJSON["seller"], orderJSON["sell_amount"], "cancel" + orderID]));
+            [orderJSON["sell_type"], blockchain.contractName(), orderJSON["seller"], orderJSON["sell_amount"], "cancel" + orderID]);
         this._del_order(orderID);
     }
     take_order(orderID) {
@@ -54,9 +54,9 @@ class DexContract {
             throw new Error("not a valid order");
         }
         blockchain.callWithAuth("token.iost", "transfer",
-            JSON.stringify([orderJSON["buy_type"], blockchain.publisher(), orderJSON["seller"], orderJSON["buy_amount"], "take" + orderID]));
+            [orderJSON["buy_type"], blockchain.publisher(), orderJSON["seller"], orderJSON["buy_amount"], "take" + orderID]);
         blockchain.callWithAuth("token.iost", "transfer",
-            JSON.stringify([orderJSON["sell_type"], blockchain.contractName(), blockchain.publisher(), orderJSON["sell_amount"], "finish" + orderID]));
+            [orderJSON["sell_type"], blockchain.contractName(), blockchain.publisher(), orderJSON["sell_amount"], "finish" + orderID]);
         this._del_order(orderID);
     }
 }
