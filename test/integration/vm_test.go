@@ -75,6 +75,16 @@ func Test_VMMethod(t *testing.T) {
 			So(r.Returns[0], ShouldEqual, string(res))
 		})
 
+		Convey("test of contract owner", func() {
+			r, err := s.Call(cname, "contractOwner", "[]", acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(len(r.Returns), ShouldEqual, 1)
+			So(r.Returns[0], ShouldEqual, "user_0")
+		})
+
 		Convey("test of receipt", func() {
 			r, err := s.Call(cname, "receiptf", fmt.Sprintf(`["%v"]`, "receiptdata"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()

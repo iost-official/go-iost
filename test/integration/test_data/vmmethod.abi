@@ -7,6 +7,10 @@
       "args": []
     },
     {
+      "name": "contractOwner",
+      "args": []
+    },
+    {
       "name": "receiptf",
       "args": ["string"]
     },

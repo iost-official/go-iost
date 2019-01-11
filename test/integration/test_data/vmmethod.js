@@ -6,6 +6,10 @@ class Contract {
         return blockchain.contractName();
     }
 
+    contractOwner() {
+        return blockchain.contractOwner();
+    }
+
     receiptf(data) {
         blockchain.receipt(data);
     }
