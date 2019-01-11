@@ -68,7 +68,7 @@ func Test_IOSTIssue(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 
 			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(7805479823))
-			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(15847489338))
+			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(8042009515))
 		})
 	})
 }

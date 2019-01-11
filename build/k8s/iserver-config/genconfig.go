@@ -170,7 +170,7 @@ func genconfig() {
 		}
 		c := &common.Config{
 			ACC:     ACC,
-			Genesis: "/var/lib/iserver/genesis.yml",
+			Genesis: "/var/lib/iserver/genesis",
 			VM:      VM,
 			DB:      DB,
 			P2P:     P2P,

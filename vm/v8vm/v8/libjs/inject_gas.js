@@ -93,6 +93,9 @@ function checkInvalidKeyword(tokens) {
         if (tokens[i].type === "RegularExpression") {
             throw new Error("use of RegularExpression is not allowed." + tokens[i].val)
         }
+        if (tokens[i].type === "Keyword" && (tokens[i].value === "try" || tokens[i].value === "catch")) {
+            throw new Error("use of try catch is not supported");
+        }
     }
 }
 

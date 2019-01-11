@@ -76,6 +76,9 @@ function checkOneClass(node, abi, cls) {
         }
         methodMap[m.key.name] = m.value.params;
     }
+    if (methodMap["init"] === undefined || methodMap["init"] === null) {
+        throw new Error("init not found!");
+    }
 
     for (const a of abi) {
         checkOneAbi(a, methodMap);
