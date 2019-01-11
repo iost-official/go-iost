@@ -71,7 +71,7 @@ func TestAccountInfo(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
 
-		r, err = s.Call("auth.iost", "revokePermission", array2json([]interface{}{"myidid", "active", "acc1"}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "revokePermission", array2json([]interface{}{"myidid", "active", "acc1@active"}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
 

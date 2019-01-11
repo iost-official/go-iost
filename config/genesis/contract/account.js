@@ -38,6 +38,26 @@ class Account {
         return -1
     }
 
+    static _findPermission(items, name) {
+        const len = name.indexOf("@");
+        if (len < 0) {
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].id === name && items[i].permission == undefined) {
+                    return i
+                }
+            }
+        } else if (len > 0) {
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].id === name.substring(0, len) && items[i].permission == name.substring(len, name.length)) {
+                    return i
+                }
+            }
+        } else {
+            throw "unexpected item"
+        }
+        return -1
+    }
+
     _hasAccount(id) {
         return storage.mapHas("auth", id);
     }
@@ -199,7 +219,7 @@ class Account {
     revokePermission(id, perm, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
-        const index = Account._find(acc.permissions[perm].items, un);
+        const index = Account._findPermission(acc.permissions[perm].items, un);
         if (index < 0) {
             throw new Error("item not found");
         } else {
