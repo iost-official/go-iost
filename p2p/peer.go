@@ -27,7 +27,6 @@ const (
 	bloomErrRate      = 0.001
 
 	msgChanSize         = 1024
-	maxStreamCount      = 8
 	maxDataLength       = 10000000 // 10MB
 	routingQueryTimeout = 10
 )
