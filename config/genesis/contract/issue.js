@@ -18,11 +18,13 @@ class IssueContract {
             }
         ]);
         for (const info of witnessInfo) {
-            blockchain.callWithAuth("token.iost", "issue", [
-                "iost",
-                info.ID,
-                new BigNumber(info.Balance).toFixed()
-            ]);
+            if (info.Balance !== 0) {
+                blockchain.callWithAuth("token.iost", "issue", [
+                    "iost",
+                    info.ID,
+                    new Float64(info.Balance).toFixed()
+                ]);
+            }
         }
         storage.put("IOSTDecimal", new Int64(config.IOSTDecimal).toFixed());
         storage.put("IOSTLastIssueTime", this._getBlockTime().toFixed());

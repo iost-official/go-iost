@@ -78,8 +78,8 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	h.Context().Set("auth_list", authList)
 
 	code := &contract.Contract{
-		ID: native.GasContractName,
-		Info: &contract.Info{Version:"1.0.0"},
+		ID:   native.GasContractName,
+		Info: &contract.Info{Version: "1.0.0"},
 	}
 
 	e := &native.Impl{}
@@ -101,7 +101,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	}
 
 	h.Context().Set("contract_name", native.GasContractName)
-	h.Context().Set("amount_limit", []*contract.Amount{&contract.Amount{Token: "*", Val: "unlimited"}})
+	h.Context().Set("amount_limit", []*contract.Amount{{Token: "*", Val: "unlimited"}})
 
 	return e, h, code, acc0.ID, tmpDB
 }
@@ -365,7 +365,7 @@ func TestGas_TGas(t *testing.T) {
 	s := verifier.NewSimulator()
 	defer s.Clear()
 	createAccountsWithResource(s)
-	ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
+	ca, err := s.Compile("auth.iost", "../../config/genesis/contract/account", "../../config/genesis/contract/account.js")
 	if err != nil {
 		panic(err)
 	}

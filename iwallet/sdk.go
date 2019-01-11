@@ -425,8 +425,8 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 	return nil
 }
 
-// CreateNewAccount ...
-func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) error {
+// CreateNewAccount ... return txHash
+func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) (string, error) {
 	var acts []*rpcpb.Action
 	acts = append(acts, NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
@@ -435,7 +435,7 @@ func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, 
 	var registerInitialPledge int64 = 10
 	initialGasPledge -= registerInitialPledge
 	if initialGasPledge < 0 {
-		return fmt.Errorf("min gas pledge is 10")
+		return "", fmt.Errorf("min gas pledge is 10")
 	}
 	if initialGasPledge > 0 {
 		acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
@@ -445,31 +445,31 @@ func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, 
 	}
 	trx, err := s.createTx(acts)
 	if err != nil {
-		return err
+		return "", err
 	}
 	stx, err := s.signTx(trx)
 	if err != nil {
-		return err
+		return "", err
 	}
 	var txHash string
 	txHash, err = s.sendTx(stx)
 	if err != nil {
-		return err
+		return txHash, err
 	}
 	fmt.Println("send tx done")
 	fmt.Println("the create user transaction hash is:", txHash)
 	if s.checkResult {
 		if err := s.checkTransaction(txHash); err != nil {
-			return err
+			return txHash, err
 		}
 	}
 	fmt.Printf("balance of %v\n", newID)
 	info, err := s.getAccountInfo(newID)
 	if err != nil {
-		return err
+		return txHash, err
 	}
 	fmt.Println(marshalTextString(info))
-	return nil
+	return txHash, nil
 }
 
 // PublishContract converts contract js code to transaction. If 'send', also send it to chain.

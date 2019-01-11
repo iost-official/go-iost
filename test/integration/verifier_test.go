@@ -583,10 +583,10 @@ func TestAuthority(t *testing.T) {
 	defer s.Clear()
 	Convey("test of Auth", t, func() {
 
-		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
+		ca, err := s.Compile("auth.iost", "../../config/genesis/contract/account", "../../config/genesis/contract/account.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
-		ca, err = s.Compile("issue.iost", "../../contract/issue", "../../contract/issue.js")
+		ca, err = s.Compile("issue.iost", "../../config/genesis/contract/issue", "../../config/genesis/contract/issue.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
 		s.Visitor.SetContract(native.GasABI())

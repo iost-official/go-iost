@@ -115,7 +115,7 @@ func createAccount(name string) (err error) {
 	if err != nil {
 		return fmt.Errorf("load account failed. Is ~/.iwallet/%v_%v exists", sdk.accountName, sdk.signAlgo)
 	}
-	err = sdk.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
+	_, err = sdk.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
 	if err != nil {
 		return fmt.Errorf("create new account error %v", err)
 	}

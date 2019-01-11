@@ -156,7 +156,7 @@ L:
 		if limit > c.TxTimeLimit {
 			limit = c.TxTimeLimit
 		}
-		if limit < 100*time.Microsecond {
+		if limit < 500*time.Microsecond {
 			break L
 		}
 		t := provider.Tx()
@@ -164,7 +164,7 @@ L:
 			break L
 		}
 		if !t.IsCreatedBefore(blk.Head.Time) {
-			ilog.Warnf(
+			ilog.Debugf(
 				"Tx %v has not arrived. tx time is %v, blk time is %v",
 				common.Base58Encode(t.Hash()),
 				t.Time,
@@ -199,7 +199,7 @@ L:
 			continue L
 		}
 		if r.Status.Code == tx.ErrorTimeout && limit < c.TxTimeLimit {
-			ilog.Warnf(
+			ilog.Debugf(
 				"isolator run time out, but time limit %v less than std time limit %v",
 				limit,
 				c.TxTimeLimit,
