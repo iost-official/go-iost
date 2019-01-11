@@ -13,7 +13,7 @@ class BonusContract {
     }
 
     _initContribute() {
-        this._call("token.iost", "create", [
+        blockchain.callWithAuth("token.iost", "create", [
             "contribute",
             "bonus.iost",
             totalSupply,
@@ -43,14 +43,6 @@ class BonusContract {
         if (ret !== true) {
             throw new Error("require auth failed. ret = " + ret);
         }
-    }
-
-    _call(contract, api, args) {
-        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length === 1) {
-            return ret[0] === "" ? "" : JSON.parse(ret[0]);
-        }
-        return ret;
     }
 
     _get(k) {
@@ -95,7 +87,7 @@ class BonusContract {
         if (block.time < lastTime + 604800) {
             return;
         }
-        const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
+        const supply = new Float64(blockchain.callWithAuth("token.iost", "supply", ["iost"])[0]);
         const blockContrib = supply.multi(blockContribRadio).toFixed(8);
         this._put("blockContrib", blockContrib);
     }
@@ -115,7 +107,7 @@ class BonusContract {
         if (acc) {
             witness = acc;
         }
-        this._call("token.iost", "issue", [
+        blockchain.callWithAuth("token.iost", "issue", [
             "contribute",
             witness,
             blockContrib
@@ -132,10 +124,10 @@ class BonusContract {
             throw new Error("last exchange less than one day.");
         }
 
-        const contribute = this._call("token.iost", "balanceOf", [
+        const contribute = blockchain.callWithAuth("token.iost", "balanceOf", [
             "contribute",
             account
-        ]);
+        ])[0];
         amount = new Float64(amount);
         if (amount.isZero()) {
             amount = new Float64(contribute);
@@ -145,10 +137,10 @@ class BonusContract {
             throw new Error("invalid amount: negative or greater than contribute");
         }
 
-        const totalBonus = new Float64(this._call("token.iost", "balanceOf", [
+        const totalBonus = new Float64(blockchain.callWithAuth("token.iost", "balanceOf", [
             "iost",
             blockchain.contractName()
-        ]));
+        ])[0]);
 
         if (amount.gt(totalBonus)) {
             throw new Error("left bonus not enough, please wait");
@@ -156,7 +148,7 @@ class BonusContract {
 
         this._put(account, currentTime, account);
 
-        this._call("token.iost", "destroy", [
+        blockchain.callWithAuth("token.iost", "destroy", [
             "contribute",
             account,
             amount.toFixed()

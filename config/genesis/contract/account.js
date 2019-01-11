@@ -126,9 +126,9 @@ class Account {
         if (block.number !== 0) {
             const defaultGasPledge = "10";
             const defaultRegisterReward = "3";
-            blockchain.callWithAuth("gas.iost", "pledge", JSON.stringify([referrer, id, defaultGasPledge]));
+            blockchain.callWithAuth("gas.iost", "pledge", [referrer, id, defaultGasPledge]);
             if (storage.globalMapHas("vote_producer.iost", "producerTable", referrer)) {
-                blockchain.callWithAuth("issue.iost", "issueIOSTTo", JSON.stringify([referrer, defaultRegisterReward]));
+                blockchain.callWithAuth("issue.iost", "issueIOSTTo", [referrer, defaultRegisterReward]);
             }
         }
 
@@ -155,6 +155,9 @@ class Account {
 
     dropPermission(id, perm) {
         this._ra(id);
+        if (perm === "active" || perm === "owner") {
+            throw "drop active or owner is forbidden"
+        }
         let acc = this._loadAccount(id);
         acc.permissions[perm] = undefined;
         this._saveAccount(acc);

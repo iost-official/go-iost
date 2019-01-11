@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +51,7 @@ var publishCmd = &cobra.Command{
 			updateID = args[3]
 		}
 
-		err = sdk.loadAccount()
+		err = sdk.LoadAccount()
 		if err != nil {
 			fmt.Printf("load account failed %v\n", err)
 			return

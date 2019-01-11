@@ -28,7 +28,7 @@ class VoteContract {
     }
 
     _initVote() {
-        const voteId = this._call("vote.iost", "newVote", [
+        const voteId = blockchain.callWithAuth("vote.iost", "newVote", [
             "vote_producer.iost",
             "vote for producer",
             {
@@ -38,8 +38,8 @@ class VoteContract {
                 anyOption: false,
                 freezeTime: VOTE_LOCKTIME
             }
-        ]);
-        this._put("voteId", JSON.stringify(voteId));
+        ])[0];
+        this._put("voteId", voteId);
     }
 
     initProducer(proID, proPubkey) {
@@ -67,7 +67,7 @@ class VoteContract {
         this._put("producerNumber", producerNumber);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "addOption", [
+        blockchain.callWithAuth("vote.iost", "addOption", [
             voteId,
             proID,
             false
@@ -106,8 +106,9 @@ class VoteContract {
         }
     }
 
+    // call abi and parse result as JSON
     _call(contract, api, args) {
-        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
+        const ret = blockchain.callWithAuth(contract, api, args);
         if (ret && Array.isArray(ret) && ret.length === 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
@@ -168,7 +169,7 @@ class VoteContract {
         this._mapPut("producerKeyToId", pubkey, account, account);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "addOption", [
+        blockchain.callWithAuth("vote.iost", "addOption", [
             voteId,
             account,
             false
@@ -250,7 +251,7 @@ class VoteContract {
             throw new Error("producer can not unregister");
         }
         const voteId = this._getVoteId();
-        this._call("vote.iost", "removeOption", [
+        blockchain.callWithAuth("vote.iost", "removeOption", [
             voteId,
             account,
             true,
@@ -519,7 +520,7 @@ class VoteContract {
         amount = this._fixAmount(amount);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "voteFor", [
+        blockchain.callWithAuth("vote.iost", "voteFor", [
             voteId,
             payer,
             voter,
@@ -541,7 +542,7 @@ class VoteContract {
         amount = this._fixAmount(amount);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "vote", [
+        blockchain.callWithAuth("vote.iost", "vote", [
             voteId,
             voter,
             producer,
@@ -558,7 +559,7 @@ class VoteContract {
         amount = this._fixAmount(amount);
 
         const voteId = this._getVoteId();
-        this._call("vote.iost", "unvote", [
+        blockchain.callWithAuth("vote.iost", "unvote", [
             voteId,
             voter,
             producer,
@@ -593,7 +594,7 @@ class VoteContract {
 
         let voterCoef = this._getVoterCoef(account);
         voterCoef = voterCoef.plus(amount.div(votes));
-        this._mapPut(voterCoefTable, account, voterCoef.toFixed(), account);
+        this._mapPut(voterCoefTable, account, voterCoef.toFixed(), payer);
         return true;
     }
 
@@ -630,7 +631,7 @@ class VoteContract {
     }
 
     getVoterBonus(voter) {
-        return this._calVoterBonus(voter, false).toFixed();
+        return this._calVoterBonus(voter, false).toFixed(IOST_DECIMAL);
     }
 
     voterWithdraw(voter) {
@@ -640,7 +641,7 @@ class VoteContract {
         if (earnings.lte("0")) {
             return;
         }
-        blockchain.withdraw(voter, earnings.toFixed(), "");
+        blockchain.withdraw(voter, earnings.toFixed(IOST_DECIMAL), "");
     }
 
     _calCandidateBonus(account, updateMask) {
@@ -665,7 +666,7 @@ class VoteContract {
     }
 
     getCandidateBonus(account) {
-        return this._calCandidateBonus(account, false).toFixed();
+        return this._calCandidateBonus(account, false).toFixed(IOST_DECIMAL);
     }
 
     candidateWithdraw(account) {
@@ -676,9 +677,9 @@ class VoteContract {
             return;
         }
         let halfEarning = earnings.div("2");
-        blockchain.withdraw(account, halfEarning.toFixed(), "");
+        blockchain.withdraw(account, halfEarning.toFixed(IOST_DECIMAL), "");
 
-        this.topupVoterBonus(account, earnings.minus(halfEarning).toFixed(), blockchain.contractName());
+        this.topupVoterBonus(account, earnings.minus(halfEarning.toFixed(IOST_DECIMAL)).toFixed(IOST_DECIMAL), blockchain.contractName());
     }
 
     _getScores() {

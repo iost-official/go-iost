@@ -103,7 +103,7 @@ func (i *Isolator) checkAuth(t *tx.Tx) error {
 }
 
 func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret string, receipts []*tx.Receipt, err error) {
-	receipts = make([]*tx.Receipt, 0)
+	oLen := len(i.h.Context().GValue("receipts").([]*tx.Receipt))
 
 	i.h.PushCtx()
 	defer func() {
@@ -133,15 +133,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
 			}
 		}
-
-		receipt := &tx.Receipt{
-			FuncName: action.Contract + "/" + action.ActionName,
-			Content:  err.Error(),
-		}
-		receipts = append(receipts, receipt)
-
 		err = nil
-
 		return
 	}
 
@@ -152,7 +144,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 
 	ret = string(rj)
 
-	receipts = append(receipts, i.h.Context().GValue("receipts").([]*tx.Receipt)...)
+	receipts = i.h.Context().GValue("receipts").([]*tx.Receipt)[oLen:]
 
 	status = &tx.Status{
 		Code:    tx.Success,

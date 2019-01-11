@@ -8,7 +8,7 @@ class IssueContract {
     }
 
     _initIOST(config, witnessInfo) {
-        this._call("token.iost", "create", [
+        blockchain.callWithAuth("token.iost", "create", [
             "iost",
             "issue.iost",
             config.IOSTTotalSupply,
@@ -18,11 +18,13 @@ class IssueContract {
             }
         ]);
         for (const info of witnessInfo) {
-            this._call("token.iost", "issue", [
-                "iost",
-                info.ID,
-                new BigNumber(info.Balance).toFixed()
-            ]);
+            if (info.Balance !== 0) {
+                blockchain.callWithAuth("token.iost", "issue", [
+                    "iost",
+                    info.ID,
+                    new Float64(info.Balance).toFixed()
+                ]);
+            }
         }
         storage.put("IOSTDecimal", new Int64(config.IOSTDecimal).toFixed());
         storage.put("IOSTLastIssueTime", this._getBlockTime().toFixed());
@@ -65,14 +67,6 @@ class IssueContract {
         }
     }
 
-    _call(contract, api, args) {
-        const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length === 1) {
-            return ret[0] === "" ? "" : JSON.parse(ret[0]);
-        }
-        return ret;
-    }
-
     _getBlockTime() {
         return new Float64(block.time);
     }
@@ -96,8 +90,7 @@ class IssueContract {
     _issueIOST(account, amount) {
         const amountStr = ((typeof amount === "string") ? amount : amount.toFixed(this._get("IOSTDecimal")));
         const args = ["iost", account, amountStr];
-        console.log("issueiost", args)
-        this._call("token.iost", "issue", args);
+        blockchain.callWithAuth("token.iost", "issue", args);
     }
 
     issueIOSTTo(account, amount) {
@@ -106,20 +99,29 @@ class IssueContract {
         for (const c of whitelist) {
             if (blockchain.requireAuth(c, "active")) {
                 auth = true;
-                break
+                break;
             }
         }
         if (!auth) {
-            throw new Error("issue iost permission denied")
+            throw new Error("issue iost permission denied");
         }
-        this._issueIOST(account, amount)
+        this._issueIOST(account, amount);
     }
 
     // issueIOST to bonus.iost and iost foundation
     issueIOST() {
-        // TODO(hudongwen): multi issuer
         const admin = storage.get("adminID");
-        this._requireAuth(admin, activePermission);
+        const whitelist = ["base.iost", admin];
+        let auth = false;
+        for (const c of whitelist) {
+            if (blockchain.requireAuth(c, "active")) {
+                auth = true;
+                break;
+            }
+        }
+        if (!auth) {
+            throw new Error("issue iost permission denied");
+        }
         const lastIssueTime = storage.get("IOSTLastIssueTime");
         if (lastIssueTime === null || lastIssueTime === 0 || lastIssueTime === undefined) {
             throw new Error("IOSTLastIssueTime not set.");
@@ -139,17 +141,17 @@ class IssueContract {
         storage.put("IOSTLastIssueTime", currentTime.toFixed());
 
         const contractName = blockchain.contractName();
-        const supply = new Float64(this._call("token.iost", "supply", ["iost"]));
+        const supply = new Float64(blockchain.callWithAuth("token.iost", "supply", ["iost"])[0]);
         const issueAmount = supply.multi(iostIssueRate).multi(gap);
-        const bonus = issueAmount.multi("0.33");
+        const bonus = issueAmount.multi("0.33333333");
         this._issueIOST(foundationAcc, issueAmount.minus(bonus).minus(bonus).toFixed(decimal));
         this._issueIOST("bonus.iost", bonus.toFixed(decimal));
         this._issueIOST(contractName, bonus.toFixed(decimal));
 
-        const succ = this._call("vote_producer.iost", "topupCandidateBonus", [
+        const succ = blockchain.callWithAuth("vote_producer.iost", "topupCandidateBonus", [
             bonus.toFixed(decimal),
             contractName
-        ]);
+        ])[0];
         if (!succ) {
             // transfer bonus to foundation if topup failed
             blockchain.transfer(contractName, foundationAcc, bonus.toFixed(decimal), "");

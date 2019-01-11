@@ -212,7 +212,9 @@
         }
 
         const rs = str("", {"": value});
-        _IOSTInstruction_counter.incr(2 * rs.length);
+        if (typeof rs == "string") {
+            _IOSTInstruction_counter.incr(2 * rs.length);
+        }
         return rs;
     };
 }());
