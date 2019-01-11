@@ -80,6 +80,7 @@ func main() {
 	conf := common.NewConfig(*configFile)
 
 	if *snapshotFile != "" {
+		conf.Snapshot.Enable = true
 		conf.Snapshot.FilePath = *snapshotFile
 	}
 

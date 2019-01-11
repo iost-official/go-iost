@@ -250,10 +250,10 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	bc.linkedRoot.Head.Number = -1
 
 	var lib *block.Block
-	if baseVariable.Config().Snapshot.FilePath == "" {
-		lib, err = bc.blockChain.Top()
-	} else {
+	if baseVariable.Config().Snapshot.Enable {
 		lib, err = snapshot.Load(bc.stateDB)
+	} else {
+		lib, err = bc.blockChain.Top()
 	}
 
 	if err != nil {

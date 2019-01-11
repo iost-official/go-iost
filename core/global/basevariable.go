@@ -49,7 +49,7 @@ type BaseVariableImpl struct {
 
 // New return a BaseVariable instance
 func New(conf *common.Config) (*BaseVariableImpl, error) {
-	if conf.Snapshot.FilePath != "" {
+	if conf.Snapshot.Enable {
 		s, err := os.Stat(conf.DB.LdbPath + "BlockChainDB")
 		if err == nil && s.IsDir() {
 			ilog.Fatal("start iserver with the snapshot failed, blockchain db already has.")
