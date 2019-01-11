@@ -95,7 +95,7 @@ func prepareAccounts() {
 		okey := k
 		akey := k
 
-		err = sdk.CreateNewAccount(acc, okey, akey, 1024, 1000, 2100000)
+		_, err = sdk.CreateNewAccount(acc, okey, akey, 1024, 1000, 2100000)
 		if err != nil {
 			log.Fatalf("create new account error %v", err)
 		}
