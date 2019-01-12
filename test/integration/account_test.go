@@ -69,11 +69,11 @@ func TestAccountInfo(t *testing.T) {
 
 		r, err = s.Call("auth.iost", "assignPermission", array2json([]interface{}{"myidid", "active", "acc1@active", 1}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `{"id":"acc1","permission":"active","is_key_pair":false,"weight":1}`)
 
 		r, err = s.Call("auth.iost", "revokePermission", array2json([]interface{}{"myidid", "active", "acc1@active"}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `{"id":"acc1","permission":"active","is_key_pair":false,"weight":1}`)
 
 		r, err = s.Call("auth.iost", "revokePermission", array2json([]interface{}{"myidid", "active", "acc2"}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
@@ -93,11 +93,11 @@ func TestAccountInfo(t *testing.T) {
 
 		r, err = s.Call("auth.iost", "assignGroup", array2json([]interface{}{"myidid", "grp0", "acc1@active", 1}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"groups":{"grp0":{"name":"grp0","items":[{"id":"acc1","permission":"active","is_key_pair":false,"weight":1}]}`)
 
-		r, err = s.Call("auth.iost", "revokeGroup", array2json([]interface{}{"myidid", "grp0", "acc1"}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "revokeGroup", array2json([]interface{}{"myidid", "grp0", "acc1@active"}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
-		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `{"id":"acc1","permission":"@active","is_key_pair":false,"weight":1}`)
+		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldNotContainSubstring, `"groups":{"grp0":{"name":"grp0","items":[{"id":"acc1","permission":"active","is_key_pair":false,"weight":1}]}`)
 
 		r, err = s.Call("auth.iost", "assignPermissionToGroup", array2json([]interface{}{"myidid", "active", "grp0"}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)

@@ -48,7 +48,7 @@ class Account {
             }
         } else if (len > 0) {
             for (let i = 0; i < items.length; i++) {
-                if (items[i].id === name.substring(0, len) && items[i].permission === name.substring(len, name.length)) {
+                if (items[i].id === name.substring(0, len) && items[i].permission === name.substring(len+1, name.length)) {
                     return i
                 }
             }
@@ -201,7 +201,7 @@ class Account {
             } else if (len > 0) {
                 acc.permissions[perm].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len, un.length),
+                    permission: un.substring(len+1, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
@@ -278,7 +278,7 @@ class Account {
             } else {
                 acc.groups[group].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len, un.length),
+                    permission: un.substring(len+1, un.length),
                     is_key_pair: false,
                     weight: weight
                 });
@@ -295,7 +295,7 @@ class Account {
     revokeGroup(id, grp, un) {
         this._ra(id);
         let acc = this._loadAccount(id);
-        const index = Account._find(acc.groups[grp].items, un);
+        const index = Account._findPermission(acc.groups[grp].items, un);
         if (index < 0) {
             throw new Error("item not found");
         } else {
