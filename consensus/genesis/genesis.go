@@ -164,7 +164,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 		acts = append(acts, tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, adminInfo.ID, v.ID, gasPledgeAmount)))
 	}
 
-	trx := tx.NewTx(acts, nil, 1000000000, 100, 0, 0)
+	trx := tx.NewTx(acts, nil, 1000000000, 100, 0, 0, tx.ChainID)
 	trx.Time = 0
 	trx, err = tx.SignTx(trx, deadAccount.ID, []*account.KeyPair{})
 	if err != nil {

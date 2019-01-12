@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/go-iost/consensus/synchronizer"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
@@ -33,6 +34,8 @@ type IServer struct {
 
 // New returns a iserver application
 func New(conf *common.Config) *IServer {
+	tx.ChainID = conf.P2P.ChainID
+
 	bv, err := global.New(conf)
 	if err != nil {
 		ilog.Fatalf("create global failed. err=%v", err)

@@ -80,8 +80,8 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("encode and decode", func() {
-			tx := NewTx(actions, []string{a1.ReadablePubkey()}, 100000, 100, 11, 0)
-			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0, 0)
+			tx := NewTx(actions, []string{a1.ReadablePubkey()}, 100000, 100, 11, 0, 0)
+			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0, 0, 0)
 			hash := tx.Hash()
 
 			encode := tx.Encode()
@@ -134,7 +134,7 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("sign and verify", func() {
-			tx := NewTx(actions, []string{a1.ReadablePubkey(), a2.ReadablePubkey()}, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0)
+			tx := NewTx(actions, []string{a1.ReadablePubkey(), a2.ReadablePubkey()}, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0, 0)
 			sig1, err := SignTxContent(tx, a1.ReadablePubkey(), a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
@@ -169,7 +169,7 @@ func TestTx(t *testing.T) {
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer error")
 
-			tx = NewTx(actions, nil, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0)
+			tx = NewTx(actions, nil, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0, 0)
 			tx.Time = -1
 			So(tx.VerifySelf().Error(), ShouldEqual, "invalid time and expiration")
 			tx.Time = time.Now().UnixNano()

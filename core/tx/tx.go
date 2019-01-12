@@ -28,6 +28,7 @@ const (
 var (
 	MaxExpiration = int64(90 * time.Second)
 	MaxDelay      = int64(720 * time.Hour) // 30 days
+	ChainID       uint32
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
@@ -50,6 +51,7 @@ type Tx struct {
 	GasRatio     int64               `json:"gas_ratio"`
 	GasLimit     int64               `json:"gas_limit"`
 	Delay        int64               `json:"delay"`
+	ChainID      uint32              `json:"chain_id"`
 	Actions      []*Action           `json:"-"`
 	Signers      []string            `json:"-"`
 	Signs        []*crypto.Signature `json:"-"`
@@ -60,7 +62,7 @@ type Tx struct {
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers []string, gasLimit, gasRatio, expiration, delay int64) *Tx {
+func NewTx(actions []*Action, signers []string, gasLimit, gasRatio, expiration, delay int64, chainID uint32) *Tx {
 	return &Tx{
 		Time:         time.Now().UnixNano(),
 		Actions:      actions,
@@ -71,6 +73,7 @@ func NewTx(actions []*Action, signers []string, gasLimit, gasRatio, expiration, 
 		hash:         nil,
 		PublishSigns: []*crypto.Signature{},
 		Delay:        delay,
+		ChainID:      chainID,
 		AmountLimit:  []*contract.Amount{},
 	}
 }
@@ -310,6 +313,9 @@ func (t *Tx) VerifyDefer(referredTx *Tx) error {
 
 // VerifySelf verify tx's signature and some base fields.
 func (t *Tx) VerifySelf() error { // nolint
+	if t.ChainID != ChainID {
+		return fmt.Errorf("invalid chain_id, should be %d, yours:%d", ChainID, t.ChainID)
+	}
 	if !(t.Time > 0 && t.Expiration > t.Time) {
 		return errors.New("invalid time and expiration")
 	}
@@ -406,6 +412,7 @@ func (t *Tx) ToBytes(l ToBytesLevel) []byte {
 	se.WriteInt64(t.GasRatio)
 	se.WriteInt64(t.GasLimit)
 	se.WriteInt64(t.Delay)
+	se.WriteInt32(int32(t.ChainID))
 	se.WriteStringSlice(t.Signers)
 
 	actionBytes := make([][]byte, 0, len(t.Actions))

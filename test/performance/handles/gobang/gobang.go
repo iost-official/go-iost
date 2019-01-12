@@ -30,7 +30,9 @@ var sdk = iwallet.SDK{}
 var testID = "i" + strconv.FormatInt(time.Now().Unix(), 10)
 var testAcc *account.KeyPair
 
-type gobangHandle struct{}
+type gobangHandle struct {
+	chainID uint32
+}
 
 func init() {
 	gobang := new(gobangHandle)
@@ -166,7 +168,7 @@ func (t *gobangHandle) Run(i int) (interface{}, error) {
 
 // Transfer ...
 func (t *gobangHandle) transfer(i int, act *tx.Action, acc *account.KeyPair, id string) string {
-	trx := tx.NewTx([]*tx.Action{act}, []string{}, 1000000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{act}, []string{}, 1000000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, t.chainID)
 	stx, err := tx.SignTx(trx, id, []*account.KeyPair{acc})
 	if err != nil {
 		return fmt.Sprintf("signtx:%v err:%v", stx, err)

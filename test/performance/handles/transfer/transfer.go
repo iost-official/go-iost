@@ -36,6 +36,7 @@ var sdk = iwallet.SDK{}
 type transferHandler struct {
 	testID     string
 	contractID string
+	chainID    uint32
 }
 
 func newTransferHandler() *transferHandler {
@@ -111,7 +112,7 @@ func (t *transferHandler) Prepare() error {
 func (t *transferHandler) Run(i int) (interface{}, error) {
 	action := tx.NewAction(t.contractID, "transfer", fmt.Sprintf(`["admin","%v",1]`, t.testID))
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 6000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 6000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, t.chainID)
 	trx.AmountLimit = []*contract.Amount{{Token: "*", Val: "unlimited"}}
 	stx, err := tx.SignTx(trx, "admin", []*account.KeyPair{acc})
 

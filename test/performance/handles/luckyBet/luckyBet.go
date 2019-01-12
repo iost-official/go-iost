@@ -38,6 +38,7 @@ type luckyBetHandler struct {
 	testID     string
 	testKp     *account.KeyPair
 	contractID string
+	chainID    uint32
 }
 
 func newLuckyBetHandler() *luckyBetHandler {
@@ -118,7 +119,7 @@ func (t *luckyBetHandler) Prepare() error {
 // Run ...
 func (t *luckyBetHandler) Run(i int) (interface{}, error) {
 	action := tx.NewAction(t.contractID, "bet", fmt.Sprintf(`["%v",%d,%d,%d]`, t.testID, i%10, 1, 1))
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000000000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000000000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, t.chainID)
 	stx, err := tx.SignTx(trx, t.testID, []*account.KeyPair{t.testKp})
 
 	if err != nil {

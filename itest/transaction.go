@@ -17,6 +17,7 @@ var (
 	Delay       = int64(0 * time.Second) // No delay
 	Signers     = make([]string, 0)      // No mutiple signers
 	AmountLimit = []*contract.Amount{{Token: "iost", Val: "unlimited"}}
+	ChainID     uint32
 )
 
 // Transaction is the transaction object
@@ -33,6 +34,7 @@ func NewTransaction(actions []*tx.Action) *Transaction {
 		GasRatio,
 		Expiration,
 		Delay,
+		ChainID,
 	)
 	t.AmountLimit = AmountLimit
 

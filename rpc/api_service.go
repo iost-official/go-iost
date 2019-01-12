@@ -101,6 +101,7 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 	return &rpcpb.ChainInfoResponse{
 		NetName:         netName,
 		ProtocolVersion: version,
+		ChainId:         as.bv.Config().P2P.ChainID,
 		WitnessList:     pob.GetStaticProperty().WitnessList,
 		HeadBlock:       headBlock.Head.Number,
 		HeadBlockHash:   common.Base58Encode(headBlock.HeadHash()),
