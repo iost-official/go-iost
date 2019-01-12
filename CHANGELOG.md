@@ -1,4 +1,18 @@
-## v2.1.0
+## Everest v2.2.0
+
+Sat Jan 12 17:37:34 CST 2019
+
+- Change naming style of all functions in system contracts from `ThisNameStyle` to `thisNameStyle`.
+- Remove `keypair pubkey ID`. Change pubkey ID ( "IOST" + `base58`(pubkey_bytes + `crc32`(pubkey_bytes)) to `base58`(pubkey_bytes) for simplicity;
+  `signup` and `vote` will be affected.
+- Add transaction replay protection.
+- Add `ChainID` field in each transaction.
+- Rewrite serialization to make it simpler and more efficient.
+- Update RPC; redefine `groups` to `group_names` in struct `Permission`.
+- Adjust genesis configuration.
+- Add `contractOwner()` system method to JS smart contract.
+
+## Everest v2.1.0
 
 Thu Jan  3 22:11:50 CST 2019
 
