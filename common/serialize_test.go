@@ -9,10 +9,10 @@ import (
 func TestWriteByte(t *testing.T) {
 	se := NewSimpleEncoder()
 	se.WriteByte('a')
-	assert.Equal(t, []byte{0, 0, 0, 0x1, 'a'}, se.Bytes())
+	assert.Equal(t, []byte{'a'}, se.Bytes())
 
 	se.WriteByte('b')
-	assert.Equal(t, []byte{0, 0, 0, 0x1, 'a', 0, 0, 0, 0x1, 'b'}, se.Bytes())
+	assert.Equal(t, []byte{'a', 'b'}, se.Bytes())
 }
 
 func TestWriteBytes(t *testing.T) {
