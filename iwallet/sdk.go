@@ -39,6 +39,8 @@ type SDK struct {
 	useLongestChain     bool
 
 	verbose bool
+
+	chainID uint32
 }
 
 var sdk = &SDK{}
@@ -130,6 +132,7 @@ func (s *SDK) createTx(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, erro
 		Expiration:    expiration,
 		PublisherSigs: []*rpcpb.Signature{},
 		Delay:         s.delaySecond * 1e9,
+		ChainId:       s.chainID,
 		AmountLimit:   amountLimits,
 	}
 	return ret, nil

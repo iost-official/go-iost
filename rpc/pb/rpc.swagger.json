@@ -657,7 +657,7 @@
           "type": "string",
           "title": "permission name"
         },
-        "groups": {
+        "group_names": {
           "type": "array",
           "items": {
             "type": "string"
@@ -991,6 +991,11 @@
         "protocol_version": {
           "type": "string",
           "title": "the iost protocol version"
+        },
+        "chain_id": {
+          "type": "integer",
+          "format": "int64",
+          "title": "chain id"
         },
         "head_block": {
           "type": "string",
@@ -1392,6 +1397,11 @@
           "format": "int64",
           "title": "delay nanoseconds"
         },
+        "chain_id": {
+          "type": "integer",
+          "format": "int64",
+          "title": "chain id"
+        },
         "actions": {
           "type": "array",
           "items": {
@@ -1455,6 +1465,11 @@
           "type": "string",
           "format": "int64",
           "title": "delay nanoseconds"
+        },
+        "chain_id": {
+          "type": "integer",
+          "format": "int64",
+          "title": "chain id"
         },
         "actions": {
           "type": "array",

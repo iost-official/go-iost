@@ -2,11 +2,16 @@ package iwallet
 
 import (
 	"fmt"
+	"os"
+	"strconv"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"os"
 )
+
+// ChainID distinguish different chains.
+var ChainID string
 
 var cfgFile string
 
@@ -35,6 +40,11 @@ func Execute() {
 func init() {
 	cobra.OnInitialize(initConfig)
 
+	chainID, err := strconv.Atoi(ChainID)
+	if err != nil {
+		fmt.Printf("WARN! parse chainID failed. err=%v, chainID=%v\n\n", err, ChainID)
+	}
+
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
@@ -52,6 +62,7 @@ func init() {
 	rootCmd.PersistentFlags().Float64VarP(&sdk.gasRatio, "gas_ratio", "p", 1.0, "gasRatio for a transaction")
 	rootCmd.PersistentFlags().StringVarP(&sdk.amountLimit, "amount_limit", "", "*:unlimited", "amount limit for one transaction, eg iost:300.00|ram:2000")
 	rootCmd.PersistentFlags().Int64VarP(&sdk.expiration, "expiration", "e", 60*5, "expiration time for a transaction,for example,-e 60 means the tx will expire after 60 seconds from now on")
+	rootCmd.PersistentFlags().Uint32VarP(&sdk.chainID, "chain_id", "c", uint32(chainID), "chain_id which distinguishes different network")
 
 	//rootCmd.PersistentFlags().StringVarP(&dest, "dest", "d", "default", "Set destination of output file")
 	//rootCmd.Flags().StringSliceVarP(&signers, "signers", "n", []string{}, "signers who should sign this transaction")

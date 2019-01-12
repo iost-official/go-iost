@@ -1,7 +1,9 @@
 package itest
 
 import (
+	"fmt"
 	"math"
+	"strconv"
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
@@ -17,7 +19,20 @@ var (
 	Delay       = int64(0 * time.Second) // No delay
 	Signers     = make([]string, 0)      // No mutiple signers
 	AmountLimit = []*contract.Amount{{Token: "iost", Val: "unlimited"}}
+	ChainID     string
+
+	chainIDUint uint32
 )
+
+func init() {
+	i, err := strconv.Atoi(ChainID)
+	if err != nil {
+		fmt.Printf("WARN!! parse chainID failed. err=%v, chainID=%v", err, ChainID)
+	} else {
+		chainIDUint = uint32(i)
+	}
+
+}
 
 // Transaction is the transaction object
 type Transaction struct {
@@ -33,6 +48,7 @@ func NewTransaction(actions []*tx.Action) *Transaction {
 		GasRatio,
 		Expiration,
 		Delay,
+		chainIDUint,
 	)
 	t.AmountLimit = AmountLimit
 
@@ -47,6 +63,7 @@ func NewTransactionFromPb(t *rpcpb.Transaction) *Transaction {
 		GasRatio:   int64(t.GasRatio * 100),
 		GasLimit:   int64(t.GasLimit * 100),
 		Delay:      t.Delay,
+		ChainID:    t.ChainId,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 	}
@@ -74,6 +91,7 @@ func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
 		GasRatio:   float64(t.GasRatio) / 100,
 		GasLimit:   float64(t.GasLimit) / 100,
 		Delay:      t.Delay,
+		ChainId:    t.ChainID,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 	}

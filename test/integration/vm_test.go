@@ -165,7 +165,7 @@ func Test_RamPayer(t *testing.T) {
 			//ram := s.GetRAM(acc0.ID)
 			r, err := s.Call(cname, "putwithpayer", fmt.Sprintf(`["k", "v", "%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
-			So(s.GetRAM(acc0.ID), ShouldEqual, ram0 - 63)
+			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-63)
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
@@ -182,7 +182,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, ram0 - 65)
+			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-65)
 
 			r, err = s.Call(cname, "mapget", fmt.Sprintf(`["k", "f"]`), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
@@ -197,7 +197,7 @@ func Test_RamPayer(t *testing.T) {
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.GetRAM(acc0.ID), ShouldEqual, ram0 - 66)
+			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-66)
 
 			ram1 := s.GetRAM(acc1.ID)
 			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "vvv", "%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
@@ -205,7 +205,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(s.GetRAM(acc0.ID), ShouldEqual, ram0)
-			So(s.GetRAM(acc1.ID), ShouldEqual, ram1 - 67)
+			So(s.GetRAM(acc1.ID), ShouldEqual, ram1-67)
 
 			ram1 = s.GetRAM(acc1.ID)
 			r, err = s.Call(cname, "mapputwithpayer", fmt.Sprintf(`["k", "f", "v", "%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
@@ -243,7 +243,7 @@ func Test_RamPayer(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
-			So(s.GetRAM(acc0.ID), ShouldEqual, ram0 - 2706)
+			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-2706)
 
 			ram0 = s.GetRAM(acc0.ID)
 			//ram4 := s.GetRAM(acc2.ID)
@@ -471,7 +471,7 @@ func Test_LargeContract(t *testing.T) {
 			Contract:   "system.iost",
 			ActionName: "setCode",
 			Data:       string(jargs),
-		}}, nil, int64(200000000), 100, s.Head.Time+100000000, 0)
+		}}, nil, int64(200000000), 100, s.Head.Time+100000000, 0, 0)
 
 		trx.Time = s.Head.Time
 

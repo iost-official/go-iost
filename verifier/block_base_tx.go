@@ -24,6 +24,7 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 		GasRatio:  100,
 		Actions:   acts,
 		Time:      blk.Head.Time,
+		ChainID:   tx.ChainID,
 	}
 	return tx, nil
 }

@@ -271,18 +271,20 @@ message Transaction {
     double gas_limit = 5;
     // delay nanoseconds
     int64 delay = 6;
+    // chain id
+    uint32 chain_id = 7;
     // action list
-    repeated Action actions = 7;
+    repeated Action actions = 8;
     // signer list
-    repeated string signers = 8;
+    repeated string signers = 9;
     // publisher
-    string publisher = 9;
+    string publisher = 10;
     // referred transaction hash
-    string referred_tx = 10;
+    string referred_tx = 11;
     // amount limit
-    repeated AmountLimit amount_limit = 11;
+    repeated AmountLimit amount_limit = 12;
     // transaction receipt
-    TxReceipt tx_receipt = 12;
+    TxReceipt tx_receipt = 13;
 }
 
 // The message defines transaction response.
@@ -335,18 +337,20 @@ message TransactionRequest {
     double gas_limit = 4;
     // delay nanoseconds
     int64 delay = 5;
+    // chain id
+    uint32 chain_id = 6;
     // action list
-    repeated Action actions = 6;
+    repeated Action actions = 7;
     // amount limit
-    repeated AmountLimit amount_limit = 7;
+    repeated AmountLimit amount_limit = 8;
     // signer list
-    repeated string signers = 8;
+    repeated string signers = 9;
     // signatures of signers
-    repeated Signature signatures = 9;
+    repeated Signature signatures = 10;
     // publisher
-    string publisher = 10;
+    string publisher = 11;
     // signatures of publisher
-    repeated Signature publisher_sigs = 11;
+    repeated Signature publisher_sigs = 12;
 }
 
 // The message defines the block struct.
@@ -410,16 +414,18 @@ message ChainInfoResponse {
     string net_name = 1;
     // the iost protocol version
     string protocol_version = 2;
+    // chain id
+    uint32 chain_id = 3;
     // head block height
-    int64 head_block = 3;
+    int64 head_block = 4;
     // head block hash
-    string head_block_hash = 4;
+    string head_block_hash = 5;
     // last irreversible block number
-    int64 lib_block = 5;
+    int64 lib_block = 6;
     // last irreversible block hash
-    string lib_block_hash = 6;
+    string lib_block_hash = 7;
     // the current witness list
-    repeated string witness_list = 7;
+    repeated string witness_list = 8;
 }
 
 // The request message containing the tx's hash.
@@ -529,7 +535,7 @@ message Account {
         // permission name
         string name = 1;
         // permission groups
-        repeated string groups = 2;
+        repeated string group_names = 2;
         // permission items
         repeated Item items = 3;
         // permission threshold

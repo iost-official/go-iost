@@ -286,12 +286,6 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return ErrCacheFull
 	}
-	if err := t.CheckSize(); err != nil {
-		return err
-	}
-	if err := t.CheckGas(); err != nil {
-		return err
-	}
 	// Add one second delay for tx created time check
 	if !t.IsCreatedBefore(time.Now().UnixNano()+(time.Second).Nanoseconds()) || t.IsExpired(time.Now().UnixNano()) {
 		return fmt.Errorf("TimeError")
