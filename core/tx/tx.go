@@ -126,6 +126,7 @@ func (t *Tx) ToPb() *txpb.Tx {
 		GasRatio:    t.GasRatio,
 		Signers:     t.Signers,
 		Delay:       t.Delay,
+		ChainId:     t.ChainID,
 		ReferredTx:  t.ReferredTx,
 		AmountLimit: t.AmountLimit,
 	}
@@ -160,6 +161,7 @@ func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 	t.GasRatio = tr.GasRatio
 	t.Actions = []*Action{}
 	t.Delay = tr.Delay
+	t.ChainID = tr.ChainId
 	t.ReferredTx = tr.ReferredTx
 	t.AmountLimit = tr.AmountLimit
 	for _, a := range tr.Actions {
