@@ -16,7 +16,7 @@ func NewSimpleEncoder() *SimpleEncoder {
 
 // WriteByte writes a byte to buffer.
 func (se *SimpleEncoder) WriteByte(b byte) { // nolint
-	se.WriteBytes([]byte{b})
+	se.buf.WriteByte(b)
 }
 
 // WriteBytes writes a byte slice to buffer.
