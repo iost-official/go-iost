@@ -7,6 +7,7 @@ DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
 DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)
 TARGET_DIR = target
 CLUSTER = devnet
+CHAINID = 1024
 
 ifeq ($(shell uname),Darwin)
 	export CGO_LDFLAGS=-L$(shell pwd)/vm/v8vm/v8/libv8/_darwin_amd64
@@ -21,6 +22,8 @@ ifeq ($(shell uname),Linux)
 endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD)
+IWALLET_FLAGS := -X github.com/iost-official/go-iost/iwallet.ChainID=$(CHAINID)
+ITEST_FLAGS := -X github.com/iost-official/go-iost/itest.ChainID=$(CHAINID)
 
 .PHONY: all build iserver iwallet itest lint test e2e_test k8s_test image push devimage swagger protobuf install clean debug clear_debug_file
 
@@ -32,10 +35,10 @@ iserver:
 	$(GO) build -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
 
 iwallet:
-	$(GO) build -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
+	$(GO) build -ldflags "$(IWALLET_FLAGS)" -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
 
 itest:
-	$(GO) build -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
+	$(GO) build -ldflags "$(ITEST_FLAGS)" -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
