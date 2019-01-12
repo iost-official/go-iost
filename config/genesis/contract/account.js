@@ -42,13 +42,13 @@ class Account {
         const len = name.indexOf("@");
         if (len < 0) {
             for (let i = 0; i < items.length; i++) {
-                if (items[i].id === name && items[i].permission == undefined) {
+                if (items[i].id === name && items[i].permission === undefined) {
                     return i
                 }
             }
         } else if (len > 0) {
             for (let i = 0; i < items.length; i++) {
-                if (items[i].id === name.substring(0, len) && items[i].permission == name.substring(len, name.length)) {
+                if (items[i].id === name.substring(0, len) && items[i].permission === name.substring(len, name.length)) {
                     return i
                 }
             }
