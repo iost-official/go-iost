@@ -389,44 +389,44 @@ func (t *Tx) CheckGas() error {
 
 // ToBytes converts tx to bytes.
 func (t *Tx) ToBytes(l ToBytesLevel) []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteInt64(t.Time, true)
-	sn.WriteInt64(t.Expiration, true)
-	sn.WriteInt64(t.GasRatio, true)
-	sn.WriteInt64(t.GasLimit, true)
-	sn.WriteInt64(t.Delay, true)
-	sn.WriteStringSlice(t.Signers, true)
+	se := common.NewSimpleEncoder()
+	se.WriteInt64(t.Time)
+	se.WriteInt64(t.Expiration)
+	se.WriteInt64(t.GasRatio)
+	se.WriteInt64(t.GasLimit)
+	se.WriteInt64(t.Delay)
+	se.WriteStringSlice(t.Signers)
 
 	actionBytes := make([][]byte, 0, len(t.Actions))
 	for _, a := range t.Actions {
 		actionBytes = append(actionBytes, a.ToBytes())
 	}
-	sn.WriteBytesSlice(actionBytes, false)
+	se.WriteBytesSlice(actionBytes)
 
 	amountBytes := make([][]byte, 0, len(t.AmountLimit))
 	for _, a := range t.AmountLimit {
 		amountBytes = append(amountBytes, a.ToBytes())
 	}
-	sn.WriteBytesSlice(amountBytes, false)
+	se.WriteBytesSlice(amountBytes)
 
 	if l > Base {
 		signBytes := make([][]byte, 0, len(t.Signs))
 		for _, sig := range t.Signs {
 			signBytes = append(signBytes, sig.ToBytes())
 		}
-		sn.WriteBytesSlice(signBytes, false)
+		se.WriteBytesSlice(signBytes)
 	}
 
 	if l > Publish {
-		sn.WriteBytes(t.ReferredTx, true)
-		sn.WriteString(t.Publisher, true)
+		se.WriteBytes(t.ReferredTx)
+		se.WriteString(t.Publisher)
 
 		signBytes := make([][]byte, 0, len(t.PublishSigns))
 		for _, sig := range t.PublishSigns {
 			signBytes = append(signBytes, sig.ToBytes())
 		}
-		sn.WriteBytesSlice(signBytes, false)
+		se.WriteBytesSlice(signBytes)
 	}
 
-	return sn.Bytes()
+	return se.Bytes()
 }

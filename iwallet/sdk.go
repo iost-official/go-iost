@@ -568,56 +568,56 @@ func (s *SDK) SendTx(actions []*rpcpb.Action) (txHash string, err error) {
 }
 
 func actionToBytes(a *rpcpb.Action) []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteString(a.Contract, true)
-	sn.WriteString(a.ActionName, true)
-	sn.WriteString(a.Data, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteString(a.Contract)
+	se.WriteString(a.ActionName)
+	se.WriteString(a.Data)
+	return se.Bytes()
 }
 
 func amountToBytes(a *rpcpb.AmountLimit) []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteString(a.Token, true)
-	sn.WriteString(a.Value, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteString(a.Token)
+	se.WriteString(a.Value)
+	return se.Bytes()
 }
 
 func signatureToBytes(s *rpcpb.Signature) []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteByte(byte(s.Algorithm), true)
-	sn.WriteBytes(s.Signature, true)
-	sn.WriteBytes(s.PublicKey, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteByte(byte(s.Algorithm))
+	se.WriteBytes(s.Signature)
+	se.WriteBytes(s.PublicKey)
+	return se.Bytes()
 }
 
 func txToBytes(t *rpcpb.TransactionRequest) []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteInt64(t.Time, true)
-	sn.WriteInt64(t.Expiration, true)
-	sn.WriteInt64(int64(t.GasRatio*100), true)
-	sn.WriteInt64(int64(t.GasLimit*100), true)
-	sn.WriteInt64(t.Delay, true)
-	sn.WriteStringSlice(t.Signers, true)
+	se := common.NewSimpleEncoder()
+	se.WriteInt64(t.Time)
+	se.WriteInt64(t.Expiration)
+	se.WriteInt64(int64(t.GasRatio * 100))
+	se.WriteInt64(int64(t.GasLimit * 100))
+	se.WriteInt64(t.Delay)
+	se.WriteStringSlice(t.Signers)
 
 	actionBytes := make([][]byte, 0, len(t.Actions))
 	for _, a := range t.Actions {
 		actionBytes = append(actionBytes, actionToBytes(a))
 	}
-	sn.WriteBytesSlice(actionBytes, false)
+	se.WriteBytesSlice(actionBytes)
 
 	amountBytes := make([][]byte, 0, len(t.AmountLimit))
 	for _, a := range t.AmountLimit {
 		amountBytes = append(amountBytes, amountToBytes(a))
 	}
-	sn.WriteBytesSlice(amountBytes, false)
+	se.WriteBytesSlice(amountBytes)
 
 	signBytes := make([][]byte, 0, len(t.Signatures))
 	for _, sig := range t.Signatures {
 		signBytes = append(signBytes, signatureToBytes(sig))
 	}
-	sn.WriteBytesSlice(signBytes, false)
+	se.WriteBytesSlice(signBytes)
 
-	return sn.Bytes()
+	return se.Bytes()
 }
 
 // NewAction ...
