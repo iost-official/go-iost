@@ -24,11 +24,13 @@ import (
 func init() {
 	luckyBet := newLuckyBetHandler()
 	call.Register("luckyBet", luckyBet)
+	sdk.SetChainID(chainID)
 }
 
 const (
-	cache = "luckyBet.cache"
-	sep   = ","
+	cache          = "luckyBet.cache"
+	sep            = ","
+	chainID uint32 = 1024
 )
 
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
@@ -38,7 +40,6 @@ type luckyBetHandler struct {
 	testID     string
 	testKp     *account.KeyPair
 	contractID string
-	chainID    uint32
 }
 
 func newLuckyBetHandler() *luckyBetHandler {
@@ -119,7 +120,7 @@ func (t *luckyBetHandler) Prepare() error {
 // Run ...
 func (t *luckyBetHandler) Run(i int) (interface{}, error) {
 	action := tx.NewAction(t.contractID, "bet", fmt.Sprintf(`["%v",%d,%d,%d]`, t.testID, i%10, 1, 1))
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000000000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, t.chainID)
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000000000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, chainID)
 	stx, err := tx.SignTx(trx, t.testID, []*account.KeyPair{t.testKp})
 
 	if err != nil {
