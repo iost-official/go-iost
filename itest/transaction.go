@@ -1,9 +1,7 @@
 package itest
 
 import (
-	"fmt"
 	"math"
-	"strconv"
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
@@ -19,20 +17,8 @@ var (
 	Delay       = int64(0 * time.Second) // No delay
 	Signers     = make([]string, 0)      // No mutiple signers
 	AmountLimit = []*contract.Amount{{Token: "iost", Val: "unlimited"}}
-	ChainID     string
-
-	chainIDUint uint32
+	ChainID     = uint32(1024)
 )
-
-func init() {
-	i, err := strconv.Atoi(ChainID)
-	if err != nil {
-		fmt.Printf("WARN!! parse chainID failed. err=%v, chainID=%v", err, ChainID)
-	} else {
-		chainIDUint = uint32(i)
-	}
-
-}
 
 // Transaction is the transaction object
 type Transaction struct {
@@ -48,7 +34,7 @@ func NewTransaction(actions []*tx.Action) *Transaction {
 		GasRatio,
 		Expiration,
 		Delay,
-		chainIDUint,
+		ChainID,
 	)
 	t.AmountLimit = AmountLimit
 
