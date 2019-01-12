@@ -48,10 +48,10 @@ func (s *Status) FromPb(st *txpb.Status) *Status {
 
 // ToBytes converts Return to a specific byte slice.
 func (s *Status) ToBytes() []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteInt32((int32(s.Code)), true)
-	sn.WriteString(s.Message, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteInt32((int32(s.Code)))
+	se.WriteString(s.Message)
+	return se.Bytes()
 }
 
 // ReceiptType type of single receipt
@@ -87,10 +87,10 @@ func (r *Receipt) FromPb(rp *txpb.Receipt) *Receipt {
 
 // ToBytes converts Receipt to a specific byte slice.
 func (r *Receipt) ToBytes() []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteString(r.FuncName, true)
-	sn.WriteString(r.Content, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteString(r.FuncName)
+	se.WriteString(r.Content)
+	return se.Bytes()
 }
 
 // TxReceipt Transaction Receipt
@@ -179,25 +179,25 @@ func (r *TxReceipt) Decode(b []byte) error {
 
 // ToBytes converts TxReceipt to a specific byte slice.
 func (r *TxReceipt) ToBytes() []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteBytes(r.TxHash, false)
-	sn.WriteInt64(r.GasUsage, true)
-	sn.WriteBytes(r.Status.ToBytes(), false)
-	sn.WriteMapStringToI64(r.RAMUsage, true)
+	se := common.NewSimpleEncoder()
+	se.WriteBytes(r.TxHash)
+	se.WriteInt64(r.GasUsage)
+	se.WriteBytes(r.Status.ToBytes())
+	se.WriteMapStringToI64(r.RAMUsage)
 
 	returnBytes := make([][]byte, 0, len(r.Returns))
 	for _, rt := range r.Returns {
 		returnBytes = append(returnBytes, []byte(rt))
 	}
-	sn.WriteBytesSlice(returnBytes, false)
+	se.WriteBytesSlice(returnBytes)
 
 	receiptBytes := make([][]byte, 0, len(r.Receipts))
 	for _, re := range r.Receipts {
 		receiptBytes = append(receiptBytes, re.ToBytes())
 	}
-	sn.WriteBytesSlice(receiptBytes, false)
+	se.WriteBytesSlice(receiptBytes)
 
-	return sn.Bytes()
+	return se.Bytes()
 }
 
 // Hash return byte hash

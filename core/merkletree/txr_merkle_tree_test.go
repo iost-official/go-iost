@@ -27,7 +27,7 @@ func TestTXRMerkleTree(t *testing.T) {
 			tx.NewTxReceipt([]byte("node5")),
 		}
 		m.Build(txrs)
-		convey.So(hex.EncodeToString(m.Tx2Txr[hex.EncodeToString([]byte("node1"))]), convey.ShouldEqual, "966ca83b0c876b72584a2c1fd8757c9191d83b40953e3f939c0b1afb22da37c3")
+		convey.So(hex.EncodeToString(m.Tx2Txr[hex.EncodeToString([]byte("node1"))]), convey.ShouldEqual, "4d0e8b99f37cd831bd42d0bd9a65f21982b06ea9addc43394923af0d55199a1c")
 
 		b, err := m.Encode()
 		if err != nil {
