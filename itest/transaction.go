@@ -63,6 +63,7 @@ func NewTransactionFromPb(t *rpcpb.Transaction) *Transaction {
 		GasRatio:   int64(t.GasRatio * 100),
 		GasLimit:   int64(t.GasLimit * 100),
 		Delay:      t.Delay,
+		ChainID:    t.ChainId,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 	}
@@ -90,6 +91,7 @@ func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
 		GasRatio:   float64(t.GasRatio) / 100,
 		GasLimit:   float64(t.GasLimit) / 100,
 		Delay:      t.Delay,
+		ChainId:    t.ChainID,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 	}
