@@ -71,11 +71,11 @@ func (a *Action) String() string {
 
 // ToBytes converts Action to a specific byte slice.
 func (a *Action) ToBytes() []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteString(a.Contract, true)
-	sn.WriteString(a.ActionName, true)
-	sn.WriteString(a.Data, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteString(a.Contract)
+	se.WriteString(a.ActionName)
+	se.WriteString(a.Data)
+	return se.Bytes()
 }
 
 // Equal returns whether two actions are equal.
