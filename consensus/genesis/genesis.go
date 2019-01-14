@@ -3,7 +3,6 @@ package genesis
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"path/filepath"
 	"time"
 
@@ -11,7 +10,6 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
@@ -212,43 +210,4 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	}
 	db.Tag(string(blk.HeadHash()))
 	return &blk, nil
-}
-
-// FakeBv is fake BaseVariable
-func FakeBv(bv global.BaseVariable) error {
-	config := common.Config{}
-	config.VM = &common.VMConfig{}
-	config.VM.JsPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/vm/v8vm/v8/libjs/"
-
-	blk, err := GenGenesis(
-		bv.StateDB(),
-		&common.GenesisConfig{
-			WitnessInfo: []*common.Witness{
-				{ID: "a1", Owner: "a1", Active: "a1", Balance: 11111111111},
-				{ID: "a2", Owner: "a2", Active: "a2", Balance: 222222},
-				{ID: "a3", Owner: "a3", Active: "a3", Balance: 333333333},
-			},
-			AdminInfo: &common.Witness{
-				ID: "admin", Owner: "admin", Active: "admin", Balance: 11111111111,
-			},
-			InitialTimestamp: "2006-01-02T15:04:05Z",
-			ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/",
-		},
-	)
-	if err != nil {
-		return err
-	}
-	blk.CalculateHeadHash()
-	blk.CalculateTxMerkleHash()
-	blk.CalculateTxReceiptMerkleHash()
-	err = bv.BlockChain().Push(blk)
-	if err != nil {
-		return err
-	}
-	err = bv.StateDB().Flush(string(blk.HeadHash()))
-	if err != nil {
-		return err
-	}
-
-	return nil
 }
