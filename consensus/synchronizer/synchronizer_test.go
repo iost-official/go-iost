@@ -67,6 +67,7 @@ func TestDownloadController(t *testing.T) {
 }
 
 func TestSynchronizer(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	ctl := NewController(t)
 	b0 := &block.Block{
@@ -103,7 +104,6 @@ func TestSynchronizer(t *testing.T) {
 	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 	baseVariable := core_mock.NewMockBaseVariable(ctl)
 	baseVariable.EXPECT().StateDB().AnyTimes().Return(statedb)
-
 	config := common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "DB/",
