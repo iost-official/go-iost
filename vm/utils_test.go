@@ -67,7 +67,7 @@ func TestCheckPublisher(t *testing.T) {
 		"system.iost",
 		"Transfer",
 		"[]",
-	}}, []string{}, 10000, 1, 10000, 0)
+	}}, []string{}, 10000, 1, 10000, 0, 0)
 
 	kp := testKps[0]
 	t2, err := tx.SignTx(tr, "a", []*account.KeyPair{kp})
@@ -137,7 +137,7 @@ func TestCheckSigners(t *testing.T) {
 		"system.iost",
 		"Transfer",
 		"[]",
-	}}, []string{"a@acitve", "b@acitve"}, 10000, 1, 10000, 0)
+	}}, []string{"a@acitve", "b@acitve"}, 10000, 1, 10000, 0, 0)
 
 	sig1, err := tx.SignTxContent(tr, "a", kp)
 	if err != nil {

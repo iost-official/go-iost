@@ -3,9 +3,10 @@ package vm
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iost-official/go-iost/account"
 	"strings"
 	"time"
+
+	"github.com/iost-official/go-iost/account"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -58,7 +59,7 @@ func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	i.t = t
 	i.h.SetDeadline(time.Now().Add(limit))
 	i.publisherID = t.Publisher
-	l := len(t.Encode())
+	l := len(t.ToBytes(tx.Full))
 	i.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
 
 	if !i.genesisMode && !i.blockBaseMode {

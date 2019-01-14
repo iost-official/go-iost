@@ -64,7 +64,7 @@ func TestVerifyBlockHead(t *testing.T) {
 		})
 
 		convey.Convey("Wrong tx hash", func() {
-			tx0 := tx.NewTx(nil, nil, 1000, 1, 300, 0)
+			tx0 := tx.NewTx(nil, nil, 1000, 1, 300, 0, 0)
 			blk.Txs = append(blk.Txs, tx0)
 			blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 			err := VerifyBlockHead(blk, parentBlk, chainTop)

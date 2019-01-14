@@ -426,7 +426,7 @@ func TestGas_TGas(t *testing.T) {
 				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       array2json([]interface{}{"iost", otherID, acc.ID, "1", ""}),
-			}}, nil, 10000000, 100, s.Head.Time+10000000, 0)
+			}}, nil, 10000000, 100, s.Head.Time+10000000, 0, 0)
 			trx.Time = s.Head.Time
 			r, err := s.CallTx(trx, otherID, otherKp)
 			So(err, ShouldBeNil)

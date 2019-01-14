@@ -224,8 +224,8 @@ func newMockAPI() rpcpb.ApiServiceServer {
 		RamInfo: &rpcpb.Account_RAMInfo{Available: 111111},
 		Permissions: map[string]*rpcpb.Account_Permission{
 			"owner": {
-				Name:   "owner",
-				Groups: []string{"active", "owner"},
+				Name:       "owner",
+				GroupNames: []string{"active", "owner"},
 				Items: []*rpcpb.Account_Item{
 					{Id: "aaa", IsKeyPair: false, Weight: 1, Permission: "aaa"},
 					{Id: "bbb", IsKeyPair: true, Weight: 2, Permission: "bbbb"},

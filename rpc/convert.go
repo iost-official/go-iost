@@ -2,6 +2,7 @@ package rpc
 
 import (
 	"encoding/json"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -56,6 +57,7 @@ func toPbTx(t *tx.Tx, tr *tx.TxReceipt) *rpcpb.Transaction {
 		GasRatio:   float64(t.GasRatio) / 100,
 		GasLimit:   float64(t.GasLimit) / 100,
 		Delay:      t.Delay,
+		ChainId:    t.ChainID,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 		ReferredTx: common.Base58Encode(t.ReferredTx),
@@ -119,9 +121,9 @@ func toPbGroup(group *account.Group) *rpcpb.Account_Group {
 
 func toPbPermission(permission *account.Permission) *rpcpb.Account_Permission {
 	ret := &rpcpb.Account_Permission{
-		Name:      permission.Name,
-		Groups:    permission.Groups,
-		Threshold: int64(permission.Threshold),
+		Name:       permission.Name,
+		GroupNames: permission.Groups,
+		Threshold:  int64(permission.Threshold),
 	}
 	for _, u := range permission.Items {
 		ret.Items = append(ret.Items, toPbItem(u))
@@ -171,6 +173,7 @@ func toCoreTx(t *rpcpb.TransactionRequest) *tx.Tx {
 		GasRatio:   int64(t.GasRatio * 100),
 		GasLimit:   int64(t.GasLimit * 100),
 		Delay:      t.Delay,
+		ChainID:    t.ChainId,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 	}

@@ -17,6 +17,7 @@ var (
 	Delay       = int64(0 * time.Second) // No delay
 	Signers     = make([]string, 0)      // No mutiple signers
 	AmountLimit = []*contract.Amount{{Token: "iost", Val: "unlimited"}}
+	ChainID     = uint32(1024)
 )
 
 // Transaction is the transaction object
@@ -33,6 +34,7 @@ func NewTransaction(actions []*tx.Action) *Transaction {
 		GasRatio,
 		Expiration,
 		Delay,
+		ChainID,
 	)
 	t.AmountLimit = AmountLimit
 
@@ -47,6 +49,7 @@ func NewTransactionFromPb(t *rpcpb.Transaction) *Transaction {
 		GasRatio:   int64(t.GasRatio * 100),
 		GasLimit:   int64(t.GasLimit * 100),
 		Delay:      t.Delay,
+		ChainID:    t.ChainId,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 	}
@@ -74,6 +77,7 @@ func (t *Transaction) ToTxRequest() *rpcpb.TransactionRequest {
 		GasRatio:   float64(t.GasRatio) / 100,
 		GasLimit:   float64(t.GasLimit) / 100,
 		Delay:      t.Delay,
+		ChainId:    t.ChainID,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
 	}

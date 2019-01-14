@@ -214,17 +214,19 @@ func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
+	if p.baseVariable.Mode() != global.ModeNormal {
+		return
+	}
+
 	blkInfo := &msgpb.BlockInfo{
 		Number: blk.Head.Number,
 		Hash:   blk.HeadHash(),
 	}
 	b, err := proto.Marshal(blkInfo)
 	if err != nil {
-		ilog.Error("fail to encode block hash")
+		ilog.Errorf("fail to encode block hash, err=%v, blockHash=%+v", err, *blkInfo)
 	} else {
-		if p.baseVariable.Mode() == global.ModeNormal {
-			p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage)
-		}
+		p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage)
 	}
 }
 
@@ -254,15 +256,17 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		err := p.handleRecvBlock(blk)
 		t2 := calculateTime(blk)
 		metricsTimeCost.Set(t2, nil)
-		go p.broadcastBlockHash(blk)
+		if err == errSingle || err == nil {
+			go p.broadcastBlockHash(blk)
+		}
 		p.blockReqMap.Delete(string(blk.HeadHash()))
-		if err != nil {
+		if err != nil && err != errSingle && err != errDuplicate {
 			ilog.Warnf("received new block error, err:%v", err)
 			return
 		}
 	case p2p.SyncBlockResponse:
 		err := p.handleRecvBlock(blk)
-		if err != nil {
+		if err != nil && err != errSingle && err != errDuplicate {
 			ilog.Warnf("received sync block error, err:%v", err)
 			return
 		}
@@ -410,6 +414,7 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
+
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
