@@ -9,15 +9,14 @@ import (
 	"github.com/golang/mock/gomock"
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/genesis"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/mocks"
-	"github.com/iost-official/go-iost/db/mocks"
+	core_mock "github.com/iost-official/go-iost/core/mocks"
+	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/p2p/mocks"
+	p2p_mock "github.com/iost-official/go-iost/p2p/mocks"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -80,6 +79,12 @@ func TestSynchronizer(t *testing.T) {
 	}
 	b0.CalculateHeadHash()
 	tpl := "[\"a1\",\"a2\",\"a3\",\"a4\",\"a5\"]"
+	base := core_mock.NewMockChain(ctl)
+	base.EXPECT().Top().AnyTimes().Return(b0, nil)
+	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
+	base.EXPECT().Length().AnyTimes().Return(int64(1))
+	base.EXPECT().Close().AnyTimes()
+	base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 	statedb := db_mock.NewMockMVCCDB(ctl)
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("5"), nil
@@ -103,13 +108,15 @@ func TestSynchronizer(t *testing.T) {
 		DB: &common.DBConfig{
 			LdbPath: "DB/",
 		},
+		Snapshot: &common.SnapshotConfig{
+			Enable: false,
+		},
 	}
 	baseVariable.EXPECT().Config().AnyTimes().Return(&config)
-	baseVariable.EXPECT().BlockChain().AnyTimes().Return(nil)
+	baseVariable.EXPECT().BlockChain().AnyTimes().Return(base)
 	baseVariable.EXPECT().Continuous().AnyTimes().Return(0)
 	baseVariable.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 	Convey("Test Synchronizer", t, func() {
-		genesis.FakeBv(baseVariable)
 
 		blockcache.CleanBlockCacheWAL()
 		blockCache, err := blockcache.NewBlockCache(baseVariable)

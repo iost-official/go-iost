@@ -13,13 +13,13 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/mocks"
+	core_mock "github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/db/mocks"
+	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/p2p/mocks"
+	p2p_mock "github.com/iost-official/go-iost/p2p/mocks"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -125,6 +125,9 @@ func TestNewTxPImpl(t *testing.T) {
 		config := common.Config{
 			DB: &common.DBConfig{
 				LdbPath: "DB/",
+			},
+			Snapshot: &common.SnapshotConfig{
+				Enable: false,
 			},
 		}
 		defer os.RemoveAll("DB/")
@@ -306,6 +309,9 @@ func TestNewTxPImplB(t *testing.T) {
 			DB: &common.DBConfig{
 				LdbPath: "DB/",
 			},
+			Snapshot: &common.SnapshotConfig{
+				Enable: false,
+			},
 		}
 		defer os.RemoveAll("DB/")
 		gbl.EXPECT().Config().AnyTimes().Return(&config)
@@ -437,52 +443,6 @@ func TestNewTxPImplB(t *testing.T) {
 			So(ok, ShouldBeFalse)
 
 		})
-
-		//
-		//Convey("concurrent", func() {
-		//	txCnt := 10
-		//	blockCnt := 100
-		//	bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
-		//	ch := make(chan int, 4)
-		//	//fmt.Println("genNodes impl")
-		//	go func() {
-		//		for _, bcn := range bl {
-		//			txPool.AddLinkedNode(bcn, bcn)
-		//		}
-		//		ch <- 1
-		//	}()
-		//
-		//	go func() {
-		//		for i := 0; i < 100; i++ {
-		//			t := genTx(accountList[0], Expiration)
-		//			txPool.AddTx(t)
-		//		}
-		//		ch <- 2
-		//	}()
-		//
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			txPool.PendingTxs(10000000)
-		//		}
-		//		ch <- 3
-		//	}()
-		//	////time.Sleep(5*time.Second)
-		//
-		//	t := genTx(accountList[0], Expiration)
-		//	txPool.AddTx(t)
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
-		//		}
-		//		ch <- 4
-		//	}()
-		//
-		//	for i := 0; i < 4; i++ {
-		//		<-ch
-		//		//fmt.Println("ch :", a)
-		//	}
-		//
-		//})
 
 		stopTest(gbl)
 	})

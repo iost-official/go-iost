@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/go-iost/core/mocks"
-	"github.com/iost-official/go-iost/db/mocks"
+	core_mock "github.com/iost-official/go-iost/core/mocks"
+	db_mock "github.com/iost-official/go-iost/db/mocks"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -84,6 +84,9 @@ func TestBlockCache(t *testing.T) {
 	config := common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "./",
+		},
+		Snapshot: &common.SnapshotConfig{
+			Enable: false,
 		},
 	}
 	global.EXPECT().Config().AnyTimes().Return(&config)
@@ -223,6 +226,9 @@ func TestVote(t *testing.T) {
 	config := common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "./",
+		},
+		Snapshot: &common.SnapshotConfig{
+			Enable: false,
 		},
 	}
 	global.EXPECT().Config().AnyTimes().Return(&config)
