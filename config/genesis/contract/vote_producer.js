@@ -157,6 +157,7 @@ class VoteContract {
             throw new Error("pubkey is used by another producer");
         }
 
+        const publisher = blockchain.publisher();
         this._mapPut("producerTable", account, {
             "pubkey" : pubkey,
             "loc": loc,
@@ -165,8 +166,8 @@ class VoteContract {
             "isProducer": isProducer,
             "status": STATUS_APPLY,
             "online": false,
-        }, account);
-        this._mapPut("producerKeyToId", pubkey, account, account);
+        }, publisher);
+        this._mapPut("producerKeyToId", pubkey, account, publisher);
 
         const voteId = this._getVoteId();
         blockchain.callWithAuth("vote.iost", "addOption", [
@@ -190,8 +191,9 @@ class VoteContract {
         if (pro.status !== STATUS_APPROVED) {
             throw new Error("producer not approved");
         }
+        const publisher = blockchain.publisher();
         pro.status = STATUS_UNAPPLY;
-        this._mapPut("producerTable", account, pro, account);
+        this._mapPut("producerTable", account, pro, publisher);
     }
 
     // approve account as a producer
@@ -257,8 +259,6 @@ class VoteContract {
             true,
         ]);
         // will clear votes and score of the producer on stat
-        pro.status = STATUS_UNAPPLY_APPROVED;
-        this._mapPut("producerTable", account, pro);
         this._doRemoveProducer(account, pro.pubkey, true);
     }
 
@@ -318,6 +318,7 @@ class VoteContract {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
+        const publisher = blockchain.publisher();
         if (pro.pubkey !== pubkey) {
             if (storage.mapHas("producerKeyToId", pubkey)) {
                 throw new Error("pubkey is used by another producer");
@@ -329,13 +330,13 @@ class VoteContract {
             }
 
             this._mapDel("producerKeyToId", pro.pubkey, account);
-            this._mapPut("producerKeyToId", pubkey, account, account);
+            this._mapPut("producerKeyToId", pubkey, account, publisher);
         }
         pro.pubkey = pubkey;
         pro.loc = loc;
         pro.url = url;
         pro.netId = netId;
-        this._mapPut("producerTable", account, pro, account);
+        this._mapPut("producerTable", account, pro, publisher);
     }
 
     getProducer(account) {
@@ -364,7 +365,7 @@ class VoteContract {
             throw new Error("producer not approved");
         }
         pro.online = true;
-        this._mapPut("producerTable", account, pro, account);
+        this._mapPut("producerTable", account, pro, blockchain.publisher());
     }
 
     // producer log out as offline state
@@ -382,7 +383,7 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         pro.online = false;
-        this._mapPut("producerTable", account, pro, account);
+        this._mapPut("producerTable", account, pro, blockchain.publisher());
     }
 
     _getVoterCoef(producer) {

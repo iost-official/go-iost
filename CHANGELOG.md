@@ -1,3 +1,9 @@
+## Everest v2.2.1
+
+Sat Jan 12 20:36:05 CST 2019
+
+- Fix `iWallet` bug.
+
 ## Everest v2.2.0
 
 Sat Jan 12 17:37:34 CST 2019
