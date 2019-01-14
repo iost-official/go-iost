@@ -381,7 +381,7 @@ func TestGas_TGas(t *testing.T) {
 	}
 	otherKp, err := account.NewKeyPair(nil, crypto.Secp256k1)
 	otherID := "lispc0"
-	s.Visitor.MPut("vote_producer.iost-producerTable", acc.ID, "dummy")
+	s.Visitor.Put("vote_producer.iost-producerMap", fmt.Sprintf(`s{"%s":"dummy"}`, acc.ID))
 	Convey("test tgas", t, func() {
 		Convey("account referrer should got 3 IOST", func() {
 			oldIOST := s.Visitor.TokenBalanceFixed("iost", acc.ID).Value
@@ -402,6 +402,7 @@ func TestGas_TGas(t *testing.T) {
 			So(s.Visitor.TGas(acc.ID).ToFloat(), ShouldAlmostEqual, float64(r.GasUsage)/100*0.1)
 		})
 		Convey("tgas can be transferred once and only once", func() {
+			s.SetGas(otherID, 1000000)
 			var testValue int64 = 100
 			var testValueStr = strconv.Itoa(int(testValue))
 			oldTGas := s.Visitor.TGas(acc.ID).ToFloat()

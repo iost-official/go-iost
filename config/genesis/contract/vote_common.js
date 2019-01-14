@@ -1,11 +1,11 @@
 const newVoteFee = "1000";
 const descriptionMaxLength = 65536;
-const optionMaxLength = 4096;
-const resultMaxLength = 1024;
+const optionMaxNum = 65536;
+const resultMaxLength = 2048;
 const iostDecimal = 8;
 
 const adminPermission = "active";
-const votePermission = "vote";
+const votePermission = "active";
 
 const optionPrefix = "v_";
 const userVotePrefix = "u_";
@@ -26,19 +26,12 @@ class VoteCommonContract {
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
-        this._put("adminID", adminID);
-    }
-
-    InitFundIDs(ids) {
-        const bn = block.number;
-        if(bn !== 0) {
-            throw new Error("init out of genesis block");
-        }
-        this._put("fundID", ids);
+        storage.put("adminID", adminID);
+        this._put("fundID", [adminID]);
     }
 
     can_update(data) {
-        const admin = this._get("adminID");
+        const admin = storage.get("adminID");
         this._requireAuth(admin, adminPermission);
         return true;
     }
@@ -74,10 +67,6 @@ class VoteCommonContract {
         storage.mapPut(k, f, JSON.stringify(v), p);
     }
 
-    _mapDel(k, f) {
-        storage.mapDel(k, f);
-    }
-
     _nextId() {
         const id = new BigNumber(this._get("current_id")).plus(1).toFixed();
         this._put("current_id", id);
@@ -103,15 +92,79 @@ class VoteCommonContract {
     _delVote(voteId, info) {
         info.deleted = TRUE;
         this._mapPut("voteInfo", voteId, info);
-        for (const id in info.preResult) {
-            storage.mapDel(optionPrefix + voteId, id);
-        }
+        storage.mapDel("preResult", voteId);
+        storage.mapDel("preOrder", voteId);
     }
 
     _checkDel(voteId) {
         const info = this._mapGet("voteInfo", voteId);
         if (info.deleted === TRUE) {
             throw new Error("vote has been deleted.");
+        }
+    }
+
+    _addToPreResult(info, voteId, option, votes) {
+        const preResult = this._mapGet("preResult", voteId);
+        if (preResult === null || info === null) {
+            return;
+        }
+        let preOrder = this._mapGet("preOrder", voteId) || [];
+        preResult[option] = votes;
+
+        const idx = preOrder.indexOf(option);
+        if (idx !== -1) {
+            preOrder.splice(idx, 1);
+        }
+        const v = new Float64(votes);
+        const findPos = function(start, end) {
+            if (end - start <= 1) {
+                if (start === end) {
+                    return start;
+                }
+                if (v.gt(preResult[preOrder[start]])) {
+                    return start;
+                } else {
+                    return end;
+                }
+            }
+            if (v.lte(preResult[preOrder[end-1]])) {
+                return end;
+            }
+            const m = Math.floor((start + end) / 2);
+            if (v.gt(preResult[preOrder[m]])) {
+                return findPos(start, m);
+            } else {
+                return findPos(m, end);
+            }
+        }
+
+        const pos = findPos(0, preOrder.length);
+        preOrder.splice(pos, 0, option);
+
+        if (preOrder.length > info.resultNumber) {
+            const deleted = preOrder.splice(info.resultNumber, preOrder.length - info.resultNumber);
+            for (const o of deleted) {
+                delete(preResult[o]);
+            }
+        }
+        this._mapPut("preResult", voteId, preResult);
+        this._mapPut("preOrder", voteId, preOrder);
+    }
+
+    _removeFromPreResult(voteId, option, preResult) {
+        if (preResult === undefined) {
+            preResult = this._mapGet("preResult", voteId);
+        }
+        if (preResult && preResult.hasOwnProperty(option)) {
+            delete(preResult[option]);
+            this._mapPut("preResult", voteId, preResult);
+
+            let preOrder = this._mapGet("preOrder", voteId) || [];
+            const idx = preOrder.indexOf(option);
+            if (idx !== -1) {
+                preOrder.splice(idx, 1);
+                this._mapPut("preOrder", voteId, preOrder);
+            }
         }
     }
 
@@ -133,7 +186,7 @@ class VoteCommonContract {
         }
 
         const options = info.options;
-        if (!options || !Array.isArray(options) || options.length > optionMaxLength) {
+        if (!options || !Array.isArray(options) || options.length > optionMaxNum) {
             throw new Error("options not valid.");
         }
 
@@ -170,26 +223,20 @@ class VoteCommonContract {
             anyOption: anyOption,
             freezeTime: freezeTime,
             deposit: bn > 0 ? newVoteFee : "0",
-            optionId: 0,
-            optionNum: 0,
-            options: {},
-            preResult: {}
+            optionNum: options.length,
         };
         for (const option of options) {
-            const id = String(voteInfo.optionId++);
-            voteInfo.options[option] = {
-                id: id,
+            const optionInfo = {
+                votes: "0",
                 deleted: FALSE,
                 clearTime: -1
             }
-            voteInfo.preResult[id] = FALSE;
-            this._mapPut(optionPrefix + voteId, id, "0", owner);
+            this._mapPut(optionPrefix + voteId, option, optionInfo, owner);
         }
-        voteInfo.optionNum = voteInfo.optionId;
 
         this._mapPut("voteInfo", voteId, voteInfo, owner);
         this._mapPut("owner", voteId, owner, owner);
-        this._mapPut("preResult", voteId, [], owner);
+        this._mapPut("preResult", voteId, {}); // pay by system
 
         return voteId;
     }
@@ -203,57 +250,56 @@ class VoteCommonContract {
         }
 
         const info = this._mapGet("voteInfo", voteId);
-        if (info.optionNum >= optionMaxLength) {
+        if (info.optionNum >= optionMaxNum) {
             throw new Error("options is full.");
         }
 
-        if (info.options.hasOwnProperty(option)) {
-            if (info.options[option].deleted === FALSE) {
+        if (storage.mapHas(optionPrefix + voteId, option)) {
+            const optionInfo = this._mapGet(optionPrefix + voteId, option);
+            if (optionInfo.deleted === FALSE) {
                 throw new Error("option already exist.");
             }
-            info.options[option].deleted = FALSE;
+            optionInfo.deleted = FALSE;
             if (clearVote === true) {
-                info.options[option].clearTime = block.number;
-                this._mapPut(optionPrefix + voteId, info.options[option].id, "0", owner);
+                optionInfo.clearTime = block.number;
+                optionInfo.votes = "0";
             } else {
-                const id = info.options[option].id;
-                const votes = new Float64(this._mapGet(optionPrefix + voteId, id));
+                const votes = new Float64(optionInfo.votes);
                 if (votes.gte(info.minVote)) {
-                    info.preResult[id] = TRUE;
+                    this._addToPreResult(info, voteId, option, optionInfo.votes);
                 }
             }
+            this._mapPut(optionPrefix + voteId, option, optionInfo, owner);
         } else {
-            const id = String(info.optionId++);
-            info.options[option] = {
-                id: id,
+            const optionInfo = {
+                votes: "0",
                 deleted: FALSE,
                 clearTime: -1
             }
-            info.preResult[id] = FALSE;
-            this._mapPut(optionPrefix + voteId, id, "0", owner);
+            this._mapPut(optionPrefix + voteId, option, optionInfo, owner);
         }
+        info.optionNum++;
         this._mapPut("voteInfo", voteId, info, owner);
     }
 
     removeOption(voteId, option, force) {
         const owner = this._requireOwner(voteId);
-        this._checkDel(voteId);
+        this._checkVote(voteId);
 
-        const info = this._mapGet("voteInfo", voteId);
-        if (!info.options[option]) {
+        if (!storage.mapHas(optionPrefix + voteId, option)) {
             throw new Error("option not exist");
         }
 
-        const id = info.options[option].id;
-        if (!force && info.preResult[id] === TRUE) {
+        const info = this._mapGet("voteInfo", voteId);
+        const preResult = this._mapGet("preResult", voteId);
+        if (!force && preResult && preResult[option] !== undefined) {
             let order = 0;
-            const votes = new Float64(this._mapGet(optionPrefix + voteId, id));
-            for (const id in info.preResult) {
-                if (info.preResult[id] === FALSE) {
+            const votes = new Float64(preResult[option]);
+            for (const o in preResult) {
+                if (o === option) {
                     continue;
                 }
-                const preVotes = this._mapGet(optionPrefix + voteId, id);
-                if (votes.lt(preVotes)) {
+                if (votes.lt(preResult[o])) {
                     order++;
                 }
                 if (order >= info.resultNumber) {
@@ -265,8 +311,17 @@ class VoteCommonContract {
             }
         }
 
-        info.options[option].deleted = TRUE;
-        info.preResult[id] = FALSE;
+        const optionInfo = this._mapGet(optionPrefix + voteId, option);
+        if (info.deleted === TRUE || new Float64(optionInfo.votes).isZero()) {
+            storage.mapDel(optionPrefix + voteId, option);
+        } else {
+            optionInfo.deleted = TRUE;
+            this._mapPut(optionPrefix + voteId, option, optionInfo, owner);
+        }
+
+        this._removeFromPreResult(voteId, option, preResult);
+
+        info.optionNum--;
         this._mapPut("voteInfo", voteId, info, owner);
     }
 
@@ -274,17 +329,11 @@ class VoteCommonContract {
         this._checkVote(voteId);
         this._checkDel(voteId);
 
-        const info = this._mapGet("voteInfo", voteId);
-        if (!info.options[option]) {
+        if (!storage.mapHas(optionPrefix + voteId, option)) {
             throw new Error("option not exist");
         }
 
-        const votes = this._mapGet(optionPrefix + voteId, info.options[option].id);
-        return {
-            votes: votes,
-            deleted: info.options[option].deleted,
-            clearTime: info.options[option].clearTime
-        };
+        return this._mapGet(optionPrefix + voteId, option);
     }
 
     _clearUserVote(clearTime, userVote) {
@@ -319,28 +368,27 @@ class VoteCommonContract {
         this._checkDel(voteId);
         this._checkVoteAuth(account, payer);
 
-        amount = this._fixAmount(amount);
-        const info = this._mapGet("voteInfo", voteId);
-        if (!info.options[option]) {
+        if (!storage.mapHas(optionPrefix + voteId, option)) {
             throw new Error("option does not exist");
         }
 
+        amount = this._fixAmount(amount);
         blockchain.deposit(payer, amount.toFixed(), "");
 
-        const id = info.options[option].id;
-        if (info.options[option].deleted === TRUE) {
+        const optionInfo = this._mapGet(optionPrefix + voteId, option);
+        if (optionInfo.deleted === TRUE) {
             throw new Error("option is removed.");
         }
 
         const userVotes = this._mapGet(userVotePrefix + voteId, account) || {};
-        const clearTime = info.options[option].clearTime;
+        const clearTime = optionInfo.clearTime;
 
-        if (userVotes.hasOwnProperty(id)) {
-            userVotes[id] = this._clearUserVote(clearTime, userVotes[id]);
-            userVotes[id][0] = new Float64(userVotes[id][0]).plus(amount).toFixed();
-            userVotes[id][1] = block.number;
+        if (userVotes.hasOwnProperty(option)) {
+            userVotes[option] = this._clearUserVote(clearTime, userVotes[option]);
+            userVotes[option][0] = new Float64(userVotes[option][0]).plus(amount).toFixed();
+            userVotes[option][1] = block.number;
         } else {
-            userVotes[id] = this._clearUserVote(clearTime, [amount.toFixed(), block.number, "0"]);
+            userVotes[option] = this._clearUserVote(clearTime, [amount.toFixed(), block.number, "0"]);
         }
         this._mapPut(userVotePrefix + voteId, account, userVotes, payer);
         if (clearTime === block.number) {
@@ -348,14 +396,14 @@ class VoteCommonContract {
             return;
         }
 
-        const votes = new Float64(this._mapGet(optionPrefix + voteId, id)).plus(amount);
-        this._mapPut(optionPrefix + voteId, id, votes.toFixed(), payer);
+        const info = this._mapGet("voteInfo", voteId);
+        const votes = amount.plus(optionInfo.votes);
+        optionInfo.votes = votes.toFixed();
+        this._mapPut(optionPrefix + voteId, option, optionInfo, payer);
 
         if (votes.gte(info.minVote)) {
-            info.preResult[id] = TRUE;
+            this._addToPreResult(info, voteId, option, optionInfo.votes);
         }
-
-        this._mapPut("voteInfo", voteId, info);
     }
 
     vote(voteId, account, option, amount) {
@@ -366,60 +414,66 @@ class VoteCommonContract {
         this._checkVote(voteId);
         this._requireAuth(account, votePermission);
 
-        amount = this._fixAmount(amount);
         if (!storage.mapHas(userVotePrefix + voteId, account)) {
             throw new Error("account didn't vote.");
         }
         let userVotes = this._mapGet(userVotePrefix + voteId, account);
-        const info = this._mapGet("voteInfo", voteId);
-        const id = info.options[option].id;
-        if (!userVotes[id]) {
+        if (!userVotes[option]) {
             throw new Error("account didn't vote for this option.");
         }
 
-        const clearTime = info.options[option].clearTime;
-        userVotes[id] = this._clearUserVote(clearTime, userVotes[id]);
-        const votes = new Float64(userVotes[id][0]);
+        amount = this._fixAmount(amount);
+        const optionInfo = this._mapGet(optionPrefix + voteId, option);
+        const clearTime = optionInfo ? optionInfo.clearTime : -1;
+ 
+        userVotes[option] = this._clearUserVote(clearTime, userVotes[option]);
+        const votes = new Float64(userVotes[option][0]);
         if (votes.lt(amount)) {
             throw new Error("amount too large. max amount = " + votes.toFixed());
         }
         let freezeTime = tx.time;
+
+        const info = this._mapGet("voteInfo", voteId);
         if (info.deleted === FALSE) {
             freezeTime += info.freezeTime*1e9;
         }
         blockchain.callWithAuth("token.iost", "transferFreeze", ["iost", "vote.iost", account, amount.toFixed(), freezeTime, ""]);
 
         const leftVoteNum = votes.minus(amount);
-        userVotes[id][0] = leftVoteNum.toFixed();
+        userVotes[option][0] = leftVoteNum.toFixed();
 
-        const realUnvotes = new Float64(userVotes[id][2]).minus(amount);
+        const realUnvotes = new Float64(userVotes[option][2]).minus(amount);
         if (realUnvotes.gt("0")) {
-            userVotes[id][2] = realUnvotes.toFixed();
+            userVotes[option][2] = realUnvotes.toFixed();
             this._mapPut(userVotePrefix + voteId, account, userVotes, account);
             return;
         }
 
-        userVotes[id][2] = "0";
+        userVotes[option][2] = "0";
 
-        if (userVotes[id][0] === "0") {
-            delete userVotes[id];
+        if (userVotes[option][0] === "0") {
+            delete userVotes[option];
         }
 
         if (Object.keys(userVotes).length === 0) {
-            this._mapDel(userVotePrefix + voteId, account);
+            storage.mapDel(userVotePrefix + voteId, account);
         } else {
             this._mapPut(userVotePrefix + voteId, account, userVotes, account);
         }
 
-        if (storage.mapHas(optionPrefix + voteId, id)) {
-            const optionVotes = new Float64(this._mapGet(optionPrefix + voteId, id));
+        if (storage.mapHas(optionPrefix + voteId, option)) {
+            const optionVotes = new Float64(optionInfo.votes);
             const leftVotes = optionVotes.plus(realUnvotes);
-            this._mapPut(optionPrefix + voteId, id, leftVotes.toFixed(), account);
-            if (info.preResult[id] === TRUE) {
-                if (leftVotes.lt(info.minVote)) {
-                    info.preResult[id] = FALSE;
-                    this._mapPut("voteInfo", voteId, info);
-                }
+            optionInfo.votes = leftVotes.toFixed();
+            if (info.deleted === TRUE && leftVotes.isZero()) {
+                storage.mapDel(optionPrefix + voteId, option);
+            } else {
+                this._mapPut(optionPrefix + voteId, option, optionInfo, account);
+            }
+            if (leftVotes.lt(info.minVote)) {
+                this._removeFromPreResult(voteId, option);
+            } else {
+                this._addToPreResult(info, voteId, option, optionInfo.votes);
             }
         }
     }
@@ -429,23 +483,15 @@ class VoteCommonContract {
 
         let userVotes = this._mapGet(userVotePrefix + voteId, account);
         if (!userVotes) {
-            return {};
-        }
-        const info = this._mapGet("voteInfo", voteId);
-        let id2option = {};
-        for (const option in info.options) {
-            id2option[info.options[option].id] = option;
+            return [];
         }
         let votes = [];
-        for (const k in userVotes) {
-            if (!userVotes.hasOwnProperty(k)) {
-                continue;
-            }
+        for (const o in userVotes) {
             votes.push({
-                option: id2option[k],
-                votes: new Float64(userVotes[k][0]).minus(userVotes[k][2]).toFixed(),
-                voteTime: userVotes[k][1],
-                clearedVotes: userVotes[k][2]
+                option: o,
+                votes: new Float64(userVotes[o][0]).minus(userVotes[o][2]).toFixed(),
+                voteTime: userVotes[o][1],
+                clearedVotes: userVotes[o][2]
             });
         }
         return votes;
@@ -453,24 +499,22 @@ class VoteCommonContract {
 
     getResult(voteId) {
         this._checkVote(voteId);
+        const preResult = this._mapGet("preResult", voteId);
+        let preOrder = this._mapGet("preOrder", voteId) || [];
+        let result = [];
+        if (!preResult || !preOrder) {
+            return result;
+        }
         const info = this._mapGet("voteInfo", voteId);
-        let preResult = [];
-        for (const o in info.options) {
-            const id = info.options[o].id;
-            if (info.preResult[id] === FALSE) {
-                continue;
-            }
-            preResult.push({
+        // pre sorted result
+        preOrder = preOrder.slice(0, info.resultNumber);
+        for (const o of preOrder) {
+            result.push({
                 option: o,
-                votes: this._mapGet(optionPrefix + voteId, id)
+                votes: preResult[o],
             });
         }
-        // sort according to votes in reversed order
-        const voteCmp = function(a, b) {
-            return new Float64(a.votes).lt(b.votes);
-        };
-        preResult.sort(voteCmp);
-        return preResult.slice(0, info.resultNumber);
+        return result;
     }
 
     delVote(voteId) {

@@ -8,6 +8,8 @@ import (
 	"errors"
 	"strconv"
 
+	"github.com/iost-official/go-iost/vm/database"
+
 	"encoding/json"
 
 	"github.com/iost-official/go-iost/core/contract"
@@ -381,6 +383,8 @@ func dbValToString(val interface{}) (string, error) {
 	case bool:
 		return strconv.FormatBool(v), nil
 	case []byte:
+		return string(v), nil
+	case database.SerializedJSON:
 		return string(v), nil
 	default:
 		return "", ErrInvalidDbValType
