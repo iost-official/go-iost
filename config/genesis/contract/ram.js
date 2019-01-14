@@ -190,10 +190,13 @@ class RAMContract {
         const referrer = accObj.referrer;
         let destroyAmount = fee;
         let rewardAmount = 0;
-        if (referrer !== null && storage.globalMapHas("vote_producer.iost", "producerTable", referrer)) {
-            const rewardRatio = 0.3;
-            rewardAmount = fee * rewardRatio;
-            destroyAmount -= rewardAmount;
+        if (referrer !== null) {
+            const producerMap = JSON.parse(storage.globalGet("vote_producer.iost", "producerMap") || "{}");
+            if (producerMap[referrer]) {
+                const rewardRatio = 0.3;
+                rewardAmount = fee * rewardRatio;
+                destroyAmount -= rewardAmount;
+            }
         }
         if (rewardAmount.toFixed(2) !== "0.00") {
             blockchain.callWithAuth("token.iost", "transfer", ["iost", blockchain.contractName(), referrer, rewardAmount.toFixed(2), ""]);
