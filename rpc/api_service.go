@@ -327,7 +327,7 @@ func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractReq
 func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) (*rpcpb.GasRatioResponse, error) {
 	ratios := make([]float64, 0)
 	for _, tx := range as.bc.Head().Block.Txs {
-		if tx.Publisher != "_Block_Base" {
+		if tx.Publisher != "base.iost" {
 			ratios = append(ratios, float64(tx.GasRatio)/100.0)
 		}
 	}
