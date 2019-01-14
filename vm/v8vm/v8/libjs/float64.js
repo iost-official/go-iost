@@ -135,6 +135,11 @@ class Float64 {
     toFixed(n) {
         return this.number.toFixed(n);
     }
+
+    // to JSON
+    toJSON() {
+        return this.number.toJSON();
+    }
 }
 
 module.exports = Float64;

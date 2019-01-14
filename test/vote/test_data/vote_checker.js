@@ -34,8 +34,8 @@ class VoteChecker {
         let data = this._get("vote") || {};
         let f = data[from] || {};
         f[to] = {
-            vote: new Float64(amount).plus(f[to] || 0).toFixed(),
-            VPContract: new Float64(voteInfo2.voteInfo.votes).minus(voteInfo1.voteInfo.votes).toFixed(),
+            vote: new Float64(amount).plus(f[to] || 0).toFixed(8),
+            VPContract: new Float64(voteInfo2.voteInfo.votes).minus(voteInfo1.voteInfo.votes).toFixed(8),
         };
         data[from] = f;
         this._put("vote", data);
@@ -49,8 +49,8 @@ class VoteChecker {
         let data = this._get("unvote") || {};
         let f = data[from] || {};
         f[to] = {
-            vote: new Float64(amount).plus(f[to] || 0).toFixed(),
-            VPContract: new Float64(voteInfo2.voteInfo.votes).minus(voteInfo1.voteInfo.votes).toFixed(),
+            vote: new Float64(amount).plus(f[to] || 0).toFixed(8),
+            VPContract: new Float64(voteInfo2.voteInfo.votes).minus(voteInfo1.voteInfo.votes).toFixed(8),
         };
         data[from] = f;
         this._put("unvote", data);
@@ -62,7 +62,7 @@ class VoteChecker {
         blockchain.callWithAuth(IssueContract, "issueIOST", []);
         let total2 = blockchain.callWithAuth(TokenContract, "supply", ["iost"])[0];
         let data = this._get("issueIOST") || [];
-        data.push(new Float64(total2).minus(total1).toFixed());
+        data.push(new Float64(total2).minus(total1).toFixed(8));
         this._put("issueIOST", data);
         return data;
     }
@@ -76,8 +76,8 @@ class VoteChecker {
         let balance21 = blockchain.callWithAuth(TokenContract, "balanceOf", ["iost", publisher])[0];
         let data = this._get("exchangeIOST") || {};
         data[publisher] = {
-            BonusContract: new Float64(balance20).minus(balance10).toFixed(),
-            publisher: new Float64(balance21).minus(balance11).toFixed(),
+            BonusContract: new Float64(balance20).minus(balance10).toFixed(8),
+            publisher: new Float64(balance21).minus(balance11).toFixed(8),
         }
         this._put("exchangeIOST", data);
         return data;
@@ -97,17 +97,17 @@ class VoteChecker {
         let votes = {};
         for (let a in vote) {
             let v = (vote[a][publisher] || {})["vote"] || "0";
-            votes[a] = new Float64(v).plus(votes[a] || "0").toFixed();
+            votes[a] = new Float64(v).plus(votes[a] || "0").toFixed(8);
         }
         for (let a in unvote) {
             let v = (unvote[a][publisher] || {})["vote"] || "0";
-            votes[a] = new Float64(votes[a] || "0").minus(v).toFixed();
+            votes[a] = new Float64(votes[a] || "0").minus(v).toFixed(8);
         }
         let data = this._get("candidateWithdraw") || {};
         data[publisher] = {
             bonus: bonus,
-            VPContract: new Float64(balance20).minus(balance10).toFixed(),
-            publisher: new Float64(balance21).minus(balance11).toFixed(),
+            VPContract: new Float64(balance20).minus(balance10).toFixed(8),
+            publisher: new Float64(balance21).minus(balance11).toFixed(8),
             votes: votes,
             totalVotes: voteInfo.voteInfo.votes,
         }
@@ -128,16 +128,16 @@ class VoteChecker {
         let votes = {};
         for (let a in vote) {
             let v = (vote[a][account] || {}).vote || "0";
-            votes[a] = new Float64(v).plus(votes[a] || "0").toFixed();
+            votes[a] = new Float64(v).plus(votes[a] || "0").toFixed(8);
         }
         for (let a in unvote) {
             let v = (unvote[a][account] || {}).vote || "0";
-            votes[a] = new Float64(votes[a] || "0").minus(v).toFixed();
+            votes[a] = new Float64(votes[a] || "0").minus(v).toFixed(8);
         }
         let data = this._get("topupVoterBonus") || {};
         data[account] = {
-            VPContract: new Float64(balance20).minus(balance10).toFixed(),
-            publisher: new Float64(balance21).minus(balance11).toFixed(),
+            VPContract: new Float64(balance20).minus(balance10).toFixed(8),
+            publisher: new Float64(balance21).minus(balance11).toFixed(8),
             votes: votes,
             totalVotes: voteInfo.voteInfo.votes,
         }
@@ -154,8 +154,8 @@ class VoteChecker {
         let balance21 = blockchain.callWithAuth(TokenContract, "balanceOf", ["iost", publisher])[0];
         let data = this._get("voterWithdraw") || {};
         data[publisher] = {
-            VPContract: new Float64(balance20).minus(balance10).toFixed(),
-            publisher: new Float64(balance21).minus(balance11).toFixed(),
+            VPContract: new Float64(balance20).minus(balance10).toFixed(8),
+            publisher: new Float64(balance21).minus(balance11).toFixed(8),
         }
         this._put("voterWithdraw", data);
         return data;
