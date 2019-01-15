@@ -60,6 +60,13 @@ func setBalance(h *host.Host, tokenSym string, from string, balance int64, ramPa
 	return cost
 }
 
+func getRAMPayer(h *host.Host, tokenSym string) string {
+	if tokenSym == "ram" || tokenSym == "iost" {
+		return "token.iost"
+	}
+	return h.Context().Value("publisher").(string)
+}
+
 func getBalance(h *host.Host, tokenSym string, from string, ramPayer string) (balance int64, cost contract.Cost, err error) {
 	balance = int64(0)
 	cost = contract.Cost0()
@@ -375,7 +382,7 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
-			publisher := h.Context().Value("publisher").(string)
+			ramPayer := getRAMPayer(h, tokenSym)
 			// set supply, set balance
 			cost0, err = h.MapPut(TokenInfoMapPrefix+tokenSym, SupplyMapField, supply.(int64)+amount)
 			cost.AddAssign(cost0)
@@ -383,7 +390,7 @@ var (
 				return nil, cost, err
 			}
 
-			balance, cost0, err := getBalance(h, tokenSym, to, publisher)
+			balance, cost0, err := getBalance(h, tokenSym, to, ramPayer)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -391,7 +398,7 @@ var (
 			cost.AddAssign(cost0)
 
 			balance += amount
-			cost0 = setBalance(h, tokenSym, to, balance, publisher)
+			cost0 = setBalance(h, tokenSym, to, balance, ramPayer)
 			cost.AddAssign(cost0)
 
 			message, err := json.Marshal(args)
@@ -481,14 +488,14 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
-			publisher := h.Context().Value("publisher").(string)
+			ramPayer := getRAMPayer(h, tokenSym)
 			// set balance
-			fbalance, cost0, err := getBalance(h, tokenSym, from, publisher)
+			fbalance, cost0, err := getBalance(h, tokenSym, from, ramPayer)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			tbalance, cost0, err := getBalance(h, tokenSym, to, publisher)
+			tbalance, cost0, err := getBalance(h, tokenSym, to, ramPayer)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -508,10 +515,10 @@ var (
 			fbalance -= amount
 			tbalance += amount
 
-			cost0 = setBalance(h, tokenSym, to, tbalance, publisher)
+			cost0 = setBalance(h, tokenSym, to, tbalance, ramPayer)
 			//fmt.Printf("transfer set %v %v %v\n", tokenSym, to, tbalance)
 			cost.AddAssign(cost0)
-			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
+			cost0 = setBalance(h, tokenSym, from, fbalance, ramPayer)
 			cost.AddAssign(cost0)
 
 			// generate receipt
@@ -591,9 +598,9 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
-			publisher := h.Context().Value("publisher").(string)
+			ramPayer := getRAMPayer(h, tokenSym)
 			// sub balance of from
-			fbalance, cost0, err := getBalance(h, tokenSym, from, publisher)
+			fbalance, cost0, err := getBalance(h, tokenSym, from, ramPayer)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -608,14 +615,14 @@ var (
 			}
 
 			fbalance -= amount
-			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
+			cost0 = setBalance(h, tokenSym, from, fbalance, ramPayer)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas
 			}
 
 			// freeze token of to
-			cost0, err = freezeBalance(h, tokenSym, to, amount, ftime, publisher)
+			cost0, err = freezeBalance(h, tokenSym, to, amount, ftime, ramPayer)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -673,9 +680,9 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
-			publisher := h.Context().Value("publisher").(string)
+			ramPayer := getRAMPayer(h, tokenSym)
 			// set balance
-			fbalance, cost0, err := getBalance(h, tokenSym, from, publisher)
+			fbalance, cost0, err := getBalance(h, tokenSym, from, ramPayer)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -689,7 +696,7 @@ var (
 				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
 			fbalance -= amount
-			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
+			cost0 = setBalance(h, tokenSym, from, fbalance, ramPayer)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas
@@ -736,8 +743,8 @@ var (
 				return nil, cost, host.ErrTokenNotExists
 			}
 
-			publisher := h.Context().Value("publisher").(string)
-			balance, cost0, err := getBalance(h, tokenSym, to, publisher)
+			ramPayer := getRAMPayer(h, tokenSym)
+			balance, cost0, err := getBalance(h, tokenSym, to, ramPayer)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
