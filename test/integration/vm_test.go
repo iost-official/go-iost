@@ -246,7 +246,7 @@ func Test_RamPayer(t *testing.T) {
 			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-2994)
 
 			ram0 = s.GetRAM(acc0.ID)
-			//ram4 := s.GetRAM(acc2.ID)
+			ram4 := s.GetRAM(acc2.ID)
 			ram6 := s.GetRAM(acc3.ID)
 			s.Visitor.SetTokenBalanceFixed("iost", acc2.ID, "100")
 			r, err = s.Call(cname0, "call", fmt.Sprintf(`["%v", "test", "%v"]`, cname1,
@@ -256,7 +256,7 @@ func Test_RamPayer(t *testing.T) {
 			So(r.Status.Code, ShouldEqual, tx.Success)
 
 			So(s.GetRAM(acc3.ID), ShouldEqual, ram6)
-			So(s.GetRAM(acc2.ID), ShouldEqual, 9957)
+			So(s.GetRAM(acc2.ID), ShouldEqual, ram4)
 			So(s.GetRAM(acc0.ID), ShouldEqual, ram0-6)
 		})
 	})

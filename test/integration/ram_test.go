@@ -139,7 +139,7 @@ func TestRAM(t *testing.T) {
 				myRAMAfter := s.Visitor.TokenBalance("ram", acc.ID)
 				//var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore)
-				So(myRAMAfter, ShouldEqual, myRAMBefore-sellAmount-43)
+				So(myRAMAfter, ShouldEqual, myRAMBefore-sellAmount)
 				So(otherBalanceAfter, ShouldEqual, 150 * 1e6)
 			})
 		})
