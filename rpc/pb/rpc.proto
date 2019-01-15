@@ -622,7 +622,7 @@ message GetContractStorageFieldsRequest {
 
 // The message defines get contract storage response.
 message GetContractStorageFieldsResponse {
-    // the json string data
+    // the fields.
     repeated string fields = 1;
 }
 
