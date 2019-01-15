@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
+	"strings"
 )
 
 var tokenABIs *abiSet
@@ -51,6 +52,9 @@ func checkTokenExists(h *host.Host, tokenSym string) (ok bool, cost contract.Cos
 func setBalance(h *host.Host, tokenSym string, from string, balance int64, ramPayer string) (cost contract.Cost) {
 	ok, cost := h.MapHas(TokenBalanceMapPrefix+from, tokenSym)
 	if ok {
+		cost0, _ := h.MapPut(TokenBalanceMapPrefix+from, tokenSym, balance)
+		cost.AddAssign(cost0)
+	} else if (tokenSym == "iost" || tokenSym == "ram") && !strings.HasPrefix(from, "Contract") {
 		cost0, _ := h.MapPut(TokenBalanceMapPrefix+from, tokenSym, balance)
 		cost.AddAssign(cost0)
 	} else {

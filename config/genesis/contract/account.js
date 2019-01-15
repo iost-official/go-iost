@@ -141,8 +141,8 @@ class Account {
             }],
             threshold: 1,
         };
-        account.groups = {}
-        this._saveAccount(account, referrer);
+        account.groups = {};
+        this._saveAccount(account, blockchain.contractName());
         if (block.number !== 0) {
             const defaultGasPledge = "10";
             const defaultRegisterReward = "3";
