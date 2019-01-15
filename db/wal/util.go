@@ -61,41 +61,6 @@ func Exist(dir string) bool {
 	return len(names) != 0 || len(names2) != 0
 }
 
-/*
-// searchIndex returns the last array index of names whose raft index section is
-// equal to or smaller than the given index.
-// The given names MUST be sorted.
-func searchIndex(names []string, index uint64) (int, bool) {
-	for i := len(names) - 1; i >= 0; i-- {
-		name := names[i]
-		_, curIndex, err := parseWALName(name)
-		if err != nil {
-			ilog.Error("failed to parse WAL file name, path: ", name, err)
-		}
-		if index >= curIndex {
-			return i, true
-		}
-	}
-	return -1, false
-}
-
-// names should have been sorted based on sequence number.
-// isValidSeq checks whether seq increases continuously.
-func isValidSeq(names []string) bool {
-	var lastSeq uint64
-	for _, name := range names {
-		curSeq, _, err := parseWALName(name)
-		if err != nil {
-			ilog.Error("failed to parse WAL file name, path: ", name, err)
-		}
-		if lastSeq != 0 && lastSeq != curSeq-1 {
-			return false
-		}
-		lastSeq = curSeq
-	}
-	return true
-}
-*/
 func readWALNames(dirpath string) ([]string, error) {
 	names, err := filterDirWithExt(dirpath, "")
 	if err != nil {
