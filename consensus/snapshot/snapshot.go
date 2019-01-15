@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/kv/leveldb"
-	"github.com/iost-official/go-iost/ilog"
 )
 
 // Save the function for saving block's head from snapshot.
@@ -108,11 +107,14 @@ func ToFile(conf *common.Config) error {
 		return fmt.Errorf("Unable to tar files - %v", err.Error())
 	}
 	db, err := leveldb.NewDB(src)
+	if err != nil {
+		return err
+	}
 	defer db.Close()
 
 	file, err := os.Create(conf.DB.LdbPath + "Snapshot.iost")
 	if err != nil {
-		ilog.Fatal(err)
+		return err
 	}
 	defer file.Close()
 	writer := bufio.NewWriter(file)
