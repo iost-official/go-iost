@@ -615,7 +615,7 @@ message GetContractStorageFieldsRequest {
     // contract id
     string id = 1;
     // get the fields from StateDB
-    string fields = 2;
+    string key = 2;
     // get data by longest chain's head block or last irreversible block
     bool by_longest_chain = 3;
 }
@@ -623,7 +623,7 @@ message GetContractStorageFieldsRequest {
 // The message defines get contract storage response.
 message GetContractStorageFieldsResponse {
     // the json string data
-    string data = 1;
+    repeated string fields = 1;
 }
 
 // The message defines send transaction response.
