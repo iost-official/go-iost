@@ -327,6 +327,7 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			h.Context().Set("auth_contract_list", authList)
 			authList[acc1.KeyPair.ReadablePubkey()] = 2
 			h.Context().Set("auth_list", authList)
+			h.Context().Set("publisher", otherAcc)
 			h.DB().SetTokenBalanceFixed("iost", otherAcc, "20")
 			_, _, err = e.LoadAndCall(h, code, "pledge", otherAcc, otherAcc, "20")
 			So(err, ShouldBeNil)

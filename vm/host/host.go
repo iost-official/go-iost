@@ -273,15 +273,10 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	// set code  without invoking init
 	h.db.SetContract(c)
 
-	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
-	ownerStr, ok := owner.(string)
-	if !ok {
-		ownerStr = ""
-	}
-	cost.AddAssign(co)
+	publisher := h.Context().Value("publisher").(string)
 	l := len(c.Encode())
 	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
-		{Payer: ownerStr, Val: int64(l - oldL)},
+		{Payer: publisher, Val: int64(l - oldL)},
 	}})
 
 	return cost, nil

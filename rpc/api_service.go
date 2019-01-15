@@ -327,7 +327,7 @@ func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractReq
 func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) (*rpcpb.GasRatioResponse, error) {
 	ratios := make([]float64, 0)
 	for _, tx := range as.bc.Head().Block.Txs {
-		if tx.Publisher != "_Block_Base" {
+		if tx.Publisher != "base.iost" {
 			ratios = append(ratios, float64(tx.GasRatio)/100.0)
 		}
 	}
@@ -376,23 +376,11 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
 	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
-	var value interface{}
 
-	if req.GetFields() != "" {
-		value, _ = h.GlobalMapKeys(req.GetId(), req.GetFields())
-	}
-	var data string
-	if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
-		data = value.(string)
-	} else {
-		bytes, err := json.Marshal(value)
-		if err != nil {
-			return nil, fmt.Errorf("cannot unmarshal %v", value)
-		}
-		data = string(bytes)
-	}
+	value, _ := h.GlobalMapKeys(req.GetId(), req.GetKey())
+
 	return &rpcpb.GetContractStorageFieldsResponse{
-		Data: data,
+		Fields: value,
 	}, nil
 }
 

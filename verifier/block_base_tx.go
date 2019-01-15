@@ -19,7 +19,7 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 		acts = append(acts, act)
 	}
 	tx := &tx.Tx{
-		Publisher: "_Block_Base",
+		Publisher: "base.iost",
 		GasLimit:  100000000,
 		GasRatio:  100,
 		Actions:   acts,
