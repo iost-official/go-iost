@@ -117,7 +117,6 @@ func OpenDir(path string) (*os.File, error) { return os.Open(path) }
 
 // ZeroToEnd write zero to file from current to end
 func ZeroToEnd(f *os.File) error {
-	// TODO: support FALLOC_FL_ZERO_RANGE
 	off, err := f.Seek(0, io.SeekCurrent)
 	if err != nil {
 		return err

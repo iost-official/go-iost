@@ -473,7 +473,6 @@ func (w *WAL) Close() error {
 }
 
 func (w *WAL) saveEntry(e *Entry) error {
-	// TODO: add MustMarshalTo to reduce one allocation.
 	e.Index = w.lastEntryIndex
 	w.lastEntryIndex++
 	b, err := proto.Marshal(e)
@@ -494,7 +493,6 @@ func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	// TODO(xiangli): no more reference operator
 	if err := w.saveEntry(&ent); err != nil {
 		return 0, err
 	}
@@ -523,7 +521,6 @@ func (w *WAL) Save(ents []Entry) (uint64, error) {
 		return w.lastEntryIndex, nil
 	}
 
-	// TODO(xiangli): no more reference operator
 	for i := range ents {
 		if err := w.saveEntry(&ents[i]); err != nil {
 			return 0, err
