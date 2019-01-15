@@ -58,6 +58,7 @@ func initSDKs() {
 	accs = append(accs, "admin")
 	for _, a := range accs {
 		sdk := &iwallet.SDK{}
+		sdk.SetChainID(1024)
 		sdk.SetSignAlgo("ed25519")
 		sdk.SetAccount(a, nil)
 		sdk.SetServer(server)

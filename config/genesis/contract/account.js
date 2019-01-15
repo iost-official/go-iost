@@ -141,13 +141,14 @@ class Account {
             }],
             threshold: 1,
         };
-        account.groups = {}
-        this._saveAccount(account, referrer);
+        account.groups = {};
+        this._saveAccount(account, blockchain.contractName());
         if (block.number !== 0) {
             const defaultGasPledge = "10";
             const defaultRegisterReward = "3";
             blockchain.callWithAuth("gas.iost", "pledge", [referrer, id, defaultGasPledge]);
-            if (storage.globalMapHas("vote_producer.iost", "producerTable", referrer)) {
+            const producerMap = JSON.parse(storage.globalGet("vote_producer.iost", "producerMap") || "{}");
+            if (producerMap[referrer]) {
                 blockchain.callWithAuth("issue.iost", "issueIOSTTo", [referrer, defaultRegisterReward]);
             }
         }

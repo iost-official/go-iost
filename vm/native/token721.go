@@ -104,12 +104,13 @@ var (
 				return nil, cost, errors.New("invalid total supply")
 			}
 
+			publisher := h.Context().Value("publisher").(string)
 			// put info
-			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenSym, Token721IssuerMapField, issuer, issuer)
+			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenSym, Token721IssuerMapField, issuer, publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenSym, TotalSupplyMapField, totalSupply, issuer)
+			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenSym, TotalSupplyMapField, totalSupply, publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenSym, SupplyMapField, int64(0), issuer)
+			cost0, _ = h.MapPut(Token721InfoMapPrefix+tokenSym, SupplyMapField, int64(0), publisher)
 			cost.AddAssign(cost0)
 
 			// generate receipt
@@ -166,14 +167,15 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
+			publisher := h.Context().Value("publisher").(string)
 			// set supply, set balance
-			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenSym, SupplyMapField, supply.(int64)+1, issuer.(string))
+			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenSym, SupplyMapField, supply.(int64)+1, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
 
-			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenSym, tokenID, to, issuer.(string))
+			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenSym, tokenID, to, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -185,10 +187,10 @@ var (
 				return nil, cost, err
 			}
 			tbalance++
-			cost0 = setToken721Balance(h, tokenSym, to, tbalance, issuer.(string))
+			cost0 = setToken721Balance(h, tokenSym, to, tbalance, publisher)
 			cost.AddAssign(cost0)
 
-			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, issuer.(string))
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, publisher)
 			cost.AddAssign(cost0)
 
 			// generate receipt
@@ -246,7 +248,8 @@ var (
 				return nil, cost, fmt.Errorf("error token owner isn't from. owner: %v, from: %v", owner, from)
 			}
 
-			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenSym, tokenID, to, from)
+			publisher := h.Context().Value("publisher").(string)
+			cost0, err = h.MapPut(Token721InfoMapPrefix+tokenSym, tokenID, to, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -266,9 +269,9 @@ var (
 			fbalance--
 			tbalance++
 
-			cost0 = setToken721Balance(h, tokenSym, from, fbalance, from)
+			cost0 = setToken721Balance(h, tokenSym, from, fbalance, publisher)
 			cost.AddAssign(cost0)
-			cost0 = setToken721Balance(h, tokenSym, to, tbalance, from)
+			cost0 = setToken721Balance(h, tokenSym, to, tbalance, publisher)
 			cost.AddAssign(cost0)
 
 			metaDataJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+from, tokenID)
@@ -278,7 +281,7 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
-			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, from)
+			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, publisher)
 			cost.AddAssign(cost0)
 
 			// generate receipt

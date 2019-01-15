@@ -49,13 +49,13 @@ func Test_VoteBonus(t *testing.T) {
 				r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, voter.ID, acc.ID, idx*2e7), voter.ID, voter.KeyPair)
 				So(err, ShouldBeNil)
 				So(r.Status.Message, ShouldEqual, "")
-				So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", fmt.Sprintf(`%d`, idx))), ShouldEqual, fmt.Sprintf(`"%d"`, idx*2e7))
+				So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, idx*2e7))
 			}
 			voter = acc2
 			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, voter.ID, acc.ID, 2e7), voter.ID, voter.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", fmt.Sprintf(`%d`, idx))), ShouldEqual, fmt.Sprintf(`"%d"`, (idx+1)*2e7))
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, (idx+1)*2e7))
 		}
 
 		for idx, acc := range testAccounts {
@@ -68,8 +68,8 @@ func Test_VoteBonus(t *testing.T) {
 			}
 			So(s.Visitor.TokenBalance("contribute", acc.ID), ShouldEqual, int64(198779440*(idx+1)))
 		}
-		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)), ShouldEqual, `{"1":["20000000",1,"0"],"2":["40000000",1,"0"],"3":["60000000",1,"0"],"4":["80000000",1,"0"],"5":["100000000",1,"0"],"6":["120000000",1,"0"],"7":["140000000",1,"0"],"8":["160000000",1,"0"],"9":["180000000",1,"0"]}`)
-		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc2.ID)), ShouldEqual, `{"0":["20000000",1,"0"],"1":["20000000",1,"0"],"2":["20000000",1,"0"],"3":["20000000",1,"0"],"4":["20000000",1,"0"],"5":["20000000",1,"0"],"6":["20000000",1,"0"],"7":["20000000",1,"0"],"8":["20000000",1,"0"],"9":["20000000",1,"0"]}`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)), ShouldEqual, `{"user_1":["20000000",1,"0"],"user_2":["40000000",1,"0"],"user_3":["60000000",1,"0"],"user_4":["80000000",1,"0"],"user_5":["100000000",1,"0"],"user_6":["120000000",1,"0"],"user_7":["140000000",1,"0"],"user_8":["160000000",1,"0"],"user_9":["180000000",1,"0"]}`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc2.ID)), ShouldEqual, `{"user_0":["20000000",1,"0"],"user_1":["20000000",1,"0"],"user_2":["20000000",1,"0"],"user_3":["20000000",1,"0"],"user_4":["20000000",1,"0"],"user_5":["20000000",1,"0"],"user_6":["20000000",1,"0"],"user_7":["20000000",1,"0"],"user_8":["20000000",1,"0"],"user_9":["20000000",1,"0"]}`)
 		s.Head.Time += 5073358980
 		r, err := s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
@@ -248,17 +248,17 @@ func Test_PartnerBonus(t *testing.T) {
 				r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, voter.ID, acc.ID, idx*2e7), voter.ID, voter.KeyPair)
 				So(err, ShouldBeNil)
 				So(r.Status.Message, ShouldEqual, "")
-				So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", fmt.Sprintf(`%d`, idx))), ShouldEqual, fmt.Sprintf(`"%d"`, idx*2e7))
+				So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, idx*2e7))
 			}
 			voter = acc2
 			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, voter.ID, acc.ID, 2e7), voter.ID, voter.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", fmt.Sprintf(`%d`, idx))), ShouldEqual, fmt.Sprintf(`"%d"`, (idx+1)*2e7))
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, (idx+1)*2e7))
 		}
 
-		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)), ShouldEqual, `{"1":["20000000",1,"0"],"2":["40000000",1,"0"],"3":["60000000",1,"0"],"4":["80000000",1,"0"],"5":["100000000",1,"0"],"6":["120000000",1,"0"],"7":["140000000",1,"0"],"8":["160000000",1,"0"],"9":["180000000",1,"0"]}`)
-		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc2.ID)), ShouldEqual, `{"0":["20000000",1,"0"],"1":["20000000",1,"0"],"2":["20000000",1,"0"],"3":["20000000",1,"0"],"4":["20000000",1,"0"],"5":["20000000",1,"0"],"6":["20000000",1,"0"],"7":["20000000",1,"0"],"8":["20000000",1,"0"],"9":["20000000",1,"0"]}`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)), ShouldEqual, `{"user_1":["20000000",1,"0"],"user_2":["40000000",1,"0"],"user_3":["60000000",1,"0"],"user_4":["80000000",1,"0"],"user_5":["100000000",1,"0"],"user_6":["120000000",1,"0"],"user_7":["140000000",1,"0"],"user_8":["160000000",1,"0"],"user_9":["180000000",1,"0"]}`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc2.ID)), ShouldEqual, `{"user_0":["20000000",1,"0"],"user_1":["20000000",1,"0"],"user_2":["20000000",1,"0"],"user_3":["20000000",1,"0"],"user_4":["20000000",1,"0"],"user_5":["20000000",1,"0"],"user_6":["20000000",1,"0"],"user_7":["20000000",1,"0"],"user_8":["20000000",1,"0"],"user_9":["20000000",1,"0"]}`)
 		s.Head.Time += 5073358980
 		r, err := s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)

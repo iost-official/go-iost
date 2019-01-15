@@ -45,6 +45,11 @@ type SDK struct {
 
 var sdk = &SDK{}
 
+// SetChainID sets chainID.
+func (s *SDK) SetChainID(chainID uint32) {
+	s.chainID = chainID
+}
+
 // SetAccount ...
 func (s *SDK) SetAccount(name string, kp *account.KeyPair) {
 	s.accountName = name
