@@ -8,7 +8,6 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/db"
-	. "github.com/smartystreets/goconvey/convey"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -21,13 +20,14 @@ func randString(n int) string {
 	return string(b)
 }
 
-func TestSnapshot(t *testing.T) {
+func BenchmarkSnapshot(b *testing.B) {
+	os.RemoveAll("DB")
 	stateDB, err := db.NewMVCCDB("DB/StateDB")
 
 	if err != nil {
 		fmt.Println(err)
 	}
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 1000000; i++ {
 		stateDB.Put("state", randString(64), randString(32))
 	}
 	stateDB.Tag("abc")
@@ -38,13 +38,16 @@ func TestSnapshot(t *testing.T) {
 			LdbPath: "DB/",
 		},
 	}
-	defer os.RemoveAll("DB")
-	Convey("Test Snapshot", t, func() {
-		err = ToSnapshot(config)
-		So(err, ShouldBeNil)
-		err = ToFile(config)
-		So(err, ShouldBeNil)
+	b.Run("ToSnapshot", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			err = ToSnapshot(config)
+		}
+	})
 
+	b.Run("ToFile", func(b *testing.B) {
+		for n := 0; n < b.N; n++ {
+			err = ToFile(config)
+		}
 	})
 
 }
