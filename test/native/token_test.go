@@ -33,6 +33,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.Set("time", int64(0))
 	ctx.Set("abi_name", "abi")
 	ctx.GSet("receipts", []*tx.Receipt{})
+	ctx.Set("publisher", "")
 
 	// pm := NewMonitor()
 	h := host.NewHost(ctx, vi, nil, nil)

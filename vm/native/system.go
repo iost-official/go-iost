@@ -91,7 +91,7 @@ var (
 				return nil, cost, err
 			}
 
-			cost2, err = h.MapPut("contract_owner", actID, publisher)
+			cost2, err = h.MapPut("contract_owner", actID, publisher, publisher)
 			cost.AddAssign(cost2)
 
 			return []interface{}{actID}, cost, err
@@ -150,7 +150,7 @@ var (
 			actID := args[0].(string)
 			con.ID = actID
 
-			cost2, err := h.SetCode(con, "")
+			cost2, err := h.SetCode(con, AdminAccount)
 			cost.AddAssign(cost2)
 
 			cost2, err = h.MapPut("contract_owner", actID, AdminAccount)
