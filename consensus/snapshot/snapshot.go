@@ -57,7 +57,7 @@ func ToSnapshot(conf *common.Config) error {
 
 	file, err := os.Create(conf.DB.LdbPath + "Snapshot.tar.gz")
 	if err != nil {
-		ilog.Fatal(err)
+		return err
 	}
 	defer file.Close()
 
@@ -92,7 +92,6 @@ func ToSnapshot(conf *common.Config) error {
 		f.Close()
 		return nil
 	})
-	return nil
 }
 
 // FromSnapshot the function for loading db from snapshot.
