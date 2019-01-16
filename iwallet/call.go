@@ -41,10 +41,10 @@ var callCmd = &cobra.Command{
 		if argc%3 != 0 {
 			return fmt.Errorf(`number of args should be a multiplier of 3`)
 		}
-		var actions = make([]*rpcpb.Action, argc/3)
+		var actions = make([]*rpcpb.Action, 0)
 		for i := 0; i < len(args); i += 3 {
 			act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
-			actions[i] = act
+			actions = append(actions, act)
 		}
 		err = sdk.LoadAccount()
 		if err != nil {
