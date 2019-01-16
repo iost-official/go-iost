@@ -40,7 +40,7 @@ class VoteContract {
                 freezeTime: VOTE_LOCKTIME
             }
         ])[0];
-        this._put("voteId", voteId);
+        storage.put("voteId", voteId);
     }
 
     initProducer(proID, proPubkey) {
@@ -147,7 +147,7 @@ class VoteContract {
     }
 
     _getVoteId() {
-        return this._get("voteId");
+        return storage.get("voteId");
     }
 
     // register account as a producer
