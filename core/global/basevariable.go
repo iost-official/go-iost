@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
@@ -60,8 +61,7 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			ilog.Fatal("start iserver with the snapshot failed, state db already has.")
 		}
 
-		// TODO: tar to statDB
-
+		snapshot.FromSnapshot(conf)
 	}
 
 	blockChain, err := block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")

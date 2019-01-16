@@ -3,13 +3,15 @@ package snapshot
 import (
 	"archive/tar"
 	"bufio"
-	"compress/gzip"
-	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"compress/gzip"
+	"encoding/json"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -49,12 +51,12 @@ func Load(db db.MVCCDB) (*block.Block, error) {
 // ToSnapshot the function for saving db to snapshot.
 func ToSnapshot(conf *common.Config) error {
 	var src string
-	src = conf.DB.LdbPath + "StateDB"
+	src = filepath.Join(conf.DB.LdbPath, "StateDB")
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("Unable to tar files - %v", err.Error())
 	}
 
-	file, err := os.Create(conf.DB.LdbPath + "Snapshot.tar.gz")
+	file, err := os.Create(filepath.Join(conf.DB.LdbPath, "Snapshot.tar.gz"))
 	if err != nil {
 		return err
 	}
@@ -94,14 +96,63 @@ func ToSnapshot(conf *common.Config) error {
 }
 
 // FromSnapshot the function for loading db from snapshot.
-func FromSnapshot() error {
+func FromSnapshot(conf *common.Config) error {
+	src := filepath.Join(conf.DB.LdbPath, "/StateDB")
+
+	s, err := os.Stat(src)
+	if err == nil && s.IsDir() {
+		return errors.New("state db already has")
+	}
+	err = os.MkdirAll(src, os.ModePerm)
+	if err != nil {
+		return err
+	}
+	fr, err := os.Open(conf.Snapshot.FilePath)
+	if err != nil {
+		return err
+	}
+	defer fr.Close()
+
+	gr, err := gzip.NewReader(fr)
+	if err != nil {
+		return err
+	}
+	defer gr.Close()
+
+	tr := tar.NewReader(gr)
+
+	for {
+		h, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+		if err != nil {
+			return err
+		}
+
+		if h.Typeflag == tar.TypeDir {
+			continue
+		}
+
+		fw, err := os.OpenFile(filepath.Join(conf.DB.LdbPath, "StateDB", h.Name), os.O_CREATE|os.O_WRONLY, os.FileMode(h.Mode))
+		if err != nil {
+			return err
+		}
+
+		_, err = io.Copy(fw, tr)
+		if err != nil {
+			return err
+		}
+
+		fw.Close()
+	}
 	return nil
 }
 
 // ToFile the function for saving db to File.
 func ToFile(conf *common.Config) error {
 	var src string
-	src = conf.DB.LdbPath + "StateDB"
+	src = filepath.Join(conf.DB.LdbPath, "StateDB")
 
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("Unable to tar files - %v", err.Error())
@@ -112,7 +163,7 @@ func ToFile(conf *common.Config) error {
 	}
 	defer db.Close()
 
-	file, err := os.Create(conf.DB.LdbPath + "Snapshot.iost")
+	file, err := os.Create(filepath.Join(conf.DB.LdbPath, "Snapshot.iost"))
 	if err != nil {
 		return err
 	}

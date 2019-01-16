@@ -8,6 +8,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/db"
+	. "github.com/smartystreets/goconvey/convey"
 )
 
 const letterBytes = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
@@ -18,6 +19,38 @@ func randString(n int) string {
 		b[i] = letterBytes[rand.Int63()%int64(len(letterBytes))]
 	}
 	return string(b)
+}
+
+func TestSnapshot(t *testing.T) {
+	Convey("Test of Snapshot", t, func() {
+		os.RemoveAll("DB")
+		defer os.RemoveAll("DB")
+		stateDB, err := db.NewMVCCDB("DB/StateDB")
+
+		if err != nil {
+			fmt.Println(err)
+		}
+		for i := 0; i < 100; i++ {
+			stateDB.Put("state", randString(64), randString(32))
+		}
+		stateDB.Tag("abc")
+		stateDB.Flush("abc")
+		stateDB.Close()
+		config := &common.Config{
+			DB: &common.DBConfig{
+				LdbPath: "DB/",
+			},
+			Snapshot: &common.SnapshotConfig{
+				Enable:   true,
+				FilePath: "DB/Snapshot.tar.gz",
+			},
+		}
+		err = ToSnapshot(config)
+		So(err, ShouldBeNil)
+		os.RemoveAll("DB/StateDB/")
+		err = FromSnapshot(config)
+		So(err, ShouldBeNil)
+	})
 }
 
 func BenchmarkSnapshot(b *testing.B) {
@@ -38,6 +71,7 @@ func BenchmarkSnapshot(b *testing.B) {
 			LdbPath: "DB/",
 		},
 	}
+	defer os.RemoveAll("DB")
 	b.Run("ToSnapshot", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			err = ToSnapshot(config)
