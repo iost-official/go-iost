@@ -254,7 +254,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 	voteInfo := dbVisitor.GetAccountVoteInfo(req.GetName())
 	for _, v := range voteInfo {
-		ret.Votes = append(ret.Votes, &rpcpb.VoteInfo{
+		ret.VoteInfos = append(ret.VoteInfos, &rpcpb.VoteInfo{
 			Option:       v.Option,
 			Votes:        v.Votes,
 			ClearedVotes: v.ClearedVotes,

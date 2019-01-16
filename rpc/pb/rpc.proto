@@ -561,7 +561,7 @@ message Account {
     repeated FrozenBalance frozen_balances = 7;
 
     // vote information
-    repeated VoteInfo votes = 8;
+    repeated VoteInfo vote_infos = 8;
 }
 
 // The message defines the get account request.
