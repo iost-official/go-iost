@@ -44,7 +44,7 @@ var callCmd = &cobra.Command{
 		var actions = make([]*rpcpb.Action, argc/3)
 		for i := 0; i < len(args); i += 3 {
 			act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
-			actions[i] = act
+			actions = append(actions, act)
 		}
 		err = sdk.LoadAccount()
 		if err != nil {
