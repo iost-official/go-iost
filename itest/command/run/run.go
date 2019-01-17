@@ -16,6 +16,7 @@ var Command = cli.Command{
 		CommonVoteCaseCommand,
 		VoteCaseCommand,
 		BenchmarkCommand,
+		VoteNodeCaseCommand,
 	},
 }
 
