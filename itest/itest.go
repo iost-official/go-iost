@@ -184,6 +184,87 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 	return nil
 }
 
+// VoteNode will send n vote transaction concurrently
+func (t *ITest) VoteNode(num int, accounts []*Account) error {
+	ilog.Infof("Send %v vote transaction...", num)
+
+	res := make(chan interface{})
+	times := len(accounts)
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < times; i++ {
+			sem.acquire()
+			go func(res chan interface{}, i int) {
+				defer sem.release()
+				A := t.bank
+				B := accounts[i].ID
+				var vote string
+				if num == 0 {
+					vote = accounts[i].vote
+				} else {
+					vote = strconv.Itoa(num)
+				}
+				ilog.Infof("VoteNode %v -> %v, vote: %v", A.ID, B, vote)
+
+				res <- t.vote(A, B, vote)
+			}(res, i)
+		}
+	}()
+
+	for i := 0; i < times; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			return fmt.Errorf("send vote transaction failed: %v", value)
+		default:
+		}
+	}
+
+	ilog.Infof("Send %v vote transaction successful!", times)
+
+	return nil
+}
+
+// CancelVoteNode will send n Cancel vote transaction concurrently
+func (t *ITest) CancelVoteNode(num int, accounts []*Account) error {
+	ilog.Infof("Send %v Cancel vote transaction...", num)
+
+	res := make(chan interface{})
+	times := len(accounts)
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < times; i++ {
+			sem.acquire()
+			go func(res chan interface{}, i int) {
+				defer sem.release()
+				A := t.bank
+				B := accounts[i].ID
+				var vote string
+				if num == 0 {
+					vote = accounts[i].vote
+				} else {
+					vote = strconv.Itoa(num)
+				}
+
+				ilog.Infof("CancelVoteNode %v -> %v, cancel vote: %v", A.ID, B, vote)
+
+				res <- t.cancelVote(A, B, vote)
+			}(res, i)
+		}
+	}()
+
+	for i := 0; i < times; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			return fmt.Errorf("send cancel vote transaction failed: %v", value)
+		default:
+		}
+	}
+
+	ilog.Infof("Send %v cancel vote transaction successful!", times)
+
+	return nil
+}
+
 // TransferN will send n transfer transaction concurrently
 func (t *ITest) TransferN(num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
 	ilog.Infof("Sending %v transfer transactions...", num)
@@ -354,6 +435,19 @@ func (t *ITest) vote(sender *Account, recipient, amount string) error {
 	client := t.clients[cIndex]
 
 	err := client.VoteProducer(sender, recipient, amount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// vote will cancel vote producer from sender to recipient
+func (t *ITest) cancelVote(sender *Account, recipient, amount string) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.CancelVoteProducer(sender, recipient, amount)
 	if err != nil {
 		return err
 	}
