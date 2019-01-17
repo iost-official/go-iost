@@ -741,7 +741,7 @@ func Test_TakeTurns(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
-		// 0	: 4 - 0.97214	, 2
+		// 0	: 4				, 2
 		// 1	: 6 - 0.97214	, 3
 		// 2	: 8 - 0.97214	, 4
 		// 3	: 10 - 0.97214	, 5
