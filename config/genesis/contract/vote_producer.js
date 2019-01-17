@@ -40,7 +40,7 @@ class VoteContract {
                 freezeTime: VOTE_LOCKTIME
             }
         ])[0];
-        this._put("voteId", voteId);
+        storage.put("voteId", voteId);
     }
 
     initProducer(proID, proPubkey) {
@@ -147,7 +147,7 @@ class VoteContract {
     }
 
     _getVoteId() {
-        return this._get("voteId");
+        return storage.get("voteId");
     }
 
     // register account as a producer
@@ -757,6 +757,7 @@ class VoteContract {
         const pendingProducerList = this._get("pendingProducerList");
         const producerMap = this._get("producerMap") || {};
         const producerKeyMap = this._get("producerKeyMap") || {};
+        const validPendingMap = {};
 
         // update scores
         let scoreTotal = new Float64("0");
@@ -778,6 +779,8 @@ class VoteContract {
                     "prior": 0,
                     "score": score,
                 });
+            } else {
+                validPendingMap[pro.pubkey] = true;
             }
         }
 
@@ -788,7 +791,7 @@ class VoteContract {
         for (const key of pendingProducerList) {
             const account = producerKeyMap[key];
             const score = new Float64(scores[account] || "0");
-            if (waitingRemoveList.includes(account)) {
+            if (waitingRemoveList.includes(account) || !validPendingMap[key]) {
                 oldPreListToRemove.push({
                     "account": account,
                     "key": key,
@@ -796,6 +799,7 @@ class VoteContract {
                     "score": score
                 });
                 minScore = new Float64(0);
+                delete(scores[account]);
             } else {
                 oldPreList.push({
                     "account": account,
@@ -847,7 +851,7 @@ class VoteContract {
         } else {
             for (const key of pendingList) {
                 const account = producerKeyMap[key];
-                scores[account] = "0";
+                delete(scores[account]);
             }
         }
 
