@@ -169,7 +169,6 @@ func NewConfig(configfile string) *Config {
 	if err := v.Unmarshal(c); err != nil {
 		ilog.Fatalf("Unable to decode into struct, %v", err)
 	}
-	c.Snapshot = &SnapshotConfig{Enable: false, FilePath: ""}
 	return c
 }
 
