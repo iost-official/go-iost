@@ -28,7 +28,7 @@ func TestSnapshot(t *testing.T) {
 		stateDB, err := db.NewMVCCDB("DB/StateDB")
 		So(err, ShouldBeNil)
 
-		for i := 0; i < 1000000; i++ {
+		for i := 0; i < 100; i++ {
 			err = stateDB.Put("state", randString(64), randString(32))
 			if err != nil {
 				fmt.Println(err)
