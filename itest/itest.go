@@ -220,7 +220,7 @@ func (t *ITest) TransferN(num int, accounts []*Account, memoSize int, check bool
 		switch value := (<-res).(type) {
 		case error:
 			if firstErr == nil {
-				firstErr = fmt.Errorf("Failed to send transfer transactions: %v", value)
+				firstErr = fmt.Errorf("failed to send transfer transactions: %v", value)
 			}
 		default:
 			successNum++
@@ -228,6 +228,66 @@ func (t *ITest) TransferN(num int, accounts []*Account, memoSize int, check bool
 	}
 
 	ilog.Infof("Sent %v/%v transfer transactions", successNum, num)
+	return
+}
+
+// PledgeGasN will send n pledge/unpledge transaction concurrently
+func (t *ITest) PledgeGasN(actionType string, num int, accounts []*Account, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v gas transaction...", num)
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				balance, _ := strconv.ParseFloat(A.balance, 64)
+				for balance < 1 {
+					A = accounts[rand.Intn(len(accounts))]
+					balance, _ = strconv.ParseFloat(A.balance, 64)
+				}
+				amount := float64(rand.Int63n(int64(math.Min(1000, balance*100)))+1)/100 + 1.0
+
+				ilog.Debugf("pledge gas %v, amount: %v", A.ID, fmt.Sprintf("%0.8f", amount))
+				var err error
+				action := actionType
+				if action == "rand" {
+					if rand.Int()%2 == 0 {
+						action = "pledge"
+					} else {
+						action = "unpledge"
+					}
+				}
+				if action == "pledge" {
+					err = t.Pledge(A, fmt.Sprintf("%0.8f", amount), check)
+				} else if action == "unpledge" {
+					err = t.Unpledge(A, fmt.Sprintf("%0.8f", amount), check)
+				} else {
+					panic("invalid action " + action)
+				}
+
+				if err == nil {
+					A.AddBalance(-amount)
+				}
+				res <- err
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send transfer transactions: %v", value)
+			}
+		default:
+			successNum++
+		}
+	}
+
+	ilog.Infof("Sent %v/%v gas transactions", successNum, num)
 	return
 }
 
@@ -267,7 +327,7 @@ func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account, memo
 		switch value := (<-res).(type) {
 		case error:
 			if firstErr == nil {
-				firstErr = fmt.Errorf("Failed to send contract transfer transactions: %v", value)
+				firstErr = fmt.Errorf("failed to send contract transfer transactions: %v", value)
 			}
 		default:
 			successNum++
@@ -365,7 +425,7 @@ func (t *ITest) vote(sender *Account, recipient, amount string) error {
 func (t *ITest) CallActionWithRandClient(sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
-	return client.CallAction(sender, contractName, actionName, args...)
+	return client.CallAction(true, sender, contractName, actionName, args...)
 }
 
 // Transfer will transfer token from sender to recipient
@@ -374,6 +434,32 @@ func (t *ITest) Transfer(sender, recipient *Account, token, amount string, memoS
 	client := t.clients[cIndex]
 
 	err := client.Transfer(sender, recipient, token, amount, memoSize, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Pledge will pledge gas for sender
+func (t *ITest) Pledge(sender *Account, amount string, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.Pledge(sender, amount, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Unpledge will unpledge gas for sender
+func (t *ITest) Unpledge(sender *Account, amount string, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.Unpledge(sender, amount, check)
 	if err != nil {
 		return err
 	}
