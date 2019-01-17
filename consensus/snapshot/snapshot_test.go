@@ -26,12 +26,13 @@ func TestSnapshot(t *testing.T) {
 		os.RemoveAll("DB")
 		defer os.RemoveAll("DB")
 		stateDB, err := db.NewMVCCDB("DB/StateDB")
+		So(err, ShouldBeNil)
 
-		if err != nil {
-			fmt.Println(err)
-		}
-		for i := 0; i < 100; i++ {
-			stateDB.Put("state", randString(64), randString(32))
+		for i := 0; i < 1000000; i++ {
+			err = stateDB.Put("state", randString(64), randString(32))
+			if err != nil {
+				fmt.Println(err)
+			}
 		}
 		stateDB.Tag("abc")
 		stateDB.Flush("abc")
@@ -47,6 +48,8 @@ func TestSnapshot(t *testing.T) {
 		}
 		err = ToSnapshot(config)
 		So(err, ShouldBeNil)
+		err = ToFile(config)
+		So(err, ShouldBeNil)
 		os.RemoveAll("DB/StateDB/")
 		err = FromSnapshot(config)
 		So(err, ShouldBeNil)
@@ -55,6 +58,7 @@ func TestSnapshot(t *testing.T) {
 
 func BenchmarkSnapshot(b *testing.B) {
 	os.RemoveAll("DB")
+	defer os.RemoveAll("DB")
 	stateDB, err := db.NewMVCCDB("DB/StateDB")
 
 	if err != nil {
@@ -71,7 +75,6 @@ func BenchmarkSnapshot(b *testing.B) {
 			LdbPath: "DB/",
 		},
 	}
-	defer os.RemoveAll("DB")
 	b.Run("ToSnapshot", func(b *testing.B) {
 		for n := 0; n < b.N; n++ {
 			err = ToSnapshot(config)

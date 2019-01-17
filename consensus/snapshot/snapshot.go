@@ -163,20 +163,21 @@ func ToFile(conf *common.Config) error {
 	}
 	defer db.Close()
 
-	file, err := os.Create(filepath.Join(conf.DB.LdbPath, "Snapshot.iost"))
+	file, err := os.OpenFile(filepath.Join(conf.DB.LdbPath, "Snapshot.iost"), os.O_WRONLY|os.O_CREATE, 0666)
+
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	writer := bufio.NewWriter(file)
 	iter := db.NewIteratorByPrefix([]byte("")).(*leveldb.Iter)
+	writer := bufio.NewWriterSize(file, 100000)
 	for iter.Next() {
 		k := string(iter.Key())
 		v := string(iter.Value())
 		writer.WriteString(k + "\n")
 		writer.WriteString(v + "\n")
 	}
-
+	writer.Flush()
 	return nil
 }
 
