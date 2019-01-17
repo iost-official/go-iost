@@ -275,7 +275,7 @@ func (c *Client) VoteProducer(sender *Account, recipient, amount string) error {
 	return err
 }
 
-// VoteProducer will cancel vote producer by sending transaction
+// CancelVoteProducer will cancel vote producer by sending transaction
 func (c *Client) CancelVoteProducer(sender *Account, recipient, amount string) error {
 	_, err := c.CallAction(sender, "vote_producer.iost", "unvote", sender.ID, recipient, amount)
 	return err
