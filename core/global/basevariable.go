@@ -51,6 +51,7 @@ type BaseVariableImpl struct {
 // New return a BaseVariable instance
 func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if conf.Snapshot.Enable {
+		conf.Snapshot.Enable = false
 		s, err := os.Stat(conf.DB.LdbPath + "BlockChainDB")
 		if err == nil && s.IsDir() {
 			ilog.Warnln("start iserver with the snapshot failed, blockchain db already has.")
@@ -59,7 +60,11 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 			if err == nil && s.IsDir() {
 				ilog.Warnln("start iserver with the snapshot failed, state db already has.")
 			} else {
-				snapshot.FromSnapshot(conf)
+				err = snapshot.FromSnapshot(conf)
+				if err != nil {
+					ilog.Fatalf("start iserver with the snapshot failed, err:%v", err)
+				}
+				conf.Snapshot.Enable = true
 			}
 		}
 	}

@@ -9,8 +9,8 @@ vm:
 db:
   ldbpath: storage/
 snapshot:
-  enable: false
-  filepath: ""
+  enable: true
+  filepath: storage/snapshot.tar.gz
 p2p:
   listenaddr: 0.0.0.0:30000
   seednodes:

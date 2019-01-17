@@ -84,6 +84,10 @@ func main() {
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
+	ilog.Infof("snapshot enable:%v", conf.Snapshot.Enable)
+	if conf.Snapshot.Enable {
+		ilog.Infof("snapshot file path:%v", conf.Snapshot.FilePath)
+	}
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {
