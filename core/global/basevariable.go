@@ -53,15 +53,15 @@ func New(conf *common.Config) (*BaseVariableImpl, error) {
 	if conf.Snapshot.Enable {
 		s, err := os.Stat(conf.DB.LdbPath + "BlockChainDB")
 		if err == nil && s.IsDir() {
-			ilog.Fatal("start iserver with the snapshot failed, blockchain db already has.")
+			ilog.Warnln("start iserver with the snapshot failed, blockchain db already has.")
+		} else {
+			s, err = os.Stat(conf.DB.LdbPath + "StateDB")
+			if err == nil && s.IsDir() {
+				ilog.Warnln("start iserver with the snapshot failed, state db already has.")
+			} else {
+				snapshot.FromSnapshot(conf)
+			}
 		}
-
-		s, err = os.Stat(conf.DB.LdbPath + "StateDB")
-		if err == nil && s.IsDir() {
-			ilog.Fatal("start iserver with the snapshot failed, state db already has.")
-		}
-
-		snapshot.FromSnapshot(conf)
 	}
 
 	blockChain, err := block.NewBlockChain(conf.DB.LdbPath + "BlockChainDB")

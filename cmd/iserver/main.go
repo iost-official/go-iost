@@ -29,9 +29,8 @@ import (
 )
 
 var (
-	configFile   = flag.StringP("config", "f", "", "Configuration `file`")
-	snapshotFile = flag.StringP("snapshot", "s", "", "Snapshot file")
-	help         = flag.BoolP("help", "h", false, "Display available options")
+	configFile = flag.StringP("config", "f", "", "Configuration `file`")
+	help       = flag.BoolP("help", "h", false, "Display available options")
 )
 
 func initMetrics(metricsConfig *common.MetricsConfig) error {
@@ -78,11 +77,6 @@ func main() {
 	}
 
 	conf := common.NewConfig(*configFile)
-
-	if *snapshotFile != "" {
-		conf.Snapshot.Enable = true
-		conf.Snapshot.FilePath = *snapshotFile
-	}
 
 	global.SetGlobalConf(conf)
 

@@ -8,6 +8,9 @@ vm:
   loglevel: ""
 db:
   ldbpath: storage/
+snapshot:
+  enable: false
+  filepath: ""
 p2p:
   listenaddr: 0.0.0.0:30000
   seednodes:
