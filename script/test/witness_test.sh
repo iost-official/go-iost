@@ -41,7 +41,7 @@ function gen_block_success
 {
     local i
     start=$(get_now_height)
-    end=$((${start} + 2200))
+    end=$((${start} + 2400))
 
     for (( i = start; i < end; i++ ))
     do
