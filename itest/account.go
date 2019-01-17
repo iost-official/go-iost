@@ -19,6 +19,7 @@ import (
 type Account struct {
 	ID      string
 	balance string
+	vote    string
 	rw      sync.RWMutex
 	key     *Key
 }
@@ -27,6 +28,7 @@ type Account struct {
 type AccountJSON struct {
 	ID        string `json:"id"`
 	Balance   string `json:"balance"`
+	Vote      string `json:"vote"`
 	Seckey    string `json:"seckey"`
 	Algorithm string `json:"algorithm"`
 }
@@ -35,10 +37,12 @@ type AccountJSON struct {
 func NewAccount(id string, seckey string, algorithm string) *Account {
 	account := &Account{
 		ID: id,
-		key: NewKey(
+	}
+	if seckey != "" {
+		account.key = NewKey(
 			common.Base58Decode(seckey),
 			crypto.NewAlgorithm(algorithm),
-		),
+		)
 	}
 
 	return account
@@ -46,7 +50,7 @@ func NewAccount(id string, seckey string, algorithm string) *Account {
 
 // LoadAccounts will load accounts from file
 func LoadAccounts(file string) ([]*Account, error) {
-	ilog.Infof("Load accounts from file...")
+	ilog.Infof("Load accounts from %v", file)
 
 	var data []byte
 	var err error
@@ -133,10 +137,13 @@ func (a *Account) UnmarshalJSON(b []byte) error {
 
 	a.ID = aux.ID
 	a.balance = aux.Balance
-	a.key = NewKey(
-		common.Base58Decode(aux.Seckey),
-		crypto.NewAlgorithm(aux.Algorithm),
-	)
+	a.vote = aux.Vote
+	if aux.Seckey != "" {
+		a.key = NewKey(
+			common.Base58Decode(aux.Seckey),
+			crypto.NewAlgorithm(aux.Algorithm),
+		)
+	}
 	return nil
 }
 
@@ -145,6 +152,7 @@ func (a *Account) MarshalJSON() ([]byte, error) {
 	aux := &AccountJSON{
 		ID:        a.ID,
 		Balance:   a.balance,
+		Vote:      a.vote,
 		Seckey:    common.Base58Encode(a.key.Seckey),
 		Algorithm: a.key.Algorithm.String(),
 	}
