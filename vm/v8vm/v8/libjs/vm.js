@@ -79,14 +79,18 @@ const _IOSTInstruction_counter = new IOSTInstruction;
 // + - * / % **, | & ^ >> >>> <<, || &&, == != === !== > >= < <=, instanceOf in
 const _IOSTBinaryOp = function(left, right, op) {
     if ((typeof left === "string" || typeof right === "string") &&
-        (op === "+" || op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
+        (op === "==" || op === "!=" || op === "===" || op === "!==" || op === "<" || op === "<=" || op === ">" || op === ">=")) {
         _IOSTInstruction_counter.incr(left === null || left === undefined || left.toString().length <= 0 ? 0 : left.toString().length);
         _IOSTInstruction_counter.incr(right === null || right === undefined || right.toString().length <= 0 ? 0 : right.toString().length);
     }
     _IOSTInstruction_counter.incr(3);
     switch (op) {
         case '+':
-            return left + right;
+            const ret = left + right;
+            if (typeof ret === "string") {
+                _IOSTInstruction_counter.incr(ret.length);
+            }
+            return ret;
         case '-':
             return left - right;
         case '*':
