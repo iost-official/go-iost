@@ -276,6 +276,18 @@ func (c *Client) Unpledge(sender *Account, amount string, check bool) error {
 	return err
 }
 
+// BuyRAM ...
+func (c *Client) BuyRAM(sender *Account, amount int64, check bool) error {
+	_, err := c.CallAction(check, sender, "ram.iost", "buy", sender.ID, sender.ID, amount)
+	return err
+}
+
+// SellRAM ...
+func (c *Client) SellRAM(sender *Account, amount int64, check bool) error {
+	_, err := c.CallAction(check, sender, "ram.iost", "sell", sender.ID, sender.ID, amount)
+	return err
+}
+
 // Transfer will transfer token by sending transaction
 func (c *Client) Transfer(sender, recipient *Account, token, amount string, memoSize int, check bool) error {
 	memo := make([]byte, memoSize)

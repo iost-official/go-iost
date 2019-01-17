@@ -46,6 +46,7 @@ const (
 	TransferTx
 	ContractTransferTx
 	GasTx
+	RAMTx
 )
 
 // BenchmarkAction is the action of benchmark.
@@ -72,6 +73,8 @@ var BenchmarkAction = func(c *cli.Context) error {
 		}
 	case "g", "gas":
 		txType = GasTx
+	case "r", "ram":
+		txType = RAMTx
 	default:
 		return fmt.Errorf("wrong transaction type: %v", txType)
 	}
@@ -107,6 +110,8 @@ var BenchmarkAction = func(c *cli.Context) error {
 			num, err = it.ContractTransferN(cid, tps, accounts, memoSize, false)
 		} else if txType == GasTx {
 			num, err = it.PledgeGasN("rand", tps, accounts, false)
+		} else if txType == RAMTx {
+			num, err = it.BuyRAMN("rand", tps, accounts, false)
 		} else {
 			panic("invalid tx type, check --type flag")
 		}

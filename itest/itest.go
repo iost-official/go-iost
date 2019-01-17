@@ -2,6 +2,7 @@ package itest
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/core/contract"
 	"math"
 	"math/rand"
 	"strconv"
@@ -291,6 +292,60 @@ func (t *ITest) PledgeGasN(actionType string, num int, accounts []*Account, chec
 	return
 }
 
+// BuyRAMN will send n buy/sell ram transaction concurrently
+func (t *ITest) BuyRAMN(actionType string, num int, accounts []*Account, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v ram transaction...", num)
+
+	AmountLimit = []*contract.Amount{{Token: "iost", Val: "1000"}, {Token: "ram", Val: "1000"}}
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				amount := rand.Int63n(1000) + 10
+
+				ilog.Debugf("buy/sell ram %v, amount: %v", A.ID, amount)
+				var err error
+				action := actionType
+				if action == "rand" {
+					if rand.Int()%2 == 0 {
+						action = "buy"
+					} else {
+						action = "sell"
+					}
+				}
+				if action == "buy" {
+					err = t.BuyRAM(A, amount, check)
+				} else if action == "sell" {
+					err = t.SellRAM(A, amount, check)
+				} else {
+					panic("invalid action " + action)
+				}
+
+				res <- err
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send transfer transactions: %v", value)
+			}
+		default:
+			successNum++
+		}
+	}
+
+	ilog.Infof("Sent %v/%v ram transactions", successNum, num)
+	return
+}
+
 // ContractTransferN will send n contract transfer transaction concurrently
 func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
 	ilog.Infof("Sending %v contract transfer transaction...", num)
@@ -460,6 +515,32 @@ func (t *ITest) Unpledge(sender *Account, amount string, check bool) error {
 	client := t.clients[cIndex]
 
 	err := client.Unpledge(sender, amount, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// BuyRAM will buy ram for sender
+func (t *ITest) BuyRAM(sender *Account, amount int64, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.BuyRAM(sender, amount, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SellRAM will sell ram for sender
+func (t *ITest) SellRAM(sender *Account, amount int64, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.SellRAM(sender, amount, check)
 	if err != nil {
 		return err
 	}
