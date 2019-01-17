@@ -254,13 +254,13 @@ func (c *Client) CallAction(check bool, sender *Account, contractName, actionNam
 
 // VoteProducer will vote producer by sending transaction
 func (c *Client) VoteProducer(sender *Account, recipient, amount string) error {
-	_, err := c.CallAction(true, sender, "vote_producer.iost", "VoteProducer", sender.ID, recipient, amount)
+	_, err := c.CallAction(true, sender, "vote_producer.iost", "vote", sender.ID, recipient, amount)
 	return err
 }
 
-// vote ...
-func (c *Client) vote(sender *Account, voteID, recipient, amount string) error {
-	_, err := c.CallAction(true, sender, "vote.iost", "vote", voteID, sender.ID, recipient, amount)
+// CancelVoteProducer will vote producer by sending transaction
+func (c *Client) CancelVoteProducer(sender *Account, recipient, amount string) error {
+	_, err := c.CallAction(true, sender, "vote_producer.iost", "unvote", sender.ID, recipient, amount)
 	return err
 }
 
