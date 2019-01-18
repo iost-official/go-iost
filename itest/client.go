@@ -127,7 +127,7 @@ func (c *Client) SendTransaction(transaction *Transaction, check bool) (string, 
 		return "", err
 	}
 	if check {
-		ilog.Debugf("transaction size: %vbytes", len(transaction.ToBytes(tx.Full)))
+		ilog.Debugf("transaction size: %v bytes", len(transaction.ToBytes(tx.Full)))
 
 		ilog.Debugf("Check transaction receipt for %v...", resp.GetHash())
 		if err := c.checkTransaction(resp.GetHash()); err != nil {
@@ -163,7 +163,7 @@ func (c *Client) checkTransaction(hash string) error {
 }
 
 // CreateAccount will create account by sending transaction
-func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Account, error) {
+func (c *Client) CreateAccount(creator *Account, name string, key *Key, check bool) (*Account, error) {
 	k := key.ReadablePubkey()
 	action1 := tx.NewAction(
 		"auth.iost",
@@ -198,10 +198,10 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	}
 
 	ilog.Debugf("Sending create account transaction for %v...", name)
-	if _, err := c.SendTransaction(st, true); err != nil {
+	if _, err := c.SendTransaction(st, check); err != nil {
 		return nil, err
 	}
-	ilog.Debugf("Sended create account transaction for %v!", name)
+	ilog.Debugf("Sent create account transaction for %v!", name)
 
 	account := &Account{
 		ID:      name,
@@ -220,29 +220,12 @@ func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount
 	memo, _ = json.Marshal(memo)
 	// Get rid of the beginning quote and cut to the string of given size.
 	memo = memo[1 : memoSize+1]
-	action := tx.NewAction(
-		cid,
-		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, sender.ID, recipient.ID, amount, string(memo)),
-	)
-
-	actions := []*tx.Action{action}
-	transaction := NewTransaction(actions)
-
-	st, err := sender.Sign(transaction)
-	if err != nil {
-		return err
-	}
-
-	if _, err := c.SendTransaction(st, check); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := c.CallAction(check, sender, cid, "transfer", sender.ID, recipient.ID, amount, string(memo))
+	return err
 }
 
 // CallAction send a tx with given actions
-func (c *Client) CallAction(sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
+func (c *Client) CallAction(check bool, sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
 	argsBytes, err := json.Marshal(args)
 	if err != nil {
 		return "", err
@@ -261,7 +244,7 @@ func (c *Client) CallAction(sender *Account, contractName, actionName string, ar
 		return "", err
 	}
 
-	hash, err := c.SendTransaction(st, true)
+	hash, err := c.SendTransaction(st, check)
 	if err != nil {
 		return "", err
 	}
@@ -271,13 +254,37 @@ func (c *Client) CallAction(sender *Account, contractName, actionName string, ar
 
 // VoteProducer will vote producer by sending transaction
 func (c *Client) VoteProducer(sender *Account, recipient, amount string) error {
-	_, err := c.CallAction(sender, "vote_producer.iost", "VoteProducer", sender.ID, recipient, amount)
+	_, err := c.CallAction(true, sender, "vote_producer.iost", "vote", sender.ID, recipient, amount)
 	return err
 }
 
-// vote ...
-func (c *Client) vote(sender *Account, voteID, recipient, amount string) error {
-	_, err := c.CallAction(sender, "vote.iost", "vote", voteID, sender.ID, recipient, amount)
+// CancelVoteProducer will vote producer by sending transaction
+func (c *Client) CancelVoteProducer(sender *Account, recipient, amount string) error {
+	_, err := c.CallAction(true, sender, "vote_producer.iost", "unvote", sender.ID, recipient, amount)
+	return err
+}
+
+// Pledge ...
+func (c *Client) Pledge(sender *Account, amount string, check bool) error {
+	_, err := c.CallAction(check, sender, "gas.iost", "pledge", sender.ID, sender.ID, amount)
+	return err
+}
+
+// Unpledge ...
+func (c *Client) Unpledge(sender *Account, amount string, check bool) error {
+	_, err := c.CallAction(check, sender, "gas.iost", "unpledge", sender.ID, sender.ID, amount)
+	return err
+}
+
+// BuyRAM ...
+func (c *Client) BuyRAM(sender *Account, amount int64, check bool) error {
+	_, err := c.CallAction(check, sender, "ram.iost", "buy", sender.ID, sender.ID, amount)
+	return err
+}
+
+// SellRAM ...
+func (c *Client) SellRAM(sender *Account, amount int64, check bool) error {
+	_, err := c.CallAction(check, sender, "ram.iost", "sell", sender.ID, sender.ID, amount)
 	return err
 }
 
@@ -289,47 +296,15 @@ func (c *Client) Transfer(sender, recipient *Account, token, amount string, memo
 	memo, _ = json.Marshal(memo)
 	// Get rid of the beginning quote and cut to the string of given size.
 	memo = memo[1 : memoSize+1]
-	action := tx.NewAction(
-		"token.iost",
-		"transfer",
-		fmt.Sprintf(`["%v", "%v", "%v", "%v", "%v"]`, token, sender.ID, recipient.ID, amount, string(memo)),
-	)
-
-	actions := []*tx.Action{action}
-	transaction := NewTransaction(actions)
-
-	st, err := sender.Sign(transaction)
-	if err != nil {
-		return err
-	}
-
-	if _, err := c.SendTransaction(st, check); err != nil {
-		return err
-	}
-
-	return nil
+	_, err := c.CallAction(check, sender, "token.iost", "transfer", token, sender.ID, recipient.ID, amount, string(memo))
+	return err
 }
 
 // SetContract will set the contract by sending transaction
 func (c *Client) SetContract(creator *Account, contract *Contract) (string, error) {
-	action := tx.NewAction(
-		"system.iost",
-		"setCode",
-		fmt.Sprintf(`["%v"]`, contract),
-	)
-
-	actions := []*tx.Action{action}
-	transaction := NewTransaction(actions)
-
-	st, err := creator.Sign(transaction)
+	hash, err := c.CallAction(true, creator, "system.iost", "setCode", contract.String())
 	if err != nil {
 		return "", err
 	}
-
-	hash, err := c.SendTransaction(st, true)
-	if err != nil {
-		return "", err
-	}
-
 	return fmt.Sprintf("Contract%v", hash), nil
 }

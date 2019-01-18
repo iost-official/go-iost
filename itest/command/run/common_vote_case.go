@@ -88,7 +88,7 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 	}
 
 	checkReturn := func(actionName string, expected string, args ...interface{}) error {
-		hash, err := client.CallAction(bank, "vote.iost", actionName, args...)
+		hash, err := client.CallAction(true, bank, "vote.iost", actionName, args...)
 		if err != nil {
 			return err
 		}

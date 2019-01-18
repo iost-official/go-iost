@@ -1,5 +1,5 @@
 acc:
-  id: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b 
+  id: producer000
   seckey: 1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB
   algorithm: ed25519
 genesis: /var/lib/iserver/genesis

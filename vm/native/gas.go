@@ -49,7 +49,7 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 		finalCost.AddAssign(cost)
 		newPledge := pledged.Sub(unpledgeAmount)
 		if newPledge.IsNegative() {
-			return finalCost, fmt.Errorf("you cannot unpledge more than your pledge %v > %v", unpledgeAmount, pledged)
+			return finalCost, fmt.Errorf("you cannot unpledge more than your pledge %v > %v", unpledgeAmount.ToString(), pledged.ToString())
 		}
 	}
 
@@ -235,9 +235,6 @@ var (
 			cost.AddAssign(cost0)
 			if pledged.IsZero() {
 				return nil, cost, fmt.Errorf("%v did not pledge for %v", pledger, gasUser)
-			}
-			if pledged.LessThan(unpledgeAmount) {
-				unpledgeAmount = pledged.Neg()
 			}
 
 			cost0, err = pledge(h, pledger, gasUser, unpledgeAmount.Neg())
