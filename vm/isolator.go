@@ -27,6 +27,7 @@ type Isolator struct {
 	blockBaseCtx  *host.Context
 	genesisMode   bool
 	blockBaseMode bool
+	limit         time.Duration
 }
 
 var staticMonitor = NewMonitor()
@@ -57,6 +58,7 @@ func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 // PrepareTx read tx and ready to run
 func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	i.t = t
+	i.limit = limit
 	i.h.SetDeadline(time.Now().Add(limit))
 	i.publisherID = t.Publisher
 	l := len(t.ToBytes(tx.Full))
@@ -155,6 +157,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 
 // Run actions in tx
 func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
+	startTime := time.Now()
 	vmGasLimit := i.t.GasLimit/i.t.GasRatio - i.h.GasPaid()
 	if vmGasLimit <= 0 {
 		ilog.Fatalf("vmGasLimit < 0. It should not happen. %v / %v < %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPaid())
@@ -229,7 +232,9 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		i.h.PayCost(actionCost, i.publisherID)
 
 		if status.Code != tx.Success {
-			ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
+			if !(status.Code == tx.ErrorTimeout && i.limit < common.MaxTxTimeLimit) {
+				ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
+			}
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
 			i.h.ClearRAMCosts()
@@ -242,6 +247,8 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		vmGasLimit -= actionCost.ToGas()
 		i.h.Context().GSet("gas_limit", vmGasLimit)
 	}
+	endTime := time.Now()
+	ilog.Debugf("tx %v time %v", i.t.Actions, endTime.Sub(startTime))
 	return i.tr, nil
 }
 

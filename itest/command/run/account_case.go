@@ -25,7 +25,7 @@ var AccountCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	accounts, err := it.CreateAccountN(anum)
+	accounts, err := it.CreateAccountN(anum, false, true)
 	if err != nil {
 		return err
 	}
