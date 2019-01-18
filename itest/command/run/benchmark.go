@@ -82,6 +82,9 @@ var BenchmarkAction = func(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+		itest.InitAmount = "10"
+		itest.InitPledge = "20"
+		itest.InitRAM    = "1000"
 	default:
 		return fmt.Errorf("wrong transaction type: %v", txType)
 	}
