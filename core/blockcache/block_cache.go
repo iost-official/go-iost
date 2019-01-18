@@ -10,6 +10,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
@@ -76,7 +77,6 @@ func (bcn *BlockCacheNode) SetParent(p *BlockCacheNode) {
 	bcn.parent = p
 	bcn.rw.Unlock()
 }
-
 func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	if child != nil {
 		bcn.Children[child] = true
@@ -191,16 +191,16 @@ type BlockCache interface {
 
 // BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct { //nolint:golint
-	linkRW       sync.RWMutex
-	linkedRoot   *BlockCacheNode
-	singleRoot   *BlockCacheNode
-	headRW       sync.RWMutex
-	head         *BlockCacheNode
-	hash2node    *sync.Map // map[string]*BlockCacheNode
-	leaf         map[*BlockCacheNode]int64
-	baseVariable global.BaseVariable
-	stateDB      db.MVCCDB
-	wal          *wal.WAL
+	linkRW     sync.RWMutex
+	linkedRoot *BlockCacheNode
+	singleRoot *BlockCacheNode
+	headRW     sync.RWMutex
+	head       *BlockCacheNode
+	hash2node  *sync.Map // map[string]*BlockCacheNode
+	leaf       map[*BlockCacheNode]int64
+	blockChain block.Chain
+	stateDB    db.MVCCDB
+	wal        *wal.WAL
 }
 
 // CleanDir used in test to clean dir
@@ -239,35 +239,44 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		return nil, err
 	}
 	bc := BlockCacheImpl{
-		linkedRoot:   NewBCN(nil, nil),
-		singleRoot:   NewBCN(nil, nil),
-		hash2node:    new(sync.Map),
-		leaf:         make(map[*BlockCacheNode]int64),
-		baseVariable: baseVariable,
-		stateDB:      baseVariable.StateDB().Fork(),
-		wal:          w,
+		linkedRoot: NewBCN(nil, nil),
+		singleRoot: NewBCN(nil, nil),
+		hash2node:  new(sync.Map),
+		leaf:       make(map[*BlockCacheNode]int64),
+		blockChain: baseVariable.BlockChain(),
+		stateDB:    baseVariable.StateDB().Fork(),
+		wal:        w,
 	}
 	bc.linkedRoot.Head.Number = -1
-	lib, err := baseVariable.BlockChain().Top()
-	if err == nil {
-		ilog.Info("Got LIB: ", lib.Head.Number)
-		bc.linkedRoot = NewBCN(nil, lib)
-		bc.linkedRoot.Type = Linked
-		bc.singleRoot.Type = Virtual
-		bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
-		bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
 
-		if err := bc.updatePending(bc.linkedRoot); err != nil {
-			return nil, err
-		}
-		bc.linkedRoot.LibWitnessHandle()
-		ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
-		for _, v := range bc.linkedRoot.Active() {
-			ilog.Info("ActiveWitness:", v)
-		}
-		for _, v := range bc.linkedRoot.Pending() {
-			ilog.Info("PendingWitness:", v)
-		}
+	var lib *block.Block
+	if baseVariable.Config().Snapshot.Enable {
+		lib, err = snapshot.Load(bc.stateDB)
+	} else {
+		lib, err = bc.blockChain.Top()
+	}
+
+	if err != nil {
+		ilog.Errorf("lib not found. err:%v", err)
+	}
+
+	ilog.Info("Got LIB: ", lib.Head.Number)
+	bc.linkedRoot = NewBCN(nil, lib)
+	bc.linkedRoot.Type = Linked
+	bc.singleRoot.Type = Virtual
+	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
+	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
+
+	if err := bc.updatePending(bc.linkedRoot); err != nil {
+		return nil, err
+	}
+	bc.linkedRoot.LibWitnessHandle()
+	ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
+	for _, v := range bc.linkedRoot.Active() {
+		ilog.Info("ActiveWitness:", v)
+	}
+	for _, v := range bc.linkedRoot.Pending() {
+		ilog.Info("PendingWitness:", v)
 	}
 	bc.head = bc.linkedRoot
 
@@ -380,7 +389,6 @@ func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
-
 	ok := bc.stateDB.Checkout(string(h.HeadHash()))
 	if ok {
 		if err := h.UpdatePending(bc.stateDB); err != nil {
@@ -392,7 +400,7 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 			return err
 		}
 	} else {
-		return errors.New("failed to state db")
+		return errors.New("failed to checkout state db")
 	}
 	return nil
 }
@@ -518,13 +526,14 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	}
 	//confirm retain to db
 	if retain.Block != nil {
-		err := bc.baseVariable.BlockChain().Push(retain.Block)
+		err := bc.blockChain.Push(retain.Block)
 		if err != nil {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 			return err
 		}
+
 		ilog.Debug("confirm: ", retain.Head.Number)
-		err = bc.baseVariable.StateDB().Flush(string(retain.HeadHash()))
+		err = bc.stateDB.Flush(string(retain.HeadHash()))
 
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
@@ -535,9 +544,9 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		retain.LibWitnessHandle()
 		bc.SetLinkedRoot(retain)
 
-		metricsTxTotal.Set(float64(bc.baseVariable.BlockChain().TxTotal()), nil)
+		metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
 
-		if blockchainDBSize, err := bc.baseVariable.BlockChain().Size(); err != nil {
+		if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
 			ilog.Warnf("Get BlockChainDB size failed: %v", err)
 		} else {
 			metricsDBSize.Set(
@@ -548,7 +557,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			)
 		}
 
-		if stateDBSize, err := bc.baseVariable.StateDB().Size(); err != nil {
+		if stateDBSize, err := bc.stateDB.Size(); err != nil {
 			ilog.Warnf("Get StateDB size failed: %v", err)
 		} else {
 			metricsDBSize.Set(

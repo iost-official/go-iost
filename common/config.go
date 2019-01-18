@@ -6,7 +6,7 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	yaml "gopkg.in/yaml.v2"
 )
 
 // Constant of limit
@@ -113,6 +113,12 @@ type MetricsConfig struct {
 	ID       string
 }
 
+// SnapshotConfig is the config of snapshot
+type SnapshotConfig struct {
+	Enable   bool
+	FilePath string
+}
+
 // DebugConfig is the config of debug.
 type DebugConfig struct {
 	ListenAddr string
@@ -126,16 +132,17 @@ type VersionConfig struct {
 
 // Config provide all configuration for the application
 type Config struct {
-	ACC     *ACCConfig
-	Genesis string
-	VM      *VMConfig
-	DB      *DBConfig
-	P2P     *P2PConfig
-	RPC     *RPCConfig
-	Log     *LogConfig
-	Metrics *MetricsConfig
-	Debug   *DebugConfig
-	Version *VersionConfig
+	ACC      *ACCConfig
+	Genesis  string
+	VM       *VMConfig
+	DB       *DBConfig
+	P2P      *P2PConfig
+	RPC      *RPCConfig
+	Log      *LogConfig
+	Metrics  *MetricsConfig
+	Debug    *DebugConfig
+	Version  *VersionConfig
+	Snapshot *SnapshotConfig
 }
 
 // LoadYamlAsViper load yaml file as viper object
@@ -162,7 +169,6 @@ func NewConfig(configfile string) *Config {
 	if err := v.Unmarshal(c); err != nil {
 		ilog.Fatalf("Unable to decode into struct, %v", err)
 	}
-
 	return c
 }
 

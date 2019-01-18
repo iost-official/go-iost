@@ -8,6 +8,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -196,7 +197,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil || txr.Status.Code != tx.Success {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
 	}
-	blk := block.Block{
+	blk := &block.Block{
 		Head:     &blockHead,
 		Sign:     &crypto.Signature{},
 		Txs:      []*tx.Tx{trx},
@@ -208,6 +209,10 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		return nil, err
 	}
+	err = snapshot.Save(db, blk)
+	if err != nil {
+		return nil, err
+	}
 	db.Tag(string(blk.HeadHash()))
-	return &blk, nil
+	return blk, nil
 }

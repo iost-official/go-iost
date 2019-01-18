@@ -29,7 +29,7 @@ import (
 )
 
 var (
-	configfile = flag.StringP("config", "f", "", "Configuration `file`")
+	configFile = flag.StringP("config", "f", "", "Configuration `file`")
 	help       = flag.BoolP("help", "h", false, "Display available options")
 )
 
@@ -72,17 +72,22 @@ func main() {
 		flag.Usage()
 	}
 
-	if *configfile == "" {
-		*configfile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
+	if *configFile == "" {
+		*configFile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
 	}
 
-	conf := common.NewConfig(*configfile)
+	conf := common.NewConfig(*configFile)
+
 	global.SetGlobalConf(conf)
 
 	initLogger(conf.Log)
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
+	ilog.Infof("snapshot enable:%v", conf.Snapshot.Enable)
+	if conf.Snapshot.Enable {
+		ilog.Infof("snapshot file path:%v", conf.Snapshot.FilePath)
+	}
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {
