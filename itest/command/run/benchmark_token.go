@@ -80,28 +80,6 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 	}
 	tps := c.Int("tps")
 
-	hashCh := make(chan *hashItem, tps * int(itest.Timeout.Seconds()))
-	go func(hashCh chan *hashItem) {
-		counter := 0
-		failedCounter := 0
-		for item := range hashCh {
-			client := it.GetClients()[rand.Intn(len(it.GetClients()))]
-			_, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
-			counter ++;
-			if err != nil {
-				ilog.Errorf("check transaction failed, %v", err)
-				failedCounter ++;
-			}
-			if counter % 1000 == 0 {
-				ilog.Warnf("check %v transaction, %v successful, %v failed.", counter, counter - failedCounter, failedCounter)
-			}
-			if len(hashCh) > 40 * tps {
-				ilog.Warnf("hash ch size too large %v", len(hashCh))
-			}
-		}
-	}(hashCh)
-
-
 	sig := make(chan os.Signal, 1)
 	signal.Notify(sig, syscall.SIGINT, syscall.SIGTERM, syscall.SIGQUIT)
 
@@ -124,6 +102,30 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 		tokenMap["iost"].acclist = append(tokenMap["iost"].acclist, acc.ID)
 	}
 	tokenPrefix := "t" + strconv.FormatInt(time.Now().UnixNano(), 10)[14:]
+	checkReceiptConcurrent := 64
+
+	hashCh := make(chan *hashItem, 4 * tps * int(itest.Timeout.Seconds()))
+	for c := 0; c < checkReceiptConcurrent; c++ {
+		go func(hashCh chan *hashItem) {
+			counter := 0
+			failedCounter := 0
+			for item := range hashCh {
+				client := it.GetClients()[rand.Intn(len(it.GetClients()))]
+				_, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
+				counter ++;
+				if err != nil {
+					ilog.Errorf("check transaction failed, %v", err)
+					failedCounter ++;
+				}
+				if counter%1000 == 0 {
+					ilog.Warnf("check %v transaction, %v successful, %v failed.", counter, counter-failedCounter, failedCounter)
+				}
+				if len(hashCh) > 3 * tps * int(itest.Timeout.Seconds()) {
+					ilog.Infof("hash ch size too large %v", len(hashCh))
+				}
+			}
+		}(hashCh)
+	}
 
 	contractName := "token.iost"
 	for {

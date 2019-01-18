@@ -13,8 +13,8 @@ import (
 	"math/rand"
 	"github.com/iost-official/go-iost/core/tx"
 	"strconv"
-	"math"
 	"sync"
+	"math"
 	"encoding/json"
 )
 
@@ -86,67 +86,72 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 	total := 0
 	slotTotal := 0
 	slotStartTime := startTime
-	issueNumber := 20
+	issueNumber := 5
+	checkReceiptConcurrent := 64
 
 	tokenList := []string{}
 	tokenMap := make(map[string]*token721Info)
 	tokenPrefix := "t" + strconv.FormatInt(time.Now().UnixNano(), 10)[14:]
 	var tokenMutex sync.Mutex
 
-	hashCh := make(chan *hashItem, tps * int(itest.Timeout.Seconds()))
-	go func(hashCh chan *hashItem) {
-		counter := 0
-		failedCounter := 0
-		for item := range hashCh {
-			client := it.GetClients()[rand.Intn(len(it.GetClients()))]
-			r, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
-			ilog.Debugf("receipt: %v", r)
-			for i := 0; i < len(r.Receipts); i++ {
-				if r.Receipts[i].FuncName == "token721.iost/issue" {
-					args := make([]string, 3)
-					err := json.Unmarshal([]byte(r.Receipts[i].Content), &args)
-					if err != nil {
-						continue
-					}
-					ilog.Infof("got receipt %v %v", r.Receipts[i], args)
-					tokenMutex.Lock()
-					tokenSym := args[0]
-					acc := args[1]
-					for j := 0; j < len(r.Returns); j++ {
-						ret := r.Returns[j]
-						ilog.Infof("got receipt, acc %v tokensym %v ret %v ", acc, tokenSym, ret, ret[0], ret[1], ret[2], ret[3])
-						ret = ret[2:(len(ret) - 4)]
-						if _, ok := tokenMap[tokenSym].balance[acc]; !ok {
-							tokenMap[tokenSym].balance[acc] = make([]string, 0)
-							tokenMap[tokenSym].acclist = append(tokenMap[tokenSym].acclist, acc)
+	hashCh := make(chan *hashItem, 4 * tps * int(itest.Timeout.Seconds()))
+
+	for c := 0; c < checkReceiptConcurrent; c++ {
+		go func(hashCh chan *hashItem) {
+			counter := 0
+			failedCounter := 0
+			for item := range hashCh {
+				client := it.GetClients()[rand.Intn(len(it.GetClients()))]
+				r, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
+				ilog.Debugf("receipt: %v", r)
+				counter ++;
+				if err != nil {
+					ilog.Errorf("check transaction failed, %v", err)
+					failedCounter ++;
+				} else {
+					for i := 0; i < len(r.Receipts); i++ {
+						if r.Receipts[i].FuncName == "token721.iost/issue" {
+							args := make([]string, 3)
+							err := json.Unmarshal([]byte(r.Receipts[i].Content), &args)
+							if err != nil {
+								continue
+							}
+							ilog.Debugf("got receipt %v %v", r.Receipts[i], args)
+							tokenMutex.Lock()
+							tokenSym := args[0]
+							acc := args[1]
+							for j := 0; j < len(r.Returns); j++ {
+								ret := r.Returns[j]
+								ret = ret[2:(len(ret) - 2)]
+								ilog.Debugf("got receipt, acc %v tokensym %v ret %v ", acc, tokenSym, ret)
+								if _, ok := tokenMap[tokenSym].balance[acc]; !ok {
+									tokenMap[tokenSym].balance[acc] = make([]string, 0)
+									tokenMap[tokenSym].acclist = append(tokenMap[tokenSym].acclist, acc)
+								}
+								tokenMap[tokenSym].balance[acc] = append(tokenMap[tokenSym].balance[acc], ret)
+								retn, _ := strconv.ParseInt(ret, 10, 32)
+								tokenMap[tokenSym].supply = int(math.Max(float64(tokenMap[tokenSym].supply), float64(retn)))
+							}
+							tokenMutex.Unlock()
+							break
 						}
-						tokenMap[tokenSym].balance[acc] = append(tokenMap[tokenSym].balance[acc], ret)
-						retn, _ := strconv.ParseInt(ret, 10, 32)
-						tokenMap[tokenSym].supply = int(math.Max(float64(tokenMap[tokenSym].supply), float64(retn)))
 					}
-					tokenMutex.Unlock()
-					break
+				}
+				if counter % 1000 == 0 {
+					ilog.Warnf("check %v transaction, %v successful, %v failed. channel size %v", counter, counter - failedCounter, failedCounter, len(hashCh))
+				}
+				if len(hashCh) > 3 * tps * int(itest.Timeout.Seconds()) {
+					ilog.Infof("hash ch size too large %v", len(hashCh))
 				}
 			}
-			counter ++;
-			if err != nil {
-				ilog.Errorf("check transaction failed, %v", err)
-				failedCounter ++;
-			}
-			if counter % 1000 == 0 {
-				ilog.Warnf("check %v transaction, %v successful, %v failed.", counter, counter - failedCounter, failedCounter)
-			}
-			if len(hashCh) > 40 * tps {
-				ilog.Warnf("hash ch size too large %v", len(hashCh))
-			}
-		}
-	}(hashCh)
+		}(hashCh)
+	}
 
 	contractName := "token721.iost"
 	for {
 		trxs := make([]*itest.Transaction, 0)
 		errList := []error{}
-
+		tokenMutex.Lock()
 		for num := 0; num < tps; num++ {
 			// create 1, issue 1000, transfer 1000, balanceOf 100, ownerOf 100, tokenOfOwner 100, tokenMetadata 100
 			tIndex := rand.Intn(2400)
@@ -184,9 +189,12 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 					}
 				}
 				break
-			case tIndex <= 1000 || len(tokenMap[tokenList[0]].balance) < 100:
+			case tIndex <= 1000 || len(tokenMap[tokenList[0]].balance) < 10:
 				abiName = issueToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
+				if len(tokenMap[tokenList[0]].balance) < 10 {
+					tokenSym = tokenList[0]
+				}
 				issuer := accountMap[tokenMap[tokenSym].issuer]
 				to := accounts[rand.Intn(len(accounts))]
 				act0 := tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, "admin", issuer.ID, 1000))
@@ -301,7 +309,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 			case tIndex <= 2300:
 				abiName = tokenOfOwnerToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
-				if tokenMap[tokenSym].supply == 0 {
+				if len(tokenMap[tokenSym].balance) == 0 {
 					tokenSym = tokenList[0]
 				}
 				var from *itest.Account
@@ -320,7 +328,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 					trxs = append(trxs, trx)
 				}
 
-				act1 = tx.NewAction(contractName, abiName, fmt.Sprintf(`["%v", "%v"]`, tokenSym, from.ID, idx))
+				act1 = tx.NewAction(contractName, abiName, fmt.Sprintf(`["%v", "%v", %v]`, tokenSym, from.ID, idx))
 				tx1 := itest.NewTransaction([]*tx.Action{act1})
 				trx, err = from.Sign(tx1)
 				if err != nil {
@@ -357,6 +365,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				break
 			}
 		}
+		tokenMutex.Unlock()
 		hashList, tmpList := it.SendTransactionN(trxs, false)
 		errList = append(errList, tmpList...)
 		ilog.Warnf("Send %v trxs, got %v hash, %v err", len(trxs), len(hashList), len(errList))
