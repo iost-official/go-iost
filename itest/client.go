@@ -163,7 +163,7 @@ func (c *Client) checkTransaction(hash string) error {
 }
 
 // CreateAccount will create account by sending transaction
-func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Account, error) {
+func (c *Client) CreateAccount(creator *Account, name string, key *Key, check bool) (*Account, error) {
 	k := key.ReadablePubkey()
 	action1 := tx.NewAction(
 		"auth.iost",
@@ -198,10 +198,10 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key) (*Accoun
 	}
 
 	ilog.Debugf("Sending create account transaction for %v...", name)
-	if _, err := c.SendTransaction(st, true); err != nil {
+	if _, err := c.SendTransaction(st, check); err != nil {
 		return nil, err
 	}
-	ilog.Debugf("Sended create account transaction for %v!", name)
+	ilog.Debugf("Sent create account transaction for %v!", name)
 
 	account := &Account{
 		ID:      name,

@@ -72,7 +72,7 @@ func Load(keysfile, configfile string) (*ITest, error) {
 }
 
 // CreateAccountN will create n accounts concurrently
-func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
+func (t *ITest) CreateAccountN(num int, randName bool, check bool) ([]*Account, error) {
 	ilog.Infof("Create %v account...", num)
 
 	res := make(chan interface{})
@@ -82,8 +82,14 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 			sem.acquire()
 			go func(n int, res chan interface{}) {
 				defer sem.release()
-				name := fmt.Sprintf("account%04d", n)
-				account, err := t.CreateAccount(name)
+				var name string
+				if randName {
+					name = fmt.Sprintf("acc%08d", rand.Int63n(100000000))
+				} else {
+					name = fmt.Sprintf("account%04d", n)
+				}
+
+				account, err := t.CreateAccount(name, check)
 				if err != nil {
 					res <- err
 				} else {
@@ -101,12 +107,12 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 		case *Account:
 			accounts = append(accounts, value)
 		default:
-			return nil, fmt.Errorf("unexpect res: %v", value)
+			return accounts, fmt.Errorf("unexpect res: %v", value)
 		}
 	}
 
 	if len(accounts) != num {
-		return nil, fmt.Errorf(
+		return accounts, fmt.Errorf(
 			"expect create %v account, but only created %v account",
 			num,
 			len(accounts),
@@ -121,7 +127,7 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 }
 
 // CreateAccount will create a account by name
-func (t *ITest) CreateAccount(name string) (*Account, error) {
+func (t *ITest) CreateAccount(name string, check bool) (*Account, error) {
 	if len(t.keys) == 0 {
 		return nil, fmt.Errorf("keys is empty")
 	}
@@ -133,7 +139,7 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	account, err := client.CreateAccount(t.bank, name, key)
+	account, err := client.CreateAccount(t.bank, name, key, check)
 	if err != nil {
 		return nil, err
 	}
