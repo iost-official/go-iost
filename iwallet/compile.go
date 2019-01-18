@@ -16,9 +16,6 @@ package iwallet
 
 import (
 	"fmt"
-	"os"
-
-	"go/build"
 	"os/exec"
 
 	"github.com/iost-official/go-iost/iwallet/contract"
@@ -30,11 +27,6 @@ import (
 
 // generate ABI file
 func generateABI(codePath string) (string, error) {
-	gopath := os.Getenv("GOPATH")
-	if gopath == "" {
-		gopath = build.Default.GOPATH
-	}
-
 	contractToRun := fmt.Sprintf(`
 	let module = {};
 	%s;
