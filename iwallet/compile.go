@@ -21,6 +21,7 @@ import (
 	"go/build"
 	"os/exec"
 
+	"github.com/iost-official/go-iost/iwallet/contract"
 	"github.com/spf13/cobra"
 )
 
@@ -33,14 +34,20 @@ func generateABI(codePath string) (string, error) {
 	if gopath == "" {
 		gopath = build.Default.GOPATH
 	}
-	contractPath := gopath + "/src/github.com/iost-official/go-iost/iwallet/contract"
-	fmt.Println("node " + contractPath + "/contract.js " + codePath)
-	cmd := exec.Command("node", contractPath+"/contract.js", codePath)
+
+	contractToRun := fmt.Sprintf(`
+	let module = {};
+	%s;
+	const processContract = module.exports;
+	processContract("%s");
+	`, contract.CompiledContract, codePath)
+
+	cmd := exec.Command("node", "-e", contractToRun)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("compile failed, error: %v\n", err)
 		fmt.Println(string(output))
-		fmt.Printf("Please make sure node.js has been installed and `npm install` has been executed inside %v\n", contractPath)
+		fmt.Printf("Please make sure node.js has been installed\n")
 		return "", err
 	}
 
