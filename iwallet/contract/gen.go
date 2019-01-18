@@ -30,9 +30,11 @@ import "net/url"
 
 const contractJSEscaped = "%s"
 
+// CompiledContract is the compiled js code
 var CompiledContract string
 
 func init() {
 	CompiledContract, _ = url.QueryUnescape(contractJSEscaped)
-}`, contractJSEscaped))
+}
+`, contractJSEscaped))
 }
