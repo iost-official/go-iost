@@ -181,8 +181,14 @@ function handleOperator(ast) {
     return escodegen.generate(ast);
 }
 
-function processContract(source) {
-  let ast = esprima.parseModule(source, {
+function processContract(file) {
+  const source = fs.readFileSync(file);
+
+  if (source === undefined) {
+      throw new Error("invalid file content. Is " + file + " exists?")
+  }
+
+  let ast = esprima.parseModule(source.toString(), {
         range: true,
         loc: false,
         comment: true,
@@ -192,7 +198,6 @@ function processContract(source) {
     let abiArr = [];
     if (!ast || ast === null || !ast.body || ast.body === null || ast.body.length === 0) {
         throw new Error("invalid source! ast = " + ast);
-        return ["", ""];
     }
 
     checkInvalidKeyword(ast.tokens);
@@ -219,33 +224,12 @@ function processContract(source) {
     abi["abi"] = abiArr;
     let abiStr = JSON.stringify(abi, null, 4);
 
-    return [newSource, abiStr]
-}
-module.exports = processContract;
-
-
-let fs = require('fs');
-
-let file = process.argv[2];
-fs.readFile(file, 'utf8', function(err, contents) {
-    if (contents === undefined) {
-        throw new Error("invalid file content. Is " + file + " exists?")
-    }
-    //console.log('before calling process, len = ' + contents.length);
-    let [newSource, abi] = processContract(contents);
-    //console.log('after calling process, newSource len = ' + newSource.length + ", abi len = " + abi.length);
-
-    //fs.writeFile(file + ".after", newSource, function(err) {
-    //    if(err) {
-    //        return console.log(err);
-    //    }
-    //    console.log("The new contract file was saved as " + file + ".after");
-    //});
-
-    fs.writeFile(file + ".abi", abi, function(err) {
+    fs.writeFile(file + ".abi", abiStr, function(err) {
         if(err) {
             return console.log(err);
         }
         console.log("The new abi file was saved as " + file + ".abi");
     });
-});
+}
+
+module.exports = processContract;
