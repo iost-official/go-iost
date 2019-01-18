@@ -14,6 +14,9 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"strconv"
 	"math"
+	"sync"
+	"encoding/json"
+	"strings"
 )
 
 // BenchmarkCommand is the subcommand for benchmark.
@@ -96,6 +99,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 		sym:"iost",
 		issuer:"",
 		balance:make(map[string]float64),
+		acclist:make([]string, 0),
 	}
 	for _, acc := range accounts {
 		tokenMap["iost"].balance[acc.ID] = acc.Balance()
@@ -103,6 +107,8 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 	}
 	tokenPrefix := "t" + strconv.FormatInt(time.Now().UnixNano(), 10)[14:]
 	checkReceiptConcurrent := 64
+	tokenOffset := 0
+	var tokenMutex sync.Mutex
 
 	hashCh := make(chan *hashItem, 4 * tps * int(itest.Timeout.Seconds()))
 	for c := 0; c < checkReceiptConcurrent; c++ {
@@ -111,11 +117,55 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 			failedCounter := 0
 			for item := range hashCh {
 				client := it.GetClients()[rand.Intn(len(it.GetClients()))]
-				_, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
+				r, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
 				counter ++;
 				if err != nil {
 					ilog.Errorf("check transaction failed, %v", err)
 					failedCounter ++;
+				} else {
+					for i := 0; i < len(r.Receipts); i++ {
+						if r.Receipts[i].FuncName == "token.iost/issue" {
+							args := make([]string, 3)
+							err := json.Unmarshal([]byte(r.Receipts[i].Content), &args)
+							if err != nil {
+								continue
+							}
+							ilog.Infof("got receipt %v %v", r.Receipts[i], args)
+							tokenMutex.Lock()
+							tokenSym := args[0]
+							if !strings.HasPrefix(tokenSym, tokenPrefix) {
+								continue
+							}
+							acc := args[1]
+							amountStr := args[2]
+							amount, _ := strconv.ParseFloat(amountStr, 32)
+							if _, ok := tokenMap[tokenSym].balance[acc]; !ok {
+								tokenMap[tokenSym].acclist = append(tokenMap[tokenSym].acclist, acc)
+							}
+							tokenMap[tokenSym].balance[acc] += amount
+							tokenMutex.Unlock()
+							break
+						} else if r.Receipts[i].FuncName == "token.iost/create" {
+							args := make([]interface{}, 4)
+							err := json.Unmarshal([]byte(r.Receipts[i].Content), &args)
+							if err != nil {
+								continue
+							}
+							ilog.Infof("got receipt %v %v", r.Receipts[i], args)
+							tokenMutex.Lock()
+							tokenSym := args[0].(string)
+							issuer := args[1].(string)
+							tokenList = append(tokenList, tokenSym)
+							tokenMap[tokenSym] = &tokenInfo{
+								sym:     tokenSym,
+								issuer:  issuer,
+								balance: make(map[string]float64),
+								acclist: []string{},
+							}
+							tokenMutex.Unlock()
+							break
+						}
+					}
 				}
 				if counter%1000 == 0 {
 					ilog.Warnf("check %v transaction, %v successful, %v failed.", counter, counter-failedCounter, failedCounter)
@@ -131,6 +181,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 	for {
 		trxs := make([]*itest.Transaction, 0)
 		errList := []error{}
+		tokenMutex.Lock()
 		for num := 0; num < tps; num++ {
 			// create 1, issue 1000, transfer 10000, transferFreeze 2000, destroy 100, balanceOf 100, supply 10, totalSupply 10
 			tIndex := rand.Intn(10000)
@@ -138,7 +189,8 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 			switch true {
 			case tIndex <= 0 || len(tokenList) < 5:
 				abiName = createToken
-				tokenSym := tokenPrefix + strconv.FormatInt(int64(len(tokenList)), 10)
+				tokenSym := tokenPrefix + strconv.FormatInt(int64(tokenOffset), 10)
+				tokenOffset++
 				from := accounts[rand.Intn(len(accounts))]
 				decimal := rand.Intn(5) + 2
 
@@ -159,13 +211,6 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 					errList = append(errList, err)
 				} else {
 					trxs = append(trxs, trx)
-					tokenList = append(tokenList, tokenSym)
-					tokenMap[tokenSym] = &tokenInfo{
-						sym:tokenSym,
-						issuer:from.ID,
-						balance:make(map[string]float64),
-						acclist:[]string{},
-					}
 				}
 				break
 			case tIndex <= 10:
@@ -184,7 +229,10 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 
 				act1 = tx.NewAction(contractName, abiName, fmt.Sprintf(`["%v"]`, tokenSym))
 				tx1 := itest.NewTransaction([]*tx.Action{act1})
-				trx, err = from.Sign(tx1)
+				trx, err = from.Sign(tx1)					//if _, ok := tokenMap[tokenSym].balance[to.ID]; !ok {
+					//	tokenMap[tokenSym].acclist = append(tokenMap[tokenSym].acclist, to.ID)
+					//}
+					//tokenMap[tokenSym].balance[to.ID] += amount
 				if err != nil {
 					errList = append(errList, err)
 				} else {
@@ -281,7 +329,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				amount := 1000 + 10 * rand.Float64()
+				amount := 1000 + 1000 * rand.Float64()
 				act1 = tx.NewAction(contractName, abiName, fmt.Sprintf(`["%v", "%v", "%v"]`, tokenSym, to.ID, int64(amount)))
 				tx1 := itest.NewTransaction([]*tx.Action{act1})
 				trx, err = issuer.Sign(tx1)
@@ -289,10 +337,6 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 					errList = append(errList, err)
 				} else {
 					trxs = append(trxs, trx)
-					if _, ok := tokenMap[tokenSym].balance[to.ID]; !ok {
-						tokenMap[tokenSym].acclist = append(tokenMap[tokenSym].acclist, to.ID)
-					}
-					tokenMap[tokenSym].balance[to.ID] += amount
 				}
 				break
 			case tIndex <= 1100:
@@ -354,14 +398,11 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 					tokenMap[tokenSym].balance[from.ID] -= amount
-					//if _, ok := tokenMap[tokenSym].balance[to.ID]; !ok {
-					//	tokenMap[tokenSym].acclist = append(tokenMap[tokenSym].acclist, to.ID)
-					//}
-					//tokenMap[tokenSym].balance[to.ID] += amount
 				}
 				break
 			}
 		}
+		tokenMutex.Unlock()
 		hashList, tmpList := it.SendTransactionN(trxs, false)
 		errList = append(errList, tmpList...)
 		ilog.Warnf("Send %v trxs, got %v hash, %v err", len(trxs), len(hashList), len(errList))

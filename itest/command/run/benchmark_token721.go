@@ -92,6 +92,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 	tokenList := []string{}
 	tokenMap := make(map[string]*token721Info)
 	tokenPrefix := "t" + strconv.FormatInt(time.Now().UnixNano(), 10)[14:]
+	tokenOffset := 0
 	var tokenMutex sync.Mutex
 
 	hashCh := make(chan *hashItem, 4 * tps * int(itest.Timeout.Seconds()))
@@ -123,7 +124,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 							for j := 0; j < len(r.Returns); j++ {
 								ret := r.Returns[j]
 								ret = ret[2:(len(ret) - 2)]
-								ilog.Debugf("got receipt, acc %v tokensym %v ret %v ", acc, tokenSym, ret)
 								if _, ok := tokenMap[tokenSym].balance[acc]; !ok {
 									tokenMap[tokenSym].balance[acc] = make([]string, 0)
 									tokenMap[tokenSym].acclist = append(tokenMap[tokenSym].acclist, acc)
@@ -131,6 +131,26 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 								tokenMap[tokenSym].balance[acc] = append(tokenMap[tokenSym].balance[acc], ret)
 								retn, _ := strconv.ParseInt(ret, 10, 32)
 								tokenMap[tokenSym].supply = int(math.Max(float64(tokenMap[tokenSym].supply), float64(retn)))
+							}
+							tokenMutex.Unlock()
+							break
+						} else if r.Receipts[i].FuncName == "token721.iost/create" {
+							args := make([]interface{}, 3)
+							err := json.Unmarshal([]byte(r.Receipts[i].Content), &args)
+							if err != nil {
+								continue
+							}
+							ilog.Debugf("got receipt %v %v", r.Receipts[i], args)
+							tokenMutex.Lock()
+							tokenSym := args[0].(string)
+							issuer:= args[1].(string)
+							tokenList = append(tokenList, tokenSym)
+							tokenMap[tokenSym] = &token721Info{
+								sym:tokenSym,
+								issuer:issuer,
+								balance:make(map[string][]string),
+								acclist:[]string{},
+								supply:0,
 							}
 							tokenMutex.Unlock()
 							break
@@ -159,7 +179,8 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 			switch true {
 			case tIndex <= 0 || len(tokenList) < 5:
 				abiName = createToken721
-				tokenSym := tokenPrefix + strconv.FormatInt(int64(len(tokenList)), 10)
+				tokenSym := tokenPrefix + strconv.FormatInt(int64(tokenOffset), 10)
+				tokenOffset++
 				from := accounts[rand.Intn(len(accounts))]
 
 				act0 := tx.NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, "admin", from.ID, 1000))
@@ -179,14 +200,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 					errList = append(errList, err)
 				} else {
 					trxs = append(trxs, trx)
-					tokenList = append(tokenList, tokenSym)
-					tokenMap[tokenSym] = &token721Info{
-						sym:tokenSym,
-						issuer:from.ID,
-						balance:make(map[string][]string),
-						acclist:[]string{},
-						supply:0,
-					}
 				}
 				break
 			case tIndex <= 1000 || len(tokenMap[tokenList[0]].balance) < 10:
