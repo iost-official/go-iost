@@ -400,9 +400,6 @@ class VoteContract {
             throw new Error("producer not exists, " + account);
         }
         const pro = this._mapGet("producerTable", account);
-        if (pro.status === STATUS_APPLY) {
-            throw new Error("producer not approved");
-        }
         pro.online = true;
         this._mapPut("producerTable", account, pro, blockchain.publisher());
         if (pro.status === STATUS_APPROVED || pro.status === STATUS_UNAPPLY) {
@@ -415,9 +412,6 @@ class VoteContract {
         this._requireAuth(account, VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
-        }
-        if (pro.status === STATUS_APPLY) {
-            throw new Error("producer not approved");
         }
         if (this._get("pendingProducerList").includes(account) ||
             this._get("currentProducerList").includes(account)) {
