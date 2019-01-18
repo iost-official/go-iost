@@ -207,6 +207,16 @@ func (mr *MockChainMockRecorder) Push(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Push", reflect.TypeOf((*MockChain)(nil).Push), arg0)
 }
 
+// SetLength mocks base method
+func (m *MockChain) SetLength(arg0 int64) {
+	m.ctrl.Call(m, "SetLength", arg0)
+}
+
+// SetLength indicates an expected call of SetLength
+func (mr *MockChainMockRecorder) SetLength(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetLength", reflect.TypeOf((*MockChain)(nil).SetLength), arg0)
+}
+
 // Size mocks base method
 func (m *MockChain) Size() (int64, error) {
 	ret := m.ctrl.Call(m, "Size")
