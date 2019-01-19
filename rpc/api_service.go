@@ -416,8 +416,11 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 			return nil, fmt.Errorf("try transaction failed: %v", err)
 		}
 	}
-	dbVisitor := as.getStateDBVisitor(true)
-	currentGas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
+	headBlock := as.bc.Head()
+	stateDB := as.bv.StateDB().Fork()
+	stateDB.Checkout(string(headBlock.HeadHash()))
+	dbVisitor := database.NewVisitor(0, stateDB)
+	currentGas := dbVisitor.TotalGasAtTime(t.Publisher, headBlock.Head.Time)
 	err := vm.CheckTxGasLimitValid(t, currentGas, dbVisitor)
 	if err != nil {
 		return nil, err

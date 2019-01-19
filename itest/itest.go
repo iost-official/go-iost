@@ -90,7 +90,7 @@ func (t *ITest) CreateAccountN(num int, randName bool, check bool) ([]*Account, 
 					name = fmt.Sprintf("account%04d", n)
 				}
 
-				account, err := t.CreateAccount(name, check)
+				account, err := t.CreateAccount(t.GetDefaultAccount(), name, check)
 				if err != nil {
 					res <- err
 				} else {
@@ -128,7 +128,7 @@ func (t *ITest) CreateAccountN(num int, randName bool, check bool) ([]*Account, 
 }
 
 // CreateAccount will create a account by name
-func (t *ITest) CreateAccount(name string, check bool) (*Account, error) {
+func (t *ITest) CreateAccount(creator *Account, name string, check bool) (*Account, error) {
 	if len(t.keys) == 0 {
 		return nil, fmt.Errorf("keys is empty")
 	}
@@ -140,7 +140,7 @@ func (t *ITest) CreateAccount(name string, check bool) (*Account, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	account, err := client.CreateAccount(t.bank, name, key, check)
+	account, err := client.CreateAccount(creator, name, key, check)
 	if err != nil {
 		return nil, err
 	}
