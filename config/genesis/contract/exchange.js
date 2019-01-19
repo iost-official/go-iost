@@ -1,5 +1,19 @@
+const ADMIN_PERMISSION = "active";
+
 class Exchange {
     init() {
+    }
+
+    can_update(data) {
+        this._requireAuth("admin", ADMIN_PERMISSION);
+        return true;
+    }
+
+    _requireAuth(account, permission) {
+        const ret = blockchain.requireAuth(account, permission);
+        if (ret !== true) {
+            throw new Error("require auth failed. ret = " + ret);
+        }
     }
 
     /**
@@ -15,21 +29,20 @@ class Exchange {
      * transfer("iost", "", "100.1", "create:newUser2:OWNERKEY:ACTIVEKEY")
      */
     transfer(tokenSym, to, amount, memo) {
-        const minAmount = 100;
-        const initialRAM = 1000;
-        const initialGasPledged = 10;
-
-        let bamount = new BigNumber(amount);
-        if (bamount.lt(minAmount)) {
-            throw new Error("transfer amount should be greater or equal to " + minAmount);
-        }
-
         let from = blockchain.publisher();
         if (to !== "") {
             // transfer to an exist account
             blockchain.call("token.iost", "transfer", [tokenSym, from, to, amount, memo]);
 
         } else if (to == "") {
+            const minAmount = 100;
+            const initialRAM = 1000;
+            const initialGasPledged = 10;
+            let bamount = new BigNumber(amount);
+            if (bamount.lt(minAmount)) {
+                throw new Error("transfer amount should be greater or equal to " + minAmount);
+            }
+
             if (memo.startsWith("create:")) {
                 if (tokenSym !== "iost") {
                     throw new Error("must transfer iost if you want to create a new account");
@@ -37,8 +50,9 @@ class Exchange {
                 // create account and then transfer to account
                 let args = memo.split(":").slice(1);
                 if (args.length !== 3) {
-                    throw new Error("memo of transferring to a new account should be of format create:name:ownerKey:activeKey");
+                    throw new Error("memo of transferring to a new account should be of format name:ownerKey:activeKey");
                 }
+                // Attention: signUp will use publisher() asset, so publisher should be equal to from
                 blockchain.call("auth.iost", "signUp", args);
                 let rets = blockchain.call("ram.iost", "buy", [from, args[0], initialRAM]);
                 let price = rets[0];

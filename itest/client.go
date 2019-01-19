@@ -222,6 +222,15 @@ func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount
 	return err
 }
 
+// ExchangeTransfer will contract transfer token by sending transaction
+func (c *Client) ExchangeTransfer(sender, recipient *Account, token, amount string, memoSize int, check bool) error {
+	memo := make([]byte, memoSize)
+	rand.Read(memo)
+	memoStr := base64.StdEncoding.EncodeToString(memo)
+	_, err := c.CallAction(check, sender, "exchange.iost", "transfer", token, recipient.ID, amount, memoStr[:memoSize])
+	return err
+}
+
 // CallAction send a tx with given actions
 func (c *Client) CallAction(check bool, sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
 	argsBytes, err := json.Marshal(args)

@@ -2,10 +2,11 @@ package itest
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/core/contract"
 	"math"
 	"math/rand"
 	"strconv"
+
+	"github.com/iost-official/go-iost/core/contract"
 
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -480,6 +481,53 @@ func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account, memo
 	return
 }
 
+// ExchangeTransferN will send n contract transfer transaction concurrently
+func (t *ITest) ExchangeTransferN(num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v exchange transfer transaction...", num)
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				balance, _ := strconv.ParseFloat(A.balance, 64)
+				for balance < 1 {
+					A = accounts[rand.Intn(len(accounts))]
+					balance, _ = strconv.ParseFloat(A.balance, 64)
+				}
+				B := accounts[rand.Intn(len(accounts))]
+				amount := float64(rand.Int63n(int64(math.Min(10000, balance*100)))+1) / 100
+
+				ilog.Debugf("Contract transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+				err := t.ExchangeTransfer(A, B, fmt.Sprintf("%0.8f", amount), memoSize, check)
+
+				if err == nil {
+					A.AddBalance(-amount)
+					B.AddBalance(amount)
+				}
+				res <- err
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send contract transfer transactions: %v", value)
+			}
+		default:
+			successNum++
+		}
+	}
+
+	ilog.Infof("Sent %v/%v contract transfer transactions", successNum, num)
+	return
+}
+
 // CheckAccounts will check account info by getting account info
 func (t *ITest) CheckAccounts(a []*Account) error {
 	ilog.Infof("Get %v accounts info...", len(a))
@@ -543,6 +591,19 @@ func (t *ITest) ContractTransfer(cid string, sender, recipient *Account, amount 
 	client := t.clients[cIndex]
 
 	err := client.ContractTransfer(cid, sender, recipient, amount, memoSize, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// ExchangeTransfer will contract transfer token from sender to recipient
+func (t *ITest) ExchangeTransfer(sender, recipient *Account, amount string, memoSize int, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.ExchangeTransfer(sender, recipient, "iost", amount, memoSize, check)
 	if err != nil {
 		return err
 	}
