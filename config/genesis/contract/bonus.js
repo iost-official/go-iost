@@ -3,9 +3,6 @@ const totalSupply = 90000000000;
 const blockContribRadio = new Float64("9.6568764571e-11");
 
 class BonusContract {
-    constructor() {
-    }
-
     init() {
         this._initContribute();
         this._put("blockContrib", "1.98779440");
