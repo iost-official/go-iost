@@ -1,11 +1,11 @@
 package ilog
 
 import (
-	"debug"
 	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
