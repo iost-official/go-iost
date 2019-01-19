@@ -17,12 +17,12 @@ import (
 
 // Constant of Client
 var (
-	Interval   = 15 * time.Second
+	Interval   = 2 * time.Millisecond
 	Timeout    = (90 + 30) * time.Second
 	InitToken  = "iost"
-	InitAmount = "1000000"
-	InitPledge = "1000000"
-	InitRAM    = "1000000"
+	InitAmount = "1000"
+	InitPledge = "1000"
+	InitRAM    = "3000"
 )
 
 // Client is a grpc client for iserver
@@ -167,8 +167,6 @@ func (c *Client) CheckTransactionWithTimeout(hash string, expire time.Time) (*Re
 		}
 	}
 }
-
-
 func (c *Client) checkTransaction(hash string) error {
 	ticker := time.NewTicker(Interval)
 	afterTimeout := time.After(Timeout)

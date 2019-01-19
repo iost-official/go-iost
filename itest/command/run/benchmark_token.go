@@ -130,10 +130,11 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 							if err != nil {
 								continue
 							}
-							ilog.Infof("got receipt %v %v", r.Receipts[i], args)
+							ilog.Debugf("got receipt %v %v", r.Receipts[i], args)
 							tokenMutex.Lock()
 							tokenSym := args[0]
 							if !strings.HasPrefix(tokenSym, tokenPrefix) {
+								tokenMutex.Unlock()
 								continue
 							}
 							acc := args[1]
@@ -151,7 +152,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 							if err != nil {
 								continue
 							}
-							ilog.Infof("got receipt %v %v", r.Receipts[i], args)
+							ilog.Debugf("got receipt %v %v", r.Receipts[i], args)
 							tokenMutex.Lock()
 							tokenSym := args[0].(string)
 							issuer := args[1].(string)
