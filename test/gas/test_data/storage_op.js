@@ -1,9 +1,6 @@
 'use strict';
 
 class StorageOp {
-    constructor() {
-    }
-
     doPut(num, data) {
         if (data === undefined || data === null) {
             data = "value";
