@@ -1,7 +1,6 @@
 package ilog
 
 import (
-	"debug"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -9,6 +8,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"time"
+	"runtime/debug"
 )
 
 type message struct {
