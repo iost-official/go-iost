@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
-	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -268,7 +267,6 @@ func (logger *Logger) Error(v ...interface{}) {
 
 // Fatal generates a fatal-level log and exits the program.
 func (logger *Logger) Fatal(v ...interface{}) {
-	debug.PrintStack()
 	logger.genMsg(LevelFatal, fmt.Sprint(v...))
 	logger.Stop()
 	os.Exit(1)
