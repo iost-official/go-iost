@@ -224,21 +224,31 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "7")), ShouldEqual, `"0"`)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "8")), ShouldEqual, `"0"`)
 
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc6.ID, "100000000"), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc6.ID, "100000000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"100000000"`)
 
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc7.ID, acc6.ID, "100000000"), acc7.ID, acc7.KeyPair)
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc7.ID, acc6.ID, "100000000"), acc7.ID, acc7.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"200000000"`)
 		info := database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1"))
 		So(info, ShouldContainSubstring, `"0":0,"1":0,"2":0,"3":0,"4":0,"5":0,"6":1,"7":0,"8":0`)
 
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc8.ID, acc6.ID, "100000000"), acc8.ID, acc8.KeyPair)
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc8.ID, acc6.ID, "100000000"), acc8.ID, acc8.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"300000000"`)
 		info = database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1"))
 		So(info, ShouldContainSubstring, `"0":0,"1":0,"2":0,"3":0,"4":0,"5":0,"6":1,"7":0,"8":0`)
 
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc7.ID, "215000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc8.ID, "220000000"), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc7.ID, "215000000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc8.ID, "220000000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 
 		r, err = s.Call("vote_producer.iost", "getProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
 		So(err, ShouldBeNil)
@@ -273,12 +283,22 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "240000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc2.ID, "230000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc3.ID, "260000000"), acc0.ID, acc0.KeyPair)
-		s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc4.ID, "250000000"), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "240000000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc2.ID, "230000000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc3.ID, "260000000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc4.ID, "250000000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: 0				, 240000000
@@ -298,7 +318,9 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: 0				, 240000000
@@ -318,7 +340,9 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: 0				, 240000000
@@ -338,7 +362,9 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^1*30000000	, 240000000
@@ -358,7 +384,9 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^2*30000000	, 240000000
@@ -378,7 +406,9 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^3*30000000	, 240000000
@@ -398,7 +428,9 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^4*30000000	, 240000000
@@ -418,7 +450,9 @@ func Test_Vote1(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 0				, 0
 		// 1	: q^5*30000000	, 240000000
@@ -503,7 +537,9 @@ func Test_Unregister2(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 4				, 2
 		// 1	: 6				, 3
@@ -533,7 +569,9 @@ func Test_Unregister2(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score				, votes
 		// 0	: 6					, 2
 		// 1	: 9					, 3
@@ -578,7 +616,9 @@ func Test_Unregister2(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score			, votes
 		// 0	: 8					, 2
 		// 1	: 12 - 2.02258095	, 3
@@ -611,7 +651,9 @@ func Test_Unregister2(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score				, votes
 		// 0 X	: X					, 2
 		// 1 W	: X					, 3
@@ -646,7 +688,9 @@ func Test_Unregister2(t *testing.T) {
 
 		// do stat
 		s.Head.Number += 2000
-		s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 		// acc	: score				, votes
 		// 0 X	: X					, 2
 		// 1 W	: X					, 3

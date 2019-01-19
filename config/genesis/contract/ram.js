@@ -2,9 +2,6 @@ const transferPermission = "transfer";
 const updatePermission = "active";
 
 class RAMContract {
-    constructor() {
-    }
-
     init() {
     }
 

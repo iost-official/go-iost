@@ -1,9 +1,6 @@
 'use strict';
 
 class EmptyOp {
-    constructor() {
-    }
-
     doStartUp() {
     }
 
