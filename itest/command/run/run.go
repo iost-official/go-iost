@@ -15,8 +15,11 @@ var Command = cli.Command{
 		ContractCaseCommand,
 		CommonVoteCaseCommand,
 		VoteCaseCommand,
-		BenchmarkCommand,
 		VoteNodeCaseCommand,
+		BenchmarkCommand,
+		BenchmarkTokenCommand,
+		BenchmarkToken721Command,
+		BenchmarkSystemCommand,
 	},
 }
 

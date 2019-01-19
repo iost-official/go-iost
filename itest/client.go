@@ -17,12 +17,12 @@ import (
 
 // Constant of Client
 var (
-	Interval   = 15 * time.Second
+	Interval   = 2 * time.Millisecond
 	Timeout    = (90 + 30) * time.Second
 	InitToken  = "iost"
-	InitAmount = "1000000"
-	InitPledge = "1000000"
-	InitRAM    = "1000000"
+	InitAmount = "1000"
+	InitPledge = "1000"
+	InitRAM    = "3000"
 )
 
 // Client is a grpc client for iserver
@@ -139,6 +139,34 @@ func (c *Client) SendTransaction(transaction *Transaction, check bool) (string, 
 	return resp.GetHash(), nil
 }
 
+func (c *Client) CheckTransactionWithTimeout(hash string, expire time.Time) (*Receipt, error) {
+	ticker := time.NewTicker(Interval)
+	var afterTimeout <-chan time.Time
+	now := time.Now()
+	if expire.Before(now) {
+		afterTimeout = time.After(2 * time.Millisecond)
+	} else {
+		afterTimeout = time.After(time.Until(expire))
+	}
+	for {
+		select {
+		case <-afterTimeout:
+			return nil, fmt.Errorf("transaction be on chain timeout: %v", hash)
+		case <-ticker.C:
+			ilog.Debugf("Get receipt for %v...", hash)
+			r, err := c.GetReceipt(hash)
+			if err != nil {
+				break
+			}
+			ilog.Debugf("Get receipt for %v successful!", hash)
+
+			if !r.Success() {
+				return nil, fmt.Errorf("%v: %v", r.Status.Code, r.Status.Message)
+			}
+			return r, nil
+		}
+	}
+}
 func (c *Client) checkTransaction(hash string) error {
 	ticker := time.NewTicker(Interval)
 	afterTimeout := time.After(Timeout)
