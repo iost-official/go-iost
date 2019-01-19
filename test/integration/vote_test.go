@@ -27,10 +27,13 @@ func prepareToken(t *testing.T, s *Simulator, pubAcc *TestAccount) {
 func prepareVote(t *testing.T, s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 	// deploy vote.iost
 	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
-	s.Call("vote.iost", "init", `[]`, acc.ID, acc.KeyPair)
+	r, err := s.Call("vote.iost", "init", `[]`, acc.ID, acc.KeyPair)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
 
 	// deploy voteresult
-	err := setNonNativeContract(s, "Contractvoteresult", "voteresult.js", "./test_data/")
+	err = setNonNativeContract(s, "Contractvoteresult", "voteresult.js", "./test_data/")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -50,7 +53,7 @@ func prepareVote(t *testing.T, s *Simulator, acc *TestAccount) (*tx.TxReceipt, e
 		config,
 	}
 	b, _ := json.Marshal(params)
-	r, err := s.Call("vote.iost", "newVote", string(b), acc.ID, acc.KeyPair)
+	r, err = s.Call("vote.iost", "newVote", string(b), acc.ID, acc.KeyPair)
 	s.Visitor.Commit()
 	return r, err
 }

@@ -19,6 +19,7 @@ var Command = cli.Command{
 		BenchmarkTokenCommand,
 		BenchmarkToken721Command,
 		BenchmarkSystemCommand,
+		VoteNodeCaseCommand,
 	},
 }
 

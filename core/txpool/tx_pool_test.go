@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -12,13 +13,13 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/mocks"
+	core_mock "github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/db/mocks"
+	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/p2p/mocks"
+	p2p_mock "github.com/iost-official/go-iost/p2p/mocks"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -46,6 +47,15 @@ func (pool *TxPImpl) testBlockListNum() int64 {
 func TestNewTxPImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
+		b0 := &block.Block{
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+				Number:     0,
+			},
+		}
+		b0.CalculateHeadHash()
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
@@ -92,6 +102,10 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
+		statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			bhJson, _ := json.Marshal(b0.Head)
+			return string(bhJson), nil
+		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 		})
@@ -110,9 +124,13 @@ func TestNewTxPImpl(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
-				LdbPath: "./",
+				LdbPath: "DB/",
+			},
+			Snapshot: &common.SnapshotConfig{
+				Enable: false,
 			},
 		}
+		defer os.RemoveAll("DB/")
 		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
@@ -212,6 +230,15 @@ func TestNewTxPImpl(t *testing.T) {
 func TestNewTxPImplB(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
+		b0 := &block.Block{
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+				Number:     0,
+			},
+		}
+		b0.CalculateHeadHash()
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
@@ -258,6 +285,10 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
+		statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			bhJson, _ := json.Marshal(b0.Head)
+			return string(bhJson), nil
+		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 		})
@@ -276,9 +307,13 @@ func TestNewTxPImplB(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
-				LdbPath: "./",
+				LdbPath: "DB/",
+			},
+			Snapshot: &common.SnapshotConfig{
+				Enable: false,
 			},
 		}
+		defer os.RemoveAll("DB/")
 		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
@@ -408,52 +443,6 @@ func TestNewTxPImplB(t *testing.T) {
 			So(ok, ShouldBeFalse)
 
 		})
-
-		//
-		//Convey("concurrent", func() {
-		//	txCnt := 10
-		//	blockCnt := 100
-		//	bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
-		//	ch := make(chan int, 4)
-		//	//fmt.Println("genNodes impl")
-		//	go func() {
-		//		for _, bcn := range bl {
-		//			txPool.AddLinkedNode(bcn, bcn)
-		//		}
-		//		ch <- 1
-		//	}()
-		//
-		//	go func() {
-		//		for i := 0; i < 100; i++ {
-		//			t := genTx(accountList[0], Expiration)
-		//			txPool.AddTx(t)
-		//		}
-		//		ch <- 2
-		//	}()
-		//
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			txPool.PendingTxs(10000000)
-		//		}
-		//		ch <- 3
-		//	}()
-		//	////time.Sleep(5*time.Second)
-		//
-		//	t := genTx(accountList[0], Expiration)
-		//	txPool.AddTx(t)
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
-		//		}
-		//		ch <- 4
-		//	}()
-		//
-		//	for i := 0; i < 4; i++ {
-		//		<-ch
-		//		//fmt.Println("ch :", a)
-		//	}
-		//
-		//})
 
 		stopTest(gbl)
 	})

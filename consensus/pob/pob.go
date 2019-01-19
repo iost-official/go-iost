@@ -8,7 +8,8 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	"github.com/iost-official/go-iost/consensus/snapshot"
+	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -398,7 +399,7 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 	if err == nil {
 		return errDuplicate
 	}
-	err = verifyBasics(blk.Head, blk.Sign)
+	err = verifyBasics(blk, blk.Sign)
 	if err != nil {
 		return err
 	}
@@ -418,7 +419,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	if err == nil {
 		return errDuplicate
 	}
-	err = verifyBasics(blk.Head, blk.Sign)
+	err = verifyBasics(blk, blk.Sign)
 	if err != nil {
 		return err
 	}
@@ -441,6 +442,10 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
 			p.blockCache.Del(node)
+			return err
+		}
+		err = snapshot.Save(p.verifyDB, blk)
+		if err != nil {
 			return err
 		}
 		p.verifyDB.Tag(string(blk.HeadHash()))

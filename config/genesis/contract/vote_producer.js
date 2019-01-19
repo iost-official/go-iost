@@ -40,7 +40,7 @@ class VoteContract {
                 freezeTime: VOTE_LOCKTIME
             }
         ])[0];
-        this._put("voteId", voteId);
+        storage.put("voteId", voteId);
     }
 
     initProducer(proID, proPubkey) {
@@ -147,7 +147,7 @@ class VoteContract {
     }
 
     _getVoteId() {
-        return this._get("voteId");
+        return storage.get("voteId");
     }
 
     // register account as a producer
@@ -400,9 +400,6 @@ class VoteContract {
             throw new Error("producer not exists, " + account);
         }
         const pro = this._mapGet("producerTable", account);
-        if (pro.status === STATUS_APPLY) {
-            throw new Error("producer not approved");
-        }
         pro.online = true;
         this._mapPut("producerTable", account, pro, blockchain.publisher());
         if (pro.status === STATUS_APPROVED || pro.status === STATUS_UNAPPLY) {
@@ -416,14 +413,11 @@ class VoteContract {
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
-        if (pro.status === STATUS_APPLY) {
-            throw new Error("producer not approved");
-        }
-        if (this._get("pendingProducerList").includes(account) ||
-            this._get("currentProducerList").includes(account)) {
+        const pro = this._mapGet("producerTable", account);
+        if (this._get("pendingProducerList").includes(pro.pubkey) ||
+            this._get("currentProducerList").includes(pro.pubkey)) {
             throw new Error("producer in pending list or in current list, can't logout");
         }
-        const pro = this._mapGet("producerTable", account);
         pro.online = false;
         this._mapPut("producerTable", account, pro, blockchain.publisher());
         if (pro.status === STATUS_APPROVED || pro.status === STATUS_UNAPPLY) {
@@ -757,6 +751,7 @@ class VoteContract {
         const pendingProducerList = this._get("pendingProducerList");
         const producerMap = this._get("producerMap") || {};
         const producerKeyMap = this._get("producerKeyMap") || {};
+        const validPendingMap = {};
 
         // update scores
         let scoreTotal = new Float64("0");
@@ -778,6 +773,8 @@ class VoteContract {
                     "prior": 0,
                     "score": score,
                 });
+            } else {
+                validPendingMap[pro.pubkey] = true;
             }
         }
 
@@ -788,7 +785,7 @@ class VoteContract {
         for (const key of pendingProducerList) {
             const account = producerKeyMap[key];
             const score = new Float64(scores[account] || "0");
-            if (waitingRemoveList.includes(account)) {
+            if (waitingRemoveList.includes(account) || !validPendingMap[key]) {
                 oldPreListToRemove.push({
                     "account": account,
                     "key": key,
@@ -796,6 +793,7 @@ class VoteContract {
                     "score": score
                 });
                 minScore = new Float64(0);
+                delete(scores[account]);
             } else {
                 oldPreList.push({
                     "account": account,
@@ -847,7 +845,7 @@ class VoteContract {
         } else {
             for (const key of pendingList) {
                 const account = producerKeyMap[key];
-                scores[account] = "0";
+                delete(scores[account]);
             }
         }
 

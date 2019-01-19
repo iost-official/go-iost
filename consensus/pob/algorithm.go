@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -24,7 +25,6 @@ var (
 	errTxDup       = errors.New("duplicate tx")
 	errDoubleTx    = errors.New("double tx in block")
 	errTxSignature = errors.New("tx wrong signature")
-	errHeadHash    = errors.New("wrong head hash")
 	generateTxsNum = 0
 )
 
@@ -33,7 +33,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	st := time.Now()
 	pTx, head := txPool.PendingTx()
 	topBlock := head.Block
-	blk := block.Block{
+	blk := &block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
 			ParentHash: topBlock.HeadHash(),
@@ -50,7 +50,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
-	dropList, _, err := v.Gen(&blk, topBlock, db, pTx, &verifier.Config{
+	dropList, _, err := v.Gen(blk, topBlock, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: common.MaxTxTimeLimit,
@@ -71,19 +71,19 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 		return nil, err
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
+	err = snapshot.Save(db, blk)
+	if err != nil {
+		return nil, err
+	}
 	db.Tag(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
-	return &blk, nil
+	return blk, nil
 }
 
-func verifyBasics(head *block.BlockHead, signature *crypto.Signature) error {
-
-	signature.SetPubkey(account.DecodePubkey(head.Witness))
-	hash, err := head.Hash()
-	if err != nil {
-		return errHeadHash
-	}
+func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
+	signature.SetPubkey(account.DecodePubkey(blk.Head.Witness))
+	hash := blk.HeadHash()
 	if !signature.Verify(hash) {
 		return errSignature
 	}

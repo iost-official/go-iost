@@ -8,6 +8,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
@@ -19,7 +20,7 @@ import (
 )
 
 // GenesisTxExecTime is the maximum execution time of a transaction in genesis block
-var GenesisTxExecTime = 3 * time.Second
+var GenesisTxExecTime = 10 * time.Second
 
 // GenGenesisByFile is create a genesis block by config file
 func GenGenesisByFile(db db.MVCCDB, path string) (*block.Block, error) {
@@ -128,6 +129,13 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "base.iost", code.B64Encode())))
 	acts = append(acts, tx.NewAction("base.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
+	// deploy exchange.iost
+	code, err = compile("exchange.iost", gConf.ContractPath, "exchange.js")
+	if err != nil {
+		return nil, nil, err
+	}
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "exchange.iost", code.B64Encode())))
+
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, v.ID, v.SignatureBlock)))
 	}
@@ -196,7 +204,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil || txr.Status.Code != tx.Success {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)
 	}
-	blk := block.Block{
+	blk := &block.Block{
 		Head:     &blockHead,
 		Sign:     &crypto.Signature{},
 		Txs:      []*tx.Tx{trx},
@@ -208,6 +216,10 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		return nil, err
 	}
+	err = snapshot.Save(db, blk)
+	if err != nil {
+		return nil, err
+	}
 	db.Tag(string(blk.HeadHash()))
-	return &blk, nil
+	return blk, nil
 }

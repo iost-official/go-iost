@@ -1,5 +1,5 @@
 acc:
-  id: producer01
+  id: producer000
   seckey: 1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB
   algorithm: ed25519
 genesis: config/genesis
@@ -8,6 +8,9 @@ vm:
   loglevel: ""
 db:
   ldbpath: storage/
+snapshot:
+  enable: false
+  filepath: storage/snapshot.tar.gz
 p2p:
   listenaddr: 0.0.0.0:30000
   seednodes:

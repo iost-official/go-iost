@@ -45,6 +45,9 @@ const (
 	None int = iota
 	TransferTx
 	ContractTransferTx
+	GasTx
+	RAMTx
+	AccountTx
 )
 
 // BenchmarkAction is the action of benchmark.
@@ -69,8 +72,21 @@ var BenchmarkAction = func(c *cli.Context) error {
 		if err != nil {
 			return err
 		}
+	case "g", "gas":
+		txType = GasTx
+	case "r", "ram":
+		txType = RAMTx
+	case "a", "account":
+		txType = AccountTx
+		err := it.Pledge(it.GetDefaultAccount(), "10000000", true)
+		if err != nil {
+			return err
+		}
+		itest.InitAmount = "10"
+		itest.InitPledge = "20"
+		itest.InitRAM = "1000"
 	default:
-		return fmt.Errorf("Wrong transaction type: %v", txType)
+		return fmt.Errorf("wrong transaction type: %v", txType)
 	}
 
 	accountFile := c.GlobalString("account")
@@ -100,8 +116,18 @@ var BenchmarkAction = func(c *cli.Context) error {
 		num := 0
 		if txType == TransferTx {
 			num, err = it.TransferN(tps, accounts, memoSize, false)
-		} else {
+		} else if txType == ContractTransferTx {
 			num, err = it.ContractTransferN(cid, tps, accounts, memoSize, false)
+		} else if txType == GasTx {
+			num, err = it.PledgeGasN("rand", tps, accounts, false)
+		} else if txType == RAMTx {
+			num, err = it.BuyRAMN("rand", tps, accounts, false)
+		} else if txType == AccountTx {
+			var accs []*itest.Account
+			accs, err = it.CreateAccountN(tps, true, false)
+			num = len(accs)
+		} else {
+			panic("invalid tx type, check --type flag")
 		}
 		if err != nil {
 			ilog.Infoln(err)

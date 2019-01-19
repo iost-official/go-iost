@@ -458,6 +458,16 @@ message FrozenBalance {
     int64 time = 2;
 }
 
+// The message defines the account's vote info.
+message VoteInfo {
+    // option name
+    string option = 1;
+    // votes
+    string votes = 2;
+    // cleared votes
+    string cleared_votes = 3;
+}
+
 message GasRatioResponse {
     // lowest gas ratio in head block
     double lowest_gas_ratio = 1;
@@ -549,6 +559,9 @@ message Account {
 
     // frozen balance information
     repeated FrozenBalance frozen_balances = 7;
+
+    // vote information
+    repeated VoteInfo vote_infos = 8;
 }
 
 // The message defines the get account request.

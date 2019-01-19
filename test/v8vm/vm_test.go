@@ -582,7 +582,12 @@ func TestEngine_Func(t *testing.T) {
 
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger", int64(1e12))
-	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
+	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
+	if err != nil || cost.ToGas() != int64(5052842) {
+		t.Fatalf("LoadAndCall objadd should cost 5052842 , got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "tooBigArray")
 	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr gas overflow max int") {
 		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr gas overflow max int, got %v\n", err)
 	}

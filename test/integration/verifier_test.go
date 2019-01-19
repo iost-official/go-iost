@@ -486,7 +486,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			Contract:   "token.iost",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "10"),
-		}}, nil, 500000, 100, 10000000, 0, 0)
+		}}, nil, 600000, 100, 10000000, 0, 0)
 
 		r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 		t.Log(err, r, r.Status)
