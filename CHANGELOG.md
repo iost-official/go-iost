@@ -1,3 +1,13 @@
+## Everest v2.3.0
+
+Sat Jan 19 17:25:28 CST 2019
+
+- Increase minimum GasLimit of transaction from 5000 to 6000.
+- RPC: add "voteInfos" to getAccount api
+- Complete vote, dividend test
+- iwallet remove npm package dependencies
+- Add exchange.iost system contract, used for creating accounts and transferring
+
 ## Everest v2.2.1
 
 Sat Jan 12 20:36:05 CST 2019

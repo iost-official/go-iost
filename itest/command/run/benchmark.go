@@ -48,6 +48,7 @@ const (
 	GasTx
 	RAMTx
 	AccountTx
+	ExchangeTransferTx
 )
 
 // BenchmarkAction is the action of benchmark.
@@ -85,6 +86,8 @@ var BenchmarkAction = func(c *cli.Context) error {
 		itest.InitAmount = "10"
 		itest.InitPledge = "20"
 		itest.InitRAM = "1000"
+	case "e", "exchange":
+		txType = ExchangeTransferTx
 	default:
 		return fmt.Errorf("wrong transaction type: %v", txType)
 	}
@@ -126,6 +129,8 @@ var BenchmarkAction = func(c *cli.Context) error {
 			var accs []*itest.Account
 			accs, err = it.CreateAccountN(tps, true, false)
 			num = len(accs)
+		} else if txType == ExchangeTransferTx {
+			num, err = it.ExchangeTransferN(tps, accounts, memoSize, false)
 		} else {
 			panic("invalid tx type, check --type flag")
 		}
