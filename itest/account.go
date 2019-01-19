@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
+	"strings"
 )
 
 // Account is account of user
@@ -51,17 +52,35 @@ func NewAccount(id string, seckey string, algorithm string) *Account {
 // LoadAccounts will load accounts from file
 func LoadAccounts(file string) ([]*Account, error) {
 	ilog.Infof("Load accounts from %v", file)
+	accounts := []*Account{}
 
-	var data []byte
-	var err error
-	data, err = ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
+	files := []string{}
+	if strings.HasSuffix(file, "/") {
+		fis, err := ioutil.ReadDir(file)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range fis {
+			if !f.IsDir() && strings.HasSuffix(f.Name(), ".json") {
+				files = append(files, file + f.Name())
+			}
+		}
+	} else {
+		files = append(files, file)
 	}
 
-	accounts := []*Account{}
-	if err := json.Unmarshal(data, &accounts); err != nil {
-		return nil, err
+	for i := 0; i < len(files); i++ {
+		var data []byte
+		var err error
+		data, err = ioutil.ReadFile(files[i])
+		if err != nil {
+			return nil, err
+		}
+		taccs := []*Account{}
+		if err := json.Unmarshal(data, &taccs); err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, taccs...)
 	}
 
 	return accounts, nil
