@@ -20,7 +20,7 @@ import (
 )
 
 // GenesisTxExecTime is the maximum execution time of a transaction in genesis block
-var GenesisTxExecTime = 3 * time.Second
+var GenesisTxExecTime = 10 * time.Second
 
 // GenGenesisByFile is create a genesis block by config file
 func GenGenesisByFile(db db.MVCCDB, path string) (*block.Block, error) {
