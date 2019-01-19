@@ -6,8 +6,6 @@ import (
 	"testing"
 	"time"
 
-	"encoding/base64"
-
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -192,7 +190,7 @@ func TestTx(t *testing.T) {
 }
 
 func TestTx_Platform(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 	//var sep = `\` + "`" + "^" + "/" + "<"
 	//fmt.Println(sep, "is", []byte(sep))
 	txx := &Tx{
@@ -219,9 +217,9 @@ func TestTx_Platform(t *testing.T) {
 
 	fmt.Println("{")
 
-	fmt.Printf(`"tx_bytes_0" : "%v",`+"\n", base64.StdEncoding.EncodeToString(by))
+	fmt.Printf(`"tx_bytes_0" : "%x",`+"\n", by)
 
-	fmt.Printf(`"tx_base_hash" : "%v",`+"\n", base64.StdEncoding.EncodeToString(txx.baseHash()))
+	fmt.Printf(`"tx_base_hash" : "%x",`+"\n", txx.baseHash())
 
 	kp, err := account.NewKeyPair(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
 	if err != nil {
@@ -233,19 +231,19 @@ func TestTx_Platform(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Printf(`"sig_bytes" : "%v",`+"\n", base64.StdEncoding.EncodeToString(sig.ToBytes()))
-	fmt.Printf(`"sig_pubkey" : "%v",`+"\n", base64.StdEncoding.EncodeToString(sig.Pubkey))
-	fmt.Printf(`"sig_sig" : "%v",`+"\n", base64.StdEncoding.EncodeToString(sig.Sig))
+	fmt.Printf(`"sig_bytes" : "%x",`+"\n", sig.ToBytes())
+	fmt.Printf(`"sig_pubkey" : "%x",`+"\n", sig.Pubkey)
+	fmt.Printf(`"sig_sig" : "%x",`+"\n", sig.Sig)
 
 	txx.Signs = append(txx.Signs, sig)
 
-	fmt.Printf(`"tx_bytes_1" : "%v",`+"\n", base64.StdEncoding.EncodeToString(txx.ToBytes(1)))
+	fmt.Printf(`"tx_bytes_1" : "%x",`+"\n", txx.ToBytes(1))
 
-	fmt.Printf(`"tx_publish_hash" : "%v",`+"\n", base64.StdEncoding.EncodeToString(txx.publishHash()))
+	fmt.Printf(`"tx_publish_hash" : "%x",`+"\n", txx.publishHash())
 
 	tx2, err := SignTx(txx, "def", []*account.KeyPair{kp})
 
-	fmt.Printf(`"tx_publish_sign" : "%v"`+"\n", base64.StdEncoding.EncodeToString(tx2.PublishSigns[0].ToBytes()))
+	fmt.Printf(`"tx_publish_sign" : "%x"`+"\n", tx2.PublishSigns[0].ToBytes())
 	fmt.Println("}")
 }
 

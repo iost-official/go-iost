@@ -127,9 +127,9 @@ class Account {
             items: [{
                 id: active,
                 is_key_pair: true,
-                weight: 1,
+                weight: 100,
             }],
-            threshold: 1,
+            threshold: 100,
         };
         account.permissions.owner = {
             name: "owner",
@@ -137,9 +137,9 @@ class Account {
             items: [{
                 id: owner,
                 is_key_pair: true,
-                weight: 1,
+                weight: 100,
             }],
-            threshold: 1,
+            threshold: 100,
         };
         account.groups = {};
         this._saveAccount(account, blockchain.contractName());
