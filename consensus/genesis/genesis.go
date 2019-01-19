@@ -129,6 +129,13 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "base.iost", code.B64Encode())))
 	acts = append(acts, tx.NewAction("base.iost", "initAdmin", fmt.Sprintf(`["%v"]`, adminInfo.ID)))
 
+	// deploy exchange.iost
+	code, err = compile("exchange.iost", gConf.ContractPath, "exchange.js")
+	if err != nil {
+		return nil, nil, err
+	}
+	acts = append(acts, tx.NewAction("system.iost", "initSetCode", fmt.Sprintf(`["%v", "%v"]`, "exchange.iost", code.B64Encode())))
+
 	for _, v := range witnessInfo {
 		acts = append(acts, tx.NewAction("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, v.ID, v.SignatureBlock)))
 	}
