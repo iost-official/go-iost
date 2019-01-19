@@ -9,9 +9,6 @@ const votePermission = "active";
 const statPermission = "active";
 
 class VoteContract {
-    constructor() {
-    }
-
     init() {
         this._put("currentProducerList", []);
         this._put("pendingProducerList", []);

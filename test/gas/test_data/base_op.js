@@ -1,9 +1,6 @@
 'use strict';
 
 class BaseOp {
-    constructor() {
-    }
-
     doThrowStatement(num) {
         for (let i = 0; i < num; i++) {
             try {
