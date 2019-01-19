@@ -208,6 +208,7 @@ func (logger *Logger) Errorf(format string, v ...interface{}) {
 
 // Fatalf generates a fatal-level log and exits the program.
 func (logger *Logger) Fatalf(format string, v ...interface{}) {
+	debug.PrintStack()
 	logger.genMsg(LevelFatal, fmt.Sprintf(format, v...))
 	logger.Stop()
 	os.Exit(1)
@@ -239,6 +240,7 @@ func (logger *Logger) Errorln(v ...interface{}) {
 
 // Fatalln generates a fatal-level log and exits the program.
 func (logger *Logger) Fatalln(v ...interface{}) {
+	debug.PrintStack()
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelFatal, msg[:len(msg)-1])
 	logger.Stop()
@@ -267,6 +269,7 @@ func (logger *Logger) Error(v ...interface{}) {
 
 // Fatal generates a fatal-level log and exits the program.
 func (logger *Logger) Fatal(v ...interface{}) {
+	debug.PrintStack()
 	logger.genMsg(LevelFatal, fmt.Sprint(v...))
 	logger.Stop()
 	os.Exit(1)
