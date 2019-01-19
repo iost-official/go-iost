@@ -83,6 +83,8 @@ func TestSignature_Platform(t *testing.T) {
 
 	secp := NewAlgorithm("secp256k1")
 	sec := common.Base58Decode("EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE")
+	t.Log(fmt.Sprintf("seckey > %x", sec))
+
 	pubkey2 := secp.GetPubkey(sec)
 	t.Log(fmt.Sprintf("pubkey    > %x", pubkey2))
 	t.Log("pubkey in base64 >", base64.StdEncoding.EncodeToString(pubkey2))
