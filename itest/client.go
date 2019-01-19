@@ -18,12 +18,12 @@ import (
 
 // Constant of Client
 var (
-	Interval   = 2 * time.Millisecond
+	Interval   = 15 * time.Second
 	Timeout    = (90 + 30) * time.Second
 	InitToken  = "iost"
-	InitAmount = "1000"
-	InitPledge = "1000"
-	InitRAM    = "3000"
+	InitAmount = "1000000"
+	InitPledge = "1000000"
+	InitRAM    = "1000000"
 )
 
 // Client is a grpc client for iserver

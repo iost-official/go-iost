@@ -56,6 +56,10 @@ type token721Info struct {
 
 // BenchmarkToken721Action is the action of benchmark.
 var BenchmarkToken721Action = func(c *cli.Context) error {
+	itest.Interval = 2 * time.Millisecond
+	itest.InitAmount = "1000"
+	itest.InitPledge = "1000"
+	itest.InitRAM = "3000"
 	//ilog.SetLevel(ilog.LevelDebug)
 	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
 	if err != nil {
