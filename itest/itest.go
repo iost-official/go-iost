@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 
 	"github.com/iost-official/go-iost/ilog"
+	"reflect"
 )
 
 // Constant of itest
@@ -748,6 +749,45 @@ func (t *ITest) GetAccount(name string) (*Account, error) {
 	}
 
 	return account, nil
+}
+
+// SendTransactionN will send n transaction to blockchain concurrently
+func (t *ITest) SendTransactionN(trxs []*Transaction, check bool) ([]string, []error) {
+	ilog.Infof("Send %v transaction...", len(trxs))
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < len(trxs); i++ {
+			sem.acquire()
+			go func(idx int, res chan interface{}) {
+				defer sem.release()
+				cIndex := rand.Intn(len(t.clients))
+				client := t.clients[cIndex]
+				hash, err := client.SendTransaction(trxs[idx], check)
+				if err != nil {
+					res <- err
+				} else {
+					res <- hash
+				}
+			}(i, res)
+		}
+	}()
+
+	hashList := []string{}
+	errList := []error{}
+	for i := 0; i < len(trxs); i++ {
+		switch value := (<-res).(type) {
+		case error:
+			errList = append(errList, value)
+		case string:
+			hashList = append(hashList, value)
+		default:
+			ilog.Errorf("unexpected send transaction value type. %v %v", value, reflect.TypeOf(value))
+		}
+	}
+	ilog.Infof("Send %v transaction successful! %v failed.", len(hashList), len(errList))
+	return hashList, errList
 }
 
 // SendTransaction will send transaction to blockchain

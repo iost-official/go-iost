@@ -16,7 +16,7 @@ var (
 	Expiration  = int64(math.MaxInt64)   // Max expired time is 90 seconds
 	Delay       = int64(0 * time.Second) // No delay
 	Signers     = make([]string, 0)      // No mutiple signers
-	AmountLimit = []*contract.Amount{{Token: "iost", Val: "unlimited"}}
+	AmountLimit = []*contract.Amount{{Token: "*", Val: "unlimited"}}
 	ChainID     = uint32(1024)
 )
 
