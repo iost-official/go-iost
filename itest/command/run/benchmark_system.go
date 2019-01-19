@@ -6,12 +6,12 @@ import (
 	"syscall"
 	"time"
 
+	"fmt"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
-	"fmt"
 	"math/rand"
-	"github.com/iost-official/go-iost/core/tx"
 	"sync"
 )
 
@@ -34,10 +34,10 @@ var BenchmarkSystemFlags = []cli.Flag{
 }
 
 const (
-	setCode = "setCode"
-	updateCode = "updateCode"
-	receipt = "receipt"
-	requireAuth = "requireAuth"
+	setCode       = "setCode"
+	updateCode    = "updateCode"
+	receipt       = "receipt"
+	requireAuth   = "requireAuth"
 	cancelDelaytx = "cancelDelaytx"
 )
 
@@ -100,10 +100,10 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 	checkReceiptConcurrent := 64
 	var contractMutex sync.Mutex
 	contractList := make([]string, 0)
-	contractMap:= make(map[string]string)
+	contractMap := make(map[string]string)
 	delayTxList := make([]string, 0)
 
-	hashCh := make(chan *hashItem, 4 * tps * int(itest.Timeout.Seconds()))
+	hashCh := make(chan *hashItem, 4*tps*int(itest.Timeout.Seconds()))
 	for c := 0; c < checkReceiptConcurrent; c++ {
 		go func(hashCh chan *hashItem) {
 			counter := 0
@@ -112,15 +112,15 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 				client := it.GetClients()[rand.Intn(len(it.GetClients()))]
 				_, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
 				//ilog.Infof("receipt %v", r)
-				counter ++;
+				counter++
 				if err != nil {
 					ilog.Errorf("check transaction failed, %v", err)
-					failedCounter ++;
+					failedCounter++
 				}
 				if counter%1000 == 0 {
 					ilog.Warnf("check %v transaction, %v successful, %v failed.", counter, counter-failedCounter, failedCounter)
 				}
-				if len(hashCh) > 3 * tps * int(itest.Timeout.Seconds()) {
+				if len(hashCh) > 3*tps*int(itest.Timeout.Seconds()) {
 					ilog.Infof("hash ch size too large %v", len(hashCh))
 				}
 			}
@@ -273,7 +273,7 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 		expire := time.Now().Add(itest.Timeout)
 		for _, hash := range hashList {
 			select {
-			case hashCh <- &hashItem{hash:hash, expire:expire}:
+			case hashCh <- &hashItem{hash: hash, expire: expire}:
 			case <-time.After(1 * time.Millisecond):
 			}
 		}

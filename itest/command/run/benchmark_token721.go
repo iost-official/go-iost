@@ -6,19 +6,19 @@ import (
 	"syscall"
 	"time"
 
+	"encoding/json"
+	"fmt"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
-	"fmt"
+	"math"
 	"math/rand"
-	"github.com/iost-official/go-iost/core/tx"
 	"strconv"
 	"sync"
-	"math"
-	"encoding/json"
 )
 
-// BenchmarkCommand is the subcommand for benchmark.
+// BenchmarkToken721Command is the subcommand for benchmark.
 var BenchmarkToken721Command = cli.Command{
 	Name:      "benchmarkToken721",
 	ShortName: "benchT721",
@@ -37,21 +37,21 @@ var BenchmarkToken721Flags = []cli.Flag{
 }
 
 const (
-	createToken721 = "create"
-	issueToken721 = "issue"
-	transferToken721 = "transfer"
-	balanceOfToken721 = "balanceOf"
-	ownerOfToken721 = "ownerOf"
-	tokenOfOwnerToken721 = "tokenOfOwnerByIndex"
+	createToken721        = "create"
+	issueToken721         = "issue"
+	transferToken721      = "transfer"
+	balanceOfToken721     = "balanceOf"
+	ownerOfToken721       = "ownerOf"
+	tokenOfOwnerToken721  = "tokenOfOwnerByIndex"
 	tokenMetadataToken721 = "tokenMetadata"
 )
 
 type token721Info struct {
-	sym string
-	issuer string
+	sym     string
+	issuer  string
 	balance map[string][]string
 	acclist []string
-	supply int
+	supply  int
 }
 
 // BenchmarkToken721Action is the action of benchmark.
@@ -95,7 +95,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 	tokenOffset := 0
 	var tokenMutex sync.Mutex
 
-	hashCh := make(chan *hashItem, 4 * tps * int(itest.Timeout.Seconds()))
+	hashCh := make(chan *hashItem, 4*tps*int(itest.Timeout.Seconds()))
 
 	for c := 0; c < checkReceiptConcurrent; c++ {
 		go func(hashCh chan *hashItem) {
@@ -105,10 +105,10 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				client := it.GetClients()[rand.Intn(len(it.GetClients()))]
 				r, err := client.CheckTransactionWithTimeout(item.hash, item.expire)
 				ilog.Debugf("receipt: %v", r)
-				counter ++;
+				counter++
 				if err != nil {
 					ilog.Errorf("check transaction failed, %v", err)
-					failedCounter ++;
+					failedCounter++
 				} else {
 					for i := 0; i < len(r.Receipts); i++ {
 						if r.Receipts[i].FuncName == "token721.iost/issue" {
@@ -143,24 +143,24 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 							ilog.Debugf("got receipt %v %v", r.Receipts[i], args)
 							tokenMutex.Lock()
 							tokenSym := args[0].(string)
-							issuer:= args[1].(string)
+							issuer := args[1].(string)
 							tokenList = append(tokenList, tokenSym)
 							tokenMap[tokenSym] = &token721Info{
-								sym:tokenSym,
-								issuer:issuer,
-								balance:make(map[string][]string),
-								acclist:[]string{},
-								supply:0,
+								sym:     tokenSym,
+								issuer:  issuer,
+								balance: make(map[string][]string),
+								acclist: []string{},
+								supply:  0,
 							}
 							tokenMutex.Unlock()
 							break
 						}
 					}
 				}
-				if counter % 1000 == 0 {
-					ilog.Warnf("check %v transaction, %v successful, %v failed. channel size %v", counter, counter - failedCounter, failedCounter, len(hashCh))
+				if counter%1000 == 0 {
+					ilog.Warnf("check %v transaction, %v successful, %v failed. channel size %v", counter, counter-failedCounter, failedCounter, len(hashCh))
 				}
-				if len(hashCh) > 3 * tps * int(itest.Timeout.Seconds()) {
+				if len(hashCh) > 3*tps*int(itest.Timeout.Seconds()) {
 					ilog.Infof("hash ch size too large %v", len(hashCh))
 				}
 			}
@@ -221,7 +221,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				}
 				acts := []*tx.Action{}
 				for i := 0; i < issueNumber; i++ {
-					acts = append(acts, tx.NewAction(contractName, abiName, fmt.Sprintf(`["%v", "%v", "%v"]`, tokenSym, to.ID, "meta" + to.ID)))
+					acts = append(acts, tx.NewAction(contractName, abiName, fmt.Sprintf(`["%v", "%v", "%v"]`, tokenSym, to.ID, "meta"+to.ID)))
 				}
 				tx1 := itest.NewTransaction(acts)
 				trx, err = issuer.Sign(tx1)
@@ -386,7 +386,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 		expire := time.Now().Add(itest.Timeout)
 		for _, hash := range hashList {
 			select {
-			case hashCh <- &hashItem{hash:hash, expire:expire}:
+			case hashCh <- &hashItem{hash: hash, expire: expire}:
 			case <-time.After(1 * time.Millisecond):
 			}
 		}

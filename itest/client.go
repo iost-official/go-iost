@@ -139,6 +139,7 @@ func (c *Client) SendTransaction(transaction *Transaction, check bool) (string, 
 	return resp.GetHash(), nil
 }
 
+// CheckTransactionWithTimeout will check transaction receipt with expire time
 func (c *Client) CheckTransactionWithTimeout(hash string, expire time.Time) (*Receipt, error) {
 	ticker := time.NewTicker(Interval)
 	var afterTimeout <-chan time.Time
