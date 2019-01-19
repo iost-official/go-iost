@@ -3,8 +3,6 @@ const voteStatInterval = 2000;
 const issueInterval = 288000;
 
 class Base {
-    constructor() {
-    }
     init() {
         this._put("execBlockNumber", 0);
     }

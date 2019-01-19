@@ -14,9 +14,6 @@ const TRUE = 1;
 const FALSE = 0;
 
 class VoteCommonContract {
-    constructor() {
-    }
-
     init() {
         this._put("current_id", "0");
     }
