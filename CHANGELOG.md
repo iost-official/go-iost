@@ -1,3 +1,9 @@
+## Everest v2.3.1
+
+Sat Jan 19 18:32:18 CST 2019
+
+- Add can_update to exchange.iost contract.
+
 ## Everest v2.3.0
 
 Sat Jan 19 17:25:28 CST 2019
