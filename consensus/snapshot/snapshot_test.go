@@ -24,7 +24,7 @@ func randString(n int) string {
 func TestSnapshot(t *testing.T) {
 	Convey("Test of Snapshot", t, func() {
 		os.RemoveAll("DB")
-		defer os.RemoveAll("DB")
+		// defer os.RemoveAll("DB")
 		stateDB, err := db.NewMVCCDB("DB/StateDB")
 		So(err, ShouldBeNil)
 
