@@ -7,6 +7,7 @@ import (
 	"strconv"
 
 	"github.com/iost-official/go-iost/ilog"
+	"reflect"
 )
 
 // Constant of itest
