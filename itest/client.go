@@ -2,6 +2,7 @@ package itest
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"math/rand"
@@ -244,11 +245,8 @@ func (c *Client) CreateAccount(creator *Account, name string, key *Key, check bo
 func (c *Client) ContractTransfer(cid string, sender, recipient *Account, amount string, memoSize int, check bool) error {
 	memo := make([]byte, memoSize)
 	rand.Read(memo)
-	// Convert to base64.
-	memo, _ = json.Marshal(memo)
-	// Get rid of the beginning quote and cut to the string of given size.
-	memo = memo[1 : memoSize+1]
-	_, err := c.CallAction(check, sender, cid, "transfer", sender.ID, recipient.ID, amount, string(memo))
+	memoStr := base64.StdEncoding.EncodeToString(memo)
+	_, err := c.CallAction(check, sender, cid, "transfer", sender.ID, recipient.ID, amount, memoStr[:memoSize])
 	return err
 }
 
@@ -320,11 +318,8 @@ func (c *Client) SellRAM(sender *Account, amount int64, check bool) error {
 func (c *Client) Transfer(sender, recipient *Account, token, amount string, memoSize int, check bool) error {
 	memo := make([]byte, memoSize)
 	rand.Read(memo)
-	// Convert to base64.
-	memo, _ = json.Marshal(memo)
-	// Get rid of the beginning quote and cut to the string of given size.
-	memo = memo[1 : memoSize+1]
-	_, err := c.CallAction(check, sender, "token.iost", "transfer", token, sender.ID, recipient.ID, amount, string(memo))
+	memoStr := base64.StdEncoding.EncodeToString(memo)
+	_, err := c.CallAction(check, sender, "token.iost", "transfer", token, sender.ID, recipient.ID, amount, memoStr[:memoSize])
 	return err
 }
 
