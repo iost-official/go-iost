@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"runtime/debug"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -208,7 +209,7 @@ func (logger *Logger) Errorf(format string, v ...interface{}) {
 
 // Fatalf generates a fatal-level log and exits the program.
 func (logger *Logger) Fatalf(format string, v ...interface{}) {
-	logger.genMsg(LevelFatal, fmt.Sprintf(format, v...))
+	logger.genMsg(LevelFatal, fmt.Sprintf(format, v...)+"\n"+string(debug.Stack()))
 	logger.Stop()
 	os.Exit(1)
 }
@@ -240,7 +241,7 @@ func (logger *Logger) Errorln(v ...interface{}) {
 // Fatalln generates a fatal-level log and exits the program.
 func (logger *Logger) Fatalln(v ...interface{}) {
 	msg := fmt.Sprintln(v...)
-	logger.genMsg(LevelFatal, msg[:len(msg)-1])
+	logger.genMsg(LevelFatal, msg[:len(msg)-1]+"\n"+string(debug.Stack()))
 	logger.Stop()
 	os.Exit(1)
 }
@@ -267,7 +268,7 @@ func (logger *Logger) Error(v ...interface{}) {
 
 // Fatal generates a fatal-level log and exits the program.
 func (logger *Logger) Fatal(v ...interface{}) {
-	logger.genMsg(LevelFatal, fmt.Sprint(v...))
+	logger.genMsg(LevelFatal, fmt.Sprint(v...)+"\n"+string(debug.Stack()))
 	logger.Stop()
 	os.Exit(1)
 }
