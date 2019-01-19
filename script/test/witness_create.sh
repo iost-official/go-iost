@@ -18,5 +18,5 @@ readonly WITNESS_PUBKEY=(
 iwallet account --import ${CREATOR_ACCOUNT} ${CREATOR_ACCOUNT_SECKEY}
 for (( i = 0; i < ${WITNESS_NUM}; i++ ))
 do
-    iwallet -s ${GRPC_URL} --account ${CREATOR_ACCOUNT} --amount_limit "ram:1024|iost:10" account --create ${WITNESS_NAME[i]} --initial_balance 0 --initial_gas_pledge 10 --initial_ram 1024 --owner ${WITNESS_PUBKEY[i]} --active ${WITNESS_PUBKEY[i]}
+    iwallet -s ${GRPC_URL} --account ${CREATOR_ACCOUNT} --amount_limit "ram:1024|iost:100" account --create ${WITNESS_NAME[i]} --initial_balance 0 --initial_gas_pledge 100 --initial_ram 1024 --owner ${WITNESS_PUBKEY[i]} --active ${WITNESS_PUBKEY[i]}
 done
