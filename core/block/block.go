@@ -85,8 +85,7 @@ func (b *BlockHead) Decode(bhByte []byte) error {
 	return nil
 }
 
-// Hash return hash
-func (b *BlockHead) Hash() ([]byte, error) {
+func (b *BlockHead) hash() ([]byte, error) {
 	return common.Sha3(b.ToBytes()), nil
 }
 
@@ -187,7 +186,7 @@ func (b *Block) Decode(blockByte []byte) error {
 // CalculateHeadHash calculate the hash of the head
 func (b *Block) CalculateHeadHash() error {
 	var err error
-	b.hash, err = b.Head.Hash()
+	b.hash, err = b.Head.hash()
 	return err
 }
 

@@ -47,7 +47,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get balance on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&sdk.checkResult, "check_result", "", true, "Check publish/call status after sending to chain")
 	rootCmd.PersistentFlags().Float32VarP(&sdk.checkResultDelay, "check_result_delay", "", 3, "RPC checking will occur at [checkResultDelay] seconds after sending to chain.")
-	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "check_result_max_retry", "", 10, "Max times to call grpc to check tx status")
+	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "check_result_max_retry", "", 20, "Max times to call grpc to check tx status")
 	rootCmd.PersistentFlags().StringVarP(&sdk.signAlgo, "sign_algo", "", "ed25519", "Sign algorithm")
 	rootCmd.PersistentFlags().Float64VarP(&sdk.gasLimit, "gas_limit", "l", 1000000, "gasLimit for a transaction")
 	rootCmd.PersistentFlags().Float64VarP(&sdk.gasRatio, "gas_ratio", "p", 1.0, "gasRatio for a transaction")

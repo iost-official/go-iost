@@ -11,7 +11,7 @@ type Receipt struct {
 	*tx.TxReceipt
 }
 
-// Success will return weather the receipt is successful
+// Success will return whether the receipt is successful
 func (r *Receipt) Success() bool {
 	return r.Status.Code == tx.Success
 }

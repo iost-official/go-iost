@@ -1111,7 +1111,7 @@
           "type": "string",
           "title": "contract id"
         },
-        "fields": {
+        "key": {
           "type": "string",
           "title": "get the fields from StateDB"
         },
@@ -1126,8 +1126,11 @@
     "rpcpbGetContractStorageFieldsResponse": {
       "type": "object",
       "properties": {
-        "data": {
-          "type": "string",
+        "fields": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
           "title": "the json string data"
         }
       },

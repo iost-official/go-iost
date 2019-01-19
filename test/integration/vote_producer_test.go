@@ -61,6 +61,11 @@ func prepareNewProducerVote(t *testing.T, s *Simulator, acc1 *TestAccount) {
 		t.Fatal(err, r)
 	}
 
+	r, err = s.Call("vote.iost", "initAdmin", fmt.Sprintf(`["%s"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
+
 	// deploy vote_producer.iost
 	setNonNativeContract(s, "vote_producer.iost", "vote_producer.js", ContractPath)
 	r, err = s.Call("vote_producer.iost", "initAdmin", fmt.Sprintf(`["%v"]`, acc1.ID), acc1.ID, acc1.KeyPair)
@@ -74,6 +79,11 @@ func prepareNewProducerVote(t *testing.T, s *Simulator, acc1 *TestAccount) {
 	}
 
 	r, err = s.Call("vote_producer.iost", "init", `[]`, acc1.ID, acc1.KeyPair)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
+
+	r, err = s.Call("vote_producer.iost", "initAdmin", fmt.Sprintf(`["%s"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 	if err != nil || r.Status.Code != tx.Success {
 		t.Fatal(err, r)
 	}
@@ -100,7 +110,7 @@ func Test_InitProducer(t *testing.T) {
 			list, _ := json.Marshal([]string{acc0.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc2.KeyPair.ReadablePubkey()})
 			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(list))
 
-			So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"0", "1", "2", "3", "4", "5"})
+			So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"user_0", "user_1", "user_2", "user_3", "user_4", "user_5"})
 		})
 	})
 }
@@ -124,13 +134,13 @@ func Test_RegisterProducer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote_producer.iost-producerTable", acc6.ID)), ShouldEqual, fmt.Sprintf(`{"pubkey":"%s","loc":"loc","url":"url","netId":"netId","online":false,"registerFee":"200000000"}`, acc6.KeyPair.ReadablePubkey()))
 			So(s.Visitor.TokenBalance("iost", acc6.ID), ShouldEqual, int64(1800000000*1e8))
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"0"`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc6.ID)), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
 
 			r, err = s.Call("vote_producer.iost", "unregisterProducer", fmt.Sprintf(`["%v"]`, acc6.ID), acc6.ID, acc6.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.MHas("vote_producer.iost-producerTable", acc6.ID), ShouldEqual, false)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "6")), ShouldEqual, `"0"`)
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc6.ID)), ShouldBeNil)
 		})
 	})
 }
@@ -456,10 +466,10 @@ func Test_Unregister2(t *testing.T) {
 		}
 		// So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", fmt.Sprintf(`%d`, 1))), ShouldEqual, "")
 		for idx, acc := range testAccounts {
-			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
+			r, err := s.Call("vote_producer.iost", "voteFor", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, acc0.ID, acc1.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", fmt.Sprintf(`%d`, idx))), ShouldEqual, fmt.Sprintf(`"%d"`, (idx+2)*1e7))
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, (idx+2)*1e7))
 		}
 
 		// do stat
@@ -616,8 +626,8 @@ func Test_Unregister2(t *testing.T) {
 		// 7, 6, 5, 4, 2, 1
 		currentList = pendingList
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
-		// 2, 1, 6, 4, 5, 7
-		pendingList, _ = json.Marshal([]string{acc2.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey(), acc6.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc7.KeyPair.ReadablePubkey()})
+		// 2, 7, 6, 5, 4, 1
+		pendingList, _ = json.Marshal([]string{acc2.KeyPair.ReadablePubkey(), acc7.KeyPair.ReadablePubkey(), acc6.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey()})
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 		scores = `{"user_2":"161796771.42857142"}`
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
@@ -648,13 +658,106 @@ func Test_Unregister2(t *testing.T) {
 		// 7 W	: X					, 9
 		// 8 	: 10 - 1.04359354	, 10
 		// 9 	: 11 - 1.04359354	, 11
-		// 2, 1, 6, 4, 5, 7
+		// 2, 7, 6, 5, 4, 1
 		currentList = pendingList
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
-		// 2, 9, 8, 4, 3, 1
-		pendingList, _ = json.Marshal([]string{acc2.KeyPair.ReadablePubkey(), acc9.KeyPair.ReadablePubkey(), acc8.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey()})
+		// 2, 9, 8, 4, 3, 7
+		pendingList, _ = json.Marshal([]string{acc2.KeyPair.ReadablePubkey(), acc9.KeyPair.ReadablePubkey(), acc8.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey(), acc7.KeyPair.ReadablePubkey()})
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 		scores = `{"user_2":"191360835.99999999","user_9":"99564064.57142857","user_8":"89564064.57142857","user_4":"49564064.57142857","user_3":"39564064.57142857"}`
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
+	})
+}
+
+func Test_TakeTurns(t *testing.T) {
+	ilog.Stop()
+	Convey("test take turns", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		s.Head.Number = 0
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		prepareToken(t, s, acc0)
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
+
+		s.Head.Number = 1
+		for _, acc := range testAccounts[6:] {
+			r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			r, err = s.Call("vote_producer.iost", "approveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+		}
+		for idx, acc := range testAccounts {
+			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, (idx+2)*1e7))
+		}
+
+		// do stat
+		s.Head.Number = 2000
+		r, err := s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		// acc	: score			, votes
+		// 0	: 2				, 2
+		// 1	: 3				, 3
+		// 2	: 4				, 4
+		// 3	: 5				, 5
+		// 4	: 6 - 0.65		, 6
+		// 5	: 7 - 0.65		, 7
+		// 6	: 8 - 0.65		, 8
+		// 7	: 9 - 0.65		, 9
+		// 8	: 10 - 0.65		, 10
+		// 9	: 11 - 0.65		, 11
+		// 0, 3, 1, 4, 5, 2
+		currentList, _ := json.Marshal([]string{acc0.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc2.KeyPair.ReadablePubkey()})
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+		// 9, 8, 7, 6, 5, 4
+		pendingList, _ := json.Marshal([]string{acc9.KeyPair.ReadablePubkey(), acc8.KeyPair.ReadablePubkey(), acc7.KeyPair.ReadablePubkey(), acc6.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey()})
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+		scores := `{"user_9":"103500000.00000000","user_8":"93500000.00000000","user_7":"83500000.00000000","user_6":"73500000.00000000","user_5":"63500000.00000000","user_4":"53500000.00000000","user_3":"50000000","user_2":"40000000","user_1":"30000000","user_0":"20000000"}`
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
+
+		for i := 7; i < 10; i++ {
+			acc := testAccounts[i]
+			r, err := s.Call("vote_producer.iost", "unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (i+2)*1e7), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
+		}
+
+		// do stat
+		s.Head.Number += 2000
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		// acc	: score			, votes
+		// 0	: 4				, 2
+		// 1	: 6 - 0.97214	, 3
+		// 2	: 8 - 0.97214	, 4
+		// 3	: 10 - 0.97214	, 5
+		// 4	: 12 - 1.62214	, 6
+		// 5	: 14 - 1.62214	, 7
+		// 6	: 16 - 1.62214	, 8
+		// 7	: 0				, 0
+		// 8	: 0				, 0
+		// 9	: 0				, 0
+		// 9, 8, 7, 6, 5, 4
+		currentList = pendingList
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+		// 6, 5, 4, 3, 2, 1
+		pendingList, _ = json.Marshal([]string{acc6.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey(), acc2.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey()})
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+		scores = `{"user_6":"143778571.42857142","user_5":"123778571.42857142","user_4":"103778571.42857142","user_3":"90278571.42857142","user_2":"70278571.42857142","user_1":"50278571.42857142","user_0":"40000000"}`
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
 	})
 }
