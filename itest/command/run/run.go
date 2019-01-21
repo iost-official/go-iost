@@ -56,4 +56,9 @@ var Flags = []cli.Flag{
 		Value: 100,
 		Usage: "The number of accounts to generated if no given account file",
 	},
+	cli.StringFlag{
+		Name:  "log, l",
+		Value: "itest_logs",
+		Usage: "log file path",
+	},
 }
