@@ -92,10 +92,10 @@ func slotOfSec(sec int64) int64 {
 	return sec / common.SlotLength
 }
 
-func timeUntilNextSchedule(timeSec int64) int64 {
-	currentSlot := timeSec / (second2nanosecond * common.SlotLength)
-	return (currentSlot+1)*second2nanosecond*common.SlotLength - timeSec
-}
+//func timeUntilNextSchedule(timeSec int64) int64 {
+//	currentSlot := timeSec / (second2nanosecond * common.SlotLength)
+//	return (currentSlot+1)*second2nanosecond*common.SlotLength - timeSec
+//}
 
 // GetStaticProperty return property. RPC needs it.
 func GetStaticProperty() *StaticProperty {
