@@ -32,6 +32,7 @@ type MVCCDB interface {
 	Checkout(t string) bool
 	Tag(t string)
 	CurrentTag() string
+	Tags() []string
 	Fork() MVCCDB
 	Flush(t string) error
 	Size() (int64, error)
@@ -333,14 +334,19 @@ func (m *CacheMVCCDB) Tag(t string) {
 	m.cm.AddTag(m.head, t)
 }
 
-// CurrentTag will returns current tag of mvccdb
+// CurrentTag will return current tag of mvccdb
 func (m *CacheMVCCDB) CurrentTag() string {
+	tags := m.Tags()
+	return tags[len(tags)-1]
+}
+
+// Tags will return all tags of mvccdb
+func (m *CacheMVCCDB) Tags() []string {
 	// TODO how to write better in this place
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
 
-	tags := m.cm.GetTags(m.head)
-	return tags[len(tags)-1]
+	return m.cm.GetTags(m.head)
 }
 
 // Fork will fork the mvcdb
