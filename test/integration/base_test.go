@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -31,18 +32,38 @@ func Test_Base(t *testing.T) {
 		prepareToken(t, s, acc0)
 		prepareProducerVote(t, s, acc0)
 		for _, acc := range testAccounts[:6] {
-			s.Call("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
+			r, err := s.Call("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
 		}
 
 		// deploy bonus.iost
 		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+		r, err := s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 
 		prepareBase(t, s, acc0)
 
 		s.Head.Number = 200
+		s.Head.Witness = "test_witness_01"
 		re, err := s.Call("base.iost", "exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc0.ID, 12345678), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(re.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.Get("base.iost-witness_produced")), ShouldEqual, `{"test_witness_01":1}`)
+
+		s.Head.Number++
+		s.Head.Witness = "test_witness_02"
+		re, err = s.Call("base.iost", "exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc0.ID, 12345678), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(re.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.Get("base.iost-witness_produced")), ShouldEqual, `{"test_witness_01":1,"test_witness_02":1}`)
+
+		s.Head.Number++
+		s.Head.Witness = "test_witness_02"
+		re, err = s.Call("base.iost", "exec", fmt.Sprintf(`[{"parent":["%v","%v"]}]`, acc0.ID, 12345678), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(re.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.Get("base.iost-witness_produced")), ShouldEqual, `{"test_witness_01":1,"test_witness_02":2}`)
 	})
 }
