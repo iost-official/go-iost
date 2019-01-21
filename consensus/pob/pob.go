@@ -317,7 +317,6 @@ func (p *PoB) scheduleLoop() {
 	for {
 		select {
 		case <-time.After(time.Duration(30 * time.Microsecond)):
-			time.Sleep(time.Microsecond)
 			t := time.Now()
 			pubkey := p.account.ReadablePubkey()
 			if !staticProperty.SlotUsed[slotOfSec(t.Unix())] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == pubkey {

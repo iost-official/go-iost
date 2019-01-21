@@ -1,10 +1,11 @@
 package pob
 
 import (
-	"strings"
-
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/ilog"
+	"strings"
+	"sync"
 )
 
 var staticProperty *StaticProperty
@@ -13,15 +14,16 @@ var staticProperty *StaticProperty
 type StaticProperty struct {
 	account           *account.KeyPair
 	NumberOfWitnesses int64
-	WitnessList       []string
+	witnessList       []string
 	Watermark         map[string]int64
 	SlotUsed          map[int64]bool
+	mu                sync.RWMutex
 }
 
 func newStaticProperty(account *account.KeyPair, witnessList []string) *StaticProperty {
 	property := &StaticProperty{
 		account:     account,
-		WitnessList: make([]string, 0),
+		witnessList: make([]string, 0),
 		Watermark:   make(map[string]int64),
 		SlotUsed:    make(map[int64]bool),
 	}
@@ -31,14 +33,36 @@ func newStaticProperty(account *account.KeyPair, witnessList []string) *StaticPr
 	return property
 }
 
-func (property *StaticProperty) updateWitness(witnessList []string) {
-
-	property.NumberOfWitnesses = int64(len(witnessList))
-	property.WitnessList = witnessList
+// WitnessList is return witnessList
+func (p *StaticProperty) WitnessList() []string {
+	return p.witnessList
 }
 
-func (property *StaticProperty) isWitness(w string) bool {
-	for _, v := range property.WitnessList {
+func (p *StaticProperty) updateWitness(witnessList []string) {
+	defer p.mu.Unlock()
+	p.mu.Lock()
+
+	p.NumberOfWitnesses = int64(len(witnessList))
+	p.witnessList = witnessList
+}
+
+func (p *StaticProperty) witnessByIndex(i int) string {
+	defer p.mu.RUnlock()
+	p.mu.RLock()
+
+	if i >= len(p.witnessList) {
+		ilog.Errorf("witnessByIndex index %v is error", i)
+		return ""
+	}
+
+	return p.witnessList[i]
+}
+
+func (p *StaticProperty) isWitness(w string) bool {
+	defer p.mu.RUnlock()
+	p.mu.RLock()
+
+	for _, v := range p.witnessList {
 		if strings.Compare(v, w) == 0 {
 			return true
 		}
@@ -60,7 +84,7 @@ func witnessOfSec(sec int64) string {
 
 func witnessOfSlot(slot int64) string {
 	index := slot % staticProperty.NumberOfWitnesses
-	witness := staticProperty.WitnessList[index]
+	witness := staticProperty.witnessByIndex(int(index))
 	return witness
 }
 
