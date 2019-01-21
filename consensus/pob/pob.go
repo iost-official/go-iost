@@ -316,10 +316,10 @@ func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
 	for {
 		select {
-		case <-time.After(30 * time.Microsecond):
+		case <-time.After(20 * time.Microsecond):
 			t := time.Now()
 			pubkey := p.account.ReadablePubkey()
-			if !staticProperty.SlotUsed[slotOfSec(t.Unix())] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == pubkey {
+			if witnessOfNanoSec(t.UnixNano()) == pubkey && !staticProperty.SlotUsed[slotOfSec(t.Unix())] && p.baseVariable.Mode() == global.ModeNormal {
 				staticProperty.SlotUsed[slotOfSec(t.Unix())] = true
 				metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 				generateBlockTicker := time.NewTicker(subSlotTime)
