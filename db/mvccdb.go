@@ -27,7 +27,6 @@ type MVCCDB interface {
 	Del(table string, key string) error
 	Has(table string, key string) (bool, error)
 	Keys(table string, prefix string) ([]string, error)
-	Rollback()
 	Checkout(t string) bool
 	Commit(t string)
 	CurrentTag() string
@@ -289,14 +288,6 @@ func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
 	//		return nil, error.New("can't assert Item type")
 	//	}
 	return nil, nil
-}
-
-// Rollback will rollback the state of mvccdb
-func (m *CacheMVCCDB) Rollback() {
-	m.rwmu.Lock()
-	defer m.rwmu.Unlock()
-
-	m.stage = m.head.Fork()
 }
 
 // Checkout will checkout the specify tag of mvccdb

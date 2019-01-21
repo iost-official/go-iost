@@ -107,23 +107,6 @@ func (suite *MVCCDBTestSuite) TestCommit() {
 	suite.Equal("", value)
 }
 
-func (suite *MVCCDBTestSuite) TestRollback() {
-	var value string
-
-	err := suite.mvccdb.Put("table01", "key06", "value06")
-	suite.Nil(err)
-	err = suite.mvccdb.Del("table01", "key04")
-	suite.Nil(err)
-	suite.mvccdb.Rollback()
-
-	value, err = suite.mvccdb.Get("table01", "key06")
-	suite.Nil(err)
-	suite.Equal("", value)
-	value, err = suite.mvccdb.Get("table01", "key04")
-	suite.Nil(err)
-	suite.Equal("value04", value)
-}
-
 func (suite *MVCCDBTestSuite) TestCheckout() {
 	var value string
 

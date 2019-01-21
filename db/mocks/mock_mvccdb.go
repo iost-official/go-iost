@@ -166,16 +166,6 @@ func (mr *MockMVCCDBMockRecorder) Put(arg0, arg1, arg2 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockMVCCDB)(nil).Put), arg0, arg1, arg2)
 }
 
-// Rollback mocks base method
-func (m *MockMVCCDB) Rollback() {
-	m.ctrl.Call(m, "Rollback")
-}
-
-// Rollback indicates an expected call of Rollback
-func (mr *MockMVCCDBMockRecorder) Rollback() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockMVCCDB)(nil).Rollback))
-}
-
 // Size mocks base method
 func (m *MockMVCCDB) Size() (int64, error) {
 	ret := m.ctrl.Call(m, "Size")
