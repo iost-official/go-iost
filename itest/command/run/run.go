@@ -57,7 +57,7 @@ var Flags = []cli.Flag{
 	},
 	cli.StringFlag{
 		Name:  "log, l",
-		Value: "itest.log",
+		Value: "itest_logs",
 		Usage: "log file path",
 	},
 }
