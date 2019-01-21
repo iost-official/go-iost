@@ -198,3 +198,15 @@ func (m *MockMVCCDB) Tag(arg0 string) {
 func (mr *MockMVCCDBMockRecorder) Tag(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tag", reflect.TypeOf((*MockMVCCDB)(nil).Tag), arg0)
 }
+
+// Tags mocks base method
+func (m *MockMVCCDB) Tags() []string {
+	ret := m.ctrl.Call(m, "Tags")
+	ret0, _ := ret[0].([]string)
+	return ret0
+}
+
+// Tags indicates an expected call of Tags
+func (mr *MockMVCCDBMockRecorder) Tags() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tags", reflect.TypeOf((*MockMVCCDB)(nil).Tags))
+}
