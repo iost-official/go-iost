@@ -57,9 +57,18 @@ class Base {
         storage.put("current_block_info", JSON.stringify(block))
     }
 
+    _saveWitnessInfo() {
+        let map = JSON.parse(storage.get("witness_produced") || '{}');
+        map[block.witness] = (map[block.witness] || 0) + 1;
+        storage.put("witness_produced", JSON.stringify(map));
+    }
+
+    _clearWitnessInfo() {
+        storage.del("witness_produced");
+    }
+
     // The first contract executed
     exec(data) {
-        this._saveBlockInfo();
         const bn = block.number;
         const execBlockNumber = this._get("execBlockNumber");
         if (bn === execBlockNumber){
@@ -67,8 +76,11 @@ class Base {
         }
         this._put("execBlockNumber", bn);
 
+        this._saveBlockInfo();
+        this._saveWitnessInfo();
         if (bn%voteStatInterval === 0){
             this._vote();
+            this._clearWitnessInfo();
         }
         if (bn%issueInterval === 0) {
             this._issue();
