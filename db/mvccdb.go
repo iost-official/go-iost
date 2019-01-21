@@ -30,7 +30,6 @@ type MVCCDB interface {
 	Checkout(t string) bool
 	Commit(t string)
 	CurrentTag() string
-	Tags() []string
 	Fork() MVCCDB
 	Flush(t string) error
 	Size() (int64, error)
@@ -53,14 +52,14 @@ type Item struct {
 // Commit is the cache of specify tag
 type Commit struct {
 	mvcc.Cache
-	Tags []string
+	Tag string
 }
 
 // NewCommit returns new commit
 func NewCommit(cacheType mvcc.CacheType) *Commit {
 	return &Commit{
 		Cache: mvcc.NewCache(cacheType),
-		Tags:  make([]string, 0),
+		Tag:   "",
 	}
 }
 
@@ -69,7 +68,7 @@ func NewCommit(cacheType mvcc.CacheType) *Commit {
 func (c *Commit) Fork() *Commit {
 	return &Commit{
 		Cache: c.Cache.Fork().(mvcc.Cache),
-		Tags:  make([]string, 0),
+		Tag:   "",
 	}
 }
 
@@ -92,12 +91,14 @@ func NewCommitManager() *CommitManager {
 	}
 }
 
-// Add will add a commit
-func (m *CommitManager) Add(c *Commit) {
+// Add will add a commit with tag
+func (m *CommitManager) Add(c *Commit, t string) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 
 	m.commits = append(m.commits, c)
+	c.Tag = t
+	m.tags[t] = c
 }
 
 // Get will get a commit by tag
@@ -108,21 +109,12 @@ func (m *CommitManager) Get(t string) *Commit {
 	return m.tags[t]
 }
 
-// AddTag will make the commit with the tag
-func (m *CommitManager) AddTag(c *Commit, t string) {
-	m.rwmu.Lock()
-	defer m.rwmu.Unlock()
-
-	c.Tags = append(c.Tags, t)
-	m.tags[t] = c
-}
-
-// GetTags returns tags of the commit
-func (m *CommitManager) GetTags(c *Commit) []string {
+// GetTag returns tags of the commit
+func (m *CommitManager) GetTag(c *Commit) string {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
 
-	return c.Tags
+	return c.Tag
 }
 
 // FreeBefore will free the momery of commits before the commit
@@ -135,9 +127,7 @@ func (m *CommitManager) FreeBefore(c *Commit) {
 			m.commits = m.commits[k:]
 			break
 		} else {
-			for _, t := range v.Tags {
-				delete(m.tags, t)
-			}
+			delete(m.tags, v.Tag)
 			v.Free()
 		}
 	}
@@ -158,22 +148,22 @@ func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to new storage: %v", err)
 	}
-	tag, err := storage.Get([]byte(string(SEPARATOR) + "tag"))
-	if err != nil {
-		return nil, fmt.Errorf("failed to get from storage: %v", err)
-	}
-	head := NewCommit(cacheType)
-	stage := head.Fork()
+	stage := NewCommit(cacheType)
 	cm := NewCommitManager()
 
-	cm.AddTag(head, string(tag))
-	cm.Add(head)
 	mvccdb := &CacheMVCCDB{
-		head:    head,
+		head:    nil,
 		stage:   stage,
 		storage: storage,
 		cm:      cm,
 	}
+
+	tag, err := storage.Get([]byte(string(SEPARATOR) + "tag"))
+	if err != nil {
+		return nil, fmt.Errorf("failed to get init tag from storage: %v", err)
+	}
+	mvccdb.Commit(string(tag))
+
 	return mvccdb, nil
 }
 
@@ -306,29 +296,20 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 
 // Commit will commit the stage and add tag to current state of mvccdb
 func (m *CacheMVCCDB) Commit(t string) {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
+	m.rwmu.Lock()
+	defer m.rwmu.Unlock()
 
-	m.cm.Add(m.stage)
+	m.cm.Add(m.stage, t)
 	m.head = m.stage
 	m.stage = m.head.Fork()
-
-	m.cm.AddTag(m.head, t)
 }
 
 // CurrentTag will return current tag of mvccdb
 func (m *CacheMVCCDB) CurrentTag() string {
-	tags := m.Tags()
-	return tags[len(tags)-1]
-}
-
-// Tags will return all tags of mvccdb
-func (m *CacheMVCCDB) Tags() []string {
-	// TODO how to write better in this place
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
 
-	return m.cm.GetTags(m.head)
+	return m.cm.GetTag(m.head)
 }
 
 // Fork will fork the mvcdb
