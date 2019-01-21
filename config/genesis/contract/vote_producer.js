@@ -747,8 +747,10 @@ class VoteContract {
         const voteRes = this._call("vote.iost", "getResult", [voteId]);
         const preList = [];    // list of producers whose vote > threshold
         const waitingRemoveList = this._get("waitingRemoveList") || [];
+        const witnessProduced = JSON.parse(storage.globalGet("base.iost", "witness_produced") || '{}');
         let scores = this._getScores();
         const pendingProducerList = this._get("pendingProducerList");
+        const currentProducerList = this._get("currentProducerList");
         const producerMap = this._get("producerMap") || {};
         const producerKeyMap = this._get("producerKeyMap") || {};
         const validPendingMap = {};
@@ -785,12 +787,21 @@ class VoteContract {
         for (const key of pendingProducerList) {
             const account = producerKeyMap[key];
             const score = new Float64(scores[account] || "0");
-            if (waitingRemoveList.includes(account) || !validPendingMap[key]) {
+            if (currentProducerList.includes(key) && !witnessProduced[key]) {
                 oldPreListToRemove.push({
                     "account": account,
                     "key": key,
                     "prior": 0,
-                    "score": score
+                    "score": new Float64("0")
+                });
+                minScore = new Float64(0);
+                scores[account] = score.div("2").toFixed(IOST_DECIMAL);
+            } else if (waitingRemoveList.includes(account) || !validPendingMap[key]) {
+                oldPreListToRemove.push({
+                    "account": account,
+                    "key": key,
+                    "prior": 0,
+                    "score": new Float64("0")
                 });
                 minScore = new Float64(0);
                 delete(scores[account]);
