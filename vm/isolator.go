@@ -127,7 +127,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 		if strings.Contains(err.Error(), "execution killed") {
 			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
-				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
+				Message: fmt.Sprintf("running action %v error: execution killed", actionDesc),
 			}
 		} else {
 			status = &tx.Status{
