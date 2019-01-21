@@ -35,7 +35,7 @@ func (suite *MVCCDBTestSuite) SetupTest() {
 	suite.mvccdb.Put("table01", "iost03", "value08")
 	suite.mvccdb.Put("table01", "iost04", "value09")
 	suite.mvccdb.Put("table01", "iost05", "value10")
-	suite.mvccdb.Commit()
+	suite.mvccdb.Commit("tag0")
 }
 
 func (suite *MVCCDBTestSuite) TestGet() {
@@ -97,7 +97,7 @@ func (suite *MVCCDBTestSuite) TestCommit() {
 	suite.Nil(err)
 	err = suite.mvccdb.Del("table01", "key04")
 	suite.Nil(err)
-	suite.mvccdb.Commit()
+	suite.mvccdb.Commit("tag1")
 
 	value, err = suite.mvccdb.Get("table01", "key06")
 	suite.Nil(err)
@@ -131,15 +131,13 @@ func (suite *MVCCDBTestSuite) TestCheckout() {
 	suite.Nil(err)
 	err = suite.mvccdb.Del("table01", "key04")
 	suite.Nil(err)
-	suite.mvccdb.Commit()
-	suite.mvccdb.Tag("tag1")
+	suite.mvccdb.Commit("tag1")
 
 	err = suite.mvccdb.Put("table01", "key06", "value066")
 	suite.Nil(err)
 	err = suite.mvccdb.Put("table01", "key04", "value044")
 	suite.Nil(err)
-	suite.mvccdb.Commit()
-	suite.mvccdb.Tag("tag2")
+	suite.mvccdb.Commit("tag2")
 
 	value, err = suite.mvccdb.Get("table01", "key06")
 	suite.Nil(err)
@@ -167,7 +165,7 @@ func (suite *MVCCDBTestSuite) TestFork() {
 	suite.Nil(err)
 	err = mvccdb2.Del("table01", "key04")
 	suite.Nil(err)
-	mvccdb2.Commit()
+	mvccdb2.Commit("tag1")
 
 	value, err = mvccdb2.Get("table01", "key06")
 	suite.Nil(err)
@@ -199,8 +197,7 @@ func (suite *MVCCDBTestSuite) TestFlush() {
 	suite.Nil(err)
 	suite.Equal("", value)
 
-	suite.mvccdb.Commit()
-	suite.mvccdb.Tag("qwertyuiopasdfghjkl;zxcvbnm,.afd")
+	suite.mvccdb.Commit("qwertyuiopasdfghjkl;zxcvbnm,.afd")
 
 	err = suite.mvccdb.Flush("qwertyuiopasdfghjkl;zxcvbnm,.afd")
 	suite.Nil(err)
@@ -221,8 +218,7 @@ func (suite *MVCCDBTestSuite) TestRecovery() {
 	suite.Nil(err)
 	suite.Equal("value05", value)
 
-	suite.mvccdb.Commit()
-	suite.mvccdb.Tag("qwertyuiopasdfghjkl;zxcvbnm,.afd")
+	suite.mvccdb.Commit("qwertyuiopasdfghjkl;zxcvbnm,.afd")
 
 	err = suite.mvccdb.Flush("qwertyuiopasdfghjkl;zxcvbnm,.afd")
 	suite.Nil(err)
@@ -249,15 +245,13 @@ func (suite *MVCCDBTestSuite) TestFlushAndCheckout() {
 	suite.Nil(err)
 	err = suite.mvccdb.Del("table01", "key04")
 	suite.Nil(err)
-	suite.mvccdb.Commit()
-	suite.mvccdb.Tag("tag1")
+	suite.mvccdb.Commit("tag1")
 
 	err = suite.mvccdb.Put("table01", "key06", "value066")
 	suite.Nil(err)
 	err = suite.mvccdb.Put("table01", "key04", "value044")
 	suite.Nil(err)
-	suite.mvccdb.Commit()
-	suite.mvccdb.Tag("tag2")
+	suite.mvccdb.Commit("tag2")
 
 	value, err = suite.mvccdb.Get("table01", "key06")
 	suite.Nil(err)

@@ -27,10 +27,9 @@ type MVCCDB interface {
 	Del(table string, key string) error
 	Has(table string, key string) (bool, error)
 	Keys(table string, prefix string) ([]string, error)
-	Commit()
 	Rollback()
 	Checkout(t string) bool
-	Tag(t string)
+	Commit(t string)
 	CurrentTag() string
 	Tags() []string
 	Fork() MVCCDB
@@ -292,16 +291,6 @@ func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
 	return nil, nil
 }
 
-// Commit will commit current state of mvccdb
-func (m *CacheMVCCDB) Commit() {
-	m.rwmu.Lock()
-	defer m.rwmu.Unlock()
-
-	m.cm.Add(m.stage)
-	m.head = m.stage
-	m.stage = m.head.Fork()
-}
-
 // Rollback will rollback the state of mvccdb
 func (m *CacheMVCCDB) Rollback() {
 	m.rwmu.Lock()
@@ -324,12 +313,14 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 	return true
 }
 
-// Tag will add tag to current state of mvccdb
-func (m *CacheMVCCDB) Tag(t string) {
-	m.Commit()
-
+// Commit will commit the stage and add tag to current state of mvccdb
+func (m *CacheMVCCDB) Commit(t string) {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
+
+	m.cm.Add(m.stage)
+	m.head = m.stage
+	m.stage = m.head.Fork()
 
 	m.cm.AddTag(m.head, t)
 }
