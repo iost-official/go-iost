@@ -62,7 +62,7 @@ func LoadAccounts(file string) ([]*Account, error) {
 		}
 		for _, f := range fis {
 			if !f.IsDir() && strings.HasSuffix(f.Name(), ".json") {
-				files = append(files, file + f.Name())
+				files = append(files, file+f.Name())
 			}
 		}
 	} else {

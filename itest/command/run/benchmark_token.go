@@ -66,6 +66,12 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 	itest.InitAmount = "1000"
 	itest.InitPledge = "1000"
 	itest.InitRAM = "3000"
+	logger := ilog.New()
+	fileWriter := ilog.NewFileWriter(c.GlobalString("log"))
+	fileWriter.SetLevel(ilog.LevelDebug)
+	logger.AddWriter(fileWriter)
+	ilog.InitLogger(logger)
+
 	//ilog.SetLevel(ilog.LevelDebug)
 	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
 	if err != nil {
@@ -83,7 +89,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 		}
 	}
 	t1 := time.Now()
-	ilog.Warnf("load account time: %v, got %v", float64(t1.UnixNano() - t0.UnixNano()) / 1e9, len(accounts))
+	ilog.Warnf("load account time: %v, got %v", float64(t1.UnixNano()-t0.UnixNano())/1e9, len(accounts))
 	accountMap := make(map[string]*itest.Account)
 	for _, acc := range accounts {
 		accountMap[acc.ID] = acc
