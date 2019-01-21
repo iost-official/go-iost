@@ -68,7 +68,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 	itest.InitRAM = "3000"
 	logger := ilog.New()
 	fileWriter := ilog.NewFileWriter(c.GlobalString("log"))
-	fileWriter.SetLevel(ilog.LevelDebug)
+	fileWriter.SetLevel(ilog.LevelInfo)
 	logger.AddWriter(fileWriter)
 	ilog.InitLogger(logger)
 
