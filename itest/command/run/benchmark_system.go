@@ -47,6 +47,11 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 	itest.InitAmount = "1000"
 	itest.InitPledge = "1000"
 	itest.InitRAM = "3000"
+	logger := ilog.New()
+	fileWriter := ilog.NewFileWriter(c.GlobalString("log"))
+	fileWriter.SetLevel(ilog.LevelInfo)
+	logger.AddWriter(fileWriter)
+	ilog.InitLogger(logger)
 	//ilog.SetLevel(ilog.LevelDebug)
 	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
 	if err != nil {
