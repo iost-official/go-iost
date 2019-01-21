@@ -121,7 +121,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		case txpool.NotFound:
 			err := t.VerifySelf()
 			if err != nil {
-				return errTxSignature
+				return err
 			}
 
 		}
