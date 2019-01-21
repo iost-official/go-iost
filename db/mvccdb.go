@@ -109,14 +109,6 @@ func (m *CommitManager) Get(t string) *Commit {
 	return m.tags[t]
 }
 
-// GetTag returns tags of the commit
-func (m *CommitManager) GetTag(c *Commit) string {
-	m.rwmu.RLock()
-	defer m.rwmu.RUnlock()
-
-	return c.Tag
-}
-
 // FreeBefore will free the momery of commits before the commit
 func (m *CommitManager) FreeBefore(c *Commit) {
 	m.rwmu.Lock()
@@ -309,7 +301,7 @@ func (m *CacheMVCCDB) CurrentTag() string {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
 
-	return m.cm.GetTag(m.head)
+	return m.head.Tag
 }
 
 // Fork will fork the mvcdb
