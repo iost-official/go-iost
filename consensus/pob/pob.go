@@ -314,17 +314,19 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
-	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+
+	tGenBlock := time.NewTicker(20 * time.Microsecond)
+	tMetricsMode := time.NewTicker(3 * time.Second)
+	defer tGenBlock.Stop()
+	defer tMetricsMode.Stop()
+
 	for {
 		select {
-		case <-time.After(time.Duration(nextSchedule)):
-			time.Sleep(time.Millisecond)
-			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
+		case <-tGenBlock.C:
 			t := time.Now()
 			pubkey := p.account.ReadablePubkey()
-			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == pubkey {
-				staticProperty.SlotUsed[t.Unix()] = true
+			if witnessOfNanoSec(t.UnixNano()) == pubkey && !staticProperty.SlotUsed[slotOfSec(t.Unix())] && p.baseVariable.Mode() == global.ModeNormal {
+				staticProperty.SlotUsed[slotOfSec(t.Unix())] = true
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
@@ -336,7 +338,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					if witnessOfNanoSec(t.UnixNano()) != pubkey {
+					if witnessOfNanoSec(time.Now().UnixNano()) != pubkey {
 						break
 					}
 				}
@@ -344,8 +346,8 @@ func (p *PoB) scheduleLoop() {
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
-			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+		case <-tMetricsMode.C:
+			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 		case <-p.exitSignal:
 			return
 		}
