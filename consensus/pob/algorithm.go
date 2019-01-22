@@ -162,10 +162,10 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 				metricsConfirmedLength.Set(float64(bc.LinkedRoot().Head.Number), nil)
 			}
 		}
-		if &node.Active()[0] != &bc.LinkedRoot().Pending()[0] {
-			node.SetActive(root.Pending())
-			node.VaildWitness = make([]string, 0)
-		}
+	}
+	if len(node.VaildWitness) >= confirmLimit && &node.Active()[0] != &bc.LinkedRoot().Pending()[0] {
+		node.SetActive(root.Pending())
+		node.VaildWitness = make([]string, 0)
 	}
 
 }
