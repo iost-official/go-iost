@@ -314,14 +314,19 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
+
+	tGenBlock := time.NewTicker(20 * time.Microsecond)
+	tMetricsMode := time.NewTicker(3 * time.Second)
+	defer tGenBlock.Stop()
+	defer tMetricsMode.Stop()
+
 	for {
 		select {
-		case <-time.After(20 * time.Microsecond):
+		case <-tGenBlock.C:
 			t := time.Now()
 			pubkey := p.account.ReadablePubkey()
 			if witnessOfNanoSec(t.UnixNano()) == pubkey && !staticProperty.SlotUsed[slotOfSec(t.Unix())] && p.baseVariable.Mode() == global.ModeNormal {
 				staticProperty.SlotUsed[slotOfSec(t.Unix())] = true
-				metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				p.quitGenerateMode = make(chan struct{})
@@ -341,6 +346,8 @@ func (p *PoB) scheduleLoop() {
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
+		case <-tMetricsMode.C:
+			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 		case <-p.exitSignal:
 			return
 		}
