@@ -13,6 +13,7 @@ cd build/k8s/
 echo "Generate iserver config"
 cd iserver-config/
 go run genconfig.go -c $NAME -m 3 -s 1
+cp -r ${GOPATH}/src/github.com/iost-official/go-iost/config/genesis/contract genesis/
 cd -
 
 echo "Generate itest config"

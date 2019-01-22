@@ -108,7 +108,7 @@ func genconfig() {
 		InitialTimestamp: "2018-01-02T15:04:03Z",
 	}
 
-	_ = os.Mkdir("genesis", 755)
+	_ = os.Mkdir("genesis", 0755)
 	genesisfile, err := os.Create("genesis/genesis.yml")
 	if err != nil {
 		log.Fatal(err)
