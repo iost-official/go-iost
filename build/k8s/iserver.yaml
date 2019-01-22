@@ -44,6 +44,8 @@ spec:
             - containerPort: 30002
             - containerPort: 30003
           volumeMounts:
+            - name: contract-volume
+              mountPath: /var/lib/iserver/contract
             - name: config-volume
               mountPath: /var/lib/iserver
             - name: storage-volume
@@ -60,6 +62,9 @@ spec:
         - name: config-volume
           configMap:
             name: iserver-config
+        - name: contract-volume
+          configMap:
+            name: iserver-contract
   volumeClaimTemplates:
     - metadata:
         name: storage-volume
