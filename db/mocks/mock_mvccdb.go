@@ -58,13 +58,13 @@ func (mr *MockMVCCDBMockRecorder) Close() *gomock.Call {
 }
 
 // Commit mocks base method
-func (m *MockMVCCDB) Commit() {
-	m.ctrl.Call(m, "Commit")
+func (m *MockMVCCDB) Commit(arg0 string) {
+	m.ctrl.Call(m, "Commit", arg0)
 }
 
 // Commit indicates an expected call of Commit
-func (mr *MockMVCCDBMockRecorder) Commit() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockMVCCDB)(nil).Commit))
+func (mr *MockMVCCDBMockRecorder) Commit(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Commit", reflect.TypeOf((*MockMVCCDB)(nil).Commit), arg0)
 }
 
 // CurrentTag mocks base method
@@ -166,16 +166,6 @@ func (mr *MockMVCCDBMockRecorder) Put(arg0, arg1, arg2 interface{}) *gomock.Call
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Put", reflect.TypeOf((*MockMVCCDB)(nil).Put), arg0, arg1, arg2)
 }
 
-// Rollback mocks base method
-func (m *MockMVCCDB) Rollback() {
-	m.ctrl.Call(m, "Rollback")
-}
-
-// Rollback indicates an expected call of Rollback
-func (mr *MockMVCCDBMockRecorder) Rollback() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Rollback", reflect.TypeOf((*MockMVCCDB)(nil).Rollback))
-}
-
 // Size mocks base method
 func (m *MockMVCCDB) Size() (int64, error) {
 	ret := m.ctrl.Call(m, "Size")
@@ -187,26 +177,4 @@ func (m *MockMVCCDB) Size() (int64, error) {
 // Size indicates an expected call of Size
 func (mr *MockMVCCDBMockRecorder) Size() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Size", reflect.TypeOf((*MockMVCCDB)(nil).Size))
-}
-
-// Tag mocks base method
-func (m *MockMVCCDB) Tag(arg0 string) {
-	m.ctrl.Call(m, "Tag", arg0)
-}
-
-// Tag indicates an expected call of Tag
-func (mr *MockMVCCDBMockRecorder) Tag(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tag", reflect.TypeOf((*MockMVCCDB)(nil).Tag), arg0)
-}
-
-// Tags mocks base method
-func (m *MockMVCCDB) Tags() []string {
-	ret := m.ctrl.Call(m, "Tags")
-	ret0, _ := ret[0].([]string)
-	return ret0
-}
-
-// Tags indicates an expected call of Tags
-func (mr *MockMVCCDBMockRecorder) Tags() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Tags", reflect.TypeOf((*MockMVCCDB)(nil).Tags))
 }

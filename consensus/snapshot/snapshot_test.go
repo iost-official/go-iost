@@ -34,7 +34,7 @@ func TestSnapshot(t *testing.T) {
 				fmt.Println(err)
 			}
 		}
-		stateDB.Tag("abc")
+		stateDB.Commit("abc")
 		stateDB.Flush("abc")
 		stateDB.Close()
 		config := &common.Config{
@@ -67,7 +67,7 @@ func BenchmarkSnapshot(b *testing.B) {
 	for i := 0; i < 1000000; i++ {
 		stateDB.Put("state", randString(64), randString(32))
 	}
-	stateDB.Tag("abc")
+	stateDB.Commit("abc")
 	stateDB.Flush("abc")
 	stateDB.Close()
 	config := &common.Config{

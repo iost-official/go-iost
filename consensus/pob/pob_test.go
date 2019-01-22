@@ -50,7 +50,7 @@ func testRun(t *testing.T) {
 	genesisBlock.CalculateHeadHash()
 	baseVariable.BlockChain().Push(genesisBlock)
 	blockCache, _ := blockcache.NewBlockCache(baseVariable)
-	baseVariable.StateDB().Tag(string(genesisBlock.HeadHash()))
+	baseVariable.StateDB().Commit(string(genesisBlock.HeadHash()))
 	mockController := gomock.NewController(t)
 	mockP2PService := p2p_mock.NewMockService(mockController)
 	channel := make(chan p2p.IncomingMessage, 1024)

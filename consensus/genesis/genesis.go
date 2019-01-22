@@ -220,6 +220,6 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	if err != nil {
 		return nil, err
 	}
-	db.Tag(string(blk.HeadHash()))
+	db.Commit(string(blk.HeadHash()))
 	return blk, nil
 }
