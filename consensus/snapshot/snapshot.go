@@ -76,7 +76,7 @@ func ToSnapshot(conf *common.Config) error {
 		if err != nil {
 			return err
 		}
-		header.Name = strings.TrimPrefix(strings.Replace(file, src, "", -1), string(filepath.Separator))
+		header.Name = strings.TrimPrefix(file, conf.DB.LdbPath)
 		if err := tw.WriteHeader(header); err != nil {
 			return err
 		}
@@ -134,7 +134,7 @@ func FromSnapshot(conf *common.Config) error {
 			continue
 		}
 
-		fw, err := os.OpenFile(filepath.Join(conf.DB.LdbPath, "StateDB", h.Name), os.O_CREATE|os.O_WRONLY, os.FileMode(h.Mode))
+		fw, err := os.OpenFile(filepath.Join(conf.DB.LdbPath, h.Name), os.O_CREATE|os.O_WRONLY, os.FileMode(h.Mode))
 		if err != nil {
 			return err
 		}
