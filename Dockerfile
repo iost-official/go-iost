@@ -1,4 +1,4 @@
-FROM iostio/iost-dev
+FROM ubuntu:16.04
 
 # Install project
 WORKDIR /workdir
