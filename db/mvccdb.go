@@ -2,6 +2,7 @@ package db
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/ilog"
 	"sync"
 
 	"github.com/iost-official/go-iost/db/kv"
@@ -102,6 +103,23 @@ func (m *CommitManager) Get(t string) *Commit {
 	defer m.rwmu.RUnlock()
 
 	return m.tags[t]
+}
+
+// Tags will return last 10 tags
+func (m *CommitManager) Tags() []string {
+	m.rwmu.RLock()
+	defer m.rwmu.RUnlock()
+
+	start := len(m.commits) - 10
+	if start < 0 {
+		start = 0
+	}
+
+	res := make([]string, 0)
+	for i := start; i < len(m.commits); i++ {
+		res = append(res, m.commits[i].Tag)
+	}
+	return res
 }
 
 // FreeBefore will free the momery of commits before the commit
@@ -274,6 +292,7 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 
 	head := m.cm.Get(t)
 	if head == nil {
+		ilog.Warnf("Checkout tag %v failed, last 10 tags is %v", t, m.cm.Tags())
 		return false
 	}
 	m.head = head
