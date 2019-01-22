@@ -152,8 +152,7 @@ func updateWaterMark(node *blockcache.BlockCacheNode) {
 }
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
-	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	if confirmedNode != nil {
+	for confirmedNode := calculateConfirm(node, bc.LinkedRoot()); confirmedNode != nil; confirmedNode = calculateConfirm(node, bc.LinkedRoot()) {
 		bc.Flush(confirmedNode)
 		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
 	}
@@ -162,18 +161,20 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
 	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
 	startNumber := node.Head.Number
-	var confirmNum int64
-	confirmUntilMap := make(map[int64]int64, startNumber-root.Head.Number)
+	pwl := root.Pending()
+	wMap := make(map[string]int64, startNumber-root.Head.Number)
+	for _, wl := range pwl {
+		wMap[wl] = 0
+	}
+	confirmedNumer := int64(0)
 	for node != root {
-		if node.ConfirmUntil <= node.Head.Number {
-			confirmNum++
-			confirmUntilMap[node.ConfirmUntil]++
+		if _, ok := wMap[node.Head.Witness]; ok {
+			confirmedNumer++
+			delete(wMap, node.Head.Witness)
+			if confirmedNumer >= confirmLimit {
+				return node
+			}
 		}
-		if confirmNum >= confirmLimit {
-			return node
-		}
-		confirmNum -= confirmUntilMap[node.Head.Number]
-		node = node.GetParent()
 	}
 	return nil
 }
