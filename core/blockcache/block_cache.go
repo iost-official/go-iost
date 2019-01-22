@@ -680,7 +680,7 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 			if ok && bcn == it {
 				break
 			}
-			bc.nmset(it.Head.Number, bcn)
+			bc.nmset(it.Head.Number, it)
 			it = it.GetParent()
 		}
 	}
