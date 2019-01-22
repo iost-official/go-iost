@@ -416,9 +416,14 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 			return nil, fmt.Errorf("try transaction failed: %v", err)
 		}
 	}
-	dbVisitor := as.getStateDBVisitor(true)
-	currentGas := dbVisitor.TotalGasAtTime(t.Publisher, as.bc.Head().Head.Time)
-	err := vm.CheckTxGasLimitValid(t, currentGas, dbVisitor)
+	headBlock := as.bc.Head()
+	dbVisitor, err := as.getStateDBVisitorByHash(headBlock.HeadHash())
+	if err != nil {
+		ilog.Errorf("[internal error] SendTransaction error: %v", err)
+		return nil, err
+	}
+	currentGas := dbVisitor.TotalGasAtTime(t.Publisher, headBlock.Head.Time)
+	err = vm.CheckTxGasLimitValid(t, currentGas, dbVisitor)
 	if err != nil {
 		return nil, err
 	}
@@ -483,13 +488,32 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 		}
 	}
 }
+func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
+	stateDB := as.bv.StateDB().Fork()
+	ok := stateDB.Checkout(string(hash))
+	if !ok {
+		b2s := func(x *blockcache.BlockCacheNode) string {
+			return fmt.Sprintf("b58 hash %v time %v height %v witness %v", common.Base58Encode(x.HeadHash()), x.Head.Time,
+				x.Head.Number, x.Head.Witness)
+		}
+		err = fmt.Errorf("db checkout failed. b58 hash %v, head block %v, li block %v", common.Base58Encode(hash),
+			b2s(as.bc.Head()), b2s(as.bc.LinkedRoot()))
+	}
+	db = database.NewVisitor(0, stateDB)
+	return
+}
 
 func (as *APIService) getStateDBVisitor(longestChain bool) *database.Visitor {
-	stateDB := as.bv.StateDB().Fork()
+	var b *blockcache.BlockCacheNode
 	if longestChain {
-		stateDB.Checkout(string(as.bc.Head().HeadHash()))
+		b = as.bc.Head()
 	} else {
-		stateDB.Checkout(string(as.bc.LinkedRoot().HeadHash()))
+		b = as.bc.LinkedRoot()
 	}
-	return database.NewVisitor(0, stateDB)
+	hash := b.HeadHash()
+	db, err := as.getStateDBVisitorByHash(hash)
+	if err != nil {
+		ilog.Errorf("getStateDBVisitor err: %v", err)
+	}
+	return db
 }

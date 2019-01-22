@@ -1,6 +1,6 @@
 const activePermission = "active";
 const totalSupply = 90000000000;
-const blockContribRadio = new Float64("9.6568764571e-11");
+const blockContribRatio = new Float64("9.6568764571e-11");
 
 class BonusContract {
     init() {
@@ -85,7 +85,7 @@ class BonusContract {
             return;
         }
         const supply = new Float64(blockchain.callWithAuth("token.iost", "supply", ["iost"])[0]);
-        const blockContrib = supply.multi(blockContribRadio).toFixed(8);
+        const blockContrib = supply.multi(blockContribRatio).toFixed(8);
         this._put("blockContrib", blockContrib);
     }
 

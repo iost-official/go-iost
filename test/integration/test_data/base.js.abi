@@ -7,6 +7,12 @@
       "args": []
     },
     {
+      "name": "initWitness",
+      "args": [
+          "json"
+      ]
+    },
+    {
       "name": "issueContribute",
       "args": [
           "json"

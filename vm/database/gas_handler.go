@@ -203,7 +203,7 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 		}
 	}
 	if durationSeconds < 0 {
-		ilog.Fatalf("PGasAtTime durationSeconds invalid %v = %v - %v", durationSeconds, t, gasUpdateTime)
+		ilog.Errorf("PGasAtTime durationSeconds invalid %v = %v - %v", durationSeconds, t, gasUpdateTime)
 	}
 	rate := g.GasPledgeTotal(name).Multiply(GasIncreaseRate)
 	limit := g.GasLimit(name)

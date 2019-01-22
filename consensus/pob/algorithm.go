@@ -75,7 +75,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	if err != nil {
 		return nil, err
 	}
-	db.Tag(string(blk.HeadHash()))
+	db.Commit(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
 	generateTxsNum += len(blk.Txs)
 	return blk, nil

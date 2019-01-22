@@ -67,6 +67,19 @@ func (d *DebugServer) Start() error {
 			rw.Write(bytes)
 		})
 
+	http.HandleFunc(
+		"/debug/setloglevel/",
+		func(rw http.ResponseWriter, r *http.Request) {
+			q := r.URL.Query()
+			lvl := q["level"]
+			if len(lvl) > 0 {
+				ilog.SetLevel(ilog.NewLevel(lvl[0]))
+				rw.Write([]byte("ok"))
+				return
+			}
+			rw.Write([]byte("param error"))
+		})
+
 	go func() {
 		if err := d.srv.ListenAndServe(); err != http.ErrServerClosed {
 			ilog.Errorf("Debug server listen failed. err=%v", err)

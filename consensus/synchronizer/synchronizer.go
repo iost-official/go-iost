@@ -205,6 +205,7 @@ func (sy *SyncImpl) checkSync() bool {
 	if netHeight > height+syncNumber {
 		sy.baseVariable.SetMode(global.ModeSync)
 		sy.dc.ReStart()
+		sy.syncEnd.Store(netHeight)
 		go sy.syncBlocks(height+1, netHeight)
 		return true
 	}
@@ -239,7 +240,9 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	}
 	if num > int64(continuousNum) {
 		ilog.Debugf("num: %v, continuousNum: %v", num, continuousNum)
-		go sy.syncBlocks(height+1, sy.blockCache.Head().Head.Number)
+		endNumber := sy.blockCache.Head().Head.Number
+		sy.syncEnd.Store(endNumber)
+		go sy.syncBlocks(height+1, endNumber)
 		return true
 	}
 	return false
@@ -257,7 +260,6 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
-	sy.syncEnd.Store(endNumber)
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Head.Number+3 < startNumber {
 			time.Sleep(500 * time.Millisecond)
