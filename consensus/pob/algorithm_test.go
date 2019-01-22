@@ -13,7 +13,7 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/core/txpool/mock"
+	txpool_mock "github.com/iost-official/go-iost/core/txpool/mock"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/verifier"
@@ -124,6 +124,7 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 	b.StopTimer()
 }
 
+/*
 func TestConfirmNode(t *testing.T) {
 	convey.Convey("Test of Confirm node", t, func() {
 
@@ -137,7 +138,6 @@ func TestConfirmNode(t *testing.T) {
 					Witness: "id0",
 				},
 			},
-			ConfirmUntil: 0,
 		}
 		convey.Convey("Normal", func() {
 			node := addNode(rootNode, 2, 0, "id1")
@@ -157,7 +157,6 @@ func TestConfirmNode(t *testing.T) {
 			node = addNode(node, 6, 3, "id1")
 			node = addNode(node, 7, 0, "id3")
 
-			confirmNode := calculateConfirm(node, rootNode)
 			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 
@@ -179,7 +178,9 @@ func TestConfirmNode(t *testing.T) {
 		})
 	})
 }
+*/
 
+/*
 func TestNodeInfoUpdate(t *testing.T) {
 	convey.Convey("Test of node info update", t, func() {
 		kp, _ := account.NewKeyPair(nil, crypto.Ed25519)
@@ -252,6 +253,7 @@ func TestNodeInfoUpdate(t *testing.T) {
 		})
 	})
 }
+*/
 
 func TestVerifyBasics(t *testing.T) {
 	convey.Convey("Test of verifyBasics", t, func() {
@@ -416,7 +418,6 @@ func addNode(parent *blockcache.BlockCacheNode, number int64, confirm int64, wit
 				Witness: witness,
 			},
 		},
-		ConfirmUntil: confirm,
 	}
 	node.SetParent(parent)
 	return node

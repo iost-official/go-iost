@@ -144,37 +144,28 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	})
 }
 
-func updateWaterMark(node *blockcache.BlockCacheNode) {
-	node.ConfirmUntil = staticProperty.Watermark[node.Head.Witness]
-	if node.Head.Number >= staticProperty.Watermark[node.Head.Witness] {
-		staticProperty.Watermark[node.Head.Witness] = node.Head.Number + 1
-	}
-}
-
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
-	for confirmedNode := calculateConfirm(node, bc.LinkedRoot()); confirmedNode != nil; confirmedNode = calculateConfirm(node, bc.LinkedRoot()) {
-		bc.Flush(confirmedNode)
-		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
-	}
-}
+	confirmLimit := int(staticProperty.NumberOfWitnesses*2/3 + 1)
+	root := bc.LinkedRoot()
+	if len(node.VaildWitness) >= confirmLimit {
+		if &node.Active()[0] == &bc.LinkedRoot().Pending()[0] {
+			blockList := make(map[int64]*blockcache.BlockCacheNode, node.Head.Number-root.Head.Number)
+			blockList[node.Head.Number] = node
+			loopNode := node.GetParent()
+			for loopNode != root {
+				blockList[loopNode.Head.Number] = loopNode
+				loopNode = loopNode.GetParent()
+			}
 
-func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
-	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
-	startNumber := node.Head.Number
-	pwl := root.Pending()
-	wMap := make(map[string]int64, startNumber-root.Head.Number)
-	for _, wl := range pwl {
-		wMap[wl] = 0
-	}
-	confirmedNumer := int64(0)
-	for node != root {
-		if _, ok := wMap[node.Head.Witness]; ok {
-			confirmedNumer++
-			delete(wMap, node.Head.Witness)
-			if confirmedNumer >= confirmLimit {
-				return node
+			for len(node.VaildWitness) >= confirmLimit && &node.Active()[0] == &bc.LinkedRoot().Pending()[0] {
+				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
+				metricsConfirmedLength.Set(float64(bc.LinkedRoot().Head.Number), nil)
 			}
 		}
+		if &node.Active()[0] != &bc.LinkedRoot().Pending()[0] {
+			node.SetActive(root.Pending())
+			node.VaildWitness = make([]string, 0)
+		}
 	}
-	return nil
+
 }

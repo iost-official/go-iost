@@ -54,13 +54,12 @@ var (
 // BlockCacheNode is the implementation of BlockCacheNode
 type BlockCacheNode struct { //nolint:golint
 	*block.Block
-	rw       sync.RWMutex
-	parent   *BlockCacheNode
-	Children map[*BlockCacheNode]bool
-	Type     BCNType
-	walIndex uint64
-
-	ConfirmUntil int64
+	rw           sync.RWMutex
+	parent       *BlockCacheNode
+	Children     map[*BlockCacheNode]bool
+	Type         BCNType
+	walIndex     uint64
+	VaildWitness []string
 	WitnessList
 }
 
@@ -133,9 +132,10 @@ func decodeBCN(b []byte) (block block.Block, witnessList WitnessList, err error)
 // NewBCN return a new block cache node instance
 func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	bcn := &BlockCacheNode{
-		Block:    blk,
-		parent:   nil,
-		Children: make(map[*BlockCacheNode]bool),
+		Block:        blk,
+		parent:       nil,
+		Children:     make(map[*BlockCacheNode]bool),
+		VaildWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make(map[string]*WitnessInfo),
 		},
@@ -156,8 +156,9 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		Block: &block.Block{
 			Head: &block.BlockHead{},
 		},
-		parent:   nil,
-		Children: make(map[*BlockCacheNode]bool),
+		parent:       nil,
+		Children:     make(map[*BlockCacheNode]bool),
+		VaildWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make(map[string]*WitnessInfo),
 		},
@@ -168,6 +169,34 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	bcn.setParent(parent)
 	bcn.Type = Virtual
 	return bcn
+}
+
+func (bcn *BlockCacheNode) updateVaildWitness(parent *BlockCacheNode, witness string) {
+	for _, w := range parent.VaildWitness {
+		bcn.VaildWitness = append(bcn.VaildWitness, w)
+		if w == witness {
+			witness = ""
+		}
+	}
+	if witness != "" {
+		bcn.VaildWitness = append(bcn.VaildWitness, witness)
+	}
+}
+
+func (bcn *BlockCacheNode) removeVaildWitness(root *BlockCacheNode) {
+	if &bcn.Active()[0] != &root.Pending()[0] || bcn.Head.Witness == root.Head.Witness {
+		return
+	}
+	newVaildWitness := make([]string, 0, 0)
+	for _, w := range bcn.VaildWitness {
+		if w != root.Head.Witness {
+			newVaildWitness = append(newVaildWitness, w)
+		}
+	}
+	bcn.VaildWitness = newVaildWitness
+	for child := range bcn.Children {
+		child.removeVaildWitness(root)
+	}
 }
 
 // BlockCache defines BlockCache's API
@@ -191,16 +220,17 @@ type BlockCache interface {
 
 // BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct { //nolint:golint
-	linkRW     sync.RWMutex
-	linkedRoot *BlockCacheNode
-	singleRoot *BlockCacheNode
-	headRW     sync.RWMutex
-	head       *BlockCacheNode
-	hash2node  *sync.Map // map[string]*BlockCacheNode
-	leaf       map[*BlockCacheNode]int64
-	blockChain block.Chain
-	stateDB    db.MVCCDB
-	wal        *wal.WAL
+	linkRW      sync.RWMutex
+	linkedRoot  *BlockCacheNode
+	singleRoot  *BlockCacheNode
+	rootWitness map[string]int64
+	headRW      sync.RWMutex
+	head        *BlockCacheNode
+	hash2node   *sync.Map // map[string]*BlockCacheNode
+	leaf        map[*BlockCacheNode]int64
+	blockChain  block.Chain
+	stateDB     db.MVCCDB
+	wal         *wal.WAL
 }
 
 // CleanDir used in test to clean dir
@@ -367,16 +397,17 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 		ilog.Error("Failed to write add node WAL!", err)
 	}
 	bcn.walIndex = index
+	bcn.updateVaildWitness(fa, bcn.Head.Witness)
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
-	bc.setHead(bcn)
+	bc.updateWitnessList(bcn)
 	if bcn.Head.Number > bc.Head().Head.Number {
 		bc.SetHead(bcn)
 	}
 }
 
-func (bc *BlockCacheImpl) setHead(h *BlockCacheNode) error {
+func (bc *BlockCacheImpl) updateWitnessList(h *BlockCacheNode) error {
 	if h.PendingWitnessNumber == 0 && h.Active() == nil && h.Pending() == nil {
 		h.CopyWitness(h.GetParent())
 	}
@@ -516,7 +547,8 @@ func (bc *BlockCacheImpl) delSingle() {
 func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 	cur := retain.GetParent()
 	if cur != bc.LinkedRoot() {
-		bc.flush(cur)
+		ilog.Errorf("block isn't blockcache root's child")
+		return errors.New("block isn't blockcache root's child")
 	}
 	for child := range cur.Children {
 		if child == retain {
@@ -539,6 +571,8 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 			ilog.Errorf("flush mvcc error: %v", err)
 			return err
 		}
+
+		retain.removeVaildWitness(retain)
 		bc.delNode(cur)
 		retain.SetParent(nil)
 		retain.LibWitnessHandle()
@@ -567,6 +601,7 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 				},
 			)
 		}
+
 	}
 	return nil
 }

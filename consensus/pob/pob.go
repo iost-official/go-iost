@@ -473,7 +473,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 }
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
-	updateWaterMark(node)
 	updateLib(node, p.blockCache)
 	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
 	if staticProperty.isWitness(p.account.ReadablePubkey()) {
