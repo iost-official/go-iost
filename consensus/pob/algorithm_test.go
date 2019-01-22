@@ -62,7 +62,7 @@ func BenchmarkGenerateBlock(b *testing.B) { // 296275 = 0.3ms(0tx), 466353591 = 
 	vi.SetTokenBalance("iost", testID[0], 100000000000000000)
 	vi.SetContract(native.SystemABI())
 	vi.Commit()
-	stateDB.Tag(string(topBlock.HeadHash()))
+	stateDB.Commit(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
 	for i := 0; i < 40000; i++ {
@@ -100,7 +100,7 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 	vi.SetTokenBalance("iost", testID[0], 100000000000000000)
 	vi.SetContract(native.SystemABI())
 	vi.Commit()
-	stateDB.Tag(string(topBlock.HeadHash()))
+	stateDB.Commit(string(topBlock.HeadHash()))
 	mockTxPool := txpool_mock.NewMockTxPool(mockController)
 	pendingTx := txpool.NewSortedTxMap()
 	for i := 0; i < 30000; i++ {
