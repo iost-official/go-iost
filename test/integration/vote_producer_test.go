@@ -574,10 +574,10 @@ func Test_Unregister2(t *testing.T) {
 
 		r, err = s.Call("vote_producer.iost", "approveUnregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc9.ID), acc9.ID, acc9.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't unregister")
 
 		// do stat
 		s.Head.Number += 2000
@@ -607,24 +607,24 @@ func Test_Unregister2(t *testing.T) {
 		// unregister 8
 		r, err = s.Call("vote_producer.iost", "applyUnregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "approveUnregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc8.ID), acc8.ID, acc8.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't unregister")
 
 		// unregister 3
 		r, err = s.Call("vote_producer.iost", "applyUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "approveUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't unregister")
 
 		// do stat
 		s.Head.Number += 2000
@@ -655,10 +655,7 @@ func Test_Unregister2(t *testing.T) {
 		for _, acc := range []*TestAccount{acc0, acc1, acc4, acc5, acc6, acc7} {
 			r, err = s.Call("vote_producer.iost", "forceUnregister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
-			r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
-			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
+			So(r.Status.Message, ShouldEqual, "")
 		}
 
 		// do stat
@@ -687,9 +684,6 @@ func Test_Unregister2(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
 
 		for _, acc := range []*TestAccount{acc3, acc4, acc8, acc9} {
-			r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldEqual, "")
 			r, err = s.Call("vote_producer.iost", "approveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
@@ -913,5 +907,72 @@ func Test_KickOut(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 		scores = `{"user_9":"200890000.00000000","user_8":"180890000.00000000","user_7":"160890000.00000000","user_6":"140890000.00000000","user_5":"66750000.00000000","user_4":"56750000.00000000","user_3":"87390000.00000000","user_2":"67390000.00000000","user_1":"60000000","user_0":"40000000"}`
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
+	})
+}
+
+func Test_UpdatePubkey(t *testing.T) {
+	ilog.Stop()
+	Convey("test update pubkey", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		s.Head.Number = 0
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		prepareToken(t, s, acc0)
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
+
+		s.Head.Number = 1
+		for _, acc := range testAccounts[6:9] {
+			r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			r, err = s.Call("vote_producer.iost", "approveRegister", fmt.Sprintf(`["%v"]`, acc.ID), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+		}
+		for idx, acc := range testAccounts[:9] {
+			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, (idx+2)*1e7))
+		}
+
+		r, err := s.Call("vote_producer.iost", "updateProducer", fmt.Sprintf(`["%v","%v","loc","url","netId"]`, acc8.ID, acc9.KeyPair.ReadablePubkey()), acc8.ID, acc8.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		// do stat
+		s.Head.Number = 2000
+		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		// acc	: score			, votes
+		// 0	: 2				, 2
+		// 1	: 3				, 3
+		// 2	: 4				, 4
+		// 3	: 5 - 0.6		, 5
+		// 4	: 6 - 0.6		, 6
+		// 5	: 7 - 0.6		, 7
+		// 6	: 8 - 0.6		, 8
+		// 7	: 9 - 0.6		, 9
+		// 8	: 10 - 0.6		, 10
+		// 0, 3, 1, 4, 5, 2
+		currentList, _ := json.Marshal([]string{acc0.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc2.KeyPair.ReadablePubkey()})
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
+		// 8(9), 7, 6, 5, 4, 3
+		pendingList, _ := json.Marshal([]string{acc9.KeyPair.ReadablePubkey(), acc7.KeyPair.ReadablePubkey(), acc6.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey()})
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
+		scores := `{"user_8":"94000000.00000000","user_7":"84000000.00000000","user_6":"74000000.00000000","user_5":"64000000.00000000","user_4":"54000000.00000000","user_3":"44000000.00000000","user_2":"40000000","user_1":"30000000","user_0":"20000000"}`
+		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
+
+		r, err = s.Call("vote_producer.iost", "updateProducer", fmt.Sprintf(`["%v","%v","loc","url","netId"]`, acc8.ID, acc8.KeyPair.ReadablePubkey()), acc8.ID, acc8.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "account in producerList, can't change pubkey")
 	})
 }

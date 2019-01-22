@@ -257,6 +257,9 @@ class VoteContract {
         if (pro.status !== STATUS_UNAPPLY_APPROVED) {
             throw new Error("producer can not unregister");
         }
+        if (this._inCurrentOrPendingList(account)) {
+            throw new Error("producer in pending list or in current list, can't unregister");
+        }
         const voteId = this._getVoteId();
         blockchain.callWithAuth("vote.iost", "removeOption", [
             voteId,
@@ -265,6 +268,23 @@ class VoteContract {
         ]);
         // will clear votes and score of the producer on stat
         this._doRemoveProducer(account, pro.pubkey, true);
+    }
+
+    _inCurrentOrPendingList(account) {
+        const producerKeyMap = this._get("producerKeyMap") || {};
+        const pendingList =  this._get("pendingProducerList");
+        for (const key of pendingList) {
+            if (producerKeyMap[key] === account) {
+                return true;
+            }
+        }
+        const currentList = this._get("currentProducerList");
+        for (const key of currentList) {
+            if (producerKeyMap[key] === account) {
+                return true;
+            }
+        }
+        return false;
     }
 
     _tryRemoveProducer(admin, account, pro) {
@@ -306,6 +326,7 @@ class VoteContract {
     _doRemoveProducer(account, pubkey, deleteScore = true) {
         this._mapDel("producerTable", account);
         this._mapDel("producerKeyToId", pubkey);
+        this._removeFromProducerMap(account);
         if (!deleteScore) {
             return;
         }
@@ -333,17 +354,29 @@ class VoteContract {
     _removeFromProducerMap(account, pro) {
         const producerMap = this._get("producerMap") || {};
         const producerKeyMap = this._get("producerKeyMap") || {};
-        delete(producerMap[account]);
-        this._put("producerMap", producerMap);
-
         const pendingProducerList = this._get("pendingProducerList");
         const newProducerKeyMap = {};
+        let inPending = false;
         for (const pubkey of pendingProducerList) {
             newProducerKeyMap[pubkey] = producerKeyMap[pubkey];
+            if (producerKeyMap[pubkey] == account) {
+                inPending = true;
+            }
+        }
+        if (!inPending) {
+            delete(producerMap[account]);
+        } else if (pro !== undefined) {
+            producerMap[account] = {
+                pubkey : pro.pubkey,
+                isProducer: pro.isProducer,
+                status: pro.status,
+                online: pro.online,
+            };
         }
         for (const acc in producerMap) {
             newProducerKeyMap[producerMap[acc].pubkey] = acc;
         }
+        this._put("producerMap", producerMap);
         this._put("producerKeyMap", newProducerKeyMap);
     }
 
@@ -359,9 +392,7 @@ class VoteContract {
             if (storage.mapHas("producerKeyToId", pubkey)) {
                 throw new Error("pubkey is used by another producer");
             }
-            const currentList = this._get("currentProducerList");
-            const pendingList = this._get("pendingProducerList");
-            if (currentList.includes(pro.pubkey) || pendingList.includes(pro.pubkey)) {
+            if (this._inCurrentOrPendingList(account)) {
                 throw new Error("account in producerList, can't change pubkey");
             }
 
@@ -414,8 +445,7 @@ class VoteContract {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
-        if (this._get("pendingProducerList").includes(pro.pubkey) ||
-            this._get("currentProducerList").includes(pro.pubkey)) {
+        if (this._inCurrentOrPendingList(account)) {
             throw new Error("producer in pending list or in current list, can't logout");
         }
         pro.online = false;
@@ -758,6 +788,11 @@ class VoteContract {
         // update scores
         let scoreTotal = new Float64("0");
         let scoreCount = 0;
+        let pendingIdMap = {};
+        for (const key of pendingProducerList) {
+            const account = producerKeyMap[key];
+            pendingIdMap[account] = true;
+        }
         for (const res of voteRes) {
             const id = res.option;
             const pro = producerMap[id];
@@ -768,7 +803,7 @@ class VoteContract {
             scoreTotal = scoreTotal.plus(score);
             scoreCount++;
             scores[id]  = score.toFixed();
-            if (!pendingProducerList.includes(pro.pubkey)) {
+            if (!pendingIdMap[id]) {
                 preList.push({
                     "id" : id,
                     "key": pro.pubkey,
@@ -786,20 +821,21 @@ class VoteContract {
         let minScore = new Float64(MaxFloat64);
         for (const key of pendingProducerList) {
             const account = producerKeyMap[key];
+            const pro = producerMap[account];
             const score = new Float64(scores[account] || "0");
             if (currentProducerList.includes(key) && !witnessProduced[key]) {
                 oldPreListToRemove.push({
                     "account": account,
-                    "key": key,
+                    "key": pro.pubkey,
                     "prior": 0,
                     "score": new Float64("0")
                 });
                 minScore = new Float64(0);
                 scores[account] = score.div("2").toFixed(IOST_DECIMAL);
-            } else if (waitingRemoveList.includes(account) || !validPendingMap[key]) {
+            } else if (waitingRemoveList.includes(account) || !validPendingMap[pro.pubkey]) {
                 oldPreListToRemove.push({
                     "account": account,
-                    "key": key,
+                    "key": pro.pubkey,
                     "prior": 0,
                     "score": new Float64("0")
                 });
@@ -808,7 +844,7 @@ class VoteContract {
             } else {
                 oldPreList.push({
                     "account": account,
-                    "key": key,
+                    "key": pro.pubkey,
                     "prior": 1,
                     "score": score
                 });
