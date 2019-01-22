@@ -63,6 +63,11 @@ func NewCommit(cache mvcc.Cache, tag string) *Commit {
 	}
 }
 
+// ForkCache will fork a cache from the commit
+func (c *Commit) ForkCache() mvcc.Cache {
+	return c.Cache.Fork().(mvcc.Cache)
+}
+
 // CommitManager is the commit manager, support get, delete etc.
 type CommitManager struct {
 	tags    map[string]*Commit
@@ -272,7 +277,7 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 		return false
 	}
 	m.head = head
-	m.stage = m.head.Cache.Fork().(mvcc.Cache)
+	m.stage = m.head.ForkCache()
 	return true
 }
 
@@ -282,7 +287,7 @@ func (m *CacheMVCCDB) Commit(t string) {
 	defer m.rwmu.Unlock()
 
 	m.head = NewCommit(m.stage, t)
-	m.stage = m.head.Cache.Fork().(mvcc.Cache)
+	m.stage = m.head.ForkCache()
 	m.cm.Add(m.head)
 }
 
@@ -302,7 +307,7 @@ func (m *CacheMVCCDB) Fork() MVCCDB {
 
 	mvccdb := &CacheMVCCDB{
 		head:    m.head,
-		stage:   m.head.Cache.Fork().(mvcc.Cache),
+		stage:   m.head.ForkCache(),
 		storage: m.storage,
 		cm:      m.cm,
 	}
