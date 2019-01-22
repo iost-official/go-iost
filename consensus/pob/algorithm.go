@@ -24,7 +24,6 @@ var (
 	errSignature   = errors.New("wrong signature")
 	errTxDup       = errors.New("duplicate tx")
 	errDoubleTx    = errors.New("double tx in block")
-	errTxSignature = errors.New("tx wrong signature")
 	generateTxsNum = 0
 )
 
