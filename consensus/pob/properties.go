@@ -2,6 +2,7 @@ package pob
 
 import (
 	"strings"
+	"sync"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -14,6 +15,7 @@ type StaticProperty struct {
 	account           *account.KeyPair
 	NumberOfWitnesses int64
 	SlotUsed          map[int64]bool
+	mu                sync.RWMutex
 }
 
 func newStaticProperty(account *account.KeyPair, number int64) *StaticProperty {
@@ -52,9 +54,8 @@ func witnessOfSlot(slot int64, witnessList []string) string {
 	return witness
 }
 
-func timeUntilNextSchedule(timeSec int64) int64 {
-	currentSlot := timeSec / (second2nanosecond * common.SlotLength)
-	return (currentSlot+1)*second2nanosecond*common.SlotLength - timeSec
+func slotOfSec(sec int64) int64 {
+	return sec / common.SlotLength
 }
 
 // GetStaticProperty return property. RPC needs it.

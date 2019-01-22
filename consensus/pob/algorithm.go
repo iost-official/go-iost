@@ -24,7 +24,6 @@ var (
 	errSignature   = errors.New("wrong signature")
 	errTxDup       = errors.New("duplicate tx")
 	errDoubleTx    = errors.New("double tx in block")
-	errTxSignature = errors.New("tx wrong signature")
 	generateTxsNum = 0
 )
 
@@ -121,7 +120,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, witnes
 		case txpool.NotFound:
 			err := t.VerifySelf()
 			if err != nil {
-				return errTxSignature
+				return err
 			}
 
 		}
