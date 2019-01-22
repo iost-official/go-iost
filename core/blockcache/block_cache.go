@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 
 	"os"
@@ -174,7 +175,7 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 func (bcn *BlockCacheNode) updateVaildWitness(parent *BlockCacheNode, witness string) {
 	for _, w := range parent.VaildWitness {
 		bcn.VaildWitness = append(bcn.VaildWitness, w)
-		if w == witness {
+		if strings.Compare(w, witness) == 0 {
 			witness = ""
 		}
 	}
@@ -184,12 +185,12 @@ func (bcn *BlockCacheNode) updateVaildWitness(parent *BlockCacheNode, witness st
 }
 
 func (bcn *BlockCacheNode) removeVaildWitness(root *BlockCacheNode) {
-	if &bcn.Active()[0] != &root.Pending()[0] || bcn.Head.Witness == root.Head.Witness {
+	if &bcn.Active()[0] != &root.Pending()[0] || strings.Compare(bcn.Head.Witness, root.Head.Witness) == 0 {
 		return
 	}
 	newVaildWitness := make([]string, 0, 0)
 	for _, w := range bcn.VaildWitness {
-		if w != root.Head.Witness {
+		if strings.Compare(w, root.Head.Witness) != 0 {
 			newVaildWitness = append(newVaildWitness, w)
 		}
 	}
