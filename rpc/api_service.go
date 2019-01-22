@@ -496,7 +496,7 @@ func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor
 			return fmt.Sprintf("b58 hash %v time %v height %v witness %v", common.Base58Encode(x.HeadHash()), x.Head.Time,
 				x.Head.Number, x.Head.Witness)
 		}
-		err = fmt.Errorf("db checkout failed. b58 hash %v, tags %v, head block %v, li block %v", common.Base58Encode(hash), stateDB.Tags(),
+		err = fmt.Errorf("db checkout failed. b58 hash %v, head block %v, li block %v", common.Base58Encode(hash),
 			b2s(as.bc.Head()), b2s(as.bc.LinkedRoot()))
 	}
 	db = database.NewVisitor(0, stateDB)

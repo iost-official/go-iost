@@ -90,7 +90,7 @@ func recoverDB(bv global.BaseVariable) error {
 			if err != nil {
 				return err
 			}
-			stateDB.Tag(string(blk.HeadHash()))
+			stateDB.Commit(string(blk.HeadHash()))
 			err = stateDB.Flush(string(blk.HeadHash()))
 			if err != nil {
 				return fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)

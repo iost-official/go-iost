@@ -443,7 +443,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		if err != nil {
 			return err
 		}
-		p.verifyDB.Tag(string(blk.HeadHash()))
+		p.verifyDB.Commit(string(blk.HeadHash()))
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
