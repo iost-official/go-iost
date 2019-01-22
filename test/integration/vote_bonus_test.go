@@ -121,10 +121,10 @@ func Test_VoteBonus(t *testing.T) {
 		// 1. unregistered withdraw
 		r, err = s.Call("vote_producer.iost", "forceUnregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "unregister", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't unregister")
 
 		r, err = s.Call("bonus.iost", "exchangeIOST", fmt.Sprintf(`["%s","%s"]`, acc3.ID, "7.9511776"), acc3.ID, acc3.KeyPair)
 		So(err, ShouldBeNil)
@@ -163,9 +163,6 @@ func Test_VoteBonus(t *testing.T) {
 		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103121212193-90909093))
 
 		// 2. re-register withdraw
-		r, err = s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc3.ID, acc3.KeyPair.ReadablePubkey()), acc3.ID, acc3.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
 		r, err = s.Call("vote_producer.iost", "approveRegister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
