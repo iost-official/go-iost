@@ -95,7 +95,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		mu:               new(sync.RWMutex),
 	}
 	continuousNum = baseVariable.Continuous()
-	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
+	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().PendingNum())
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
 	return &p
@@ -322,12 +322,14 @@ func (p *PoB) scheduleLoop() {
 			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			t := time.Now()
+			_, head := p.txPool.PendingTx()
+			witnessList := head.Active()
 			pubkey := p.account.ReadablePubkey()
-			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano()) == pubkey {
-				staticProperty.SlotUsed[t.Unix()] = true
+			if !staticProperty.SlotUsed[t.Unix()] && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+				p.quitGenerateMode = make(chan struct{})
+				staticProperty.SlotUsed[t.Unix()] = true // never delete
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
-				p.quitGenerateMode = make(chan struct{})
 				for num := 0; num < continuousNum; num++ {
 					p.gen(num)
 					if num == continuousNum-1 {
@@ -336,7 +338,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					if witnessOfNanoSec(t.UnixNano()) != pubkey {
+					if witnessOfNanoSec(t.UnixNano(), witnessList) != pubkey {
 						break
 					}
 				}
@@ -437,7 +439,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain, replay)
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, node.GetParent().Active(), p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
@@ -462,7 +464,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
 		tContinuousNum++
 	}
-	if witnessOfNanoSec(time.Now().UnixNano()) != node.Head.Witness {
+	if witnessOfNanoSec(time.Now().UnixNano(), node.GetParent().Active()) != node.Head.Witness {
 		ilog.Debugf("hasn't process the block in the slot belonging to the witness")
 		metricsDelayedBlock.Add(1, nil)
 	}
@@ -474,8 +476,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateLib(node, p.blockCache)
-	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
-	if staticProperty.isWitness(p.account.ReadablePubkey()) {
+	if staticProperty.isWitness(p.account.ReadablePubkey(), p.blockCache.LinkedRoot().Pending()) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
 	}
 }

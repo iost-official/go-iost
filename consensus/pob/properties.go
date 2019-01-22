@@ -13,32 +13,20 @@ var staticProperty *StaticProperty
 type StaticProperty struct {
 	account           *account.KeyPair
 	NumberOfWitnesses int64
-	WitnessList       []string
-	Watermark         map[string]int64
 	SlotUsed          map[int64]bool
 }
 
-func newStaticProperty(account *account.KeyPair, witnessList []string) *StaticProperty {
+func newStaticProperty(account *account.KeyPair, number int64) *StaticProperty {
 	property := &StaticProperty{
-		account:     account,
-		WitnessList: make([]string, 0),
-		Watermark:   make(map[string]int64),
-		SlotUsed:    make(map[int64]bool),
+		account:           account,
+		NumberOfWitnesses: number,
+		SlotUsed:          make(map[int64]bool),
 	}
-
-	property.updateWitness(witnessList)
-
 	return property
 }
 
-func (property *StaticProperty) updateWitness(witnessList []string) {
-
-	property.NumberOfWitnesses = int64(len(witnessList))
-	property.WitnessList = witnessList
-}
-
-func (property *StaticProperty) isWitness(w string) bool {
-	for _, v := range property.WitnessList {
+func (property *StaticProperty) isWitness(w string, witnessList []string) bool {
+	for _, v := range witnessList {
 		if strings.Compare(v, w) == 0 {
 			return true
 		}
@@ -50,17 +38,17 @@ var (
 	second2nanosecond int64 = 1000000000
 )
 
-func witnessOfNanoSec(nanosec int64) string {
-	return witnessOfSec(nanosec / second2nanosecond)
+func witnessOfNanoSec(nanosec int64, witnessList []string) string {
+	return witnessOfSec(nanosec/second2nanosecond, witnessList)
 }
 
-func witnessOfSec(sec int64) string {
-	return witnessOfSlot(sec / common.SlotLength)
+func witnessOfSec(sec int64, witnessList []string) string {
+	return witnessOfSlot(sec/common.SlotLength, witnessList)
 }
 
-func witnessOfSlot(slot int64) string {
+func witnessOfSlot(slot int64, witnessList []string) string {
 	index := slot % staticProperty.NumberOfWitnesses
-	witness := staticProperty.WitnessList[index]
+	witness := witnessList[index]
 	return witness
 }
 

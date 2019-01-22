@@ -90,15 +90,15 @@ func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
+func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, witnessList []string, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
 	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
 	}
 
-	if replay == false && witnessOfNanoSec(blk.Head.Time) != blk.Head.Witness {
+	if replay == false && witnessOfNanoSec(blk.Head.Time, witnessList) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
-			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList)
+			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, witnessList)
 		return errWitness
 	}
 	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
