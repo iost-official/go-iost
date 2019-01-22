@@ -56,19 +56,10 @@ type Commit struct {
 }
 
 // NewCommit returns new commit
-func NewCommit(cacheType mvcc.CacheType) *Commit {
+func NewCommit(cache mvcc.Cache, tag string) *Commit {
 	return &Commit{
-		Cache: mvcc.NewCache(cacheType),
-		Tag:   "",
-	}
-}
-
-// Fork will fork the commit
-// thread safe between all forks of the commit
-func (c *Commit) Fork() *Commit {
-	return &Commit{
-		Cache: c.Cache.Fork().(mvcc.Cache),
-		Tag:   "",
+		Cache: cache,
+		Tag:   tag,
 	}
 }
 
@@ -92,13 +83,12 @@ func NewCommitManager() *CommitManager {
 }
 
 // Add will add a commit with tag
-func (m *CommitManager) Add(c *Commit, t string) {
+func (m *CommitManager) Add(c *Commit) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 
 	m.commits = append(m.commits, c)
-	c.Tag = t
-	m.tags[t] = c
+	m.tags[c.Tag] = c
 }
 
 // Get will get a commit by tag
@@ -128,10 +118,10 @@ func (m *CommitManager) FreeBefore(c *Commit) {
 // CacheMVCCDB is the mvcc db with cache
 type CacheMVCCDB struct {
 	head    *Commit
-	rwmu    sync.RWMutex
-	stage   *Commit
+	stage   mvcc.Cache
 	storage *kv.Storage
 	cm      *CommitManager
+	rwmu    sync.RWMutex
 }
 
 // NewCacheMVCCDB returns new CacheMVCCDB
@@ -140,7 +130,7 @@ func NewCacheMVCCDB(path string, cacheType mvcc.CacheType) (*CacheMVCCDB, error)
 	if err != nil {
 		return nil, fmt.Errorf("failed to new storage: %v", err)
 	}
-	stage := NewCommit(cacheType)
+	stage := mvcc.NewCache(cacheType)
 	cm := NewCommitManager()
 
 	mvccdb := &CacheMVCCDB{
@@ -282,7 +272,7 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 		return false
 	}
 	m.head = head
-	m.stage = m.head.Fork()
+	m.stage = m.head.Cache.Fork().(mvcc.Cache)
 	return true
 }
 
@@ -291,9 +281,9 @@ func (m *CacheMVCCDB) Commit(t string) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 
-	m.cm.Add(m.stage, t)
-	m.head = m.stage
-	m.stage = m.head.Fork()
+	m.head = NewCommit(m.stage, t)
+	m.stage = m.head.Cache.Fork().(mvcc.Cache)
+	m.cm.Add(m.head)
 }
 
 // CurrentTag will return current tag of mvccdb
@@ -312,7 +302,7 @@ func (m *CacheMVCCDB) Fork() MVCCDB {
 
 	mvccdb := &CacheMVCCDB{
 		head:    m.head,
-		stage:   m.head.Fork(),
+		stage:   m.head.Cache.Fork().(mvcc.Cache),
 		storage: m.storage,
 		cm:      m.cm,
 	}
