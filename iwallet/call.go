@@ -16,17 +16,11 @@ package iwallet
 
 import (
 	"fmt"
-
 	"github.com/iost-official/go-iost/rpc/pb"
-
 	"github.com/spf13/cobra"
 )
 
-// TODO later
-// var signers []string
-
-//TODO refine the reminder here
-// callCmd represents the compile command
+// callCmd call a contract with given actions
 var callCmd = &cobra.Command{
 	Use:   "call",
 	Short: "Call a method in some contract",
@@ -37,14 +31,10 @@ var callCmd = &cobra.Command{
 	example:./iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'
 	`,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		argc := len(args)
-		if argc%3 != 0 {
-			return fmt.Errorf(`number of args should be a multiplier of 3`)
-		}
-		var actions = make([]*rpcpb.Action, 0)
-		for i := 0; i < len(args); i += 3 {
-			act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
-			actions = append(actions, act)
+		var actions []*rpcpb.Action
+		actions, err = actionsFromFlags(args)
+		if err != nil {
+			return
 		}
 		err = sdk.LoadAccount()
 		if err != nil {
@@ -57,4 +47,6 @@ var callCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(callCmd)
+	callCmd.Flags().StringSliceVarP(&sdk.signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
+	callCmd.Flags().StringSliceVarP(&sdk.withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
 }

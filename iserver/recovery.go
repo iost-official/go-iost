@@ -6,7 +6,6 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
 	"github.com/iost-official/go-iost/consensus/snapshot"
-	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -57,45 +56,45 @@ func recoverDB(bv global.BaseVariable) error {
 		}
 		blockChain.SetLength(blk.Head.Number + 1)
 	} else {
-		startNumebr := int64(0)
+		startNumber := int64(0)
 		hash := stateDB.CurrentTag()
 		ilog.Infoln("current Tag:", common.Base58Encode([]byte(hash)))
-		var parent *block.Block
+		//var parent *block.Block
 		if hash != "" {
 			blk, err := blockChain.GetBlockByHash([]byte(hash))
 			if err != nil {
 				return fmt.Errorf("statedb doesn't coincides with blockchaindb. err: %v", err)
 			}
-			startNumebr = blk.Head.Number + 1
-			parent = blk
+			startNumber = blk.Head.Number + 1
+			//parent = blk
 		}
 		blockChain.SetLength(startNumber)
-		/*
-			for i := startNumebr; i < blockChain.Length(); i++ {
-				blk, err := blockChain.GetBlockByNumber(i)
-				if err != nil {
-					return fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
-				}
-				v := verifier.Verifier{}
-				err = v.Verify(blk, parent, stateDB, &verifier.Config{
-					Mode:        0,
-					Timeout:     common.SlotLength / 3 * time.Second,
-					TxTimeLimit: time.Millisecond * 100,
-				})
-				if err != nil {
-					return fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
-				}
-				parent = blk
-				err = snapshot.Save(stateDB, blk)
-				if err != nil {
-					return err
-				}
-				stateDB.Commit(string(blk.HeadHash()))
-				err = stateDB.Flush(string(blk.HeadHash()))
-				if err != nil {
-					return fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
-				}
-			}*/
+		/*for i := startNumebr; i < blockChain.Length(); i++ {
+			blk, err := blockChain.GetBlockByNumber(i)
+			if err != nil {
+				return fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
+			}
+			v := verifier.Verifier{}
+			// TODO: fix witnessList
+			err = v.Verify(blk, parent, nil, stateDB, &verifier.Config{
+				Mode:        0,
+				Timeout:     common.SlotLength / 3 * time.Second,
+				TxTimeLimit: time.Millisecond * 100,
+			})
+			if err != nil {
+				return fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
+			}
+			parent = blk
+			err = snapshot.Save(stateDB, blk)
+			if err != nil {
+				return err
+			}
+			stateDB.Commit(string(blk.HeadHash()))
+			err = stateDB.Flush(string(blk.HeadHash()))
+			if err != nil {
+				return fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
+			}
+		}*/
 	}
 	return nil
 }

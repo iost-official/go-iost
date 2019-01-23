@@ -26,12 +26,16 @@ type SDK struct {
 	accountName string
 	keyPair     *account.KeyPair
 	signAlgo    string
+	signKeys    []string
+	signers     string
+	withSigns   []string
 
 	gasLimit    float64
 	gasRatio    float64
 	expiration  int64
 	amountLimit string
 	delaySecond int64
+	txTime      string
 
 	checkResult         bool
 	checkResultDelay    float32
@@ -125,13 +129,33 @@ func (s *SDK) createTx(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, erro
 	if err != nil {
 		return nil, err
 	}
-	now := time.Now().UnixNano()
-	expiration := now + s.expiration*1e9
+
+	var txTime int64
+	if s.txTime != "" {
+		t, err := time.Parse(time.RFC3339, s.txTime)
+		if err != nil {
+			return nil, fmt.Errorf("invalid time %v, should in format %v", s.txTime, time.RFC3339)
+		}
+		txTime = t.UnixNano()
+	} else {
+		txTime = time.Now().UnixNano()
+	}
+	expiration := txTime + s.expiration*1e9
+
+	signers := make([]string, 0)
+	if s.signers != "" {
+		strings.Split(s.signers, ",")
+		for _, s := range signers {
+			if !(len(strings.Split(s, "@")) == 2) {
+				return nil, fmt.Errorf("signer %v should contrain '@'", s)
+			}
+		}
+	}
 
 	ret := &rpcpb.TransactionRequest{
-		Time:          time.Now().UnixNano(),
+		Time:          txTime,
 		Actions:       actions,
-		Signers:       []string{},
+		Signers:       signers,
 		GasLimit:      s.gasLimit,
 		GasRatio:      s.gasRatio,
 		Expiration:    expiration,
@@ -143,13 +167,55 @@ func (s *SDK) createTx(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, erro
 	return ret, nil
 }
 
+func (s *SDK) toRPCSign(sig *crypto.Signature) *rpcpb.Signature {
+	return &rpcpb.Signature{
+		Algorithm: rpcpb.Signature_Algorithm(sig.Algorithm),
+		Signature: sig.Sig,
+		PublicKey: sig.Pubkey,
+	}
+}
+
+func (s *SDK) getSignatureOfTx(t *rpcpb.TransactionRequest, kp *account.KeyPair) *rpcpb.Signature {
+	hash := common.Sha3(txToBytes(t, false))
+	sig := s.toRPCSign(kp.Sign(hash))
+	return sig
+}
+
 func (s *SDK) signTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, error) {
-	sig := &rpcpb.Signature{
+	sigs := make([]*rpcpb.Signature, 0)
+	if len(s.withSigns) != 0 && len(s.signKeys) != 0 {
+		return nil, fmt.Errorf("at least one of --sign_keys and --with_signs should be empty")
+	}
+	if len(s.signKeys) > 0 {
+		for _, f := range s.signKeys {
+			kp, err := loadKeyPair(f, s.GetSignAlgo())
+			if err != nil {
+				return nil, fmt.Errorf("sign tx with priv key %v err %v", f, err)
+			}
+			sigs = append(sigs, s.getSignatureOfTx(t, kp))
+		}
+	} else if len(s.withSigns) > 0 {
+		hash := common.Sha3(txToBytes(t, false))
+		for _, f := range s.withSigns {
+			sig, err := loadSignature(f)
+			if err != nil {
+				return nil, fmt.Errorf("invalid signature file %v", f)
+			}
+			if !s.GetSignAlgoByEnum(sig.Algorithm).Verify(hash, sig.PublicKey, sig.Signature) {
+				return nil, fmt.Errorf("sign verify error %v", f)
+			}
+			sigs = append(sigs, sig)
+		}
+	}
+
+	t.Signatures = sigs
+	txHashBytes := common.Sha3(txToBytes(t, true))
+	publishSig := &rpcpb.Signature{
 		Algorithm: rpcpb.Signature_Algorithm(s.GetSignAlgo()),
-		Signature: s.GetSignAlgo().Sign(common.Sha3(txToBytes(t)), s.keyPair.Seckey),
+		Signature: s.GetSignAlgo().Sign(txHashBytes, s.keyPair.Seckey),
 		PublicKey: s.GetSignAlgo().GetPubkey(s.keyPair.Seckey),
 	}
-	t.PublisherSigs = []*rpcpb.Signature{sig}
+	t.PublisherSigs = []*rpcpb.Signature{publishSig}
 	t.Publisher = s.accountName
 	return t, nil
 }
@@ -160,10 +226,27 @@ func (s *SDK) getSignAlgoName() string {
 
 // GetSignAlgo ...
 func (s *SDK) GetSignAlgo() crypto.Algorithm {
-	switch s.getSignAlgoName() {
+	return s.GetSignAlgoByName(s.getSignAlgoName())
+}
+
+// GetSignAlgoByName ...
+func (s *SDK) GetSignAlgoByName(name string) crypto.Algorithm {
+	switch name {
 	case "secp256k1":
 		return crypto.Secp256k1
 	case "ed25519":
+		return crypto.Ed25519
+	default:
+		return crypto.Ed25519
+	}
+}
+
+// GetSignAlgoByEnum ...
+func (s *SDK) GetSignAlgoByEnum(enum rpcpb.Signature_Algorithm) crypto.Algorithm {
+	switch enum {
+	case rpcpb.Signature_SECP256K1:
+		return crypto.Secp256k1
+	case rpcpb.Signature_ED25519:
 		return crypto.Ed25519
 	default:
 		return crypto.Ed25519
@@ -343,12 +426,8 @@ func (s *SDK) LoadAccount() error {
 	if err != nil {
 		return err
 	}
-	kpPath := fmt.Sprintf("%s/%s_%s", dir, s.accountName, s.getSignAlgoName())
-	fsk, err := loadKey(kpPath)
-	if err != nil {
-		return fmt.Errorf("read file failed: %v", err)
-	}
-	s.keyPair, err = account.NewKeyPair(loadBytes(string(fsk)), s.GetSignAlgo())
+	privKeyFile := fmt.Sprintf("%s/%s_%s", dir, s.accountName, s.getSignAlgoName())
+	s.keyPair, err = loadKeyPair(privKeyFile, s.GetSignAlgo())
 	if err != nil {
 		return err
 	}
@@ -598,7 +677,7 @@ func signatureToBytes(s *rpcpb.Signature) []byte {
 	return se.Bytes()
 }
 
-func txToBytes(t *rpcpb.TransactionRequest) []byte {
+func txToBytes(t *rpcpb.TransactionRequest, withSign bool) []byte {
 	se := common.NewSimpleEncoder()
 	se.WriteInt64(t.Time)
 	se.WriteInt64(t.Expiration)
@@ -620,11 +699,13 @@ func txToBytes(t *rpcpb.TransactionRequest) []byte {
 	}
 	se.WriteBytesSlice(amountBytes)
 
-	signBytes := make([][]byte, 0, len(t.Signatures))
-	for _, sig := range t.Signatures {
-		signBytes = append(signBytes, signatureToBytes(sig))
+	if withSign {
+		signBytes := make([][]byte, 0, len(t.Signatures))
+		for _, sig := range t.Signatures {
+			signBytes = append(signBytes, signatureToBytes(sig))
+		}
+		se.WriteBytesSlice(signBytes)
 	}
-	se.WriteBytesSlice(signBytes)
 
 	return se.Bytes()
 }
