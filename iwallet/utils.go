@@ -5,6 +5,7 @@ import (
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"io/ioutil"
 	"os"
 )
@@ -26,17 +27,17 @@ func changeSuffix(filename, suffix string) string {
 	dist = dist + suffix
 	return dist
 }
+*/
 
-func saveTo(Dist string, file []byte) error {
-	f, err := os.Create(Dist)
+func saveTo(output string, data []byte) error {
+	f, err := os.Create(output)
 	if err != nil {
 		return err
 	}
-	_, err = f.Write(file)
+	_, err = f.Write(data)
 	defer f.Close()
 	return err
 }
-*/
 
 func loadKey(src string) ([]byte, error) {
 	fi, err := os.Open(src)
@@ -80,4 +81,17 @@ func marshalTextString(pb proto.Message) string {
 		return "json.Marshal error: " + err.Error()
 	}
 	return r
+}
+
+func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
+	argc := len(args)
+	if argc%3 != 0 {
+		return nil, fmt.Errorf(`number of args should be a multiplier of 3`)
+	}
+	var actions = make([]*rpcpb.Action, 0)
+	for i := 0; i < len(args); i += 3 {
+		act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
+		actions = append(actions, act)
+	}
+	return actions, nil
 }

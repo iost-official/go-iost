@@ -14,112 +14,49 @@
 
 package iwallet
 
-/*
 import (
 	"fmt"
-	"io/ioutil"
-	"os"
-
-	"strings"
-
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/mitchellh/go-homedir"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
+var outputFile string
+var signKeyFile string
 
-// signCmd represents the sign command
+// signCmd sign a tx, and save the signature to a binary file
 var signCmd = &cobra.Command{
 	Use:   "sign",
-	Short: "Sign to .sc file",
-	Long:  `Sign to .sc file`,
-	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) < 1 {
-			fmt.Println(`Error: source file not given`)
-			return
+	Short: "sign a tx, and save the signature to a binary file",
+	Long:  "create a tx from command similar to `call` command, then sign it and save the signature to file",
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
+		if outputFile == "" {
+			return fmt.Errorf("output file name should be provided with --output flag")
 		}
-		path := args[0]
-		fi, err := os.Open(path)
+		var actions []*rpcpb.Action
+		actions, err = actionsFromFlags(args)
 		if err != nil {
-			fmt.Println("Error: input file not found")
+			return err
 		}
-		defer fi.Close()
-		fd, err := ioutil.ReadAll(fi)
+		trx, err := sdk.createTx(actions)
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+			return err
 		}
-
-		var mtx tx.Tx
-		err = mtx.Decode(fd)
+		kp, err := sdk.loadKeyPair(signKeyFile)
 		if err != nil {
-			fmt.Println("file broken: ", err.Error())
+			return err
 		}
-
-		fsk, err := os.Open(kpPath)
+		sig := sdk.getSignatureOfTx(trx, kp)
+		err = saveTo(outputFile, signatureToBytes(sig))
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+			return err
 		}
-		defer fsk.Close()
-		seckey, err := ioutil.ReadAll(fsk)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		acc, err := account.NewKeyPair(loadBytes(string(seckey)), getSignAlgo(signAlgo))
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		sig, err := tx.SignTxContent(&mtx, "todo", acc) // TODO 修改iwallet
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-
-		if len(args) < 2 {
-			dest = args[0][:strings.LastIndex(args[0], ".")]
-			dest = dest + ".sig"
-		} else {
-			dest = args[1]
-		}
-
-		sigRaw, err := sig.Encode()
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
-		err = saveTo(dest, sigRaw)
-		if err != nil {
-			fmt.Println(err.Error())
-			return
-		}
+		fmt.Printf("save signature to %v done", outputFile)
+		return
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(signCmd)
-
-	home, err := homedir.Dir()
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-
-	signCmd.Flags().StringVarP(&kpPath, "key-path", "k", home+"/.iwallet/id_ed25519", "Set path of sec-key")
-	signCmd.Flags().StringVarP(&signAlgo, "signAlgo", "a", "ed25519", "Sign algorithm")
-
-	// Here you will define your flags and configuration settings.
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// signCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// signCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	signCmd.Flags().StringVarP(&outputFile, "output", "", "", "output file name to write signature")
+	signCmd.Flags().StringVarP(&signKeyFile, "sign_key", "", "", "key file used for signing")
 }
-*/
