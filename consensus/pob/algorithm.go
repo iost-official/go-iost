@@ -49,7 +49,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
-	dropList, _, err := v.Gen(blk, topBlock, db, pTx, &verifier.Config{
+	dropList, _, err := v.Gen(blk, topBlock, &head.WitnessList, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: common.MaxTxTimeLimit,
@@ -89,15 +89,15 @@ func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, witnessList []string, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
+func verifyBlock(blk, parent *block.Block, lib *block.Block, witnessList *blockcache.WitnessList, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
 	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
 	}
 
-	if replay == false && witnessOfNanoSec(blk.Head.Time, witnessList) != blk.Head.Witness {
+	if replay == false && witnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
-			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, witnessList)
+			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, witnessList.Active())
 		return errWitness
 	}
 	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
@@ -136,7 +136,7 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, witnes
 		}
 	}
 	v := verifier.Verifier{}
-	return v.Verify(blk, parent, db, &verifier.Config{
+	return v.Verify(blk, parent, witnessList, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     time.Millisecond * 250,
 		TxTimeLimit: time.Millisecond * 100,

@@ -441,7 +441,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, node.GetParent().Active(), p.txPool, p.verifyDB, p.blockChain, replay)
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)

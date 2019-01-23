@@ -115,7 +115,7 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
 		v := verifier.Verifier{}
-		v.Verify(blk, topBlock, stateDB, &verifier.Config{
+		v.Verify(blk, topBlock, nil, stateDB, &verifier.Config{
 			Mode:        0,
 			Timeout:     time.Millisecond * 1000,
 			TxTimeLimit: time.Millisecond * 100,

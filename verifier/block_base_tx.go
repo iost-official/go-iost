@@ -4,14 +4,15 @@ import (
 	"fmt"
 
 	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
 )
 
 // NewBaseTx is new baseTx
-func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
+func NewBaseTx(blk, parent *block.Block, witnessList *blockcache.WitnessList) (*tx.Tx, error) {
 	acts := []*tx.Action{}
 	if blk.Head.Number > 0 {
-		txData, err := baseTxData(blk, parent)
+		txData, err := baseTxData(blk, parent, witnessList)
 		if err != nil {
 			return nil, err
 		}
@@ -29,12 +30,16 @@ func NewBaseTx(blk *block.Block, parent *block.Block) (*tx.Tx, error) {
 	return tx, nil
 }
 
-func baseTxData(b *block.Block, pb *block.Block) (string, error) {
+func baseTxData(b, pb *block.Block, witnessList *blockcache.WitnessList) (string, error) {
 	if pb != nil {
-		return fmt.Sprintf(`[{"parent":["%v", "%v"]}]`, pb.Head.Witness, pb.CalculateGasUsage()), nil
+		witnessChanged := false
+		if witnessList != nil && &witnessList.Active()[0] != &witnessList.Pending()[0] {
+			witnessChanged = true
+		}
+		return fmt.Sprintf(`[{"parent":["%v", "%v", %v]}]`, pb.Head.Witness, pb.CalculateGasUsage(), witnessChanged), nil
 	}
 	if b.Head.Number != 0 {
 		return "", fmt.Errorf("block dit not have parent")
 	}
-	return `[{"parent":["", "0"]}]`, nil
+	return `[{"parent":["", "0", false]}]`, nil
 }

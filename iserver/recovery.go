@@ -77,7 +77,8 @@ func recoverDB(bv global.BaseVariable) error {
 				return fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 			}
 			v := verifier.Verifier{}
-			err = v.Verify(blk, parent, stateDB, &verifier.Config{
+			// TODO: fix witnessList
+			err = v.Verify(blk, parent, nil, stateDB, &verifier.Config{
 				Mode:        0,
 				Timeout:     common.SlotLength / 3 * time.Second,
 				TxTimeLimit: time.Millisecond * 100,
