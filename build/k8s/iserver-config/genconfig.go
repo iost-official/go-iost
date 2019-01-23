@@ -46,7 +46,6 @@ func genconfig() {
 	pushAddr := os.Getenv("PROMETHEUS_HOSTNAME")
 	username := os.Getenv("PROMETHEUS_USERNAME")
 	password := os.Getenv("PROMETHEUS_PASSWORD")
-	consoleLog := true
 	seedNodes := []string{fmt.Sprintf("/dns4/iserver-0.iserver.%s.svc.cluster.local/tcp/30000/ipfs/12D3KooWA2QZHXCLsVL9rxrtKPRqBSkQj7mCdHEhRoW8eJtn24ht", *cluster)}
 
 	file, err := os.Open("keypairs")
@@ -71,10 +70,11 @@ func genconfig() {
 	WitnessInfo := make([]*common.Witness, 0)
 	for i := 0; i < *master; i++ {
 		witness := &common.Witness{
-			ID:      fmt.Sprintf("producer%05d", i),
-			Owner:   ids[i],
-			Active:  ids[i],
-			Balance: int64(1000000000),
+			ID:             fmt.Sprintf("producer%03d", i),
+			Owner:          ids[i],
+			Active:         ids[i],
+			SignatureBlock: ids[i],
+			Balance:        int64(0),
 		}
 		WitnessInfo = append(WitnessInfo, witness)
 	}
@@ -83,7 +83,7 @@ func genconfig() {
 		ID:      "admin",
 		Owner:   "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto",
 		Active:  "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto",
-		Balance: int64(21000000000) - int64(1000000000)*int64(*master),
+		Balance: int64(21000000000),
 	}
 
 	tokenInfo := &common.TokenInfo{
@@ -101,12 +101,11 @@ func genconfig() {
 
 	Genesis := &common.GenesisConfig{
 		CreateGenesis:    true,
-		InitialTimestamp: "2018-01-02T15:04:03Z",
 		TokenInfo:        tokenInfo,
 		WitnessInfo:      WitnessInfo,
 		AdminInfo:        adminInfo,
 		FoundationInfo:   foundationInfo,
-		ContractPath:     "contract/",
+		InitialTimestamp: "2018-01-02T15:04:03Z",
 	}
 
 	genesisfile, err := os.Create("genesis.yml")
@@ -127,17 +126,26 @@ func genconfig() {
 	DB := &common.DBConfig{
 		LdbPath: "/data/storage/",
 	}
-
+	Snapshot := &common.SnapshotConfig{
+		Enable:   false,
+		FilePath: "",
+	}
 	P2P := &common.P2PConfig{
-		ListenAddr: "0.0.0.0:30000",
-		SeedNodes:  seedNodes,
-		ChainID:    1024,
-		Version:    1,
-		DataPath:   "/data/p2p/",
+		ListenAddr:   "0.0.0.0:30000",
+		SeedNodes:    seedNodes,
+		ChainID:      1024,
+		Version:      1,
+		DataPath:     "/data/p2p/",
+		InboundConn:  18,
+		OutboundConn: 12,
+		AdminPort:    "30005",
 	}
 	RPC := &common.RPCConfig{
-		GatewayAddr: "0.0.0.0:30001",
-		GRPCAddr:    "0.0.0.0:30002",
+		Enable:       true,
+		GatewayAddr:  "0.0.0.0:30001",
+		GRPCAddr:     "0.0.0.0:30002",
+		TryTx:        false,
+		AllowOrigins: []string{"*"},
 	}
 	Log := &common.LogConfig{
 		FileLog: &common.FileLogConfig{
@@ -147,9 +155,10 @@ func genconfig() {
 		},
 		ConsoleLog: &common.ConsoleLogConfig{
 			Level:  "info",
-			Enable: consoleLog,
+			Enable: true,
 		},
-		AsyncWrite: true,
+		AsyncWrite:        true,
+		EnableContractLog: false,
 	}
 	Debug := &common.DebugConfig{
 		ListenAddr: "0.0.0.0:30003",
@@ -157,7 +166,7 @@ func genconfig() {
 
 	for i := 0; i < *master+*slave; i++ {
 		ACC := &common.ACCConfig{
-			ID:        fmt.Sprintf("producer%05d", i),
+			ID:        fmt.Sprintf("producer%03d", i),
 			SecKey:    seckeys[i],
 			Algorithm: "ed25519",
 		}
@@ -169,15 +178,16 @@ func genconfig() {
 			Password: password,
 		}
 		c := &common.Config{
-			ACC:     ACC,
-			Genesis: "/var/lib/iserver/genesis",
-			VM:      VM,
-			DB:      DB,
-			P2P:     P2P,
-			RPC:     RPC,
-			Log:     Log,
-			Metrics: Metrics,
-			Debug:   Debug,
+			ACC:      ACC,
+			Genesis:  "/var/lib/iserver/",
+			VM:       VM,
+			DB:       DB,
+			Snapshot: Snapshot,
+			P2P:      P2P,
+			RPC:      RPC,
+			Log:      Log,
+			Metrics:  Metrics,
+			Debug:    Debug,
 		}
 
 		if i == 0 {
