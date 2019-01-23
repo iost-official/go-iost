@@ -95,7 +95,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		mu:               new(sync.RWMutex),
 	}
 	continuousNum = baseVariable.Continuous()
-	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().PendingNum())
+	staticProperty = newStaticProperty(p.account, int64(len(blockCache.LinkedRoot().Pending())))
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
 	return &p
