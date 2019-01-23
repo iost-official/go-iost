@@ -143,13 +143,19 @@ func (c *Client) SendTransaction(transaction *Transaction, check bool) (string, 
 // CheckTransactionWithTimeout will check transaction receipt with expire time
 func (c *Client) CheckTransactionWithTimeout(hash string, expire time.Time) (*Receipt, error) {
 	ticker := time.NewTicker(Interval)
+	defer ticker.Stop()
 	var afterTimeout <-chan time.Time
 	now := time.Now()
+
+	var timer *time.Timer
 	if expire.Before(now) {
-		afterTimeout = time.After(2 * time.Millisecond)
+		timer = time.NewTimer(2 * time.Millisecond)
 	} else {
-		afterTimeout = time.After(time.Until(expire))
+		timer = time.NewTimer(time.Until(expire))
 	}
+	afterTimeout = timer.C
+	defer timer.Stop()
+
 	for {
 		select {
 		case <-afterTimeout:
@@ -171,7 +177,10 @@ func (c *Client) CheckTransactionWithTimeout(hash string, expire time.Time) (*Re
 }
 func (c *Client) checkTransaction(hash string) error {
 	ticker := time.NewTicker(Interval)
-	afterTimeout := time.After(Timeout)
+	defer ticker.Stop()
+	timer := time.NewTimer(Timeout)
+	afterTimeout := timer.C
+	defer timer.Stop()
 	for {
 		select {
 		case <-afterTimeout:
