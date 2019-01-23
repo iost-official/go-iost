@@ -462,7 +462,7 @@ func (bc *BlockCacheImpl) updateLongest() {
 	if ok {
 		return
 	}
-	for bcn, _ := range bc.leaf {
+	for bcn := range bc.leaf {
 		if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 			bc.SetHead(bcn)
 		}
