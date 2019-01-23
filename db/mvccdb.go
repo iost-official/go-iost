@@ -292,7 +292,6 @@ func (m *CacheMVCCDB) Checkout(t string) bool {
 
 	head := m.cm.Get(t)
 	if head == nil {
-		ilog.Warnf("Checkout tag %v failed, last 10 tags is %v", t, m.cm.Tags())
 		return false
 	}
 	m.head = head
