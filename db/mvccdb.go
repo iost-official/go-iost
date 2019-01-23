@@ -2,7 +2,6 @@ package db
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/ilog"
 	"sync"
 
 	"github.com/iost-official/go-iost/db/kv"
