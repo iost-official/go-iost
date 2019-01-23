@@ -48,7 +48,8 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 	contractName := "auth.iost"
 	trxs := make([]*itest.Transaction, 0)
 	for num := 0; num < tps; num++ {
-		tIndex := rand.Intn(15) // signUp 1/3, each other 1/15
+		//tIndex := rand.Intn(15) // signUp 1/3, each other 1/15
+		tIndex := 5 + rand.Intn(10)
 		switch true {
 		case tIndex < 5:
 			// signUp
@@ -75,13 +76,13 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 			from := accounts[rand.Intn(len(accounts))]
 			randPerm := randStr(10)
 			act1 := tx.NewAction(contractName, "addPermission", fmt.Sprintf(`["%v","%v",%v]`, from.ID, randPerm, 10+rand.Intn(50)))
-			trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act1}))
-			if err != nil {
-				return nil, err
-			}
-			trxs = append(trxs, trx1)
+			//trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act1}))
+			//if err != nil {
+			//	return nil, err
+			//}
+			//trxs = append(trxs, trx1)
 			act2 := tx.NewAction(contractName, "dropPermission", fmt.Sprintf(`["%v","%v"]`, from.ID, randPerm))
-			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act2}))
+			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act1, act2}))
 			if err != nil {
 				return nil, err
 			}
@@ -93,13 +94,13 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 			kp, _ := account.NewKeyPair(nil, crypto.Ed25519)
 			k := kp.ReadablePubkey()
 			act1 := tx.NewAction(contractName, "assignPermission", fmt.Sprintf(`["%v","%v","%v",%v]`, from.ID, "active", k, 10+rand.Intn(50)))
-			trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act1}))
-			if err != nil {
-				return nil, err
-			}
-			trxs = append(trxs, trx1)
+			//trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act1}))
+			//if err != nil {
+			//	return nil, err
+			//}
+			//trxs = append(trxs, trx1)
 			act2 := tx.NewAction(contractName, "revokePermission", fmt.Sprintf(`["%v","%v","%v"]`, from.ID, "active", k))
-			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act2}))
+			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act1, act2}))
 			if err != nil {
 				return nil, err
 			}
@@ -110,13 +111,13 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 			from := accounts[rand.Intn(len(accounts))]
 			randGroup := randStr(10)
 			act1 := tx.NewAction(contractName, "addGroup", fmt.Sprintf(`["%v","%v"]`, from.ID, randGroup))
-			trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act1}))
-			if err != nil {
-				return nil, err
-			}
-			trxs = append(trxs, trx1)
+			//trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act1}))
+			//if err != nil {
+			//	return nil, err
+			//}
+			//trxs = append(trxs, trx1)
 			act2 := tx.NewAction(contractName, "dropGroup", fmt.Sprintf(`["%v","%v"]`, from.ID, randGroup))
-			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act2}))
+			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act1, act2}))
 			if err != nil {
 				return nil, err
 			}
@@ -130,13 +131,13 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 			k := kp.ReadablePubkey()
 			act11 := tx.NewAction(contractName, "addGroup", fmt.Sprintf(`["%v","%v"]`, from.ID, randGroup))
 			act12 := tx.NewAction(contractName, "assignGroup", fmt.Sprintf(`["%v","%v","%v",%v]`, from.ID, randGroup, k, 30))
-			trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act11, act12}))
-			if err != nil {
-				return nil, err
-			}
-			trxs = append(trxs, trx1)
+			//trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act11, act12}))
+			//if err != nil {
+			//	return nil, err
+			//}
+			//trxs = append(trxs, trx1)
 			act2 := tx.NewAction(contractName, "revokeGroup", fmt.Sprintf(`["%v","%v","%v"]`, from.ID, randGroup, k))
-			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act2}))
+			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act11, act12, act2}))
 			if err != nil {
 				return nil, err
 			}
@@ -150,13 +151,13 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 			act11 := tx.NewAction(contractName, "addGroup", fmt.Sprintf(`["%v","%v"]`, from.ID, randGroup))
 			act12 := tx.NewAction(contractName, "addPermission", fmt.Sprintf(`["%v","%v",%v]`, from.ID, randPerm, 10+rand.Intn(50)))
 			act13 := tx.NewAction(contractName, "assignPermissionToGroup", fmt.Sprintf(`["%v","%v","%v"]`, from.ID, randPerm, randGroup))
-			trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act11, act12, act13}))
-			if err != nil {
-				return nil, err
-			}
-			trxs = append(trxs, trx1)
+			//trx1, err := from.Sign(itest.NewTransaction([]*tx.Action{act11, act12, act13}))
+			//if err != nil {
+			//	return nil, err
+			//}
+			//trxs = append(trxs, trx1)
 			act2 := tx.NewAction(contractName, "revokePermissionInGroup", fmt.Sprintf(`["%v","%v","%v"]`, from.ID, randPerm, randGroup))
-			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act2}))
+			trx2, err := from.Sign(itest.NewTransaction([]*tx.Action{act11, act12, act13, act2}))
 			if err != nil {
 				return nil, err
 			}
