@@ -2,6 +2,7 @@ package common
 
 import (
 	"bytes"
+	"fmt"
 )
 
 // SimpleEncoder is a simple encoder used to convert struct to bytes.
@@ -89,4 +90,48 @@ func (se *SimpleEncoder) Bytes() []byte {
 // Reset resets the buffer.
 func (se *SimpleEncoder) Reset() {
 	se.buf.Reset()
+}
+
+// SimpleDecoder is a simple decoder used to convert bytes to other types. Not used now!!!
+type SimpleDecoder struct {
+	input []byte
+}
+
+// NewSimpleDecoder returns a new SimpleDecoder instance.
+func NewSimpleDecoder(input []byte) *SimpleDecoder {
+	return &SimpleDecoder{input}
+}
+
+// ParseByte parse input, return first byte
+func (sd *SimpleDecoder) ParseByte() (byte, error) {
+	if len(sd.input) < 1 {
+		return 0, fmt.Errorf("parse byte fail: invalid len %v", sd.input)
+	}
+	result := sd.input[0]
+	sd.input = sd.input[1:]
+	return result, nil
+}
+
+// ParseInt32 parse input, return first int32
+func (sd *SimpleDecoder) ParseInt32() (int32, error) {
+	if len(sd.input) < 4 {
+		return 0, fmt.Errorf("parse int32 fail: invalid len %v", sd.input)
+	}
+	result := BytesToInt32(sd.input[:4])
+	sd.input = sd.input[4:]
+	return result, nil
+}
+
+// ParseBytes parse input, return first byte array
+func (sd *SimpleDecoder) ParseBytes() ([]byte, error) {
+	length, err := sd.ParseInt32()
+	if err != nil {
+		return nil, err
+	}
+	if len(sd.input) < int(length) {
+		return nil, fmt.Errorf("bytes length too large: %v > %v", length, len(sd.input))
+	}
+	result := sd.input[:length]
+	sd.input = sd.input[length:]
+	return result, nil
 }
