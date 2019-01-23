@@ -391,6 +391,12 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	block, witnessList, err := decodeBCN(b)
 	//bc.Add(&block)
+
+	// Try to put LinkedRoot's Active list back.
+	if bc.LinkedRoot().Head.Number == block.Head.Number {
+		bc.LinkedRoot().SetActive(witnessList.Active())
+	}
+
 	p.RecoverBlock(&block, witnessList)
 
 	return err
@@ -670,7 +676,7 @@ func (bc *BlockCacheImpl) writeAddNodeWAL(h *BlockCacheNode) (uint64, error) {
 }
 
 func (bc *BlockCacheImpl) cutWALFiles(h *BlockCacheNode) error {
-	bc.wal.RemoveFiles(h.walIndex)
+	bc.wal.RemoveFilesBefore(h.walIndex)
 	return nil
 }
 
