@@ -29,7 +29,6 @@ var (
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
 	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
-	metricsDelayedBlock          = metrics.NewCounter("iost_delayed_block", nil)
 )
 
 var (
@@ -470,10 +469,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
 		tContinuousNum++
 	}
-	if witnessOfNanoSec(time.Now().UnixNano(), node.GetParent().Active()) != node.Head.Witness {
-		ilog.Debugf("hasn't process the block in the slot belonging to the witness")
-		metricsDelayedBlock.Add(1, nil)
-	}
+
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, replay)
 	}

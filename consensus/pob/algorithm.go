@@ -156,7 +156,8 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 				loopNode = loopNode.GetParent()
 			}
 
-			for len(node.VaildWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+			for len(node.VaildWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
+				blockList[bc.LinkedRoot().Head.Number+1] != nil {
 				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
 				metricsConfirmedLength.Set(float64(bc.LinkedRoot().Head.Number), nil)
 			}
