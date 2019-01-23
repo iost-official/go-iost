@@ -344,7 +344,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					if witnessOfNanoSec(t.UnixNano(), witnessList) != pubkey {
+					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break
 					}
 				}
@@ -482,7 +482,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 
 func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
 	updateLib(node, p.blockCache)
-	if staticProperty.isWitness(p.account.ReadablePubkey(), p.blockCache.LinkedRoot().Pending()) {
+	if staticProperty.isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
 	}
 }
