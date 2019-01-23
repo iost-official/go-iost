@@ -14,7 +14,6 @@ var staticProperty *StaticProperty
 type StaticProperty struct {
 	account           *account.KeyPair
 	NumberOfWitnesses int64
-	SlotUsed          map[int64]bool
 	mu                sync.RWMutex
 }
 
@@ -22,7 +21,6 @@ func newStaticProperty(account *account.KeyPair, number int64) *StaticProperty {
 	property := &StaticProperty{
 		account:           account,
 		NumberOfWitnesses: number,
-		SlotUsed:          make(map[int64]bool),
 	}
 	return property
 }

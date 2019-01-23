@@ -315,21 +315,25 @@ func (p *PoB) blockLoop() {
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
 
-	tGenBlock := time.NewTicker(20 * time.Microsecond)
+	tGenBlock := time.NewTicker(20 * time.Millisecond)
 	tMetricsMode := time.NewTicker(3 * time.Second)
 	defer tGenBlock.Stop()
 	defer tMetricsMode.Stop()
 
+	var slotFlag int64
 	for {
 		select {
 		case <-tGenBlock.C:
+			// Don't delete,avoid time error
+			time.Sleep(1 * time.Millisecond)
+
 			t := time.Now()
 			_, head := p.txPool.PendingTx()
 			witnessList := head.Active()
 			pubkey := p.account.ReadablePubkey()
-			if witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey && !staticProperty.SlotUsed[slotOfSec(t.Unix())] && p.baseVariable.Mode() == global.ModeNormal {
+			if witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey && slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal {
+				slotFlag = slotOfSec(t.Unix())
 				p.quitGenerateMode = make(chan struct{})
-				staticProperty.SlotUsed[t.Unix()] = true // never delete
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				for num := 0; num < continuousNum; num++ {
@@ -441,7 +445,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, node.GetParent().Active(), p.txPool, p.verifyDB, p.blockChain, replay)
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)

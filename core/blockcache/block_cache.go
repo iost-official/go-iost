@@ -185,7 +185,7 @@ func (bcn *BlockCacheNode) updateVaildWitness(parent *BlockCacheNode, witness st
 }
 
 func (bcn *BlockCacheNode) removeVaildWitness(root *BlockCacheNode) {
-	if &bcn.Active()[0] != &root.Pending()[0] || strings.Compare(bcn.Head.Witness, root.Head.Witness) == 0 {
+	if !common.StringSliceEqual(bcn.Active(), root.Pending()) || strings.Compare(bcn.Head.Witness, root.Head.Witness) == 0 {
 		return
 	}
 	newVaildWitness := make([]string, 0, 0)
@@ -399,9 +399,7 @@ func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
 	bcn, bo := bc.hmget(b)
 	if bo {
-		bc.flush(bcn)
-		bc.delSingle()
-		bc.updateLongest()
+		bc.Flush(bcn)
 	}
 	return
 }

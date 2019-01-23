@@ -78,7 +78,7 @@ class Base {
 
         this._saveBlockInfo();
         this._saveWitnessInfo();
-        if (bn%voteStatInterval === 0){
+        if (bn%voteStatInterval === 0 && data.parent[2] === false){
             this._vote();
             this._clearWitnessInfo();
         }
