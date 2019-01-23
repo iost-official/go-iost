@@ -153,15 +153,10 @@ func viewAccount(name string) {
 				return
 			}
 			for _, f := range files {
-				fsk, err := loadKey(f)
+				keyPair, err := loadKeyPair(f, sdk.GetSignAlgo())
 				if err != nil {
-					fmt.Println("read file failed: ", err)
-					continue
-				}
-				keyPair, err := account.NewKeyPair(loadBytes(string(fsk)), crypto.NewAlgorithm(v))
-				if err != nil {
-					fmt.Println("NewKeyPair error: ", err)
-					continue
+					fmt.Println(err)
+					return
 				}
 				name, err := getFileName(f, "_"+v)
 				if err != nil {
@@ -193,7 +188,7 @@ func viewAccount(name string) {
 			if err != nil {
 				continue
 			}
-			keyPair, err := account.NewKeyPair(loadBytes(string(fsk)), crypto.NewAlgorithm(v))
+			keyPair, err := account.NewKeyPair(common.Base58Decode(string(fsk)), crypto.NewAlgorithm(v))
 			if err != nil {
 				fmt.Println("NewKeyPair error: ", err)
 				continue
@@ -220,7 +215,7 @@ func importAcc(name string, args []string) {
 		fmt.Println("Error: private key not given")
 		return
 	}
-	keyPair, err := account.NewKeyPair(loadBytes(args[0]), sdk.GetSignAlgo())
+	keyPair, err := account.NewKeyPair(common.Base58Decode(args[0]), sdk.GetSignAlgo())
 	if err != nil {
 		fmt.Println("private key error: ", err)
 		return
