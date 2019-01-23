@@ -188,7 +188,7 @@ func (s *SDK) signTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, er
 	}
 	if len(s.signKeys) > 0 {
 		for _, f := range s.signKeys {
-			kp, err := s.loadKeyPair(f)
+			kp, err := loadKeyPair(f, s.GetSignAlgo())
 			if err != nil {
 				return nil, fmt.Errorf("sign tx with priv key %v err %v", f, err)
 			}
@@ -197,11 +197,7 @@ func (s *SDK) signTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, er
 	} else if len(s.withSigns) > 0 {
 		hash := common.Sha3(txToBytes(t, false))
 		for _, f := range s.withSigns {
-			sigBytes, err := readFile(f)
-			if err != nil {
-				return nil, fmt.Errorf("fail to read signature file %v", f)
-			}
-			sig, err := signatureFromBytes(sigBytes)
+			sig, err := loadSignature(f)
 			if err != nil {
 				return nil, fmt.Errorf("invalid signature file %v", f)
 			}
@@ -418,14 +414,6 @@ func (s *SDK) getAccountDir() (string, error) {
 	return home + "/.iwallet", nil
 }
 
-func (s *SDK) loadKeyPair(privKeyFile string) (*account.KeyPair, error) {
-	fsk, err := loadKey(privKeyFile)
-	if err != nil {
-		return nil, fmt.Errorf("read key file failed: %v", err)
-	}
-	return account.NewKeyPair(loadBytes(string(fsk)), s.GetSignAlgo())
-}
-
 // LoadAccount load account from file
 func (s *SDK) LoadAccount() error {
 	if s.accountName == "" {
@@ -439,7 +427,7 @@ func (s *SDK) LoadAccount() error {
 		return err
 	}
 	privKeyFile := fmt.Sprintf("%s/%s_%s", dir, s.accountName, s.getSignAlgoName())
-	s.keyPair, err = s.loadKeyPair(privKeyFile)
+	s.keyPair, err = loadKeyPair(privKeyFile, s.GetSignAlgo())
 	if err != nil {
 		return err
 	}
@@ -687,27 +675,6 @@ func signatureToBytes(s *rpcpb.Signature) []byte {
 	se.WriteBytes(s.Signature)
 	se.WriteBytes(s.PublicKey)
 	return se.Bytes()
-}
-
-func signatureFromBytes(b []byte) (*rpcpb.Signature, error) {
-	sd := common.NewSimpleDecoder(b)
-	algo, err := sd.ParseByte()
-	if err != nil {
-		return nil, err
-	}
-	sign, err := sd.ParseBytes()
-	if err != nil {
-		return nil, err
-	}
-	k, err := sd.ParseBytes()
-	if err != nil {
-		return nil, err
-	}
-	return &rpcpb.Signature{
-		Algorithm: rpcpb.Signature_Algorithm(algo),
-		Signature: sign,
-		PublicKey: k,
-	}, nil
 }
 
 func txToBytes(t *rpcpb.TransactionRequest, withSign bool) []byte {

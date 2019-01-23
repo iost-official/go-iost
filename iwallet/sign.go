@@ -41,12 +41,12 @@ var signCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		kp, err := sdk.loadKeyPair(signKeyFile)
+		kp, err := loadKeyPair(signKeyFile, sdk.GetSignAlgo())
 		if err != nil {
 			return err
 		}
 		sig := sdk.getSignatureOfTx(trx, kp)
-		err = saveTo(outputFile, signatureToBytes(sig))
+		err = saveSignature(sig, outputFile)
 		if err != nil {
 			return err
 		}
