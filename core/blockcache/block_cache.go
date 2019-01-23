@@ -221,17 +221,16 @@ type BlockCache interface {
 
 // BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct { //nolint:golint
-	linkRW      sync.RWMutex
-	linkedRoot  *BlockCacheNode
-	singleRoot  *BlockCacheNode
-	rootWitness map[string]int64
-	headRW      sync.RWMutex
-	head        *BlockCacheNode
-	hash2node   *sync.Map // map[string]*BlockCacheNode
-	leaf        map[*BlockCacheNode]int64
-	blockChain  block.Chain
-	stateDB     db.MVCCDB
-	wal         *wal.WAL
+	linkRW     sync.RWMutex
+	linkedRoot *BlockCacheNode
+	singleRoot *BlockCacheNode
+	headRW     sync.RWMutex
+	head       *BlockCacheNode
+	hash2node  *sync.Map // map[string]*BlockCacheNode
+	leaf       map[*BlockCacheNode]int64
+	blockChain block.Chain
+	stateDB    db.MVCCDB
+	wal        *wal.WAL
 }
 
 // CleanDir used in test to clean dir
@@ -301,7 +300,6 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	if err := bc.updatePending(bc.linkedRoot); err != nil {
 		return nil, err
 	}
-	bc.linkedRoot.LibWitnessHandle()
 	ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
 	for _, v := range bc.linkedRoot.Active() {
 		ilog.Info("ActiveWitness:", v)
@@ -403,7 +401,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
 	bc.updateWitnessList(bcn)
-	if bcn.Head.Number > bc.Head().Head.Number {
+	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
 }
@@ -442,11 +440,9 @@ func (bc *BlockCacheImpl) updateLongest() {
 	if ok {
 		return
 	}
-	cur := bc.LinkedRoot().Head.Number
-	for key, val := range bc.leaf {
-		if val > cur {
-			cur = val
-			bc.SetHead(key)
+	for bcn, _ := range bc.leaf {
+		if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
+			bc.SetHead(bcn)
 		}
 	}
 }
@@ -492,9 +488,6 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 	l.Type = Linked
 	bc.SetLinkedRoot(l)
 
-	if err := bc.updatePending(bc.LinkedRoot()); err == nil {
-		bc.LinkedRoot().LibWitnessHandle()
-	}
 	bc.SetHead(bc.LinkedRoot())
 	bc.hmset(bc.LinkedRoot().HeadHash(), bc.LinkedRoot())
 	bc.leaf[bc.LinkedRoot()] = bc.LinkedRoot().Head.Number
@@ -545,39 +538,36 @@ func (bc *BlockCacheImpl) delSingle() {
 	}
 }
 
-func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
-	cur := retain.GetParent()
-	if cur != bc.LinkedRoot() {
+// Flush is save a block
+func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
+	parent := bcn.GetParent()
+	if parent != bc.LinkedRoot() {
 		ilog.Errorf("block isn't blockcache root's child")
-		return errors.New("block isn't blockcache root's child")
 	}
-	for child := range cur.Children {
-		if child == retain {
+	for child := range parent.Children {
+		if child == bcn {
 			continue
 		}
 		bc.del(child)
 	}
-	//confirm retain to db
-	if retain.Block != nil {
-		err := bc.blockChain.Push(retain.Block)
+	//confirm bcn to db
+	if bcn.Block != nil {
+		err := bc.blockChain.Push(bcn.Block, bcn.Active(), bcn.VaildWitness)
 		if err != nil {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
-			return err
 		}
 
-		ilog.Debug("confirm: ", retain.Head.Number)
-		err = bc.stateDB.Flush(string(retain.HeadHash()))
+		ilog.Debug("confirm: ", bcn.Head.Number)
+		err = bc.stateDB.Flush(string(bcn.HeadHash()))
 
 		if err != nil {
 			ilog.Errorf("flush mvcc error: %v", err)
-			return err
 		}
 
-		retain.removeVaildWitness(retain)
-		bc.delNode(cur)
-		retain.SetParent(nil)
-		retain.LibWitnessHandle()
-		bc.SetLinkedRoot(retain)
+		bcn.removeVaildWitness(bcn)
+		bc.delNode(parent)
+		bcn.SetParent(nil)
+		bc.SetLinkedRoot(bcn)
 
 		metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
 
@@ -604,12 +594,6 @@ func (bc *BlockCacheImpl) flush(retain *BlockCacheNode) error {
 		}
 
 	}
-	return nil
-}
-
-// Flush is save a block
-func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
-	bc.flush(bcn)
 	bc.delSingle()
 	bc.updateLongest()
 	bc.flushWAL(bcn)

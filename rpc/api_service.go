@@ -13,7 +13,6 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
-	"github.com/iost-official/go-iost/consensus/pob"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/event"
@@ -22,7 +21,7 @@ import (
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -102,7 +101,7 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 		NetName:         netName,
 		ProtocolVersion: version,
 		ChainId:         as.bv.Config().P2P.ChainID,
-		WitnessList:     pob.GetStaticProperty().WitnessList(),
+		WitnessList:     as.bc.LinkedRoot().Pending(),
 		HeadBlock:       headBlock.Head.Number,
 		HeadBlockHash:   common.Base58Encode(headBlock.HeadHash()),
 		LibBlock:        libBlock.Head.Number,
