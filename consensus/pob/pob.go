@@ -326,9 +326,9 @@ func (p *PoB) scheduleLoop() {
 			_, head := p.txPool.PendingTx()
 			witnessList := head.Active()
 			pubkey := p.account.ReadablePubkey()
-			if slotFlag == slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
-				slotFlag = slotOfSec(t.Unix()) // never delete
+				slotFlag = slotOfSec(t.Unix())
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				for num := 0; num < continuousNum; num++ {
@@ -339,7 +339,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					if witnessOfNanoSec(t.UnixNano(), witnessList) != pubkey {
+					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break
 					}
 				}
