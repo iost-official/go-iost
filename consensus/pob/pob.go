@@ -456,6 +456,8 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
 	p.updateInfo(node)
+	p.blockCache.AddNodeToWAL(node)
+
 	if node.Head.Witness != p.account.ReadablePubkey() {
 		if tWitness != node.Head.Witness {
 			tWitness = node.Head.Witness
