@@ -314,26 +314,22 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
-
-	tGenBlock := time.NewTicker(20 * time.Millisecond)
-	tMetricsMode := time.NewTicker(3 * time.Second)
-	defer tGenBlock.Stop()
-	defer tMetricsMode.Stop()
+	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
+	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 
 	var slotFlag int64
 	for {
 		select {
-		case <-tGenBlock.C:
-			// Don't delete,avoid time error
-			time.Sleep(1 * time.Millisecond)
-
+		case <-time.After(time.Duration(nextSchedule)):
+			time.Sleep(time.Millisecond)
+			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			t := time.Now()
 			_, head := p.txPool.PendingTx()
 			witnessList := head.Active()
 			pubkey := p.account.ReadablePubkey()
-			if witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey && slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal {
-				slotFlag = slotOfSec(t.Unix())
+			if slotFlag == slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
+				slotFlag = slotOfSec(t.Unix()) // never delete
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				for num := 0; num < continuousNum; num++ {
@@ -344,7 +340,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
+					if witnessOfNanoSec(t.UnixNano(), witnessList) != pubkey {
 						break
 					}
 				}
@@ -352,8 +348,8 @@ func (p *PoB) scheduleLoop() {
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
-		case <-tMetricsMode.C:
-			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
+			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
+			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
 		}
