@@ -284,7 +284,38 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	return metadata, ents, err
 }
 
-// RemoveFiles remove files less than index
+// RemoveFilesBefore remove files less than index
+func (w *WAL) RemoveFilesBefore(index uint64) error {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	fileIndex := -1
+	for i, file := range w.files {
+		fileName := file.Name()
+		if strings.HasSuffix(fileName, ".wal.tmp") {
+			continue
+		}
+		_, lastIndex, err := parseWALName(fileName)
+		if err != nil {
+			return err
+		}
+		if lastIndex < index {
+			if i == len(w.files)-1 {
+				continue
+			}
+			fileIndex = i
+			file.Close()
+			err = os.Remove(fileName)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+	}
+	w.files = w.files[fileIndex+1:]
+	return nil
+}
+
+// RemoveFiles remove files less than or equal to index
 func (w *WAL) RemoveFiles(index uint64) error {
 	w.mu.Lock()
 	defer w.mu.Unlock()
