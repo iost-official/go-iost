@@ -395,7 +395,7 @@ func (t *ITest) BuyRAMN(actionType string, num int, accounts []*Account, check b
 			go func(res chan interface{}) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
-				amount := rand.Int63n(900) + 10
+				amount := rand.Int63n(10) + 10
 
 				ilog.Debugf("buy/sell ram %v, amount: %v", A.ID, amount)
 				var err error
