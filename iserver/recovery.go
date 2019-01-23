@@ -2,7 +2,6 @@ package iserver
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
@@ -10,7 +9,6 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/verifier"
 )
 
 func checkGenesis(bv global.BaseVariable) error {
@@ -71,31 +69,33 @@ func recoverDB(bv global.BaseVariable) error {
 			startNumebr = blk.Head.Number + 1
 			parent = blk
 		}
-		for i := startNumebr; i < blockChain.Length(); i++ {
-			blk, err := blockChain.GetBlockByNumber(i)
-			if err != nil {
-				return fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
-			}
-			v := verifier.Verifier{}
-			err = v.Verify(blk, parent, stateDB, &verifier.Config{
-				Mode:        0,
-				Timeout:     common.SlotLength / 3 * time.Second,
-				TxTimeLimit: time.Millisecond * 100,
-			})
-			if err != nil {
-				return fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
-			}
-			parent = blk
-			err = snapshot.Save(stateDB, blk)
-			if err != nil {
-				return err
-			}
-			stateDB.Commit(string(blk.HeadHash()))
-			err = stateDB.Flush(string(blk.HeadHash()))
-			if err != nil {
-				return fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
-			}
-		}
+		blockChain.SetLength(startNumber)
+		/*
+			for i := startNumebr; i < blockChain.Length(); i++ {
+				blk, err := blockChain.GetBlockByNumber(i)
+				if err != nil {
+					return fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
+				}
+				v := verifier.Verifier{}
+				err = v.Verify(blk, parent, stateDB, &verifier.Config{
+					Mode:        0,
+					Timeout:     common.SlotLength / 3 * time.Second,
+					TxTimeLimit: time.Millisecond * 100,
+				})
+				if err != nil {
+					return fmt.Errorf("verify block with VM failed, stop the pogram. err: %v", err)
+				}
+				parent = blk
+				err = snapshot.Save(stateDB, blk)
+				if err != nil {
+					return err
+				}
+				stateDB.Commit(string(blk.HeadHash()))
+				err = stateDB.Flush(string(blk.HeadHash()))
+				if err != nil {
+					return fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
+				}
+			}*/
 	}
 	return nil
 }
