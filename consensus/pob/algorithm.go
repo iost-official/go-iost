@@ -146,7 +146,7 @@ func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessL
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmLimit := int(staticProperty.NumberOfWitnesses*2/3 + 1)
 	root := bc.LinkedRoot()
-	if len(node.VaildWitness) >= confirmLimit {
+	if len(node.ValidWitness) >= confirmLimit {
 		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 			blockList := make(map[int64]*blockcache.BlockCacheNode, node.Head.Number-root.Head.Number)
 			blockList[node.Head.Number] = node
@@ -156,16 +156,16 @@ func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 				loopNode = loopNode.GetParent()
 			}
 
-			for len(node.VaildWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
+			for len(node.ValidWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
 				blockList[bc.LinkedRoot().Head.Number+1] != nil {
 				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
 				metricsConfirmedLength.Set(float64(bc.LinkedRoot().Head.Number), nil)
 			}
 		}
 	}
-	if len(node.VaildWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+	if len(node.ValidWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 		node.SetActive(root.Pending())
-		node.VaildWitness = make([]string, 0)
+		node.ValidWitness = make([]string, 0)
 	}
 
 }

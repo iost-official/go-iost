@@ -60,7 +60,7 @@ type BlockCacheNode struct { //nolint:golint
 	Children     map[*BlockCacheNode]bool
 	Type         BCNType
 	walIndex     uint64
-	VaildWitness []string
+	ValidWitness []string
 	WitnessList
 }
 
@@ -136,7 +136,7 @@ func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		Block:        blk,
 		parent:       nil,
 		Children:     make(map[*BlockCacheNode]bool),
-		VaildWitness: make([]string, 0, 0),
+		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make(map[string]*WitnessInfo),
 		},
@@ -159,7 +159,7 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		},
 		parent:       nil,
 		Children:     make(map[*BlockCacheNode]bool),
-		VaildWitness: make([]string, 0, 0),
+		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make(map[string]*WitnessInfo),
 		},
@@ -172,31 +172,31 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	return bcn
 }
 
-func (bcn *BlockCacheNode) updateVaildWitness(parent *BlockCacheNode, witness string) {
-	for _, w := range parent.VaildWitness {
-		bcn.VaildWitness = append(bcn.VaildWitness, w)
+func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness string) {
+	for _, w := range parent.ValidWitness {
+		bcn.ValidWitness = append(bcn.ValidWitness, w)
 		if strings.Compare(w, witness) == 0 {
 			witness = ""
 		}
 	}
 	if witness != "" {
-		bcn.VaildWitness = append(bcn.VaildWitness, witness)
+		bcn.ValidWitness = append(bcn.ValidWitness, witness)
 	}
 }
 
-func (bcn *BlockCacheNode) removeVaildWitness(root *BlockCacheNode) {
-	if !common.StringSliceEqual(bcn.Active(), root.Pending()) || strings.Compare(bcn.Head.Witness, root.Head.Witness) == 0 {
+func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
+	if !common.StringSliceEqual(bcn.Active(), root.Pending()) || bcn.Head.Witness == root.Head.Witness {
 		return
 	}
-	newVaildWitness := make([]string, 0, 0)
-	for _, w := range bcn.VaildWitness {
-		if strings.Compare(w, root.Head.Witness) != 0 {
-			newVaildWitness = append(newVaildWitness, w)
+	newValidWitness := make([]string, 0, len(bcn.ValidWitness))
+	for _, w := range bcn.ValidWitness {
+		if w != root.Head.Witness {
+			newValidWitness = append(newValidWitness, w)
 		}
 	}
-	bcn.VaildWitness = newVaildWitness
+	bcn.ValidWitness = newValidWitness
 	for child := range bcn.Children {
-		child.removeVaildWitness(root)
+		child.removeValidWitness(root)
 	}
 }
 
@@ -425,7 +425,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 		ilog.Error("Failed to write add node WAL!", err)
 	}
 	bcn.walIndex = index
-	bcn.updateVaildWitness(fa, bcn.Head.Witness)
+	bcn.updateValidWitness(fa, bcn.Head.Witness)
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
@@ -593,7 +593,7 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 			ilog.Errorf("flush mvcc error: %v", err)
 		}
 
-		bcn.removeVaildWitness(bcn)
+		bcn.removeValidWitness(bcn)
 		bc.nmdel(parent.Head.Number)
 		bc.delNode(parent)
 		bcn.SetParent(nil)
