@@ -170,6 +170,7 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 
 // BenchmarkAccountAction is the action of benchmark.
 var BenchmarkAccountAction = func(c *cli.Context) error {
+	rand.Seed(time.Now().UTC().UnixNano())
 	itest.Interval = 2 * time.Millisecond
 	itest.InitAmount = "1000"
 	itest.InitPledge = "1000"
