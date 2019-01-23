@@ -217,6 +217,7 @@ type BlockCache interface {
 	CleanDir() error
 	Recover(p conAlgo) (err error)
 	NewWAL(config *common.Config) (err error)
+	AddNodeToWAL(bcn *BlockCacheNode)
 }
 
 // BlockCacheImpl is the implementation of BlockCache
@@ -419,11 +420,6 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if !ok || fa.Type != Linked {
 		return
 	}
-	index, err := bc.writeAddNodeWAL(bcn)
-	if err != nil {
-		ilog.Error("Failed to write add node WAL!", err)
-	}
-	bcn.walIndex = index
 	bcn.updateVaildWitness(fa, bcn.Head.Witness)
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.GetParent())
@@ -432,6 +428,15 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
+}
+
+// AddNodeToWAL add write node message to WAL
+func (bc *BlockCacheImpl) AddNodeToWAL(bcn *BlockCacheNode) {
+	index, err := bc.writeAddNodeWAL(bcn)
+	if err != nil {
+		ilog.Error("Failed to write add node WAL!", err)
+	}
+	bcn.walIndex = index
 }
 
 func (bc *BlockCacheImpl) updateWitnessList(h *BlockCacheNode) error {

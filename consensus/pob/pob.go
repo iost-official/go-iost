@@ -474,6 +474,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		ilog.Debugf("hasn't process the block in the slot belonging to the witness")
 		metricsDelayedBlock.Add(1, nil)
 	}
+	p.blockCache.AddNodeToWAL(node)
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, replay)
 	}
