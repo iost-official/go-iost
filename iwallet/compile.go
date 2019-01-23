@@ -56,8 +56,7 @@ var compileCmd = &cobra.Command{
 
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
-			fmt.Println(`Error: source code file not given`)
-			return
+			return fmt.Errorf("source code file not given")
 		}
 		codePath := args[0]
 		abiPath, err := generateABI(codePath)

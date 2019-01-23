@@ -221,16 +221,18 @@ type BlockCache interface {
 
 // BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct { //nolint:golint
-	linkRW     sync.RWMutex
-	linkedRoot *BlockCacheNode
-	singleRoot *BlockCacheNode
-	headRW     sync.RWMutex
-	head       *BlockCacheNode
-	hash2node  *sync.Map // map[string]*BlockCacheNode
-	leaf       map[*BlockCacheNode]int64
-	blockChain block.Chain
-	stateDB    db.MVCCDB
-	wal        *wal.WAL
+	linkRW      sync.RWMutex
+	linkedRoot  *BlockCacheNode
+	singleRoot  *BlockCacheNode
+	headRW      sync.RWMutex
+	head        *BlockCacheNode
+	hash2node   *sync.Map // map[string]*BlockCacheNode
+	numberMutex sync.Mutex
+	number2node *sync.Map // map[int64]*BlockCacheNode
+	leaf        map[*BlockCacheNode]int64
+	blockChain  block.Chain
+	stateDB     db.MVCCDB
+	wal         *wal.WAL
 }
 
 // CleanDir used in test to clean dir
@@ -262,6 +264,27 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 	bc.hash2node.Delete(string(hash))
 }
 
+func (bc *BlockCacheImpl) nmget(num int64) (*BlockCacheNode, bool) {
+	rtnI, ok := bc.hash2node.Load(num)
+	if !ok {
+		return nil, false
+	}
+	bcn, okn := rtnI.(*BlockCacheNode)
+	if !okn {
+		bc.hash2node.Delete(num)
+		return nil, false
+	}
+	return bcn, true
+}
+
+func (bc *BlockCacheImpl) nmset(num int64, bcn *BlockCacheNode) {
+	bc.hash2node.Store(num, bcn)
+}
+
+func (bc *BlockCacheImpl) nmdel(num int64) {
+	bc.number2node.Delete(num)
+}
+
 // NewBlockCache return a new BlockCache instance
 func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	w, err := wal.Create(baseVariable.Config().DB.LdbPath+blockCacheWALDir, []byte("block_cache_wal"))
@@ -269,13 +292,14 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		return nil, err
 	}
 	bc := BlockCacheImpl{
-		linkedRoot: NewBCN(nil, nil),
-		singleRoot: NewBCN(nil, nil),
-		hash2node:  new(sync.Map),
-		leaf:       make(map[*BlockCacheNode]int64),
-		blockChain: baseVariable.BlockChain(),
-		stateDB:    baseVariable.StateDB().Fork(),
-		wal:        w,
+		linkedRoot:  NewBCN(nil, nil),
+		singleRoot:  NewBCN(nil, nil),
+		hash2node:   new(sync.Map),
+		number2node: new(sync.Map),
+		leaf:        make(map[*BlockCacheNode]int64),
+		blockChain:  baseVariable.BlockChain(),
+		stateDB:     baseVariable.StateDB().Fork(),
+		wal:         w,
 	}
 	bc.linkedRoot.Head.Number = -1
 
@@ -552,7 +576,7 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	}
 	//confirm bcn to db
 	if bcn.Block != nil {
-		err := bc.blockChain.Push(bcn.Block, bcn.Active(), bcn.VaildWitness)
+		err := bc.blockChain.Push(bcn.Block)
 		if err != nil {
 			ilog.Errorf("Database error, BlockChain Push err:%v", err)
 		}
@@ -565,6 +589,7 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 		}
 
 		bcn.removeVaildWitness(bcn)
+		bc.nmdel(parent.Head.Number)
 		bc.delNode(parent)
 		bcn.SetParent(nil)
 		bc.SetLinkedRoot(bcn)
@@ -666,11 +691,19 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	if num < bc.LinkedRoot().Head.Number || num > it.Head.Number {
 		return nil, fmt.Errorf("block not found")
 	}
+	bc.numberMutex.Lock()
 	for it != nil {
-		if it.Head.Number == num {
-			return it.Block, nil
+		bcn, ok := bc.nmget(it.Head.Number)
+		if ok && bcn == it {
+			break
 		}
+		bc.nmset(it.Head.Number, it)
 		it = it.GetParent()
+	}
+	bc.numberMutex.Unlock()
+	bcn, ok := bc.nmget(num)
+	if ok {
+		return bcn.Block, nil
 	}
 	return nil, fmt.Errorf("block not found")
 }

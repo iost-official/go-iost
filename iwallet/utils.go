@@ -4,39 +4,36 @@ import (
 	"fmt"
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"io/ioutil"
 	"os"
 )
 
-func loadBytes(s string) []byte {
-	if s[len(s)-1] == 10 {
-		s = s[:len(s)-1]
+func readFile(src string) ([]byte, error) {
+	fi, err := os.Open(src)
+	defer fi.Close()
+	if err != nil {
+		return nil, err
 	}
-	buf := common.Base58Decode(s)
-	return buf
+	fd, err := ioutil.ReadAll(fi)
+	if err != nil {
+		return nil, err
+	}
+	return fd, nil
 }
 
-/*
-func saveBytes(buf []byte) string {
-	return common.Base58Encode(buf)
-}
-func changeSuffix(filename, suffix string) string {
-	dist := filename[:strings.LastIndex(filename, ".")]
-	dist = dist + suffix
-	return dist
-}
-
-func saveTo(Dist string, file []byte) error {
-	f, err := os.Create(Dist)
+func writeFile(output string, data []byte) error {
+	f, err := os.Create(output)
 	if err != nil {
 		return err
 	}
-	_, err = f.Write(file)
+	_, err = f.Write(data)
 	defer f.Close()
 	return err
 }
-*/
 
 func loadKey(src string) ([]byte, error) {
 	fi, err := os.Open(src)
@@ -58,26 +55,52 @@ func loadKey(src string) ([]byte, error) {
 	return fd, nil
 }
 
-func readFile(src string) ([]byte, error) {
-	fi, err := os.Open(src)
-	defer fi.Close()
+func loadKeyPair(privKeyFile string, algo crypto.Algorithm) (*account.KeyPair, error) {
+	fsk, err := loadKey(privKeyFile)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("read key file failed: %v", err)
 	}
-	fd, err := ioutil.ReadAll(fi)
+	return account.NewKeyPair(common.Base58Decode(string(fsk)), algo)
+}
+
+func saveSignature(s *rpcpb.Signature, fileName string) error {
+	r, err := (&jsonpb.Marshaler{EmitDefaults: true, Indent: "    "}).MarshalToString(s)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return fd, nil
+	return writeFile(fileName, []byte(r))
+}
+
+func loadSignature(fileName string) (*rpcpb.Signature, error) {
+	bytes, err := readFile(fileName)
+	if err != nil {
+		return nil, fmt.Errorf("load signature err %v %v", fileName, err)
+	}
+	s := &rpcpb.Signature{}
+	err = jsonpb.UnmarshalString(string(bytes), s)
+	if err != nil {
+		return nil, fmt.Errorf("not a valid signature json %v %v", fileName, err)
+	}
+	return s, nil
 }
 
 func marshalTextString(pb proto.Message) string {
-	m := jsonpb.Marshaler{}
-	m.EmitDefaults = true
-	m.Indent = "    "
-	r, err := m.MarshalToString(pb)
+	r, err := (&jsonpb.Marshaler{EmitDefaults: true, Indent: "    "}).MarshalToString(pb)
 	if err != nil {
 		return "json.Marshal error: " + err.Error()
 	}
 	return r
+}
+
+func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
+	argc := len(args)
+	if argc%3 != 0 {
+		return nil, fmt.Errorf(`number of args should be a multiplier of 3`)
+	}
+	var actions = make([]*rpcpb.Action, 0)
+	for i := 0; i < len(args); i += 3 {
+		act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
+		actions = append(actions, act)
+	}
+	return actions, nil
 }
