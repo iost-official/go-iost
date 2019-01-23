@@ -2,6 +2,7 @@ package verifier
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/common"
 
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -33,7 +34,7 @@ func NewBaseTx(blk, parent *block.Block, witnessList *blockcache.WitnessList) (*
 func baseTxData(b, pb *block.Block, witnessList *blockcache.WitnessList) (string, error) {
 	if pb != nil {
 		witnessChanged := false
-		if witnessList != nil && &witnessList.Active()[0] != &witnessList.Pending()[0] {
+		if witnessList != nil && !common.StringSliceEqual(witnessList.Active(), witnessList.Pending()) {
 			witnessChanged = true
 		}
 		return fmt.Sprintf(`[{"parent":["%v", "%v", %v]}]`, pb.Head.Witness, pb.CalculateGasUsage(), witnessChanged), nil
