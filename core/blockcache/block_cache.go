@@ -672,19 +672,16 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 		return nil, fmt.Errorf("block not found")
 	}
 	bc.numberMutex.Lock()
-	defer bc.numberMutex.Unlock()
-	bcn, ok := bc.nmget(it.Head.Number)
-	if !ok || bcn != it {
-		for it != nil {
-			bcn, ok = bc.nmget(it.Head.Number)
-			if ok && bcn == it {
-				break
-			}
-			bc.nmset(it.Head.Number, it)
-			it = it.GetParent()
+	for it != nil {
+		bcn, ok := bc.nmget(it.Head.Number)
+		if ok && bcn == it {
+			break
 		}
+		bc.nmset(it.Head.Number, it)
+		it = it.GetParent()
 	}
-	bcn, ok = bc.nmget(num)
+	bc.numberMutex.Unlock()
+	bcn, ok := bc.nmget(num)
 	if ok {
 		return bcn.Block, nil
 	}
