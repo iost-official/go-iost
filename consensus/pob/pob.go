@@ -314,7 +314,8 @@ func (p *PoB) blockLoop() {
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
 	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+	pubkey := p.account.ReadablePubkey()
 
 	var slotFlag int64
 	for {
@@ -325,8 +326,6 @@ func (p *PoB) scheduleLoop() {
 			t := time.Now()
 			_, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			pubkey := p.account.ReadablePubkey()
-			ilog.Infof("active witness: %v, pubkey: %v", witnessList, pubkey)
 			if slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = slotOfSec(t.Unix())
@@ -349,7 +348,7 @@ func (p *PoB) scheduleLoop() {
 				generateBlockTicker.Stop()
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Infof("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
 		}
