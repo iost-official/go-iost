@@ -187,7 +187,8 @@ func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness st
 
 func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 	ilog.Infof("before removeValidWitness: nodeNumber: %d, %v, len: %d", bcn.Head.Number, bcn.ValidWitness, len(bcn.ValidWitness))
-	if !common.StringSliceEqual(bcn.Active(), root.Pending()) || bcn.Head.Witness == root.Head.Witness {
+	if !common.StringSliceEqual(bcn.Active(), root.Pending()) ||
+		(bcn != root && bcn.Head.Witness == root.Head.Witness) {
 		return
 	}
 	newValidWitness := make([]string, 0, len(bcn.ValidWitness))
