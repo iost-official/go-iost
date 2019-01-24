@@ -14,7 +14,7 @@ func TestGlobalStaticProperty(t *testing.T) {
 				Pubkey: []byte{},
 				Seckey: []byte{},
 			},
-			[]string{"id1", "id2", "id3"},
+			3,
 		)
 		So(prop.NumberOfWitnesses, ShouldEqual, 3)
 	})

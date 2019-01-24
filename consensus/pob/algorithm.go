@@ -27,7 +27,7 @@ var (
 	generateTxsNum = 0
 )
 
-func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) { // TODO 应传入account
+func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) {
 	ilog.Debug("generate Block start")
 	st := time.Now()
 	pTx, head := txPool.PendingTx()
@@ -49,7 +49,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
-	dropList, _, err := v.Gen(blk, topBlock, db, pTx, &verifier.Config{
+	dropList, _, err := v.Gen(blk, topBlock, &head.WitnessList, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: common.MaxTxTimeLimit,
@@ -89,15 +89,15 @@ func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
+func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessList, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
 	err := cverifier.VerifyBlockHead(blk, parent, lib)
 	if err != nil {
 		return err
 	}
 
-	if replay == false && witnessOfNanoSec(blk.Head.Time) != blk.Head.Witness {
+	if replay == false && witnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
-			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, staticProperty.WitnessList())
+			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, witnessList.Active())
 		return errWitness
 	}
 	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
@@ -136,43 +136,36 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 		}
 	}
 	v := verifier.Verifier{}
-	return v.Verify(blk, parent, db, &verifier.Config{
+	return v.Verify(blk, parent, witnessList, db, &verifier.Config{
 		Mode:        0,
 		Timeout:     time.Millisecond * 250,
 		TxTimeLimit: time.Millisecond * 100,
 	})
 }
 
-func updateWaterMark(node *blockcache.BlockCacheNode) {
-	node.ConfirmUntil = staticProperty.Watermark[node.Head.Witness]
-	if node.Head.Number >= staticProperty.Watermark[node.Head.Witness] {
-		staticProperty.Watermark[node.Head.Witness] = node.Head.Number + 1
-	}
-}
-
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
-	confirmedNode := calculateConfirm(node, bc.LinkedRoot())
-	if confirmedNode != nil {
-		bc.Flush(confirmedNode)
-		metricsConfirmedLength.Set(float64(confirmedNode.Head.Number+1), nil)
-	}
-}
+	confirmLimit := int(staticProperty.NumberOfWitnesses*2/3 + 1)
+	root := bc.LinkedRoot()
+	if len(node.ValidWitness) >= confirmLimit {
+		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+			blockList := make(map[int64]*blockcache.BlockCacheNode, node.Head.Number-root.Head.Number)
+			blockList[node.Head.Number] = node
+			loopNode := node.GetParent()
+			for loopNode != root {
+				blockList[loopNode.Head.Number] = loopNode
+				loopNode = loopNode.GetParent()
+			}
 
-func calculateConfirm(node *blockcache.BlockCacheNode, root *blockcache.BlockCacheNode) *blockcache.BlockCacheNode {
-	confirmLimit := staticProperty.NumberOfWitnesses*2/3 + 1
-	startNumber := node.Head.Number
-	var confirmNum int64
-	confirmUntilMap := make(map[int64]int64, startNumber-root.Head.Number)
-	for node != root {
-		if node.ConfirmUntil <= node.Head.Number {
-			confirmNum++
-			confirmUntilMap[node.ConfirmUntil]++
+			for len(node.ValidWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
+				blockList[bc.LinkedRoot().Head.Number+1] != nil {
+				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
+				metricsConfirmedLength.Set(float64(bc.LinkedRoot().Head.Number), nil)
+			}
 		}
-		if confirmNum >= confirmLimit {
-			return node
-		}
-		confirmNum -= confirmUntilMap[node.Head.Number]
-		node = node.GetParent()
 	}
-	return nil
+	if len(node.ValidWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+		node.SetActive(root.Pending())
+		node.ValidWitness = make([]string, 0)
+	}
+
 }

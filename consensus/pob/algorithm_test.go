@@ -13,7 +13,7 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/core/txpool/mock"
+	txpool_mock "github.com/iost-official/go-iost/core/txpool/mock"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/verifier"
@@ -115,7 +115,7 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 	b.ResetTimer()
 	for j := 0; j < b.N; j++ {
 		v := verifier.Verifier{}
-		v.Verify(blk, topBlock, stateDB, &verifier.Config{
+		v.Verify(blk, topBlock, nil, stateDB, &verifier.Config{
 			Mode:        0,
 			Timeout:     time.Millisecond * 1000,
 			TxTimeLimit: time.Millisecond * 100,
@@ -124,6 +124,7 @@ func BenchmarkVerifyBlockWithVM(b *testing.B) { // 296275 = 0.3ms(0tx), 46635359
 	b.StopTimer()
 }
 
+/*
 func TestConfirmNode(t *testing.T) {
 	convey.Convey("Test of Confirm node", t, func() {
 
@@ -137,7 +138,6 @@ func TestConfirmNode(t *testing.T) {
 					Witness: "id0",
 				},
 			},
-			ConfirmUntil: 0,
 		}
 		convey.Convey("Normal", func() {
 			node := addNode(rootNode, 2, 0, "id1")
@@ -157,7 +157,6 @@ func TestConfirmNode(t *testing.T) {
 			node = addNode(node, 6, 3, "id1")
 			node = addNode(node, 7, 0, "id3")
 
-			confirmNode := calculateConfirm(node, rootNode)
 			convey.So(confirmNode.Head.Number, convey.ShouldEqual, 4)
 		})
 
@@ -179,7 +178,9 @@ func TestConfirmNode(t *testing.T) {
 		})
 	})
 }
+*/
 
+/*
 func TestNodeInfoUpdate(t *testing.T) {
 	convey.Convey("Test of node info update", t, func() {
 		kp, _ := account.NewKeyPair(nil, crypto.Ed25519)
@@ -252,6 +253,7 @@ func TestNodeInfoUpdate(t *testing.T) {
 		})
 	})
 }
+*/
 
 func TestVerifyBasics(t *testing.T) {
 	convey.Convey("Test of verifyBasics", t, func() {
@@ -259,7 +261,8 @@ func TestVerifyBasics(t *testing.T) {
 		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		secKey = common.Sha3([]byte("secKey of id1"))
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		staticProperty = newStaticProperty(account1, []string{account0.ReadablePubkey(), account1.ReadablePubkey(), "id2"})
+		staticProperty = newStaticProperty(account1, int64(3))
+		// witnessList := []string{account0.ReadablePubkey(), account1.ReadablePubkey(), "id2"}
 		convey.Convey("Normal (self block)", func() {
 			blk := &block.Block{
 				Head: &block.BlockHead{
@@ -345,13 +348,14 @@ func TestVerifyBlock(t *testing.T) {
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		secKey = common.Sha3([]byte("sec of id2"))
 		account2, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		staticProperty = newStaticProperty(account0, []string{account0.ReadablePubkey(), account1.ReadablePubkey(), account2.ReadablePubkey()})
+		staticProperty = newStaticProperty(account0, int64(3))
+		witnessList := []string{account0.ReadablePubkey(), account1.ReadablePubkey(), account2.ReadablePubkey()}
 		rootTime := time.Now().UnixNano()
 		rootBlk := &block.Block{
 			Head: &block.BlockHead{
 				Number:  1,
 				Time:    rootTime,
-				Witness: witnessOfSlot(rootTime),
+				Witness: witnessOfSlot(rootTime, witnessList),
 			},
 		}
 		tx0 := &tx.Tx{
@@ -368,13 +372,13 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		curTime := time.Now().UnixNano()
 		hash := rootBlk.HeadHash()
-		witness := witnessOfSlot(curTime)
+		witness := witnessOfSlot(curTime, witnessList)
 		blk := &block.Block{
 			Head: &block.BlockHead{
 				Number:     2,
 				ParentHash: hash,
 				Time:       curTime,
-				Witness:    witnessOfSlot(curTime),
+				Witness:    witnessOfSlot(curTime, witnessList),
 			},
 			Txs:      []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},
@@ -416,7 +420,6 @@ func addNode(parent *blockcache.BlockCacheNode, number int64, confirm int64, wit
 				Witness: witness,
 			},
 		},
-		ConfirmUntil: confirm,
 	}
 	node.SetParent(parent)
 	return node

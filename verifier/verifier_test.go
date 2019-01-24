@@ -41,7 +41,7 @@ func TestVerifier_Gen(t *testing.T) {
 	}
 
 	var v Verifier
-	a, b, c := v.Gen(&blk, nil, mvccdb, mti, &Config{
+	a, b, c := v.Gen(&blk, nil, nil, mvccdb, mti, &Config{
 		Mode:        0,
 		Timeout:     time.Second,
 		TxTimeLimit: time.Millisecond * 100,
@@ -50,7 +50,7 @@ func TestVerifier_Gen(t *testing.T) {
 	t.Log(a, b, c)
 	t.Log(blk)
 
-	err = v.Verify(&blk, nil, mvccdb, &Config{
+	err = v.Verify(&blk, nil, nil, mvccdb, &Config{
 		Mode:        0,
 		Timeout:     time.Second,
 		TxTimeLimit: time.Millisecond * 100,

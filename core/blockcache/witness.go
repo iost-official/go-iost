@@ -3,9 +3,10 @@ package blockcache
 import (
 	"encoding/json"
 	"errors"
+	"strconv"
+
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm/database"
-	"strconv"
 )
 
 // SetPending set pending witness list
@@ -99,11 +100,6 @@ func (wl *WitnessList) UpdateInfo(mv db.MVCCDB) error {
 		wl.WitnessInfo[v] = &str
 	}
 	return nil
-}
-
-// LibWitnessHandle is set active list
-func (wl *WitnessList) LibWitnessHandle() {
-	wl.SetActive(wl.Pending())
 }
 
 // CopyWitness is copy witness
