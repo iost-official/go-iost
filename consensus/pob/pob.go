@@ -455,8 +455,12 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
-	p.updateInfo(node)
+	updateLib(node, p.blockCache)
 	p.blockCache.AddNodeToWAL(node)
+
+	if staticProperty.isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
+		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
+	}
 
 	if node.Head.Witness != p.account.ReadablePubkey() {
 		if tWitness != node.Head.Witness {
@@ -472,11 +476,4 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		p.addExistingBlock(child.Block, node.Block, replay)
 	}
 	return nil
-}
-
-func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
-	updateLib(node, p.blockCache)
-	if staticProperty.isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
-		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
-	}
 }
