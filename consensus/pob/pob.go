@@ -455,8 +455,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
-	updateLib(node, p.blockCache)
 	p.blockCache.AddNodeToWAL(node)
+
+	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
 
 	if staticProperty.isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())

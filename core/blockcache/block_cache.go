@@ -232,6 +232,7 @@ type BlockCacheImpl struct { //nolint:golint
 	numberMutex sync.Mutex
 	number2node *sync.Map // map[int64]*BlockCacheNode
 	leaf        map[*BlockCacheNode]int64
+	witnessNum  int64
 	blockChain  block.Chain
 	stateDB     db.MVCCDB
 	wal         *wal.WAL
@@ -326,15 +327,12 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	if err := bc.updatePending(bc.linkedRoot); err != nil {
 		return nil, err
 	}
-	bc.LinkedRoot().SetActive(bc.LinkedRoot().Pending()) // TODO, delete this line
 	ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
-	for _, v := range bc.linkedRoot.Active() {
-		ilog.Info("ActiveWitness:", v)
-	}
 	for _, v := range bc.linkedRoot.Pending() {
 		ilog.Info("PendingWitness:", v)
 	}
 	bc.head = bc.linkedRoot
+	bc.witnessNum = int64(len(bc.LinkedRoot().Pending()))
 
 	return &bc, nil
 }
@@ -413,6 +411,33 @@ func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
 	return
 }
 
+// updateLib will update last inreversible block
+func (bc *BlockCacheImpl) updateLib(node *BlockCacheNode) {
+	confirmLimit := int(bc.witnessNum*2/3 + 1)
+	root := bc.LinkedRoot()
+	if len(node.ValidWitness) >= confirmLimit {
+		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+			blockList := make(map[int64]*BlockCacheNode, node.Head.Number-root.Head.Number)
+			blockList[node.Head.Number] = node
+			loopNode := node.GetParent()
+			for loopNode != root {
+				blockList[loopNode.Head.Number] = loopNode
+				loopNode = loopNode.GetParent()
+			}
+
+			for len(node.ValidWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
+				blockList[bc.LinkedRoot().Head.Number+1] != nil {
+				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
+			}
+		}
+	}
+	if len(node.ValidWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+		node.SetActive(root.Pending())
+		node.ValidWitness = make([]string, 0)
+	}
+
+}
+
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
 func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn == nil {
@@ -430,6 +455,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
+	bc.updateLib(bcn)
 }
 
 // AddNodeToWAL add write node message to WAL
