@@ -98,6 +98,8 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
+
+	common.MaxTxTimeLimit = time.Millisecond * time.Duration(baseVariable.Config().VM.TxLimitTime)
 	return &p
 }
 

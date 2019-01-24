@@ -138,8 +138,8 @@ func verifyBlock(blk *block.Block, parent *block.Block, lib *block.Block, txPool
 	v := verifier.Verifier{}
 	return v.Verify(blk, parent, db, &verifier.Config{
 		Mode:        0,
-		Timeout:     time.Millisecond * 250,
-		TxTimeLimit: time.Millisecond * 100,
+		Timeout:     genBlockTime,
+		TxTimeLimit: common.MaxTxTimeLimit,
 	})
 }
 

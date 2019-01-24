@@ -20,8 +20,8 @@ const (
 	minGasRatio = 100
 	maxGasRatio = 10000
 	minGasLimit = 600000
-	maxGasLimit = 200000000
-	txSizeLimit = 65536
+	maxGasLimit = 400000000
+	txSizeLimit = 49152
 )
 
 // values
