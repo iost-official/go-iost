@@ -145,6 +145,7 @@ func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessL
 
 func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
 	confirmLimit := int(staticProperty.NumberOfWitnesses*2/3 + 1)
+	ilog.Infof("confirmLimit: %d, validWitness: %d", confirmLimit, len(node.ValidWitness))
 	root := bc.LinkedRoot()
 	if len(node.ValidWitness) >= confirmLimit {
 		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {

@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"sync"
 
 	"os"
@@ -173,18 +172,21 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 }
 
 func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness string) {
+	ilog.Infof("before updateValidWitness: %v, len: %d", bcn.ValidWitness, len(bcn.ValidWitness))
 	for _, w := range parent.ValidWitness {
 		bcn.ValidWitness = append(bcn.ValidWitness, w)
-		if strings.Compare(w, witness) == 0 {
+		if w == witness {
 			witness = ""
 		}
 	}
 	if witness != "" {
 		bcn.ValidWitness = append(bcn.ValidWitness, witness)
 	}
+	ilog.Infof("after updateValidWitness: %v, len: %d", bcn.ValidWitness, len(bcn.ValidWitness))
 }
 
 func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
+	ilog.Infof("before removeValidWitness: nodeNumber: %d, %v, len: %d", bcn.Head.Number, bcn.ValidWitness, len(bcn.ValidWitness))
 	if !common.StringSliceEqual(bcn.Active(), root.Pending()) || bcn.Head.Witness == root.Head.Witness {
 		return
 	}
@@ -198,6 +200,7 @@ func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 	for child := range bcn.Children {
 		child.removeValidWitness(root)
 	}
+	ilog.Infof("after removeValidWitness: nodeNumber:%d, %v, len: %d", bcn.Head.Number, bcn.ValidWitness, len(bcn.ValidWitness))
 }
 
 // BlockCache defines BlockCache's API
