@@ -1,6 +1,7 @@
 package blockcache
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"strconv"
@@ -395,7 +396,7 @@ func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	//bc.Add(&block)
 
 	// Try to put LinkedRoot's Active list back.
-	if bc.LinkedRoot().Head.Number == block.Head.Number {
+	if bytes.Equal(block.HeadHash(), bc.LinkedRoot().HeadHash()) {
 		bc.LinkedRoot().SetActive(witnessList.Active())
 	}
 
