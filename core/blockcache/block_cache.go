@@ -425,6 +425,7 @@ func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
 	blockHeadHash, witnessList, err := decodeSetHead(b)
 	if bytes.Equal(blockHeadHash, bc.LinkedRoot().HeadHash()) {
 		bc.LinkedRoot().SetActive(witnessList.Active())
+		ilog.Infof("Set Root active to :%v", bc.LinkedRoot().Active())
 	}
 	return
 }
