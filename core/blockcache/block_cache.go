@@ -419,6 +419,20 @@ func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
 func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 	confirmLimit := int(bc.witnessNum*2/3 + 1)
 	root := bc.LinkedRoot()
+
+	updateActive := false
+	if !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+		if len(node.ValidWitness) >= confirmLimit {
+			updateActive = true
+		} else if len(node.ValidWitness)+1 >= confirmLimit {
+			for _, w := range node.Active() {
+				if w == root.Head.Witness {
+					updateActive = true
+					break
+				}
+			}
+		}
+	}
 	if len(node.ValidWitness) >= confirmLimit {
 		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 			blockList := make(map[int64]*BlockCacheNode, node.Head.Number-root.Head.Number)
@@ -435,7 +449,7 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 			}
 		}
 	}
-	if len(node.ValidWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+	if updateActive {
 		newValidWitness := make([]string, 0)
 		for _, witness := range node.ValidWitness {
 			for _, w := range root.Pending() {
