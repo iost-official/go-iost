@@ -328,7 +328,11 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 	if err := bc.updatePending(bc.linkedRoot); err != nil {
 		return nil, err
 	}
+	bc.LinkedRoot().SetActive(bc.LinkedRoot().Pending()) // For genesis case
 	ilog.Info("Witness Block Num:", bc.LinkedRoot().Head.Number)
+	for _, v := range bc.linkedRoot.Active() {
+		ilog.Info("ActiveWitness:", v)
+	}
 	for _, v := range bc.linkedRoot.Pending() {
 		ilog.Info("PendingWitness:", v)
 	}
