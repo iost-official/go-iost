@@ -459,6 +459,8 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	}
 	p.blockCache.Link(node)
 	p.blockCache.UpdateLib(node)
+	// After UpdateLib, the block head active witness list will be right
+	// So AddLinkedNode need execute after UpdateLib
 	p.txPool.AddLinkedNode(node)
 
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
