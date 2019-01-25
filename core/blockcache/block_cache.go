@@ -439,21 +439,9 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 	confirmLimit := int(bc.witnessNum*2/3 + 1)
 	root := bc.LinkedRoot()
 
-	updateActive := false
-	if !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
-		if len(node.ValidWitness) >= confirmLimit {
-			updateActive = true
-		} else if len(node.ValidWitness)+1 >= confirmLimit {
-			updateActive = true
-			for _, w := range node.ValidWitness {
-				if w == root.Head.Witness {
-					updateActive = false
-					break
-				}
-			}
-		}
-	}
+	confirmRoot := false
 	if len(node.ValidWitness) >= confirmLimit {
+		confirmRoot = true
 		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 			blockList := make(map[int64]*BlockCacheNode, node.Head.Number-root.Head.Number)
 			blockList[node.Head.Number] = node
@@ -463,16 +451,26 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 				loopNode = loopNode.GetParent()
 			}
 
-			for len(node.ValidWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
+			for len(node.ValidWitness) >= confirmLimit &&
+				common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
 				blockList[bc.LinkedRoot().Head.Number+1] != nil {
+				// bc.Flush() will change node.ValidWitness and bc.LinkedRoot()
 				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
 			}
 		}
+	} else if len(node.ValidWitness)+1 == confirmLimit {
+		confirmRoot = true
+		for _, w := range node.ValidWitness {
+			if w == root.Head.Witness {
+				confirmRoot = false
+				break
+			}
+		}
 	}
-	if updateActive {
+	if confirmRoot && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 		newValidWitness := make([]string, 0)
 		for _, witness := range node.ValidWitness {
-			for _, w := range root.Pending() {
+			for _, w := range bc.LinkedRoot().Pending() {
 				if witness == w {
 					newValidWitness = append(newValidWitness, witness)
 					break
@@ -480,7 +478,7 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 			}
 		}
 		node.ValidWitness = newValidWitness
-		node.SetActive(root.Pending())
+		node.SetActive(bc.LinkedRoot().Pending())
 		bc.writeUpdateActiveWAL(node)
 	}
 }
