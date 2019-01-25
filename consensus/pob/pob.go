@@ -326,7 +326,7 @@ func (p *PoB) scheduleLoop() {
 			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			t := time.Now()
-			_, head := p.txPool.PendingTx()
+			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
 			if slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
@@ -334,14 +334,14 @@ func (p *PoB) scheduleLoop() {
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
 				for num := 0; num < continuousNum; num++ {
-					p.gen(num)
+					p.gen(num, pTx, head)
 					if num == continuousNum-1 {
 						break
 					}
 					select {
 					case <-generateBlockTicker.C:
 					}
-					_, head = p.txPool.PendingTx()
+					pTx, head = p.txPool.PendingTx()
 					witnessList = head.Active()
 					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break
@@ -359,13 +359,13 @@ func (p *PoB) scheduleLoop() {
 	}
 }
 
-func (p *PoB) gen(num int) {
+func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) {
 	limitTime := genBlockTime
 	if num >= continuousNum-2 {
 		limitTime = last2GenBlockTime
 	}
 	p.txPool.Lock()
-	blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime)
+	blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime, pTx, head)
 	p.txPool.Release()
 	if err != nil {
 		ilog.Error(err)
@@ -457,9 +457,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 		}
 		p.verifyDB.Commit(string(blk.HeadHash()))
 	}
-	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
 	p.blockCache.UpdateLib(node)
+	p.txPool.AddLinkedNode(node)
 
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
 

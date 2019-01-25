@@ -27,10 +27,16 @@ var (
 	generateTxsNum = 0
 )
 
-func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, limitTime time.Duration) (*block.Block, error) {
+func generateBlock(
+	acc *account.KeyPair,
+	txPool txpool.TxPool,
+	db db.MVCCDB,
+	limitTime time.Duration,
+	pTx *txpool.SortedTxMap,
+	head *blockcache.BlockCacheNode) (*block.Block, error) {
+
 	ilog.Debug("generate Block start")
 	st := time.Now()
-	pTx, head := txPool.PendingTx()
 	topBlock := head.Block
 	blk := &block.Block{
 		Head: &block.BlockHead{
@@ -49,6 +55,7 @@ func generateBlock(acc *account.KeyPair, txPool txpool.TxPool, db db.MVCCDB, lim
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
+	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
 	dropList, _, err := v.Gen(blk, topBlock, &head.WitnessList, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
