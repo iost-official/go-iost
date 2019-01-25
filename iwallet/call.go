@@ -16,20 +16,22 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
-// callCmd call a contract with given actions
+// callCmd represents the call command that call a contract with given actions.
 var callCmd = &cobra.Command{
 	Use:   "call",
-	Short: "Call a method in some contract",
-	Long: `Call a method in some contract
-	the format of this command is:iwallet call contract_name0 function_name0 parameters0 contract_name1 function_name1 parameters1 ...
+	Short: "Call the method in contracts",
+	Long: `Call the method in contracts
+	The format of this command is:
+		iwallet call contract_name0 function_name0 parameters0 contract_name1 function_name1 parameters1 ...
 	(you can call more than one function in this command)
-	the parameters is a string whose format is: ["arg0","arg1",...]
-	example:./iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'
+	The parameters is a string whose format is: ["arg0","arg1",...]
+	Example:
+		./iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'
 	`,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		trx := &rpcpb.TransactionRequest{}
@@ -54,7 +56,7 @@ var callCmd = &cobra.Command{
 		}
 		err = sdk.LoadAccount()
 		if err != nil {
-			return fmt.Errorf("load account err %v", err)
+			return fmt.Errorf("Load account err: %v", err)
 		}
 		_, err = sdk.SendTx(trx)
 		return

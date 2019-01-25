@@ -22,23 +22,24 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var method string
+var byNum bool
 var complete bool
 
-// blockCmd represents the block command
+// blockCmd represents the block command.
 var blockCmd = &cobra.Command{
 	Use:   "block",
-	Short: "print block info",
-	Long:  `print block info, find by block number or hash`,
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Short: "Print block info",
+	Long:  `Print block info by block number or hash`,
+	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			fmt.Println(`Error: block num or hash not given`)
-			return
+			return fmt.Errorf("Please enter the block number or hash")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		var blockInfo *rpcpb.BlockResponse
 		var num int64
-		if method == "num" {
+		if byNum {
 			num, err = strconv.ParseInt(args[0], 10, 64)
 			if err != nil {
 				fmt.Printf("invalid block number %v\n", err)
@@ -49,15 +50,12 @@ var blockCmd = &cobra.Command{
 				fmt.Printf(err.Error())
 				return
 			}
-		} else if method == "hash" {
+		} else {
 			blockInfo, err = sdk.getGetBlockByHash(args[0], complete)
 			if err != nil {
 				fmt.Printf(err.Error())
 				return
 			}
-		} else {
-			fmt.Println("please enter correct method arg")
-			return
 		}
 		fmt.Println(marshalTextString(blockInfo))
 		return nil
@@ -66,6 +64,6 @@ var blockCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(blockCmd)
-	blockCmd.Flags().StringVarP(&method, "method", "m", "num", "find by block num or hash")
-	blockCmd.Flags().BoolVarP(&complete, "complete", "c", false, "indicate whether to fetch all the trxs in the block or not")
+	blockCmd.Flags().BoolVarP(&byNum, "by_num", "n", true, "find by block num or set false to find by hash")
+	blockCmd.Flags().BoolVarP(&complete, "complete", "c", false, "indicate whether to fetch all the transactions in the block or not")
 }
