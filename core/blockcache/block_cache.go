@@ -30,7 +30,7 @@ var (
 type CacheStatus int
 
 type conAlgo interface {
-	RecoverBlock(blk *block.Block) error
+	RecoverBlock(blk *block.Block, witnessList WitnessList) error
 }
 
 const (
@@ -131,13 +131,14 @@ func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 		return
 	}
 	bcRaw := &BlockCacheRaw{
-		BlockBytes: blockByte,
+		BlockBytes:  blockByte,
+		WitnessList: &bcn.WitnessList,
 	}
 	b, err = proto.Marshal(bcRaw)
 	return
 }
 
-func decodeBCN(b []byte) (block block.Block, err error) {
+func decodeBCN(b []byte) (block block.Block, wt WitnessList, err error) {
 	var bcRaw BlockCacheRaw
 	err = proto.Unmarshal(b, &bcRaw)
 	if err != nil {
@@ -147,6 +148,7 @@ func decodeBCN(b []byte) (block block.Block, err error) {
 	if err != nil {
 		return
 	}
+	wt = *(bcRaw.WitnessList)
 	return
 }
 
@@ -414,8 +416,8 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 }
 
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
-	block, err := decodeBCN(b)
-	p.RecoverBlock(&block)
+	block, witnessList, err := decodeBCN(b)
+	p.RecoverBlock(&block, witnessList)
 	return err
 }
 
