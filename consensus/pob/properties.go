@@ -2,7 +2,6 @@ package pob
 
 import (
 	"github.com/iost-official/go-iost/common"
-	"strings"
 )
 
 var (
@@ -11,7 +10,7 @@ var (
 
 func isWitness(w string, witnessList []string) bool {
 	for _, v := range witnessList {
-		if strings.Compare(v, w) == 0 {
+		if v == w {
 			return true
 		}
 	}

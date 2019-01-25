@@ -185,8 +185,7 @@ func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness st
 }
 
 func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
-	if !common.StringSliceEqual(bcn.Active(), root.Active()) ||
-		(bcn != root && bcn.Head.Witness == root.Head.Witness) {
+	if bcn != root && bcn.Head.Witness == root.Head.Witness {
 		return
 	}
 	newValidWitness := make([]string, 0, len(bcn.ValidWitness))
@@ -437,10 +436,18 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 		}
 	}
 	if len(node.ValidWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+		newValidWitness := make([]string, 0)
+		for _, witness := range node.ValidWitness {
+			for _, w := range root.Pending() {
+				if witness == w {
+					newValidWitness = append(newValidWitness, witness)
+					break
+				}
+			}
+		}
+		node.ValidWitness = newValidWitness
 		node.SetActive(root.Pending())
-		node.ValidWitness = make([]string, 0)
 	}
-
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
