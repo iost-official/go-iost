@@ -341,6 +341,8 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
+					_, head = p.txPool.PendingTx()
+					witnessList = head.Active()
 					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break
 					}

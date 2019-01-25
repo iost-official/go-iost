@@ -207,8 +207,7 @@ func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness st
 }
 
 func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
-	if !common.StringSliceEqual(bcn.Active(), root.Active()) ||
-		(bcn != root && bcn.Head.Witness == root.Head.Witness) {
+	if bcn != root && bcn.Head.Witness == root.Head.Witness {
 		return
 	}
 	newValidWitness := make([]string, 0, len(bcn.ValidWitness))
@@ -439,7 +438,10 @@ func (bc *BlockCacheImpl) applyUpdateActive(b []byte) (err error) {
 func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 	confirmLimit := int(bc.witnessNum*2/3 + 1)
 	root := bc.LinkedRoot()
+
+	confirmRoot := false
 	if len(node.ValidWitness) >= confirmLimit {
+		confirmRoot = true
 		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 			blockList := make(map[int64]*BlockCacheNode, node.Head.Number-root.Head.Number)
 			blockList[node.Head.Number] = node
@@ -449,18 +451,36 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 				loopNode = loopNode.GetParent()
 			}
 
-			for len(node.ValidWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
+			for len(node.ValidWitness) >= confirmLimit &&
+				common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
 				blockList[bc.LinkedRoot().Head.Number+1] != nil {
+				// bc.Flush() will change node.ValidWitness and bc.LinkedRoot()
 				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
 			}
 		}
+	} else if len(node.ValidWitness)+1 == confirmLimit {
+		confirmRoot = true
+		for _, w := range node.ValidWitness {
+			if w == root.Head.Witness {
+				confirmRoot = false
+				break
+			}
+		}
 	}
-	if len(node.ValidWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
-		node.SetActive(root.Pending())
-		node.ValidWitness = make([]string, 0)
+	if confirmRoot && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+		newValidWitness := make([]string, 0)
+		for _, witness := range node.ValidWitness {
+			for _, w := range bc.LinkedRoot().Pending() {
+				if witness == w {
+					newValidWitness = append(newValidWitness, witness)
+					break
+				}
+			}
+		}
+		node.ValidWitness = newValidWitness
+		node.SetActive(bc.LinkedRoot().Pending())
 		bc.writeUpdateActiveWAL(node)
 	}
-
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
