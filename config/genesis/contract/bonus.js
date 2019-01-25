@@ -91,10 +91,6 @@ class BonusContract {
 
     // issueContribute to witness
     issueContribute(data) {
-        if (!data || !data.parent || !Array.isArray(data.parent)
-            || data.parent.length !== 2 || !data.parent[0]) {
-            return;
-        }
         this._requireAuth("base.iost", activePermission);
         this._updateRate();
         let witness = data.parent[0];

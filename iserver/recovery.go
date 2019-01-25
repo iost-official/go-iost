@@ -2,15 +2,12 @@ package iserver
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
 	"github.com/iost-official/go-iost/consensus/snapshot"
-	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/verifier"
 )
 
 func checkGenesis(bv global.BaseVariable) error {
@@ -59,25 +56,27 @@ func recoverDB(bv global.BaseVariable) error {
 		}
 		blockChain.SetLength(blk.Head.Number + 1)
 	} else {
-		startNumebr := int64(0)
+		startNumber := int64(0)
 		hash := stateDB.CurrentTag()
 		ilog.Infoln("current Tag:", common.Base58Encode([]byte(hash)))
-		var parent *block.Block
+		//var parent *block.Block
 		if hash != "" {
 			blk, err := blockChain.GetBlockByHash([]byte(hash))
 			if err != nil {
 				return fmt.Errorf("statedb doesn't coincides with blockchaindb. err: %v", err)
 			}
-			startNumebr = blk.Head.Number + 1
-			parent = blk
+			startNumber = blk.Head.Number + 1
+			//parent = blk
 		}
-		for i := startNumebr; i < blockChain.Length(); i++ {
+		blockChain.SetLength(startNumber)
+		/*for i := startNumebr; i < blockChain.Length(); i++ {
 			blk, err := blockChain.GetBlockByNumber(i)
 			if err != nil {
 				return fmt.Errorf("get block by number failed, stop the pogram. err: %v", err)
 			}
 			v := verifier.Verifier{}
-			err = v.Verify(blk, parent, stateDB, &verifier.Config{
+			// TODO: fix witnessList
+			err = v.Verify(blk, parent, nil, stateDB, &verifier.Config{
 				Mode:        0,
 				Timeout:     common.SlotLength / 3 * time.Second,
 				TxTimeLimit: time.Millisecond * 100,
@@ -95,7 +94,7 @@ func recoverDB(bv global.BaseVariable) error {
 			if err != nil {
 				return fmt.Errorf("flush stateDB failed, stop the pogram. err: %v", err)
 			}
-		}
+		}*/
 	}
 	return nil
 }
