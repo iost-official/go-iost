@@ -189,26 +189,41 @@ func (logger *Logger) flushWriters() {
 
 // Debugf generates a debug-level log.
 func (logger *Logger) Debugf(format string, v ...interface{}) {
+	if LevelDebug < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelDebug, fmt.Sprintf(format, v...))
 }
 
 // Infof generates a info-level log.
 func (logger *Logger) Infof(format string, v ...interface{}) {
+	if LevelInfo < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelInfo, fmt.Sprintf(format, v...))
 }
 
 // Warnf generates a warn-level log.
 func (logger *Logger) Warnf(format string, v ...interface{}) {
+	if LevelWarn < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelWarn, fmt.Sprintf(format, v...))
 }
 
 // Errorf generates a error-level log.
 func (logger *Logger) Errorf(format string, v ...interface{}) {
+	if LevelError < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelError, fmt.Sprintf(format, v...))
 }
 
 // Fatalf generates a fatal-level log and exits the program.
 func (logger *Logger) Fatalf(format string, v ...interface{}) {
+	if LevelFatal < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelFatal, fmt.Sprintf(format, v...)+"\n"+string(debug.Stack()))
 	logger.Stop()
 	os.Exit(1)
@@ -216,30 +231,45 @@ func (logger *Logger) Fatalf(format string, v ...interface{}) {
 
 // Debugln generates a debug-level log.
 func (logger *Logger) Debugln(v ...interface{}) {
+	if LevelDebug < logger.lowestLevel {
+		return
+	}
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelDebug, msg[:len(msg)-1])
 }
 
 // Infoln generates a info-level log.
 func (logger *Logger) Infoln(v ...interface{}) {
+	if LevelInfo < logger.lowestLevel {
+		return
+	}
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelInfo, msg[:len(msg)-1])
 }
 
 // Warnln generates a warn-level log.
 func (logger *Logger) Warnln(v ...interface{}) {
+	if LevelWarn < logger.lowestLevel {
+		return
+	}
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelWarn, msg[:len(msg)-1])
 }
 
 // Errorln generates a error-level log.
 func (logger *Logger) Errorln(v ...interface{}) {
+	if LevelError < logger.lowestLevel {
+		return
+	}
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelError, msg[:len(msg)-1])
 }
 
 // Fatalln generates a fatal-level log and exits the program.
 func (logger *Logger) Fatalln(v ...interface{}) {
+	if LevelFatal < logger.lowestLevel {
+		return
+	}
 	msg := fmt.Sprintln(v...)
 	logger.genMsg(LevelFatal, msg[:len(msg)-1]+"\n"+string(debug.Stack()))
 	logger.Stop()
@@ -248,35 +278,47 @@ func (logger *Logger) Fatalln(v ...interface{}) {
 
 // Debug generates a debug-level log.
 func (logger *Logger) Debug(v ...interface{}) {
+	if LevelError < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelDebug, fmt.Sprint(v...))
 }
 
 // Info generates a info-level log.
 func (logger *Logger) Info(v ...interface{}) {
+	if LevelInfo < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelInfo, fmt.Sprint(v...))
 }
 
 // Warn generates a warn-level log.
 func (logger *Logger) Warn(v ...interface{}) {
+	if LevelWarn < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelWarn, fmt.Sprint(v...))
 }
 
 // Error generates a error-level log.
 func (logger *Logger) Error(v ...interface{}) {
+	if LevelError < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelError, fmt.Sprint(v...))
 }
 
 // Fatal generates a fatal-level log and exits the program.
 func (logger *Logger) Fatal(v ...interface{}) {
+	if LevelFatal < logger.lowestLevel {
+		return
+	}
 	logger.genMsg(LevelFatal, fmt.Sprint(v...)+"\n"+string(debug.Stack()))
 	logger.Stop()
 	os.Exit(1)
 }
 
 func (logger *Logger) genMsg(level Level, log string) {
-	if level < logger.lowestLevel {
-		return
-	}
 	if atomic.LoadInt32(&logger.isRunning) == 0 {
 		return
 	}
@@ -286,8 +328,6 @@ func (logger *Logger) genMsg(level Level, log string) {
 	buf.Write(levelBytes[level])
 	buf.WriteString(" ")
 	buf.WriteString(time.Now().Format("2006-01-02 15:04:05.000"))
-	//buf.WriteString(" , slot: " + strconv.Itoa(int(time.Now().Unix())/common.SlotLength))
-	//buf.WriteString(" , phase: " + strconv.Itoa(int(time.Now().Unix())%common.SlotLength))
 	if logger.showLocation {
 		buf.WriteString(" ")
 		buf.WriteString(location(logger.callDepth + 3))

@@ -77,7 +77,10 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 
 // GetRAMInfo returns the chain info.
 func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
-	dbVisitor := as.getStateDBVisitor(true)
+	dbVisitor, err := as.getStateDBVisitor(true)
+	if err != nil {
+		return nil, err
+	}
 	return &rpcpb.RAMInfoResponse{
 		AvailableRam: dbVisitor.LeftRAM(),
 		UsedRam:      dbVisitor.UsedRAM(),
@@ -112,27 +115,29 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 // GetTxByHash returns the transaction corresponding to the given hash.
 func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest) (*rpcpb.TransactionResponse, error) {
 	txHashBytes := common.Base58Decode(req.GetHash())
-	status := rpcpb.TransactionResponse_PENDING
+	status := rpcpb.TransactionResponse_IRREVERSIBLE
 	var (
 		t         *tx.Tx
 		txReceipt *tx.TxReceipt
 		err       error
 	)
-	t, err = as.txpool.GetFromPending(txHashBytes)
+	t, err = as.blockchain.GetTx(txHashBytes)
 	if err != nil {
 		status = rpcpb.TransactionResponse_PACKED
 		t, txReceipt, err = as.txpool.GetFromChain(txHashBytes)
 		if err != nil {
-			status = rpcpb.TransactionResponse_IRREVERSIBLE
-			t, err = as.blockchain.GetTx(txHashBytes)
+			status = rpcpb.TransactionResponse_PENDING
+			t, err = as.txpool.GetFromPending(txHashBytes)
 			if err != nil {
 				return nil, errors.New("tx not found")
 			}
-			txReceipt, err = as.blockchain.GetReceiptByTxHash(txHashBytes)
-			if err != nil {
-				return nil, errors.New("txreceipt not found")
-			}
 		}
+	} else {
+		txReceipt, err = as.blockchain.GetReceiptByTxHash(txHashBytes)
+		if err != nil {
+			return nil, errors.New("txreceipt not found")
+		}
+
 	}
 
 	return &rpcpb.TransactionResponse{
@@ -158,11 +163,11 @@ func (as *APIService) GetBlockByHash(ctx context.Context, req *rpcpb.GetBlockByH
 		blk *block.Block
 		err error
 	)
-	status := rpcpb.BlockResponse_PENDING
-	blk, err = as.bc.GetBlockByHash(hashBytes)
+	status := rpcpb.BlockResponse_IRREVERSIBLE
+	blk, err = as.blockchain.GetBlockByHash(hashBytes)
 	if err != nil {
-		status = rpcpb.BlockResponse_IRREVERSIBLE
-		blk, err = as.blockchain.GetBlockByHash(hashBytes)
+		status = rpcpb.BlockResponse_PENDING
+		blk, err = as.bc.GetBlockByHash(hashBytes)
 		if err != nil {
 			return nil, err
 		}
@@ -180,11 +185,11 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 		blk *block.Block
 		err error
 	)
-	status := rpcpb.BlockResponse_PENDING
-	blk, err = as.bc.GetBlockByNumber(number)
+	status := rpcpb.BlockResponse_IRREVERSIBLE
+	blk, err = as.blockchain.GetBlockByNumber(number)
 	if err != nil {
-		status = rpcpb.BlockResponse_IRREVERSIBLE
-		blk, err = as.blockchain.GetBlockByNumber(number)
+		status = rpcpb.BlockResponse_PENDING
+		blk, err = as.bc.GetBlockByNumber(number)
 		if err != nil {
 			return nil, err
 		}
@@ -197,7 +202,10 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	// pack basic account information
 	acc, _ := host.ReadAuth(dbVisitor, req.GetName())
 	if acc == nil {
@@ -265,8 +273,10 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 // GetTokenBalance returns contract information corresponding to the given contract ID.
 func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetTokenBalanceResponse, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
-	// pack basic account information
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	acc, _ := host.ReadAuth(dbVisitor, req.GetAccount())
 	if acc == nil {
 		return nil, errors.New("account not found")
@@ -289,8 +299,10 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 
 // GetToken721Balance returns balance of account of an specific token721 token.
 func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
-	// pack basic account information
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	acc, _ := host.ReadAuth(dbVisitor, req.GetAccount())
 	if acc == nil {
 		return nil, errors.New("account not found")
@@ -305,7 +317,10 @@ func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetToke
 
 // GetToken721Metadata returns metadata of an specific token721 token.
 func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721MetadataResponse, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	metadata, err := dbVisitor.Token721Metadata(req.GetToken(), req.GetTokenId())
 	return &rpcpb.GetToken721MetadataResponse{
 		Metadata: metadata,
@@ -314,7 +329,10 @@ func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetTok
 
 // GetToken721Owner returns owner of an specific token721 token.
 func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721OwnerResponse, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	owner, err := dbVisitor.Token721Owner(req.GetToken(), req.GetTokenId())
 	return &rpcpb.GetToken721OwnerResponse{
 		Owner: owner,
@@ -323,7 +341,10 @@ func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken7
 
 // GetContract returns contract information corresponding to the given contract ID.
 func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	contract := dbVisitor.Contract(req.GetId())
 	if contract == nil {
 		return nil, errors.New("contract not found")
@@ -356,7 +377,10 @@ func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) 
 
 // GetContractStorage returns contract storage corresponding to the given key and field.
 func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 	var value interface{}
 	switch {
@@ -382,7 +406,10 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 
 // GetContractStorageFields returns contract storage corresponding to the given fields.
 func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
-	dbVisitor := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 
 	value, _ := h.GlobalMapKeys(req.GetId(), req.GetKey())
@@ -402,7 +429,10 @@ func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
 	}
 	v := verifier.Verifier{}
 	stateDB := as.bv.StateDB().Fork()
-	stateDB.Checkout(string(topBlock.HeadHash()))
+	ok := stateDB.Checkout(string(topBlock.HeadHash()))
+	if !ok {
+		return nil, fmt.Errorf("failed to checkout blockhash: %s", common.Base58Encode(topBlock.HeadHash()))
+	}
 	return v.Try(blkHead, stateDB, t, cverifier.TxExecTimeLimit)
 }
 
@@ -502,17 +532,24 @@ func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor
 	return
 }
 
-func (as *APIService) getStateDBVisitor(longestChain bool) *database.Visitor {
-	var b *blockcache.BlockCacheNode
-	if longestChain {
-		b = as.bc.Head()
-	} else {
-		b = as.bc.LinkedRoot()
+func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, error) {
+	var err error
+	var db *database.Visitor
+	// retry 3 times as block may be flushed
+	for i := 0; i < 3; i++ {
+		var b *blockcache.BlockCacheNode
+		if longestChain {
+			b = as.bc.Head()
+		} else {
+			b = as.bc.LinkedRoot()
+		}
+		hash := b.HeadHash()
+		db, err = as.getStateDBVisitorByHash(hash)
+		if err != nil {
+			ilog.Errorf("getStateDBVisitor err: %v", err)
+			continue
+		}
+		return db, nil
 	}
-	hash := b.HeadHash()
-	db, err := as.getStateDBVisitorByHash(hash)
-	if err != nil {
-		ilog.Errorf("getStateDBVisitor err: %v", err)
-	}
-	return db
+	return nil, err
 }
