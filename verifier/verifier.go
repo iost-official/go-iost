@@ -328,7 +328,8 @@ func verifyBlockBase(blk, parent *block.Block, witnessList *blockcache.WitnessLi
 		if a.ActionName != baseTx.Actions[i].ActionName ||
 			a.Contract != baseTx.Actions[i].Contract ||
 			a.Data != baseTx.Actions[i].Data {
-			return fmt.Errorf("block base tx not match")
+			ilog.Warnf("witnessList: %+v", witnessList)
+			return fmt.Errorf("block base tx not match, verifyBaseTxAction: %+v, localBaseTxAction: %+v", a, baseTx)
 		}
 	}
 	isolator := &vm.Isolator{}
