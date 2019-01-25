@@ -261,7 +261,6 @@ func TestVerifyBasics(t *testing.T) {
 		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		secKey = common.Sha3([]byte("secKey of id1"))
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		staticProperty = newStaticProperty(account1, int64(3))
 		// witnessList := []string{account0.ReadablePubkey(), account1.ReadablePubkey(), "id2"}
 		convey.Convey("Normal (self block)", func() {
 			blk := &block.Block{
@@ -348,7 +347,6 @@ func TestVerifyBlock(t *testing.T) {
 		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
 		secKey = common.Sha3([]byte("sec of id2"))
 		account2, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
-		staticProperty = newStaticProperty(account0, int64(3))
 		witnessList := []string{account0.ReadablePubkey(), account1.ReadablePubkey(), account2.ReadablePubkey()}
 		rootTime := time.Now().UnixNano()
 		rootBlk := &block.Block{

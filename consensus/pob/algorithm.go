@@ -97,7 +97,7 @@ func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessL
 
 	if replay == false && witnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
-			blk.Head.Number, blk.Head.Time, blk.Head.Witness, staticProperty.NumberOfWitnesses, witnessList.Active())
+			blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(witnessList.Active()), witnessList.Active())
 		return errWitness
 	}
 	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
@@ -141,31 +141,4 @@ func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessL
 		Timeout:     time.Millisecond * 250,
 		TxTimeLimit: time.Millisecond * 100,
 	})
-}
-
-func updateLib(node *blockcache.BlockCacheNode, bc blockcache.BlockCache) {
-	confirmLimit := int(staticProperty.NumberOfWitnesses*2/3 + 1)
-	root := bc.LinkedRoot()
-	if len(node.ValidWitness) >= confirmLimit {
-		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
-			blockList := make(map[int64]*blockcache.BlockCacheNode, node.Head.Number-root.Head.Number)
-			blockList[node.Head.Number] = node
-			loopNode := node.GetParent()
-			for loopNode != root {
-				blockList[loopNode.Head.Number] = loopNode
-				loopNode = loopNode.GetParent()
-			}
-
-			for len(node.ValidWitness) >= confirmLimit && common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
-				blockList[bc.LinkedRoot().Head.Number+1] != nil {
-				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
-				metricsConfirmedLength.Set(float64(bc.LinkedRoot().Head.Number), nil)
-			}
-		}
-	}
-	if len(node.ValidWitness) >= confirmLimit && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
-		node.SetActive(root.Pending())
-		node.ValidWitness = make([]string, 0)
-	}
-
 }
