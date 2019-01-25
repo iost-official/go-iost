@@ -67,7 +67,7 @@ func TestSetCode(t *testing.T) {
 		defer s.Clear()
 		acc := prepareAuth(t, s)
 		s.SetAccount(acc.ToAccount())
-		s.SetGas(acc.ID, 10000000)
+		s.SetGas(acc.ID, 40000000)
 		s.SetRAM(acc.ID, 3000)
 
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
@@ -77,8 +77,8 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "ContractGmFi2GZQg5JB5e5WRtK2VrWhEMa3w78GAFDDp37HCasH")
-		So(r.GasUsage, ShouldEqual, 3643200)
+		So(cname, ShouldEqual, "ContractDr12BzLb2fFtdhG3EVuHh3DFgHrHWwuPQGVu9YwdHoYd")
+		So(r.GasUsage, ShouldEqual, 24421800)
 		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2550))
 
 		r, err = s.Call(cname, "hello", "[]", acc.ID, acc.KeyPair)
@@ -137,7 +137,7 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		acc := prepareAuth(t, s)
-		s.SetGas(acc.ID, 1000000)
+		s.SetGas(acc.ID, 4000000)
 		s.SetRAM(acc.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)

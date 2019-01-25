@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
@@ -31,16 +32,31 @@ var callCmd = &cobra.Command{
 	example:./iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'
 	`,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		var actions []*rpcpb.Action
-		actions, err = actionsFromFlags(args)
-		if err != nil {
-			return
+		trx := &rpcpb.TransactionRequest{}
+		if txFile != "" {
+			if len(args) != 0 {
+				ilog.Warnf("load tx from file %v, will ignore cmd args %v", txFile, args)
+			}
+			err = loadProto(txFile, trx)
+			if err != nil {
+				return err
+			}
+		} else {
+			var actions []*rpcpb.Action
+			actions, err = actionsFromFlags(args)
+			if err != nil {
+				return
+			}
+			trx, err = sdk.createTx(actions)
+			if err != nil {
+				return err
+			}
 		}
 		err = sdk.LoadAccount()
 		if err != nil {
 			return fmt.Errorf("load account err %v", err)
 		}
-		_, err = sdk.SendTx(actions)
+		_, err = sdk.SendTx(trx)
 		return
 	},
 }
@@ -49,4 +65,5 @@ func init() {
 	rootCmd.AddCommand(callCmd)
 	callCmd.Flags().StringSliceVarP(&sdk.signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
 	callCmd.Flags().StringSliceVarP(&sdk.withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
+	callCmd.Flags().StringVarP(&txFile, "tx_file", "", "", "load tx from this file")
 }

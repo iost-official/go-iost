@@ -6,6 +6,7 @@ genesis: config/genesis
 vm:
   jspath: vm/v8vm/v8/libjs/
   loglevel: ""
+  maxTxLimitTime: 200
 db:
   ldbpath: storage/
 snapshot:
