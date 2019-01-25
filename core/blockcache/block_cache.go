@@ -515,9 +515,7 @@ func (bc *BlockCacheImpl) AddNodeToWAL(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) updateWitnessList(h *BlockCacheNode) error {
-	if h.PendingWitnessNumber == 0 && h.Active() == nil && h.Pending() == nil {
-		h.CopyWitness(h.GetParent())
-	}
+	h.CopyWitness(h.GetParent())
 	if h.Head.Number%common.VoteInterval == 0 {
 		if err := bc.updatePending(h); err != nil {
 			return err
