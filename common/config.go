@@ -1,18 +1,17 @@
 package common
 
 import (
-	"os"
-	"time"
-
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
+	"os"
+	"time"
 )
 
 // Constant of limit
 var (
 	MaxBlockGasLimit = int64(500000000)
-	MaxTxTimeLimit   = 100 * time.Millisecond
+	MaxTxTimeLimit   = 200 * time.Millisecond
 )
 
 // ACCConfig account of the system
@@ -56,8 +55,9 @@ type DBConfig struct {
 
 // VMConfig config of the v8vm
 type VMConfig struct {
-	JsPath   string
-	LogLevel string
+	JsPath         string
+	LogLevel       string
+	MaxTxLimitTime int64
 }
 
 // P2PConfig is the config for p2p network.

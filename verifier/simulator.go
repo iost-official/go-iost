@@ -117,7 +117,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Contract:   "system.iost",
 		ActionName: "setCode",
 		Data:       string(jargs),
-	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
+	}}, nil, 400000000, 100, s.Head.Time+10000000, 0, 0)
 
 	trx.Time = s.Head.Time
 

@@ -471,7 +471,7 @@ func Test_LargeContract(t *testing.T) {
 			Contract:   "system.iost",
 			ActionName: "setCode",
 			Data:       string(jargs),
-		}}, nil, int64(200000000), 100, s.Head.Time+100000000, 0, 0)
+		}}, nil, int64(400000000), 100, s.Head.Time+100000000, 0, 0)
 
 		trx.Time = s.Head.Time
 
@@ -479,7 +479,7 @@ func Test_LargeContract(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-		So(r.Status.Message, ShouldContainSubstring, "code size invalid")
+		So(r.Status.Message, ShouldContainSubstring, "out of gas")
 	})
 }
 
@@ -490,7 +490,7 @@ func Test_CallResult(t *testing.T) {
 		defer s.Clear()
 		acc := prepareAuth(t, s)
 		s.SetAccount(acc.ToAccount())
-		s.SetGas(acc.ID, 2000000)
+		s.SetGas(acc.ID, 4000000)
 		s.SetRAM(acc.ID, 10000)
 
 		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
@@ -516,7 +516,7 @@ func Test_ReturnObjectToJsonError(t *testing.T) {
 		defer s.Clear()
 		acc := prepareAuth(t, s)
 		s.SetAccount(acc.ToAccount())
-		s.SetGas(acc.ID, 2000000)
+		s.SetGas(acc.ID, 4000000)
 		s.SetRAM(acc.ID, 10000)
 
 		c, err := s.Compile("", "test_data/callresult", "test_data/callresult")
@@ -539,7 +539,7 @@ func Test_Exception(t *testing.T) {
 		defer s.Clear()
 		acc := prepareAuth(t, s)
 		s.SetAccount(acc.ToAccount())
-		s.SetGas(acc.ID, 2000000)
+		s.SetGas(acc.ID, 4000000)
 		s.SetRAM(acc.ID, 10000)
 
 		c, err := s.Compile("", "test_data/vmmethod", "test_data/vmmethod")

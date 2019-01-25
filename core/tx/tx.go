@@ -20,7 +20,7 @@ const (
 	minGasRatio = 100
 	maxGasRatio = 10000
 	minGasLimit = 600000
-	maxGasLimit = 200000000
+	maxGasLimit = 400000000
 	txSizeLimit = 65536
 )
 
@@ -388,8 +388,9 @@ func (t *Tx) IsCreatedBefore(ct int64) bool {
 
 // CheckSize checks whether tx size is valid.
 func (t *Tx) CheckSize() error {
-	if len(t.ToBytes(Full)) > txSizeLimit {
-		return fmt.Errorf("tx size illegal, should <= %v", txSizeLimit)
+	l := len(t.ToBytes(Full))
+	if l > txSizeLimit {
+		return fmt.Errorf("tx size illegal, should <= %v, got %v", txSizeLimit, l)
 	}
 	return nil
 }
