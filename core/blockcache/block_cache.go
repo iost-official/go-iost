@@ -30,7 +30,7 @@ var (
 type CacheStatus int
 
 type conAlgo interface {
-	RecoverBlock(blk *block.Block, witnessList WitnessList) error
+	RecoverBlock(blk *block.Block) error
 }
 
 const (
@@ -103,6 +103,27 @@ func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block
 	}
 }
 
+func encodeSetHead(bcn *BlockCacheNode) (b []byte, err error) {
+	// First add block
+	bcRaw := &SetRootRaw{
+		BlockHashBytes: bcn.HeadHash(),
+		WitnessList:    &bcn.WitnessList,
+	}
+	b, err = proto.Marshal(bcRaw)
+	return
+}
+
+func decodeSetHead(b []byte) (blockHeadHash []byte, wt WitnessList, err error) {
+	var STRaw SetRootRaw
+	err = proto.Unmarshal(b, &STRaw)
+	if err != nil {
+		return
+	}
+	blockHeadHash = STRaw.BlockHashBytes
+	wt = *(STRaw.WitnessList)
+	return
+}
+
 func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 	// First add block
 	blockByte, err := bcn.Block.Encode()
@@ -110,13 +131,13 @@ func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 		return
 	}
 	bcRaw := &BlockCacheRaw{
-		BlockBytes:  blockByte,
-		WitnessList: &bcn.WitnessList,
+		BlockBytes: blockByte,
 	}
 	b, err = proto.Marshal(bcRaw)
 	return
 }
-func decodeBCN(b []byte) (block block.Block, witnessList WitnessList, err error) {
+
+func decodeBCN(b []byte) (block block.Block, err error) {
 	var bcRaw BlockCacheRaw
 	err = proto.Unmarshal(b, &bcRaw)
 	if err != nil {
@@ -126,7 +147,6 @@ func decodeBCN(b []byte) (block block.Block, witnessList WitnessList, err error)
 	if err != nil {
 		return
 	}
-	witnessList = *(bcRaw.WitnessList)
 	return
 }
 
@@ -383,35 +403,30 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 		if err != nil {
 			return
 		}
-		/*case BcMessageType_SetRootType:
+	case BcMessageType_SetRootType:
 		err = bc.applySetRoot(bcMessage.Data)
 		ilog.Info("Finish ApplySetRoot!")
 		ilog.Flush()
 		if err != nil {
 			return
-		}*/
+		}
 	}
 	return
 }
 
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
-	block, witnessList, err := decodeBCN(b)
+	block, err := decodeBCN(b)
 	//bc.Add(&block)
 
-	// Try to put LinkedRoot's Active list back.
-	if bytes.Equal(block.HeadHash(), bc.LinkedRoot().HeadHash()) {
-		bc.LinkedRoot().SetActive(witnessList.Active())
-	}
-
-	p.RecoverBlock(&block, witnessList)
+	p.RecoverBlock(&block)
 
 	return err
 }
 
 func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
-	bcn, bo := bc.hmget(b)
-	if bo {
-		bc.Flush(bcn)
+	blockHeadHash, witnessList, err := decodeSetHead(b)
+	if bytes.Equal(blockHeadHash, bc.LinkedRoot().HeadHash()) {
+		bc.LinkedRoot().SetActive(witnessList.Active())
 	}
 	return
 }
@@ -678,8 +693,12 @@ func (bc *BlockCacheImpl) flushWAL(h *BlockCacheNode) error {
 }
 
 func (bc *BlockCacheImpl) writeSetHeadWAL(h *BlockCacheNode) (err error) {
+	hb, err := encodeSetHead(h)
+	if err != nil {
+		return err
+	}
 	bcMessage := &BcMessage{
-		Data: h.Block.HeadHash(),
+		Data: hb,
 		Type: BcMessageType_SetRootType,
 	}
 	data, err := proto.Marshal(bcMessage)

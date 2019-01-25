@@ -14,6 +14,10 @@ enum bcMessageType {
 
 message BlockCacheRaw{
     bytes blockBytes = 1;
+}
+
+message SetRootRaw{
+    bytes blockHashBytes = 1;
     WitnessList witnessList = 2;
 }
 
