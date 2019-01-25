@@ -197,7 +197,8 @@ func (s *SDK) signTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, er
 	} else if len(s.withSigns) > 0 {
 		hash := common.Sha3(txToBytes(t, false))
 		for _, f := range s.withSigns {
-			sig, err := loadSignature(f)
+			sig := &rpcpb.Signature{}
+			err := loadProto(f, sig)
 			if err != nil {
 				return nil, fmt.Errorf("invalid signature file %v", f)
 			}
@@ -629,12 +630,17 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	return trx, hash, nil
 }
 
-// SendTx send transaction and check result if sdk.checkResult is set
-func (s *SDK) SendTx(actions []*rpcpb.Action) (txHash string, err error) {
+// SendTxFromActions send transaction and check result if sdk.checkResult is set
+func (s *SDK) SendTxFromActions(actions []*rpcpb.Action) (txHash string, err error) {
 	trx, err := s.createTx(actions)
 	if err != nil {
 		return "", err
 	}
+	return s.SendTx(trx)
+}
+
+// SendTx send transaction and check result if sdk.checkResult is set
+func (s *SDK) SendTx(trx *rpcpb.TransactionRequest) (txHash string, err error) {
 	stx, err := s.signTx(trx)
 	if err != nil {
 		return "", fmt.Errorf("sign tx error %v", err)

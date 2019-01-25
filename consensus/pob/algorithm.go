@@ -138,7 +138,7 @@ func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessL
 	v := verifier.Verifier{}
 	return v.Verify(blk, parent, witnessList, db, &verifier.Config{
 		Mode:        0,
-		Timeout:     time.Millisecond * 250,
-		TxTimeLimit: time.Millisecond * 100,
+		Timeout:     genBlockTime,
+		TxTimeLimit: common.MaxTxTimeLimit,
 	})
 }

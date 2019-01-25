@@ -6,6 +6,7 @@ genesis: /var/lib/iserver/genesis
 vm:
   jspath: vm/v8vm/v8/libjs/
   loglevel: ""
+  maxTxLimitTime: 200
 db:
   ldbpath: /var/lib/iserver/storage/
 snapshot:

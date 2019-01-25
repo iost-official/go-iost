@@ -120,8 +120,9 @@ func genconfig() {
 	genesisfile.Close()
 
 	VM := &common.VMConfig{
-		JsPath:   "vm/v8vm/v8/libjs/",
-		LogLevel: "",
+		JsPath:         "vm/v8vm/v8/libjs/",
+		LogLevel:       "",
+		MaxTxLimitTime: 200,
 	}
 	DB := &common.DBConfig{
 		LdbPath: "/data/storage/",

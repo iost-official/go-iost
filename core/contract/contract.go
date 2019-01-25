@@ -25,7 +25,7 @@ const (
 	ContractPay
 )
 
-const codeSizeLimit = 65536
+const codeSizeLimit = 49152
 
 // FixedAmount the limit amount of token used by contract
 type FixedAmount struct {

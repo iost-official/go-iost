@@ -47,7 +47,6 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	// prepare actions
 	var acts []*tx.Action
 	adminInfo := gConf.AdminInfo
-	native.AdminAccount = adminInfo.ID
 
 	// deploy token.iost
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
