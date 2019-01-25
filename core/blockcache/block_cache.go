@@ -406,7 +406,6 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 	case BcMessageType_SetRootType:
 		err = bc.applySetRoot(bcMessage.Data)
 		ilog.Info("Finish ApplySetRoot!")
-		ilog.Flush()
 		if err != nil {
 			return
 		}
@@ -416,10 +415,7 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	block, err := decodeBCN(b)
-	//bc.Add(&block)
-
 	p.RecoverBlock(&block)
-
 	return err
 }
 
