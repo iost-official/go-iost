@@ -140,7 +140,7 @@ func publish() {
 func vote() {
 	for _, acc := range accounts {
 		sdk := sdks[acc]
-		sdk.SendTx([]*rpcpb.Action{
+		sdk.SendTxFromActions([]*rpcpb.Action{
 			iwallet.NewAction(contractName, "vote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*100000)),
 		})
 	}
@@ -149,14 +149,14 @@ func vote() {
 func unvote() {
 	for _, acc := range accounts {
 		sdk := sdks[acc]
-		sdk.SendTx([]*rpcpb.Action{
+		sdk.SendTxFromActions([]*rpcpb.Action{
 			iwallet.NewAction(contractName, "unvote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*1000)),
 		})
 	}
 }
 
 func issueIOST() {
-	sdks["admin"].SendTx([]*rpcpb.Action{
+	sdks["admin"].SendTxFromActions([]*rpcpb.Action{
 		iwallet.NewAction(contractName, "issueIOST", `[]`),
 	})
 }
@@ -167,7 +167,7 @@ func withdrawBlockBonus() {
 	}
 	for _, acc := range witness {
 		sdk := sdks[acc]
-		sdk.SendTx([]*rpcpb.Action{
+		sdk.SendTxFromActions([]*rpcpb.Action{
 			iwallet.NewAction(contractName, "exchangeIOST", `[]`),
 		})
 	}
@@ -176,7 +176,7 @@ func withdrawBlockBonus() {
 func withdrawVoteBonus() {
 	for _, acc := range witness {
 		sdk := sdks[acc]
-		sdk.SendTx([]*rpcpb.Action{
+		sdk.SendTxFromActions([]*rpcpb.Action{
 			iwallet.NewAction(contractName, "candidateWithdraw", `[]`),
 		})
 	}
@@ -185,7 +185,7 @@ func withdrawVoteBonus() {
 func topupVoterBonus() {
 	sdk := sdks["admin"]
 	for _, acc := range witness {
-		sdk.SendTx([]*rpcpb.Action{
+		sdk.SendTxFromActions([]*rpcpb.Action{
 			iwallet.NewAction(contractName, "topupVoterBonus", fmt.Sprintf(`["%v", "%v"]`, acc, (rand.Intn(10)+2)*100000)),
 		})
 	}
@@ -194,14 +194,14 @@ func topupVoterBonus() {
 func withdrawVoterBonus() {
 	for _, acc := range accounts {
 		sdk := sdks[acc]
-		sdk.SendTx([]*rpcpb.Action{
+		sdk.SendTxFromActions([]*rpcpb.Action{
 			iwallet.NewAction(contractName, "voterWithdraw", `[]`),
 		})
 	}
 }
 
 func checkResult() {
-	sdks["admin"].SendTx([]*rpcpb.Action{
+	sdks["admin"].SendTxFromActions([]*rpcpb.Action{
 		iwallet.NewAction(contractName, "checkResult", `[]`),
 	})
 }
