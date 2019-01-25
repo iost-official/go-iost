@@ -55,9 +55,9 @@ type DBConfig struct {
 
 // VMConfig config of the v8vm
 type VMConfig struct {
-	JsPath      string
-	LogLevel    string
-	TxLimitTime int64
+	JsPath         string
+	LogLevel       string
+	MaxTxLimitTime int64
 }
 
 // P2PConfig is the config for p2p network.
