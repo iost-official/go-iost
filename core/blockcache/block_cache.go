@@ -445,7 +445,7 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 			updateActive = true
 		} else if len(node.ValidWitness)+1 >= confirmLimit {
 			updateActive = true
-			for _, w := range node.Active() {
+			for _, w := range node.ValidWitness {
 				if w == root.Head.Witness {
 					updateActive = false
 					break
