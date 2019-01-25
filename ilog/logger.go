@@ -278,7 +278,7 @@ func (logger *Logger) Fatalln(v ...interface{}) {
 
 // Debug generates a debug-level log.
 func (logger *Logger) Debug(v ...interface{}) {
-	if LevelError < logger.lowestLevel {
+	if LevelDebug < logger.lowestLevel {
 		return
 	}
 	logger.genMsg(LevelDebug, fmt.Sprint(v...))
