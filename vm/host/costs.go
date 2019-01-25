@@ -14,6 +14,8 @@ var (
 		"EventPrice":   contract.NewCost(0, 0, 1),
 		"ReceiptPrice": contract.NewCost(0, 1, 0),
 		"CodePrice":    contract.NewCost(0, 0, 1),
+		"SetCodeBasePrice":    contract.NewCost(0, 0, 200000),
+		"SetCodePrice":    contract.NewCost(0, 0, 70),
 		"OpPrice":      contract.NewCost(0, 0, 1),
 		"ErrPrice":     contract.NewCost(0, 0, 1),
 	}
@@ -32,6 +34,13 @@ func ReceiptCost(size int) contract.Cost {
 // CodeSavageCost cost in deploy contract based on code size
 func CodeSavageCost(size int) contract.Cost {
 	return Costs["CodePrice"].Multiply(int64(size))
+}
+
+// SetCodeCost calculate set code cost based on code size
+func SetCodeCost(size int) contract.Cost {
+	cost := Costs["SetCodeBasePrice"]
+	cost.AddAssign(Costs["SetCodePrice"].Multiply(int64(size)))
+	return cost
 }
 
 // CommonErrorCost returns cost increased by stack layer

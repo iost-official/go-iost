@@ -85,6 +85,11 @@ var (
 			con.ID = actID
 
 			publisher := h.Context().Value("publisher").(string)
+
+			cost.AddAssign(host.SetCodeCost(len(con.Code)))
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrOutOfGas
+			}
 			cost2, err := h.SetCode(con, publisher)
 			cost.AddAssign(cost2)
 			if err != nil {
@@ -122,6 +127,11 @@ var (
 				if err != nil {
 					return nil, host.CommonErrorCost(1), err
 				}
+			}
+
+			cost.AddAssign(host.SetCodeCost(len(con.Code)))
+			if !CheckCost(h, cost) {
+				return nil, cost, host.ErrOutOfGas
 			}
 
 			cost1, err := h.UpdateCode(con, []byte(args[1].(string)))

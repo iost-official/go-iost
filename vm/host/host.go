@@ -117,7 +117,7 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract
 func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 	cost := contract.Cost0()
 	err := h.monitor.Validate(c)
-	cost.AddAssign(CodeSavageCost(len(c.Code)))
+	cost.AddAssign(CodeSavageCost(len(c.Encode())))
 	return cost, err
 }
 
@@ -209,8 +209,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 
 	c.Info.Abi = append(c.Info.Abi, &initABI)
 
-	l := len(c.Encode()) // todo multi Encode call
-	//fmt.Println("host setcode, paycost, ", owner)
+	l := len(c.Encode())
 	cost.AddAssign(contract.Cost{Data: int64(l), DataList: []contract.DataItem{
 		{Payer: owner, Val: int64(l)},
 	}})
