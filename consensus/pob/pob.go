@@ -29,7 +29,6 @@ var (
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
 	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
-	metricsDelayedBlock          = metrics.NewCounter("iost_delayed_block", nil)
 )
 
 var (
@@ -95,7 +94,7 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		mu:               new(sync.RWMutex),
 	}
 	continuousNum = baseVariable.Continuous()
-	staticProperty = newStaticProperty(p.account, blockCache.LinkedRoot().Active())
+
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
 
@@ -316,22 +315,24 @@ func (p *PoB) blockLoop() {
 
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
+	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
+	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+	pubkey := p.account.ReadablePubkey()
 
-	tGenBlock := time.NewTicker(20 * time.Microsecond)
-	tMetricsMode := time.NewTicker(3 * time.Second)
-	defer tGenBlock.Stop()
-	defer tMetricsMode.Stop()
-
+	var slotFlag int64
 	for {
 		select {
-		case <-tGenBlock.C:
+		case <-time.After(time.Duration(nextSchedule)):
+			time.Sleep(time.Millisecond)
+			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
 			t := time.Now()
-			pubkey := p.account.ReadablePubkey()
-			if witnessOfNanoSec(t.UnixNano()) == pubkey && !staticProperty.SlotUsed[slotOfSec(t.Unix())] && p.baseVariable.Mode() == global.ModeNormal {
-				staticProperty.SlotUsed[slotOfSec(t.Unix())] = true
+			_, head := p.txPool.PendingTx()
+			witnessList := head.Active()
+			if slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+				p.quitGenerateMode = make(chan struct{})
+				slotFlag = slotOfSec(t.Unix())
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				generateTxsNum = 0
-				p.quitGenerateMode = make(chan struct{})
 				for num := 0; num < continuousNum; num++ {
 					p.gen(num)
 					if num == continuousNum-1 {
@@ -340,7 +341,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					if witnessOfNanoSec(time.Now().UnixNano()) != pubkey {
+					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break
 					}
 				}
@@ -348,8 +349,8 @@ func (p *PoB) scheduleLoop() {
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
-		case <-tMetricsMode.C:
-			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
+			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
+			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
 		}
@@ -441,7 +442,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, p.txPool, p.verifyDB, p.blockChain, replay)
+		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
@@ -456,7 +457,15 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
-	p.updateInfo(node)
+	p.blockCache.UpdateLib(node)
+	p.blockCache.AddNodeToWAL(node)
+
+	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+
+	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
+		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
+	}
+
 	if node.Head.Witness != p.account.ReadablePubkey() {
 		if tWitness != node.Head.Witness {
 			tWitness = node.Head.Witness
@@ -466,21 +475,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
 		tContinuousNum++
 	}
-	if witnessOfNanoSec(time.Now().UnixNano()) != node.Head.Witness {
-		ilog.Debugf("hasn't process the block in the slot belonging to the witness")
-		metricsDelayedBlock.Add(1, nil)
-	}
+
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node.Block, replay)
 	}
 	return nil
-}
-
-func (p *PoB) updateInfo(node *blockcache.BlockCacheNode) {
-	updateWaterMark(node)
-	updateLib(node, p.blockCache)
-	staticProperty.updateWitness(p.blockCache.LinkedRoot().Active())
-	if staticProperty.isWitness(p.account.ReadablePubkey()) {
-		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
-	}
 }

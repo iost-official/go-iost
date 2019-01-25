@@ -63,25 +63,24 @@ func loadKeyPair(privKeyFile string, algo crypto.Algorithm) (*account.KeyPair, e
 	return account.NewKeyPair(common.Base58Decode(string(fsk)), algo)
 }
 
-func saveSignature(s *rpcpb.Signature, fileName string) error {
-	r, err := (&jsonpb.Marshaler{EmitDefaults: true, Indent: "    "}).MarshalToString(s)
+func saveProto(pb proto.Message, fileName string) error {
+	r, err := (&jsonpb.Marshaler{EmitDefaults: true, Indent: "    "}).MarshalToString(pb)
 	if err != nil {
 		return err
 	}
 	return writeFile(fileName, []byte(r))
 }
 
-func loadSignature(fileName string) (*rpcpb.Signature, error) {
+func loadProto(fileName string, pb proto.Message) error {
 	bytes, err := readFile(fileName)
 	if err != nil {
-		return nil, fmt.Errorf("load signature err %v %v", fileName, err)
+		return fmt.Errorf("load signature err %v %v", fileName, err)
 	}
-	s := &rpcpb.Signature{}
-	err = jsonpb.UnmarshalString(string(bytes), s)
+	err = jsonpb.UnmarshalString(string(bytes), pb)
 	if err != nil {
-		return nil, fmt.Errorf("not a valid signature json %v %v", fileName, err)
+		return fmt.Errorf("not a valid signature json %v %v", fileName, err)
 	}
-	return s, nil
+	return nil
 }
 
 func marshalTextString(pb proto.Message) string {

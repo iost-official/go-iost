@@ -22,22 +22,19 @@ import (
 
 var outputFile string
 var signKeyFile string
+var txFile string
 
 // signCmd sign a tx, and save the signature to a binary file
 var signCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "sign a tx, and save the signature to a binary file",
-	Long:  "create a tx from command similar to `call` command, then sign it and save the signature to file",
+	Long:  "load a tx from file, then sign it and save the signature to file",
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if outputFile == "" {
 			return fmt.Errorf("output file name should be provided with --output flag")
 		}
-		var actions []*rpcpb.Action
-		actions, err = actionsFromFlags(args)
-		if err != nil {
-			return err
-		}
-		trx, err := sdk.createTx(actions)
+		trx := &rpcpb.TransactionRequest{}
+		err = loadProto(txFile, trx)
 		if err != nil {
 			return err
 		}
@@ -46,7 +43,7 @@ var signCmd = &cobra.Command{
 			return err
 		}
 		sig := sdk.getSignatureOfTx(trx, kp)
-		err = saveSignature(sig, outputFile)
+		err = saveProto(sig, outputFile)
 		if err != nil {
 			return err
 		}
@@ -59,4 +56,5 @@ func init() {
 	rootCmd.AddCommand(signCmd)
 	signCmd.Flags().StringVarP(&outputFile, "output", "", "", "output file name to write signature")
 	signCmd.Flags().StringVarP(&signKeyFile, "sign_key", "", "", "key file used for signing")
+	signCmd.Flags().StringVarP(&txFile, "tx_file", "", "", "load tx from this file")
 }
