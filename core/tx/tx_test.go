@@ -183,7 +183,7 @@ func TestTx(t *testing.T) {
 			So(tx.VerifySelf().Error(), ShouldEqual, "invalid tx. including both delay and referredtx field")
 			tx.ReferredTx = nil
 			tx.Actions = []*Action{{"", "", string(make([]byte, 1000000))}}
-			So(tx.VerifySelf().Error(), ShouldEqual, "tx size illegal, should <= 49152")
+			So(tx.VerifySelf().Error(), ShouldContainSubstring, "tx size illegal, should <= 65536")
 		})
 
 	})

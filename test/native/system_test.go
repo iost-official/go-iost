@@ -50,7 +50,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 // nolint
 func TestEngine_SetCode(t *testing.T) {
 
-	e, host, code := InitVMWithMonitor(t, "setcode")
+	e, host, code := InitVMWithMonitor(t, "setcode", int64(400000000))
 	host.Context().Set("tx_hash", "iamhash")
 	host.Context().Set("contract_name", "system.iost")
 	host.Context().Set("auth_contract_list", make(map[string]int))
