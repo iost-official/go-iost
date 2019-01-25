@@ -411,7 +411,7 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 		return err
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
-	p.blockCache.AddWithWit(blk, witnessList)
+	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent.Block, true)
 	}

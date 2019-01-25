@@ -225,7 +225,6 @@ func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 // BlockCache defines BlockCache's API
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
-	AddWithWit(blk *block.Block, witnessList WitnessList) (bcn *BlockCacheNode)
 	AddGenesis(*block.Block)
 	Link(*BlockCacheNode)
 	UpdateLib(*BlockCacheNode)
@@ -416,6 +415,9 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	block, witnessList, err := decodeBCN(b)
+	if string(bc.LinkedRoot().HeadHash()) == string(block.HeadHash()) {
+		bc.LinkedRoot().WitnessList = witnessList
+	}
 	p.RecoverBlock(&block, witnessList)
 	return err
 }
@@ -492,12 +494,12 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if !ok || fa.Type != Linked {
 		return
 	}
-	bc.AddNodeToWAL(bcn)
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
 	bcn.updateValidWitness(fa, bcn.Head.Witness)
 	bc.updateWitnessList(bcn)
+	bc.AddNodeToWAL(bcn)
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
@@ -551,16 +553,6 @@ func (bc *BlockCacheImpl) updateLongest() {
 			bc.SetHead(bcn)
 		}
 	}
-}
-
-// AddWithWit add block with witnessList
-func (bc *BlockCacheImpl) AddWithWit(blk *block.Block, witnessList WitnessList) (bcn *BlockCacheNode) {
-	bcn = bc.Add(blk)
-	if bcn == nil {
-		return nil
-	}
-	bcn.WitnessList = witnessList
-	return bcn
 }
 
 // Add is add a block
