@@ -455,6 +455,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	}
 	p.txPool.AddLinkedNode(node)
 	p.blockCache.Link(node)
+	p.blockCache.UpdateLib(node)
 	p.blockCache.AddNodeToWAL(node)
 
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)

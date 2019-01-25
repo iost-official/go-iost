@@ -207,6 +207,7 @@ type BlockCache interface {
 	AddWithWit(blk *block.Block, witnessList WitnessList) (bcn *BlockCacheNode)
 	AddGenesis(*block.Block)
 	Link(*BlockCacheNode)
+	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	Flush(*BlockCacheNode)
 	Find([]byte) (*BlockCacheNode, error)
@@ -411,8 +412,8 @@ func (bc *BlockCacheImpl) applySetRoot(b []byte) (err error) {
 	return
 }
 
-// updateLib will update last inreversible block
-func (bc *BlockCacheImpl) updateLib(node *BlockCacheNode) {
+// UpdateLib will update last inreversible block
+func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 	confirmLimit := int(bc.witnessNum*2/3 + 1)
 	root := bc.LinkedRoot()
 	if len(node.ValidWitness) >= confirmLimit {
@@ -455,7 +456,6 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
-	bc.updateLib(bcn)
 }
 
 // AddNodeToWAL add write node message to WAL
