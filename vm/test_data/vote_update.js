@@ -6,8 +6,6 @@ const voteStatInterval = 200;
 const admin = "IOSTrGdaqXePYMyo33DhjHthVSzFCmv7khwXejvBTcRvVbFoNjbrV";
 
 class VoteContract {
-    constructor() {
-    }
     init() {
         this._put("currentProducerList", []);
         this._put("pendingProducerList", []);

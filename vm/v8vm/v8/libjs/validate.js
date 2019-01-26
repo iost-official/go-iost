@@ -74,13 +74,13 @@ function checkOneClass(node, abi, cls) {
         if (m.type !== "MethodDefinition" || m.key.type !== "Identifier" || m.value.type !== "FunctionExpression") {
             continue;
         }
+        if (m.key.name === "constructor") {
+            throw new Error("smart contract class shouldn't contain constructor method!!");
+        }
         methodMap[m.key.name] = m.value.params;
     }
     if (methodMap["init"] === undefined || methodMap["init"] === null) {
         throw new Error("init not found!");
-    }
-    if (methodMap["constructor"] !== undefined && methodMap["constructor"] !== null) {
-        throw new Error("smart contract class shouldn't contain constructor method!");
     }
 
     for (const a of abi) {
