@@ -99,7 +99,6 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
 
-	//common.MaxTxTimeLimit = time.Millisecond * time.Duration(baseVariable.Config().VM.MaxTxLimitTime)
 	return &p
 }
 
