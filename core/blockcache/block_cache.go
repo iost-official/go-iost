@@ -601,6 +601,7 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	if fa != nil {
 		fa.delChild(bcn)
 	}
+	delete(bc.leaf, bcn)
 }
 
 // Del is delete a block
@@ -613,14 +614,11 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
-	if len(bcn.Children) == 0 {
-		delete(bc.leaf, bcn)
+	for ch := range bcn.Children {
+		bc.del(ch)
 	}
 	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
 		bc.leaf[bcn.GetParent()] = bcn.GetParent().Head.Number
-	}
-	for ch := range bcn.Children {
-		bc.del(ch)
 	}
 	bc.delNode(bcn)
 }
@@ -649,51 +647,54 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 		}
 		bc.del(child)
 	}
-	//confirm bcn to db
-	if bcn.Block != nil {
-		err := bc.blockChain.Push(bcn.Block)
-		if err != nil {
-			ilog.Errorf("Database error, BlockChain Push err:%v", err)
-		}
-
-		ilog.Debug("confirm: ", bcn.Head.Number)
-		err = bc.stateDB.Flush(string(bcn.HeadHash()))
-
-		if err != nil {
-			ilog.Errorf("flush mvcc error: %v", err)
-		}
-
-		bcn.removeValidWitness(bcn)
-		bc.nmdel(parent.Head.Number)
-		bc.delNode(parent)
-		bcn.SetParent(nil)
-		bc.SetLinkedRoot(bcn)
-
-		metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
-
-		if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
-			ilog.Warnf("Get BlockChainDB size failed: %v", err)
-		} else {
-			metricsDBSize.Set(
-				float64(blockchainDBSize),
-				map[string]string{
-					"Name": "BlockChainDB",
-				},
-			)
-		}
-
-		if stateDBSize, err := bc.stateDB.Size(); err != nil {
-			ilog.Warnf("Get StateDB size failed: %v", err)
-		} else {
-			metricsDBSize.Set(
-				float64(stateDBSize),
-				map[string]string{
-					"Name": "StateDB",
-				},
-			)
-		}
-
+	if bcn.Block == nil {
+		ilog.Errorf("When flush, block cache node don't have block: %+v", bcn)
+		return
 	}
+
+	//confirm bcn to db
+	err := bc.blockChain.Push(bcn.Block)
+	if err != nil {
+		ilog.Errorf("Database error, BlockChain Push err:%v", err)
+	}
+
+	ilog.Debug("confirm: ", bcn.Head.Number)
+	err = bc.stateDB.Flush(string(bcn.HeadHash()))
+
+	if err != nil {
+		ilog.Errorf("flush mvcc error: %v", err)
+	}
+
+	bcn.removeValidWitness(bcn)
+	bc.nmdel(parent.Head.Number)
+	bc.delNode(parent)
+	bcn.SetParent(nil)
+	bc.SetLinkedRoot(bcn)
+
+	metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
+
+	if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
+		ilog.Warnf("Get BlockChainDB size failed: %v", err)
+	} else {
+		metricsDBSize.Set(
+			float64(blockchainDBSize),
+			map[string]string{
+				"Name": "BlockChainDB",
+			},
+		)
+	}
+
+	if stateDBSize, err := bc.stateDB.Size(); err != nil {
+		ilog.Warnf("Get StateDB size failed: %v", err)
+	} else {
+		metricsDBSize.Set(
+			float64(stateDBSize),
+			map[string]string{
+				"Name": "StateDB",
+			},
+		)
+	}
+
 	bc.delSingle()
 	bc.updateLongest()
 	bc.flushWAL(bcn)
