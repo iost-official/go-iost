@@ -17,6 +17,7 @@ package iwallet
 import (
 	"fmt"
 	"os/exec"
+	"strings"
 
 	"github.com/iost-official/go-iost/iwallet/contract"
 	"github.com/spf13/cobra"
@@ -25,13 +26,14 @@ import (
 // Generate ABI file.
 func generateABI(codePath string) (string, error) {
 	contractToRun := fmt.Sprintf(`
-	let module = {};
+	const fs = require('fs');
 	%s;
 	const processContract = module.exports;
 	processContract("%s");
 	`, contract.CompiledContract, codePath)
 
-	cmd := exec.Command("node", "-e", contractToRun)
+	cmd := exec.Command("node", "-")
+	cmd.Stdin = strings.NewReader(contractToRun)
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		fmt.Printf("Failed to compile, error: %v\n", err)
