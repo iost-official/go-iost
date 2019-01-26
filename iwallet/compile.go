@@ -47,17 +47,18 @@ func generateABI(codePath string) (string, error) {
 
 // compileCmd represents the compile command.
 var compileCmd = &cobra.Command{
-	Use:   "compile",
-	Short: "Generate contract abi",
-	Long: `Generate abi from contract javascript code
-	Example:
-		iwallet compile ./example.js
-	`,
-
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Use:     "compile codePath",
+	Short:   "Generate contract abi",
+	Long:    `Generate abi from contract javascript code`,
+	Example: `  iwallet compile ./example.js`,
+	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return fmt.Errorf("source code file not given")
+			cmd.Usage()
+			return fmt.Errorf("please enter the code path")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		codePath := args[0]
 		abiPath, err := generateABI(codePath)
 		if err != nil {

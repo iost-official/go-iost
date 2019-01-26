@@ -24,43 +24,41 @@ import (
 
 // callCmd represents the call command that call a contract with given actions.
 var callCmd = &cobra.Command{
-	Use:   "call",
+	Use:   "call [ACTION]...",
 	Short: "Call the method in contracts",
 	Long: `Call the method in contracts
-	The format of this command is:
-		iwallet call contract_name0 function_name0 parameters0 contract_name1 function_name1 parameters1 ...
-	(you can call more than one function in this command)
-	The parameters is a string whose format is: ["arg0","arg1",...]
-	Example:
-		./iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'
-	`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Would accept arguments as call actions or load transaction request directly from proto file.
+	An ACTION is a group of 3 arguments: contract name, function name, method parameters.
+	The method parameters should be a string with format '["arg0","arg1",...]'.`,
+	Example: `  iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'
+  iwallet call --tx_file tx.proto`,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		trx := &rpcpb.TransactionRequest{}
 		if txFile != "" {
 			if len(args) != 0 {
 				ilog.Warnf("load tx from file %v, will ignore cmd args %v", txFile, args)
 			}
-			err = loadProto(txFile, trx)
+			err := loadProto(txFile, trx)
 			if err != nil {
 				return err
 			}
 		} else {
 			var actions []*rpcpb.Action
-			actions, err = actionsFromFlags(args)
+			actions, err := actionsFromFlags(args)
 			if err != nil {
-				return
+				return err
 			}
 			trx, err = sdk.createTx(actions)
 			if err != nil {
 				return err
 			}
 		}
-		err = sdk.LoadAccount()
+		err := sdk.LoadAccount()
 		if err != nil {
-			return fmt.Errorf("Load account err: %v", err)
+			return fmt.Errorf("failed to load account: %v", err)
 		}
 		_, err = sdk.SendTx(trx)
-		return
+		return err
 	},
 }
 
