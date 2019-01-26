@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -246,8 +247,15 @@ func (t *Tx) verifyDeferBaseFields(referredTx *Tx) error {
 	if referredTx.Time+referredTx.Delay != t.Time {
 		return errors.New("unmatched referred tx delay time")
 	}
-	if referredTx.Expiration+referredTx.Delay != t.Expiration {
+	expi := referredTx.Expiration + referredTx.Delay
+	if expi < referredTx.Expiration {
+		expi = math.MaxInt64
+	}
+	if expi != t.Expiration {
 		return errors.New("unmatched referred tx expiration time")
+	}
+	if referredTx.ChainID != t.ChainID {
+		return errors.New("unmatched chainID")
 	}
 	if referredTx.GasRatio != t.GasRatio {
 		return errors.New("unmatched referred tx gas ratio")
