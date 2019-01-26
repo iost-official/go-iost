@@ -23,8 +23,8 @@ import (
 // accountInfoCmd represents the balance command.
 var accountInfoCmd = &cobra.Command{
 	Use:   "balance",
-	Short: "Check balance information of a specified account",
-	Long:  `Check balance information of a specified account, must followed by an account ID`,
+	Short: "Check the information of a specified account",
+	Long:  `Check the information of a specified account, must followed by an account ID`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			return fmt.Errorf("Please enter the account ID")

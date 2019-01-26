@@ -22,7 +22,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var byNum bool
+var method string
 var complete bool
 
 // blockCmd represents the block command.
@@ -39,7 +39,8 @@ var blockCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		var blockInfo *rpcpb.BlockResponse
 		var num int64
-		if byNum {
+		switch method {
+		case "num":
 			num, err = strconv.ParseInt(args[0], 10, 64)
 			if err != nil {
 				fmt.Printf("invalid block number %v\n", err)
@@ -50,12 +51,15 @@ var blockCmd = &cobra.Command{
 				fmt.Printf(err.Error())
 				return
 			}
-		} else {
+		case "hash":
 			blockInfo, err = sdk.getGetBlockByHash(args[0], complete)
 			if err != nil {
 				fmt.Printf(err.Error())
 				return
 			}
+		default:
+			fmt.Printf("Wrong method '%v'. Supported methods: 'num', 'hash'\n", method)
+			return
 		}
 		fmt.Println(marshalTextString(blockInfo))
 		return nil
@@ -64,6 +68,6 @@ var blockCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(blockCmd)
-	blockCmd.Flags().BoolVarP(&byNum, "by_num", "n", true, "find by block num or set false to find by hash")
+	blockCmd.Flags().StringVarP(&method, "method", "m", "num", "find by block num (set as 'num') or hash (set as 'hash')")
 	blockCmd.Flags().BoolVarP(&complete, "complete", "c", false, "indicate whether to fetch all the transactions in the block or not")
 }

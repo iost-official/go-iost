@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
