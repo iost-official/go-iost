@@ -30,7 +30,7 @@ var (
 type CacheStatus int
 
 type conAlgo interface {
-	RecoverBlock(blk *block.Block, witnessList WitnessList) error
+	RecoverBlock(blk *block.Block) error
 }
 
 const (
@@ -62,6 +62,7 @@ type BlockCacheNode struct { //nolint:golint
 	walIndex     uint64
 	ValidWitness []string
 	WitnessList
+	SerialNum int64
 }
 
 // GetParent returns the node's parent node.
@@ -133,12 +134,13 @@ func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 	bcRaw := &BlockCacheRaw{
 		BlockBytes:  blockByte,
 		WitnessList: &bcn.WitnessList,
+		SerialNum:   bcn.SerialNum,
 	}
 	b, err = proto.Marshal(bcRaw)
 	return
 }
 
-func decodeBCN(b []byte) (block block.Block, wt WitnessList, err error) {
+func decodeBCN(b []byte) (block block.Block, wt WitnessList, serialNum int64, err error) {
 	var bcRaw BlockCacheRaw
 	err = proto.Unmarshal(b, &bcRaw)
 	if err != nil {
@@ -149,6 +151,7 @@ func decodeBCN(b []byte) (block block.Block, wt WitnessList, err error) {
 		return
 	}
 	wt = *(bcRaw.WitnessList)
+	serialNum = bcRaw.SerialNum
 	return
 }
 
@@ -289,20 +292,20 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 }
 
 func (bc *BlockCacheImpl) nmget(num int64) (*BlockCacheNode, bool) {
-	rtnI, ok := bc.hash2node.Load(num)
+	rtnI, ok := bc.number2node.Load(num)
 	if !ok {
 		return nil, false
 	}
 	bcn, okn := rtnI.(*BlockCacheNode)
 	if !okn {
-		bc.hash2node.Delete(num)
+		bc.number2node.Delete(num)
 		return nil, false
 	}
 	return bcn, true
 }
 
 func (bc *BlockCacheImpl) nmset(num int64, bcn *BlockCacheNode) {
-	bc.hash2node.Store(num, bcn)
+	bc.number2node.Store(num, bcn)
 }
 
 func (bc *BlockCacheImpl) nmdel(num int64) {
@@ -414,11 +417,12 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 }
 
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
-	block, witnessList, err := decodeBCN(b)
+	block, witnessList, serialNum, err := decodeBCN(b)
 	if string(bc.LinkedRoot().HeadHash()) == string(block.HeadHash()) {
 		bc.LinkedRoot().WitnessList = witnessList
+		bc.LinkedRoot().SerialNum = serialNum
 	}
-	p.RecoverBlock(&block, witnessList)
+	p.RecoverBlock(&block)
 	return err
 }
 
@@ -598,6 +602,7 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	if fa != nil {
 		fa.delChild(bcn)
 	}
+	delete(bc.leaf, bcn)
 }
 
 // Del is delete a block
@@ -610,14 +615,11 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
-	if len(bcn.Children) == 0 {
-		delete(bc.leaf, bcn)
+	for ch := range bcn.Children {
+		bc.del(ch)
 	}
 	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
 		bc.leaf[bcn.GetParent()] = bcn.GetParent().Head.Number
-	}
-	for ch := range bcn.Children {
-		bc.del(ch)
 	}
 	bc.delNode(bcn)
 }
@@ -646,51 +648,54 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 		}
 		bc.del(child)
 	}
-	//confirm bcn to db
-	if bcn.Block != nil {
-		err := bc.blockChain.Push(bcn.Block)
-		if err != nil {
-			ilog.Errorf("Database error, BlockChain Push err:%v", err)
-		}
-
-		ilog.Debug("confirm: ", bcn.Head.Number)
-		err = bc.stateDB.Flush(string(bcn.HeadHash()))
-
-		if err != nil {
-			ilog.Errorf("flush mvcc error: %v", err)
-		}
-
-		bcn.removeValidWitness(bcn)
-		bc.nmdel(parent.Head.Number)
-		bc.delNode(parent)
-		bcn.SetParent(nil)
-		bc.SetLinkedRoot(bcn)
-
-		metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
-
-		if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
-			ilog.Warnf("Get BlockChainDB size failed: %v", err)
-		} else {
-			metricsDBSize.Set(
-				float64(blockchainDBSize),
-				map[string]string{
-					"Name": "BlockChainDB",
-				},
-			)
-		}
-
-		if stateDBSize, err := bc.stateDB.Size(); err != nil {
-			ilog.Warnf("Get StateDB size failed: %v", err)
-		} else {
-			metricsDBSize.Set(
-				float64(stateDBSize),
-				map[string]string{
-					"Name": "StateDB",
-				},
-			)
-		}
-
+	if bcn.Block == nil {
+		ilog.Errorf("When flush, block cache node don't have block: %+v", bcn)
+		return
 	}
+
+	//confirm bcn to db
+	err := bc.blockChain.Push(bcn.Block)
+	if err != nil {
+		ilog.Errorf("Database error, BlockChain Push err:%v", err)
+	}
+
+	ilog.Debug("confirm: ", bcn.Head.Number)
+	err = bc.stateDB.Flush(string(bcn.HeadHash()))
+
+	if err != nil {
+		ilog.Errorf("flush mvcc error: %v", err)
+	}
+
+	bcn.removeValidWitness(bcn)
+	bc.nmdel(parent.Head.Number)
+	bc.delNode(parent)
+	bcn.SetParent(nil)
+	bc.SetLinkedRoot(bcn)
+
+	metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
+
+	if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
+		ilog.Warnf("Get BlockChainDB size failed: %v", err)
+	} else {
+		metricsDBSize.Set(
+			float64(blockchainDBSize),
+			map[string]string{
+				"Name": "BlockChainDB",
+			},
+		)
+	}
+
+	if stateDBSize, err := bc.stateDB.Size(); err != nil {
+		ilog.Warnf("Get StateDB size failed: %v", err)
+	} else {
+		metricsDBSize.Set(
+			float64(stateDBSize),
+			map[string]string{
+				"Name": "StateDB",
+			},
+		)
+	}
+
 	bc.delSingle()
 	bc.updateLongest()
 	bc.flushWAL(bcn)
@@ -827,7 +832,7 @@ func (bc *BlockCacheImpl) Draw() string {
 	bc.LinkedRoot().drawChildren(linkedTree)
 	singleTree := treeprint.New()
 	bc.singleRoot.drawChildren(singleTree)
-	return linkedTree.String()
+	return linkedTree.String() + "\n" + singleTree.String()
 }
 
 func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {

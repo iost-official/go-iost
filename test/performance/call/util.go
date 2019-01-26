@@ -17,6 +17,7 @@ func ToTxRequest(t *tx.Tx) *rpcpb.TransactionRequest {
 		Delay:      t.Delay,
 		Signers:    t.Signers,
 		Publisher:  t.Publisher,
+		ChainId:    t.ChainID,
 	}
 	for _, a := range t.Actions {
 		ret.Actions = append(ret.Actions, &rpcpb.Action{

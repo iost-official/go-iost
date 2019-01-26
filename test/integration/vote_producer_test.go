@@ -273,7 +273,7 @@ func Test_Vote1(t *testing.T) {
 		So(r.Returns[0], ShouldEqual, `["[{\"option\":\"user_6\",\"votes\":\"100000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"user_7\",\"votes\":\"215000000\",\"voteTime\":1,\"clearedVotes\":\"0\"},{\"option\":\"user_8\",\"votes\":\"220000000\",\"voteTime\":1,\"clearedVotes\":\"0\"}]"]`)
 
 		// do stat
-		s.Head.Number = 2000
+		s.Head.Number = 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -307,7 +307,7 @@ func Test_Vote1(t *testing.T) {
 		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc4.ID, "250000000"), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -329,7 +329,7 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -351,7 +351,7 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -373,7 +373,7 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -395,7 +395,7 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -417,7 +417,7 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -439,7 +439,7 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -461,7 +461,7 @@ func Test_Vote1(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -519,7 +519,7 @@ func Test_Unregister2(t *testing.T) {
 		}
 
 		// do stat
-		s.Head.Number = 2000
+		s.Head.Number = 1200
 		r, err := s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -548,7 +548,7 @@ func Test_Unregister2(t *testing.T) {
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -580,7 +580,7 @@ func Test_Unregister2(t *testing.T) {
 		So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't unregister")
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -627,7 +627,7 @@ func Test_Unregister2(t *testing.T) {
 		So(r.Status.Message, ShouldContainSubstring, "producer in pending list or in current list, can't unregister")
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -659,7 +659,7 @@ func Test_Unregister2(t *testing.T) {
 		}
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -693,7 +693,7 @@ func Test_Unregister2(t *testing.T) {
 		}
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -753,7 +753,7 @@ func Test_TakeTurns(t *testing.T) {
 		}
 
 		// do stat
-		s.Head.Number = 2000
+		s.Head.Number = 1200
 		r, err := s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -786,7 +786,7 @@ func Test_TakeTurns(t *testing.T) {
 		}
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -846,7 +846,7 @@ func Test_KickOut(t *testing.T) {
 		}
 
 		// do stat
-		s.Head.Number = 2000
+		s.Head.Number = 1200
 		r, err := s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -884,7 +884,7 @@ func Test_KickOut(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 
 		// do stat
-		s.Head.Number += 2000
+		s.Head.Number += 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
@@ -948,7 +948,7 @@ func Test_UpdatePubkey(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 
 		// do stat
-		s.Head.Number = 2000
+		s.Head.Number = 1200
 		r, err = s.Call("base.iost", "stat", `[]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")

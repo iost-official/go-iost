@@ -32,16 +32,17 @@ var (
 )
 
 var (
-	errSingle    = errors.New("single block")
-	errDuplicate = errors.New("duplicate block")
+	errSingle     = errors.New("single block")
+	errDuplicate  = errors.New("duplicate block")
+	errOutOfLimit = errors.New("block out of limit in one slot")
 )
 
 var (
 	blockReqTimeout   = 3 * time.Second
 	continuousNum     int
-	subSlotTime       = 300 * time.Millisecond
-	genBlockTime      = 250 * time.Millisecond
-	last2GenBlockTime = 30 * time.Millisecond
+	subSlotTime       = 500 * time.Millisecond
+	genBlockTime      = 400 * time.Millisecond
+	last2GenBlockTime = 50 * time.Millisecond
 	tWitness          = ""
 	tContinuousNum    = 0
 )
@@ -98,7 +99,6 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
 
-	//common.MaxTxTimeLimit = time.Millisecond * time.Duration(baseVariable.Config().VM.MaxTxLimitTime)
 	return &p
 }
 
@@ -401,7 +401,7 @@ func (p *PoB) printStatistics(num int, blk *block.Block) {
 }
 
 // RecoverBlock recover block from block cache wal
-func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList) error {
+func (p *PoB) RecoverBlock(blk *block.Block) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -413,7 +413,7 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList)
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block, true)
+		return p.addExistingBlock(blk, parent, true)
 	}
 	return errSingle
 }
@@ -433,18 +433,29 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent.Block, false)
+		return p.addExistingBlock(blk, parent, false)
 	}
 	return errSingle
 }
 
-func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, replay bool) error {
+func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool) error {
 	node, _ := p.blockCache.Find(blk.HeadHash())
+
+	if parentNode.Block.Head.Witness != blk.Head.Witness ||
+		slotOfSec(parentNode.Block.Head.Time/1e9) != slotOfSec(blk.Head.Time/1e9) {
+		node.SerialNum = 0
+	} else {
+		node.SerialNum = parentNode.SerialNum + 1
+	}
+
+	if node.SerialNum >= int64(p.baseVariable.Continuous()) {
+		return errOutOfLimit
+	}
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentBlock, p.blockCache.LinkedRoot().Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
+		err := verifyBlock(blk, parentNode.Block, p.blockCache.LinkedRoot().Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
@@ -480,7 +491,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentBlock *block.Block, repla
 	}
 
 	for child := range node.Children {
-		p.addExistingBlock(child.Block, node.Block, replay)
+		p.addExistingBlock(child.Block, node, replay)
 	}
 	return nil
 }
