@@ -30,7 +30,7 @@ var (
 type CacheStatus int
 
 type conAlgo interface {
-	RecoverBlock(blk *block.Block, serialNum int64) error
+	RecoverBlock(blk *block.Block) error
 }
 
 const (
@@ -420,8 +420,9 @@ func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
 	block, witnessList, serialNum, err := decodeBCN(b)
 	if string(bc.LinkedRoot().HeadHash()) == string(block.HeadHash()) {
 		bc.LinkedRoot().WitnessList = witnessList
+		bc.LinkedRoot().SerialNum = serialNum
 	}
-	p.RecoverBlock(&block, serialNum)
+	p.RecoverBlock(&block)
 	return err
 }
 

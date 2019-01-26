@@ -401,7 +401,7 @@ func (p *PoB) printStatistics(num int, blk *block.Block) {
 }
 
 // RecoverBlock recover block from block cache wal
-func (p *PoB) RecoverBlock(blk *block.Block, serialNum int64) error {
+func (p *PoB) RecoverBlock(blk *block.Block) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -411,10 +411,6 @@ func (p *PoB) RecoverBlock(blk *block.Block, serialNum int64) error {
 		return err
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
-	node := p.blockCache.Add(blk)
-	if node != nil {
-		node.SerialNum = serialNum
-	}
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent, true)
 	}
