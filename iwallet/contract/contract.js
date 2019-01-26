@@ -70,6 +70,7 @@ function genAbiArr(stat, comments) {
     for (let def of stat.body.body) {
         if (def.type === "MethodDefinition" && isPublicMethod(def)) {
             if (def.key.name === "constructor") {
+                throw new Error("smart contract class shouldn't contain constructor method!");
             } else if (def.key.name === "init") {
                 initFound = true;
             } else {

@@ -1,8 +1,5 @@
 'use strict';
 class Func {
-    constructor() {
-    }
-
     func1() {
         this.func2()
     }

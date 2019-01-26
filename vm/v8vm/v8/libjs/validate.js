@@ -47,7 +47,7 @@ function checkOneAbi(a, methodMap) {
         checkAmountLimitValid(a.amountLimit);
     }
     if (a.name === "init") {
-        throw new Error("abi has internal function: init");
+        throw new Error("abi shouldn't contain internal function: init");
     }
     const params = methodMap[a.name];
     if (params === undefined || params === null || !Array.isArray(params)) {
@@ -73,6 +73,9 @@ function checkOneClass(node, abi, cls) {
     for (m of node.body.body) {
         if (m.type !== "MethodDefinition" || m.key.type !== "Identifier" || m.value.type !== "FunctionExpression") {
             continue;
+        }
+        if (m.key.name === "constructor") {
+            throw new Error("smart contract class shouldn't contain constructor method!!");
         }
         methodMap[m.key.name] = m.value.params;
     }

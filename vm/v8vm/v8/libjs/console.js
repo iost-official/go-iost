@@ -25,10 +25,6 @@ class Console {
         this._cLog('Error', this._format(...args));
     }
 
-    fatal(...args) {
-        this._cLog('Fatal', this._format(...args));
-    }
-
     log(...args) {
         this.info(...args)
     }

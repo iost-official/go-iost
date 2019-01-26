@@ -11,8 +11,6 @@ function raw(strings, ...keys) {
 }
 
 class Gas {
-    constructor() {
-    }
     init() {
     }
     assignment0() {
