@@ -3,6 +3,7 @@ package txpool
 import (
 	"errors"
 	"fmt"
+	"math"
 	"runtime"
 	"sync"
 	"time"
@@ -76,10 +77,15 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 	if err != nil {
 		return err
 	}
+	expi := referredTx.Expiration + referredTx.Delay
+	// overflow
+	if expi < referredTx.Expiration {
+		expi = math.MaxInt64
+	}
 	t := &tx.Tx{
 		Actions:      referredTx.Actions,
 		Time:         referredTx.Time + referredTx.Delay,
-		Expiration:   referredTx.Expiration + referredTx.Delay,
+		Expiration:   expi,
 		GasLimit:     referredTx.GasLimit,
 		GasRatio:     referredTx.GasRatio,
 		Publisher:    referredTx.Publisher,
@@ -88,8 +94,13 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 		PublishSigns: referredTx.PublishSigns,
 		Signs:        referredTx.Signs,
 		Signers:      referredTx.Signers,
+		ChainID:      referredTx.ChainID,
 	}
 	err = pool.verifyDuplicate(t)
+	if err != nil {
+		return err
+	}
+	err = t.VerifySelf()
 	if err != nil {
 		return err
 	}
