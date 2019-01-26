@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
@@ -24,11 +25,11 @@ var outputFile string
 var signKeyFile string
 var txFile string
 
-// signCmd sign a tx, and save the signature to a binary file
+// signCmd represents the command used to sign a transaction.
 var signCmd = &cobra.Command{
 	Use:   "sign",
-	Short: "sign a tx, and save the signature to a binary file",
-	Long:  "load a tx from file, then sign it and save the signature to file",
+	Short: "Sign a tx loaded from given file and save the signature as a binary file",
+	Long:  `Sign a tx loaded from given file (--tx_file) and save the signature as a binary file (--output)`,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if outputFile == "" {
 			return fmt.Errorf("output file name should be provided with --output flag")
@@ -47,7 +48,7 @@ var signCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Printf("save signature to %v done", outputFile)
+		fmt.Println("Successfully saved signature as:", outputFile)
 		return
 	},
 }

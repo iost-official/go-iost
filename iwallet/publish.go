@@ -22,17 +22,19 @@ import (
 
 var update bool
 
-// publishCmd represents the compile command
+// publishCmd represents the compile command.
 var publishCmd = &cobra.Command{
 	Use:   "publish",
-	Short: "publish a contract",
-	Long: `publish a contract by a contract and an abi file
-	example:iwallet publish ./example.js ./example.js.abi
+	Short: "Publish a contract",
+	Long: `Publish a contract by a contract and an abi file
+	Example:
+		iwallet publish ./example.js ./example.js.abi
+		iwallet publish -u ./example.js ./example.js.abi contractID [updateID]
 	`,
 
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 2 {
-			fmt.Println(`usage: iwallet publish ./example.js ./example.js.abi [contractID [updateID]]`)
+			fmt.Println(`Usage: iwallet publish ./example.js ./example.js.abi`)
 			return
 		}
 		codePath := args[0]
@@ -41,7 +43,7 @@ var publishCmd = &cobra.Command{
 		conID := ""
 		if update {
 			if len(args) < 3 {
-				fmt.Println(`Error: contract id not given`)
+				fmt.Println("Please enter the contract id")
 				return
 			}
 			conID = args[2]
@@ -53,12 +55,12 @@ var publishCmd = &cobra.Command{
 
 		err = sdk.LoadAccount()
 		if err != nil {
-			fmt.Printf("load account failed %v\n", err)
+			fmt.Printf("Failed to load account: %v\n", err)
 			return
 		}
 		_, txHash, err := sdk.PublishContract(codePath, abiPath, conID, update, updateID)
 		if err != nil {
-			fmt.Printf("create tx failed %v\n", err)
+			fmt.Printf("Failed to create tx: %v\n", err)
 			return
 		}
 		if sdk.checkResult {
