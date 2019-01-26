@@ -831,7 +831,7 @@ func (bc *BlockCacheImpl) Draw() string {
 	bc.LinkedRoot().drawChildren(linkedTree)
 	singleTree := treeprint.New()
 	bc.singleRoot.drawChildren(singleTree)
-	return linkedTree.String()
+	return linkedTree.String() + "\n" + singleTree.String()
 }
 
 func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
