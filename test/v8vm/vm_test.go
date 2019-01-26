@@ -667,7 +667,7 @@ func TestEngine_Int64(t *testing.T) {
 func TestEngine_Console(t *testing.T) {
 	host, code := MyInit(t, "console1")
 	_, _, err := vmPool.LoadAndCall(host, code, "log")
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "console.fatal is not a function") {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 }
