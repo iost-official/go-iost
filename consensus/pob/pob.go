@@ -401,7 +401,7 @@ func (p *PoB) printStatistics(num int, blk *block.Block) {
 }
 
 // RecoverBlock recover block from block cache wal
-func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList, serialNum int64) error {
+func (p *PoB) RecoverBlock(blk *block.Block, serialNum int64) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
