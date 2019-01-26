@@ -413,7 +413,9 @@ func (p *PoB) RecoverBlock(blk *block.Block, witnessList blockcache.WitnessList,
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	node := p.blockCache.Add(blk)
-	node.SerialNum = serialNum
+	if node != nil {
+		node.SerialNum = serialNum
+	}
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent, true)
 	}
