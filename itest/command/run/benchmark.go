@@ -127,7 +127,7 @@ var BenchmarkAction = func(c *cli.Context) error {
 			num, err = it.BuyRAMN("rand", tps, accounts, false)
 		} else if txType == AccountTx {
 			var accs []*itest.Account
-			accs, err = it.CreateAccountN(tps, true, false)
+			accs, err = it.CreateAccountN(tps, true, false, 0)
 			num = len(accs)
 		} else if txType == ExchangeTransferTx {
 			num, err = it.ExchangeTransferN(tps, accounts, memoSize, false)

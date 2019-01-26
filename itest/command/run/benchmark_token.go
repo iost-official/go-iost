@@ -5,6 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+	"runtime/pprof"
 
 	"encoding/json"
 	"fmt"
@@ -62,6 +63,13 @@ type hashItem struct {
 
 // BenchmarkTokenAction is the action of benchmark.
 var BenchmarkTokenAction = func(c *cli.Context) error {
+	f, err := os.Create("cpu.profile")
+        if err != nil {
+            ilog.Fatalf("create cpu.profile failed. %v", err)
+        }
+        pprof.StartCPUProfile(f)
+        defer pprof.StopCPUProfile()
+
 	itest.Interval = 2 * time.Millisecond
 	itest.InitAmount = "1000"
 	itest.InitPledge = "1000"
@@ -447,4 +455,5 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 			slotStartTime = time.Now()
 		}
 	}
+	return nil
 }

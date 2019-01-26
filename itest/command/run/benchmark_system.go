@@ -201,6 +201,7 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 				break
 			case tIndex <= 2:
 				abiName = cancelDelaytx
+				break
 				if len(delayTxList) == 0 {
 					from := accounts[rand.Intn(len(accounts))]
 					act1 := tx.NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, "admin", from.ID, 10))
