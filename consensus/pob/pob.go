@@ -411,6 +411,7 @@ func (p *PoB) RecoverBlock(blk *block.Block) error {
 		return err
 	}
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
+	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
 		return p.addExistingBlock(blk, parent, true)
 	}
