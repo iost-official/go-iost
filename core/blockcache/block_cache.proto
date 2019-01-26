@@ -15,6 +15,7 @@ enum bcMessageType {
 message BlockCacheRaw{
     bytes blockBytes = 1;
     WitnessList witnessList = 2;
+    int64 serialNum = 3;
 }
 
 message UpdateActiveRaw{

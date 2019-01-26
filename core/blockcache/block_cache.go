@@ -30,7 +30,7 @@ var (
 type CacheStatus int
 
 type conAlgo interface {
-	RecoverBlock(blk *block.Block, witnessList WitnessList) error
+	RecoverBlock(blk *block.Block, witnessList WitnessList, serialNum int64) error
 }
 
 const (
@@ -62,6 +62,7 @@ type BlockCacheNode struct { //nolint:golint
 	walIndex     uint64
 	ValidWitness []string
 	WitnessList
+	SerialNum int64
 }
 
 // GetParent returns the node's parent node.
@@ -133,12 +134,13 @@ func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 	bcRaw := &BlockCacheRaw{
 		BlockBytes:  blockByte,
 		WitnessList: &bcn.WitnessList,
+		SerialNum:   bcn.SerialNum,
 	}
 	b, err = proto.Marshal(bcRaw)
 	return
 }
 
-func decodeBCN(b []byte) (block block.Block, wt WitnessList, err error) {
+func decodeBCN(b []byte) (block block.Block, wt WitnessList, serialNum int64, err error) {
 	var bcRaw BlockCacheRaw
 	err = proto.Unmarshal(b, &bcRaw)
 	if err != nil {
@@ -149,6 +151,7 @@ func decodeBCN(b []byte) (block block.Block, wt WitnessList, err error) {
 		return
 	}
 	wt = *(bcRaw.WitnessList)
+	serialNum = bcRaw.SerialNum
 	return
 }
 
@@ -414,11 +417,11 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 }
 
 func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
-	block, witnessList, err := decodeBCN(b)
+	block, witnessList, serialNum, err := decodeBCN(b)
 	if string(bc.LinkedRoot().HeadHash()) == string(block.HeadHash()) {
 		bc.LinkedRoot().WitnessList = witnessList
 	}
-	p.RecoverBlock(&block, witnessList)
+	p.RecoverBlock(&block, witnessList, serialNum)
 	return err
 }
 
