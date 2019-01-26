@@ -292,20 +292,20 @@ func (bc *BlockCacheImpl) hmdel(hash []byte) {
 }
 
 func (bc *BlockCacheImpl) nmget(num int64) (*BlockCacheNode, bool) {
-	rtnI, ok := bc.hash2node.Load(num)
+	rtnI, ok := bc.number2node.Load(num)
 	if !ok {
 		return nil, false
 	}
 	bcn, okn := rtnI.(*BlockCacheNode)
 	if !okn {
-		bc.hash2node.Delete(num)
+		bc.number2node.Delete(num)
 		return nil, false
 	}
 	return bcn, true
 }
 
 func (bc *BlockCacheImpl) nmset(num int64, bcn *BlockCacheNode) {
-	bc.hash2node.Store(num, bcn)
+	bc.number2node.Store(num, bcn)
 }
 
 func (bc *BlockCacheImpl) nmdel(num int64) {
