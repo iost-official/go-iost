@@ -223,6 +223,6 @@ func TestInjectGas(t *testing.T) {
 	Convey("test bignumber0", t, func() {
 		_, cost0, err := vmPool.LoadAndCall(host, code, "bignumber0", "")
 		So(err, ShouldBeNil)
-		So(cost0.ToGas(), ShouldEqual, int64(436))
+		So(cost0.ToGas(), ShouldEqual, int64(433))
 	})
 }

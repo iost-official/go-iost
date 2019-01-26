@@ -2,9 +2,6 @@
 
 const _this = this;
 class Danger {
-    constructor() {
-    }
-
     bigArray() {
         return new Array(1000000);
     }

@@ -108,9 +108,6 @@ class Game {
 }
 
 class Gobang {
-    constructor() {
-    }
-
     init() {
         storage.put("nonce", JSON.stringify(0));
     }
