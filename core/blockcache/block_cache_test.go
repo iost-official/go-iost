@@ -236,13 +236,10 @@ func TestVote(t *testing.T) {
 	Convey("test api", t, func() {
 		var wl WitnessList
 		pl := []string{"p1", "p2", "p3"}
-		var pn int64 = 1
 		al := []string{"a1", "a2", "a3"}
 
 		wl.SetPending(pl)
 		So(StringSliceEqual(pl, wl.Pending()), ShouldBeTrue)
-		wl.SetPendingNum(pn)
-		So(wl.PendingNum(), ShouldEqual, pn)
 		wl.SetActive(al)
 		So(StringSliceEqual(al, wl.Active()), ShouldBeTrue)
 

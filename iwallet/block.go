@@ -25,20 +25,22 @@ import (
 var method string
 var complete bool
 
-// blockCmd represents the block command
+// blockCmd represents the block command.
 var blockCmd = &cobra.Command{
 	Use:   "block",
-	Short: "print block info",
-	Long:  `print block info, find by block number or hash`,
-	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Short: "Print block info",
+	Long:  `Print block info by block number or hash`,
+	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			fmt.Println(`Error: block num or hash not given`)
-			return
+			return fmt.Errorf("Please enter the block number or hash")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		var blockInfo *rpcpb.BlockResponse
 		var num int64
-		if method == "num" {
+		switch method {
+		case "num":
 			num, err = strconv.ParseInt(args[0], 10, 64)
 			if err != nil {
 				fmt.Printf("invalid block number %v\n", err)
@@ -49,14 +51,14 @@ var blockCmd = &cobra.Command{
 				fmt.Printf(err.Error())
 				return
 			}
-		} else if method == "hash" {
+		case "hash":
 			blockInfo, err = sdk.getGetBlockByHash(args[0], complete)
 			if err != nil {
 				fmt.Printf(err.Error())
 				return
 			}
-		} else {
-			fmt.Println("please enter correct method arg")
+		default:
+			fmt.Printf("Wrong method '%v'. Supported methods: 'num', 'hash'\n", method)
 			return
 		}
 		fmt.Println(marshalTextString(blockInfo))
@@ -66,6 +68,6 @@ var blockCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(blockCmd)
-	blockCmd.Flags().StringVarP(&method, "method", "m", "num", "find by block num or hash")
-	blockCmd.Flags().BoolVarP(&complete, "complete", "c", false, "indicate whether to fetch all the trxs in the block or not")
+	blockCmd.Flags().StringVarP(&method, "method", "m", "num", "find by block num (set as 'num') or hash (set as 'hash')")
+	blockCmd.Flags().BoolVarP(&complete, "complete", "c", false, "indicate whether to fetch all the transactions in the block or not")
 }

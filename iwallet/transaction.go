@@ -16,14 +16,15 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
-// transactionCmd represents the transaction command
+// transactionCmd represents the transaction command.
 var transactionCmd = &cobra.Command{
 	Use:   "transaction",
-	Short: "find transactions",
-	Long:  `find transaction by transaction hash`,
+	Short: "Find transactions",
+	Long:  `Find transaction by transaction hash`,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		if len(args) < 1 {
 			fmt.Println(`Error: transaction hash not given`)

@@ -328,7 +328,8 @@ func verifyBlockBase(blk, parent *block.Block, witnessList *blockcache.WitnessLi
 		if a.ActionName != baseTx.Actions[i].ActionName ||
 			a.Contract != baseTx.Actions[i].Contract ||
 			a.Data != baseTx.Actions[i].Data {
-			return fmt.Errorf("block base tx not match")
+			ilog.Warnf("witnessList: %+v", witnessList)
+			return fmt.Errorf("block base tx not match, verifyBaseTxAction: %+v\n, localBaseTxAction: %+v", a, baseTx.Actions[i])
 		}
 	}
 	isolator := &vm.Isolator{}
@@ -385,7 +386,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 }
 
 func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
-	if r.Status.Code != receipt.Status.Code || r.Status.Message != r.Status.Message {
+	if r.Status.Code != receipt.Status.Code || r.Status.Message != receipt.Status.Message {
 		return fmt.Errorf("receipt not match, status not same: %v != %v \n%v\n%v", r.Status, receipt.Status, r, receipt)
 	}
 	if r.GasUsage != receipt.GasUsage {

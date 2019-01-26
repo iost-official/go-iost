@@ -32,12 +32,12 @@ type key struct {
 // keyCmd represents the keyPair command
 var keyCmd = &cobra.Command{
 	Use:   "key",
-	Short: "create a keyPair",
-	Long:  `create a keyPair`,
+	Short: "Create a key pair",
+	Long:  `Create a key pair`,
 	RunE: func(cmd *cobra.Command, args []string) (err error) {
 		n, err := account.NewKeyPair(nil, sdk.GetSignAlgo())
 		if err != nil {
-			fmt.Printf("NewKeyPair error %v\nn", err)
+			fmt.Printf("NewKeyPair error: %v\n", err)
 			return
 		}
 
@@ -48,7 +48,7 @@ var keyCmd = &cobra.Command{
 
 		ret, err := json.MarshalIndent(k, "", "    ")
 		if err != nil {
-			fmt.Printf("error %v\n", err)
+			fmt.Printf("MarshalIndent error: %v\n", err)
 			return
 		}
 		fmt.Println(string(ret))

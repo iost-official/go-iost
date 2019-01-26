@@ -9,11 +9,16 @@ message bcMessage{
 
 enum bcMessageType {
     LinkType = 0;
-    SetRootType = 1;
+    UpdateActiveType = 1;
 }
 
 message BlockCacheRaw{
     bytes blockBytes = 1;
+    WitnessList witnessList = 2;
+}
+
+message UpdateActiveRaw{
+    bytes blockHashBytes = 1;
     WitnessList witnessList = 2;
 }
 

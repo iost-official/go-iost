@@ -2,14 +2,15 @@ package iwallet
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc/pb"
-	"io/ioutil"
-	"os"
 )
 
 func readFile(src string) ([]byte, error) {
@@ -98,7 +99,7 @@ func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 	}
 	var actions = make([]*rpcpb.Action, 0)
 	for i := 0; i < len(args); i += 3 {
-		act := NewAction(args[i], args[i+1], args[i+2]) //check sth here
+		act := NewAction(args[i], args[i+1], args[i+2]) // Add some checks here.
 		actions = append(actions, act)
 	}
 	return actions, nil
