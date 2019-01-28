@@ -8,8 +8,9 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 
-	"github.com/iost-official/go-iost/ilog"
 	"reflect"
+
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // Constant of itest
@@ -749,6 +750,22 @@ func (t *ITest) GetAccount(name string) (*Account, error) {
 	}
 
 	return account, nil
+}
+
+// GetContractStorage will get contract storage by contract id, key and field
+func (t *ITest) GetContractStorage(id, key, field string) (data string, hash string, number int64, err error) {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	return client.GetContractStorage(id, key, field)
+}
+
+// GetBlockByNumber will get block by number
+func (t *ITest) GetBlockByNumber(number int64) (*Block, error) {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	return client.GetBlockByNumber(number)
 }
 
 // SendTransactionN will send n transaction to blockchain concurrently

@@ -621,6 +621,10 @@ message GetContractStorageRequest {
 message GetContractStorageResponse {
     // the json string data
     string data = 1;
+    // block hash
+    string block_hash = 2;
+    // block number
+    int64 block_number = 3;
 }
 
 // The message defines get contract storage request.
@@ -637,6 +641,10 @@ message GetContractStorageFieldsRequest {
 message GetContractStorageFieldsResponse {
     // the fields.
     repeated string fields = 1;
+    // block hash
+    string block_hash = 2;
+    // block number
+    int64 block_number = 3;
 }
 
 // The message defines send transaction response.
