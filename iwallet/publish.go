@@ -22,30 +22,31 @@ import (
 
 var update bool
 
-// publishCmd represents the compile command.
+// publishCmd represents the publish command.
 var publishCmd = &cobra.Command{
-	Use:   "publish",
-	Short: "Publish a contract",
-	Long: `Publish a contract by a contract and an abi file
-	Example:
-		iwallet publish ./example.js ./example.js.abi
-		iwallet publish -u ./example.js ./example.js.abi contractID [updateID]
-	`,
-
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Use:     "publish codePath abiPath [contractID [updateID]]",
+	Aliases: []string{"pub"},
+	Short:   "Publish a contract",
+	Long:    `Publish a contract by a contract and an abi file`,
+	Example: `  iwallet publish ./example.js ./example.js.abi
+  iwallet publish ./example.js ./example.js.abi -u ContractXXX`,
+	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			fmt.Println(`Usage: iwallet publish ./example.js ./example.js.abi`)
-			return
+			cmd.Usage()
+			return fmt.Errorf("please enter the code path and the abi path")
 		}
+		if update {
+			cmd.Usage()
+			return fmt.Errorf("please enter the contract id")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		codePath := args[0]
 		abiPath := args[1]
 
 		conID := ""
 		if update {
-			if len(args) < 3 {
-				fmt.Println("Please enter the contract id")
-				return
-			}
 			conID = args[2]
 		}
 		updateID := ""
@@ -53,15 +54,13 @@ var publishCmd = &cobra.Command{
 			updateID = args[3]
 		}
 
-		err = sdk.LoadAccount()
+		err := sdk.LoadAccount()
 		if err != nil {
-			fmt.Printf("Failed to load account: %v\n", err)
-			return
+			return fmt.Errorf("failed to load account: %v", err)
 		}
 		_, txHash, err := sdk.PublishContract(codePath, abiPath, conID, update, updateID)
 		if err != nil {
-			fmt.Printf("Failed to create tx: %v\n", err)
-			return
+			return fmt.Errorf("failed to create tx: %v", err)
 		}
 		if sdk.checkResult {
 			if err := sdk.checkTransaction(txHash); err != nil {

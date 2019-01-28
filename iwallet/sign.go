@@ -30,26 +30,30 @@ var signCmd = &cobra.Command{
 	Use:   "sign",
 	Short: "Sign a tx loaded from given file and save the signature as a binary file",
 	Long:  `Sign a tx loaded from given file (--tx_file) and save the signature as a binary file (--output)`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Args: func(cmd *cobra.Command, args []string) error {
 		if outputFile == "" {
+			cmd.Usage()
 			return fmt.Errorf("output file name should be provided with --output flag")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		trx := &rpcpb.TransactionRequest{}
-		err = loadProto(txFile, trx)
+		err := loadProto(txFile, trx)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load transaction file: %v", err)
 		}
 		kp, err := loadKeyPair(signKeyFile, sdk.GetSignAlgo())
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to load key pair: %v", err)
 		}
 		sig := sdk.getSignatureOfTx(trx, kp)
 		err = saveProto(sig, outputFile)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to save signature: %v", err)
 		}
 		fmt.Println("Successfully saved signature as:", outputFile)
-		return
+		return nil
 	},
 }
 
