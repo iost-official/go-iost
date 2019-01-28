@@ -3,9 +3,9 @@ package blockcache
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm/database"
+	"strings"
 )
 
 // SetPending set pending witness list
@@ -62,20 +62,14 @@ func (wl *WitnessList) UpdateInfo(mv db.MVCCDB) error {
 		if iAcc == nil {
 			continue
 		}
-
-		var acc []string
-		err := json.Unmarshal([]byte(iAcc.(string)), &acc)
-		if err != nil {
-			continue
-		}
-
-		jwl := database.MustUnmarshal(vi.MGet("vote_producer.iost-producerTable", acc[0]))
+		acc := strings.Trim(iAcc.(string), "\"")
+		jwl := database.MustUnmarshal(vi.MGet("vote_producer.iost-producerTable", acc))
 		if jwl == nil {
 			continue
 		}
 
 		var str WitnessInfo
-		err = json.Unmarshal([]byte(jwl.(string)), &str)
+		err := json.Unmarshal([]byte(jwl.(string)), &str)
 		if err != nil {
 			continue
 		}

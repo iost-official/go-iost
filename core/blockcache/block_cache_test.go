@@ -65,10 +65,10 @@ func TestBlockCache(t *testing.T) {
 		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
 	})
 	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerKeyToId-"+"aaaa").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-		return database.MustMarshal("[\"accaaaa\"]"), nil
+		return database.MustMarshal("\"accaaaa\""), nil
 	})
 	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerKeyToId-"+"bbbbb").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-		return database.MustMarshal("[\"accbbbbb\"]"), nil
+		return database.MustMarshal("\"accbbbbb\""), nil
 	})
 	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerTable-"+"accaaaa").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(`{"pubkey":"aaaaaa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b","loc":"aaloc","url":"aaurl","netId":"accaaaaNetId","isProducer":true,"status":1,"online":true}`), nil
