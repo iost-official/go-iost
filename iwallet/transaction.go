@@ -22,9 +22,10 @@ import (
 
 // transactionCmd represents the transaction command.
 var transactionCmd = &cobra.Command{
-	Use:   "transaction transactionHash",
-	Short: "Find transactions",
-	Long:  `Find transaction by transaction hash`,
+	Use:     "transaction transactionHash",
+	Aliases: []string{"tx"},
+	Short:   "Find transactions",
+	Long:    `Find transaction by transaction hash`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			cmd.Usage()
