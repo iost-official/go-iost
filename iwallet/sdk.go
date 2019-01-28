@@ -691,6 +691,7 @@ func txToBytes(t *rpcpb.TransactionRequest, withSign bool) []byte {
 	se.WriteInt64(int64(t.GasLimit * 100))
 	se.WriteInt64(t.Delay)
 	se.WriteInt32(int32(t.ChainId))
+	se.WriteBytes(nil)
 	se.WriteStringSlice(t.Signers)
 
 	actionBytes := make([][]byte, 0, len(t.Actions))

@@ -60,6 +60,7 @@ type Tx struct {
 	PublishSigns []*crypto.Signature `json:"-"`
 	ReferredTx   []byte              `json:"referred_tx"`
 	AmountLimit  []*contract.Amount  `json:"amountLimit"`
+	Reserved     []byte              `json:"reserved"`
 }
 
 // NewTx return a new Tx
@@ -424,6 +425,7 @@ func (t *Tx) ToBytes(l ToBytesLevel) []byte {
 	se.WriteInt64(t.GasLimit)
 	se.WriteInt64(t.Delay)
 	se.WriteInt32(int32(t.ChainID))
+	se.WriteBytes(t.Reserved)
 	se.WriteStringSlice(t.Signers)
 
 	actionBytes := make([][]byte, 0, len(t.Actions))
