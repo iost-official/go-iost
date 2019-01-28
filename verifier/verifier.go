@@ -340,7 +340,7 @@ func verifyBlockBase(blk, parent *block.Block, witnessList *blockcache.WitnessLi
 	if r.Status.Code != tx.Success {
 		return fmt.Errorf("block base tx receipt error: %v", r.Status.Message)
 	}
-	err = checkReceiptEqual(r, blk.Receipts[0])
+	err = checkReceiptEqual(blk.Receipts[0], r)
 	if err != nil {
 		return err
 	}

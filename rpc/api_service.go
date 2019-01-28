@@ -77,7 +77,7 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 
 // GetRAMInfo returns the chain info.
 func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(true)
+	dbVisitor, _, err := as.getStateDBVisitor(true)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +202,7 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -273,7 +273,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 // GetTokenBalance returns contract information corresponding to the given contract ID.
 func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetTokenBalanceResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +299,7 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 
 // GetToken721Balance returns balance of account of an specific token721 token.
 func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +317,7 @@ func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetToke
 
 // GetToken721Metadata returns metadata of an specific token721 token.
 func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721MetadataResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +329,7 @@ func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetTok
 
 // GetToken721Owner returns owner of an specific token721 token.
 func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721OwnerResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +341,7 @@ func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken7
 
 // GetContract returns contract information corresponding to the given contract ID.
 func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +377,7 @@ func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) 
 
 // GetContractStorage returns contract storage corresponding to the given key and field.
 func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -400,13 +400,15 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 		data = string(bytes)
 	}
 	return &rpcpb.GetContractStorageResponse{
-		Data: data,
+		Data:        data,
+		BlockHash:   common.Base58Encode(bcn.HeadHash()),
+		BlockNumber: bcn.Head.Number,
 	}, nil
 }
 
 // GetContractStorageFields returns contract storage corresponding to the given fields.
 func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +417,9 @@ func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.G
 	value, _ := h.GlobalMapKeys(req.GetId(), req.GetKey())
 
 	return &rpcpb.GetContractStorageFieldsResponse{
-		Fields: value,
+		Fields:      value,
+		BlockHash:   common.Base58Encode(bcn.HeadHash()),
+		BlockNumber: bcn.Head.Number,
 	}, nil
 }
 
@@ -532,7 +536,7 @@ func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor
 	return
 }
 
-func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, error) {
+func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, *blockcache.BlockCacheNode, error) {
 	var err error
 	var db *database.Visitor
 	// retry 3 times as block may be flushed
@@ -549,7 +553,7 @@ func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, e
 			ilog.Errorf("getStateDBVisitor err: %v", err)
 			continue
 		}
-		return db, nil
+		return db, b, nil
 	}
-	return nil, err
+	return nil, nil, err
 }

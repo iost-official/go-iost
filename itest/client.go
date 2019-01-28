@@ -113,6 +113,47 @@ func (c *Client) GetAccount(name string) (*Account, error) {
 	return account, nil
 }
 
+// GetContractStorage will get contract storage by contract id, key and field
+func (c *Client) GetContractStorage(id, key, field string) (data string, hash string, number int64, err error) {
+	data, hash, number = "", "", 0
+	grpc, err := c.getGRPC()
+	if err != nil {
+		return
+	}
+
+	resp, err := grpc.GetContractStorage(
+		context.Background(),
+		&rpcpb.GetContractStorageRequest{
+			Id:    id,
+			Key:   key,
+			Field: field,
+		},
+	)
+	if err != nil {
+		return
+	}
+	return resp.Data, resp.BlockHash, resp.BlockNumber, nil
+}
+
+// GetBlockByNumber will get block by number
+func (c *Client) GetBlockByNumber(number int64) (*Block, error) {
+	grpc, err := c.getGRPC()
+	if err != nil {
+		return nil, err
+	}
+
+	resp, err := grpc.GetBlockByNumber(
+		context.Background(),
+		&rpcpb.GetBlockByNumberRequest{
+			Number: number,
+		},
+	)
+	if err != nil {
+		return nil, err
+	}
+	return NewBlockFromPb(resp.Block), nil
+}
+
 // SendTransaction will send transaction to blockchain
 func (c *Client) SendTransaction(transaction *Transaction, check bool) (string, error) {
 	grpc, err := c.getGRPC()
