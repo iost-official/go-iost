@@ -17,7 +17,6 @@ package iwallet
 import (
 	"fmt"
 
-	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
@@ -38,8 +37,7 @@ var saveCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var actions []*rpcpb.Action
-		actions, err = actionsFromFlags(args)
+		actions, err := actionsFromFlags(args)
 		if err != nil {
 			return err
 		}
