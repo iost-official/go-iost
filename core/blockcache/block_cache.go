@@ -163,7 +163,7 @@ func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		Children:     make(map[*BlockCacheNode]bool),
 		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
-			WitnessInfo: make(map[string]*WitnessInfo),
+			WitnessInfo: make([]string, 0, 0),
 		},
 	}
 	if blk == nil {
@@ -186,7 +186,7 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		Children:     make(map[*BlockCacheNode]bool),
 		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
-			WitnessInfo: make(map[string]*WitnessInfo),
+			WitnessInfo: make([]string, 0, 0),
 		},
 	}
 	if blk != nil {
