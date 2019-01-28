@@ -363,6 +363,7 @@ func TestGas_Increase(t *testing.T) {
 }
 
 func TestGas_TGas(t *testing.T) {
+	t.Skip()
 	s := verifier.NewSimulator()
 	defer s.Clear()
 	createAccountsWithResource(s)
