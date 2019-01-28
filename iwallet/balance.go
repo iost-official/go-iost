@@ -22,22 +22,21 @@ import (
 
 // accountInfoCmd represents the balance command.
 var accountInfoCmd = &cobra.Command{
-	Use:   "balance",
+	Use:   "balance accoutID",
 	Short: "Check the information of a specified account",
-	Long:  `Check the information of a specified account, must followed by an account ID`,
+	Long:  `Check the information of a specified account`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			return fmt.Errorf("Please enter the account ID")
+			cmd.Usage()
+			return fmt.Errorf("please enter the account ID")
 		}
-		// Do some checks for arg[0] here.
 		return nil
 	},
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		info, err := sdk.getAccountInfo(id)
 		if err != nil {
-			fmt.Println(err)
-			return
+			return err
 		}
 		fmt.Println(marshalTextString(info))
 		return nil

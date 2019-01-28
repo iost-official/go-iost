@@ -34,11 +34,10 @@ var keyCmd = &cobra.Command{
 	Use:   "key",
 	Short: "Create a key pair",
 	Long:  `Create a key pair`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		n, err := account.NewKeyPair(nil, sdk.GetSignAlgo())
 		if err != nil {
-			fmt.Printf("NewKeyPair error: %v\n", err)
-			return
+			return fmt.Errorf("failed to new key pair: %v", err)
 		}
 
 		var k key
@@ -48,8 +47,7 @@ var keyCmd = &cobra.Command{
 
 		ret, err := json.MarshalIndent(k, "", "    ")
 		if err != nil {
-			fmt.Printf("MarshalIndent error: %v\n", err)
-			return
+			return fmt.Errorf("failed to marshal: %v", err)
 		}
 		fmt.Println(string(ret))
 		return nil
