@@ -24,6 +24,7 @@ message Tx {
     uint32 chain_id = 11;
     bytes referredTx = 12;
     repeated contract.Amount amountLimit = 13;
+    bytes reserved = 14;
 }
 
 message Receipt {

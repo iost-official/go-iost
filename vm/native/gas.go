@@ -26,7 +26,7 @@ func init() {
 	gasABIs.Register(constructor)
 	gasABIs.Register(pledgeGas)
 	gasABIs.Register(unpledgeGas)
-	gasABIs.Register(transferTGas)
+	//gasABIs.Register(transferTGas)
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
@@ -128,7 +128,7 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 	return finalCost, nil
 }
 
-var (
+var ( // nolint: deadcode
 	constructor = &abi{
 		name: "constructor",
 		args: []string{},
