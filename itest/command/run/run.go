@@ -16,6 +16,7 @@ var Command = cli.Command{
 		CommonVoteCaseCommand,
 		VoteCaseCommand,
 		VoteNodeCaseCommand,
+		BonusCaseCommand,
 		BenchmarkCommand,
 		BenchmarkTokenCommand,
 		BenchmarkToken721Command,
@@ -55,6 +56,11 @@ var Flags = []cli.Flag{
 		Name:  "anum",
 		Value: 100,
 		Usage: "The number of accounts to generated if no given account file",
+	},
+	cli.StringFlag{
+		Name:  "aname",
+		Value: "producer000",
+		Usage: "The account name to check/run actions",
 	},
 	cli.StringFlag{
 		Name:  "log, l",

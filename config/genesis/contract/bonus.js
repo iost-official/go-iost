@@ -81,12 +81,13 @@ class BonusContract {
     _updateRate() {
         // update rate every 7 days
         const lastTime = this._get("lastTime");
-        if (block.time < lastTime + 604800) {
+        if (block.time < lastTime + 604800000000000) {
             return;
         }
         const supply = new Float64(blockchain.callWithAuth("token.iost", "supply", ["iost"])[0]);
         const blockContrib = supply.multi(blockContribRatio).toFixed(8);
         this._put("blockContrib", blockContrib);
+        this._put("lastTime", block.time);
     }
 
     // issueContribute to witness

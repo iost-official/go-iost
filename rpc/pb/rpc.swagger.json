@@ -552,7 +552,7 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/rpcpbSubscribeResponse"
+              "$ref": "#/definitions/rpcpbSubscribeResponse"
             }
           }
         },
@@ -820,18 +820,6 @@
       ],
       "default": "SUCCESS",
       "description": "The enumeration defines transaction receipt status code.\n\n - SUCCESS: success\n - GAS_RUN_OUT: run out of gas\n - BALANCE_NOT_ENOUGH: balance not enough\n - WRONG_PARAMETER: wrong parameter\n - RUNTIME_ERROR: runtime error\n - TIMEOUT: run out of time\n - WRONG_TX_FORMAT: wrong transaction format\n - DUPLICATE_SET_CODE: more than one set code action in a transaction\n - UNKNOWN_ERROR: unknown error"
-    },
-    "protobufAny": {
-      "type": "object",
-      "properties": {
-        "type_url": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
     },
     "rpcpbAccount": {
       "type": "object",
@@ -1151,6 +1139,15 @@
             "type": "string"
           },
           "description": "the fields."
+        },
+        "block_hash": {
+          "type": "string",
+          "title": "block hash"
+        },
+        "block_number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
         }
       },
       "description": "The message defines get contract storage response."
@@ -1184,6 +1181,15 @@
         "data": {
           "type": "string",
           "title": "the json string data"
+        },
+        "block_hash": {
+          "type": "string",
+          "title": "block hash"
+        },
+        "block_number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
         }
       },
       "description": "The message defines get contract storage response."
@@ -1621,45 +1627,6 @@
         }
       },
       "description": "The message defines the account's vote info."
-    },
-    "runtimeStreamError": {
-      "type": "object",
-      "properties": {
-        "grpc_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "http_code": {
-          "type": "integer",
-          "format": "int32"
-        },
-        "message": {
-          "type": "string"
-        },
-        "http_status": {
-          "type": "string"
-        },
-        "details": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/protobufAny"
-          }
-        }
-      }
-    }
-  },
-  "x-stream-definitions": {
-    "rpcpbSubscribeResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/rpcpbSubscribeResponse"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "title": "Stream result of rpcpbSubscribeResponse"
     }
   }
 }
