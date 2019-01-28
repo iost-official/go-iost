@@ -40,7 +40,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 796800)
+			So(r.GasUsage, ShouldEqual, 800800)
 		})
 
 		Convey("test of token memo", func() {
@@ -77,8 +77,8 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "ContractDr12BzLb2fFtdhG3EVuHh3DFgHrHWwuPQGVu9YwdHoYd")
-		So(r.GasUsage, ShouldEqual, 24421800)
+		So(cname, ShouldEqual, "Contract63Y53NzXRuLE1Ri4ePm5ZReKAaQy7Fx6p8JPGjZXwvzf")
+		So(r.GasUsage, ShouldEqual, 24425800)
 		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2550))
 
 		r, err = s.Call(cname, "hello", "[]", acc.ID, acc.KeyPair)
@@ -652,7 +652,7 @@ func TestGasLimit2(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(7512900))
+			So(r.GasUsage, ShouldEqual, int64(7516900))
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "980")
