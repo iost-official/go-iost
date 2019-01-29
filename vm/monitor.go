@@ -209,12 +209,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			if !checkLimit(amountLimit, token, amount) {
 				return nil, cost,
 					fmt.Errorf("token %s exceed amountLimit in abi. need %v, got %v",
-						token, amount.ToString(), amountLimit)
+						token, amount.ToString(), amountLimit[token].ToString())
 			}
 			if !checkLimit(txAmountLimit, token, amount) {
 				return nil, cost,
 					fmt.Errorf("token %s exceed amountLimit in tx. need %v, got %v",
-						token, amount.ToString(), txAmountLimit)
+						token, amount.ToString(), txAmountLimit[token].ToString())
 			}
 		}
 	}
