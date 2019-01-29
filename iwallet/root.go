@@ -43,7 +43,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&sdk.verbose, "verbose", "", true, "print verbose information")
 	rootCmd.PersistentFlags().StringVarP(&sdk.accountName, "account", "", "", "which account to use")
 	rootCmd.PersistentFlags().StringVarP(&sdk.server, "server", "s", "localhost:30002", "set server of this client")
-	rootCmd.PersistentFlags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get balance on longest chain")
+	rootCmd.PersistentFlags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&sdk.checkResult, "check_result", "", true, "check publish/call status after sending to chain")
 	rootCmd.PersistentFlags().Float32VarP(&sdk.checkResultDelay, "check_result_delay", "", 3, "rpc checking will occur at [checkResultDelay] seconds after sending to chain.")
 	rootCmd.PersistentFlags().Int32VarP(&sdk.checkResultMaxRetry, "check_result_max_retry", "", 20, "max times to call grpc to check tx status")

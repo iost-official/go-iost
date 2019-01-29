@@ -26,8 +26,8 @@ import (
 var systemCmd = &cobra.Command{
 	Use:     "system",
 	Aliases: []string{"sys"},
-	Short:   "Call the common methods in system contracts",
-	Long:    `Call the common methods in system contracts`,
+	Short:   "Send system contract action to blockchain",
+	Long:    `Send system contract action to blockchain`,
 }
 
 func actionSender(contract, method string, methodArgs ...interface{}) func(cmd *cobra.Command, args []string) error {

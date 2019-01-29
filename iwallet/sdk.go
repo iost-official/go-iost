@@ -276,6 +276,21 @@ func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.Get
 	return value, nil
 }
 
+// GetProducerVoteInfo...
+func (s *SDK) GetProducerVoteInfo(r *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
+	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	defer conn.Close()
+	client := rpcpb.NewApiServiceClient(conn)
+	value, err := client.GetProducerVoteInfo(context.Background(), r)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {

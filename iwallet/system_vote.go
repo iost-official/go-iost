@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
@@ -36,7 +37,7 @@ var voteCmd = &cobra.Command{
 			cmd.Usage()
 			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[1], err)
 		}
-		return nil
+		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return actionSender("vote_producer.iost", "vote", sdk.accountName, args[0], args[1])(cmd, args)
@@ -57,7 +58,7 @@ var unvoteCmd = &cobra.Command{
 			cmd.Usage()
 			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[1], err)
 		}
-		return nil
+		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return actionSender("vote_producer.iost", "unvote", sdk.accountName, args[0], args[1])(cmd, args)
@@ -79,7 +80,7 @@ var registerCmd = &cobra.Command{
 			cmd.Usage()
 			return fmt.Errorf("please enter the public key")
 		}
-		return nil
+		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return actionSender("vote_producer.iost", "applyRegister", sdk.accountName, args[0], location, url, networkID, !isPartner)(cmd, args)
@@ -91,6 +92,9 @@ var unregisterCmd = &cobra.Command{
 	Short:   "Unregister from a producer",
 	Long:    `Unregister from a producer`,
 	Example: `  iwallet sys unregister`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return actionSender("vote_producer.iost", "applyUnregister", sdk.accountName)(cmd, args)
 	},
@@ -101,6 +105,9 @@ var loginCmd = &cobra.Command{
 	Short:   "Login as online state",
 	Long:    `Login as online state`,
 	Example: `  iwallet sys login`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return actionSender("vote_producer.iost", "logInProducer", sdk.accountName)(cmd, args)
 	},
@@ -110,8 +117,37 @@ var logoutCmd = &cobra.Command{
 	Short:   "Logout as offline state",
 	Long:    `Logout as offline state`,
 	Example: `  iwallet sys logout`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return actionSender("vote_producer.iost", "logOutProducer", sdk.accountName)(cmd, args)
+	},
+}
+
+var infoCmd = &cobra.Command{
+	Use:     "producerinfo producerID",
+	Aliases: []string{"info"},
+	Short:   "Show producer info",
+	Long:    `Show producer info`,
+	Example: `  iwallet sys producerinfo producer000`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) < 1 {
+			cmd.Usage()
+			return fmt.Errorf("please enter the producer id")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		info, err := sdk.GetProducerVoteInfo(&rpcpb.GetProducerVoteInfoRequest{
+			Account:        args[0],
+			ByLongestChain: sdk.useLongestChain,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Println(marshalTextString(info))
+		return nil
 	},
 }
 
@@ -128,4 +164,6 @@ func init() {
 
 	systemCmd.AddCommand(loginCmd)
 	systemCmd.AddCommand(logoutCmd)
+
+	systemCmd.AddCommand(infoCmd)
 }
