@@ -1,6 +1,8 @@
 package database
 
 import (
+	"errors"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/common"
 )
@@ -20,8 +22,26 @@ type VoteHandler struct {
 // AccountVoteInfo ...
 type AccountVoteInfo struct {
 	Option       string
-	Votes        string
-	ClearedVotes string
+	Votes        *common.Fixed
+	ClearedVotes *common.Fixed
+}
+
+var statusList = []string{
+	"APPLY",
+	"APPROVED",
+	"UNAPPLY",
+	"UNAPPLY_APPROVED",
+}
+
+// ProducerVoteInfo ...
+type ProducerVoteInfo struct {
+	Pubkey     string
+	Loc        string
+	URL        string
+	NetID      string
+	IsProducer bool
+	Status     string
+	Online     bool
 }
 
 // GetAccountVoteInfo ...
@@ -52,9 +72,52 @@ func (v *VoteHandler) GetAccountVoteInfo(account string) []*AccountVoteInfo {
 		}
 		result = append(result, &AccountVoteInfo{
 			Option:       pro,
-			Votes:        votes.Sub(cleared).ToString(),
-			ClearedVotes: cleared.ToString(),
+			Votes:        votes.Sub(cleared),
+			ClearedVotes: cleared,
 		})
 	}
 	return result
+}
+
+// GetProducerVoteInfo ...
+func (v *VoteHandler) GetProducerVoteInfo(account string) (*ProducerVoteInfo, error) {
+	producerInfoVal := v.MGet(VoteProducerContractName+"-producerTable", account)
+	producerInfoStr, ok := Unmarshal(producerInfoVal).(string)
+	if !ok {
+		return nil, errors.New("can't get producer info")
+	}
+	producerInfo, err := simplejson.NewJson([]byte(producerInfoStr))
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &ProducerVoteInfo{
+		Pubkey:     producerInfo.Get("pubkey").MustString(),
+		Loc:        producerInfo.Get("loc").MustString(),
+		URL:        producerInfo.Get("url").MustString(),
+		NetID:      producerInfo.Get("netId").MustString(),
+		IsProducer: producerInfo.Get("isProducer").MustBool(),
+		Status:     statusList[producerInfo.Get("status").MustInt(0)],
+		Online:     producerInfo.Get("online").MustBool(),
+	}
+	return ret, nil
+}
+
+// GetProducerVotes ...
+func (v *VoteHandler) GetProducerVotes(account string) (*common.Fixed, error) {
+	idVal := v.Get(VoteProducerContractName + "-voteId")
+	voteID, ok := Unmarshal(idVal).(string)
+	if !ok {
+		return nil, errors.New("vote not found")
+	}
+	voteInfoVal := v.MGet(VoteContractName+"-v_"+voteID, account)
+	voteInfoStr, ok := Unmarshal(voteInfoVal).(string)
+	if !ok {
+		return nil, errors.New("can't get producer vote info")
+	}
+	voteInfo, err := simplejson.NewJson([]byte(voteInfoStr))
+	if err != nil {
+		return nil, err
+	}
+	return common.NewFixed(voteInfo.Get("votes").MustString("0"), 8)
 }

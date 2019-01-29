@@ -265,6 +265,17 @@ func newMockAPI() rpcpb.ApiServiceServer {
 		Owner: "myaccount",
 	}, nil)
 
+	api.EXPECT().GetProducerVoteInfo(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetProducerVoteInfoResponse{
+		Pubkey:     "abcd",
+		Loc:        "earth",
+		Url:        "http://example.org",
+		NetId:      "xxx",
+		IsProducer: true,
+		Status:     "APPROVED",
+		Online:     true,
+		Votes:      123.0,
+	}, nil)
+
 	api.EXPECT().GetContract(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.Contract{
 		Id:       "Contract12312131",
 		Code:     "print helloworld",

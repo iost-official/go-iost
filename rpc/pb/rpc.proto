@@ -93,6 +93,13 @@ service ApiService {
         };
     }
 
+    // get producer vote infomation
+    rpc GetProducerVoteInfo (GetProducerVoteInfoRequest) returns (GetProducerVoteInfoResponse) {
+        option (google.api.http) = {
+            get: "/getProducerVoteInfo/{account}/{by_longest_chain}"
+        };
+    }
+
     // get contract
     rpc GetContract (GetContractRequest) returns (Contract) {
         option (google.api.http) = {
@@ -463,9 +470,35 @@ message VoteInfo {
     // option name
     string option = 1;
     // votes
-    string votes = 2;
+    double votes = 2;
     // cleared votes
-    string cleared_votes = 3;
+    double cleared_votes = 3;
+}
+
+message GetProducerVoteInfoRequest {
+    // account name
+    string account = 1;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 2;
+}
+
+message GetProducerVoteInfoResponse {
+    // producer's public key
+    string pubkey = 1;
+    // producer's location
+    string loc = 2;
+    // producer's url
+    string url = 3;
+    // producer's net id
+    string net_id = 4;
+    // is producer
+    bool is_producer = 5;
+    // is approved
+    string status = 6;
+    // is online
+    bool online = 7;
+    // votes
+    double votes = 8;
 }
 
 message GasRatioResponse {
