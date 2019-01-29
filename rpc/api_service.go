@@ -65,12 +65,6 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		Id:        as.p2pService.ID(),
 		PeerCount: int32(len(p2pNeighbors)),
 	}
-	for _, p := range p2pNeighbors {
-		networkInfo.PeerInfo = append(networkInfo.PeerInfo, &rpcpb.PeerInfo{
-			Id:   p.ID(),
-			Addr: p.Addr(),
-		})
-	}
 	res.Network = networkInfo
 	return res, nil
 }
@@ -497,6 +491,9 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
+	if !as.bv.Config().RPC.ExecTx {
+		return nil, errors.New("The node has't enabled this method")
+	}
 	t := toCoreTx(req)
 	receipt, err := as.tryTransaction(t)
 	if err != nil {
