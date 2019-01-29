@@ -284,6 +284,40 @@
         ]
       }
     },
+    "/getProducerVoteInfo/{account}/{by_longest_chain}": {
+      "get": {
+        "summary": "get producer vote infomation",
+        "operationId": "GetProducerVoteInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetProducerVoteInfoResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "account",
+            "description": "account name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getRAMInfo": {
       "get": {
         "summary": "get current blockchain ram information",
@@ -1194,6 +1228,46 @@
       },
       "description": "The message defines get contract storage response."
     },
+    "rpcpbGetProducerVoteInfoResponse": {
+      "type": "object",
+      "properties": {
+        "pubkey": {
+          "type": "string",
+          "title": "producer's public key"
+        },
+        "loc": {
+          "type": "string",
+          "title": "producer's location"
+        },
+        "url": {
+          "type": "string",
+          "title": "producer's url"
+        },
+        "net_id": {
+          "type": "string",
+          "title": "producer's net id"
+        },
+        "is_producer": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "is producer"
+        },
+        "status": {
+          "type": "string",
+          "title": "is approved"
+        },
+        "online": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "is online"
+        },
+        "votes": {
+          "type": "number",
+          "format": "double",
+          "title": "votes"
+        }
+      }
+    },
     "rpcpbGetToken721BalanceResponse": {
       "type": "object",
       "properties": {
@@ -1618,11 +1692,13 @@
           "title": "option name"
         },
         "votes": {
-          "type": "string",
+          "type": "number",
+          "format": "double",
           "title": "votes"
         },
         "cleared_votes": {
-          "type": "string",
+          "type": "number",
+          "format": "double",
           "title": "cleared votes"
         }
       },

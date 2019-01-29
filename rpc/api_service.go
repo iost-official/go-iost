@@ -263,8 +263,8 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	for _, v := range voteInfo {
 		ret.VoteInfos = append(ret.VoteInfos, &rpcpb.VoteInfo{
 			Option:       v.Option,
-			Votes:        v.Votes,
-			ClearedVotes: v.ClearedVotes,
+			Votes:        v.Votes.ToFloat(),
+			ClearedVotes: v.ClearedVotes.ToFloat(),
 		})
 	}
 
@@ -372,6 +372,32 @@ func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) 
 	return &rpcpb.GasRatioResponse{
 		LowestGasRatio: lowest,
 		MedianGasRatio: mid,
+	}, nil
+}
+
+// GetProducerVoteInfo returns producers's vote info
+func (as *APIService) GetProducerVoteInfo(ctx context.Context, req *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	votes, err := dbVisitor.GetProducerVotes(req.Account)
+	if err != nil {
+		return nil, err
+	}
+	info, err := dbVisitor.GetProducerVoteInfo(req.Account)
+	if err != nil {
+		return nil, err
+	}
+	return &rpcpb.GetProducerVoteInfoResponse{
+		Pubkey:     info.Pubkey,
+		Loc:        info.Loc,
+		Url:        info.URL,
+		NetId:      info.NetID,
+		IsProducer: info.IsProducer,
+		Status:     info.Status,
+		Online:     info.Online,
+		Votes:      votes.ToFloat(),
 	}, nil
 }
 

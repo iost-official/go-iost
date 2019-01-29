@@ -428,6 +428,44 @@ func request_ApiService_GetGasRatio_0(ctx context.Context, marshaler runtime.Mar
 
 }
 
+func request_ApiService_GetProducerVoteInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ApiServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetProducerVoteInfoRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["account"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "account")
+	}
+
+	protoReq.Account, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "account", err)
+	}
+
+	val, ok = pathParams["by_longest_chain"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "by_longest_chain")
+	}
+
+	protoReq.ByLongestChain, err = runtime.Bool(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "by_longest_chain", err)
+	}
+
+	msg, err := client.GetProducerVoteInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
 func request_ApiService_GetContract_0(ctx context.Context, marshaler runtime.Marshaler, client ApiServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetContractRequest
 	var metadata runtime.ServerMetadata
@@ -857,6 +895,26 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
+	mux.Handle("GET", pattern_ApiService_GetProducerVoteInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ApiService_GetProducerVoteInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ApiService_GetProducerVoteInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("GET", pattern_ApiService_GetContract_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1007,6 +1065,8 @@ var (
 
 	pattern_ApiService_GetGasRatio_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getGasRatio"}, ""))
 
+	pattern_ApiService_GetProducerVoteInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getProducerVoteInfo", "account", "by_longest_chain"}, ""))
+
 	pattern_ApiService_GetContract_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getContract", "id", "by_longest_chain"}, ""))
 
 	pattern_ApiService_GetContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorage"}, ""))
@@ -1046,6 +1106,8 @@ var (
 	forward_ApiService_GetToken721Owner_0 = runtime.ForwardResponseMessage
 
 	forward_ApiService_GetGasRatio_0 = runtime.ForwardResponseMessage
+
+	forward_ApiService_GetProducerVoteInfo_0 = runtime.ForwardResponseMessage
 
 	forward_ApiService_GetContract_0 = runtime.ForwardResponseMessage
 
