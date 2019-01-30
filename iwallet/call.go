@@ -32,6 +32,9 @@ var callCmd = &cobra.Command{
 	The method parameters should be a string with format '["arg0","arg1",...]'.`,
 	Example: `  iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'
   iwallet call --tx_file tx.proto`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		trx := &rpcpb.TransactionRequest{}
 		if txFile != "" {

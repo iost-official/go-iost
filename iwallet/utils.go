@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/spf13/cobra"
 )
 
 func readFile(src string) ([]byte, error) {
@@ -103,4 +104,12 @@ func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 		actions = append(actions, act)
 	}
 	return actions, nil
+}
+
+func checkAccount(cmd *cobra.Command) error {
+	if sdk.accountName == "" {
+		cmd.Usage()
+		return fmt.Errorf("please provide the account name with flag --account")
+	}
+	return nil
 }

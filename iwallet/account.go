@@ -220,6 +220,7 @@ func importAcc(name string, args []string) {
 	err = sdk.SaveAccount(name, keyPair)
 	if err != nil {
 		fmt.Printf("saveAccount failed %v\n", err)
+		return
 	}
 
 	fmt.Println("Successfully imported account")
