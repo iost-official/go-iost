@@ -54,6 +54,10 @@ class Danger {
         }
         return r.length;
     }
+
+    jsonparse() {
+        JSON.parse({a:1});
+    }
 };
 
 module.exports = function () {
