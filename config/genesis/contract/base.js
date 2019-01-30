@@ -1,4 +1,4 @@
-const producerPermission = "active";
+const activePermission = "active";
 const voteStatInterval = 1200;
 const issueInterval = 172800;
 
@@ -12,11 +12,12 @@ class Base {
         if(bn !== 0) {
             throw new Error("init out of genesis block")
         }
-        this._put("adminID", adminID);
+        storage.put("adminID", adminID);
     }
+
     can_update(data) {
-        const admin = this._get("adminID");
-        this._requireAuth(admin, producerPermission);
+        const admin = storage.get("adminID");
+        this._requireAuth(admin, activePermission);
         return true;
     }
 

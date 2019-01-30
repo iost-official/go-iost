@@ -30,7 +30,7 @@ func Test_Base(t *testing.T) {
 
 		createAccountsWithResource(s)
 		prepareToken(t, s, acc0)
-		prepareProducerVote(t, s, acc0)
+		prepareNewProducerVote(t, s, acc0)
 		for _, acc := range testAccounts[:6] {
 			r, err := s.Call("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc.ID, acc.KeyPair)
 			So(err, ShouldBeNil)

@@ -94,7 +94,8 @@ func Test_VoteBonus(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "invalid amount: negative or greater than contribute")
 
-		r, err = s.Call("vote_producer.iost", "candidateWithdraw", fmt.Sprintf(`["%s"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+		// withdraw by admin
+		r, err = s.Call("vote_producer.iost", "candidateWithdraw", fmt.Sprintf(`["%s"]`, acc1.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(397558880+60606062))                 // 60606062 = (3333333410*(2/55))/2
@@ -280,16 +281,17 @@ func Test_PartnerBonus(t *testing.T) {
 		So(s.Visitor.TokenBalance("iost", acc6.ID), ShouldEqual, int64(212121217)) // not change
 		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103333333410-212121217))
 
-		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		// withdraw by admin
+		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%s"]`, acc2.ID), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(181818186))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(102939394007))
+		So(s.Visitor.TokenBalance("iost", acc2.ID), ShouldEqual, int64(30303031))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103090909162))
 
-		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%s"]`, acc2.ID), acc2.ID, acc2.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(181818186))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(102939394007))
+		So(s.Visitor.TokenBalance("iost", acc2.ID), ShouldEqual, int64(30303031))
+		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103090909162))
 	})
 }

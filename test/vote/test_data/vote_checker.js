@@ -21,7 +21,7 @@ class VoteChecker {
 
     _call(contract, api, args) {
         const ret = blockchain.callWithAuth(contract, api, JSON.stringify(args));
-        if (ret && Array.isArray(ret) && ret.length === 1) {
+        if (ret && Array.isArray(ret) && ret.length >= 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
