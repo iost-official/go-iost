@@ -43,8 +43,6 @@ var (
 	subSlotTime       = 500 * time.Millisecond
 	genBlockTime      = 400 * time.Millisecond
 	last2GenBlockTime = 50 * time.Millisecond
-	tWitness          = ""
-	tContinuousNum    = 0
 )
 
 type verifyBlockMessage struct {
@@ -332,7 +330,6 @@ func (p *PoB) scheduleLoop() {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = slotOfSec(t.Unix())
 				generateBlockTicker := time.NewTicker(subSlotTime)
-				generateTxsNum = 0
 				for num := 0; num < continuousNum; num++ {
 					p.gen(num, pTx, head)
 					if num == continuousNum-1 {
@@ -348,10 +345,7 @@ func (p *PoB) scheduleLoop() {
 					}
 				}
 				close(p.quitGenerateMode)
-				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
-			} else if witnessOfNanoSec(t.UnixNano(), witnessList) != pubkey {
-				metricsTxSize.Set(0, nil)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
@@ -477,19 +471,15 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	p.txPool.AddLinkedNode(node)
 
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+	metricsTxSize.Set(float64(len(node.Txs)), nil)
 
 	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
 	}
 
 	if node.Head.Witness != p.account.ReadablePubkey() {
-		if tWitness != node.Head.Witness {
-			tWitness = node.Head.Witness
-			tContinuousNum = 0
-		}
 		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
-			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
-		tContinuousNum++
+			node.SerialNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
 	}
 
 	for child := range node.Children {
