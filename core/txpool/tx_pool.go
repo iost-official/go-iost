@@ -286,17 +286,6 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 		return fmt.Errorf("VerifyError %v", err)
 	}
 
-	if t.IsDefer() {
-		referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
-		if err != nil {
-			return fmt.Errorf("get referred tx error, %v", err)
-		}
-		err = t.VerifyDefer(referredTx)
-		if err != nil {
-			return err
-		}
-	}
-
 	return nil
 }
 

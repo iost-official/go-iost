@@ -2,7 +2,6 @@ package pob
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
@@ -130,16 +129,6 @@ func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessL
 				return err
 			}
 
-		}
-		if t.IsDefer() {
-			referredTx, err := chain.GetTx(t.ReferredTx)
-			if err != nil {
-				return fmt.Errorf("get referred tx error, %v", err)
-			}
-			err = t.VerifyDefer(referredTx)
-			if err != nil {
-				return err
-			}
 		}
 	}
 	v := verifier.Verifier{}
