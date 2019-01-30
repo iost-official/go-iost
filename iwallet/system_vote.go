@@ -15,6 +15,7 @@
 package iwallet
 
 import (
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -105,7 +106,7 @@ var loginCmd = &cobra.Command{
 	Aliases: []string{"plogin"},
 	Short:   "Producer login as online state",
 	Long:    `Producer login as online state`,
-	Example: `  iwallet sys login`,
+	Example: `  iwallet sys plogin`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},
@@ -118,7 +119,7 @@ var logoutCmd = &cobra.Command{
 	Aliases: []string{"plogout"},
 	Short:   "Producer logout as offline state",
 	Long:    `Producer logout as offline state`,
-	Example: `  iwallet sys logout`,
+	Example: `  iwallet sys plogout`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},
@@ -132,7 +133,7 @@ var infoCmd = &cobra.Command{
 	Aliases: []string{"pinfo"},
 	Short:   "Show producer info",
 	Long:    `Show producer info`,
-	Example: `  iwallet sys producerinfo producer000`,
+	Example: `  iwallet sys pinfo producer000`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			cmd.Usage()
@@ -153,6 +154,55 @@ var infoCmd = &cobra.Command{
 	},
 }
 
+func getProducerList(key string) ([]string, error) {
+	response, err := sdk.GetContractStorage(&rpcpb.GetContractStorageRequest{
+		Id:  "vote_producer.iost",
+		Key: key,
+	})
+	if err != nil {
+		return nil, err
+	}
+	var list []string
+	err = json.Unmarshal([]byte(response.Data), &list)
+	if err != nil {
+		return nil, err
+	}
+	result := make([]string, len(list))
+	for i, producerKey := range list {
+		response, err := sdk.GetContractStorage(&rpcpb.GetContractStorageRequest{
+			Id:    "vote_producer.iost",
+			Key:   "producerKeyToId",
+			Field: producerKey,
+		})
+		if err != nil {
+			return nil, err
+		}
+		result[i] = response.Data
+	}
+	return result, nil
+}
+
+var listCmd = &cobra.Command{
+	Use:     "producer-list",
+	Aliases: []string{"plist"},
+	Short:   "Show current/pending producer list",
+	Long:    `Show current/pending producer list`,
+	Example: `  iwallet sys plist`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		currentList, err := getProducerList("currentProducerList")
+		if err != nil {
+			return err
+		}
+		fmt.Println("Current producer list:", currentList)
+		pendingList, err := getProducerList("pendingProducerList")
+		if err != nil {
+			return err
+		}
+		fmt.Println("Pending producer list:", pendingList)
+		return nil
+	},
+}
+
 func init() {
 	systemCmd.AddCommand(voteCmd)
 	systemCmd.AddCommand(unvoteCmd)
@@ -168,4 +218,5 @@ func init() {
 	systemCmd.AddCommand(logoutCmd)
 
 	systemCmd.AddCommand(infoCmd)
+	systemCmd.AddCommand(listCmd)
 }
