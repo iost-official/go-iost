@@ -218,6 +218,14 @@ var (
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.CancelDelaytx(args[0].(string))
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost.AddAssign(h.Receipt(string(message)))
 			return []interface{}{}, cost, err
 		},
 	}

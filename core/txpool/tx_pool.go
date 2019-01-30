@@ -168,16 +168,15 @@ func (pool *TxPImpl) verifyWorkers() {
 
 func (pool *TxPImpl) processDelaytx(blk *block.Block) {
 	for i, t := range blk.Txs {
-		if t.Delay > 0 {
+		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
 			pool.deferServer.StoreDeferTx(t)
 		}
 		if t.IsDefer() {
 			pool.deferServer.DelDeferTx(t)
 		}
-		if cancelHash, exist := t.CanceledDelaytxHash(); exist {
-			if blk.Receipts[i].Status.Code == tx.Success {
-				pool.deferServer.DelDeferTxByHash(cancelHash)
-			}
+		canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
+		for _, canceledHash := range canceledDelayHashes {
+			pool.deferServer.DelDeferTxByHash(canceledHash)
 		}
 	}
 }
