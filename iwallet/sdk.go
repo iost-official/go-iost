@@ -276,7 +276,7 @@ func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.Get
 	return value, nil
 }
 
-// GetProducerVoteInfo...
+// GetProducerVoteInfo ...
 func (s *SDK) GetProducerVoteInfo(r *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {

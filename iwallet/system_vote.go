@@ -101,9 +101,10 @@ var unregisterCmd = &cobra.Command{
 }
 
 var loginCmd = &cobra.Command{
-	Use:     "login",
-	Short:   "Login as online state",
-	Long:    `Login as online state`,
+	Use:     "producer-login",
+	Aliases: []string{"plogin"},
+	Short:   "Producer login as online state",
+	Long:    `Producer login as online state`,
 	Example: `  iwallet sys login`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
@@ -113,9 +114,10 @@ var loginCmd = &cobra.Command{
 	},
 }
 var logoutCmd = &cobra.Command{
-	Use:     "logout",
-	Short:   "Logout as offline state",
-	Long:    `Logout as offline state`,
+	Use:     "producer-logout",
+	Aliases: []string{"plogout"},
+	Short:   "Producer logout as offline state",
+	Long:    `Producer logout as offline state`,
 	Example: `  iwallet sys logout`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
@@ -126,8 +128,8 @@ var logoutCmd = &cobra.Command{
 }
 
 var infoCmd = &cobra.Command{
-	Use:     "producerinfo producerID",
-	Aliases: []string{"info"},
+	Use:     "producer-info producerID",
+	Aliases: []string{"pinfo"},
 	Short:   "Show producer info",
 	Long:    `Show producer info`,
 	Example: `  iwallet sys producerinfo producer000`,
