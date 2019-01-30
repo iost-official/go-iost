@@ -1,11 +1,12 @@
 package common
 
 import (
+	"os"
+	"time"
+
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/spf13/viper"
 	"gopkg.in/yaml.v2"
-	"os"
-	"time"
 )
 
 // Constant of limit
@@ -80,6 +81,7 @@ type RPCConfig struct {
 	GRPCAddr     string
 	AllowOrigins []string
 	TryTx        bool
+	ExecTx       bool
 }
 
 // FileLogConfig is the config for filewriter of ilog.

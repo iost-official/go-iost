@@ -37,10 +37,6 @@ func newMockAPI() rpcpb.ApiServiceServer {
 		Network: &rpcpb.NetworkInfo{
 			Id:        "444",
 			PeerCount: 555,
-			PeerInfo: []*rpcpb.PeerInfo{
-				{Id: "id1", Addr: "addr1"},
-				{Id: "id2", Addr: "addr2"},
-			},
 		},
 	}, nil)
 
