@@ -325,7 +325,6 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
-			metricsTxSize.Set(0, nil)
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
@@ -351,6 +350,8 @@ func (p *PoB) scheduleLoop() {
 				close(p.quitGenerateMode)
 				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
+			} else if witnessOfNanoSec(t.UnixNano(), witnessList) != pubkey {
+				metricsTxSize.Set(0, nil)
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
