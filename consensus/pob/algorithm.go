@@ -19,11 +19,12 @@ import (
 )
 
 var (
-	errWitness     = errors.New("wrong witness")
-	errSignature   = errors.New("wrong signature")
-	errTxDup       = errors.New("duplicate tx")
-	errDoubleTx    = errors.New("double tx in block")
-	generateTxsNum = 0
+	errWitness                = errors.New("wrong witness")
+	errSignature              = errors.New("wrong signature")
+	errTxDup                  = errors.New("duplicate tx")
+	errDoubleTx               = errors.New("double tx in block")
+	errTxLenUnmatchReceiptLen = errors.New("tx len unmatch receipt len")
+	generateTxsNum            = 0
 )
 
 func generateBlock(
@@ -91,6 +92,9 @@ func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
 	hash := blk.HeadHash()
 	if !signature.Verify(hash) {
 		return errSignature
+	}
+	if len(blk.Txs) != len(blk.Receipts) {
+		return errTxLenUnmatchReceiptLen
 	}
 	return nil
 }
