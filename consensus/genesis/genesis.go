@@ -186,7 +186,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		ilog.Fatalf("invalid genesis initial time string %v (%v).", gConf.InitialTimestamp, err)
 		return nil, err
 	}
-	trx, acc, err := genGenesisTx(gConf)
+	trx, _, err := genGenesisTx(gConf)
 	if err != nil {
 		return nil, err
 	}
@@ -195,7 +195,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Version:    0,
 		ParentHash: nil,
 		Number:     0,
-		Witness:    acc.ID,
+		Witness:    "0",
 		Time:       t.UnixNano(),
 	}
 	v := verifier.Verifier{}

@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	. "github.com/golang/mock/gomock"
-	core_mock "github.com/iost-official/go-iost/core/mocks"
-	db_mock "github.com/iost-official/go-iost/db/mocks"
+	"github.com/iost-official/go-iost/core/mocks"
+	"github.com/iost-official/go-iost/db/mocks"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -63,6 +63,18 @@ func TestBlockCache(t *testing.T) {
 	})
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
+	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerKeyToId-"+"aaaa").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("\"accaaaa\""), nil
+	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerKeyToId-"+"bbbbb").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("\"accbbbbb\""), nil
+	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerTable-"+"accaaaa").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(`{"pubkey":"aaaaaa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b","loc":"aaloc","url":"aaurl","netId":"accaaaaNetId","isProducer":true,"status":1,"online":true}`), nil
+	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerTable-"+"accbbbbb").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(`{"pubkey":"bbbbbbPV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b","loc":"aaloc","url":"aaurl","netId":"accbbbbbNetId","isProducer":true,"status":1,"online":true}`), nil
 	})
 	statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		bhJson, _ := json.Marshal(b0.Head)
@@ -173,6 +185,17 @@ func TestBlockCache(t *testing.T) {
 
 		})
 
+		Convey("UpdateInfo", func() {
+			CleanBlockCacheWAL()
+			bc, err := NewBlockCache(global)
+			defer bc.CleanDir()
+			So(err, ShouldBeNil)
+			netId := []string{"accaaaaNetId", "accbbbbbNetId"}
+			b := common.StringSliceEqual(netId, bc.linkedRoot.NetID())
+			So(b, ShouldBeTrue)
+
+		})
+
 	})
 }
 
@@ -245,7 +268,8 @@ func TestVote(t *testing.T) {
 
 	})
 	Convey("test update", t, func() {
-		bc, _ := NewBlockCache(global)
+		bc, err := NewBlockCache(global)
+		So(err, ShouldBeNil)
 		defer bc.CleanDir()
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 		node1 := NewBCN(bc.linkedRoot, b1)

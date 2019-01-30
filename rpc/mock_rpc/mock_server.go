@@ -37,10 +37,6 @@ func newMockAPI() rpcpb.ApiServiceServer {
 		Network: &rpcpb.NetworkInfo{
 			Id:        "444",
 			PeerCount: 555,
-			PeerInfo: []*rpcpb.PeerInfo{
-				{Id: "id1", Addr: "addr1"},
-				{Id: "id2", Addr: "addr2"},
-			},
 		},
 	}, nil)
 
@@ -263,6 +259,17 @@ func newMockAPI() rpcpb.ApiServiceServer {
 	}, nil)
 	api.EXPECT().GetToken721Owner(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetToken721OwnerResponse{
 		Owner: "myaccount",
+	}, nil)
+
+	api.EXPECT().GetProducerVoteInfo(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.GetProducerVoteInfoResponse{
+		Pubkey:     "abcd",
+		Loc:        "earth",
+		Url:        "http://example.org",
+		NetId:      "xxx",
+		IsProducer: true,
+		Status:     "APPROVED",
+		Online:     true,
+		Votes:      123.0,
 	}, nil)
 
 	api.EXPECT().GetContract(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.Contract{

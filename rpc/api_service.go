@@ -65,19 +65,13 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		Id:        as.p2pService.ID(),
 		PeerCount: int32(len(p2pNeighbors)),
 	}
-	for _, p := range p2pNeighbors {
-		networkInfo.PeerInfo = append(networkInfo.PeerInfo, &rpcpb.PeerInfo{
-			Id:   p.ID(),
-			Addr: p.Addr(),
-		})
-	}
 	res.Network = networkInfo
 	return res, nil
 }
 
 // GetRAMInfo returns the chain info.
 func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(true)
+	dbVisitor, _, err := as.getStateDBVisitor(true)
 	if err != nil {
 		return nil, err
 	}
@@ -202,7 +196,7 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -263,8 +257,8 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	for _, v := range voteInfo {
 		ret.VoteInfos = append(ret.VoteInfos, &rpcpb.VoteInfo{
 			Option:       v.Option,
-			Votes:        v.Votes,
-			ClearedVotes: v.ClearedVotes,
+			Votes:        v.Votes.ToFloat(),
+			ClearedVotes: v.ClearedVotes.ToFloat(),
 		})
 	}
 
@@ -273,7 +267,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 // GetTokenBalance returns contract information corresponding to the given contract ID.
 func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetTokenBalanceResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +293,7 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 
 // GetToken721Balance returns balance of account of an specific token721 token.
 func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +311,7 @@ func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetToke
 
 // GetToken721Metadata returns metadata of an specific token721 token.
 func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721MetadataResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -329,7 +323,7 @@ func (as *APIService) GetToken721Metadata(ctx context.Context, req *rpcpb.GetTok
 
 // GetToken721Owner returns owner of an specific token721 token.
 func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721OwnerResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -341,7 +335,7 @@ func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken7
 
 // GetContract returns contract information corresponding to the given contract ID.
 func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -375,9 +369,35 @@ func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) 
 	}, nil
 }
 
+// GetProducerVoteInfo returns producers's vote info
+func (as *APIService) GetProducerVoteInfo(ctx context.Context, req *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	votes, err := dbVisitor.GetProducerVotes(req.Account)
+	if err != nil {
+		return nil, err
+	}
+	info, err := dbVisitor.GetProducerVoteInfo(req.Account)
+	if err != nil {
+		return nil, err
+	}
+	return &rpcpb.GetProducerVoteInfoResponse{
+		Pubkey:     info.Pubkey,
+		Loc:        info.Loc,
+		Url:        info.URL,
+		NetId:      info.NetID,
+		IsProducer: info.IsProducer,
+		Status:     info.Status,
+		Online:     info.Online,
+		Votes:      votes.ToFloat(),
+	}, nil
+}
+
 // GetContractStorage returns contract storage corresponding to the given key and field.
 func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -400,13 +420,15 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 		data = string(bytes)
 	}
 	return &rpcpb.GetContractStorageResponse{
-		Data: data,
+		Data:        data,
+		BlockHash:   common.Base58Encode(bcn.HeadHash()),
+		BlockNumber: bcn.Head.Number,
 	}, nil
 }
 
 // GetContractStorageFields returns contract storage corresponding to the given fields.
 func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
-	dbVisitor, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +437,9 @@ func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.G
 	value, _ := h.GlobalMapKeys(req.GetId(), req.GetKey())
 
 	return &rpcpb.GetContractStorageFieldsResponse{
-		Fields: value,
+		Fields:      value,
+		BlockHash:   common.Base58Encode(bcn.HeadHash()),
+		BlockNumber: bcn.Head.Number,
 	}, nil
 }
 
@@ -467,6 +491,9 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
+	if !as.bv.Config().RPC.ExecTx {
+		return nil, errors.New("The node has't enabled this method")
+	}
 	t := toCoreTx(req)
 	receipt, err := as.tryTransaction(t)
 	if err != nil {
@@ -532,7 +559,7 @@ func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor
 	return
 }
 
-func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, error) {
+func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, *blockcache.BlockCacheNode, error) {
 	var err error
 	var db *database.Visitor
 	// retry 3 times as block may be flushed
@@ -549,7 +576,7 @@ func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, e
 			ilog.Errorf("getStateDBVisitor err: %v", err)
 			continue
 		}
-		return db, nil
+		return db, b, nil
 	}
-	return nil, err
+	return nil, nil, err
 }

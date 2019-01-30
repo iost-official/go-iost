@@ -164,6 +164,19 @@ func (mr *MockApiServiceServerMockRecorder) GetNodeInfo(arg0, arg1 interface{}) 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetNodeInfo), arg0, arg1)
 }
 
+// GetProducerVoteInfo mocks base method
+func (m *MockApiServiceServer) GetProducerVoteInfo(arg0 context.Context, arg1 *pb.GetProducerVoteInfoRequest) (*pb.GetProducerVoteInfoResponse, error) {
+	ret := m.ctrl.Call(m, "GetProducerVoteInfo", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetProducerVoteInfoResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProducerVoteInfo indicates an expected call of GetProducerVoteInfo
+func (mr *MockApiServiceServerMockRecorder) GetProducerVoteInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProducerVoteInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetProducerVoteInfo), arg0, arg1)
+}
+
 // GetRAMInfo mocks base method
 func (m *MockApiServiceServer) GetRAMInfo(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.RAMInfoResponse, error) {
 	ret := m.ctrl.Call(m, "GetRAMInfo", arg0, arg1)

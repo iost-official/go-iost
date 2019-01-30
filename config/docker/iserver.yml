@@ -28,6 +28,7 @@ rpc:
   gatewayaddr: 0.0.0.0:30001
   grpcaddr: 0.0.0.0:30002
   trytx: false
+  exectx: false
   allowOrigins:
     - "*"
 log:

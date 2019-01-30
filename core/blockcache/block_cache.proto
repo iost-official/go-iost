@@ -27,14 +27,9 @@ message WitnessList{
     repeated string activeWitnessList = 1;
 	repeated string pendingWitnessList = 2;
 	int64 pendingWitnessNumber = 3;
-	map<string, WitnessInfo> witnessInfo = 4;
+	repeated string witnessInfo = 4;
 }
 
 message WitnessInfo {
-    string Loc = 1;
-    string URL = 2;
-    string NetID = 3;
-    bool Online = 4;
-    int64 Score = 5;
-    int64 Votes = 6;
+    string NetID = 1;
 }

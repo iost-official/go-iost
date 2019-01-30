@@ -3,9 +3,9 @@ package blockcache
 import (
 	"encoding/json"
 	"errors"
-
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm/database"
+	"strings"
 )
 
 // SetPending set pending witness list
@@ -30,13 +30,7 @@ func (wl *WitnessList) Active() []string {
 
 // NetID get net id
 func (wl *WitnessList) NetID() []string {
-	r := make([]string, 0)
-	for _, value := range wl.WitnessInfo {
-		if value != nil {
-			r = append(r, value.NetID)
-		}
-	}
-	return r
+	return wl.WitnessInfo
 }
 
 // UpdatePending update pending witness list
@@ -61,12 +55,15 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB) error {
 // UpdateInfo update pending witness list
 func (wl *WitnessList) UpdateInfo(mv db.MVCCDB) error {
 
-	for key := range wl.WitnessInfo {
-		delete(wl.WitnessInfo, key)
-	}
+	wl.WitnessInfo = make([]string, 0, 0)
 	vi := database.NewVisitor(0, mv)
 	for _, v := range wl.PendingWitnessList {
-		jwl := database.MustUnmarshal(vi.MGet("vote_producer.iost-producerTable", v))
+		iAcc := database.MustUnmarshal(vi.MGet("vote_producer.iost-producerKeyToId", v))
+		if iAcc == nil {
+			continue
+		}
+		acc := strings.Trim(iAcc.(string), "\"")
+		jwl := database.MustUnmarshal(vi.MGet("vote_producer.iost-producerTable", acc))
 		if jwl == nil {
 			continue
 		}
@@ -76,7 +73,7 @@ func (wl *WitnessList) UpdateInfo(mv db.MVCCDB) error {
 		if err != nil {
 			continue
 		}
-		wl.WitnessInfo[v] = &str
+		wl.WitnessInfo = append(wl.WitnessInfo, str.NetID)
 	}
 	return nil
 }
