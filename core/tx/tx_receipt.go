@@ -1,9 +1,12 @@
 package tx
 
 import (
+	"encoding/json"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	txpb "github.com/iost-official/go-iost/core/tx/pb"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // StatusCode status code of transaction execution result
@@ -211,4 +214,28 @@ func (r *TxReceipt) String() string {
 	}
 	tr := r.ToPb()
 	return tr.String()
+}
+
+// ParseCancelDelaytx returns the delaytxs' hashes that are canceled.
+func (r *TxReceipt) ParseCancelDelaytx() [][]byte {
+	if r.Status.Code != Success {
+		return nil
+	}
+	var ret [][]byte
+	for _, receipt := range r.Receipts {
+		if receipt.FuncName == "system.iost/cancelDelaytx" {
+			var params []string
+			err := json.Unmarshal([]byte(receipt.Content), &params)
+			if err != nil {
+				ilog.Errorf("json decode `%s` failed, err=%v", receipt.Content, err)
+				continue
+			}
+			if len(params) != 1 {
+				ilog.Errorf("param length is %d, not equal to 1. params=%v", len(params), params)
+				continue
+			}
+			ret = append(ret, common.Base58Decode(params[0]))
+		}
+	}
+	return ret
 }

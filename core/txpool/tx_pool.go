@@ -3,7 +3,6 @@ package txpool
 import (
 	"errors"
 	"fmt"
-	"math"
 	"runtime"
 	"sync"
 	"time"
@@ -77,34 +76,16 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 	if err != nil {
 		return err
 	}
-	expi := referredTx.Expiration + referredTx.Delay
-	// overflow
-	if expi < referredTx.Expiration {
-		expi = math.MaxInt64
-	}
-	t := &tx.Tx{
-		Actions:      referredTx.Actions,
-		Time:         referredTx.Time + referredTx.Delay,
-		Expiration:   expi,
-		GasLimit:     referredTx.GasLimit,
-		GasRatio:     referredTx.GasRatio,
-		Publisher:    referredTx.Publisher,
-		ReferredTx:   txHash,
-		AmountLimit:  referredTx.AmountLimit,
-		PublishSigns: referredTx.PublishSigns,
-		Signs:        referredTx.Signs,
-		Signers:      referredTx.Signers,
-		ChainID:      referredTx.ChainID,
-	}
-	err = pool.verifyDuplicate(t)
+	deferTx := referredTx.DeferTx()
+	err = pool.verifyDuplicate(deferTx)
 	if err != nil {
 		return err
 	}
-	err = t.VerifySelf()
+	err = deferTx.VerifySelf()
 	if err != nil {
 		return err
 	}
-	pool.pendingTx.Add(t)
+	pool.pendingTx.Add(deferTx)
 	return nil
 }
 
@@ -187,16 +168,15 @@ func (pool *TxPImpl) verifyWorkers() {
 
 func (pool *TxPImpl) processDelaytx(blk *block.Block) {
 	for i, t := range blk.Txs {
-		if t.Delay > 0 {
+		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
 			pool.deferServer.StoreDeferTx(t)
 		}
 		if t.IsDefer() {
 			pool.deferServer.DelDeferTx(t)
 		}
-		if cancelHash, exist := t.CanceledDelaytxHash(); exist {
-			if blk.Receipts[i].Status.Code == tx.Success {
-				pool.deferServer.DelDeferTxByHash(cancelHash)
-			}
+		canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
+		for _, canceledHash := range canceledDelayHashes {
+			pool.deferServer.DelDeferTxByHash(canceledHash)
 		}
 	}
 }
@@ -303,17 +283,6 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	}
 	if err := t.VerifySelf(); err != nil {
 		return fmt.Errorf("VerifyError %v", err)
-	}
-
-	if t.IsDefer() {
-		referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
-		if err != nil {
-			return fmt.Errorf("get referred tx error, %v", err)
-		}
-		err = t.VerifyDefer(referredTx)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil
