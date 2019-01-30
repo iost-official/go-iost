@@ -448,10 +448,10 @@
     // JSON
     const JSONparse = JSON.parse;
     JSON.parse = function () {
-        if (typeof arguments[0] === 'string' || arguments[0] instanceof String) {
-            _IOSTInstruction_counter.incr(10 + arguments[0].length);
-        } else {
+        if (arguments[0] === undefined || arguments[0] === null) {
             _IOSTInstruction_counter.incr(10);
+        } else {
+            _IOSTInstruction_counter.incr(10 + arguments[0].toString().length);
         }
         return JSONparse.call(this, ...arguments);
     };
