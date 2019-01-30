@@ -7,6 +7,7 @@ Mon Jan 28 16:54:43 CST 2019
 - Increase block packing time from 300ms to 500ms.
 - Modify 'maxTxLimitTime' from 100ms to 200ms.
 - Increase gas charged for 'setCode'.
+- Disable account referrer reward.
 - Add a reserved field in transaction.
 
 ## Everest v2.3.1
