@@ -21,7 +21,6 @@ func (m *DelaytxHandler) delaytxKey(txHash string) string {
 
 // StoreDelaytx stores delaytx hash.
 func (m *DelaytxHandler) StoreDelaytx(txHash, publisher, deferTxHash string) {
-	println(len(m.delaytxKey(txHash)), m.delaytxKey(txHash))
 	m.db.Put(m.delaytxKey(txHash), publisher+deferSep+deferTxHash)
 }
 
