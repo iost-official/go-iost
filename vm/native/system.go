@@ -218,6 +218,9 @@ var (
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 
 			cost, err = h.CancelDelaytx(args[0].(string))
+			if err != nil {
+				return []interface{}{}, cost, err
+			}
 
 			// generate receipt
 			message, err := json.Marshal(args)
