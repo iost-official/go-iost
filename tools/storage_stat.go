@@ -2,10 +2,11 @@ package main
 
 import (
 	"fmt"
+	"strings"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/db/kv/leveldb"
 	"github.com/iost-official/go-iost/vm/database"
-	"strings"
 )
 
 func padTo(s string, ptn string, l int) string {
@@ -17,6 +18,14 @@ func padTo(s string, ptn string, l int) string {
 
 func printTokenBalance(db *leveldb.DB, tokenType string) {
 	fmt.Println("############# ", tokenType, " balance ##############")
+	k, err := db.Keys([]byte("state/t-"))
+	if err != nil {
+		panic(err)
+	}
+	for _, kk := range k {
+		fmt.Println(len(kk))
+		fmt.Println((kk))
+	}
 	prefix := "state/m-token.iost-TB"
 	keys, err := db.Keys([]byte(prefix))
 	if err != nil {

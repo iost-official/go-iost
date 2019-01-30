@@ -244,6 +244,30 @@ func (t *Tx) CanceledDelaytxHash() ([]byte, bool) {
 	return nil, false
 }
 
+// DeferTx generates a new transaction that will be packed to blockchain.
+func (t *Tx) DeferTx() *Tx {
+	expi := t.Expiration + t.Delay
+	// overflow
+	if expi < t.Expiration {
+		expi = math.MaxInt64
+	}
+	deferTx := &Tx{
+		Actions:      t.Actions,
+		Time:         t.Time + t.Delay,
+		Expiration:   expi,
+		GasLimit:     t.GasLimit,
+		GasRatio:     t.GasRatio,
+		Publisher:    t.Publisher,
+		ReferredTx:   t.Hash(),
+		AmountLimit:  t.AmountLimit,
+		PublishSigns: t.PublishSigns,
+		Signs:        t.Signs,
+		Signers:      t.Signers,
+		ChainID:      t.ChainID,
+	}
+	return deferTx
+}
+
 func (t *Tx) verifyDeferBaseFields(referredTx *Tx) error {
 	if referredTx.Time+referredTx.Delay != t.Time {
 		return errors.New("unmatched referred tx delay time")
