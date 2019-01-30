@@ -3,6 +3,7 @@ package run
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 
 	"github.com/bitly/go-simplejson"
@@ -97,7 +98,7 @@ var BonusCaseAction = func(c *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	ratef, err := strconv.ParseFloat(data1[1:len(data1)-1], 64)
+	ratef, err := strconv.ParseFloat(strings.Trim(data1, "\""), 64)
 	if err != nil {
 		return err
 	}

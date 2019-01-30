@@ -5,7 +5,7 @@ const blockContribRatio = new Float64("9.6568764571e-11");
 class BonusContract {
     init() {
         this._initContribute();
-        this._put("blockContrib", "1.98779440");
+        storage.put("blockContrib", "1.98779440");
         this._put("lastTime", block.time);
     }
 
@@ -54,22 +54,6 @@ class BonusContract {
         storage.put(k, JSON.stringify(v), p);
     }
 
-    _mapGet(k, f) {
-        const val = storage.mapGet(k, f);
-        if (val === "") {
-            return null;
-        }
-        return JSON.parse(val);
-    }
-
-    _mapPut(k, f, v, p) {
-        storage.mapPut(k, f, JSON.stringify(v), p);
-    }
-
-    _mapDel(k, f) {
-        storage.mapDel(k, f);
-    }
-
     _globalMapGet(c, k, f) {
         const val = storage.globalMapGet(c, k, f);
         if (val === "") {
@@ -86,7 +70,7 @@ class BonusContract {
         }
         const supply = new Float64(blockchain.callWithAuth("token.iost", "supply", ["iost"])[0]);
         const blockContrib = supply.multi(blockContribRatio).toFixed(8);
-        this._put("blockContrib", blockContrib);
+        storage.get("blockContrib", blockContrib);
         this._put("lastTime", block.time);
     }
 
@@ -95,7 +79,7 @@ class BonusContract {
         this._requireAuth("base.iost", activePermission);
         this._updateRate();
         let witness = data.parent[0];
-        const blockContrib = this._get("blockContrib");
+        const blockContrib = storage.get("blockContrib");
         // get account name of the witness
         const acc = this._globalMapGet("vote_producer.iost", "producerKeyToId", witness);
         if (acc) {

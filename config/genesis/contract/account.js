@@ -1,7 +1,7 @@
 class Account {
     init() {
-
     }
+
     initAdmin(adminID) {
         const bn = block.number;
         if(bn !== 0) {
@@ -9,10 +9,12 @@ class Account {
         }
         storage.put("adminID", adminID);
     }
+
     can_update(data) {
         const admin = storage.get("adminID");
         return blockchain.requireAuth(admin, "active");
     }
+
     _saveAccount(account, payer) {
         if (payer === undefined) {
             payer = account.id

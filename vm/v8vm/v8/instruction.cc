@@ -1,6 +1,7 @@
 #include "instruction.h"
 #include "limits.h"
 #include <iostream>
+#include <cmath>
 
 void NewIOSTContractInstruction(const FunctionCallbackInfo<Value> &args) {
     Isolate *isolate = args.GetIsolate();
@@ -51,7 +52,7 @@ void IOSTContractInstruction_Incr(const FunctionCallbackInfo<Value> &args) {
         isolate->ThrowException(err);
         return;
     }
-    if (valInt < 0) {
+    if (valInt < 0 || std::isnan(valInt) || std::isinf(valInt)) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractInstruction_Incr invalid gas")
         );
