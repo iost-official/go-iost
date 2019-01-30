@@ -325,6 +325,7 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
+			metricsTxSize.Set(0, nil)
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
