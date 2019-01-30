@@ -1,7 +1,9 @@
 package vm
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -155,6 +157,12 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 	return
 }
 
+func (i *Isolator) delDelaytx(refTxHash, publisher, deferTxHash string) {
+	i.h.DB().DelDelaytx(refTxHash)
+	cost := host.DelDelayTxCost(len(refTxHash)+len(i.publisherID)+len(deferTxHash), i.publisherID)
+	i.h.PayCost(cost, i.publisherID)
+}
+
 // Run actions in tx
 func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	startTime := time.Now()
@@ -168,36 +176,38 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	i.tr = tx.NewTxReceipt(i.t.Hash())
 
 	if i.t.Delay > 0 {
-		txHash := string(i.t.Hash())
-		i.h.DB().StoreDelaytx(txHash, i.publisherID)
+		txHash := i.t.Hash()
+		deferTxHash := i.t.DeferTx().Hash()
+		i.h.DB().StoreDelaytx(string(txHash), i.publisherID, string(deferTxHash))
 		i.tr.Status = &tx.Status{
 			Code:    tx.Success,
-			Message: "",
+			Message: "defertx hash: " + common.Base58Encode(deferTxHash),
 		}
-		cost := host.DelayTxCost(len(txHash)+len(i.publisherID), i.publisherID)
+		cost := host.DelayTxCost(len(txHash)+len(i.publisherID)+len(deferTxHash), i.publisherID)
 		i.h.PayCost(cost, i.publisherID)
 		return i.tr, nil
 	}
 
+	var refTxHash, deferTxHash string
 	if i.t.IsDefer() {
-		refTxHash := string(i.t.ReferredTx)
-		if !i.h.DB().HasDelaytx(refTxHash) {
-			return nil, fmt.Errorf("delay tx not found, hash=%v", i.t.ReferredTx)
+		refTxHash = string(i.t.ReferredTx)
+		_, deferTxHash = i.h.DB().GetDelaytx(refTxHash)
+		if deferTxHash == "" {
+			return nil, fmt.Errorf("delay tx not found, hash=%v", common.Base58Encode(i.t.ReferredTx))
 		}
 
-		// the delaytx should be deleted even the tx is executed failed.
-		// use defer func so the delete operation would not be reverted by i.h.DB().Rollback().
-		defer func() {
-			i.h.DB().DelDelaytx(refTxHash)
-			cost := host.DelDelayTxCost(len(refTxHash)+len(i.publisherID), i.publisherID)
-			i.h.PayCost(cost, i.publisherID)
-		}()
+		if !bytes.Equal(i.t.Hash(), []byte(deferTxHash)) {
+			return nil, errors.New("defertx hash not match")
+		}
+
+		i.h.PayCost(host.Costs["GetCost"], i.publisherID)
 
 		if i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
 			i.tr.Status = &tx.Status{
-				Code:    tx.Success,
+				Code:    tx.ErrorRuntime,
 				Message: "transaction expired",
 			}
+			i.delDelaytx(refTxHash, i.publisherID, deferTxHash)
 			return i.tr, nil
 		}
 	}
@@ -247,6 +257,11 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		vmGasLimit -= actionCost.ToGas()
 		i.h.Context().GSet("gas_limit", vmGasLimit)
 	}
+
+	if i.t.IsDefer() {
+		i.delDelaytx(refTxHash, i.publisherID, deferTxHash)
+	}
+
 	endTime := time.Now()
 	ilog.Debugf("tx %v time %v", i.t.Actions, endTime.Sub(startTime))
 	return i.tr, nil

@@ -31,5 +31,5 @@ var (
 	ErrMemoTooLarge              = errors.New("memo too large")
 
 	ErrDelaytxNotFound   = errors.New("delaytx not exists")
-	ErrCancelDelayForbid = errors.New("cancel delaytx forbid")
+	ErrCannotCancelDelay = errors.New("can not cancel delaytx")
 )
