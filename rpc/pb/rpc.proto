@@ -152,22 +152,12 @@ service ApiService {
 // The message defines an empty request.
 message EmptyRequest {}
 
-// The message defines peer information.
-message PeerInfo {
-    // peer ID
-    string id = 1;
-    // peer addr
-    string addr = 2;
-}
-
 // The message defines network connection information.
 message NetworkInfo {
     // local network ID
     string id = 1;
     // peer connection count
     int32 peer_count = 2;
-    // peers' information
-    repeated PeerInfo peer_info = 3;
 }
 
 // The message containing blockchain's ram information.

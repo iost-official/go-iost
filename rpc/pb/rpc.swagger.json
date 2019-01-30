@@ -1335,13 +1335,6 @@
           "type": "integer",
           "format": "int32",
           "title": "peer connection count"
-        },
-        "peer_info": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/rpcpbPeerInfo"
-          },
-          "title": "peers' information"
         }
       },
       "description": "The message defines network connection information."
@@ -1367,20 +1360,6 @@
         }
       },
       "description": "The message containing the node's information."
-    },
-    "rpcpbPeerInfo": {
-      "type": "object",
-      "properties": {
-        "id": {
-          "type": "string",
-          "title": "peer ID"
-        },
-        "addr": {
-          "type": "string",
-          "title": "peer addr"
-        }
-      },
-      "description": "The message defines peer information."
     },
     "rpcpbRAMInfoResponse": {
       "type": "object",
