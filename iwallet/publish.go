@@ -39,7 +39,7 @@ var publishCmd = &cobra.Command{
 			cmd.Usage()
 			return fmt.Errorf("please enter the contract id")
 		}
-		return nil
+		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		codePath := args[0]
