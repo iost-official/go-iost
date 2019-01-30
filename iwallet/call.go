@@ -49,7 +49,6 @@ var callCmd = &cobra.Command{
 				return err
 			}
 			trx, err = sdk.createTx(actions)
-			trx.Delay = delay * 1e9
 			if err != nil {
 				return err
 			}
@@ -68,5 +67,4 @@ func init() {
 	callCmd.Flags().StringSliceVarP(&sdk.signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
 	callCmd.Flags().StringSliceVarP(&sdk.withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
 	callCmd.Flags().StringVarP(&txFile, "tx_file", "", "", "load tx from this file")
-	callCmd.Flags().Int64Var(&delay, "delay", 0, "load tx from this file")
 }

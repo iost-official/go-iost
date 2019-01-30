@@ -1,10 +1,7 @@
 package database
 
 import (
-	"fmt"
 	"strings"
-
-	"github.com/iost-official/go-iost/common"
 )
 
 const (
@@ -30,13 +27,11 @@ func (m *DelaytxHandler) StoreDelaytx(txHash, publisher, deferTxHash string) {
 
 // GetDelaytx gets the delay tx's publisher and deferTxHash.
 func (m *DelaytxHandler) GetDelaytx(txHash string) (string, string) {
-	fmt.Println(common.Base58Encode([]byte(txHash)), []byte(txHash))
 	str := m.db.Get(m.delaytxKey(txHash))
-	fmt.Println(str)
 	if str == NilPrefix {
 		return "", ""
 	}
-	arr := strings.Split(str, deferSep)
+	arr := strings.SplitN(str, deferSep, 2)
 	if len(arr) != 2 {
 		return "", ""
 	}

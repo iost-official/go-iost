@@ -18,14 +18,6 @@ func padTo(s string, ptn string, l int) string {
 
 func printTokenBalance(db *leveldb.DB, tokenType string) {
 	fmt.Println("############# ", tokenType, " balance ##############")
-	k, err := db.Keys([]byte("state/t-"))
-	if err != nil {
-		panic(err)
-	}
-	for _, kk := range k {
-		fmt.Println(len(kk))
-		fmt.Println((kk))
-	}
 	prefix := "state/m-token.iost-TB"
 	keys, err := db.Keys([]byte(prefix))
 	if err != nil {

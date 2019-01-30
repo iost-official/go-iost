@@ -24,7 +24,6 @@ import (
 var outputFile string
 var signKeyFile string
 var txFile string
-var delay int64
 
 // signCmd represents the command used to sign a transaction.
 var signCmd = &cobra.Command{
