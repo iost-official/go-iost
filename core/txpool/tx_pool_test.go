@@ -652,6 +652,12 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(walPath)
 }
 
+func genTxReceipt() *tx.TxReceipt {
+	return &tx.TxReceipt{
+		Status: &tx.Status{},
+	}
+}
+
 func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
@@ -721,6 +727,7 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 
 		for i := 0; i < txCnt; i++ {
 			blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
+			blk.Receipts = append(blk.Receipts, genTxReceipt())
 		}
 
 		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
@@ -761,6 +768,7 @@ func genSingleBlock(accountList []*account.KeyPair, witnessList []string, Parent
 
 	for i := 0; i < txCnt; i++ {
 		blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
+		blk.Receipts = append(blk.Receipts, genTxReceipt())
 	}
 
 	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
