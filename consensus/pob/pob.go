@@ -24,7 +24,6 @@ var (
 	metricsGeneratedBlockCount   = metrics.NewCounter("iost_pob_generated_block", nil)
 	metricsVerifyBlockCount      = metrics.NewCounter("iost_pob_verify_block", nil)
 	metricsConfirmedLength       = metrics.NewGauge("iost_pob_confirmed_length", nil)
-	metricsTxSize                = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                  = metrics.NewGauge("iost_node_mode", nil)
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
@@ -471,7 +470,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	p.txPool.AddLinkedNode(node)
 
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-	metricsTxSize.Set(float64(len(node.Txs)), nil)
 
 	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
