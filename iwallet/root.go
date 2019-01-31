@@ -40,7 +40,7 @@ func init() {
 	// will be global for your application.
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file (default $HOME/.iwallet.yaml)")
 
-	rootCmd.PersistentFlags().BoolVarP(&sdk.verbose, "verbose", "", true, "print verbose information")
+	rootCmd.PersistentFlags().BoolVarP(&sdk.verbose, "verbose", "v", false, "print verbose information")
 	rootCmd.PersistentFlags().StringVarP(&sdk.accountName, "account", "", "", "which account to use")
 	rootCmd.PersistentFlags().StringVarP(&sdk.server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get info on longest chain")
