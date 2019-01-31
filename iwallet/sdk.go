@@ -598,6 +598,9 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	}
 	action := NewAction("system.iost", methodName, string(data))
 	trx, err := s.createTx([]*rpcpb.Action{action})
+	if err != nil {
+		return nil, "", err
+	}
 	txHash, err := s.SendTx(trx)
 	if err != nil {
 		return nil, "", err

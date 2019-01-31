@@ -121,9 +121,6 @@ var viewCmd = &cobra.Command{
 	Long:  `View account by name or omit to show all accounts`,
 	Example: `  iwallet account view test0
   iwallet account view`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		return checkAccount(cmd)
-	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		dir, err := sdk.getAccountDir()
 		if err != nil {
@@ -140,7 +137,8 @@ var viewCmd = &cobra.Command{
 				for _, f := range files {
 					keyPair, err := loadKeyPair(f, algo)
 					if err != nil {
-						return err
+						fmt.Println(err)
+						continue
 					}
 					name, err := getAccountName(f, "_"+algo.String())
 					if err != nil {
@@ -159,7 +157,8 @@ var viewCmd = &cobra.Command{
 				f := fmt.Sprintf("%s/%s_%s", dir, name, algo.String())
 				keyPair, err := loadKeyPair(f, algo)
 				if err != nil {
-					return err
+					fmt.Println(err)
+					continue
 				}
 				var k key
 				k.Algorithm = keyPair.Algorithm.String()
@@ -225,13 +224,28 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to get account dir: %v", err)
 		}
+		found := false
 		for _, algo := range signAlgos {
 			f := fmt.Sprintf("%s/%s_%s", dir, name, algo.String())
-			os.Remove(f)
-			os.Remove(f + ".id")
-			os.Remove(f + ".pub")
+			err = os.Remove(f)
+			if err == nil {
+				found = true
+				fmt.Println("File", f, "has been removed.")
+			}
+			err = os.Remove(f + ".id")
+			if err == nil {
+				fmt.Println("File", f+".id", "has been removed.")
+			}
+			err = os.Remove(f + ".pub")
+			if err == nil {
+				fmt.Println("File", f+".pub", "has been removed.")
+			}
 		}
-		fmt.Println("Successfully deleted <", name, ">.")
+		if found {
+			fmt.Println("Successfully deleted <", name, ">.")
+		} else {
+			fmt.Println("Account <", name, "> does not exist.")
+		}
 		return nil
 	},
 }
