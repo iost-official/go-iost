@@ -27,7 +27,7 @@ var voteCmd = &cobra.Command{
 	Use:     "vote producerID amount",
 	Short:   "Vote a producer",
 	Long:    `Vote a producer by given amount of IOSTs`,
-	Example: `  iwallet sys vote producer000 1000000`,
+	Example: `  iwallet sys vote producer000 1000000 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			cmd.Usage()
@@ -48,7 +48,7 @@ var unvoteCmd = &cobra.Command{
 	Use:     "unvote producerID amount",
 	Short:   "Unvote a producer",
 	Long:    `Unvote a producer by given amount of IOSTs`,
-	Example: `  iwallet sys unvote producer000 1000000`,
+	Example: `  iwallet sys unvote producer000 1000000 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			cmd.Usage()
@@ -75,7 +75,7 @@ var registerCmd = &cobra.Command{
 	Aliases: []string{"reg"},
 	Short:   "Register as producer",
 	Long:    `Register as producer`,
-	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`,
+	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			cmd.Usage()
@@ -92,7 +92,7 @@ var unregisterCmd = &cobra.Command{
 	Aliases: []string{"unreg"},
 	Short:   "Unregister from a producer",
 	Long:    `Unregister from a producer`,
-	Example: `  iwallet sys unregister`,
+	Example: `  iwallet sys unregister --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},
@@ -106,7 +106,7 @@ var loginCmd = &cobra.Command{
 	Aliases: []string{"plogin"},
 	Short:   "Producer login as online state",
 	Long:    `Producer login as online state`,
-	Example: `  iwallet sys plogin`,
+	Example: `  iwallet sys plogin --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},
@@ -119,7 +119,7 @@ var logoutCmd = &cobra.Command{
 	Aliases: []string{"plogout"},
 	Short:   "Producer logout as offline state",
 	Long:    `Producer logout as offline state`,
-	Example: `  iwallet sys plogout`,
+	Example: `  iwallet sys plogout --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},

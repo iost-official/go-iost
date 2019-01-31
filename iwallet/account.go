@@ -59,7 +59,7 @@ var createCmd = &cobra.Command{
 	Use:     "create accountName",
 	Short:   "Create an account on blockchain",
 	Long:    `Create an account on blockchain`,
-	Example: `  iwallet account create test0`,
+	Example: `  iwallet account create test1 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			cmd.Usage()

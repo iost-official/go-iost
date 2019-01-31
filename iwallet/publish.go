@@ -28,8 +28,8 @@ var publishCmd = &cobra.Command{
 	Aliases: []string{"pub"},
 	Short:   "Publish a contract",
 	Long:    `Publish a contract by a contract and an abi file`,
-	Example: `  iwallet publish ./example.js ./example.js.abi
-  iwallet publish ./example.js ./example.js.abi -u ContractXXX`,
+	Example: `  iwallet publish ./example.js ./example.js.abi --account test0
+  iwallet publish ./example.js ./example.js.abi -u ContractXXX --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
 			cmd.Usage()
