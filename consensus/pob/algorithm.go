@@ -24,7 +24,6 @@ var (
 	errTxDup                  = errors.New("duplicate tx")
 	errDoubleTx               = errors.New("double tx in block")
 	errTxLenUnmatchReceiptLen = errors.New("tx len unmatch receipt len")
-	generateTxsNum            = 0
 )
 
 func generateBlock(
@@ -83,7 +82,6 @@ func generateBlock(
 	}
 	db.Commit(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
-	generateTxsNum += len(blk.Txs)
 	return blk, nil
 }
 

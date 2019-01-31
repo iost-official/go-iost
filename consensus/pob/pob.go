@@ -24,7 +24,6 @@ var (
 	metricsGeneratedBlockCount   = metrics.NewCounter("iost_pob_generated_block", nil)
 	metricsVerifyBlockCount      = metrics.NewCounter("iost_pob_verify_block", nil)
 	metricsConfirmedLength       = metrics.NewGauge("iost_pob_confirmed_length", nil)
-	metricsTxSize                = metrics.NewGauge("iost_block_tx_size", nil)
 	metricsMode                  = metrics.NewGauge("iost_node_mode", nil)
 	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
 	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
@@ -43,8 +42,6 @@ var (
 	subSlotTime       = 500 * time.Millisecond
 	genBlockTime      = 400 * time.Millisecond
 	last2GenBlockTime = 50 * time.Millisecond
-	tWitness          = ""
-	tContinuousNum    = 0
 )
 
 type verifyBlockMessage struct {
@@ -325,7 +322,6 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			time.Sleep(time.Millisecond)
 			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
-			metricsTxSize.Set(0, nil)
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
@@ -333,7 +329,6 @@ func (p *PoB) scheduleLoop() {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = slotOfSec(t.Unix())
 				generateBlockTicker := time.NewTicker(subSlotTime)
-				generateTxsNum = 0
 				for num := 0; num < continuousNum; num++ {
 					p.gen(num, pTx, head)
 					if num == continuousNum-1 {
@@ -349,7 +344,6 @@ func (p *PoB) scheduleLoop() {
 					}
 				}
 				close(p.quitGenerateMode)
-				metricsTxSize.Set(float64(generateTxsNum), nil)
 				generateBlockTicker.Stop()
 			}
 			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
@@ -482,13 +476,8 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	}
 
 	if node.Head.Witness != p.account.ReadablePubkey() {
-		if tWitness != node.Head.Witness {
-			tWitness = node.Head.Witness
-			tContinuousNum = 0
-		}
 		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
-			tContinuousNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
-		tContinuousNum++
+			node.SerialNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
 	}
 
 	for child := range node.Children {
