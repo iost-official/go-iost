@@ -375,18 +375,14 @@ func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
 	return client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHashStr})
 }
 
-func (s *SDK) sendTx(stx *rpcpb.TransactionRequest) (string, error) {
-	fmt.Println("sending tx")
-	if sdk.verbose {
-		fmt.Println(stx)
-	}
+func (s *SDK) sendTx(signedTx *rpcpb.TransactionRequest) (string, error) {
 	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
 	if err != nil {
 		return "", err
 	}
 	defer conn.Close()
 	client := rpcpb.NewApiServiceClient(conn)
-	resp, err := client.SendTransaction(context.Background(), stx)
+	resp, err := client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
 		return "", err
 	}
@@ -394,32 +390,35 @@ func (s *SDK) sendTx(stx *rpcpb.TransactionRequest) (string, error) {
 }
 
 func (s *SDK) checkTransaction(txHash string) error {
-	// It may be better to to create a grpc client and reuse it. TODO later
+	// TODO: May be better to to create a grpc client and reuse it.
+	fmt.Println("Checking transaction receipt...")
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
 		txReceipt, err := s.GetTxReceiptByTxHash(txHash)
 		if err != nil {
-			fmt.Println("result not ready, please wait. Details: ", err)
+			fmt.Println("...", err)
 			continue
 		}
 		if txReceipt == nil {
-			fmt.Println("result not ready, please wait.")
+			fmt.Println("...")
 			continue
 		}
 		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
-			fmt.Println("exec tx failed: ", txReceipt.Message)
-			fmt.Println("full error information: ", marshalTextString(txReceipt))
-			return fmt.Errorf(txReceipt.Message) //failed
+			if s.verbose {
+				fmt.Println("Transaction receipt:")
+				fmt.Println(marshalTextString(txReceipt))
+			}
+			return fmt.Errorf(txReceipt.Message)
 		}
 
-		// success
-		fmt.Println("exec tx done")
+		fmt.Println("SUCCESS!")
 		if s.verbose {
+			fmt.Println("Transaction receipt:")
 			fmt.Println(marshalTextString(txReceipt))
 		}
 		return nil
 	}
-	return fmt.Errorf("max retries exceeded")
+	return fmt.Errorf("exceeded max retry times")
 }
 
 func (s *SDK) getAccountDir() (string, error) {
@@ -490,8 +489,7 @@ func (s *SDK) SaveAccount(name string, kp *account.KeyPair) error {
 		return err
 	}
 
-	fmt.Println("your account private key is saved at:")
-	fmt.Println(fileName)
+	fmt.Println("Your account private key is saved at:", fileName)
 	return nil
 }
 
@@ -502,28 +500,16 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 	if ram > 0 {
 		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, s.accountName, ram)))
 	}
-	trx, err := s.createTx(acts)
+	_, err := s.SendTxFromActions(acts)
 	if err != nil {
 		return err
 	}
-	stx, err := s.signTx(trx)
+
+	info, err := sdk.getAccountInfo(s.accountName)
 	if err != nil {
-		return err
+		return fmt.Errorf("failed to get account info: %v", err)
 	}
-	var txHash string
-	txHash, err = s.sendTx(stx)
-	if err != nil {
-		return err
-	}
-	fmt.Printf("send tx done\n")
-	if s.checkResult {
-		s.checkTransaction(txHash)
-	}
-	fmt.Printf("\nbalance of %v\n", s.accountName)
-	info, err := s.getAccountInfo(s.accountName)
-	if err != nil {
-		return err
-	}
+	fmt.Println("Account info of <", s.accountName, ">:")
 	fmt.Println(marshalTextString(info))
 	return nil
 }
@@ -546,50 +532,33 @@ func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, 
 	if initialCoins > 0 {
 		acts = append(acts, NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
 	}
-	trx, err := s.createTx(acts)
-	if err != nil {
-		return "", err
-	}
-	stx, err := s.signTx(trx)
-	if err != nil {
-		return "", err
-	}
-	var txHash string
-	txHash, err = s.sendTx(stx)
+	txHash, err := s.SendTxFromActions(acts)
 	if err != nil {
 		return txHash, err
 	}
-	fmt.Println("send tx done")
-	fmt.Println("the create user transaction hash is:", txHash)
-	if s.checkResult {
-		if err := s.checkTransaction(txHash); err != nil {
-			return txHash, err
-		}
-	}
-	fmt.Printf("balance of %v\n", newID)
-	info, err := s.getAccountInfo(newID)
+	info, err := sdk.getAccountInfo(newID)
 	if err != nil {
-		return txHash, err
+		return txHash, fmt.Errorf("failed to get account info: %v", err)
 	}
+	fmt.Println("Account info of <", newID, ">:")
 	fmt.Println(marshalTextString(info))
 	return txHash, nil
 }
 
 // PublishContract converts contract js code to transaction. If 'send', also send it to chain.
-func (s *SDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (stx *rpcpb.TransactionRequest, txHash string, err error) {
+func (s *SDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (*rpcpb.TransactionRequest, string, error) {
 	fd, err := readFile(codePath)
 	if err != nil {
-		fmt.Println("Read source code file failed: ", err.Error())
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to read source code file: %v", err)
 	}
 	code := string(fd)
 
 	fd, err = readFile(abiPath)
 	if err != nil {
-		fmt.Println("Read abi file failed: ", err.Error())
-		return nil, "", err
+		return nil, "", fmt.Errorf("failed to read abi file: %v", err)
 	}
 	abi := string(fd)
+
 	var info *contract.Info
 	err = json.Unmarshal([]byte(abi), &info)
 	if err != nil {
@@ -632,17 +601,11 @@ func (s *SDK) PublishContract(codePath string, abiPath string, conID string, upd
 	if err != nil {
 		return nil, "", err
 	}
-	stx, err = s.signTx(trx)
-	if err != nil {
-		return nil, "", fmt.Errorf("sign tx error %v", err)
-	}
-	var hash string
-	hash, err = s.sendTx(stx)
+	txHash, err := s.SendTx(trx)
 	if err != nil {
 		return nil, "", err
 	}
-	fmt.Println("Sending tx to rpc server finished. The transaction hash is:", hash)
-	return trx, hash, nil
+	return trx, txHash, nil
 }
 
 // SendTxFromActions send transaction and check result if sdk.checkResult is set
@@ -655,24 +618,28 @@ func (s *SDK) SendTxFromActions(actions []*rpcpb.Action) (txHash string, err err
 }
 
 // SendTx send transaction and check result if sdk.checkResult is set
-func (s *SDK) SendTx(trx *rpcpb.TransactionRequest) (txHash string, err error) {
-	stx, err := s.signTx(trx)
+func (s *SDK) SendTx(tx *rpcpb.TransactionRequest) (string, error) {
+	signedTx, err := s.signTx(tx)
 	if err != nil {
 		return "", fmt.Errorf("sign tx error %v", err)
 	}
-	fmt.Printf("sending tx %v", stx)
-	txHash, err = s.sendTx(stx)
+	fmt.Println("Sending transaction...")
+	if s.verbose {
+		fmt.Println("Transaction:")
+		fmt.Println(marshalTextString(signedTx))
+	}
+	txHash, err := s.sendTx(signedTx)
 	if err != nil {
 		return "", fmt.Errorf("send tx error %v", err)
 	}
-	fmt.Println("send tx done")
-	fmt.Println("the transaction hash is:", txHash)
+	fmt.Println("Transaction has been sent.")
+	fmt.Println("The transaction hash is:", txHash)
 	if s.checkResult {
 		if err = s.checkTransaction(txHash); err != nil {
-			return
+			return txHash, err
 		}
 	}
-	return
+	return txHash, nil
 }
 
 func actionToBytes(a *rpcpb.Action) []byte {
