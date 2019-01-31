@@ -1,3 +1,11 @@
+## Everest v2.5.0
+
+Thu Jan 31 14:29:15 CST 2019
+
+- Fix known issue
+- Improve stability
+- Add system contract command to iWallet
+
 ## Everest v2.4.0
 
 Mon Jan 28 16:54:43 CST 2019
