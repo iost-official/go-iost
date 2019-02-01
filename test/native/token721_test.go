@@ -5,12 +5,14 @@ import (
 	"testing"
 	"time"
 
+	"fmt"
+
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
-	"fmt"
 )
 
 var test721DataPath = "./test_data/"
@@ -23,7 +25,7 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	vi.MPut("auth.iost-auth", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(1000000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
@@ -33,6 +35,9 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.Set("tx_hash", []byte("iamhash"))
 	ctx.Set("auth_list", make(map[string]int))
 	ctx.Set("time", int64(0))
+	ctx.Set("abi_name", "abi")
+	ctx.GSet("receipts", []*tx.Receipt{})
+	ctx.Set("publisher", "")
 
 	// pm := NewMonitor()
 	h := host.NewHost(ctx, vi, nil, nil)
@@ -40,6 +45,7 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 
 	code := &contract.Contract{
 		ID: "system.iost",
+		Info: &contract.Info{Version:"1.0.0"},
 	}
 
 	e := &native.Impl{}
@@ -52,6 +58,7 @@ func TestToken721_Create(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
+	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
@@ -59,6 +66,7 @@ func TestToken721_Create(t *testing.T) {
 		Reset(func() {
 			e, host, code = initVM(t, "token721.iost")
 			code.ID = "token721.iost"
+			host.Context().Set("contract_name", "token721.iost")
 			host.SetDeadline(time.Now().Add(10 * time.Second))
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})
@@ -99,6 +107,7 @@ func TestToken721_Issue(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
+	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 
@@ -158,6 +167,7 @@ func TestToken721_Transfer(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
+	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
 

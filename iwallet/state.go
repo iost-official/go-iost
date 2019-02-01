@@ -16,26 +16,25 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/spf13/cobra"
 	"strings"
+
+	"github.com/spf13/cobra"
 )
 
-// stateCmd prints the state of blockchain
+// stateCmd prints the state of blockchain.
 var stateCmd = &cobra.Command{
 	Use:   "state",
 	Short: "Get blockchain and node state",
 	Long:  `Get blockchain and node state`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	RunE: func(cmd *cobra.Command, args []string) error {
 		n, err := sdk.getNodeInfo()
 		if err != nil {
-			fmt.Printf("cannot get node info %v\nn", err)
-			return
+			return fmt.Errorf("cannot get node info: %v", err)
 		}
 		fmt.Print(strings.TrimRight(marshalTextString(n), "}"))
 		c, err := sdk.getChainInfo()
 		if err != nil {
-			fmt.Printf("cannot get chain info %v\n", err)
-			return
+			return fmt.Errorf("cannot get chain info: %v", err)
 		}
 		fmt.Println(strings.Replace(marshalTextString(c), "{\n", "", 1))
 		return nil

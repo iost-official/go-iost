@@ -11,8 +11,8 @@ import (
 
 // Constant of limit
 var (
-	MaxBlockGasLimit = int64(500000000)
-	MaxTxTimeLimit   = 100 * time.Millisecond
+	MaxBlockGasLimit = int64(800000000)
+	MaxTxTimeLimit   = 200 * time.Millisecond
 )
 
 // ACCConfig account of the system
@@ -24,10 +24,11 @@ type ACCConfig struct {
 
 // Witness config of the genesis block
 type Witness struct {
-	ID      string
-	Owner   string
-	Active  string
-	Balance int64
+	ID             string
+	Owner          string
+	Active         string
+	SignatureBlock string
+	Balance        int64
 }
 
 // TokenInfo config of the genesis block
@@ -75,10 +76,12 @@ type P2PConfig struct {
 
 //RPCConfig is the config for RPC Server.
 type RPCConfig struct {
+	Enable       bool
 	GatewayAddr  string
 	GRPCAddr     string
 	AllowOrigins []string
 	TryTx        bool
+	ExecTx       bool
 }
 
 // FileLogConfig is the config for filewriter of ilog.
@@ -96,9 +99,10 @@ type ConsoleLogConfig struct {
 
 // LogConfig is the config of ilog.
 type LogConfig struct {
-	FileLog    *FileLogConfig
-	ConsoleLog *ConsoleLogConfig
-	AsyncWrite bool
+	FileLog           *FileLogConfig
+	ConsoleLog        *ConsoleLogConfig
+	AsyncWrite        bool
+	EnableContractLog bool
 }
 
 // MetricsConfig is the config of metrics.
@@ -108,6 +112,12 @@ type MetricsConfig struct {
 	Password string
 	Enable   bool
 	ID       string
+}
+
+// SnapshotConfig is the config of snapshot
+type SnapshotConfig struct {
+	Enable   bool
+	FilePath string
 }
 
 // DebugConfig is the config of debug.
@@ -123,16 +133,17 @@ type VersionConfig struct {
 
 // Config provide all configuration for the application
 type Config struct {
-	ACC     *ACCConfig
-	Genesis string
-	VM      *VMConfig
-	DB      *DBConfig
-	P2P     *P2PConfig
-	RPC     *RPCConfig
-	Log     *LogConfig
-	Metrics *MetricsConfig
-	Debug   *DebugConfig
-	Version *VersionConfig
+	ACC      *ACCConfig
+	Genesis  string
+	VM       *VMConfig
+	DB       *DBConfig
+	Snapshot *SnapshotConfig
+	P2P      *P2PConfig
+	RPC      *RPCConfig
+	Log      *LogConfig
+	Metrics  *MetricsConfig
+	Debug    *DebugConfig
+	Version  *VersionConfig
 }
 
 // LoadYamlAsViper load yaml file as viper object
@@ -159,7 +170,6 @@ func NewConfig(configfile string) *Config {
 	if err := v.Unmarshal(c); err != nil {
 		ilog.Fatalf("Unable to decode into struct, %v", err)
 	}
-
 	return c
 }
 

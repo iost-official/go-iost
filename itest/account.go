@@ -13,12 +13,14 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
+	"strings"
 )
 
 // Account is account of user
 type Account struct {
 	ID      string
 	balance string
+	vote    string
 	rw      sync.RWMutex
 	key     *Key
 }
@@ -27,6 +29,7 @@ type Account struct {
 type AccountJSON struct {
 	ID        string `json:"id"`
 	Balance   string `json:"balance"`
+	Vote      string `json:"vote"`
 	Seckey    string `json:"seckey"`
 	Algorithm string `json:"algorithm"`
 }
@@ -35,10 +38,12 @@ type AccountJSON struct {
 func NewAccount(id string, seckey string, algorithm string) *Account {
 	account := &Account{
 		ID: id,
-		key: NewKey(
+	}
+	if seckey != "" {
+		account.key = NewKey(
 			common.Base58Decode(seckey),
 			crypto.NewAlgorithm(algorithm),
-		),
+		)
 	}
 
 	return account
@@ -46,18 +51,36 @@ func NewAccount(id string, seckey string, algorithm string) *Account {
 
 // LoadAccounts will load accounts from file
 func LoadAccounts(file string) ([]*Account, error) {
-	ilog.Infof("Load accounts from file...")
+	ilog.Infof("Load accounts from %v", file)
+	accounts := []*Account{}
 
-	var data []byte
-	var err error
-	data, err = ioutil.ReadFile(file)
-	if err != nil {
-		return nil, err
+	files := []string{}
+	if strings.HasSuffix(file, "/") {
+		fis, err := ioutil.ReadDir(file)
+		if err != nil {
+			return nil, err
+		}
+		for _, f := range fis {
+			if !f.IsDir() && strings.HasSuffix(f.Name(), ".json") {
+				files = append(files, file+f.Name())
+			}
+		}
+	} else {
+		files = append(files, file)
 	}
 
-	accounts := []*Account{}
-	if err := json.Unmarshal(data, &accounts); err != nil {
-		return nil, err
+	for i := 0; i < len(files); i++ {
+		var data []byte
+		var err error
+		data, err = ioutil.ReadFile(files[i])
+		if err != nil {
+			return nil, err
+		}
+		taccs := []*Account{}
+		if err := json.Unmarshal(data, &taccs); err != nil {
+			return nil, err
+		}
+		accounts = append(accounts, taccs...)
 	}
 
 	return accounts, nil
@@ -133,10 +156,13 @@ func (a *Account) UnmarshalJSON(b []byte) error {
 
 	a.ID = aux.ID
 	a.balance = aux.Balance
-	a.key = NewKey(
-		common.Base58Decode(aux.Seckey),
-		crypto.NewAlgorithm(aux.Algorithm),
-	)
+	a.vote = aux.Vote
+	if aux.Seckey != "" {
+		a.key = NewKey(
+			common.Base58Decode(aux.Seckey),
+			crypto.NewAlgorithm(aux.Algorithm),
+		)
+	}
 	return nil
 }
 
@@ -145,6 +171,7 @@ func (a *Account) MarshalJSON() ([]byte, error) {
 	aux := &AccountJSON{
 		ID:        a.ID,
 		Balance:   a.balance,
+		Vote:      a.vote,
 		Seckey:    common.Base58Encode(a.key.Seckey),
 		Algorithm: a.key.Algorithm.String(),
 	}

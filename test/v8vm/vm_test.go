@@ -42,7 +42,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 	vi := database.NewVisitor(100, db)
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(10000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
@@ -76,7 +76,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 func TestEngine_LoadAndCall(t *testing.T) {
 	vi := Init(t)
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", "contractName")
 	tHost := host.NewHost(ctx, vi, nil, nil)
@@ -582,7 +582,17 @@ func TestEngine_Func(t *testing.T) {
 
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger", int64(1e12))
-	_, _, err := vmPool.LoadAndCall(host, code, "tooBigArray")
+	_, _, err := vmPool.LoadAndCall(host, code, "jsonparse")
+	if err == nil || !strings.Contains(err.Error(), "SyntaxError: Unexpected token o in JSON at position 1") {
+		t.Fatalf("LoadAndCall jsonparse should return error: SyntaxError: Unexpected token o in JSON at position 1, got err = %v\n", err)
+	}
+
+	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
+	if err != nil || cost.ToGas() != int64(5052842) {
+		t.Fatalf("LoadAndCall objadd should cost 5052842, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "tooBigArray")
 	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr gas overflow max int") {
 		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr gas overflow max int, got %v\n", err)
 	}
@@ -662,7 +672,7 @@ func TestEngine_Int64(t *testing.T) {
 func TestEngine_Console(t *testing.T) {
 	host, code := MyInit(t, "console1")
 	_, _, err := vmPool.LoadAndCall(host, code, "log")
-	if err != nil {
+	if err != nil && !strings.Contains(err.Error(), "console.fatal is not a function") {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 }

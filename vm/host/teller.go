@@ -2,9 +2,11 @@ package host
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
-	"strings"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
@@ -109,8 +111,17 @@ func (t *Teller) PayCost(c contract.Cost, who string) {
 
 // IsProducer check account is producer
 func (t *Teller) IsProducer(acc string) bool {
-	//fmt.Printf("producerTable %v\n ", t.h.DB().MKeys("vote_producer.iost-producerTable"))
-	return t.h.DB().MHas("vote_producer.iost-producerTable", acc)
+	pm := t.h.DB().Get("vote_producer.iost-producerMap")
+	pmStr := database.Unmarshal(pm)
+	if _, ok := pmStr.(error); ok {
+		return false
+	}
+	producerMap, err := simplejson.NewJson([]byte(pmStr.(string)))
+	if err != nil {
+		return false
+	}
+	_, ok := producerMap.CheckGet(acc)
+	return ok
 }
 
 // DoPay ...
@@ -125,17 +136,22 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (paidGas *common.Fixed, e
 			if err != nil {
 				return nil, fmt.Errorf("pay gas cost failed: %v %v %v", err, payer, gas)
 			}
-			// reward 15% gas to account referrer
-			if !t.h.IsContract(payer) {
-				acc, _ := ReadAuth(t.h.DB(), payer)
-				if acc == nil {
-					ilog.Fatalf("invalid account %v", payer)
-				}
-				if acc.Referrer != "" && t.IsProducer(acc.Referrer) {
-					reward := gas.TimesF(0.1)
-					t.h.ChangeTGas(acc.Referrer, reward, true)
+
+			var enableReferrerReward = false
+			if enableReferrerReward {
+				// reward 15% gas to account referrer
+				if !t.h.IsContract(payer) {
+					acc, _ := ReadAuth(t.h.DB(), payer)
+					if acc == nil {
+						ilog.Fatalf("invalid account %v", payer)
+					}
+					if acc.Referrer != "" && t.IsProducer(acc.Referrer) {
+						reward := gas.TimesF(0.1)
+						t.h.ChangeTGas(acc.Referrer, reward, true)
+					}
 				}
 			}
+
 		}
 
 		if payer == t.h.Context().Value("publisher").(string) {

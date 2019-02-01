@@ -22,8 +22,8 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 
 	witness := common.Witness{
 		ID:      acc0.ID,
-		Owner:   acc0.KeyPair.ID,
-		Active:  acc0.KeyPair.ID,
+		Owner:   acc0.KeyPair.ReadablePubkey(),
+		Active:  acc0.KeyPair.ReadablePubkey(),
 		Balance: 21000000000,
 	}
 	params := []interface{}{
@@ -36,7 +36,7 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 		[]interface{}{witness},
 	}
 	b, _ := json.Marshal(params)
-	r, err := s.Call("issue.iost", "InitGenesis", string(b), acc.ID, acc.KeyPair)
+	r, err := s.Call("issue.iost", "initGenesis", string(b), acc.ID, acc.KeyPair)
 	s.Visitor.Commit()
 	return r, err
 }
@@ -59,16 +59,16 @@ func Test_IOSTIssue(t *testing.T) {
 		prepareNewProducerVote(t, s, acc0)
 		initProducer(s)
 
-		Convey("test IssueIOST", func() {
+		Convey("test issueIOST", func() {
 			s.Head.Time += 4 * 3 * 1e9
-			r, err := s.Call("issue.iost", "IssueIOST", `[]`, acc0.ID, acc0.KeyPair)
+			r, err := s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 
-			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(7805479823))
-			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(15847489338))
+			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(7884322975))
+			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(7884323211))
 		})
 	})
 }

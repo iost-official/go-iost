@@ -101,7 +101,7 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 	s.Visitor.SetContract(c)
 }
 
-// DeployContract via system.iost/SetCode
+// DeployContract via system.iost/setCode
 func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, *tx.TxReceipt, error) {
 	sc, err := json.Marshal(c)
 	if err != nil {
@@ -115,9 +115,9 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   "system.iost",
-		ActionName: "SetCode",
+		ActionName: "setCode",
 		Data:       string(jargs),
-	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0)
+	}}, nil, 400000000, 100, s.Head.Time+10000000, 0, 0)
 
 	trx.Time = s.Head.Time
 
@@ -166,7 +166,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0)
+	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
 
 	trx.Time = s.Head.Time
 	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})

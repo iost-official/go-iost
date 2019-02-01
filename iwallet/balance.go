@@ -16,25 +16,27 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
-// accountInfoCmd represents the balance command
+// accountInfoCmd represents the balance command.
 var accountInfoCmd = &cobra.Command{
-	Use:   "balance",
-	Short: "check information of specified account",
-	Long:  `check information of specified account`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Use:   "balance accountID",
+	Short: "Check the information of a specified account",
+	Long:  `Check the information of a specified account`,
+	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			fmt.Println("please enter the account ID")
-			return
+			cmd.Usage()
+			return fmt.Errorf("please enter the account ID")
 		}
-		//do some check for arg[0] here
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
 		info, err := sdk.getAccountInfo(id)
 		if err != nil {
-			fmt.Println(err)
-			return
+			return err
 		}
 		fmt.Println(marshalTextString(info))
 		return nil

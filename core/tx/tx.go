@@ -1,9 +1,9 @@
 package tx
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -12,21 +12,23 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx/pb"
+	txpb "github.com/iost-official/go-iost/core/tx/pb"
 	"github.com/iost-official/go-iost/crypto"
 )
 
 const (
 	minGasRatio = 100
 	maxGasRatio = 10000
-	minGasLimit = 500000
-	maxGasLimit = 200000000
+	minGasLimit = 600000
+	maxGasLimit = 400000000
 	txSizeLimit = 65536
 )
 
 // values
 var (
 	MaxExpiration = int64(90 * time.Second)
+	MaxDelay      = int64(720 * time.Hour) // 30 days
+	ChainID       uint32
 )
 
 //go:generate protoc  --go_out=plugins=grpc:. ./core/tx/tx.proto
@@ -49,6 +51,7 @@ type Tx struct {
 	GasRatio     int64               `json:"gas_ratio"`
 	GasLimit     int64               `json:"gas_limit"`
 	Delay        int64               `json:"delay"`
+	ChainID      uint32              `json:"chain_id"`
 	Actions      []*Action           `json:"-"`
 	Signers      []string            `json:"-"`
 	Signs        []*crypto.Signature `json:"-"`
@@ -56,10 +59,11 @@ type Tx struct {
 	PublishSigns []*crypto.Signature `json:"-"`
 	ReferredTx   []byte              `json:"referred_tx"`
 	AmountLimit  []*contract.Amount  `json:"amountLimit"`
+	Reserved     []byte              `json:"reserved"`
 }
 
 // NewTx return a new Tx
-func NewTx(actions []*Action, signers []string, gasLimit, gasRatio, expiration, delay int64) *Tx {
+func NewTx(actions []*Action, signers []string, gasLimit, gasRatio, expiration, delay int64, chainID uint32) *Tx {
 	return &Tx{
 		Time:         time.Now().UnixNano(),
 		Actions:      actions,
@@ -70,6 +74,7 @@ func NewTx(actions []*Action, signers []string, gasLimit, gasRatio, expiration, 
 		hash:         nil,
 		PublishSigns: []*crypto.Signature{},
 		Delay:        delay,
+		ChainID:      chainID,
 		AmountLimit:  []*contract.Amount{},
 	}
 }
@@ -122,6 +127,7 @@ func (t *Tx) ToPb() *txpb.Tx {
 		GasRatio:    t.GasRatio,
 		Signers:     t.Signers,
 		Delay:       t.Delay,
+		ChainId:     t.ChainID,
 		ReferredTx:  t.ReferredTx,
 		AmountLimit: t.AmountLimit,
 	}
@@ -156,6 +162,7 @@ func (t *Tx) FromPb(tr *txpb.Tx) *Tx {
 	t.GasRatio = tr.GasRatio
 	t.Actions = []*Action{}
 	t.Delay = tr.Delay
+	t.ChainID = tr.ChainId
 	t.ReferredTx = tr.ReferredTx
 	t.AmountLimit = tr.AmountLimit
 	for _, a := range tr.Actions {
@@ -222,96 +229,51 @@ func (t *Tx) IsDefer() bool {
 	return len(t.ReferredTx) > 0
 }
 
-// CanceledDelaytxHash returns the delay transaction hash that is canceled.
-func (t *Tx) CanceledDelaytxHash() ([]byte, bool) {
-	for _, action := range t.Actions {
-		if action.Contract == "system.iost" && action.ActionName == "CancelDelaytx" {
-			var actionData []string
-			err := json.Unmarshal([]byte(action.Data), &actionData)
-			if err == nil && len(actionData) > 0 {
-				return common.Base58Decode(actionData[0]), true
-			}
-		}
+// DeferTx generates a new transaction that will be packed to blockchain.
+func (t *Tx) DeferTx() *Tx {
+	expi := t.Expiration + t.Delay
+	// overflow
+	if expi < t.Expiration {
+		expi = math.MaxInt64
 	}
-	return nil, false
+	deferTx := &Tx{
+		Actions:      t.Actions,
+		Time:         t.Time + t.Delay,
+		Expiration:   expi,
+		GasLimit:     t.GasLimit,
+		GasRatio:     t.GasRatio,
+		Publisher:    t.Publisher,
+		ReferredTx:   t.Hash(),
+		AmountLimit:  t.AmountLimit,
+		PublishSigns: t.PublishSigns,
+		Signs:        t.Signs,
+		Signers:      t.Signers,
+		ChainID:      t.ChainID,
+	}
+	return deferTx
 }
 
-func (t *Tx) verifyDeferBaseFields(referredTx *Tx) error {
-	if referredTx.Time+referredTx.Delay != t.Time {
-		return errors.New("unmatched referred tx delay time")
+// VerifySelf verify tx's signature and some base fields.
+func (t *Tx) VerifySelf() error { // nolint
+	if t.ChainID != ChainID {
+		return fmt.Errorf("invalid chain_id, should be %d, yours:%d", ChainID, t.ChainID)
 	}
-	if referredTx.Expiration+referredTx.Delay != t.Expiration {
-		return errors.New("unmatched referred tx expiration time")
+	if !(t.Time > 0 && t.Expiration > t.Time) {
+		return errors.New("invalid time and expiration")
 	}
-	if referredTx.GasRatio != t.GasRatio {
-		return errors.New("unmatched referred tx gas ratio")
+	if t.Delay < 0 || t.Delay > MaxDelay {
+		return errors.New("invalid delay time")
 	}
-	if referredTx.GasLimit != t.GasLimit {
-		return errors.New("unmatched referred tx gas limit")
-	}
-	if len(referredTx.Actions) != len(t.Actions) {
-		return errors.New("unmatched referred tx action length")
-	}
-	for i := 0; i < len(referredTx.Actions); i++ {
-		if !referredTx.Actions[i].Equal(t.Actions[i]) {
-			return errors.New("unmatched referred tx action")
-		}
-	}
-	if len(referredTx.AmountLimit) != len(t.AmountLimit) {
-		return errors.New("unmatched referred tx amount limit length")
-	}
-	for i := 0; i < len(referredTx.AmountLimit); i++ {
-		if !referredTx.AmountLimit[i].Equal(t.AmountLimit[i]) {
-			return errors.New("unmatched referred tx amount limit")
-		}
-	}
-	return nil
-}
-
-func (t *Tx) verifyDeferSigFields(referredTx *Tx) error {
-	if referredTx.Publisher != t.Publisher {
-		return errors.New("unmatched referred tx publisher")
-	}
-	if len(referredTx.PublishSigns) != len(t.PublishSigns) {
-		return errors.New("unmatched referred tx publishsigns length")
-	}
-	for i := 0; i < len(referredTx.PublishSigns); i++ {
-		if !referredTx.PublishSigns[i].Equal(t.PublishSigns[i]) {
-			return errors.New("unmatched referred tx publishsign")
-		}
-	}
-	if len(referredTx.Signers) != len(t.Signers) {
-		return errors.New("unmatched referred tx signers length")
-	}
-	for i := 0; i < len(referredTx.Signers); i++ {
-		if referredTx.Signers[i] != t.Signers[i] {
-			return errors.New("unmatched referred tx signer")
-		}
-	}
-	if len(referredTx.Signs) != len(t.Signs) {
-		return errors.New("unmatched referred tx signs length")
-	}
-	for i := 0; i < len(referredTx.Signs); i++ {
-		if !referredTx.Signs[i].Equal(t.Signs[i]) {
-			return errors.New("unmatched referred tx sign")
-		}
-	}
-	return nil
-}
-
-// VerifyDefer verifes whether the defer tx is matched  with the referred tx.
-func (t *Tx) VerifyDefer(referredTx *Tx) error {
-	if err := t.verifyDeferBaseFields(referredTx); err != nil {
-		return err
-	}
-	return t.verifyDeferSigFields(referredTx)
-}
-
-// VerifySelf verify tx's signature
-func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 	if t.Delay > 0 && t.IsDefer() {
 		return errors.New("invalid tx. including both delay and referredtx field")
 	}
+	if err := t.CheckSize(); err != nil {
+		return err
+	}
+	if err := t.CheckGas(); err != nil {
+		return err
+	}
+
 	// Defer tx does not need to verify signature.
 	if t.IsDefer() {
 		return nil
@@ -323,7 +285,7 @@ func (t *Tx) VerifySelf() error { // only check whether sigs are legal
 		if !ok {
 			return fmt.Errorf("signer error")
 		}
-		//signerSet[account.GetIDByPubkey(sign.Pubkey)] = true
+		//signerSet[account.EncodePubkey(sign.Pubkey)] = true
 	}
 	//for _, signer := range t.Signers {
 	//	if _, ok := signerSet[signer]; !ok {
@@ -366,8 +328,9 @@ func (t *Tx) IsCreatedBefore(ct int64) bool {
 
 // CheckSize checks whether tx size is valid.
 func (t *Tx) CheckSize() error {
-	if len(t.ToBytes(Full)) > txSizeLimit {
-		return fmt.Errorf("tx size illegal, should <= %v", txSizeLimit)
+	l := len(t.ToBytes(Full))
+	if l > txSizeLimit {
+		return fmt.Errorf("tx size illegal, should <= %v, got %v", txSizeLimit, l)
 	}
 	return nil
 }
@@ -378,55 +341,54 @@ func (t *Tx) CheckGas() error {
 	if t.GasRatio < minGasRatio || t.GasRatio > maxGasRatio {
 		return fmt.Errorf("gas ratio illegal, should in [%v, %v]", minGasRatio/ratio, maxGasRatio/ratio)
 	}
-	if t.GasLimit < minGasLimit {
-		return fmt.Errorf("gas limit illegal, should >= %v", minGasLimit/ratio)
-	}
-	if t.GasLimit > maxGasLimit {
-		return fmt.Errorf("gas limit illegal, should <= %v", maxGasLimit/ratio)
+	if t.GasLimit < minGasLimit || t.GasLimit > maxGasLimit {
+		return fmt.Errorf("gas limit illegal, should in [%v, %v]", minGasLimit/ratio, maxGasLimit/ratio)
 	}
 	return nil
 }
 
 // ToBytes converts tx to bytes.
 func (t *Tx) ToBytes(l ToBytesLevel) []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteInt64(t.Time, true)
-	sn.WriteInt64(t.Expiration, true)
-	sn.WriteInt64(t.GasRatio, true)
-	sn.WriteInt64(t.GasLimit, true)
-	sn.WriteInt64(t.Delay, true)
-	sn.WriteStringSlice(t.Signers, true)
+	se := common.NewSimpleEncoder()
+	se.WriteInt64(t.Time)
+	se.WriteInt64(t.Expiration)
+	se.WriteInt64(t.GasRatio)
+	se.WriteInt64(t.GasLimit)
+	se.WriteInt64(t.Delay)
+	se.WriteInt32(int32(t.ChainID))
+	se.WriteBytes(t.Reserved)
+	se.WriteStringSlice(t.Signers)
 
 	actionBytes := make([][]byte, 0, len(t.Actions))
 	for _, a := range t.Actions {
 		actionBytes = append(actionBytes, a.ToBytes())
 	}
-	sn.WriteBytesSlice(actionBytes, false)
+	se.WriteBytesSlice(actionBytes)
 
 	amountBytes := make([][]byte, 0, len(t.AmountLimit))
 	for _, a := range t.AmountLimit {
 		amountBytes = append(amountBytes, a.ToBytes())
 	}
-	sn.WriteBytesSlice(amountBytes, false)
+	se.WriteBytesSlice(amountBytes)
 
 	if l > Base {
 		signBytes := make([][]byte, 0, len(t.Signs))
 		for _, sig := range t.Signs {
 			signBytes = append(signBytes, sig.ToBytes())
 		}
-		sn.WriteBytesSlice(signBytes, false)
+		se.WriteBytesSlice(signBytes)
 	}
 
 	if l > Publish {
-		sn.WriteBytes(t.ReferredTx, true)
-		sn.WriteString(t.Publisher, true)
+		se.WriteBytes(t.ReferredTx)
+		se.WriteString(t.Publisher)
 
 		signBytes := make([][]byte, 0, len(t.PublishSigns))
 		for _, sig := range t.PublishSigns {
 			signBytes = append(signBytes, sig.ToBytes())
 		}
-		sn.WriteBytesSlice(signBytes, false)
+		se.WriteBytesSlice(signBytes)
 	}
 
-	return sn.Bytes()
+	return se.Bytes()
 }

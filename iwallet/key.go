@@ -17,13 +17,13 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/spf13/cobra"
 )
 
 type key struct {
-	ID        string
 	Algorithm string
 	Pubkey    string
 	Seckey    string
@@ -32,25 +32,22 @@ type key struct {
 // keyCmd represents the keyPair command
 var keyCmd = &cobra.Command{
 	Use:   "key",
-	Short: "create a keyPair",
-	Long:  `create a keyPair`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
-		n, err := account.NewKeyPair(nil, sdk.getSignAlgo())
+	Short: "Create a key pair",
+	Long:  `Create a key pair`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		n, err := account.NewKeyPair(nil, sdk.GetSignAlgo())
 		if err != nil {
-			fmt.Printf("NewKeyPair error %v\nn", err)
-			return
+			return fmt.Errorf("failed to new key pair: %v", err)
 		}
 
 		var k key
-		k.ID = n.ID
 		k.Algorithm = n.Algorithm.String()
 		k.Pubkey = common.Base58Encode(n.Pubkey)
 		k.Seckey = common.Base58Encode(n.Seckey)
 
 		ret, err := json.MarshalIndent(k, "", "    ")
 		if err != nil {
-			fmt.Printf("error %v\n", err)
-			return
+			return fmt.Errorf("failed to marshal: %v", err)
 		}
 		fmt.Println(string(ret))
 		return nil

@@ -1,4 +1,60 @@
-## v2.1.0
+## Everest v2.5.0
+
+Thu Jan 31 14:29:15 CST 2019
+
+- Fix known issue
+- Improve stability
+- Add system contract command to iWallet
+
+## Everest v2.4.0
+
+Mon Jan 28 16:54:43 CST 2019
+
+- Shrink docker image size.
+- Fix bug: iwallet 'compile' command fails to generate contract abi on Linux.
+- Increase block packing time from 300ms to 500ms.
+- Modify 'maxTxLimitTime' from 100ms to 200ms.
+- Increase gas charged for 'setCode'.
+- Disable account referrer reward.
+- Add a reserved field in transaction.
+
+## Everest v2.3.1
+
+Sat Jan 19 18:32:18 CST 2019
+
+- Add can_update to exchange.iost contract.
+
+## Everest v2.3.0
+
+Sat Jan 19 17:25:28 CST 2019
+
+- Increase minimum GasLimit of transaction from 5000 to 6000.
+- RPC: add "voteInfos" to getAccount api.
+- Complete vote, dividend test.
+- iWallet remove npm package dependencies.
+- Add 'exchange.iost' system contract, used for creating accounts and transferring.
+
+## Everest v2.2.1
+
+Sat Jan 12 20:36:05 CST 2019
+
+- Fix `iWallet` bug.
+
+## Everest v2.2.0
+
+Sat Jan 12 17:37:34 CST 2019
+
+- Change naming style of all functions in system contracts from `ThisNameStyle` to `thisNameStyle`.
+- Remove `keypair pubkey ID`. Change pubkey ID ( "IOST" + `base58`(pubkey_bytes + `crc32`(pubkey_bytes)) to `base58`(pubkey_bytes) for simplicity;
+  `signup` and `vote` will be affected.
+- Add transaction replay protection.
+- Add `ChainID` field in each transaction.
+- Rewrite serialization to make it simpler and more efficient.
+- Update RPC; redefine `groups` to `group_names` in struct `Permission`.
+- Adjust genesis configuration.
+- Add `contractOwner()` system method to JS smart contract.
+
+## Everest v2.1.0
 
 Thu Jan  3 22:11:50 CST 2019
 

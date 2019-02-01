@@ -1,17 +1,17 @@
 package blockcache
 
 import (
+	"encoding/json"
 	"testing"
-	//	"fmt"
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/db/mocks"
 
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
-	"github.com/iost-official/go-iost/common"
 )
 
 func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
@@ -39,7 +39,7 @@ func TestBlockCache(t *testing.T) {
 			Number:     0,
 		},
 	}
-
+	b0.CalculateHeadHash()
 	b1 := genBlock(b0, "w1", 1)
 	b2 := genBlock(b1, "w2", 2)
 	b2a := genBlock(b1, "w3", 3)
@@ -64,6 +64,22 @@ func TestBlockCache(t *testing.T) {
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
 	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerKeyToId-"+"aaaa").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("\"accaaaa\""), nil
+	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerKeyToId-"+"bbbbb").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal("\"accbbbbb\""), nil
+	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerTable-"+"accaaaa").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(`{"pubkey":"aaaaaa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b","loc":"aaloc","url":"aaurl","netId":"accaaaaNetId","isProducer":true,"status":1,"online":true}`), nil
+	})
+	statedb.EXPECT().Get("state", "m-vote_producer.iost-"+"producerTable-"+"accbbbbb").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		return database.MustMarshal(`{"pubkey":"bbbbbbPV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b","loc":"aaloc","url":"aaurl","netId":"accbbbbbNetId","isProducer":true,"status":1,"online":true}`), nil
+	})
+	statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		bhJson, _ := json.Marshal(b0.Head)
+		return string(bhJson), nil
+	})
 	//"m-vote_producer.iost-producerTable"
 	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
@@ -80,6 +96,9 @@ func TestBlockCache(t *testing.T) {
 	config := common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "./",
+		},
+		Snapshot: &common.SnapshotConfig{
+			Enable: false,
 		},
 	}
 	global.EXPECT().Config().AnyTimes().Return(&config)
@@ -133,22 +152,22 @@ func TestBlockCache(t *testing.T) {
 			//bc.Draw()
 			b2node := bc.Add(b2)
 			bc.Link(b2node)
-			//bc.Draw()
+			// bc.Draw()
 			b2anode := bc.Add(b2a)
 			bc.Link(b2anode)
-			//bc.Draw()
+			// bc.Draw()
 			b3node := bc.Add(b3)
 			bc.Link(b3node)
-			//bc.Draw()
+			// bc.Draw()
 			b4node := bc.Add(b4)
 			bc.Link(b4node)
-			//bc.Draw()
+			// bc.Draw()
 			b3anode := bc.Add(b3a)
 			bc.Link(b3anode)
-			//bc.Draw()
+			// bc.Draw()
 			b5node := bc.Add(b5)
 			bc.Link(b5node)
-			//bc.Draw()
+			// bc.Draw()
 			So(bc.head, ShouldEqual, b5node)
 			blk, _ := bc.GetBlockByNumber(7)
 			So(blk, ShouldEqual, b5node.Block)
@@ -166,6 +185,17 @@ func TestBlockCache(t *testing.T) {
 
 		})
 
+		Convey("UpdateInfo", func() {
+			CleanBlockCacheWAL()
+			bc, err := NewBlockCache(global)
+			defer bc.CleanDir()
+			So(err, ShouldBeNil)
+			netId := []string{"accaaaaNetId", "accbbbbbNetId"}
+			b := common.StringSliceEqual(netId, bc.linkedRoot.NetID())
+			So(b, ShouldBeTrue)
+
+		})
+
 	})
 }
 
@@ -179,6 +209,7 @@ func TestVote(t *testing.T) {
 			Number:     0,
 		},
 	}
+	b0.CalculateHeadHash()
 
 	b1 := genBlock(b0, "w1", 1)
 	b2 := genBlock(b1, "w2", 2)
@@ -201,6 +232,10 @@ func TestVote(t *testing.T) {
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(tpl), nil
 	})
+	statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+		bhJson, _ := json.Marshal(b0.Head)
+		return string(bhJson), nil
+	})
 	statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 	})
@@ -215,25 +250,26 @@ func TestVote(t *testing.T) {
 		DB: &common.DBConfig{
 			LdbPath: "./",
 		},
+		Snapshot: &common.SnapshotConfig{
+			Enable: false,
+		},
 	}
 	global.EXPECT().Config().AnyTimes().Return(&config)
 
 	Convey("test api", t, func() {
 		var wl WitnessList
 		pl := []string{"p1", "p2", "p3"}
-		var pn int64 = 1
 		al := []string{"a1", "a2", "a3"}
 
 		wl.SetPending(pl)
 		So(StringSliceEqual(pl, wl.Pending()), ShouldBeTrue)
-		wl.SetPendingNum(pn)
-		So(wl.PendingNum(), ShouldEqual, pn)
 		wl.SetActive(al)
 		So(StringSliceEqual(al, wl.Active()), ShouldBeTrue)
 
 	})
 	Convey("test update", t, func() {
-		bc, _ := NewBlockCache(global)
+		bc, err := NewBlockCache(global)
+		So(err, ShouldBeNil)
 		defer bc.CleanDir()
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 		node1 := NewBCN(bc.linkedRoot, b1)

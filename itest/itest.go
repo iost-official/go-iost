@@ -4,6 +4,11 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
+
+	"github.com/iost-official/go-iost/core/contract"
+
+	"reflect"
 
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -70,7 +75,7 @@ func Load(keysfile, configfile string) (*ITest, error) {
 }
 
 // CreateAccountN will create n accounts concurrently
-func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
+func (t *ITest) CreateAccountN(num int, randName bool, check bool) ([]*Account, error) {
 	ilog.Infof("Create %v account...", num)
 
 	res := make(chan interface{})
@@ -80,8 +85,14 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 			sem.acquire()
 			go func(n int, res chan interface{}) {
 				defer sem.release()
-				name := fmt.Sprintf("account%04d", n)
-				account, err := t.CreateAccount(name)
+				var name string
+				if randName {
+					name = fmt.Sprintf("acc%08d", rand.Int63n(100000000))
+				} else {
+					name = fmt.Sprintf("account%04d", n)
+				}
+
+				account, err := t.CreateAccount(t.GetDefaultAccount(), name, check)
 				if err != nil {
 					res <- err
 				} else {
@@ -99,12 +110,12 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 		case *Account:
 			accounts = append(accounts, value)
 		default:
-			return nil, fmt.Errorf("unexpect res: %v", value)
+			return accounts, fmt.Errorf("unexpect res: %v", value)
 		}
 	}
 
 	if len(accounts) != num {
-		return nil, fmt.Errorf(
+		return accounts, fmt.Errorf(
 			"expect create %v account, but only created %v account",
 			num,
 			len(accounts),
@@ -119,7 +130,7 @@ func (t *ITest) CreateAccountN(num int) ([]*Account, error) {
 }
 
 // CreateAccount will create a account by name
-func (t *ITest) CreateAccount(name string) (*Account, error) {
+func (t *ITest) CreateAccount(creator *Account, name string, check bool) (*Account, error) {
 	if len(t.keys) == 0 {
 		return nil, fmt.Errorf("keys is empty")
 	}
@@ -131,7 +142,7 @@ func (t *ITest) CreateAccount(name string) (*Account, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	account, err := client.CreateAccount(t.bank, name, key)
+	account, err := client.CreateAccount(creator, name, key, check)
 	if err != nil {
 		return nil, err
 	}
@@ -165,7 +176,7 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 				A.AddBalance(-amount)
 				ilog.Debugf("VoteProducer %v -> %v, amount: %v", A.ID, B, fmt.Sprintf("%0.8f", amount))
 
-				res <- t.Vote(A, B, fmt.Sprintf("%0.8f", amount))
+				res <- t.vote(A, B, fmt.Sprintf("%0.8f", amount))
 			}(res)
 		}
 	}()
@@ -183,46 +194,90 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 	return nil
 }
 
-// TransferN will send n transfer transaction concurrently
-func (t *ITest) TransferN(num int, accounts []*Account) error {
-	ilog.Infof("Send %v transfer transaction...", num)
+// VoteNode will send n vote transaction concurrently
+func (t *ITest) VoteNode(num int, accounts []*Account) error {
+	ilog.Infof("Send %v vote transaction...", num)
 
 	res := make(chan interface{})
+	times := len(accounts)
 	go func() {
 		sem := make(semaphore, concurrentNum)
-		for i := 0; i < num; i++ {
+		for i := 0; i < times; i++ {
 			sem.acquire()
-			go func(res chan interface{}) {
+			go func(res chan interface{}, i int) {
 				defer sem.release()
-				A := accounts[rand.Intn(len(accounts))]
-				B := accounts[rand.Intn(len(accounts))]
-				amount := float64(rand.Int63n(10000)+1) / 100
+				A := t.bank
+				B := accounts[i].ID
+				var vote string
+				if num == 0 {
+					vote = accounts[i].vote
+				} else {
+					vote = strconv.Itoa(num)
+				}
+				ilog.Infof("VoteNode %v -> %v, vote: %v", A.ID, B, vote)
 
-				A.AddBalance(-amount)
-				B.AddBalance(amount)
-				ilog.Debugf("Transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
-
-				res <- t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount))
-			}(res)
+				res <- t.vote(A, B, vote)
+			}(res, i)
 		}
 	}()
 
-	for i := 0; i < num; i++ {
+	for i := 0; i < times; i++ {
 		switch value := (<-res).(type) {
 		case error:
-			return fmt.Errorf("send transfer transaction failed: %v", value)
+			return fmt.Errorf("send vote transaction failed: %v", value)
 		default:
 		}
 	}
 
-	ilog.Infof("Send %v transfer transaction successful!", num)
+	ilog.Infof("Send %v vote transaction successful!", times)
 
 	return nil
 }
 
-// ContractTransferN will send n contract transfer transaction concurrently
-func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account) error {
-	ilog.Infof("Send %v contract transfer transaction...", num)
+// CancelVoteNode will send n Cancel vote transaction concurrently
+func (t *ITest) CancelVoteNode(num int, accounts []*Account) error {
+	ilog.Infof("Send %v Cancel vote transaction...", num)
+
+	res := make(chan interface{})
+	times := len(accounts)
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < times; i++ {
+			sem.acquire()
+			go func(res chan interface{}, i int) {
+				defer sem.release()
+				A := t.bank
+				B := accounts[i].ID
+				var vote string
+				if num == 0 {
+					vote = accounts[i].vote
+				} else {
+					vote = strconv.Itoa(num)
+				}
+
+				ilog.Infof("CancelVoteNode %v -> %v, cancel vote: %v", A.ID, B, vote)
+
+				res <- t.cancelVote(A, B, vote)
+			}(res, i)
+		}
+	}()
+
+	for i := 0; i < times; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			return fmt.Errorf("send cancel vote transaction failed: %v", value)
+		default:
+		}
+	}
+
+	ilog.Infof("Send %v cancel vote transaction successful!", times)
+
+	return nil
+}
+
+// TransferN will send n transfer transaction concurrently
+func (t *ITest) TransferN(num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v transfer transactions...", num)
 
 	res := make(chan interface{})
 	go func() {
@@ -232,14 +287,22 @@ func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account) erro
 			go func(res chan interface{}) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
+				balance, _ := strconv.ParseFloat(A.balance, 64)
+				for balance < 1 {
+					A = accounts[rand.Intn(len(accounts))]
+					balance, _ = strconv.ParseFloat(A.balance, 64)
+				}
 				B := accounts[rand.Intn(len(accounts))]
-				amount := float64(rand.Int63n(10000)+1) / 100
+				amount := float64(rand.Int63n(int64(math.Min(10000, balance*100)))+1) / 100
 
-				A.AddBalance(-amount)
-				B.AddBalance(amount)
-				ilog.Debugf("Contract transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+				ilog.Debugf("Transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+				err := t.Transfer(A, B, "iost", fmt.Sprintf("%0.8f", amount), memoSize, check)
 
-				res <- t.ContractTransfer(cid, A, B, fmt.Sprintf("%0.8f", amount))
+				if err == nil {
+					A.AddBalance(-amount)
+					B.AddBalance(amount)
+				}
+				res <- err
 			}(res)
 		}
 	}()
@@ -247,14 +310,224 @@ func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account) erro
 	for i := 0; i < num; i++ {
 		switch value := (<-res).(type) {
 		case error:
-			return fmt.Errorf("send contract transfer transaction failed: %v", value)
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send transfer transactions: %v", value)
+			}
 		default:
+			successNum++
 		}
 	}
 
-	ilog.Infof("Send %v contract transfer transaction successful!", num)
+	ilog.Infof("Sent %v/%v transfer transactions", successNum, num)
+	return
+}
 
-	return nil
+// PledgeGasN will send n pledge/unpledge transaction concurrently
+func (t *ITest) PledgeGasN(actionType string, num int, accounts []*Account, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v gas transaction...", num)
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				balance, _ := strconv.ParseFloat(A.balance, 64)
+				for balance < 1 {
+					A = accounts[rand.Intn(len(accounts))]
+					balance, _ = strconv.ParseFloat(A.balance, 64)
+				}
+				amount := float64(rand.Int63n(int64(math.Min(1000, balance*100)))+1)/100 + 1.0
+
+				ilog.Debugf("pledge gas %v, amount: %v", A.ID, fmt.Sprintf("%0.8f", amount))
+				var err error
+				action := actionType
+				if action == "rand" {
+					if rand.Int()%2 == 0 {
+						action = "pledge"
+					} else {
+						action = "unpledge"
+					}
+				}
+				if action == "pledge" {
+					err = t.Pledge(A, fmt.Sprintf("%0.8f", amount), check)
+				} else if action == "unpledge" {
+					err = t.Unpledge(A, fmt.Sprintf("%0.8f", amount), check)
+				} else {
+					panic("invalid action " + action)
+				}
+
+				if err == nil {
+					A.AddBalance(-amount)
+				}
+				res <- err
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send transfer transactions: %v", value)
+			}
+		default:
+			successNum++
+		}
+	}
+
+	ilog.Infof("Sent %v/%v gas transactions", successNum, num)
+	return
+}
+
+// BuyRAMN will send n buy/sell ram transaction concurrently
+func (t *ITest) BuyRAMN(actionType string, num int, accounts []*Account, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v ram transaction...", num)
+
+	AmountLimit = []*contract.Amount{{Token: "iost", Val: "1000"}, {Token: "ram", Val: "1000"}}
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				amount := rand.Int63n(10) + 10
+
+				ilog.Debugf("buy/sell ram %v, amount: %v", A.ID, amount)
+				var err error
+				action := actionType
+				if action == "rand" {
+					if rand.Int()%2 == 0 {
+						action = "buy"
+					} else {
+						action = "sell"
+					}
+				}
+				if action == "buy" {
+					err = t.BuyRAM(A, amount, check)
+				} else if action == "sell" {
+					err = t.SellRAM(A, amount, check)
+				} else {
+					panic("invalid action " + action)
+				}
+
+				res <- err
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send transfer transactions: %v", value)
+			}
+		default:
+			successNum++
+		}
+	}
+
+	ilog.Infof("Sent %v/%v ram transactions", successNum, num)
+	return
+}
+
+// ContractTransferN will send n contract transfer transaction concurrently
+func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v contract transfer transaction...", num)
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				balance, _ := strconv.ParseFloat(A.balance, 64)
+				for balance < 1 {
+					A = accounts[rand.Intn(len(accounts))]
+					balance, _ = strconv.ParseFloat(A.balance, 64)
+				}
+				B := accounts[rand.Intn(len(accounts))]
+				amount := float64(rand.Int63n(int64(math.Min(10000, balance*100)))+1) / 100
+
+				ilog.Debugf("Contract transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+				err := t.ContractTransfer(cid, A, B, fmt.Sprintf("%0.8f", amount), memoSize, check)
+
+				if err == nil {
+					A.AddBalance(-amount)
+					B.AddBalance(amount)
+				}
+				res <- err
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send contract transfer transactions: %v", value)
+			}
+		default:
+			successNum++
+		}
+	}
+
+	ilog.Infof("Sent %v/%v contract transfer transactions", successNum, num)
+	return
+}
+
+// ExchangeTransferN will send n contract transfer transaction concurrently
+func (t *ITest) ExchangeTransferN(num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
+	ilog.Infof("Sending %v exchange transfer transaction...", num)
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(res chan interface{}) {
+				defer sem.release()
+				A := accounts[rand.Intn(len(accounts))]
+				balance, _ := strconv.ParseFloat(A.balance, 64)
+				for balance < 1 {
+					A = accounts[rand.Intn(len(accounts))]
+					balance, _ = strconv.ParseFloat(A.balance, 64)
+				}
+				B := accounts[rand.Intn(len(accounts))]
+				amount := float64(rand.Int63n(int64(math.Min(10000, balance*100)))+1) / 100
+
+				ilog.Debugf("Contract transfer %v -> %v, amount: %v", A.ID, B.ID, fmt.Sprintf("%0.8f", amount))
+				err := t.ExchangeTransfer(A, B, fmt.Sprintf("%0.8f", amount), memoSize, check)
+
+				if err == nil {
+					A.AddBalance(-amount)
+					B.AddBalance(amount)
+				}
+				res <- err
+			}(res)
+		}
+	}()
+
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			if firstErr == nil {
+				firstErr = fmt.Errorf("failed to send contract transfer transactions: %v", value)
+			}
+		default:
+			successNum++
+		}
+	}
+
+	ilog.Infof("Sent %v/%v contract transfer transactions", successNum, num)
+	return
 }
 
 // CheckAccounts will check account info by getting account info
@@ -315,11 +588,11 @@ func (t *ITest) CheckAccounts(a []*Account) error {
 }
 
 // ContractTransfer will contract transfer token from sender to recipient
-func (t *ITest) ContractTransfer(cid string, sender, recipient *Account, amount string) error {
+func (t *ITest) ContractTransfer(cid string, sender, recipient *Account, amount string, memoSize int, check bool) error {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	err := client.ContractTransfer(cid, sender, recipient, amount)
+	err := client.ContractTransfer(cid, sender, recipient, amount, memoSize, check)
 	if err != nil {
 		return err
 	}
@@ -327,8 +600,21 @@ func (t *ITest) ContractTransfer(cid string, sender, recipient *Account, amount 
 	return nil
 }
 
-// Vote will vote producer from sender to recipient
-func (t *ITest) Vote(sender *Account, recipient, amount string) error {
+// ExchangeTransfer will contract transfer token from sender to recipient
+func (t *ITest) ExchangeTransfer(sender, recipient *Account, amount string, memoSize int, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.ExchangeTransfer(sender, recipient, "iost", amount, memoSize, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// vote will vote producer from sender to recipient
+func (t *ITest) vote(sender *Account, recipient, amount string) error {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
@@ -340,19 +626,84 @@ func (t *ITest) Vote(sender *Account, recipient, amount string) error {
 	return nil
 }
 
+// vote will cancel vote producer from sender to recipient
+func (t *ITest) cancelVote(sender *Account, recipient, amount string) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.CancelVoteProducer(sender, recipient, amount)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // CallActionWithRandClient randomly select one client and use it to send a tx
 func (t *ITest) CallActionWithRandClient(sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
-	return client.CallAction(sender, contractName, actionName, args...)
+	return client.CallAction(true, sender, contractName, actionName, args...)
 }
 
 // Transfer will transfer token from sender to recipient
-func (t *ITest) Transfer(sender, recipient *Account, token, amount string) error {
+func (t *ITest) Transfer(sender, recipient *Account, token, amount string, memoSize int, check bool) error {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	err := client.Transfer(sender, recipient, token, amount)
+	err := client.Transfer(sender, recipient, token, amount, memoSize, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Pledge will pledge gas for sender
+func (t *ITest) Pledge(sender *Account, amount string, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.Pledge(sender, amount, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// Unpledge will unpledge gas for sender
+func (t *ITest) Unpledge(sender *Account, amount string, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.Unpledge(sender, amount, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// BuyRAM will buy ram for sender
+func (t *ITest) BuyRAM(sender *Account, amount int64, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.BuyRAM(sender, amount, check)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// SellRAM will sell ram for sender
+func (t *ITest) SellRAM(sender *Account, amount int64, check bool) error {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	err := client.SellRAM(sender, amount, check)
 	if err != nil {
 		return err
 	}
@@ -401,12 +752,67 @@ func (t *ITest) GetAccount(name string) (*Account, error) {
 	return account, nil
 }
 
-// SendTransaction will send transaction to blockchain
-func (t *ITest) SendTransaction(transaction *Transaction) (string, error) {
+// GetContractStorage will get contract storage by contract id, key and field
+func (t *ITest) GetContractStorage(id, key, field string) (data string, hash string, number int64, err error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 
-	hash, err := client.SendTransaction(transaction)
+	return client.GetContractStorage(id, key, field)
+}
+
+// GetBlockByNumber will get block by number
+func (t *ITest) GetBlockByNumber(number int64) (*Block, error) {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	return client.GetBlockByNumber(number)
+}
+
+// SendTransactionN will send n transaction to blockchain concurrently
+func (t *ITest) SendTransactionN(trxs []*Transaction, check bool) ([]string, []error) {
+	ilog.Infof("Send %v transaction...", len(trxs))
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, concurrentNum)
+		for i := 0; i < len(trxs); i++ {
+			sem.acquire()
+			go func(idx int, res chan interface{}) {
+				defer sem.release()
+				cIndex := rand.Intn(len(t.clients))
+				client := t.clients[cIndex]
+				hash, err := client.SendTransaction(trxs[idx], check)
+				if err != nil {
+					res <- err
+				} else {
+					res <- hash
+				}
+			}(i, res)
+		}
+	}()
+
+	hashList := []string{}
+	errList := []error{}
+	for i := 0; i < len(trxs); i++ {
+		switch value := (<-res).(type) {
+		case error:
+			errList = append(errList, value)
+		case string:
+			hashList = append(hashList, value)
+		default:
+			ilog.Errorf("unexpected send transaction value type. %v %v", value, reflect.TypeOf(value))
+		}
+	}
+	ilog.Infof("Send %v transaction successful! %v failed.", len(hashList), len(errList))
+	return hashList, errList
+}
+
+// SendTransaction will send transaction to blockchain
+func (t *ITest) SendTransaction(transaction *Transaction, check bool) (string, error) {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+
+	hash, err := client.SendTransaction(transaction, check)
 	if err != nil {
 		return "", err
 	}

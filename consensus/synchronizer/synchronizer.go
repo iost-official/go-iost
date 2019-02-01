@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -205,6 +206,7 @@ func (sy *SyncImpl) checkSync() bool {
 	if netHeight > height+syncNumber {
 		sy.baseVariable.SetMode(global.ModeSync)
 		sy.dc.ReStart()
+		sy.syncEnd.Store(netHeight)
 		go sy.syncBlocks(height+1, netHeight)
 		return true
 	}
@@ -239,7 +241,9 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	}
 	if num > int64(continuousNum) {
 		ilog.Debugf("num: %v, continuousNum: %v", num, continuousNum)
-		go sy.syncBlocks(height+1, sy.blockCache.Head().Head.Number)
+		endNumber := sy.blockCache.Head().Head.Number
+		sy.syncEnd.Store(endNumber)
+		go sy.syncBlocks(height+1, endNumber)
 		return true
 	}
 	return false
@@ -257,7 +261,6 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
-	sy.syncEnd.Store(endNumber)
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
 		for sy.blockCache.Head().Head.Number+3 < startNumber {
 			time.Sleep(500 * time.Millisecond)
@@ -296,7 +299,7 @@ func (sy *SyncImpl) messageLoop() {
 				var rh msgpb.BlockHashQuery
 				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
-					ilog.Errorf("unmarshal BlockHashQuery failed:%v", err)
+					ilog.Errorf("Unmarshal BlockHashQuery failed:%v", err)
 					break
 				}
 				go sy.handleHashQuery(&rh, req.From())
@@ -304,7 +307,7 @@ func (sy *SyncImpl) messageLoop() {
 				var rh msgpb.BlockHashResponse
 				err := proto.Unmarshal(req.Data(), &rh)
 				if err != nil {
-					ilog.Errorf("unmarshal BlockHashResponse failed:%v", err)
+					ilog.Errorf("Unmarshal BlockHashResponse failed:%v", err)
 					break
 				}
 				go sy.handleHashResp(&rh, req.From())
@@ -344,7 +347,7 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashRespo
 		} else {
 			hash, err = sy.baseVariable.BlockChain().GetHashByNumber(i)
 			if err != nil {
-				ilog.Errorf("get hash by number from db failed. err=%v, number=%v", err, i)
+				ilog.Warnf("Get hash by number from db failed. err=%v, number=%v", err, i)
 				continue
 			}
 		}
@@ -405,7 +408,7 @@ func (sy *SyncImpl) handleHashQuery(rh *msgpb.BlockHashQuery, peerID p2p.PeerID)
 	}
 	bytes, err := proto.Marshal(resp)
 	if err != nil {
-		ilog.Errorf("marshal BlockHashResponse failed:struct=%v, err=%v", resp, err)
+		ilog.Errorf("Marshal BlockHashResponse failed:struct=%+v, err=%v", resp, err)
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
@@ -455,7 +458,7 @@ func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 	if err != nil {
 		blk, err = sy.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 		if err != nil {
-			ilog.Errorf("handle block query failed to get block.")
+			ilog.Warnf("Fail to get block. from=%v, hash=%v", peerID.Pretty(), common.Base58Encode(rh.Hash))
 			return
 		}
 	}
@@ -470,7 +473,7 @@ func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
 	bn, ok := p.(int64)
 	if !ok {
-		ilog.Errorf("get p failed.")
+		ilog.Errorf("Assert p to int64 failed. p=%v", p)
 		return false
 	}
 	if bn <= sy.blockCache.LinkedRoot().Head.Number {
@@ -486,7 +489,7 @@ func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
 func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{}) (bool, bool) {
 	bn, ok := p.(int64)
 	if !ok {
-		ilog.Errorf("get p failed.")
+		ilog.Errorf("Assert p to int64 failed. p=%v", p)
 		return false, false
 	}
 	ilog.Debugf("callback try sync block, num:%v", bn)
@@ -506,7 +509,7 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 	bi := &msgpb.BlockInfo{Number: bn, Hash: bHash}
 	bytes, err := proto.Marshal(bi)
 	if err != nil {
-		ilog.Errorf("marshal request block failed. err=%v", err)
+		ilog.Errorf("Marshal request block failed. struct=%+v, err=%v", bi, err)
 		return false, false
 	}
 	pid, ok := peerID.(p2p.PeerID)

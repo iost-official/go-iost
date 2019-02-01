@@ -10,6 +10,7 @@ type Chain interface {
 	Length() int64
 	TxTotal() int64
 	CheckLength()
+	SetLength(i int64)
 	Top() (*Block, error)
 	GetHashByNumber(number int64) ([]byte, error)
 	GetBlockByNumber(number int64) (*Block, error)

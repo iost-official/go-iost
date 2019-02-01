@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
+	"strings"
 )
 
 var tokenABIs *abiSet
@@ -51,6 +52,9 @@ func checkTokenExists(h *host.Host, tokenSym string) (ok bool, cost contract.Cos
 func setBalance(h *host.Host, tokenSym string, from string, balance int64, ramPayer string) (cost contract.Cost) {
 	ok, cost := h.MapHas(TokenBalanceMapPrefix+from, tokenSym)
 	if ok {
+		cost0, _ := h.MapPut(TokenBalanceMapPrefix+from, tokenSym, balance)
+		cost.AddAssign(cost0)
+	} else if (tokenSym == "iost" || tokenSym == "ram") && !strings.HasPrefix(from, "Contract") {
 		cost0, _ := h.MapPut(TokenBalanceMapPrefix+from, tokenSym, balance)
 		cost.AddAssign(cost0)
 	} else {
@@ -196,7 +200,6 @@ var (
 			return []interface{}{}, host.CommonErrorCost(1), nil
 		},
 	}
-
 	createTokenABI = &abi{
 		name: "create",
 		args: []string{"string", "string", "number", "json"},
@@ -265,7 +268,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 := h.RequireAuth(issuer, "token.iost")
+			ok, cost0 := h.RequireAuth(issuer, TokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -290,22 +293,32 @@ var (
 			}
 			totalSupply *= int64(math.Pow10(decimal))
 
+			publisher := h.Context().Value("publisher").(string)
 			// put info
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, IssuerMapField, issuer, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, IssuerMapField, issuer, publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, TotalSupplyMapField, totalSupply, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, TotalSupplyMapField, totalSupply, publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, SupplyMapField, int64(0), issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, SupplyMapField, int64(0), publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, CanTransferMapField, canTransfer, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, CanTransferMapField, canTransfer, publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField, onlyIssuerCanTransfer, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, OnlyIssuerCanTransferMapField, onlyIssuerCanTransfer, publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, DefaultRateMapField, defaultRate, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, DefaultRateMapField, defaultRate, publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, DecimalMapField, int64(decimal), issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, DecimalMapField, int64(decimal), publisher)
 			cost.AddAssign(cost0)
-			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, FullNameMapField, fullName, issuer)
+			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, FullNameMapField, fullName, publisher)
+			cost.AddAssign(cost0)
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 
 			return []interface{}{}, cost, nil
@@ -339,7 +352,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(issuer.(string), "token.iost")
+			ok, cost0 = h.RequireAuth(issuer.(string), TokenPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -366,6 +379,7 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
+			publisher := h.Context().Value("publisher").(string)
 			// set supply, set balance
 			cost0, err = h.MapPut(TokenInfoMapPrefix+tokenSym, SupplyMapField, supply.(int64)+amount)
 			cost.AddAssign(cost0)
@@ -373,7 +387,7 @@ var (
 				return nil, cost, err
 			}
 
-			balance, cost0, err := getBalance(h, tokenSym, to, issuer.(string))
+			balance, cost0, err := getBalance(h, tokenSym, to, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -381,7 +395,7 @@ var (
 			cost.AddAssign(cost0)
 
 			balance += amount
-			cost0 = setBalance(h, tokenSym, to, balance, issuer.(string))
+			cost0 = setBalance(h, tokenSym, to, balance, publisher)
 			cost.AddAssign(cost0)
 
 			message, err := json.Marshal(args)
@@ -438,7 +452,7 @@ var (
 			if onlyIssuerCanTransfer.(bool) {
 				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
 				cost.AddAssign(cost0)
-				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				ok, cost0 = h.RequireAuth(issuer.(string), TransferPermission)
 				cost.AddAssign(cost0)
 				if !ok {
 					return nil, cost, fmt.Errorf("transfer need issuer permission")
@@ -449,7 +463,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, "transfer")
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -471,13 +485,14 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
+			publisher := h.Context().Value("publisher").(string)
 			// set balance
-			fbalance, cost0, err := getBalance(h, tokenSym, from, from)
+			fbalance, cost0, err := getBalance(h, tokenSym, from, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
 			}
-			tbalance, cost0, err := getBalance(h, tokenSym, to, from)
+			tbalance, cost0, err := getBalance(h, tokenSym, to, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -497,10 +512,10 @@ var (
 			fbalance -= amount
 			tbalance += amount
 
-			cost0 = setBalance(h, tokenSym, to, tbalance, from)
+			cost0 = setBalance(h, tokenSym, to, tbalance, publisher)
 			//fmt.Printf("transfer set %v %v %v\n", tokenSym, to, tbalance)
 			cost.AddAssign(cost0)
-			cost0 = setBalance(h, tokenSym, from, fbalance, from)
+			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
 			cost.AddAssign(cost0)
 
 			// generate receipt
@@ -547,7 +562,7 @@ var (
 			if onlyIssuerCanTransfer.(bool) {
 				issuer, cost0 := h.MapGet(TokenInfoMapPrefix+tokenSym, IssuerMapField)
 				cost.AddAssign(cost0)
-				ok, cost0 = h.RequireAuth(issuer.(string), "transfer")
+				ok, cost0 = h.RequireAuth(issuer.(string), TransferPermission)
 				cost.AddAssign(cost0)
 				if !ok {
 					return nil, cost, fmt.Errorf("transfer need issuer permission")
@@ -558,7 +573,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, "transfer")
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -580,8 +595,9 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
+			publisher := h.Context().Value("publisher").(string)
 			// sub balance of from
-			fbalance, cost0, err := getBalance(h, tokenSym, from, from)
+			fbalance, cost0, err := getBalance(h, tokenSym, from, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -596,14 +612,14 @@ var (
 			}
 
 			fbalance -= amount
-			cost0 = setBalance(h, tokenSym, from, fbalance, from)
+			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas
 			}
 
 			// freeze token of to
-			cost0, err = freezeBalance(h, tokenSym, to, amount, ftime, from)
+			cost0, err = freezeBalance(h, tokenSym, to, amount, ftime, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -639,7 +655,7 @@ var (
 			}
 
 			// check auth
-			ok, cost0 = h.RequireAuth(from, "transfer")
+			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
 				return nil, cost, host.ErrPermissionLost
@@ -661,8 +677,9 @@ var (
 				return nil, cost, host.ErrOutOfGas
 			}
 
+			publisher := h.Context().Value("publisher").(string)
 			// set balance
-			fbalance, cost0, err := getBalance(h, tokenSym, from, from)
+			fbalance, cost0, err := getBalance(h, tokenSym, from, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -676,7 +693,7 @@ var (
 				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
 			fbalance -= amount
-			cost0 = setBalance(h, tokenSym, from, fbalance, from)
+			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
 			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas
@@ -723,7 +740,8 @@ var (
 				return nil, cost, host.ErrTokenNotExists
 			}
 
-			balance, cost0, err := getBalance(h, tokenSym, to, to)
+			publisher := h.Context().Value("publisher").(string)
+			balance, cost0, err := getBalance(h, tokenSym, to, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err

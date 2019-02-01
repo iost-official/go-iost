@@ -1,6 +1,7 @@
 package txpool
 
 import (
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -12,13 +13,13 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/mocks"
+	core_mock "github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/db/mocks"
+	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/p2p/mocks"
+	p2p_mock "github.com/iost-official/go-iost/p2p/mocks"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -46,6 +47,15 @@ func (pool *TxPImpl) testBlockListNum() int64 {
 func TestNewTxPImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
+		b0 := &block.Block{
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+				Number:     0,
+			},
+		}
+		b0.CalculateHeadHash()
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
@@ -61,17 +71,17 @@ func TestNewTxPImpl(t *testing.T) {
 			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
-		witnessInfo = append(witnessInfo, newAccount.ID)
+		witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 		witnessInfo = append(witnessInfo, "100000")
-		witnessList = append(witnessList, newAccount.ID)
+		witnessList = append(witnessList, newAccount.ReadablePubkey())
 		for i := 1; i < 3; i++ {
 			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
 				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
-			witnessList = append(witnessList, newAccount.ID)
-			witnessInfo = append(witnessInfo, newAccount.ID)
+			witnessList = append(witnessList, newAccount.ReadablePubkey())
+			witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 			witnessInfo = append(witnessInfo, "100000")
 		}
 		//conf := &common.Config{
@@ -92,6 +102,10 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
+		statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			bhJson, _ := json.Marshal(b0.Head)
+			return string(bhJson), nil
+		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 		})
@@ -110,9 +124,13 @@ func TestNewTxPImpl(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
-				LdbPath: "./",
+				LdbPath: "DB/",
+			},
+			Snapshot: &common.SnapshotConfig{
+				Enable: false,
 			},
 		}
+		defer os.RemoveAll("DB/")
 		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
@@ -212,6 +230,15 @@ func TestNewTxPImpl(t *testing.T) {
 func TestNewTxPImplB(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
 		ctl := NewController(t)
+		b0 := &block.Block{
+			Head: &block.BlockHead{
+				Version:    0,
+				ParentHash: []byte("nothing"),
+				Witness:    "w0",
+				Number:     0,
+			},
+		}
+		b0.CalculateHeadHash()
 		p2pMock := p2p_mock.NewMockService(ctl)
 
 		p2pCh := make(chan p2p.IncomingMessage, 100)
@@ -227,17 +254,17 @@ func TestNewTxPImplB(t *testing.T) {
 			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
-		witnessInfo = append(witnessInfo, newAccount.ID)
+		witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 		witnessInfo = append(witnessInfo, "100000")
-		witnessList = append(witnessList, newAccount.ID)
+		witnessList = append(witnessList, newAccount.ReadablePubkey())
 		for i := 1; i < 3; i++ {
 			newAccount, err := account.NewKeyPair(nil, crypto.Secp256k1)
 			if err != nil {
 				panic("account.NewKeyPair error")
 			}
 			accountList = append(accountList, newAccount)
-			witnessList = append(witnessList, newAccount.ID)
-			witnessInfo = append(witnessInfo, newAccount.ID)
+			witnessList = append(witnessList, newAccount.ReadablePubkey())
+			witnessInfo = append(witnessInfo, newAccount.ReadablePubkey())
 			witnessInfo = append(witnessInfo, "100000")
 		}
 		//conf := &common.Config{
@@ -258,6 +285,10 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
+		statedb.EXPECT().Get("snapshot", "blockHead").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
+			bhJson, _ := json.Marshal(b0.Head)
+			return string(bhJson), nil
+		})
 		statedb.EXPECT().Get("state", Any()).AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal(`{"loc":"11","url":"22","netId":"33","online":true,"score":0,"votes":0}`), nil
 		})
@@ -276,9 +307,13 @@ func TestNewTxPImplB(t *testing.T) {
 		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
-				LdbPath: "./",
+				LdbPath: "DB/",
+			},
+			Snapshot: &common.SnapshotConfig{
+				Enable: false,
 			},
 		}
+		defer os.RemoveAll("DB/")
 		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
@@ -355,34 +390,34 @@ func TestNewTxPImplB(t *testing.T) {
 			t4.GasRatio = 400
 			t5.GasRatio = 500
 
-			sig1, err := tx.SignTxContent(t1, newAccount.ID, newAccount)
+			sig1, err := tx.SignTxContent(t1, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t1.Signs = []*crypto.Signature{sig1}
-			t1, err = tx.SignTx(t1, newAccount.ID, []*account.KeyPair{newAccount})
+			t1, err = tx.SignTx(t1, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig2, err := tx.SignTxContent(t2, newAccount.ID, newAccount)
+			sig2, err := tx.SignTxContent(t2, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t2.Signs = []*crypto.Signature{sig2}
-			t2, err = tx.SignTx(t2, newAccount.ID, []*account.KeyPair{newAccount})
+			t2, err = tx.SignTx(t2, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig3, err := tx.SignTxContent(t3, newAccount.ID, newAccount)
+			sig3, err := tx.SignTxContent(t3, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t3.Signs = []*crypto.Signature{sig3}
-			t3, err = tx.SignTx(t3, newAccount.ID, []*account.KeyPair{newAccount})
+			t3, err = tx.SignTx(t3, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig4, err := tx.SignTxContent(t4, newAccount.ID, newAccount)
+			sig4, err := tx.SignTxContent(t4, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t4.Signs = []*crypto.Signature{sig4}
-			t4, err = tx.SignTx(t4, newAccount.ID, []*account.KeyPair{newAccount})
+			t4, err = tx.SignTx(t4, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
-			sig5, err := tx.SignTxContent(t5, newAccount.ID, newAccount)
+			sig5, err := tx.SignTxContent(t5, newAccount.ReadablePubkey(), newAccount)
 			So(err, ShouldBeNil)
 			t5.Signs = []*crypto.Signature{sig5}
-			t5, err = tx.SignTx(t5, newAccount.ID, []*account.KeyPair{newAccount})
+			t5, err = tx.SignTx(t5, newAccount.ReadablePubkey(), []*account.KeyPair{newAccount})
 			So(err, ShouldBeNil)
 
 			println("before add tx")
@@ -408,52 +443,6 @@ func TestNewTxPImplB(t *testing.T) {
 			So(ok, ShouldBeFalse)
 
 		})
-
-		//
-		//Convey("concurrent", func() {
-		//	txCnt := 10
-		//	blockCnt := 100
-		//	bl := genNodes(accountList, witnessList, blockCnt, txCnt, true)
-		//	ch := make(chan int, 4)
-		//	//fmt.Println("genNodes impl")
-		//	go func() {
-		//		for _, bcn := range bl {
-		//			txPool.AddLinkedNode(bcn, bcn)
-		//		}
-		//		ch <- 1
-		//	}()
-		//
-		//	go func() {
-		//		for i := 0; i < 100; i++ {
-		//			t := genTx(accountList[0], Expiration)
-		//			txPool.AddTx(t)
-		//		}
-		//		ch <- 2
-		//	}()
-		//
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			txPool.PendingTxs(10000000)
-		//		}
-		//		ch <- 3
-		//	}()
-		//	////time.Sleep(5*time.Second)
-		//
-		//	t := genTx(accountList[0], Expiration)
-		//	txPool.AddTx(t)
-		//	go func() {
-		//		for i := 0; i < 10000; i++ {
-		//			txPool.ExistTxs(t.Hash(), bl[blockCnt-10].Block)
-		//		}
-		//		ch <- 4
-		//	}()
-		//
-		//	for i := 0; i < 4; i++ {
-		//		<-ch
-		//		//fmt.Println("ch :", a)
-		//	}
-		//
-		//})
 
 		stopTest(gbl)
 	})
@@ -614,7 +603,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 		panic("account.NewKeyPair error")
 	}
 	accountList = append(accountList, newAccount)
-	witnessList = append(witnessList, newAccount.ID)
+	witnessList = append(witnessList, newAccount.ReadablePubkey())
 	//_accId := newAccount.ID
 
 	for i := 1; i < 3; i++ {
@@ -623,7 +612,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 			panic("account.NewKeyPair error")
 		}
 		accountList = append(accountList, newAccount)
-		witnessList = append(witnessList, newAccount.ID)
+		witnessList = append(witnessList, newAccount.ReadablePubkey())
 	}
 
 	config := &common.P2PConfig{
@@ -663,6 +652,12 @@ func stopTest(gl global.BaseVariable) {
 	os.RemoveAll(walPath)
 }
 
+func genTxReceipt() *tx.TxReceipt {
+	return &tx.TxReceipt{
+		Status: &tx.Status{},
+	}
+}
+
 func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 	actions := make([]*tx.Action, 0)
 	actions = append(actions, &tx.Action{
@@ -678,16 +673,16 @@ func genTx(a *account.KeyPair, expirationIter int64) *tx.Tx {
 
 	ex := time.Now().UnixNano() + expirationIter
 
-	t := tx.NewTx(actions, []string{a.ID}, 1000000, 100, ex, 0)
+	t := tx.NewTx(actions, []string{a.ReadablePubkey()}, 1000000, 100, ex, 0, 0)
 
-	sig1, err := tx.SignTxContent(t, a.ID, a)
+	sig1, err := tx.SignTxContent(t, a.ReadablePubkey(), a)
 	if err != nil {
 		ilog.Debug("failed to SignTxContent")
 	}
 
 	t.Signs = append(t.Signs, sig1)
 
-	t1, err := tx.SignTx(t, a.ID, []*account.KeyPair{a})
+	t1, err := tx.SignTx(t, a.ReadablePubkey(), []*account.KeyPair{a})
 	if err != nil {
 		ilog.Debug("failed to SignTx")
 	}
@@ -732,6 +727,7 @@ func genBlocks(accountList []*account.KeyPair, witnessList []string, blockCnt in
 
 		for i := 0; i < txCnt; i++ {
 			blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
+			blk.Receipts = append(blk.Receipts, genTxReceipt())
 		}
 
 		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
@@ -772,6 +768,7 @@ func genSingleBlock(accountList []*account.KeyPair, witnessList []string, Parent
 
 	for i := 0; i < txCnt; i++ {
 		blk.Txs = append(blk.Txs, genTx(accountList[0], tx.MaxExpiration))
+		blk.Receipts = append(blk.Receipts, genTxReceipt())
 	}
 
 	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()

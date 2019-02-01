@@ -21,8 +21,10 @@ message Tx {
     string publisher = 8;
     repeated sigpb.Signature publishSigns = 9;
     int64 delay = 10;
-    bytes referredTx = 11;
-    repeated contract.Amount amountLimit = 12;
+    uint32 chain_id = 11;
+    bytes referredTx = 12;
+    repeated contract.Amount amountLimit = 13;
+    bytes reserved = 14;
 }
 
 message Receipt {

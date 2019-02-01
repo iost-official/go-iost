@@ -2,9 +2,6 @@
 
 const _this = this;
 class Danger {
-    constructor() {
-    }
-
     bigArray() {
         return new Array(1000000);
     }
@@ -37,6 +34,29 @@ class Danger {
 
     putlong() {
         storage.put('x', 'x'.repeat(65537));
+    }
+
+    objadd() {
+        const s = "x".repeat(1000);
+        const sObj = {
+            toString() {
+                return s;
+            }
+        };
+        let r = ""
+        const rObj = {
+            valueOf() {
+                return r;
+            }
+        };
+        for (let i = 0; i < 100; i++) {
+            r = rObj + sObj;
+        }
+        return r.length;
+    }
+
+    jsonparse() {
+        JSON.parse({a:1});
     }
 };
 

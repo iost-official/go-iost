@@ -1,6 +1,7 @@
 package db
 
 import (
+	"fmt"
 	"math/rand"
 	"os/exec"
 	"testing"
@@ -64,7 +65,7 @@ func BenchmarkMVCCDBPutAndCommit(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mvccdb.Put("table01", keys[i], values[i])
 		if i%100 == 99 {
-			mvccdb.Commit()
+			mvccdb.Commit(fmt.Sprintf("tag%v", i))
 		}
 	}
 	b.StopTimer()
@@ -129,7 +130,7 @@ func BenchmarkMVCCDBGetAndCommit(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mvccdb.Put("table01", keys[i], values[i])
 		if i%100 == 99 {
-			mvccdb.Commit()
+			mvccdb.Commit(fmt.Sprintf("tag%v", i))
 		}
 	}
 	b.ResetTimer()
@@ -198,7 +199,7 @@ func BenchmarkMVCCDBDelAndCommit(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mvccdb.Put("table01", keys[i], values[i])
 		if i%100 == 99 {
-			mvccdb.Commit()
+			mvccdb.Commit(fmt.Sprintf("tag%v", i))
 		}
 	}
 	b.ResetTimer()
@@ -235,12 +236,12 @@ func BenchmarkMVCCDBPutAndCommitAndFlush(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		mvccdb.Put("table01", keys[i], values[i])
 		if i%100 == 99 {
-			mvccdb.Commit()
+			mvccdb.Commit(fmt.Sprintf("tag%v", i))
 		}
 		if i%2000 == 1999 {
 			tag := make([]byte, 32)
 			rand.Read(tag)
-			mvccdb.Tag(string(tag))
+			mvccdb.Commit(string(tag))
 			mvccdb.Flush(string(tag))
 		}
 	}
@@ -275,12 +276,12 @@ func BenchmarkMVCCDBGetAndPutAndCommitAndFlush(b *testing.B) {
 		mvccdb.Get("table01", keys[i])
 		mvccdb.Put("table01", keys[i], values[i])
 		if i%50 == 49 {
-			mvccdb.Commit()
+			mvccdb.Commit(fmt.Sprintf("tag%v", i))
 		}
 		if i%2500 == 2499 {
 			tag := make([]byte, 32)
 			rand.Read(tag)
-			mvccdb.Tag(string(tag))
+			mvccdb.Commit(string(tag))
 			mvccdb.Flush(string(tag))
 		}
 	}

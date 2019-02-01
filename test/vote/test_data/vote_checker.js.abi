@@ -1,0 +1,86 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "vote",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "unvote",
+            "args": [
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "issueIOST",
+            "args": [
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "exchangeIOST",
+            "args": [
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "candidateWithdraw",
+            "args": [
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "topupVoterBonus",
+            "args": [
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "voterWithdraw",
+            "args": [
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "checkResult",
+            "args": [
+            ],
+            "amountLimit": [{
+                "token": "*",
+                "val": "unlimited"
+            }]
+        }
+    ]
+}

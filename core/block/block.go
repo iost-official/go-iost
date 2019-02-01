@@ -40,16 +40,16 @@ func (b *BlockHead) ToPb() *blockpb.BlockHead {
 
 // ToBytes converts BlockHead to a specific byte slice.
 func (b *BlockHead) ToBytes() []byte {
-	sn := common.NewSimpleNotation()
-	sn.WriteInt64(b.Version, true)
-	sn.WriteBytes(b.ParentHash, false)
-	sn.WriteBytes(b.TxMerkleHash, false)
-	sn.WriteBytes(b.TxReceiptMerkleHash, false)
-	sn.WriteBytes(b.Info, true)
-	sn.WriteInt64(b.Number, true)
-	sn.WriteString(b.Witness, true)
-	sn.WriteInt64(b.Time, true)
-	return sn.Bytes()
+	se := common.NewSimpleEncoder()
+	se.WriteInt64(b.Version)
+	se.WriteBytes(b.ParentHash)
+	se.WriteBytes(b.TxMerkleHash)
+	se.WriteBytes(b.TxReceiptMerkleHash)
+	se.WriteBytes(b.Info)
+	se.WriteInt64(b.Number)
+	se.WriteString(b.Witness)
+	se.WriteInt64(b.Time)
+	return se.Bytes()
 }
 
 // FromPb convert BlockHead from proto buf data structure.
@@ -85,8 +85,7 @@ func (b *BlockHead) Decode(bhByte []byte) error {
 	return nil
 }
 
-// Hash return hash
-func (b *BlockHead) Hash() ([]byte, error) {
+func (b *BlockHead) hash() ([]byte, error) {
 	return common.Sha3(b.ToBytes()), nil
 }
 
@@ -187,7 +186,7 @@ func (b *Block) Decode(blockByte []byte) error {
 // CalculateHeadHash calculate the hash of the head
 func (b *Block) CalculateHeadHash() error {
 	var err error
-	b.hash, err = b.Head.Hash()
+	b.hash, err = b.Head.hash()
 	return err
 }
 

@@ -76,24 +76,16 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 	if err != nil {
 		return err
 	}
-	t := &tx.Tx{
-		Actions:      referredTx.Actions,
-		Time:         referredTx.Time + referredTx.Delay,
-		Expiration:   referredTx.Expiration + referredTx.Delay,
-		GasLimit:     referredTx.GasLimit,
-		GasRatio:     referredTx.GasRatio,
-		Publisher:    referredTx.Publisher,
-		ReferredTx:   txHash,
-		AmountLimit:  referredTx.AmountLimit,
-		PublishSigns: referredTx.PublishSigns,
-		Signs:        referredTx.Signs,
-		Signers:      referredTx.Signers,
-	}
-	err = pool.verifyDuplicate(t)
+	deferTx := referredTx.DeferTx()
+	err = pool.verifyDuplicate(deferTx)
 	if err != nil {
 		return err
 	}
-	pool.pendingTx.Add(t)
+	err = deferTx.VerifySelf()
+	if err != nil {
+		return err
+	}
+	pool.pendingTx.Add(deferTx)
 	return nil
 }
 
@@ -176,16 +168,15 @@ func (pool *TxPImpl) verifyWorkers() {
 
 func (pool *TxPImpl) processDelaytx(blk *block.Block) {
 	for i, t := range blk.Txs {
-		if t.Delay > 0 {
+		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
 			pool.deferServer.StoreDeferTx(t)
 		}
 		if t.IsDefer() {
 			pool.deferServer.DelDeferTx(t)
 		}
-		if cancelHash, exist := t.CanceledDelaytxHash(); exist {
-			if blk.Receipts[i].Status.Code == tx.Success {
-				pool.deferServer.DelDeferTxByHash(cancelHash)
-			}
+		canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
+		for _, canceledHash := range canceledDelayHashes {
+			pool.deferServer.DelDeferTxByHash(canceledHash)
 		}
 	}
 }
@@ -286,29 +277,12 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return ErrCacheFull
 	}
-	if err := t.CheckSize(); err != nil {
-		return err
-	}
-	if err := t.CheckGas(); err != nil {
-		return err
-	}
 	// Add one second delay for tx created time check
 	if !t.IsCreatedBefore(time.Now().UnixNano()+(time.Second).Nanoseconds()) || t.IsExpired(time.Now().UnixNano()) {
 		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
 		return fmt.Errorf("VerifyError %v", err)
-	}
-
-	if t.IsDefer() {
-		referredTx, err := pool.global.BlockChain().GetTx(t.ReferredTx)
-		if err != nil {
-			return fmt.Errorf("get referred tx error, %v", err)
-		}
-		err = t.VerifyDefer(referredTx)
-		if err != nil {
-			return err
-		}
 	}
 
 	return nil

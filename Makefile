@@ -1,9 +1,10 @@
 GO = go
 
-VERSION = 2.1.0
+VERSION = 2.5.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
+DOCKER_RELEASE_IMAGE = iostio/iost-node:$(VERSION)
 DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)
 TARGET_DIR = target
 CLUSTER = devnet
@@ -82,6 +83,11 @@ devimage:
 devpush:
 	docker push $(DOCKER_DEVIMAGE)
 
+release: devimage devpush
+	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
+	docker build -f Dockerfile -t $(DOCKER_RELEASE_IMAGE) .
+	docker push $(DOCKER_RELEASE_IMAGE)
+
 swagger:
 	./script/gen_swagger.sh
 
@@ -89,11 +95,12 @@ protobuf:
 	./script/gen_protobuf.sh
 
 install:
-	go install ./cmd/iwallet/
 	go install ./cmd/iserver/
+	go install ./cmd/iwallet/
+	go install ./cmd/itest/
 
 clean:
-	rm -f ${TARGET_DIR}
+	rm -rf ${TARGET_DIR}
 
 debug: build
 	target/iserver -f config/iserver.yml

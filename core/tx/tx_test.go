@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"testing"
-
-	"encoding/base64"
+	"time"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
@@ -65,7 +64,7 @@ func TestTx(t *testing.T) {
 					ActionName: "actionname1",
 					Data:       "{\"num\": 1, \"message\": \"contract1\"}",
 				}},
-				Signers: []string{a1.ID},
+				Signers: []string{a1.ReadablePubkey()},
 			}
 			b, err := proto.Marshal(tx)
 			So(err, ShouldEqual, nil)
@@ -79,8 +78,8 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("encode and decode", func() {
-			tx := NewTx(actions, []string{a1.ID}, 100000, 100, 11, 0)
-			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0, 0)
+			tx := NewTx(actions, []string{a1.ReadablePubkey()}, 100000, 100, 11, 0, 0)
+			tx1 := NewTx([]*Action{}, []string{}, 0, 0, 0, 0, 0)
 			hash := tx.Hash()
 
 			encode := tx.Encode()
@@ -90,10 +89,10 @@ func TestTx(t *testing.T) {
 			hash1 := tx1.Hash()
 			So(bytes.Equal(hash, hash1), ShouldEqual, true)
 
-			sig, err := SignTxContent(tx, a1.ID, a1)
+			sig, err := SignTxContent(tx, a1.ReadablePubkey(), a1)
 			So(err, ShouldEqual, nil)
 
-			_, err = SignTx(tx, a1.ID, []*account.KeyPair{a1}, sig)
+			_, err = SignTx(tx, a1.ReadablePubkey(), []*account.KeyPair{a1}, sig)
 			So(err, ShouldEqual, nil)
 
 			hash = tx.Hash()
@@ -133,19 +132,19 @@ func TestTx(t *testing.T) {
 		})
 
 		Convey("sign and verify", func() {
-			tx := NewTx(actions, []string{a1.ID, a2.ID}, 9999, 1, 1, 0)
-			sig1, err := SignTxContent(tx, a1.ID, a1)
+			tx := NewTx(actions, []string{a1.ReadablePubkey(), a2.ReadablePubkey()}, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0, 0)
+			sig1, err := SignTxContent(tx, a1.ReadablePubkey(), a1)
 			So(tx.VerifySigner(sig1), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig1)
 
-			sig2, err := SignTxContent(tx, a2.ID, a2)
+			sig2, err := SignTxContent(tx, a2.ReadablePubkey(), a2)
 			So(tx.VerifySigner(sig2), ShouldBeTrue)
 			tx.Signs = append(tx.Signs, sig2)
 
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "publisher empty error")
 
-			tx3, err := SignTx(tx, a3.ID, []*account.KeyPair{a3})
+			tx3, err := SignTx(tx, a3.ReadablePubkey(), []*account.KeyPair{a3})
 			So(err, ShouldBeNil)
 			err = tx3.VerifySelf()
 			So(err, ShouldBeNil)
@@ -167,13 +166,31 @@ func TestTx(t *testing.T) {
 			}
 			err = tx.VerifySelf()
 			So(err.Error(), ShouldEqual, "signer error")
+
+			tx = NewTx(actions, nil, 100000000, 100, time.Now().Add(time.Minute).UnixNano(), 0, 0)
+			tx.Time = -1
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid time and expiration")
+			tx.Time = time.Now().UnixNano()
+			tx.Expiration = tx.Time
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid time and expiration")
+			tx.Expiration = tx.Time + 1
+			tx.Delay = -1
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid delay time")
+			tx.Delay = 999999999999999999
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid delay time")
+			tx.Delay = 1000
+			tx.ReferredTx = []byte("b")
+			So(tx.VerifySelf().Error(), ShouldEqual, "invalid tx. including both delay and referredtx field")
+			tx.ReferredTx = nil
+			tx.Actions = []*Action{{"", "", string(make([]byte, 1000000))}}
+			So(tx.VerifySelf().Error(), ShouldContainSubstring, "tx size illegal, should <= 65536")
 		})
 
 	})
 }
 
 func TestTx_Platform(t *testing.T) {
-	t.Skip()
+	//t.Skip()
 	//var sep = `\` + "`" + "^" + "/" + "<"
 	//fmt.Println(sep, "is", []byte(sep))
 	txx := &Tx{
@@ -200,9 +217,9 @@ func TestTx_Platform(t *testing.T) {
 
 	fmt.Println("{")
 
-	fmt.Printf(`"tx_bytes_0" : "%v",`+"\n", base64.StdEncoding.EncodeToString(by))
+	fmt.Printf(`"tx_bytes_0" : "%x",`+"\n", by)
 
-	fmt.Printf(`"tx_base_hash" : "%v",`+"\n", base64.StdEncoding.EncodeToString(txx.baseHash()))
+	fmt.Printf(`"tx_base_hash" : "%x",`+"\n", txx.baseHash())
 
 	kp, err := account.NewKeyPair(common.Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB"), crypto.Ed25519)
 	if err != nil {
@@ -214,19 +231,19 @@ func TestTx_Platform(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Printf(`"sig_bytes" : "%v",`+"\n", base64.StdEncoding.EncodeToString(sig.ToBytes()))
-	fmt.Printf(`"sig_pubkey" : "%v",`+"\n", base64.StdEncoding.EncodeToString(sig.Pubkey))
-	fmt.Printf(`"sig_sig" : "%v",`+"\n", base64.StdEncoding.EncodeToString(sig.Sig))
+	fmt.Printf(`"sig_bytes" : "%x",`+"\n", sig.ToBytes())
+	fmt.Printf(`"sig_pubkey" : "%x",`+"\n", sig.Pubkey)
+	fmt.Printf(`"sig_sig" : "%x",`+"\n", sig.Sig)
 
 	txx.Signs = append(txx.Signs, sig)
 
-	fmt.Printf(`"tx_bytes_1" : "%v",`+"\n", base64.StdEncoding.EncodeToString(txx.ToBytes(1)))
+	fmt.Printf(`"tx_bytes_1" : "%x",`+"\n", txx.ToBytes(1))
 
-	fmt.Printf(`"tx_publish_hash" : "%v",`+"\n", base64.StdEncoding.EncodeToString(txx.publishHash()))
+	fmt.Printf(`"tx_publish_hash" : "%x",`+"\n", txx.publishHash())
 
 	tx2, err := SignTx(txx, "def", []*account.KeyPair{kp})
 
-	fmt.Printf(`"tx_publish_sign" : "%v"`+"\n", base64.StdEncoding.EncodeToString(tx2.PublishSigns[0].ToBytes()))
+	fmt.Printf(`"tx_publish_sign" : "%x"`+"\n", tx2.PublishSigns[0].ToBytes())
 	fmt.Println("}")
 }
 

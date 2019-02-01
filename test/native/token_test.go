@@ -21,7 +21,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	vi.MPut("auth.iost-auth", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 
 	ctx := host.NewContext(nil)
-	ctx.Set("gas_price", int64(1))
+	ctx.Set("gas_ratio", int64(100))
 	var gasLimit = int64(1000000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
@@ -33,6 +33,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.Set("time", int64(0))
 	ctx.Set("abi_name", "abi")
 	ctx.GSet("receipts", []*tx.Receipt{})
+	ctx.Set("publisher", "")
 
 	// pm := NewMonitor()
 	h := host.NewHost(ctx, vi, nil, nil)
@@ -40,6 +41,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 
 	code := &contract.Contract{
 		ID: "system.iost",
+		Info: &contract.Info{Version:"1.0.0"},
 	}
 
 	e := &native.Impl{}

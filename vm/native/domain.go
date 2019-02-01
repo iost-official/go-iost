@@ -13,12 +13,15 @@ import (
 
 // DomainABIs list of domain abi
 var domainABIs *abiSet
+var domain0ABIs *abiSet
 
 func init() {
 	domainABIs = newAbiSet()
 	domainABIs.Register(initDomainABI, true)
 	domainABIs.Register(linkDomainABI)
 	domainABIs.Register(transferDomainABI)
+	domain0ABIs = newAbiSet()
+	domain0ABIs.Register(initDomainABI, true)
 }
 
 func checkURLValid(name string) error {
@@ -46,7 +49,7 @@ var (
 	}
 
 	linkDomainABI = &abi{
-		name: "Link",
+		name: "link",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
@@ -57,6 +60,13 @@ var (
 			err = checkURLValid(url)
 			if err != nil {
 				return nil, cost, err
+			}
+			if strings.HasSuffix(url, ".iost") {
+				ok, c := h.RequireAuth(AdminAccount, DomainPermission)
+				cost.AddAssign(c)
+				if !ok {
+					return nil, cost, errors.New("only admin has permission to claim url .iost")
+				}
 			}
 
 			txInfo, c := h.TxInfo()
@@ -75,7 +85,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant, "domain.iost")
+			ok, c := h.RequireAuth(applicant, DomainPermission)
 			cost.AddAssign(c)
 
 			if !ok {
@@ -91,7 +101,7 @@ var (
 		},
 	}
 	transferDomainABI = &abi{
-		name: "Transfer",
+		name: "transfer",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
 			cost = contract.Cost0()
@@ -119,7 +129,7 @@ var (
 				return nil, cost, errors.New("no privilege of claimed url")
 			}
 
-			ok, c := h.RequireAuth(applicant, "domain.iost")
+			ok, c := h.RequireAuth(applicant, DomainPermission)
 			cost.AddAssign(c)
 
 			if !ok {

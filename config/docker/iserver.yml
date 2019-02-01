@@ -1,13 +1,17 @@
 acc:
-  id: IOSTfQFocqDn7VrKV7vvPqhAQGyeFU9XMYo5SNn5yQbdbzC75wM7C
+  id: producer000
   seckey: 1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB
   algorithm: ed25519
-genesis: /var/lib/iserver/genesis.yml
+genesis: /var/lib/iserver/genesis
 vm:
   jspath: vm/v8vm/v8/libjs/
   loglevel: ""
+  maxTxLimitTime: 200
 db:
   ldbpath: /var/lib/iserver/storage/
+snapshot:
+  enable: false
+  filepath: /var/lib/iserver/storage/snapshot.tar.gz
 p2p:
   listenaddr: 0.0.0.0:30000
   seednodes:
@@ -20,8 +24,13 @@ p2p:
   blackIP:
   adminPort: 30005
 rpc:
+  enable: true
   gatewayaddr: 0.0.0.0:30001
   grpcaddr: 0.0.0.0:30002
+  trytx: false
+  exectx: false
+  allowOrigins:
+    - "*"
 log:
   filelog:
     path: /var/lib/iserver/logs/
@@ -31,6 +40,7 @@ log:
     level: info
     enable: true
   asyncwrite: true
+  enablecontractlog: true
 metrics:
   pushaddr: 
   username: 

@@ -1,11 +1,6 @@
 'use strict';
 class Int64Test {
 
-
-    constructor() {
-
-    }
-
     getPlus() {
         const number = new Int64("1234500000");
         const number2 = number.plus(1234);

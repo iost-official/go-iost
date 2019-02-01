@@ -24,11 +24,13 @@ import (
 func init() {
 	luckyBet := newLuckyBetHandler()
 	call.Register("luckyBet", luckyBet)
+	sdk.SetChainID(chainID)
 }
 
 const (
-	cache = "luckyBet.cache"
-	sep   = ","
+	cache          = "luckyBet.cache"
+	sep            = ","
+	chainID uint32 = 1024
 )
 
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
@@ -86,7 +88,8 @@ func (t *luckyBetHandler) Prepare() error {
 		return err
 	}
 	testID := "i" + strconv.FormatInt(time.Now().Unix(), 10)
-	err = sdk.CreateNewAccount(testID, t.testKp.ID, t.testKp.ID, 900000000, 100000000, 100000)
+	k := t.testKp.ReadablePubkey()
+	_, err = sdk.CreateNewAccount(testID, k, k, 900000000, 100000000, 100000)
 	if err != nil {
 		return err
 	}
@@ -117,7 +120,7 @@ func (t *luckyBetHandler) Prepare() error {
 // Run ...
 func (t *luckyBetHandler) Run(i int) (interface{}, error) {
 	action := tx.NewAction(t.contractID, "bet", fmt.Sprintf(`["%v",%d,%d,%d]`, t.testID, i%10, 1, 1))
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000000000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000000000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, chainID)
 	stx, err := tx.SignTx(trx, t.testID, []*account.KeyPair{t.testKp})
 
 	if err != nil {

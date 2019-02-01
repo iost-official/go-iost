@@ -1,0 +1,22 @@
+creategenesis: true
+tokeninfo:
+  foundationaccount: foundation
+  iosttotalsupply: 90000000000
+  iostdecimal: 8
+witnessinfo:
+  - id: producer000
+    owner: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b 
+    active: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b
+    signatureblock: 6sNQa7PV2SFzqCBtQUcQYJGGoU7XaB6R4xuCQVXNZe6b
+    balance: 0
+admininfo:
+  id: admin
+  owner: Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto 
+  active: Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto
+  balance: 21000000000
+foundationinfo:
+  id: foundation
+  owner: Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto
+  active: Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto
+  balance: 0
+initialtimestamp: "2018-11-10T11:04:05Z"

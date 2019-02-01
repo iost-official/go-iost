@@ -14,6 +14,7 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -22,11 +23,13 @@ import (
 func init() {
 	transfer := newTransferHandler()
 	call.Register("transfer", transfer)
+	sdk.SetChainID(chainID)
 }
 
 const (
-	cache = "transfer.cache"
-	sep   = ","
+	cache          = "transfer.cache"
+	sep            = ","
+	chainID uint32 = 1024
 )
 
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
@@ -69,14 +72,16 @@ func (t *transferHandler) Prepare() error {
 	client := call.GetClient(0)
 	sdk.SetServer(client.Addr())
 	sdk.SetAccount("admin", acc)
-	sdk.SetTxInfo(50000.0, 1.0, 90, 0)
+	sdk.SetTxInfo(500000.0, 1.0, 90, 0)
 	sdk.SetCheckResult(true, 3, 10)
+	sdk.SetAmountLimit("*:unlimited")
 	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		return err
 	}
 	testID := "i" + strconv.FormatInt(time.Now().Unix(), 10)
-	err = sdk.CreateNewAccount(testID, testKp.ID, testKp.ID, 1000000, 10000, 100000)
+	k := testKp.ReadablePubkey()
+	_, err = sdk.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}
@@ -108,7 +113,8 @@ func (t *transferHandler) Prepare() error {
 func (t *transferHandler) Run(i int) (interface{}, error) {
 	action := tx.NewAction(t.contractID, "transfer", fmt.Sprintf(`["admin","%v",1]`, t.testID))
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
-	trx := tx.NewTx([]*tx.Action{action}, []string{}, 6000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0)
+	trx := tx.NewTx([]*tx.Action{action}, []string{}, 6000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, chainID)
+	trx.AmountLimit = []*contract.Amount{{Token: "*", Val: "unlimited"}}
 	stx, err := tx.SignTx(trx, "admin", []*account.KeyPair{acc})
 
 	if err != nil {

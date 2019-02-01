@@ -117,7 +117,7 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract
 func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 	cost := contract.Cost0()
 	err := h.monitor.Validate(c)
-	cost.AddAssign(CodeSavageCost(len(c.Code)))
+	cost.AddAssign(CodeSavageCost(len(c.Encode())))
 	return cost, err
 }
 
@@ -209,8 +209,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 
 	c.Info.Abi = append(c.Info.Abi, &initABI)
 
-	l := len(c.Encode()) // todo multi Encode call
-	//fmt.Println("host setcode, paycost, ", owner)
+	l := len(c.Encode())
 	cost.AddAssign(contract.Cost{Data: int64(l), DataList: []contract.DataItem{
 		{Payer: owner, Val: int64(l)},
 	}})
@@ -273,51 +272,13 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	// set code  without invoking init
 	h.db.SetContract(c)
 
-	owner, co := h.GlobalMapGet("system.iost", "contract_owner", c.ID)
-	cost.AddAssign(co)
+	publisher := h.Context().Value("publisher").(string)
 	l := len(c.Encode())
 	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
-		{Payer: owner.(string), Val: int64(l - oldL)},
+		{Payer: publisher, Val: int64(l - oldL)},
 	}})
 
 	return cost, nil
-}
-
-// DestroyCode delete code
-func (h *Host) DestroyCode(contractName string) (contract.Cost, error) {
-	// todo free kv
-
-	oc := h.db.Contract(contractName)
-	if oc == nil {
-		return Costs["GetCost"], ErrContractNotFound
-	}
-	abi := oc.ABI("can_destroy")
-	if abi == nil {
-		return Costs["GetCost"], ErrDestroyRefused
-	}
-
-	oldL := len(oc.Encode())
-
-	rtn, cost, err := h.Call(contractName, "can_destroy", "[]")
-
-	if err != nil {
-		return cost, err
-	}
-
-	if t, ok := rtn[0].(string); !ok || t != "true" {
-		return cost, ErrDestroyRefused
-	}
-
-	owner, co := h.GlobalMapGet("system.iost", "contract_owner", oc.ID)
-	cost.AddAssign(co)
-	cost.AddAssign(contract.Cost{Data: int64(-oldL), DataList: []contract.DataItem{
-		{Payer: owner.(string), Val: int64(-oldL)},
-	}})
-
-	h.db.MDel("system.iost-contract_owner", oc.ID)
-
-	h.db.DelContract(contractName)
-	return Costs["PutCost"], nil
 }
 
 // CancelDelaytx deletes delaytx hash.
@@ -327,17 +288,17 @@ func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
 
 	hashString := string(common.Base58Decode(txHash))
 	cost := Costs["GetCost"]
-	publisher := h.db.GetDelaytx(hashString)
+	publisher, deferTxHash := h.db.GetDelaytx(hashString)
 
-	if publisher == database.NilPrefix {
+	if publisher == "" {
 		return cost, ErrDelaytxNotFound
 	}
 	if publisher != h.Context().Value("publisher").(string) {
-		return cost, ErrCancelDelayForbid
+		return cost, ErrCannotCancelDelay
 	}
 
 	h.db.DelDelaytx(hashString)
-	cost.AddAssign(DelDelayTxCost(len(hashString)+len(publisher), publisher))
+	cost.AddAssign(DelDelayTxCost(len(hashString)+len(publisher)+len(deferTxHash), publisher))
 	return cost, nil
 }
 

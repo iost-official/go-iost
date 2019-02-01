@@ -1,8 +1,5 @@
 'use strict';
 class Datatype {
-    constructor() {
-    }
-
     for() {
         for (;;) {}
     }

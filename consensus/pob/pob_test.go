@@ -10,7 +10,6 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/genesis"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -31,19 +30,14 @@ func testRun(t *testing.T) {
 	account2, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	account3, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 	id2Seckey := make(map[string][]byte)
-	id2Seckey[account1.ID] = account1.Seckey
-	id2Seckey[account2.ID] = account2.Seckey
-	id2Seckey[account3.ID] = account3.Seckey
-	baseVariable, err := global.New(&common.Config{
+	id2Seckey[account1.ReadablePubkey()] = account1.Seckey
+	id2Seckey[account2.ReadablePubkey()] = account2.Seckey
+	id2Seckey[account3.ReadablePubkey()] = account3.Seckey
+	baseVariable, _ := global.New(&common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "Fakedb/",
 		},
 	})
-	genesis.FakeBv(baseVariable)
-
-	if err != nil {
-		t.Fatal(err)
-	}
 	genesisBlock := &block.Block{
 		Head: &block.BlockHead{
 			Version: 0,
@@ -56,7 +50,7 @@ func testRun(t *testing.T) {
 	genesisBlock.CalculateHeadHash()
 	baseVariable.BlockChain().Push(genesisBlock)
 	blockCache, _ := blockcache.NewBlockCache(baseVariable)
-	baseVariable.StateDB().Tag(string(genesisBlock.HeadHash()))
+	baseVariable.StateDB().Commit(string(genesisBlock.HeadHash()))
 	mockController := gomock.NewController(t)
 	mockP2PService := p2p_mock.NewMockService(mockController)
 	channel := make(chan p2p.IncomingMessage, 1024)

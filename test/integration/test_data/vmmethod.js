@@ -6,6 +6,10 @@ class Contract {
         return blockchain.contractName();
     }
 
+    contractOwner() {
+        return blockchain.contractOwner();
+    }
+
     receiptf(data) {
         blockchain.receipt(data);
     }
@@ -28,6 +32,21 @@ class Contract {
 
     mapget(k, f) {
         return storage.mapGet(k, f)
+    }
+
+    testException0() {
+        /*
+        try/catch has been disabled
+        try {
+            blockchain.call(blockchain.contractName(), "testException1", JSON.stringify([]));
+        } catch (e) {
+            return true
+        }
+        */
+        return false
+    }
+    testException1() {
+        throw new Error("test exception");
     }
 }
 

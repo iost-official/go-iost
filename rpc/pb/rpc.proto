@@ -93,6 +93,13 @@ service ApiService {
         };
     }
 
+    // get producer vote infomation
+    rpc GetProducerVoteInfo (GetProducerVoteInfoRequest) returns (GetProducerVoteInfoResponse) {
+        option (google.api.http) = {
+            get: "/getProducerVoteInfo/{account}/{by_longest_chain}"
+        };
+    }
+
     // get contract
     rpc GetContract (GetContractRequest) returns (Contract) {
         option (google.api.http) = {
@@ -145,22 +152,12 @@ service ApiService {
 // The message defines an empty request.
 message EmptyRequest {}
 
-// The message defines peer information.
-message PeerInfo {
-    // peer ID
-    string id = 1;
-    // peer addr
-    string addr = 2;
-}
-
 // The message defines network connection information.
 message NetworkInfo {
     // local network ID
     string id = 1;
     // peer connection count
     int32 peer_count = 2;
-    // peers' information
-    repeated PeerInfo peer_info = 3;
 }
 
 // The message containing blockchain's ram information.
@@ -271,18 +268,20 @@ message Transaction {
     double gas_limit = 5;
     // delay nanoseconds
     int64 delay = 6;
+    // chain id
+    uint32 chain_id = 7;
     // action list
-    repeated Action actions = 7;
+    repeated Action actions = 8;
     // signer list
-    repeated string signers = 8;
+    repeated string signers = 9;
     // publisher
-    string publisher = 9;
+    string publisher = 10;
     // referred transaction hash
-    string referred_tx = 10;
+    string referred_tx = 11;
     // amount limit
-    repeated AmountLimit amount_limit = 11;
+    repeated AmountLimit amount_limit = 12;
     // transaction receipt
-    TxReceipt tx_receipt = 12;
+    TxReceipt tx_receipt = 13;
 }
 
 // The message defines transaction response.
@@ -335,18 +334,20 @@ message TransactionRequest {
     double gas_limit = 4;
     // delay nanoseconds
     int64 delay = 5;
+    // chain id
+    uint32 chain_id = 6;
     // action list
-    repeated Action actions = 6;
+    repeated Action actions = 7;
     // amount limit
-    repeated AmountLimit amount_limit = 7;
+    repeated AmountLimit amount_limit = 8;
     // signer list
-    repeated string signers = 8;
+    repeated string signers = 9;
     // signatures of signers
-    repeated Signature signatures = 9;
+    repeated Signature signatures = 10;
     // publisher
-    string publisher = 10;
+    string publisher = 11;
     // signatures of publisher
-    repeated Signature publisher_sigs = 11;
+    repeated Signature publisher_sigs = 12;
 }
 
 // The message defines the block struct.
@@ -410,16 +411,18 @@ message ChainInfoResponse {
     string net_name = 1;
     // the iost protocol version
     string protocol_version = 2;
+    // chain id
+    uint32 chain_id = 3;
     // head block height
-    int64 head_block = 3;
+    int64 head_block = 4;
     // head block hash
-    string head_block_hash = 4;
+    string head_block_hash = 5;
     // last irreversible block number
-    int64 lib_block = 5;
+    int64 lib_block = 6;
     // last irreversible block hash
-    string lib_block_hash = 6;
+    string lib_block_hash = 7;
     // the current witness list
-    repeated string witness_list = 7;
+    repeated string witness_list = 8;
 }
 
 // The request message containing the tx's hash.
@@ -450,6 +453,42 @@ message FrozenBalance {
     double amount = 1;
     // free time
     int64 time = 2;
+}
+
+// The message defines the account's vote info.
+message VoteInfo {
+    // option name
+    string option = 1;
+    // votes
+    double votes = 2;
+    // cleared votes
+    double cleared_votes = 3;
+}
+
+message GetProducerVoteInfoRequest {
+    // account name
+    string account = 1;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 2;
+}
+
+message GetProducerVoteInfoResponse {
+    // producer's public key
+    string pubkey = 1;
+    // producer's location
+    string loc = 2;
+    // producer's url
+    string url = 3;
+    // producer's net id
+    string net_id = 4;
+    // is producer
+    bool is_producer = 5;
+    // is approved
+    string status = 6;
+    // is online
+    bool online = 7;
+    // votes
+    double votes = 8;
 }
 
 message GasRatioResponse {
@@ -529,7 +568,7 @@ message Account {
         // permission name
         string name = 1;
         // permission groups
-        repeated string groups = 2;
+        repeated string group_names = 2;
         // permission items
         repeated Item items = 3;
         // permission threshold
@@ -543,6 +582,9 @@ message Account {
 
     // frozen balance information
     repeated FrozenBalance frozen_balances = 7;
+
+    // vote information
+    repeated VoteInfo vote_infos = 8;
 }
 
 // The message defines the get account request.
@@ -602,6 +644,10 @@ message GetContractStorageRequest {
 message GetContractStorageResponse {
     // the json string data
     string data = 1;
+    // block hash
+    string block_hash = 2;
+    // block number
+    int64 block_number = 3;
 }
 
 // The message defines get contract storage request.
@@ -609,15 +655,19 @@ message GetContractStorageFieldsRequest {
     // contract id
     string id = 1;
     // get the fields from StateDB
-    string fields = 2;
+    string key = 2;
     // get data by longest chain's head block or last irreversible block
     bool by_longest_chain = 3;
 }
 
 // The message defines get contract storage response.
 message GetContractStorageFieldsResponse {
-    // the json string data
-    string data = 1;
+    // the fields.
+    repeated string fields = 1;
+    // block hash
+    string block_hash = 2;
+    // block number
+    int64 block_number = 3;
 }
 
 // The message defines send transaction response.

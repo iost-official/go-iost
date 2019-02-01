@@ -1,9 +1,6 @@
 'use strict';
 
 class LibOp {
-    constructor() {
-    }
-
     // String
     doStringCharAt(num) {
         for (let i = 0; i < num; i++) {

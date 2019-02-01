@@ -20,20 +20,22 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// receiptCmd represents the receipt command
+// receiptCmd represents the receipt command.
 var receiptCmd = &cobra.Command{
-	Use:   "receipt",
-	Short: "find receipt",
-	Long:  `find receipt by transaction hash`,
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Use:   "receipt transactionHash",
+	Short: "Find receipt",
+	Long:  `Find receipt by transaction hash`,
+	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			fmt.Println(`Error: transaction hash not given`)
-			return
+			cmd.Usage()
+			return fmt.Errorf("please enter the transaction hash")
 		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		txReceipt, err := sdk.GetTxReceiptByTxHash(args[0])
 		if err != nil {
-			fmt.Println(err.Error())
-			return
+			return err
 		}
 		fmt.Println(marshalTextString(txReceipt))
 		return nil

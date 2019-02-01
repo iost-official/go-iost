@@ -7,6 +7,10 @@
       "args": []
     },
     {
+      "name": "contractOwner",
+      "args": []
+    },
+    {
       "name": "receiptf",
       "args": ["string"]
     },
@@ -29,6 +33,14 @@
     {
       "name": "mapget",
       "args": ["string", "string"]
+    },
+    {
+      "name": "testException0",
+      "args": []
+    },
+    {
+      "name": "testException1",
+      "args": []
     }
   ]
 }

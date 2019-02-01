@@ -1,7 +1,9 @@
 package native
 
 import (
+	"encoding/json"
 	"fmt"
+
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 
@@ -24,7 +26,7 @@ func init() {
 	gasABIs.Register(constructor)
 	gasABIs.Register(pledgeGas)
 	gasABIs.Register(unpledgeGas)
-	gasABIs.Register(transferTGas)
+	//gasABIs.Register(transferTGas)
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
@@ -47,7 +49,7 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 		finalCost.AddAssign(cost)
 		newPledge := pledged.Sub(unpledgeAmount)
 		if newPledge.IsNegative() {
-			return finalCost, fmt.Errorf("you cannot unpledge more than your pledge %v > %v", unpledgeAmount, pledged)
+			return finalCost, fmt.Errorf("you cannot unpledge more than your pledge %v > %v", unpledgeAmount.ToString(), pledged.ToString())
 		}
 	}
 
@@ -126,7 +128,7 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 	return finalCost, nil
 }
 
-var (
+var ( // nolint: deadcode
 	constructor = &abi{
 		name: "constructor",
 		args: []string{},
@@ -156,7 +158,7 @@ var (
 			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[1])
 			}
-			auth, cost0 := h.RequireAuth(pledger, "transfer")
+			auth, cost0 := h.RequireAuth(pledger, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -185,6 +187,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -203,7 +214,7 @@ var (
 			if !ok || !h.IsValidAccount(gasUser) {
 				return nil, cost, fmt.Errorf("invalid user name %s", args[0])
 			}
-			auth, cost0 := h.RequireAuth(pledger, "transfer")
+			auth, cost0 := h.RequireAuth(pledger, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -225,9 +236,6 @@ var (
 			if pledged.IsZero() {
 				return nil, cost, fmt.Errorf("%v did not pledge for %v", pledger, gasUser)
 			}
-			if pledged.LessThan(unpledgeAmount) {
-				unpledgeAmount = pledged.Neg()
-			}
 
 			cost0, err = pledge(h, pledger, gasUser, unpledgeAmount.Neg())
 			cost.AddAssign(cost0)
@@ -245,6 +253,15 @@ var (
 			if err != nil {
 				return nil, cost, err
 			}
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
+			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},
 	}
@@ -261,7 +278,7 @@ var (
 			if !h.IsValidAccount(to) {
 				return nil, cost, fmt.Errorf("invalid user name %v", to)
 			}
-			auth, cost0 := h.RequireAuth(from, "transfer")
+			auth, cost0 := h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !auth {
 				return nil, cost, host.ErrPermissionLost
@@ -282,6 +299,15 @@ var (
 			cost0 = h.ChangeTGas(from, f.Neg(), true)
 			cost.AddAssign(cost0)
 			cost0 = h.ChangeTGas(to, f, false)
+			cost.AddAssign(cost0)
+
+			// generate receipt
+			message, err := json.Marshal(args)
+			cost.AddAssign(host.CommonOpCost(1))
+			if err != nil {
+				return nil, cost, err
+			}
+			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
 		},

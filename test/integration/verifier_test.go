@@ -40,7 +40,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 738400)
+			So(r.GasUsage, ShouldEqual, 800800)
 		})
 
 		Convey("test of token memo", func() {
@@ -67,7 +67,7 @@ func TestSetCode(t *testing.T) {
 		defer s.Clear()
 		acc := prepareAuth(t, s)
 		s.SetAccount(acc.ToAccount())
-		s.SetGas(acc.ID, 10000000)
+		s.SetGas(acc.ID, 40000000)
 		s.SetRAM(acc.ID, 3000)
 
 		c, err := s.Compile("hw", "test_data/helloworld", "test_data/helloworld")
@@ -77,9 +77,9 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "ContractAhFA9ToFpBVg6hFgyRRf37XYh4w3e3a7TZUxGTSFdawA")
-		So(r.GasUsage, ShouldEqual, 3591000)
-		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2694))
+		So(cname, ShouldEqual, "Contract63Y53NzXRuLE1Ri4ePm5ZReKAaQy7Fx6p8JPGjZXwvzf")
+		So(r.GasUsage, ShouldEqual, 24425800)
+		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2550))
 
 		r, err = s.Call(cname, "hello", "[]", acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
@@ -137,7 +137,7 @@ func TestJS_Database(t *testing.T) {
 		So(err, ShouldBeNil)
 
 		acc := prepareAuth(t, s)
-		s.SetGas(acc.ID, 1000000)
+		s.SetGas(acc.ID, 4000000)
 		s.SetRAM(acc.ID, 10000)
 
 		cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
@@ -333,7 +333,7 @@ func TestAmountLimit(t *testing.T) {
 				Contract:   "Contracttransfer",
 				ActionName: "transfermulti",
 				Data:       fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, acc0.ID, acc2.ID, acc1.ID, "60"),
-			}}, []string{acc2.ID + "@active"}, s.GasLimit, 100, s.Head.Time+10000000, 0)
+			}}, []string{acc2.ID + "@active"}, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
 			trx.Time = s.Head.Time
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 			sign, err := tx.SignTxContent(trx, acc2.ID, acc2.KeyPair)
@@ -358,7 +358,7 @@ func TestAmountLimit(t *testing.T) {
 				Contract:   "Contracttransfer",
 				ActionName: "transfermulti",
 				Data:       fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, acc0.ID, acc2.ID, acc1.ID, "61"),
-			}}, []string{acc2.ID + "@active"}, s.GasLimit, 100, s.Head.Time+10000000, 0)
+			}}, []string{acc2.ID + "@active"}, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
 			trx.Time = s.Head.Time
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 			sign, err = tx.SignTxContent(trx, acc2.ID, acc2.KeyPair)
@@ -406,7 +406,7 @@ func TestTxAmountLimit(t *testing.T) {
 				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "10"),
-			}}, nil, 10000000, 100, 10000000, 0)
+			}}, nil, 10000000, 100, 10000000, 0, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
@@ -424,7 +424,7 @@ func TestTxAmountLimit(t *testing.T) {
 				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "110"),
-			}}, nil, 10000000, 100, 10000000, 0)
+			}}, nil, 10000000, 100, 10000000, 0, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
 			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
@@ -442,7 +442,7 @@ func TestTxAmountLimit(t *testing.T) {
 				Contract:   "token.iost",
 				ActionName: "transfer",
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "110"),
-			}}, nil, 10000000, 100, 10000000, 0)
+			}}, nil, 10000000, 100, 10000000, 0, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost1", Val: "100"})
 
 			_, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
@@ -486,7 +486,7 @@ func TestNativeVM_GasLimit(t *testing.T) {
 			Contract:   "token.iost",
 			ActionName: "transfer",
 			Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "10"),
-		}}, nil, 500000, 100, 10000000, 0)
+		}}, nil, 600000, 100, 10000000, 0, 0)
 
 		r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 		t.Log(err, r, r.Status)
@@ -518,7 +518,7 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 		var txGasLimit int64 = 100000
 		Convey("normal case", func() {
 			s.SetGas(acc0.ID, 0)
-			tx0 := tx.NewTx([]*tx.Action{pledgeAction}, nil, txGasLimit*100, 100, 10000000, 0)
+			tx0 := tx.NewTx([]*tx.Action{pledgeAction}, nil, txGasLimit*100, 100, 10000000, 0, 0)
 			tx0.AmountLimit = append(tx0.AmountLimit, &contract.Amount{Token: "iost", Val: "unlimited"})
 			r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
@@ -536,7 +536,7 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, 5),
 			}
 			// the first action can run succ
-			tx0 := tx.NewTx([]*tx.Action{pledgeAction, anotherAction}, nil, txGasLimit*100, 100, 10000000, 0)
+			tx0 := tx.NewTx([]*tx.Action{pledgeAction, anotherAction}, nil, txGasLimit*100, 100, 10000000, 0, 0)
 			r, err := s.CallTx(tx0, acc0.ID, acc0.KeyPair)
 			//txGasUsage := r.GasUsage/100
 			s.Visitor.Commit()
@@ -564,14 +564,14 @@ func TestDomain(t *testing.T) {
 		cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(native.DomainABI())
-		r1, err := s.Call("domain.iost", "Link", fmt.Sprintf(`["abc_0_de.io","%v"]`, cname), acc.ID, acc.KeyPair)
+		r1, err := s.Call("domain.iost", "link", fmt.Sprintf(`["abc_0_de.io","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldEqual, "")
 		r2, err := s.Call("abc_0_de.io", "read", "[]", acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r2.Status.Message, ShouldEqual, "")
 
-		r1, err = s.Call("domain.iost", "Link", fmt.Sprintf(`["ab.cde#A","%v"]`, cname), acc.ID, acc.KeyPair)
+		r1, err = s.Call("domain.iost", "link", fmt.Sprintf(`["ab.cde#A","%v"]`, cname), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r1.Status.Message, ShouldContainSubstring, "url contains invalid character")
 	})
@@ -583,10 +583,10 @@ func TestAuthority(t *testing.T) {
 	defer s.Clear()
 	Convey("test of Auth", t, func() {
 
-		ca, err := s.Compile("auth.iost", "../../contract/account", "../../contract/account.js")
+		ca, err := s.Compile("auth.iost", "../../config/genesis/contract/account", "../../config/genesis/contract/account.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
-		ca, err = s.Compile("issue.iost", "../../contract/issue", "../../contract/issue.js")
+		ca, err = s.Compile("issue.iost", "../../config/genesis/contract/issue", "../../config/genesis/contract/issue.js")
 		So(err, ShouldBeNil)
 		s.Visitor.SetContract(ca)
 		s.Visitor.SetContract(native.GasABI())
@@ -599,21 +599,21 @@ func TestAuthority(t *testing.T) {
 		err = createToken(t, s, acc)
 		So(err, ShouldBeNil)
 
-		r, err := s.Call("auth.iost", "SignUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err := s.Call("auth.iost", "signUp", array2json([]interface{}{"Contractmyi", acc.KeyPair.ReadablePubkey(), acc.KeyPair.ReadablePubkey()}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id shouldn't start with")
 
-		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"myidid", acc.KeyPair.ID, acc.KeyPair.ID}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "signUp", array2json([]interface{}{"myidid", acc.KeyPair.ReadablePubkey(), acc.KeyPair.ReadablePubkey()}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
 
-		r, err = s.Call("auth.iost", "AddPermission", array2json([]interface{}{"myidid", "perm1", 1}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "addPermission", array2json([]interface{}{"myidid", "perm1", 1}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
 
-		r, err = s.Call("auth.iost", "SignUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "signUp", array2json([]interface{}{"invalid#id", acc.ID, acc.ID}), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, "id contains invalid character")
 	})
@@ -644,7 +644,7 @@ func TestGasLimit2(t *testing.T) {
 			for i := 0; i < 2; i++ {
 				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
 			}
-			trx := tx.NewTx(acts, nil, 10000000, 100, s.Head.Time, 0)
+			trx := tx.NewTx(acts, nil, 10000000, 100, s.Head.Time, 0, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
 			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
@@ -652,7 +652,7 @@ func TestGasLimit2(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(7302700))
+			So(r.GasUsage, ShouldEqual, int64(7516900))
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "980")
@@ -667,7 +667,7 @@ func TestGasLimit2(t *testing.T) {
 			for i := 0; i < 4; i++ {
 				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
 			}
-			trx = tx.NewTx(acts, nil, 2000000, 100, s.Head.Time, 0)
+			trx = tx.NewTx(acts, nil, 2000000, 100, s.Head.Time, 0, 0)
 			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
 			r, err = s.CallTx(trx, acc0.ID, acc0.KeyPair)

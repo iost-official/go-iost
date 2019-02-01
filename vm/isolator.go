@@ -1,12 +1,15 @@
 package vm
 
 import (
+	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
@@ -26,6 +29,7 @@ type Isolator struct {
 	blockBaseCtx  *host.Context
 	genesisMode   bool
 	blockBaseMode bool
+	limit         time.Duration
 }
 
 var staticMonitor = NewMonitor()
@@ -56,9 +60,10 @@ func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 // PrepareTx read tx and ready to run
 func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
 	i.t = t
+	i.limit = limit
 	i.h.SetDeadline(time.Now().Add(limit))
 	i.publisherID = t.Publisher
-	l := len(t.Encode())
+	l := len(t.ToBytes(tx.Full))
 	i.h.PayCost(contract.NewCost(0, int64(l), 0), t.Publisher)
 
 	if !i.genesisMode && !i.blockBaseMode {
@@ -102,7 +107,7 @@ func (i *Isolator) checkAuth(t *tx.Tx) error {
 }
 
 func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret string, receipts []*tx.Receipt, err error) {
-	receipts = make([]*tx.Receipt, 0)
+	oLen := len(i.h.Context().GValue("receipts").([]*tx.Receipt))
 
 	i.h.PushCtx()
 	defer func() {
@@ -124,7 +129,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 		if strings.Contains(err.Error(), "execution killed") {
 			status = &tx.Status{
 				Code:    tx.ErrorTimeout,
-				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
+				Message: fmt.Sprintf("running action %v error: execution killed", actionDesc),
 			}
 		} else {
 			status = &tx.Status{
@@ -132,15 +137,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 				Message: fmt.Sprintf("running action %v error: %v", actionDesc, err.Error()),
 			}
 		}
-
-		receipt := &tx.Receipt{
-			FuncName: action.Contract + "/" + action.ActionName,
-			Content:  err.Error(),
-		}
-		receipts = append(receipts, receipt)
-
 		err = nil
-
 		return
 	}
 
@@ -151,7 +148,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 
 	ret = string(rj)
 
-	receipts = append(receipts, i.h.Context().GValue("receipts").([]*tx.Receipt)...)
+	receipts = i.h.Context().GValue("receipts").([]*tx.Receipt)[oLen:]
 
 	status = &tx.Status{
 		Code:    tx.Success,
@@ -160,8 +157,15 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 	return
 }
 
+func (i *Isolator) delDelaytx(refTxHash, publisher, deferTxHash string) {
+	i.h.DB().DelDelaytx(refTxHash)
+	cost := host.DelDelayTxCost(len(refTxHash)+len(i.publisherID)+len(deferTxHash), i.publisherID)
+	i.h.PayCost(cost, i.publisherID)
+}
+
 // Run actions in tx
 func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
+	startTime := time.Now()
 	vmGasLimit := i.t.GasLimit/i.t.GasRatio - i.h.GasPaid()
 	if vmGasLimit <= 0 {
 		ilog.Fatalf("vmGasLimit < 0. It should not happen. %v / %v < %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPaid())
@@ -172,36 +176,38 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	i.tr = tx.NewTxReceipt(i.t.Hash())
 
 	if i.t.Delay > 0 {
-		txHash := string(i.t.Hash())
-		i.h.DB().StoreDelaytx(txHash, i.publisherID)
+		txHash := i.t.Hash()
+		deferTxHash := i.t.DeferTx().Hash()
+		i.h.DB().StoreDelaytx(string(txHash), i.publisherID, string(deferTxHash))
 		i.tr.Status = &tx.Status{
 			Code:    tx.Success,
-			Message: "",
+			Message: "defertx hash: " + common.Base58Encode(deferTxHash),
 		}
-		cost := host.DelayTxCost(len(txHash)+len(i.publisherID), i.publisherID)
+		cost := host.DelayTxCost(len(txHash)+len(i.publisherID)+len(deferTxHash), i.publisherID)
 		i.h.PayCost(cost, i.publisherID)
 		return i.tr, nil
 	}
 
+	var refTxHash, deferTxHash string
 	if i.t.IsDefer() {
-		refTxHash := string(i.t.ReferredTx)
-		if !i.h.DB().HasDelaytx(refTxHash) {
-			return nil, fmt.Errorf("delay tx not found, hash=%v", i.t.ReferredTx)
+		refTxHash = string(i.t.ReferredTx)
+		_, deferTxHash = i.h.DB().GetDelaytx(refTxHash)
+		if deferTxHash == "" {
+			return nil, fmt.Errorf("delay tx not found, hash=%v", common.Base58Encode(i.t.ReferredTx))
 		}
 
-		// the delaytx should be deleted even the tx is executed failed.
-		// use defer func so the delete operation would not be reverted by i.h.DB().Rollback().
-		defer func() {
-			i.h.DB().DelDelaytx(refTxHash)
-			cost := host.DelDelayTxCost(len(refTxHash)+len(i.publisherID), i.publisherID)
-			i.h.PayCost(cost, i.publisherID)
-		}()
+		if !bytes.Equal(i.t.Hash(), []byte(deferTxHash)) {
+			return nil, errors.New("defertx hash not match")
+		}
+
+		i.h.PayCost(host.Costs["GetCost"], i.publisherID)
 
 		if i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
 			i.tr.Status = &tx.Status{
-				Code:    tx.Success,
+				Code:    tx.ErrorRuntime,
 				Message: "transaction expired",
 			}
+			i.delDelaytx(refTxHash, i.publisherID, deferTxHash)
 			return i.tr, nil
 		}
 	}
@@ -236,7 +242,9 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		i.h.PayCost(actionCost, i.publisherID)
 
 		if status.Code != tx.Success {
-			ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
+			if !(status.Code == tx.ErrorTimeout && i.limit < common.MaxTxTimeLimit) {
+				ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
+			}
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
 			i.h.ClearRAMCosts()
@@ -249,6 +257,13 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		vmGasLimit -= actionCost.ToGas()
 		i.h.Context().GSet("gas_limit", vmGasLimit)
 	}
+
+	if i.t.IsDefer() {
+		i.delDelaytx(refTxHash, i.publisherID, deferTxHash)
+	}
+
+	endTime := time.Now()
+	ilog.Debugf("tx %v time %v", i.t.Actions, endTime.Sub(startTime))
 	return i.tr, nil
 }
 
@@ -326,10 +341,10 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 
 	authList := make(map[string]int)
 	for _, v := range t.Signs {
-		authList[account.GetIDByPubkey(v.Pubkey)] = 1
+		authList[account.EncodePubkey(v.Pubkey)] = 1
 	}
 	for _, v := range t.PublishSigns {
-		authList[account.GetIDByPubkey(v.Pubkey)] = 2
+		authList[account.EncodePubkey(v.Pubkey)] = 2
 	}
 
 	signers := make(map[string]int)

@@ -10,9 +10,10 @@ import "C"
 import (
 	"sync"
 
+	"math/rand"
+
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
-	"math/rand"
 )
 
 const vmRefLimit = 60

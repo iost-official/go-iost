@@ -16,33 +16,37 @@ package iwallet
 
 import (
 	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
 var update bool
 
-// publishCmd represents the compile command
+// publishCmd represents the publish command.
 var publishCmd = &cobra.Command{
-	Use:   "publish",
-	Short: "publish a contract",
-	Long: `publish a contract by a contract and an abi file
-	example:iwallet publish ./example.js ./example.js.abi
-	`,
-
-	RunE: func(cmd *cobra.Command, args []string) (err error) {
+	Use:     "publish codePath abiPath [contractID [updateID]]",
+	Aliases: []string{"pub"},
+	Short:   "Publish a contract",
+	Long:    `Publish a contract by a contract and an abi file`,
+	Example: `  iwallet publish ./example.js ./example.js.abi --account test0
+  iwallet publish ./example.js ./example.js.abi -u ContractXXX --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 2 {
-			fmt.Println(`usage: iwallet publish ./example.js ./example.js.abi [contractID [updateID]]`)
-			return
+			cmd.Usage()
+			return fmt.Errorf("please enter the code path and the abi path")
 		}
+		if update && len(args) < 3 {
+			cmd.Usage()
+			return fmt.Errorf("please enter the contract id")
+		}
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
 		codePath := args[0]
 		abiPath := args[1]
 
 		conID := ""
 		if update {
-			if len(args) < 3 {
-				fmt.Println(`Error: contract id not given`)
-				return
-			}
 			conID = args[2]
 		}
 		updateID := ""
@@ -50,21 +54,21 @@ var publishCmd = &cobra.Command{
 			updateID = args[3]
 		}
 
-		err = sdk.loadAccount()
+		err := sdk.LoadAccount()
 		if err != nil {
-			fmt.Printf("load account failed %v\n", err)
-			return
+			return fmt.Errorf("failed to load account: %v", err)
 		}
 		_, txHash, err := sdk.PublishContract(codePath, abiPath, conID, update, updateID)
 		if err != nil {
-			fmt.Printf("create tx failed %v\n", err)
-			return
+			return fmt.Errorf("failed to create tx: %v", err)
 		}
 		if sdk.checkResult {
 			if err := sdk.checkTransaction(txHash); err != nil {
 				return err
 			}
-			fmt.Println("The contract id is Contract" + txHash)
+			if !update {
+				fmt.Println("The contract id is Contract" + txHash)
+			}
 		}
 		return nil
 	},
