@@ -47,6 +47,11 @@ print_minimal_fail() {
 
 install_docker() {
     $CURL https://get.docker.com | sudo sh
+    {
+        echo
+        echo Make sure \`docker\` is prepared and then re-run the boot script.
+        echo
+    }>&2
     return 1
 }
 
