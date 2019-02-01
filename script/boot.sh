@@ -138,13 +138,13 @@ print_servi() {
     {
         echo If you want to register Servi node, exec:
         printf "\n\t"
-        echo "iwallet --account <your-account> call 'vote_producer.iost' 'applyRegister' '[\"<your-account>\",\"$PUBKEY\",\"\",\"\",\""$NETWORK_ID"\",true]'"
+        echo "iwallet sys register $PUBKEY --net_id $NETWORK_ID --account <your-account>"
         echo
         echo To set the Servi node online:
         printf "\n\t"
-        echo "iwallet --acount <your-account> call 'vote_producer.iost' 'logInProducer' '[\"<your-account>\"]'"
+        echo "iwallet sys plogin --acount <your-account>"
         echo
-        echo See full doc at https://developers.iost.io
+        echo See full doc at https://developers.iost.io/docs/en/4-running-iost-node/Become-Servi-Node.html
         echo
     }>&2
 }
@@ -221,8 +221,8 @@ done
 NETWORK_ID=$($CURL localhost:30001/getNodeInfo | ${PYTHON} -c 'import json,sys;print(json.load(sys.stdin)["network"]["id"])')
 {
     echo
-    echo Your network ID is:
-    echo $NETWORK_ID
+    echo "Your node's Public key: $PUBKEY"
+    echo "Your node's Network ID: $NETWORK_ID"
     echo
 }>&2
 
