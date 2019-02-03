@@ -62,13 +62,8 @@ var publishCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to create tx: %v", err)
 		}
-		if sdk.checkResult {
-			if err := sdk.checkTransaction(txHash); err != nil {
-				return err
-			}
-			if !update {
-				fmt.Println("The contract id is Contract" + txHash)
-			}
+		if !update {
+			fmt.Println("The contract id is: Contract" + txHash)
 		}
 		return nil
 	},
