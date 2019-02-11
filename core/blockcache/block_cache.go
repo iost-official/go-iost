@@ -229,7 +229,7 @@ func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
 	AddGenesis(*block.Block)
-	Link(*BlockCacheNode)
+	Link(*BlockCacheNode, bool)
 	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	Flush(*BlockCacheNode)
@@ -490,7 +490,7 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
-func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
+func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	if bcn == nil {
 		return
 	}
@@ -503,7 +503,9 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	bc.leaf[bcn] = bcn.Head.Number
 	bcn.updateValidWitness(fa, bcn.Head.Witness)
 	bc.updateWitnessList(bcn)
-	bc.AddNodeToWAL(bcn)
+	if !replay {
+		bc.AddNodeToWAL(bcn)
+	}
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}

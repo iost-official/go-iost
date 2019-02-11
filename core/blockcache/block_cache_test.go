@@ -5,8 +5,8 @@ import (
 	"testing"
 
 	. "github.com/golang/mock/gomock"
-	"github.com/iost-official/go-iost/core/mocks"
-	"github.com/iost-official/go-iost/db/mocks"
+	core_mock "github.com/iost-official/go-iost/core/mocks"
+	db_mock "github.com/iost-official/go-iost/db/mocks"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -148,25 +148,25 @@ func TestBlockCache(t *testing.T) {
 			bc, _ := NewBlockCache(global)
 			defer bc.CleanDir()
 			b1node := bc.Add(b1)
-			bc.Link(b1node)
+			bc.Link(b1node, false)
 			//bc.Draw()
 			b2node := bc.Add(b2)
-			bc.Link(b2node)
+			bc.Link(b2node, false)
 			// bc.Draw()
 			b2anode := bc.Add(b2a)
-			bc.Link(b2anode)
+			bc.Link(b2anode, false)
 			// bc.Draw()
 			b3node := bc.Add(b3)
-			bc.Link(b3node)
+			bc.Link(b3node, false)
 			// bc.Draw()
 			b4node := bc.Add(b4)
-			bc.Link(b4node)
+			bc.Link(b4node, false)
 			// bc.Draw()
 			b3anode := bc.Add(b3a)
-			bc.Link(b3anode)
+			bc.Link(b3anode, false)
 			// bc.Draw()
 			b5node := bc.Add(b5)
-			bc.Link(b5node)
+			bc.Link(b5node, false)
 			// bc.Draw()
 			So(bc.head, ShouldEqual, b5node)
 			blk, _ := bc.GetBlockByNumber(7)
@@ -275,11 +275,11 @@ func TestVote(t *testing.T) {
 		node1 := NewBCN(bc.linkedRoot, b1)
 		node2 := NewBCN(node1, b2)
 		node3 := NewBCN(node2, b3)
-		bc.Link(node1)
+		bc.Link(node1, false)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(node2)
+		bc.Link(node2, false)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(node3)
+		bc.Link(node3, false)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
 	})

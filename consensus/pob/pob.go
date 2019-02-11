@@ -463,7 +463,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		}
 		p.verifyDB.Commit(string(blk.HeadHash()))
 	}
-	p.blockCache.Link(node)
+	p.blockCache.Link(node, replay)
 	p.blockCache.UpdateLib(node)
 	// After UpdateLib, the block head active witness list will be right
 	// So AddLinkedNode need execute after UpdateLib
