@@ -48,7 +48,7 @@ var (
 type verifyBlockMessage struct {
 	blk     *block.Block
 	p2pType p2p.MessageType
-	from    p2p.PeerID
+	from    string
 }
 
 //PoB is a struct that handles the consensus logic.
@@ -71,7 +71,7 @@ type PoB struct {
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
 	headNumber       int64
-	recvTimesMap     *sync.Map
+	recvTimesMap     map[string]int64
 }
 
 // New init a new PoB.
@@ -95,12 +95,13 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 		headNumber:       0,
-		recvTimesMap:     new(sync.Map),
+		recvTimesMap:     make(map[string]int64, 0),
 	}
 	continuousNum = baseVariable.Continuous()
 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
+	p.headNumber = p.blockCache.Head().Head.Number
 
 	return &p
 }
@@ -249,34 +250,30 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		return
 	}
 
-	rt, ok := p.recvTimesMap.Load(vbm.from)
-	var recvTimes int64
+	recvTimes, ok := p.recvTimesMap[vbm.from]
 	if ok {
-		recvTimes = rt.(int64)
-	} else {
 		recvTimes = 0
 	}
+	recvTimes += 1
 
 	if recvTimes > maxBlockNumber {
-		p.p2pService.PutPeerToBlack(vbm.from.Pretty())
+		p.p2pService.PutPeerToBlack(vbm.from)
 		return
 	}
-	p.recvTimesMap.Store(vbm.from, recvTimes+1)
+	p.recvTimesMap[vbm.from] = recvTimes
 
 	defer func() {
 		if p.blockCache.Head().Head.Number > p.headNumber {
 			delta := p.blockCache.Head().Head.Number - p.headNumber
 			p.headNumber += delta
-			p.recvTimesMap.Range(func(k, v interface{}) bool {
-				recvTimes = v.(int64)
-				recvTimes = recvTimes - delta
-				if recvTimes < 0 {
-					p.recvTimesMap.Delete(k)
+			for k, v := range p.recvTimesMap {
+				v -= delta
+				if v < 0 {
+					delete(p.recvTimesMap, k)
 				} else {
-					p.recvTimesMap.Store(k, recvTimes)
+					p.recvTimesMap[k] = v
 				}
-				return true
-			})
+			}
 		}
 	}()
 
@@ -345,7 +342,7 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
-			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type(), from: incomingMessage.From()}
+			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type(), from: incomingMessage.From().Pretty()}
 		case <-p.exitSignal:
 			return
 		}
