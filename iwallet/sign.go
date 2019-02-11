@@ -27,17 +27,21 @@ var txFile string
 
 // signCmd represents the command used to sign a transaction.
 var signCmd = &cobra.Command{
-	Use:   "sign",
-	Short: "Sign a tx loaded from given file and save the signature as a binary file",
-	Long:  `Sign a tx loaded from given file (--tx_file) and save the signature as a binary file (--output)`,
+	Use:     "sign txFile keyFile outputFile",
+	Short:   "Sign a tx and save the signature",
+	Long:    `Sign a tx loaded from given file with private key file and save the signature`,
+	Example: `  iwallet sign tx.json ~/.iwallet/test0_ed25519 sign.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if outputFile == "" {
-			cmd.Usage()
-			return fmt.Errorf("output file name should be provided with --output flag")
+		if err := checkArgsNumber(cmd, args, "txFile", "keyFile", "outputFile"); err != nil {
+			return err
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		txFile := args[0]
+		signKeyFile := args[1]
+		outputFile := args[2]
+
 		trx := &rpcpb.TransactionRequest{}
 		err := loadProto(txFile, trx)
 		if err != nil {
@@ -59,7 +63,4 @@ var signCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(signCmd)
-	signCmd.Flags().StringVarP(&outputFile, "output", "", "", "output file name to write signature")
-	signCmd.Flags().StringVarP(&signKeyFile, "sign_key", "", "", "key file used for signing")
-	signCmd.Flags().StringVarP(&txFile, "tx_file", "", "", "load tx from this file")
 }

@@ -22,13 +22,13 @@ import (
 
 // accountInfoCmd represents the balance command.
 var accountInfoCmd = &cobra.Command{
-	Use:   "balance accountID",
-	Short: "Check the information of a specified account",
-	Long:  `Check the information of a specified account`,
+	Use:     "balance accountName",
+	Short:   "Check the information of a specified account",
+	Long:    `Check the information of a specified account`,
+	Example: `  iwallet balance test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the account ID")
+		if err := checkArgsNumber(cmd, args, "accountName"); err != nil {
+			return err
 		}
 		return nil
 	},

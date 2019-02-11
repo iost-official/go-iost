@@ -61,9 +61,8 @@ var createCmd = &cobra.Command{
 	Long:    `Create an account on blockchain`,
 	Example: `  iwallet account create test1 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the account name")
+		if err := checkArgsNumber(cmd, args, "accountName"); err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
@@ -181,9 +180,8 @@ var importCmd = &cobra.Command{
 	Long:    `Import an account by name and private key`,
 	Example: `  iwallet account import test0 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the account name and the private key")
+		if err := checkArgsNumber(cmd, args, "accountName", "accountPrivateKey"); err != nil {
+			return err
 		}
 		return nil
 	},
@@ -211,9 +209,8 @@ var deleteCmd = &cobra.Command{
 	Long:    `Delete an account by name`,
 	Example: `  iwallet account delete test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the account name")
+		if err := checkArgsNumber(cmd, args, "accountName"); err != nil {
+			return err
 		}
 		return nil
 	},

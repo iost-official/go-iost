@@ -28,8 +28,12 @@ var saveCmd = &cobra.Command{
 	Would accept arguments as call actions and create a transaction request from them.
 	An ACTION is a group of 3 arguments: contract name, function name, method parameters.
 	The method parameters should be a string with format '["arg0","arg1",...]'.`,
-	Example: `  iwallet save "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]'`,
+	Example: `  iwallet save "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' -o tx.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) == 0 {
+			cmd.Usage()
+			return fmt.Errorf("please give at least one action")
+		}
 		if outputFile == "" {
 			cmd.Usage()
 			return fmt.Errorf("output file name should be provided with --output flag")
@@ -51,5 +55,5 @@ var saveCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(saveCmd)
-	saveCmd.Flags().StringVarP(&outputFile, "output", "", "", "output file to save transaction request")
+	saveCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file to save transaction request")
 }

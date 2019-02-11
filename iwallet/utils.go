@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"strconv"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -110,6 +111,23 @@ func checkAccount(cmd *cobra.Command) error {
 	if sdk.accountName == "" {
 		cmd.Usage()
 		return fmt.Errorf("please provide the account name with flag --account")
+	}
+	return nil
+}
+
+func checkFloat(cmd *cobra.Command, arg string, argName string) error {
+	_, err := strconv.ParseFloat(arg, 64)
+	if err != nil {
+		cmd.Usage()
+		return fmt.Errorf(`invalid value "%v" for argument "%v": %v`, arg, argName, err)
+	}
+	return nil
+}
+
+func checkArgsNumber(cmd *cobra.Command, args []string, argNames ...string) error {
+	if len(args) < len(argNames) {
+		cmd.Usage()
+		return fmt.Errorf("missing positional argument: %v", argNames[len(args):])
 	}
 	return nil
 }

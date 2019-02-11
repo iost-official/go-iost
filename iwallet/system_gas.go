@@ -15,7 +15,6 @@
 package iwallet
 
 import (
-	"fmt"
 	"strconv"
 
 	"github.com/spf13/cobra"
@@ -30,14 +29,11 @@ var pledgeCmd = &cobra.Command{
 	Long:    `Pledge IOST to obtain gas`,
 	Example: `  iwallet sys pledge 100 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the amount")
+		if err := checkArgsNumber(cmd, args, "amount"); err != nil {
+			return err
 		}
-		_, err := strconv.ParseFloat(args[0], 64)
-		if err != nil {
-			cmd.Usage()
-			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[0], err)
+		if err := checkFloat(cmd, args[0], "amount"); err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
@@ -45,7 +41,8 @@ var pledgeCmd = &cobra.Command{
 		if gas_user == "" {
 			gas_user = sdk.accountName
 		}
-		return sendAction("gas.iost", "pledge", sdk.accountName, gas_user, args[0])
+		amount, _ := strconv.ParseFloat(args[0], 64)
+		return sendAction("gas.iost", "pledge", sdk.accountName, gas_user, amount)
 	},
 }
 
@@ -56,14 +53,11 @@ var unpledgeCmd = &cobra.Command{
 	Long:    `Undo pledge and get back the IOST pledged ealier`,
 	Example: `  iwallet sys unpledge 100 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the amount")
+		if err := checkArgsNumber(cmd, args, "amount"); err != nil {
+			return err
 		}
-		_, err := strconv.ParseFloat(args[0], 64)
-		if err != nil {
-			cmd.Usage()
-			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[0], err)
+		if err := checkFloat(cmd, args[0], "amount"); err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
@@ -71,7 +65,8 @@ var unpledgeCmd = &cobra.Command{
 		if gas_user == "" {
 			gas_user = sdk.accountName
 		}
-		return sendAction("gas.iost", "unpledge", sdk.accountName, gas_user, args[0])
+		amount, _ := strconv.ParseFloat(args[0], 64)
+		return sendAction("gas.iost", "unpledge", sdk.accountName, gas_user, amount)
 	},
 }
 
