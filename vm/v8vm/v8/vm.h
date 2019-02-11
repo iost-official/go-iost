@@ -94,8 +94,9 @@ void InitGoStorage(putFunc, hasFunc, getFunc, delFunc,
 
 // crypto
 typedef CStr (*sha3Func)(SandboxPtr, const CStr, size_t *);
+typedef int (*verifyFunc)(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
 
-void InitGoCrypto(sha3Func);
+void InitGoCrypto(sha3Func, verifyFunc);
 
 extern int compile(SandboxPtr, const CStr code, CStr *compiledCode, CStr *errMsg);
 extern int validate(SandboxPtr ptr, const CStr code, const CStr abi, CStr *result, CStr *errMsg);

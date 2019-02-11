@@ -33,6 +33,7 @@ char* goGlobalMapLen(SandboxPtr, const CStr, const CStr, const CStr, size_t *, s
 char* goConsoleLog(SandboxPtr, const CStr, const CStr);
 
 CStr goSha3(SandboxPtr, const CStr, size_t *);
+int goVerify(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
 */
 import "C"
 import (
@@ -137,7 +138,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.globalMapKeysFunc)(C.goGlobalMapKeys),
 		(C.globalMapLenFunc)(C.goGlobalMapLen),
 	)
-	C.InitGoCrypto((C.sha3Func)(C.goSha3))
+	C.InitGoCrypto((C.sha3Func)(C.goSha3), (C.verifyFunc)(C.goVerify))
 	C.loadVM(sbx.context, C.int(vmType))
 }
 
