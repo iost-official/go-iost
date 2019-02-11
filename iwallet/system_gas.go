@@ -50,7 +50,7 @@ var unpledgeCmd = &cobra.Command{
 	Use:     "gas-unpledge amount",
 	Aliases: []string{"unpledge"},
 	Short:   "Undo pledge",
-	Long:    `Undo pledge and get back the IOST pledged ealier`,
+	Long:    `Undo pledge and get back the IOST pledged earlier`,
 	Example: `  iwallet sys unpledge 100 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "amount"); err != nil {
