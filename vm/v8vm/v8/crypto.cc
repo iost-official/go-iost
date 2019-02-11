@@ -2,14 +2,24 @@
 #include <iostream>
 
 static sha3Func CSha3 = nullptr;
+static verifyFunc CVerify = nullptr;
 
-void InitGoCrypto(sha3Func sha3) {
+void InitGoCrypto(sha3Func sha3, verifyFunc verify) {
     CSha3 = sha3;
+    CVerify = verify;
 }
 
 CStr IOSTCrypto::sha3(const CStr msg) {
     size_t gasUsed;
     CStr ret = CSha3(sbxPtr, msg, &gasUsed);
+    Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    sbx->gasUsed += gasUsed;
+    return ret;
+}
+
+int IOSTCrypto::verify(const CStr algo, const CStr msg, const CStr sig, const CStr pubkey) {
+    size_t gasUsed;
+    int ret = CVerify(sbxPtr, algo, msg, sig, pubkey, &gasUsed);
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
     sbx->gasUsed += gasUsed;
     return ret;
@@ -74,6 +84,69 @@ void IOSTCrypto_sha3(const FunctionCallbackInfo<Value> &args) {
     args.GetReturnValue().SetNull();
 }
 
+void IOSTCrypto_verify(const FunctionCallbackInfo<Value> &args) {
+    Isolate *isolate = args.GetIsolate();
+    Local<Object> self = args.Holder();
+
+    if (args.Length() != 4) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTCrypto_verify invalid argument length.")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+
+    Local<Value> algo = args[0];
+    if (!algo->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTCrypto_verify algo must be string.")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+    NewCStrChecked(algoStr, algo, isolate);
+
+    Local<Value> msg = args[1];
+    if (!msg->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTCrypto_verify msg must be string.")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+    NewCStrChecked(msgStr, msg, isolate);
+
+    Local<Value> sig = args[2];
+    if (!sig->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTCrypto_verify sig must be string.")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+    NewCStrChecked(sigStr, sig, isolate);
+
+    Local<Value> pubkey = args[3];
+    if (!pubkey->IsString()) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, "IOSTCrypto_verify pubkey must be string.")
+        );
+        isolate->ThrowException(err);
+        return;
+    }
+    NewCStrChecked(pubkeyStr, pubkey, isolate);
+
+    Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
+    if (!extVal->IsExternal()) {
+        std::cout << "IOSTCrypto_verify val error" << std::endl;
+        return;
+    }
+
+    IOSTCrypto *ic = static_cast<IOSTCrypto *>(extVal->Value());
+    int ret = ic->verify(algoStr, msgStr, sigStr, pubkeyStr);
+    args.GetReturnValue().Set(ret);
+}
+
 void InitCrypto(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     Local<FunctionTemplate> cryptoClass =
         FunctionTemplate::New(isolate, NewCrypto);
@@ -81,10 +154,14 @@ void InitCrypto(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
     cryptoClass->SetClassName(cryptoClassName);
 
     Local<ObjectTemplate> cryptoTpl = cryptoClass->InstanceTemplate();
-    cryptoTpl->SetInternalFieldCount(1);
+    cryptoTpl->SetInternalFieldCount(2);
     cryptoTpl->Set(
         String::NewFromUtf8(isolate, "sha3"),
         FunctionTemplate::New(isolate, IOSTCrypto_sha3)
+    );
+    cryptoTpl->Set(
+        String::NewFromUtf8(isolate, "verify"),
+        FunctionTemplate::New(isolate, IOSTCrypto_verify)
     );
 
     globalTpl->Set(cryptoClassName, cryptoClass);
