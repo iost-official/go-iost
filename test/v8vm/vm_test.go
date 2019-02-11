@@ -12,6 +12,7 @@ import (
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -719,8 +720,9 @@ func TestEngine_Float64(t *testing.T) {
 	}
 }
 
-func TestEngine_Sha3(t *testing.T) {
+func TestEngine_Crypto(t *testing.T) {
 	host, code := MyInit(t, "crypto1")
+
 	testStr := "hello world"
 	rs, _, err := vmPool.LoadAndCall(host, code, "sha3", testStr)
 	if err != nil {
@@ -729,6 +731,28 @@ func TestEngine_Sha3(t *testing.T) {
 	if rs[0] != common.Base58Encode(common.Sha3([]byte(testStr))) {
 		t.Fatalf("LoadAndCall sha3 invalid result")
 	}
+
+	algo := crypto.Ed25519
+	secKey := algo.GenSeckey()
+	pubKey := algo.GetPubkey(secKey)
+	msg := []byte(testStr)
+	rs, _, err = vmPool.LoadAndCall(host, code, "verify", algo.String(), common.Base58Encode(msg),
+		common.Base58Encode(algo.Sign(msg, secKey)), common.Base58Encode(pubKey))
+	if err != nil {
+		t.Fatalf("LoadAndCall error: %v", err)
+	}
+	if rs[0] != "1" {
+		t.Fatalf("LoadAndCall verify invalid result %v", rs[0])
+	}
+	rs, _, err = vmPool.LoadAndCall(host, code, "verify", algo.String(), common.Base58Encode(msg),
+		common.Base58Encode(algo.Sign(msg[1:], secKey)), common.Base58Encode(pubKey))
+	if err != nil {
+		t.Fatalf("LoadAndCall error: %v", err)
+	}
+	if rs[0] != "0" {
+		t.Fatalf("LoadAndCall verify invalid result %v", rs[0])
+	}
+
 }
 
 func TestEngine_ArrayOfFrom(t *testing.T) {
