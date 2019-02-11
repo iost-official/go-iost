@@ -453,6 +453,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		err := verifyBlock(blk, parentNode.Block, p.blockCache.LinkedRoot().Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
+			if replay {
+				ilog.Fatalf("Recover block from wal failed. blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
+			}
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
 			p.blockCache.Del(node)
 			return err
@@ -463,7 +466,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		}
 		p.verifyDB.Commit(string(blk.HeadHash()))
 	}
-	p.blockCache.Link(node)
+	p.blockCache.Link(node, replay)
 	p.blockCache.UpdateLib(node)
 	// After UpdateLib, the block head active witness list will be right
 	// So AddLinkedNode need execute after UpdateLib
