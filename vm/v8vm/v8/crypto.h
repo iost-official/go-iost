@@ -14,6 +14,7 @@ public:
     IOSTCrypto(SandboxPtr ptr): sbxPtr(ptr) {}
 
     CStr sha3(const CStr msg);
+    int verify(const CStr algo, const CStr msg, const CStr sig, const CStr pubkey);
 };
 
 #endif // IOST_V8_CRYPTO_H
