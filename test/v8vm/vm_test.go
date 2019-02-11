@@ -1,7 +1,6 @@
 package v8vm
 
 import (
-	"github.com/iost-official/go-iost/crypto"
 	"io/ioutil"
 	"strings"
 	"testing"
@@ -13,6 +12,7 @@ import (
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
