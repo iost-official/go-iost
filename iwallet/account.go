@@ -157,7 +157,6 @@ var viewCmd = &cobra.Command{
 				f := fmt.Sprintf("%s/%s_%s", dir, name, algo.String())
 				keyPair, err := loadKeyPair(f, algo)
 				if err != nil {
-					fmt.Println(err)
 					continue
 				}
 				var k key
