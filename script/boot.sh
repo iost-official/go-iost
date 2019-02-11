@@ -1,9 +1,9 @@
 #!/bin/sh
 #
 # boot.sh
-# Copyright (C) 2019 jack <jack@iOSTdeMacBook-Pro.local>
+# Author Yuanyi<yuanyi@iost.io>
 #
-# Distributed under terms of the MIT license.
+# Distributed under terms of the LGPLv3 license.
 #
 
 set -ue
