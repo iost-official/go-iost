@@ -17,7 +17,6 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
@@ -30,14 +29,11 @@ var voteCmd = &cobra.Command{
 	Long:    `Vote a producer by given amount of IOSTs`,
 	Example: `  iwallet sys vote producer000 1000000 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the producer ID and the amount")
+		if err := checkArgsNumber(cmd, args, "producerID", "amount"); err != nil {
+			return err
 		}
-		_, err := strconv.ParseFloat(args[1], 64)
-		if err != nil {
-			cmd.Usage()
-			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[1], err)
+		if err := checkFloat(cmd, args[1], "amount"); err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
@@ -51,18 +47,7 @@ var unvoteCmd = &cobra.Command{
 	Short:   "Unvote a producer",
 	Long:    `Unvote a producer by given amount of IOSTs`,
 	Example: `  iwallet sys unvote producer000 1000000 --account test0`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the producer ID and the amount")
-		}
-		_, err := strconv.ParseFloat(args[1], 64)
-		if err != nil {
-			cmd.Usage()
-			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[1], err)
-		}
-		return checkAccount(cmd)
-	},
+	Args:    voteCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return sendAction("vote_producer.iost", "unvote", sdk.accountName, args[0], args[1])
 	},
@@ -79,9 +64,8 @@ var registerCmd = &cobra.Command{
 	Long:    `Register as producer`,
 	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the public key")
+		if err := checkArgsNumber(cmd, args, "publicKey"); err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
@@ -137,9 +121,8 @@ var infoCmd = &cobra.Command{
 	Long:    `Show producer info`,
 	Example: `  iwallet sys pinfo producer000`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the producer id")
+		if err := checkArgsNumber(cmd, args, "producerID"); err != nil {
+			return err
 		}
 		return nil
 	},

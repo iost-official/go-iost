@@ -52,15 +52,7 @@ var sellCmd = &cobra.Command{
 	Short:   "Sell unused ram to system",
 	Long:    `Sell unused ram to system`,
 	Example: `  iwallet sys sell 100 --account test0`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if err := checkArgsNumber(cmd, args, "amount"); err != nil {
-			return err
-		}
-		if err := checkFloat(cmd, args[0], "amount"); err != nil {
-			return err
-		}
-		return checkAccount(cmd)
-	},
+	Args:    buyCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if other == "" {
 			other = sdk.accountName

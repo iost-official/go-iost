@@ -52,15 +52,7 @@ var unpledgeCmd = &cobra.Command{
 	Short:   "Undo pledge",
 	Long:    `Undo pledge and get back the IOST pledged earlier`,
 	Example: `  iwallet sys unpledge 100 --account test0`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if err := checkArgsNumber(cmd, args, "amount"); err != nil {
-			return err
-		}
-		if err := checkFloat(cmd, args[0], "amount"); err != nil {
-			return err
-		}
-		return checkAccount(cmd)
-	},
+	Args:    pledgeCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if gas_user == "" {
 			gas_user = sdk.accountName
