@@ -41,7 +41,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file (default $HOME/.iwallet.yaml)")
 
 	rootCmd.PersistentFlags().BoolVarP(&sdk.verbose, "verbose", "v", false, "print verbose information")
-	rootCmd.PersistentFlags().StringVarP(&sdk.accountName, "account", "", "", "which account to use")
+	rootCmd.PersistentFlags().StringVarP(&sdk.accountName, "account", "a", "", "which account to use")
 	rootCmd.PersistentFlags().StringVarP(&sdk.server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&sdk.useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&sdk.checkResult, "check_result", "", true, "check publish/call status after sending to chain")

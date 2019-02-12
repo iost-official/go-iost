@@ -31,7 +31,7 @@ var callCmd = &cobra.Command{
 	An ACTION is a group of 3 arguments: contract name, function name, method parameters.
 	The method parameters should be a string with format '["arg0","arg1",...]'.`,
 	Example: `  iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' --account test0
-  iwallet call --tx_file tx.proto --account test0`,
+  iwallet call --tx_file tx.json --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},

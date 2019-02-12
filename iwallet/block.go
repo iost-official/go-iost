@@ -44,6 +44,8 @@ var blockCmd = &cobra.Command{
 	Use:   "block blockNum|blockHash",
 	Short: "Print block info",
 	Long:  `Print block info by block number or hash`,
+	Example: `  iwallet block 0
+  iwallet block 5dEgmyMURGfe7GxvTLajmaLXTkcqs5JwiJ2C2DE5VvVX -m hash`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			cmd.Usage()

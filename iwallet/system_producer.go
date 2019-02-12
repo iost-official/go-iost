@@ -17,52 +17,39 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"strconv"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
 var voteCmd = &cobra.Command{
-	Use:     "vote producerID amount",
+	Use:     "producer-vote producerID amount",
+	Aliases: []string{"vote"},
 	Short:   "Vote a producer",
 	Long:    `Vote a producer by given amount of IOSTs`,
 	Example: `  iwallet sys vote producer000 1000000 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the producer ID and the amount")
+		if err := checkArgsNumber(cmd, args, "producerID", "amount"); err != nil {
+			return err
 		}
-		_, err := strconv.ParseFloat(args[1], 64)
-		if err != nil {
-			cmd.Usage()
-			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[1], err)
+		if err := checkFloat(cmd, args[1], "amount"); err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return actionSender("vote_producer.iost", "vote", sdk.accountName, args[0], args[1])(cmd, args)
+		return sendAction("vote_producer.iost", "vote", sdk.accountName, args[0], args[1])
 	},
 }
 var unvoteCmd = &cobra.Command{
-	Use:     "unvote producerID amount",
+	Use:     "producer-unvote producerID amount",
+	Aliases: []string{"unvote"},
 	Short:   "Unvote a producer",
 	Long:    `Unvote a producer by given amount of IOSTs`,
 	Example: `  iwallet sys unvote producer000 1000000 --account test0`,
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the producer ID and the amount")
-		}
-		_, err := strconv.ParseFloat(args[1], 64)
-		if err != nil {
-			cmd.Usage()
-			return fmt.Errorf(`invalid argument "%v" for "amount": %v`, args[1], err)
-		}
-		return checkAccount(cmd)
-	},
+	Args:    voteCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return actionSender("vote_producer.iost", "unvote", sdk.accountName, args[0], args[1])(cmd, args)
+		return sendAction("vote_producer.iost", "unvote", sdk.accountName, args[0], args[1])
 	},
 }
 
@@ -71,25 +58,24 @@ var url string
 var networkID string
 var isPartner bool
 var registerCmd = &cobra.Command{
-	Use:     "register publicKey",
-	Aliases: []string{"reg"},
+	Use:     "producer-register publicKey",
+	Aliases: []string{"register", "reg"},
 	Short:   "Register as producer",
 	Long:    `Register as producer`,
 	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the public key")
+		if err := checkArgsNumber(cmd, args, "publicKey"); err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return actionSender("vote_producer.iost", "applyRegister", sdk.accountName, args[0], location, url, networkID, !isPartner)(cmd, args)
+		return sendAction("vote_producer.iost", "applyRegister", sdk.accountName, args[0], location, url, networkID, !isPartner)
 	},
 }
 var unregisterCmd = &cobra.Command{
-	Use:     "unregister",
-	Aliases: []string{"unreg"},
+	Use:     "producer-unregister",
+	Aliases: []string{"unregister", "unreg"},
 	Short:   "Unregister from a producer",
 	Long:    `Unregister from a producer`,
 	Example: `  iwallet sys unregister --account test0`,
@@ -97,7 +83,7 @@ var unregisterCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return actionSender("vote_producer.iost", "applyUnregister", sdk.accountName)(cmd, args)
+		return sendAction("vote_producer.iost", "applyUnregister", sdk.accountName)
 	},
 }
 
@@ -111,7 +97,7 @@ var loginCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return actionSender("vote_producer.iost", "logInProducer", sdk.accountName)(cmd, args)
+		return sendAction("vote_producer.iost", "logInProducer", sdk.accountName)
 	},
 }
 var logoutCmd = &cobra.Command{
@@ -124,7 +110,7 @@ var logoutCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return actionSender("vote_producer.iost", "logOutProducer", sdk.accountName)(cmd, args)
+		return sendAction("vote_producer.iost", "logOutProducer", sdk.accountName)
 	},
 }
 
@@ -135,9 +121,8 @@ var infoCmd = &cobra.Command{
 	Long:    `Show producer info`,
 	Example: `  iwallet sys pinfo producer000`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the producer id")
+		if err := checkArgsNumber(cmd, args, "producerID"); err != nil {
+			return err
 		}
 		return nil
 	},
