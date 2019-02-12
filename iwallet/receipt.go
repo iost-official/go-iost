@@ -26,9 +26,8 @@ var receiptCmd = &cobra.Command{
 	Short: "Find receipt",
 	Long:  `Find receipt by transaction hash`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the transaction hash")
+		if err := checkArgsNumber(cmd, args, "transactionHash"); err != nil {
+			return err
 		}
 		return nil
 	},
