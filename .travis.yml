@@ -49,7 +49,7 @@ matrix:
     services:
     - docker
     before_install:
-        - docker pull iostio/iost-dev:3.0.0-rc1
+    - docker pull iostio/iost-dev:3.0.0-rc1
     - git lfs install
     before_script:
     - git lfs pull
