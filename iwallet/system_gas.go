@@ -20,7 +20,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var gas_user string
+var gasUser string
 
 var pledgeCmd = &cobra.Command{
 	Use:     "gas-pledge amount",
@@ -38,11 +38,11 @@ var pledgeCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if gas_user == "" {
-			gas_user = sdk.accountName
+		if gasUser == "" {
+			gasUser = sdk.accountName
 		}
 		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("gas.iost", "pledge", sdk.accountName, gas_user, amount)
+		return sendAction("gas.iost", "pledge", sdk.accountName, gasUser, amount)
 	},
 }
 
@@ -54,17 +54,17 @@ var unpledgeCmd = &cobra.Command{
 	Example: `  iwallet sys unpledge 100 --account test0`,
 	Args:    pledgeCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if gas_user == "" {
-			gas_user = sdk.accountName
+		if gasUser == "" {
+			gasUser = sdk.accountName
 		}
 		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("gas.iost", "unpledge", sdk.accountName, gas_user, amount)
+		return sendAction("gas.iost", "unpledge", sdk.accountName, gasUser, amount)
 	},
 }
 
 func init() {
 	systemCmd.AddCommand(pledgeCmd)
-	pledgeCmd.Flags().StringVarP(&gas_user, "gas_user", "", "", "gas user that pledge IOST for (default is pledger himself/herself)")
+	pledgeCmd.Flags().StringVarP(&gasUser, "gasUser", "", "", "gas user that pledge IOST for (default is pledger himself/herself)")
 	systemCmd.AddCommand(unpledgeCmd)
-	unpledgeCmd.Flags().StringVarP(&gas_user, "gas_user", "", "", "gas user that earlier pledge for (default is pledger himself/herself)")
+	unpledgeCmd.Flags().StringVarP(&gasUser, "gasUser", "", "", "gas user that earlier pledge for (default is pledger himself/herself)")
 }
