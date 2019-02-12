@@ -62,7 +62,7 @@ func NewBlockChain(path string) (Chain, error) {
 			return nil, errors.New("fail to put blocklength")
 		}
 		txTotalByte := common.Int64ToBytes(0)
-		if err := levelDB.Put(blockLength, txTotalByte); err != nil {
+		if err := levelDB.Put(blockTxTotal, txTotalByte); err != nil {
 			return nil, errors.New("fail to put tx total")
 		}
 	}
