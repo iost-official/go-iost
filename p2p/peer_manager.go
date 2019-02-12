@@ -32,7 +32,7 @@ var (
 	metricsStatInterval      = 3 * time.Second
 	findBPInterval           = 2 * time.Second
 
-	dialTimeout        = 3 * time.Second
+	dialTimeout        = 10 * time.Second
 	deadPeerRetryTimes = 5
 )
 
@@ -223,9 +223,6 @@ func (pm *PeerManager) connectBPs() {
 
 // ConnectBPs makes the local host connected to the block producers directly.
 func (pm *PeerManager) ConnectBPs(ids []string) {
-	if len(ids) == 0 {
-		return
-	}
 	pm.setBPs(ids)
 }
 
