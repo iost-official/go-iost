@@ -30,25 +30,23 @@ var systemCmd = &cobra.Command{
 	Long:    `Send system contract action to blockchain`,
 }
 
-func actionSender(contract, method string, methodArgs ...interface{}) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		methodArgsBytes, err := json.Marshal(methodArgs)
-		if err != nil {
-			return err
-		}
-		action := NewAction(contract, method, string(methodArgsBytes))
-		actions := []*rpcpb.Action{action}
-		tx, err := sdk.createTx(actions)
-		if err != nil {
-			return fmt.Errorf("failed to create tx: %v", err)
-		}
-		err = sdk.LoadAccount()
-		if err != nil {
-			return fmt.Errorf("failed to load account: %v", err)
-		}
-		_, err = sdk.SendTx(tx)
+func sendAction(contract, method string, methodArgs ...interface{}) error {
+	methodArgsBytes, err := json.Marshal(methodArgs)
+	if err != nil {
 		return err
 	}
+	action := NewAction(contract, method, string(methodArgsBytes))
+	actions := []*rpcpb.Action{action}
+	tx, err := sdk.createTx(actions)
+	if err != nil {
+		return fmt.Errorf("failed to create tx: %v", err)
+	}
+	err = sdk.LoadAccount()
+	if err != nil {
+		return fmt.Errorf("failed to load account: %v", err)
+	}
+	_, err = sdk.SendTx(tx)
+	return err
 }
 
 func init() {

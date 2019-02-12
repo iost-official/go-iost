@@ -23,9 +23,10 @@ import (
 
 // stateCmd prints the state of blockchain.
 var stateCmd = &cobra.Command{
-	Use:   "state",
-	Short: "Get blockchain and node state",
-	Long:  `Get blockchain and node state`,
+	Use:     "state",
+	Short:   "Get blockchain and node state",
+	Long:    `Get blockchain and node state`,
+	Example: `  iwallet state`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		n, err := sdk.getNodeInfo()
 		if err != nil {
