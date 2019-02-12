@@ -30,10 +30,6 @@ var saveCmd = &cobra.Command{
 	The method parameters should be a string with format '["arg0","arg1",...]'.`,
 	Example: `  iwallet save "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' -o tx.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) == 0 {
-			cmd.Usage()
-			return fmt.Errorf("please give at least one action")
-		}
 		if outputFile == "" {
 			cmd.Usage()
 			return fmt.Errorf("output file name should be provided with --output flag")
