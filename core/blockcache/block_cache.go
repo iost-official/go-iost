@@ -104,6 +104,24 @@ func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block
 	}
 }
 
+func encodeUpdateLinkedRootWitness(bc *BlockCacheImpl) (b []byte, err error) {
+	uwRaw := &UpdateLinkedRootWitnessRaw{
+		LinkedRootWitness: bc.linkedRootWitness,
+	}
+	b, err = proto.Marshal(uwRaw)
+	return
+}
+
+func decodeUpdateLinkedRootWitness(b []byte) (wt []string, err error) {
+	var uwRaw UpdateLinkedRootWitnessRaw
+	err = proto.Unmarshal(b, &uwRaw)
+	if err != nil {
+		return
+	}
+	wt = uwRaw.LinkedRootWitness
+	return
+}
+
 func encodeUpdateActive(bcn *BlockCacheNode) (b []byte, err error) {
 	// First add block
 	uaRaw := &UpdateActiveRaw{
@@ -247,19 +265,20 @@ type BlockCache interface {
 
 // BlockCacheImpl is the implementation of BlockCache
 type BlockCacheImpl struct { //nolint:golint
-	linkRW      sync.RWMutex
-	linkedRoot  *BlockCacheNode
-	singleRoot  *BlockCacheNode
-	headRW      sync.RWMutex
-	head        *BlockCacheNode
-	hash2node   *sync.Map // map[string]*BlockCacheNode
-	numberMutex sync.Mutex
-	number2node *sync.Map // map[int64]*BlockCacheNode
-	leaf        map[*BlockCacheNode]int64
-	witnessNum  int64
-	blockChain  block.Chain
-	stateDB     db.MVCCDB
-	wal         *wal.WAL
+	linkRW            sync.RWMutex
+	linkedRoot        *BlockCacheNode
+	singleRoot        *BlockCacheNode
+	linkedRootWitness []string
+	headRW            sync.RWMutex
+	head              *BlockCacheNode
+	hash2node         *sync.Map // map[string]*BlockCacheNode
+	numberMutex       sync.Mutex
+	number2node       *sync.Map // map[int64]*BlockCacheNode
+	leaf              map[*BlockCacheNode]int64
+	witnessNum        int64
+	blockChain        block.Chain
+	stateDB           db.MVCCDB
+	wal               *wal.WAL
 }
 
 // CleanDir used in test to clean dir
@@ -319,14 +338,15 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		return nil, err
 	}
 	bc := BlockCacheImpl{
-		linkedRoot:  NewBCN(nil, nil),
-		singleRoot:  NewBCN(nil, nil),
-		hash2node:   new(sync.Map),
-		number2node: new(sync.Map),
-		leaf:        make(map[*BlockCacheNode]int64),
-		blockChain:  baseVariable.BlockChain(),
-		stateDB:     baseVariable.StateDB().Fork(),
-		wal:         w,
+		linkedRoot:        NewBCN(nil, nil),
+		singleRoot:        NewBCN(nil, nil),
+		linkedRootWitness: make([]string, 0),
+		hash2node:         new(sync.Map),
+		number2node:       new(sync.Map),
+		leaf:              make(map[*BlockCacheNode]int64),
+		blockChain:        baseVariable.BlockChain(),
+		stateDB:           baseVariable.StateDB().Fork(),
+		wal:               w,
 	}
 	bc.linkedRoot.Head.Number = -1
 
@@ -412,6 +432,11 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 		if err != nil {
 			return
 		}
+	case BcMessageType_UpdateLinkedRootWitnessType:
+		err = bc.applyUpdateLinkedRootWitness(bcMessage.Data)
+		if err != nil {
+			return
+		}
 	}
 	return
 }
@@ -440,14 +465,19 @@ func (bc *BlockCacheImpl) applyUpdateActive(b []byte) (err error) {
 	return
 }
 
+func (bc *BlockCacheImpl) applyUpdateLinkedRootWitness(b []byte) (err error) {
+	wl, err := decodeUpdateLinkedRootWitness(b)
+	bc.linkedRootWitness = wl
+	return
+}
+
 // UpdateLib will update last inreversible block
 func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 	confirmLimit := int(bc.witnessNum*2/3 + 1)
 	root := bc.LinkedRoot()
 
-	confirmRoot := false
+	updateActive := false
 	if len(node.ValidWitness) >= confirmLimit {
-		confirmRoot = true
 		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 			blockList := make(map[int64]*BlockCacheNode, node.Head.Number-root.Head.Number)
 			blockList[node.Head.Number] = node
@@ -460,20 +490,34 @@ func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 			for len(node.ValidWitness) >= confirmLimit &&
 				common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
 				blockList[bc.LinkedRoot().Head.Number+1] != nil {
-				// bc.Flush() will change node.ValidWitness and bc.LinkedRoot()
+				// bc.Flush() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
 				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
 			}
 		}
-	} else if len(node.ValidWitness)+1 == confirmLimit {
-		confirmRoot = true
+		if !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+			updateActive = true
+		}
+	} else if len(node.ValidWitness)+len(bc.linkedRootWitness) >= confirmLimit &&
+		!common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+		cnt := len(bc.linkedRootWitness)
 		for _, w := range node.ValidWitness {
-			if w == root.Head.Witness {
-				confirmRoot = false
+			inc := true
+			for _, w1 := range bc.linkedRootWitness {
+				if w == w1 {
+					inc = false
+				}
+			}
+			if inc {
+				cnt++
+			}
+			if cnt >= confirmLimit {
+				updateActive = true
 				break
 			}
 		}
 	}
-	if confirmRoot && !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+
+	if updateActive {
 		newValidWitness := make([]string, 0)
 		for _, witness := range node.ValidWitness {
 			for _, w := range bc.LinkedRoot().Pending() {
@@ -518,6 +562,21 @@ func (bc *BlockCacheImpl) AddNodeToWAL(bcn *BlockCacheNode) {
 		ilog.Error("Failed to write add node WAL!", err)
 	}
 	bcn.walIndex = index
+}
+
+func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
+	if !common.StringSliceEqual(parent.Pending(), bcn.Pending()) {
+		bc.linkedRootWitness = make([]string, 0)
+	}
+	witness := bcn.Head.Witness
+	for _, w := range bc.linkedRootWitness {
+		if w == witness {
+			witness = ""
+		}
+	}
+	if witness != "" {
+		bc.linkedRootWitness = append(bc.linkedRootWitness, witness)
+	}
 }
 
 func (bc *BlockCacheImpl) updateWitnessList(h *BlockCacheNode) error {
@@ -669,6 +728,7 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	}
 
 	bcn.removeValidWitness(bcn)
+	bc.updateLinkedRootWitness(parent, bcn)
 	bc.nmdel(parent.Head.Number)
 	bc.delNode(parent)
 	bcn.SetParent(nil)
@@ -708,11 +768,35 @@ func (bc *BlockCacheImpl) flushWAL(h *BlockCacheNode) error {
 	if err != nil {
 		return err
 	}
+	err = bc.writeUpdateLinkedRootWitnessWAL()
+	if err != nil {
+		return err
+	}
 	err = bc.cutWALFiles(h)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
+	hb, err := encodeUpdateLinkedRootWitness(bc)
+	if err != nil {
+		return err
+	}
+	bcMessage := &BcMessage{
+		Data: hb,
+		Type: BcMessageType_UpdateLinkedRootWitnessType,
+	}
+	data, err := proto.Marshal(bcMessage)
+	if err != nil {
+		return
+	}
+	ent := wal.Entry{
+		Data: data,
+	}
+	_, err = bc.wal.SaveSingle(ent)
+	return
 }
 
 func (bc *BlockCacheImpl) writeUpdateActiveWAL(h *BlockCacheNode) (err error) {
