@@ -37,16 +37,18 @@ var (
 )
 
 var (
-	blockReqTimeout   = 3 * time.Second
 	continuousNum     int
-	subSlotTime       = 500 * time.Millisecond
-	genBlockTime      = 400 * time.Millisecond
-	last2GenBlockTime = 50 * time.Millisecond
+	maxBlockNumber    int64 = 10000
+	blockReqTimeout         = 3 * time.Second
+	subSlotTime             = 500 * time.Millisecond
+	genBlockTime            = 400 * time.Millisecond
+	last2GenBlockTime       = 50 * time.Millisecond
 )
 
 type verifyBlockMessage struct {
 	blk     *block.Block
 	p2pType p2p.MessageType
+	from    string
 }
 
 //PoB is a struct that handles the consensus logic.
@@ -68,6 +70,8 @@ type PoB struct {
 	chVerifyBlock    chan *verifyBlockMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
+	headNumber       int64
+	recvTimesMap     map[string]int64
 }
 
 // New init a new PoB.
@@ -90,11 +94,14 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chVerifyBlock:    make(chan *verifyBlockMessage, 1024),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
+		headNumber:       0,
+		recvTimesMap:     make(map[string]int64, 0),
 	}
 	continuousNum = baseVariable.Continuous()
 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
+	p.headNumber = p.blockCache.Head().Head.Number
 
 	return &p
 }
@@ -114,7 +121,6 @@ func (p *PoB) recoverBlockcache() error {
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
-
 	p.wg.Add(4)
 	go p.messageLoop()
 	go p.blockLoop()
@@ -238,6 +244,7 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 	}
 	ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.blk
+
 	switch vbm.p2pType {
 	case p2p.NewBlock:
 		t1 := calculateTime(blk)
@@ -280,7 +287,33 @@ func (p *PoB) verifyLoop() {
 			select {
 			case <-p.quitGenerateMode:
 			}
+			if p.blockCache.Head().Head.Number+maxBlockNumber < vbm.blk.Head.Number {
+				ilog.Debugf("block number is too large, block number:%v", vbm.blk.Head.Number)
+				continue
+			}
+
+			recvTimes := p.recvTimesMap[vbm.from] + 1
+
+			if recvTimes > maxBlockNumber {
+				p.p2pService.PutPeerToBlack(vbm.from)
+				continue
+			}
+			p.recvTimesMap[vbm.from] = recvTimes
+
 			p.doVerifyBlock(vbm)
+
+			if p.blockCache.Head().Head.Number > p.headNumber {
+				delta := p.blockCache.Head().Head.Number - p.headNumber
+				p.headNumber += delta
+				for k, v := range p.recvTimesMap {
+					v -= delta
+					if v < 0 {
+						delete(p.recvTimesMap, k)
+					} else {
+						p.recvTimesMap[k] = v
+					}
+				}
+			}
 		case <-p.exitSignal:
 			return
 		}
@@ -303,7 +336,7 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
-			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type()}
+			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type(), from: incomingMessage.From().Pretty()}
 		case <-p.exitSignal:
 			return
 		}
@@ -421,10 +454,12 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	if err == nil {
 		return errDuplicate
 	}
+
 	err = verifyBasics(blk, blk.Sign)
 	if err != nil {
 		return err
 	}
+
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
