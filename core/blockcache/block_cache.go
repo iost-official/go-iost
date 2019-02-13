@@ -215,7 +215,9 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	return bcn
 }
 
-func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness string) {
+func (bcn *BlockCacheNode) updateValidWitness() {
+	witness := bcn.Head.Witness
+	parent := bcn.GetParent()
 	for _, w := range parent.ValidWitness {
 		bcn.ValidWitness = append(bcn.ValidWitness, w)
 		if w == witness {
@@ -554,14 +556,14 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	if bcn == nil {
 		return
 	}
-	fa, ok := bc.hmget(bcn.Head.ParentHash)
-	if !ok || fa.Type != Linked {
+	parent := bcn.GetParent()
+	if parent.Type != Linked {
 		return
 	}
 	bcn.Type = Linked
-	delete(bc.leaf, bcn.GetParent())
+	delete(bc.leaf, parent)
 	bc.leaf[bcn] = bcn.Head.Number
-	bcn.updateValidWitness(fa, bcn.Head.Witness)
+	bcn.updateValidWitness()
 	bc.updateWitnessList(bcn)
 	if !replay {
 		bc.AddNodeToWAL(bcn)
@@ -644,16 +646,16 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	if nok && newNode.Type != Virtual {
 		return newNode
 	}
-	fa, ok := bc.hmget(blk.Head.ParentHash)
+	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
-		fa = NewVirtualBCN(bc.singleRoot, blk)
-		bc.hmset(blk.Head.ParentHash, fa)
+		parent = NewVirtualBCN(bc.singleRoot, blk)
+		bc.hmset(blk.Head.ParentHash, parent)
 	}
 	if nok && newNode.Type == Virtual {
 		bc.singleRoot.delChild(newNode)
-		newNode.updateVirtualBCN(fa, blk)
+		newNode.updateVirtualBCN(parent, blk)
 	} else {
-		newNode = NewBCN(fa, blk)
+		newNode = NewBCN(parent, blk)
 		bc.hmset(blk.HeadHash(), newNode)
 	}
 	//newNode.WitnessInfo = wi
@@ -672,13 +674,13 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 }
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
-	fa := bcn.GetParent()
+	parent := bcn.GetParent()
 	bcn.SetParent(nil)
 	if bcn.Block != nil {
 		bc.hmdel(bcn.HeadHash())
 	}
-	if fa != nil {
-		fa.delChild(bcn)
+	if parent != nil {
+		parent.delChild(bcn)
 	}
 	delete(bc.leaf, bcn)
 }
