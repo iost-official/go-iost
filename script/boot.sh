@@ -16,6 +16,8 @@ PRODUCER_KEY_FILE=keypair
 CURL="curl -fsSL"
 PYTHON=${PYTHON:=python}
 
+USR_LOCAL_BIN=${USR_LOCAL_BIN:=/usr/local/bin}
+export PATH=$PATH:$USR_LOCAL_BIN
 #
 # function
 #
@@ -59,8 +61,8 @@ install_docker_compose() {
     _SYS=$(uname)
     if [ x$_SYS = x"Linux" ]; then
         >&2 echo Installing docker-compose ...
-        sudo curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o /usr/local/bin/docker-compose
-        sudo chmod +x /usr/local/bin/docker-compose
+        sudo curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o $USR_LOCAL_BIN/docker-compose
+        sudo chmod +x $USR_LOCAL_BIN/docker-compose
         docker-compose version >/dev/null && return 0
     fi
     >&2 echo Install docker-compose failed. See https://docs.docker.com/compose/install/.
