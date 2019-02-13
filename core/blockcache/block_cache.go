@@ -742,20 +742,20 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	//confirm bcn to db
 	err := bc.blockChain.Push(bcn.Block)
 	if err != nil {
-		ilog.Errorf("Database error, BlockChain Push err:%v", err)
+		ilog.Errorf("Database error, BlockChain Push err: %v %v", bcn.HeadHash(), err)
 	}
 
 	bc.updateLinkedRootWitness(parent, bcn)
 	err = bc.writeUpdateLinkedRootWitnessWAL()
 	if err != nil {
-		return
+		ilog.Errorf("write wal error: %v %v", bc.LinkedRoot().HeadHash(), err)
 	}
 
 	ilog.Debug("confirm: ", bcn.Head.Number)
 	err = bc.stateDB.Flush(string(bcn.HeadHash()))
 
 	if err != nil {
-		ilog.Errorf("flush mvcc error: %v", err)
+		ilog.Errorf("flush mvcc error: %v %v", bcn.HeadHash(), err)
 	}
 
 	bcn.removeValidWitness(bcn)
