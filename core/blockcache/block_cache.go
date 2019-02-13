@@ -215,8 +215,9 @@ func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	return bcn
 }
 
-func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness string) {
-	for _, w := range parent.ValidWitness {
+func (bcn *BlockCacheNode) updateValidWitness() {
+	witness := bcn.Head.Witness
+	for _, w := range bcn.parent.ValidWitness {
 		bcn.ValidWitness = append(bcn.ValidWitness, w)
 		if w == witness {
 			witness = ""
@@ -554,14 +555,13 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	if bcn == nil {
 		return
 	}
-	fa, ok := bc.hmget(bcn.Head.ParentHash)
-	if !ok || fa.Type != Linked {
+	if bcn.parent.Type != Linked {
 		return
 	}
 	bcn.Type = Linked
 	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
-	bcn.updateValidWitness(fa, bcn.Head.Witness)
+	bcn.updateValidWitness()
 	bc.updateWitnessList(bcn)
 	if !replay {
 		bc.AddNodeToWAL(bcn)
