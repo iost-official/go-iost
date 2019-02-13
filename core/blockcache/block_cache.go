@@ -743,6 +743,12 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 		ilog.Errorf("Database error, BlockChain Push err:%v", err)
 	}
 
+	bc.updateLinkedRootWitness(parent, bcn)
+	err = bc.writeUpdateLinkedRootWitnessWAL()
+	if err != nil {
+		return
+	}
+
 	ilog.Debug("confirm: ", bcn.Head.Number)
 	err = bc.stateDB.Flush(string(bcn.HeadHash()))
 
@@ -751,7 +757,6 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	}
 
 	bcn.removeValidWitness(bcn)
-	bc.updateLinkedRootWitness(parent, bcn)
 	bc.nmdel(parent.Head.Number)
 	bc.delNode(parent)
 	bcn.SetParent(nil)
@@ -783,23 +788,7 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 
 	bc.delSingle()
 	bc.updateLongest()
-	bc.flushWAL(bcn)
-}
-
-func (bc *BlockCacheImpl) flushWAL(h *BlockCacheNode) error {
-	err := bc.writeUpdateActiveWAL(h)
-	if err != nil {
-		return err
-	}
-	err = bc.writeUpdateLinkedRootWitnessWAL()
-	if err != nil {
-		return err
-	}
-	err = bc.cutWALFiles(h)
-	if err != nil {
-		return err
-	}
-	return nil
+	bc.cutWALFiles(bcn)
 }
 
 func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
