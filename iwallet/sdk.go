@@ -45,6 +45,8 @@ type SDK struct {
 	verbose bool
 
 	chainID uint32
+
+	rpcConn *grpc.ClientConn
 }
 
 var sdk = &SDK{}
@@ -261,14 +263,30 @@ func (s *SDK) checkPubKey(k string) bool {
 	return true
 }
 
+// Connect ...
+func (s *SDK) Connect() (err error) {
+	if s.verbose {
+		fmt.Println("Connecting to server", s.server, "...")
+	}
+	s.rpcConn, err = grpc.Dial(s.server, grpc.WithInsecure())
+	return
+}
+
+// CloseConn ...
+func (s *SDK) CloseConn() {
+	s.rpcConn.Close()
+	s.rpcConn = nil
+}
+
 // GetContractStorage ...
 func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	value, err := client.GetContractStorage(context.Background(), r)
 	if err != nil {
 		return nil, err
@@ -278,12 +296,13 @@ func (s *SDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.Get
 
 // GetProducerVoteInfo ...
 func (s *SDK) GetProducerVoteInfo(r *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	value, err := client.GetProducerVoteInfo(context.Background(), r)
 	if err != nil {
 		return nil, err
@@ -292,12 +311,13 @@ func (s *SDK) GetProducerVoteInfo(r *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.G
 }
 
 func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	value, err := client.GetNodeInfo(context.Background(), &rpcpb.EmptyRequest{})
 	if err != nil {
 		return nil, err
@@ -306,12 +326,13 @@ func (s *SDK) getNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 }
 
 func (s *SDK) getChainInfo() (*rpcpb.ChainInfoResponse, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	value, err := client.GetChainInfo(context.Background(), &rpcpb.EmptyRequest{})
 	if err != nil {
 		return nil, err
@@ -321,12 +342,13 @@ func (s *SDK) getChainInfo() (*rpcpb.ChainInfoResponse, error) {
 
 // getAccountInfo return account info
 func (s *SDK) getAccountInfo(id string) (*rpcpb.Account, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	req := &rpcpb.GetAccountRequest{Name: id, ByLongestChain: s.useLongestChain}
 	value, err := client.GetAccount(context.Background(), req)
 	if err != nil {
@@ -335,53 +357,58 @@ func (s *SDK) getAccountInfo(id string) (*rpcpb.Account, error) {
 	return value, nil
 }
 func (s *SDK) getGetBlockByNum(num int64, complete bool) (*rpcpb.BlockResponse, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	return client.GetBlockByNumber(context.Background(), &rpcpb.GetBlockByNumberRequest{Number: num, Complete: complete})
 }
 
 func (s *SDK) getGetBlockByHash(hash string, complete bool) (*rpcpb.BlockResponse, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	return client.GetBlockByHash(context.Background(), &rpcpb.GetBlockByHashRequest{Hash: hash, Complete: complete})
 }
 
 func (s *SDK) getTxByHash(hash string) (*rpcpb.TransactionResponse, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	return client.GetTxByHash(context.Background(), &rpcpb.TxHashRequest{Hash: hash})
 }
 
 // GetTxReceiptByTxHash ...
 func (s *SDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return nil, err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	return client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHashStr})
 }
 
 func (s *SDK) sendTx(signedTx *rpcpb.TransactionRequest) (string, error) {
-	conn, err := grpc.Dial(s.server, grpc.WithInsecure())
-	if err != nil {
-		return "", err
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return "", err
+		}
+		defer s.CloseConn()
 	}
-	defer conn.Close()
-	client := rpcpb.NewApiServiceClient(conn)
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	resp, err := client.SendTransaction(context.Background(), signedTx)
 	if err != nil {
 		return "", err
@@ -390,7 +417,6 @@ func (s *SDK) sendTx(signedTx *rpcpb.TransactionRequest) (string, error) {
 }
 
 func (s *SDK) checkTransaction(txHash string) error {
-	// TODO: May be better to to create a grpc client and reuse it.
 	fmt.Println("Checking transaction receipt...")
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)

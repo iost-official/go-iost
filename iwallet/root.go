@@ -3,6 +3,7 @@ package iwallet
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -10,6 +11,7 @@ import (
 )
 
 var cfgFile string
+var startTime time.Time
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -18,9 +20,16 @@ var rootCmd = &cobra.Command{
 	Long:          `An IOST RPC client`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
-	// Uncomment the following line if your bare application
-	// has an action associated with it:
-	//	Run: func(cmd *cobra.Command, args []string) { },
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		startTime = time.Now()
+		return sdk.Connect()
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		sdk.CloseConn()
+		if sdk.verbose {
+			fmt.Println("Executed in", time.Since(startTime))
+		}
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
