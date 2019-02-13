@@ -220,6 +220,7 @@ func (bcn *BlockCacheNode) updateValidWitness(parent *BlockCacheNode, witness st
 		bcn.ValidWitness = append(bcn.ValidWitness, w)
 		if w == witness {
 			witness = ""
+			break
 		}
 	}
 	if witness != "" {
@@ -474,63 +475,78 @@ func (bc *BlockCacheImpl) applyUpdateLinkedRootWitness(b []byte) (err error) {
 // UpdateLib will update last inreversible block
 func (bc *BlockCacheImpl) UpdateLib(node *BlockCacheNode) {
 	confirmLimit := int(bc.witnessNum*2/3 + 1)
-	root := bc.LinkedRoot()
 
 	updateActive := false
 	if len(node.ValidWitness) >= confirmLimit {
-		if common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
-			blockList := make(map[int64]*BlockCacheNode, node.Head.Number-root.Head.Number)
-			blockList[node.Head.Number] = node
-			loopNode := node.GetParent()
-			for loopNode != root {
-				blockList[loopNode.Head.Number] = loopNode
-				loopNode = loopNode.GetParent()
-			}
+		bc.updateLib(node, confirmLimit)
 
-			for len(node.ValidWitness) >= confirmLimit &&
-				common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
-				blockList[bc.LinkedRoot().Head.Number+1] != nil {
-				// bc.Flush() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
-				bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
-			}
-		}
 		if !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
 			updateActive = true
 		}
 	} else if len(node.ValidWitness)+len(bc.linkedRootWitness) >= confirmLimit &&
 		!common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
-		cnt := len(bc.linkedRootWitness)
-		for _, w := range node.ValidWitness {
-			inc := true
-			for _, w1 := range bc.linkedRootWitness {
-				if w == w1 {
-					inc = false
-				}
+		updateActive = bc.checkUpdateActive(node, confirmLimit)
+	}
+
+	if updateActive {
+		bc.updateActive(node)
+	}
+}
+
+func (bc *BlockCacheImpl) updateLib(node *BlockCacheNode, confirmLimit int) {
+	if !common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) {
+		return
+	}
+	root := bc.LinkedRoot()
+	blockList := make(map[int64]*BlockCacheNode, node.Head.Number-root.Head.Number)
+	blockList[node.Head.Number] = node
+	loopNode := node.GetParent()
+	for loopNode != root {
+		blockList[loopNode.Head.Number] = loopNode
+		loopNode = loopNode.GetParent()
+	}
+
+	for len(node.ValidWitness) >= confirmLimit &&
+		common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
+		blockList[bc.LinkedRoot().Head.Number+1] != nil {
+		// bc.Flush() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
+		bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
+	}
+}
+
+func (bc *BlockCacheImpl) checkUpdateActive(node *BlockCacheNode, confirmLimit int) bool {
+	cnt := len(bc.linkedRootWitness)
+	for _, w := range node.ValidWitness {
+		inc := true
+		for _, w1 := range bc.linkedRootWitness {
+			if w == w1 {
+				inc = false
+				break
 			}
-			if inc {
-				cnt++
-			}
-			if cnt >= confirmLimit {
-				updateActive = true
+		}
+		if inc {
+			cnt++
+		}
+		if cnt >= confirmLimit {
+			return true
+		}
+	}
+	return false
+}
+
+func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
+	newValidWitness := make([]string, 0)
+	for _, witness := range node.ValidWitness {
+		for _, w := range bc.LinkedRoot().Pending() {
+			if witness == w {
+				newValidWitness = append(newValidWitness, witness)
 				break
 			}
 		}
 	}
-
-	if updateActive {
-		newValidWitness := make([]string, 0)
-		for _, witness := range node.ValidWitness {
-			for _, w := range bc.LinkedRoot().Pending() {
-				if witness == w {
-					newValidWitness = append(newValidWitness, witness)
-					break
-				}
-			}
-		}
-		node.ValidWitness = newValidWitness
-		node.SetActive(bc.LinkedRoot().Pending())
-		bc.writeUpdateActiveWAL(node)
-	}
+	node.ValidWitness = newValidWitness
+	node.SetActive(bc.LinkedRoot().Pending())
+	bc.writeUpdateActiveWAL(node)
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
@@ -572,6 +588,7 @@ func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
 	for _, w := range bc.linkedRootWitness {
 		if w == witness {
 			witness = ""
+			break
 		}
 	}
 	if witness != "" {
