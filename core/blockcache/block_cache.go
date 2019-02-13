@@ -550,7 +550,6 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 		}
 	}
 	node.ValidWitness = newValidWitness
-	ilog.Infof("update activelist to %v", node.Active())
 	node.SetActive(bc.LinkedRoot().Pending())
 	ilog.Infof("update node:%d activelist to %v", node.Head.Number, node.Active())
 	bc.writeUpdateActiveWAL(node)
