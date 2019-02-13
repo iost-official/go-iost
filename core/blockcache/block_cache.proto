@@ -10,6 +10,7 @@ message bcMessage{
 enum bcMessageType {
     LinkType = 0;
     UpdateActiveType = 1;
+    UpdateLinkedRootWitnessType = 2;
 }
 
 message BlockCacheRaw{
@@ -21,6 +22,10 @@ message BlockCacheRaw{
 message UpdateActiveRaw{
     bytes blockHashBytes = 1;
     WitnessList witnessList = 2;
+}
+
+message UpdateLinkedRootWitnessRaw{
+    repeated string linkedRootWitness = 1;
 }
 
 message WitnessList{
