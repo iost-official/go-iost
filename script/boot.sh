@@ -9,7 +9,7 @@
 set -ue
 
 PREFIX=${PREFIX:="/data/iserver"}
-INET=${INET:="testnet"}
+INET=${INET:="mainnet"}
 VERSION=${VERSION:="latest"}
 
 PRODUCER_KEY_FILE=keypair
