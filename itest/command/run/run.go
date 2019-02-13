@@ -22,6 +22,7 @@ var Command = cli.Command{
 		BenchmarkToken721Command,
 		BenchmarkSystemCommand,
 		BenchmarkAccountCommand,
+		BenchmarkRPCCommand,
 	},
 }
 
