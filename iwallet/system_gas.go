@@ -15,8 +15,6 @@
 package iwallet
 
 import (
-	"strconv"
-
 	"github.com/spf13/cobra"
 )
 
@@ -41,8 +39,7 @@ var pledgeCmd = &cobra.Command{
 		if gasUser == "" {
 			gasUser = sdk.accountName
 		}
-		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("gas.iost", "pledge", sdk.accountName, gasUser, amount)
+		return sendAction("gas.iost", "pledge", sdk.accountName, gasUser, args[0])
 	},
 }
 
@@ -57,8 +54,7 @@ var unpledgeCmd = &cobra.Command{
 		if gasUser == "" {
 			gasUser = sdk.accountName
 		}
-		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("gas.iost", "unpledge", sdk.accountName, gasUser, amount)
+		return sendAction("gas.iost", "unpledge", sdk.accountName, gasUser, args[0])
 	},
 }
 
