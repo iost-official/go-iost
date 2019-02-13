@@ -106,18 +106,20 @@ func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block
 
 func encodeUpdateLinkedRootWitness(bc *BlockCacheImpl) (b []byte, err error) {
 	uwRaw := &UpdateLinkedRootWitnessRaw{
+		BlockHashBytes:    bc.LinkedRoot().HeadHash(),
 		LinkedRootWitness: bc.linkedRootWitness,
 	}
 	b, err = proto.Marshal(uwRaw)
 	return
 }
 
-func decodeUpdateLinkedRootWitness(b []byte) (wt []string, err error) {
+func decodeUpdateLinkedRootWitness(b []byte) (blockHeadHash []byte, wt []string, err error) {
 	var uwRaw UpdateLinkedRootWitnessRaw
 	err = proto.Unmarshal(b, &uwRaw)
 	if err != nil {
 		return
 	}
+	blockHeadHash = uwRaw.BlockHashBytes
 	wt = uwRaw.LinkedRootWitness
 	return
 }
@@ -467,8 +469,11 @@ func (bc *BlockCacheImpl) applyUpdateActive(b []byte) (err error) {
 }
 
 func (bc *BlockCacheImpl) applyUpdateLinkedRootWitness(b []byte) (err error) {
-	wl, err := decodeUpdateLinkedRootWitness(b)
-	bc.linkedRootWitness = wl
+	blockHeadHash, wl, err := decodeUpdateLinkedRootWitness(b)
+	if bytes.Equal(blockHeadHash, bc.LinkedRoot().HeadHash()) {
+		bc.linkedRootWitness = wl
+		ilog.Infof("Set linkedRootWitness to :%v", bc.linkedRootWitness)
+	}
 	return
 }
 
@@ -545,7 +550,9 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 		}
 	}
 	node.ValidWitness = newValidWitness
+	ilog.Infof("update activelist to %v", node.Active())
 	node.SetActive(bc.LinkedRoot().Pending())
+	ilog.Infof("update node:%d activelist to %v", node.Head.Number, node.Active())
 	bc.writeUpdateActiveWAL(node)
 }
 
