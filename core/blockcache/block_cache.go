@@ -748,7 +748,7 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	bc.updateLinkedRootWitness(parent, bcn)
 	err = bc.writeUpdateLinkedRootWitnessWAL()
 	if err != nil {
-		ilog.Errorf("write wal error: %v %v", bc.LinkedRoot().HeadHash(), err)
+		ilog.Errorf("write wal error: %v %v", bcn.HeadHash(), err)
 	}
 
 	ilog.Debug("confirm: ", bcn.Head.Number)
