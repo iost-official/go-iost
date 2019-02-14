@@ -34,7 +34,8 @@ type Client struct {
 	Addr string
 }
 
-func (c *Client) getGRPC() (rpcpb.ApiServiceClient, error) {
+// GetGRPC return the underlying grpc client
+func (c *Client) GetGRPC() (rpcpb.ApiServiceClient, error) {
 	c.o.Do(func() {
 		conn, err := grpc.Dial(c.Addr, grpc.WithInsecure())
 		if err != nil {
@@ -48,7 +49,7 @@ func (c *Client) getGRPC() (rpcpb.ApiServiceClient, error) {
 
 // GetTransaction will get transaction by tx hash
 func (c *Client) GetTransaction(hash string) (*Transaction, error) {
-	grpc, err := c.getGRPC()
+	grpc, err := c.GetGRPC()
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +69,7 @@ func (c *Client) GetTransaction(hash string) (*Transaction, error) {
 
 // GetReceipt will get receipt by tx hash
 func (c *Client) GetReceipt(hash string) (*Receipt, error) {
-	grpc, err := c.getGRPC()
+	grpc, err := c.GetGRPC()
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +89,7 @@ func (c *Client) GetReceipt(hash string) (*Receipt, error) {
 
 // GetAccount will get account by name
 func (c *Client) GetAccount(name string) (*Account, error) {
-	grpc, err := c.getGRPC()
+	grpc, err := c.GetGRPC()
 	if err != nil {
 		return nil, err
 	}
@@ -116,7 +117,7 @@ func (c *Client) GetAccount(name string) (*Account, error) {
 // GetContractStorage will get contract storage by contract id, key and field
 func (c *Client) GetContractStorage(id, key, field string) (data string, hash string, number int64, err error) {
 	data, hash, number = "", "", 0
-	grpc, err := c.getGRPC()
+	grpc, err := c.GetGRPC()
 	if err != nil {
 		return
 	}
@@ -137,7 +138,7 @@ func (c *Client) GetContractStorage(id, key, field string) (data string, hash st
 
 // GetBlockByNumber will get block by number
 func (c *Client) GetBlockByNumber(number int64) (*Block, error) {
-	grpc, err := c.getGRPC()
+	grpc, err := c.GetGRPC()
 	if err != nil {
 		return nil, err
 	}
@@ -156,7 +157,7 @@ func (c *Client) GetBlockByNumber(number int64) (*Block, error) {
 
 // SendTransaction will send transaction to blockchain
 func (c *Client) SendTransaction(transaction *Transaction, check bool) (string, error) {
-	grpc, err := c.getGRPC()
+	grpc, err := c.GetGRPC()
 	if err != nil {
 		return "", err
 	}
