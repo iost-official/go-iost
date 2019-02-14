@@ -265,17 +265,21 @@ func (s *SDK) checkPubKey(k string) bool {
 
 // Connect ...
 func (s *SDK) Connect() (err error) {
-	if s.verbose {
-		fmt.Println("Connecting to server", s.server, "...")
+	if s.rpcConn == nil {
+		if s.verbose {
+			fmt.Println("Connecting to server", s.server, "...")
+		}
+		s.rpcConn, err = grpc.Dial(s.server, grpc.WithInsecure())
 	}
-	s.rpcConn, err = grpc.Dial(s.server, grpc.WithInsecure())
 	return
 }
 
 // CloseConn ...
 func (s *SDK) CloseConn() {
-	s.rpcConn.Close()
-	s.rpcConn = nil
+	if s.rpcConn != nil {
+		s.rpcConn.Close()
+		s.rpcConn = nil
+	}
 }
 
 // GetContractStorage ...
