@@ -589,8 +589,8 @@ func TestEngine_Danger(t *testing.T) {
 	}
 
 	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
-	if err != nil || cost.ToGas() != int64(5052842) {
-		t.Fatalf("LoadAndCall objadd should cost 5052842, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
+	if err != nil || cost.ToGas() != int64(5052845) {
+		t.Fatalf("LoadAndCall objadd should cost 5052845, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "tooBigArray")
@@ -616,6 +616,11 @@ func TestEngine_Danger(t *testing.T) {
 	_, _, err = vmPool.LoadAndCall(host, code, "putlong")
 	if err == nil || !strings.Contains(err.Error(), "input string too long") {
 		t.Fatalf("LoadAndCall putlong should return error: input string too long, but got %v\n", err)
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "funcstr")
+	if err == nil || !strings.Contains(err.Error(), "TypeError: this.funcstr.toString is not a function") {
+		t.Fatalf("LoadAndCall funcstr should return error: TypeError: this.funcstr.toString is not a function, got err = %v\n", err)
 	}
 }
 
