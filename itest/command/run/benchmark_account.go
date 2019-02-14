@@ -171,7 +171,7 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 // BenchmarkAccountAction is the action of benchmark.
 var BenchmarkAccountAction = func(c *cli.Context) error {
 	rand.Seed(time.Now().UTC().UnixNano())
-	itest.Interval = 2 * time.Millisecond
+	itest.Interval = 1000 * time.Millisecond
 	itest.InitAmount = "1000"
 	itest.InitPledge = "1000"
 	itest.InitRAM = "3000"
@@ -240,13 +240,13 @@ var BenchmarkAccountAction = func(c *cli.Context) error {
 		hashList, errList := it.SendTransactionN(trxs, false)
 		ilog.Warnf("Send %v trxs, got %v hash, %v err", len(trxs), len(hashList), len(errList))
 
-		expire := time.Now().Add(itest.Timeout)
-		for _, hash := range hashList {
-			select {
-			case hashCh <- &hashItem{hash: hash, expire: expire}:
-			case <-time.After(1 * time.Millisecond):
-			}
-		}
+		//expire := time.Now().Add(itest.Timeout)
+		//for _, hash := range hashList {
+		//	select {
+		//	case hashCh <- &hashItem{hash: hash, expire: expire}:
+		//	case <-time.After(1 * time.Millisecond):
+		//	}
+		//}
 
 		select {
 		case <-sig:
