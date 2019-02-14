@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/spf13/cobra"
 )
@@ -34,11 +35,11 @@ var accountInfoCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
-		info, err := sdk.getAccountInfo(id)
+		info, err := iwalletSDK.GetAccountInfo(id)
 		if err != nil {
 			return err
 		}
-		fmt.Println(marshalTextString(info))
+		fmt.Println(sdk.MarshalTextString(info))
 		return nil
 	},
 }

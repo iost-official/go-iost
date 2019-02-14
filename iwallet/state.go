@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -28,16 +29,16 @@ var stateCmd = &cobra.Command{
 	Long:    `Get blockchain and node state`,
 	Example: `  iwallet state`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		n, err := sdk.getNodeInfo()
+		n, err := iwalletSDK.GetNodeInfo()
 		if err != nil {
 			return fmt.Errorf("cannot get node info: %v", err)
 		}
-		fmt.Print(strings.TrimRight(marshalTextString(n), "}"))
-		c, err := sdk.getChainInfo()
+		fmt.Print(strings.TrimRight(sdk.MarshalTextString(n), "}"))
+		c, err := iwalletSDK.GetChainInfo()
 		if err != nil {
 			return fmt.Errorf("cannot get chain info: %v", err)
 		}
-		fmt.Println(strings.Replace(marshalTextString(c), "{\n", "", 1))
+		fmt.Println(strings.Replace(sdk.MarshalTextString(c), "{\n", "", 1))
 		return nil
 	},
 }

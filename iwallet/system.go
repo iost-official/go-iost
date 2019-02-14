@@ -17,6 +17,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
@@ -35,17 +36,17 @@ func sendAction(contract, method string, methodArgs ...interface{}) error {
 	if err != nil {
 		return err
 	}
-	action := NewAction(contract, method, string(methodArgsBytes))
+	action := sdk.NewAction(contract, method, string(methodArgsBytes))
 	actions := []*rpcpb.Action{action}
-	tx, err := sdk.createTx(actions)
+	tx, err := iwalletSDK.CreateTxFromActions(actions)
 	if err != nil {
 		return fmt.Errorf("failed to create tx: %v", err)
 	}
-	err = sdk.LoadAccount()
+	err = InitAccount()
 	if err != nil {
 		return fmt.Errorf("failed to load account: %v", err)
 	}
-	_, err = sdk.SendTx(tx)
+	_, err = iwalletSDK.SendTx(tx)
 	return err
 }
 

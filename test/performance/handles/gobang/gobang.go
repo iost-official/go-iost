@@ -3,11 +3,11 @@ package gobang
 import (
 	"context"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 	"os"
 	"strconv"
 	"time"
 
-	"github.com/iost-official/go-iost/iwallet"
 	"github.com/iost-official/go-iost/test/performance/call"
 
 	"encoding/json"
@@ -26,7 +26,7 @@ var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgy
 var rootID = "admin"
 var rootAcc *account.KeyPair
 var contractID string
-var sdk = iwallet.SDK{}
+var iostSDK = sdk.NewIOSTDevSDK()
 var testID = "i" + strconv.FormatInt(time.Now().Unix(), 10)
 var testAcc *account.KeyPair
 
@@ -39,7 +39,7 @@ const (
 func init() {
 	gobang := new(gobangHandle)
 	call.Register("gobang", gobang)
-	sdk.SetChainID(chainID)
+	iostSDK.SetChainID(chainID)
 }
 
 // Publish ...
@@ -48,25 +48,25 @@ func (t *gobangHandle) Prepare() error {
 	rootAcc, _ = account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/gobang/gobang.js"
 	abiPath := codePath + ".abi"
-	sdk.SetServer(call.GetClient(0).Addr())
-	sdk.SetAccount("admin", rootAcc)
-	sdk.SetTxInfo(100000, 1, 90, 0)
-	sdk.SetCheckResult(true, 3, 10)
+	iostSDK.SetServer(call.GetClient(0).Addr())
+	iostSDK.SetAccount("admin", rootAcc)
+	iostSDK.SetTxInfo(100000, 1, 90, 0, nil)
+	iostSDK.SetCheckResult(true, 3, 10)
 	testAcc, err = account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		return err
 	}
 	k := testAcc.ReadablePubkey()
-	_, err = sdk.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
+	_, err = iostSDK.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGasAndRAM(1500000, 10000000)
+	err = iostSDK.PledgeForGasAndRAM(1500000, 10000000)
 	if err != nil {
 		return err
 	}
-	sdk.SetAccount(testID, testAcc)
-	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
+	iostSDK.SetAccount(testID, testAcc)
+	_, txHash, err := iostSDK.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		return err
 	}
@@ -87,7 +87,7 @@ func (t *gobangHandle) Prepare() error {
 func (t *gobangHandle) wait(i int, h string, id string) bool {
 	g := rpcpb.GetContractStorageRequest{Id: contractID, Key: "games" + id, Field: "", ByLongestChain: true}
 	for {
-		v, err := sdk.GetContractStorage(&g)
+		v, err := iostSDK.GetContractStorage(&g)
 		if err != nil {
 			time.Sleep(3000 * time.Millisecond)
 			continue
@@ -113,7 +113,7 @@ func (t *gobangHandle) wait(i int, h string, id string) bool {
 
 func (t *gobangHandle) getGameID(h string) string {
 	for {
-		v, err := sdk.GetTxReceiptByTxHash(h)
+		v, err := iostSDK.GetTxReceiptByTxHash(h)
 		if err != nil {
 			time.Sleep(100 * time.Millisecond)
 			continue

@@ -17,6 +17,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
@@ -38,7 +39,7 @@ var voteCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("vote_producer.iost", "vote", sdk.accountName, args[0], args[1])
+		return sendAction("vote_producer.iost", "vote", accountName, args[0], args[1])
 	},
 }
 var unvoteCmd = &cobra.Command{
@@ -49,7 +50,7 @@ var unvoteCmd = &cobra.Command{
 	Example: `  iwallet sys unvote producer000 1000000 --account test0`,
 	Args:    voteCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("vote_producer.iost", "unvote", sdk.accountName, args[0], args[1])
+		return sendAction("vote_producer.iost", "unvote", accountName, args[0], args[1])
 	},
 }
 
@@ -70,7 +71,7 @@ var registerCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("vote_producer.iost", "applyRegister", sdk.accountName, args[0], location, url, networkID, !isPartner)
+		return sendAction("vote_producer.iost", "applyRegister", accountName, args[0], location, url, networkID, !isPartner)
 	},
 }
 var unregisterCmd = &cobra.Command{
@@ -83,7 +84,7 @@ var unregisterCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("vote_producer.iost", "applyUnregister", sdk.accountName)
+		return sendAction("vote_producer.iost", "applyUnregister", accountName)
 	},
 }
 
@@ -97,7 +98,7 @@ var loginCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("vote_producer.iost", "logInProducer", sdk.accountName)
+		return sendAction("vote_producer.iost", "logInProducer", accountName)
 	},
 }
 var logoutCmd = &cobra.Command{
@@ -110,7 +111,7 @@ var logoutCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("vote_producer.iost", "logOutProducer", sdk.accountName)
+		return sendAction("vote_producer.iost", "logOutProducer", accountName)
 	},
 }
 
@@ -127,20 +128,20 @@ var infoCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		info, err := sdk.GetProducerVoteInfo(&rpcpb.GetProducerVoteInfoRequest{
+		info, err := iwalletSDK.GetProducerVoteInfo(&rpcpb.GetProducerVoteInfoRequest{
 			Account:        args[0],
-			ByLongestChain: sdk.useLongestChain,
+			ByLongestChain: useLongestChain,
 		})
 		if err != nil {
 			return err
 		}
-		fmt.Println(marshalTextString(info))
+		fmt.Println(sdk.MarshalTextString(info))
 		return nil
 	},
 }
 
 func getProducerList(key string) ([]string, error) {
-	response, err := sdk.GetContractStorage(&rpcpb.GetContractStorageRequest{
+	response, err := iwalletSDK.GetContractStorage(&rpcpb.GetContractStorageRequest{
 		Id:  "vote_producer.iost",
 		Key: key,
 	})
@@ -154,7 +155,7 @@ func getProducerList(key string) ([]string, error) {
 	}
 	result := make([]string, len(list))
 	for i, producerKey := range list {
-		response, err := sdk.GetContractStorage(&rpcpb.GetContractStorageRequest{
+		response, err := iwalletSDK.GetContractStorage(&rpcpb.GetContractStorageRequest{
 			Id:    "vote_producer.iost",
 			Key:   "producerKeyToId",
 			Field: producerKey,
