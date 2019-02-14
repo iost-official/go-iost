@@ -268,14 +268,14 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
-		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: 0, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
+		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
 		startNumber += maxBlockHashQueryNumber
 	}
 	if startNumber <= endNumber {
 		for i := startNumber; i <= endNumber; i++ {
 			sy.reqMap.Store(i, true)
 		}
-		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: 0, Start: startNumber, End: endNumber, Nums: nil})
+		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: endNumber, Nums: nil})
 	}
 	return nil
 }
@@ -326,6 +326,11 @@ func (sy *SyncImpl) messageLoop() {
 }
 
 func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashResponse {
+	if end-start+1 > maxBlockHashQueryNumber {
+		return &msgpb.BlockHashResponse{
+			BlockInfos: make([]*msgpb.BlockInfo, 0, 0),
+		}
+	}
 	resp := &msgpb.BlockHashResponse{
 		BlockInfos: make([]*msgpb.BlockInfo, 0, end-start+1),
 	}
@@ -365,6 +370,11 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashRespo
 }
 
 func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *msgpb.BlockHashResponse {
+	if int64(len(nums)) > maxBlockHashQueryNumber {
+		return &msgpb.BlockHashResponse{
+			BlockInfos: make([]*msgpb.BlockInfo, 0, 0),
+		}
+	}
 	resp := &msgpb.BlockHashResponse{
 		BlockInfos: make([]*msgpb.BlockInfo, 0, len(nums)),
 	}
@@ -429,7 +439,7 @@ func (sy *SyncImpl) retryDownloadLoop() {
 	for {
 		select {
 		case <-time.After(retryTime):
-			hq := &msgpb.BlockHashQuery{ReqType: 1, Start: 0, End: 0, Nums: make([]int64, 0)}
+			hq := &msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHESBYNUMBER, Start: 0, End: 0, Nums: make([]int64, 0)}
 			sy.reqMap.Range(func(k, v interface{}) bool {
 				num, ok := k.(int64)
 				if !ok {
@@ -437,6 +447,9 @@ func (sy *SyncImpl) retryDownloadLoop() {
 					return true
 				}
 				hq.Nums = append(hq.Nums, num)
+				if int64(len(hq.Nums)) == maxBlockHashQueryNumber {
+					return false
+				}
 				return true
 			})
 			if len(hq.Nums) > 0 {
@@ -460,13 +473,11 @@ func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 		if err != nil {
 			ilog.Warnf("Fail to get block. from=%v, num=%v,hash=%v", peerID.Pretty(), rh.Number, common.Base58Encode(rh.Hash))
 			var hash []byte
-			if rh.Number <= sy.blockCache.LinkedRoot().Head.Number {
-				hash, err = sy.baseVariable.BlockChain().GetHashByNumber(rh.Number)
+			blk, err = sy.blockCache.GetBlockByNumber(rh.Number)
+			if err == nil {
+				hash = blk.HeadHash()
 			} else {
-				blk, err = sy.blockCache.GetBlockByNumber(rh.Number)
-				if err == nil {
-					hash = blk.HeadHash()
-				}
+				hash, err = sy.baseVariable.BlockChain().GetHashByNumber(rh.Number)
 			}
 			if err == nil {
 				resp := &msgpb.BlockHashResponse{
