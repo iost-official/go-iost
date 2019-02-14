@@ -26,7 +26,5 @@ function Console() {
         inner_cLog('Error', inner_format(...args));
     }
 
-    Console.prototype.log = function(...args) {
-        this.info(...args)
-    }
+    Console.prototype.log = Console.prototype.info;
 })();
