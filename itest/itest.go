@@ -55,6 +55,13 @@ func (t *ITest) GetClients() []*Client {
 	return t.clients
 }
 
+// GetRandClient return a random client
+func (t *ITest) GetRandClient() *Client {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+	return client
+}
+
 // Load will load the itest from file
 func Load(keysfile, configfile string) (*ITest, error) {
 	ilog.Infof("Load itest from file...")
