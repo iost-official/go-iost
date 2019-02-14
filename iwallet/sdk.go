@@ -505,7 +505,7 @@ func (s *SDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 		return err
 	}
 
-	info, err := sdk.getAccountInfo(s.accountName)
+	info, err := s.getAccountInfo(s.accountName)
 	if err != nil {
 		return fmt.Errorf("failed to get account info: %v", err)
 	}
@@ -536,7 +536,7 @@ func (s *SDK) CreateNewAccount(newID string, ownerKey string, activeKey string, 
 	if err != nil {
 		return txHash, err
 	}
-	info, err := sdk.getAccountInfo(newID)
+	info, err := s.getAccountInfo(newID)
 	if err != nil {
 		return txHash, fmt.Errorf("failed to get account info: %v", err)
 	}

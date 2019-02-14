@@ -1,6 +1,6 @@
 GO = go
 
-VERSION = 2.5.0
+VERSION = 3.0.0-rc2
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
