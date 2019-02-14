@@ -3,13 +3,13 @@ package transfer
 import (
 	"context"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/iost-official/go-iost/iwallet"
 	"github.com/iost-official/go-iost/test/performance/call"
 
 	"github.com/iost-official/go-iost/account"
@@ -23,7 +23,7 @@ import (
 func init() {
 	transfer := newTransferHandler()
 	call.Register("transfer", transfer)
-	sdk.SetChainID(chainID)
+	iostSDK.SetChainID(chainID)
 }
 
 const (
@@ -33,7 +33,7 @@ const (
 )
 
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"
-var sdk = iwallet.SDK{}
+var iostSDK = sdk.NewIOSTDevSDK()
 
 type transferHandler struct {
 	testID     string
@@ -70,27 +70,26 @@ func (t *transferHandler) Prepare() error {
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/performance/handles/transfer/transfer.js"
 	abiPath := codePath + ".abi"
 	client := call.GetClient(0)
-	sdk.SetServer(client.Addr())
-	sdk.SetAccount("admin", acc)
-	sdk.SetTxInfo(500000.0, 1.0, 90, 0)
-	sdk.SetCheckResult(true, 3, 10)
-	sdk.SetAmountLimit("*:unlimited")
+	iostSDK.SetServer(client.Addr())
+	iostSDK.SetAccount("admin", acc)
+	iostSDK.SetTxInfo(500000.0, 1.0, 90, 0, nil)
+	iostSDK.SetCheckResult(true, 3, 10)
 	testKp, err := account.NewKeyPair(nil, crypto.Ed25519)
 	if err != nil {
 		return err
 	}
 	testID := "i" + strconv.FormatInt(time.Now().Unix(), 10)
 	k := testKp.ReadablePubkey()
-	_, err = sdk.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
+	_, err = iostSDK.CreateNewAccount(testID, k, k, 1000000, 10000, 100000)
 	if err != nil {
 		return err
 	}
-	err = sdk.PledgeForGasAndRAM(1500000, 0)
+	err = iostSDK.PledgeForGasAndRAM(1500000, 0)
 	if err != nil {
 		return err
 	}
-	sdk.SetAccount(testID, testKp)
-	_, txHash, err := sdk.PublishContract(codePath, abiPath, "", false, "")
+	iostSDK.SetAccount(testID, testKp)
+	_, txHash, err := iostSDK.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		return err
 	}

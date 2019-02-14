@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
@@ -43,16 +44,16 @@ var signCmd = &cobra.Command{
 		outputFile := args[2]
 
 		trx := &rpcpb.TransactionRequest{}
-		err := loadProto(txFile, trx)
+		err := sdk.LoadProtoStructFromJSONFile(txFile, trx)
 		if err != nil {
 			return fmt.Errorf("failed to load transaction file: %v", err)
 		}
-		kp, err := loadKeyPair(signKeyFile, sdk.GetSignAlgo())
+		kp, err := sdk.LoadKeyPair(signKeyFile, signAlgo)
 		if err != nil {
 			return fmt.Errorf("failed to load key pair: %v", err)
 		}
-		sig := sdk.getSignatureOfTx(trx, kp)
-		err = saveProto(sig, outputFile)
+		sig := sdk.GetSignatureOfTx(trx, kp)
+		err = sdk.SaveProtoStructToJSONFile(sig, outputFile)
 		if err != nil {
 			return fmt.Errorf("failed to save signature: %v", err)
 		}

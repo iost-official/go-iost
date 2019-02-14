@@ -17,6 +17,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -79,33 +80,42 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("invalid account name")
 		}
 
-		if sdk.checkPubKey(ownerKey) && sdk.checkPubKey(activeKey) {
-			okey, akey = ownerKey, activeKey
-		} else {
+		if ownerKey == "" && activeKey == "" {
 			autoKey = true
-			newKp, err = account.NewKeyPair(nil, sdk.GetSignAlgo())
+			newKp, err = account.NewKeyPair(nil, sdk.GetSignAlgoByName(signAlgo))
 			if err != nil {
 				return fmt.Errorf("failed to create key pair: %v", err)
 			}
 			okey = newKp.ReadablePubkey()
 			akey = okey
+		} else if sdk.CheckPubKey(ownerKey) && sdk.CheckPubKey(activeKey) {
+			okey, akey = ownerKey, activeKey
+		} else {
+			return fmt.Errorf("key provided but not valid")
 		}
 
-		err = sdk.LoadAccount()
+		err = InitAccount()
 		if err != nil {
 			return fmt.Errorf("failed to load account: %v", err)
 		}
-		_, err = sdk.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
+		_, err = iwalletSDK.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
 		if err != nil {
 			return fmt.Errorf("create new account error: %v", err)
 		}
+
+		info, err := iwalletSDK.GetAccountInfo(newName)
+		if err != nil {
+			return fmt.Errorf("failed to get account info: %v", err)
+		}
+		fmt.Println("Account info of <", newName, ">:")
+		fmt.Println(sdk.MarshalTextString(info))
 
 		fmt.Println("The IOST account ID is:", newName)
 		fmt.Println("Owner permission key:", okey)
 		fmt.Println("Active permission key:", akey)
 
 		if autoKey {
-			err = sdk.SaveAccount(newName, newKp)
+			err = SaveAccount(newName, newKp)
 			if err != nil {
 				return fmt.Errorf("failed to save account: %v", err)
 			}
@@ -121,7 +131,7 @@ var viewCmd = &cobra.Command{
 	Example: `  iwallet account view test0
   iwallet account view`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := sdk.getAccountDir()
+		dir, err := getAccountDir()
 		if err != nil {
 			return fmt.Errorf("failed to get account dir: %v", err)
 		}
@@ -134,7 +144,7 @@ var viewCmd = &cobra.Command{
 					return err
 				}
 				for _, f := range files {
-					keyPair, err := loadKeyPair(f, algo)
+					keyPair, err := sdk.LoadKeyPair(f, algo.String())
 					if err != nil {
 						fmt.Println(err)
 						continue
@@ -154,7 +164,7 @@ var viewCmd = &cobra.Command{
 			name := args[0]
 			for _, algo := range signAlgos {
 				f := fmt.Sprintf("%s/%s_%s", dir, name, algo.String())
-				keyPair, err := loadKeyPair(f, algo)
+				keyPair, err := sdk.LoadKeyPair(f, algo.String())
 				if err != nil {
 					continue
 				}
@@ -188,11 +198,11 @@ var importCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
 		key := args[1]
-		keyPair, err := account.NewKeyPair(common.Base58Decode(key), sdk.GetSignAlgo())
+		keyPair, err := account.NewKeyPair(common.Base58Decode(key), sdk.GetSignAlgoByName(signAlgo))
 		if err != nil {
 			return err
 		}
-		err = sdk.SaveAccount(name, keyPair)
+		err = SaveAccount(name, keyPair)
 		if err != nil {
 			return fmt.Errorf("failed to save account: %v", err)
 		}
@@ -216,7 +226,7 @@ var deleteCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
-		dir, err := sdk.getAccountDir()
+		dir, err := getAccountDir()
 		if err != nil {
 			return fmt.Errorf("failed to get account dir: %v", err)
 		}
