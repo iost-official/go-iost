@@ -62,6 +62,7 @@ type WAL struct {
 
 // Create creates a WAL ready for appending records. The given metadata is
 // recorded at the head of each WAL file, and can be retrieved with ReadAll.
+// If there already are some wal files, it will try to recover from them.
 func Create(dirpath string, metadata []byte) (*WAL, error) {
 	b, err := exists(dirpath)
 	if err != nil {
@@ -109,79 +110,6 @@ func Create(dirpath string, metadata []byte) (*WAL, error) {
 		return nil, err
 	}
 	w.encoder.flush()
-
-	return w, nil
-}
-
-func recoverFromDir(dirpath string, metadata []byte) (*WAL, error) {
-	ilog.Info("RecoverFromDir")
-	w, err := Open(dirpath)
-	if err != nil {
-		return nil, err
-	}
-
-	return w, err
-
-}
-
-// Open opens the WAL at the given snap.
-// The snap SHOULD have been previously saved to the WAL, or the following
-// ReadAll will fail.
-// The returned WAL is ready to read and the first record will be the one after
-// the given snap. The WAL cannot be appended to before reading out all of its
-// previous records.
-func Open(dirpath string) (*WAL, error) {
-	w, err := openAtIndex(dirpath)
-	if err != nil {
-		return nil, err
-	}
-	if w.dirFile, err = OpenDir(w.dir); err != nil {
-		return nil, err
-	}
-	return w, nil
-}
-
-// OpenForRead only opens the wal files for read.
-// Write on a read only wal panics.
-func OpenForRead(dirpath string) (*WAL, error) {
-	return openAtIndex(dirpath)
-}
-
-func openAtIndex(dirpath string) (*WAL, error) {
-	names, err := readWALNames(dirpath)
-	if err != nil {
-		return nil, err
-	}
-
-	// open the wal files
-	rcs := make([]io.ReadCloser, 0)
-	rs := make([]io.Reader, 0)
-	ls := make([]*os.File, 0)
-	for _, name := range names {
-		p := filepath.Join(dirpath, name)
-		l, err := os.OpenFile(p, os.O_RDWR, 0666)
-		if err != nil {
-			closeAll(rcs...)
-			return nil, err
-		}
-		ls = append(ls, l)
-		rs = append(rs, l)
-		if strings.HasSuffix(name, ".wal") {
-			rcs = append(rcs, l)
-		}
-	}
-
-	closer := func() error { return closeAll(rcs...) }
-
-	streamFile := newStreamFile(dirpath, SegmentSizeBytes)
-	// create a WAL ready for reading
-	w := &WAL{
-		dir:       dirpath,
-		decoder:   newDecoder(rs...),
-		readClose: closer,
-		files:     ls,
-		st:        streamFile,
-	}
 
 	return w, nil
 }
@@ -284,6 +212,30 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 	return metadata, ents, err
 }
 
+// SaveSingle save single entry, Return entry index and error
+func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+
+	if err := w.saveEntry(&ent); err != nil {
+		return 0, err
+	}
+
+	if err := w.encoder.flush(); err != nil {
+		return 0, err
+	}
+
+	curOff, err := w.tail().Seek(0, io.SeekCurrent)
+	if err != nil {
+		return 0, err
+	}
+	if curOff < SegmentSizeBytes {
+		return w.lastEntryIndex, nil
+	}
+
+	return w.lastEntryIndex, w.cut()
+}
+
 // RemoveFilesBefore remove files less than index
 func (w *WAL) RemoveFilesBefore(index uint64) error {
 	w.mu.Lock()
@@ -313,6 +265,103 @@ func (w *WAL) RemoveFilesBefore(index uint64) error {
 	}
 	w.files = w.files[fileIndex+1:]
 	return nil
+}
+
+// CleanDir clean the wal dir
+func (w *WAL) CleanDir() error {
+	if w.dirFile != nil {
+		return os.RemoveAll(w.dirFile.Name())
+	}
+	return nil
+}
+
+// Size return WAL used data size include current tmp file.
+func (w *WAL) Size() uint64 {
+	size := uint64(len(w.files)) * uint64(SegmentSizeBytes)
+	return size
+}
+
+// HasDecoder check whether wal has decoder, has decoder means
+// there already are some wal files.
+func (w *WAL) HasDecoder() bool {
+	if w.decoder != nil && len(w.decoder.r) != 0 {
+		return true
+	}
+	return false
+
+}
+
+func recoverFromDir(dirpath string, metadata []byte) (*WAL, error) {
+	ilog.Info("RecoverFromDir")
+	w, err := Open(dirpath)
+	if err != nil {
+		return nil, err
+	}
+
+	return w, err
+
+}
+
+// Open opens the WAL at the given snap.
+// The snap SHOULD have been previously saved to the WAL, or the following
+// ReadAll will fail.
+// The returned WAL is ready to read and the first record will be the one after
+// the given snap. The WAL cannot be appended to before reading out all of its
+// previous records.
+func Open(dirpath string) (*WAL, error) {
+	w, err := openAtIndex(dirpath)
+	if err != nil {
+		return nil, err
+	}
+	if w.dirFile, err = OpenDir(w.dir); err != nil {
+		return nil, err
+	}
+	return w, nil
+}
+
+// OpenForRead only opens the wal files for read.
+// Write on a read only wal panics.
+func OpenForRead(dirpath string) (*WAL, error) {
+	return openAtIndex(dirpath)
+}
+
+func openAtIndex(dirpath string) (*WAL, error) {
+	names, err := readWALNames(dirpath)
+	if err != nil {
+		return nil, err
+	}
+
+	// open the wal files
+	rcs := make([]io.ReadCloser, 0)
+	rs := make([]io.Reader, 0)
+	ls := make([]*os.File, 0)
+	for _, name := range names {
+		p := filepath.Join(dirpath, name)
+		l, err := os.OpenFile(p, os.O_RDWR, 0666)
+		if err != nil {
+			closeAll(rcs...)
+			return nil, err
+		}
+		ls = append(ls, l)
+		rs = append(rs, l)
+		if strings.HasSuffix(name, ".wal") {
+			rcs = append(rcs, l)
+		}
+	}
+
+	closer := func() error { return closeAll(rcs...) }
+
+	streamFile := newStreamFile(dirpath, SegmentSizeBytes)
+	// create a WAL ready for reading
+	w := &WAL{
+		dir:       dirpath,
+		decoder:   newDecoder(rs...),
+		readClose: closer,
+		files:     ls,
+		st:        streamFile,
+	}
+
+	return w, nil
 }
 
 // RemoveFiles remove files less than or equal to index
@@ -519,30 +568,6 @@ func (w *WAL) saveEntry(e *Entry) error {
 	return nil
 }
 
-// SaveSingle save single entry
-func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
-	w.mu.Lock()
-	defer w.mu.Unlock()
-
-	if err := w.saveEntry(&ent); err != nil {
-		return 0, err
-	}
-
-	if err := w.encoder.flush(); err != nil {
-		return 0, err
-	}
-
-	curOff, err := w.tail().Seek(0, io.SeekCurrent)
-	if err != nil {
-		return 0, err
-	}
-	if curOff < SegmentSizeBytes {
-		return w.lastEntryIndex, nil
-	}
-
-	return w.lastEntryIndex, w.cut()
-}
-
 // Save save entries
 func (w *WAL) Save(ents []Entry) (uint64, error) {
 	w.mu.Lock()
@@ -567,15 +592,6 @@ func (w *WAL) Save(ents []Entry) (uint64, error) {
 	}
 
 	return w.lastEntryIndex, w.cut()
-}
-
-// HasDecoder check whether wal has decoder
-func (w *WAL) HasDecoder() bool {
-	if w.decoder != nil && len(w.decoder.r) != 0 {
-		return true
-	}
-	return false
-
 }
 
 // called when new file is used.
@@ -612,18 +628,4 @@ func closeAll(rcs ...io.ReadCloser) error {
 		}
 	}
 	return nil
-}
-
-// CleanDir clean the wal dir
-func (w *WAL) CleanDir() error {
-	if w.dirFile != nil {
-		return os.RemoveAll(w.dirFile.Name())
-	}
-	return nil
-}
-
-// Size return WAL used data size include current tmp file.
-func (w *WAL) Size() uint64 {
-	size := uint64(len(w.files)) * uint64(SegmentSizeBytes)
-	return size
 }

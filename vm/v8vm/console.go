@@ -13,10 +13,11 @@ import (
 var (
 	ErrConsoleNoLogger        = errors.New("no logger error")
 	ErrConsoleInvalidLogLevel = errors.New("log invalid level")
-	invalidLogLevelMap        = map[string]bool{
-		"Fatal":   true,
-		"Fatalln": true,
-		"Fatalf":  true,
+	validLogLevelMap          = map[string]bool{
+		"Debug": true,
+		"Info":  true,
+		"Warn":  true,
+		"Error": true,
 	}
 )
 
@@ -37,7 +38,7 @@ func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail C.CStr) *C.char {
 	loggerVal := reflect.ValueOf(sbx.host.Logger())
 	loggerFunc := loggerVal.MethodByName(levelStr)
 
-	if _, ok := invalidLogLevelMap[levelStr]; ok {
+	if _, ok := validLogLevelMap[levelStr]; !ok {
 		return C.CString(ErrConsoleInvalidLogLevel.Error())
 	}
 
