@@ -26,6 +26,7 @@ message UpdateActiveRaw{
 
 message UpdateLinkedRootWitnessRaw{
     repeated string linkedRootWitness = 1;
+    bytes blockHashBytes = 2;
 }
 
 message WitnessList{
