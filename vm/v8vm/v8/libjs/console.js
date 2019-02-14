@@ -1,31 +1,30 @@
 'use strict';
 
-class Console {
-    constructor() {
-        this._cLog = _cLog;
-    }
-    _format(...args) {
-        let formatStr = format(...args);
-        return formatStr;
-    }
-
-    debug(...args) {
-        this._cLog('Debug', this._format(...args));
-    }
-
-    info(...args) {
-        this._cLog('Info', this._format(...args));
-    }
-
-    warn(...args) {
-        this._cLog('Warn', this._format(...args));
-    }
-
-    error(...args) {
-        this._cLog('Error', this._format(...args));
-    }
-
-    log(...args) {
-        this.info(...args)
+function Console() {
+    if (!(this instanceof Console)) {
+        return new Console();
     }
 }
+
+(function(){
+    const inner_cLog = _cLog;
+    const inner_format = format;
+
+    Console.prototype.debug = function(...args) {
+        inner_cLog('Debug', inner_format(...args));
+    }
+
+    Console.prototype.info = function(...args) {
+        inner_cLog('Info', inner_format(...args));
+    }
+
+    Console.prototype.warn = function(...args) {
+        inner_cLog('Warn', inner_format(...args));
+    }
+
+    Console.prototype.error = function(...args) {
+        inner_cLog('Error', inner_format(...args));
+    }
+
+    Console.prototype.log = Console.prototype.info;
+})();

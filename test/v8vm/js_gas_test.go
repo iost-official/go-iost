@@ -74,13 +74,13 @@ func TestInjectGas(t *testing.T) {
 			So(err, ShouldBeNil)
 			t.Log(rs, cost)
 		})
-	*/
 
-	Convey("test instruction counter0", t, func() {
-		rs, cost, err := vmPool.LoadAndCall(host, code, "counter0", 10)
-		So(err, ShouldBeNil)
-		t.Log(rs, cost)
-	})
+		Convey("test instruction counter0", t, func() {
+			rs, cost, err := vmPool.LoadAndCall(host, code, "counter0", 10)
+			So(err, ShouldBeNil)
+			t.Log(rs, cost)
+		})
+	*/
 
 	Convey("test yield0", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "yield0", 10)
