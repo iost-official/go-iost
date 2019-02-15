@@ -58,10 +58,6 @@ class Danger {
     jsonparse() {
         JSON.parse({a:1});
     }
-
-    funcstr() {
-        return this.funcstr.toString();
-    }
 };
 
 module.exports = function () {
