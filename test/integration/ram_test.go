@@ -12,8 +12,8 @@ import (
 )
 
 var initialTotal int64 = 128 * 1024 * 1024 * 1024
-var increaseInterval int64 = 10 * 60                   // increase every 10 mins
-var increaseAmount int64 = 10 * (64*1024*1024*1024) / (365 * 24 * 60) // 64GB per year
+var increaseInterval int64 = 10 * 60                                        // increase every 10 mins
+var increaseAmount int64 = 10 * (64 * 1024 * 1024 * 1024) / (365 * 24 * 60) // 64GB per year
 var ramContractName = "ram.iost"
 
 func ramSetup(t *testing.T) (*Simulator, *TestAccount) {
@@ -73,20 +73,20 @@ func TestRAM(t *testing.T) {
 				balanceAfter := s.Visitor.TokenBalance("iost", acc.ID)
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", ramContractName)
 				//var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
-				So(balanceAfter, ShouldEqual, 99490 * 1e6)
+				So(balanceAfter, ShouldEqual, 99490*1e6)
 				So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, initRAM+buyAmount)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore-buyAmount)
 			})
 			Convey("when buying triggers increasing total ram", func() {
 				head := s.Head
-				head.Time = head.Time + 144 * increaseInterval*1000*1000*1000
+				head.Time = head.Time + 144*increaseInterval*1000*1000*1000
 				s.SetBlockHead(head)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", ramContractName)
 				r, err := s.Call(ramContractName, "buy", array2json([]interface{}{acc.ID, acc.ID, buyAmount}), acc.ID, acc.KeyPair)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", ramContractName)
-				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+ 144 * increaseAmount-buyAmount)
+				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+144*increaseAmount-buyAmount)
 			})
 			Convey("user can buy for others", func() {
 				//balanceBefore := s.Visitor.TokenBalance("iost", acc.ID)
@@ -99,7 +99,7 @@ func TestRAM(t *testing.T) {
 				otherRAMAfter := s.Visitor.TokenBalance("ram", other)
 				myRAMAfter := s.Visitor.TokenBalance("ram", acc.ID)
 				//var priceEstimated int64 = 30 * 1e8 // TODO when the final function is set, update here
-				So(balanceAfter, ShouldEqual, 98472 * 1e6)
+				So(balanceAfter, ShouldEqual, 98472*1e6)
 				So(myRAMAfter, ShouldEqual, myRAMBefore)
 				So(otherRAMAfter, ShouldEqual, otherRAMBefore+buyAmount)
 			})
@@ -122,7 +122,7 @@ func TestRAM(t *testing.T) {
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", ramContractName)
 				myRAMAfter := s.Visitor.TokenBalance("ram", acc.ID)
 				//var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
-				So(balanceAfter, ShouldEqual, 98622 * 1e6)
+				So(balanceAfter, ShouldEqual, 98622*1e6)
 				So(myRAMAfter, ShouldEqual, myRAMBefore-sellAmount)
 				So(ramAvailableAfter, ShouldEqual, ramAvailableBefore+sellAmount)
 			})
@@ -140,19 +140,18 @@ func TestRAM(t *testing.T) {
 				//var priceEstimated int64 = 10 * 1e8 // TODO when the final function is set, update here
 				So(balanceAfter, ShouldEqual, balanceBefore)
 				So(myRAMAfter, ShouldEqual, myRAMBefore-sellAmount)
-				So(otherBalanceAfter, ShouldEqual, 150 * 1e6)
+				So(otherBalanceAfter, ShouldEqual, 150*1e6)
 			})
 		})
 	})
 }
 
-
 func TestRAM2(t *testing.T) {
 	s, _ := ramSetup(t)
 	defer s.Clear()
 	Convey("borrowed ram cannot be selled", t, func() {
-		s.Visitor.SetTokenBalance("iost", acc2.ID, 100 * 100000000)
-		s.Visitor.SetTokenBalance("iost", acc3.ID, 100 * 100000000)
+		s.Visitor.SetTokenBalance("iost", acc2.ID, 100*100000000)
+		s.Visitor.SetTokenBalance("iost", acc3.ID, 100*100000000)
 		s.SetRAM(acc2.ID, 0)
 		s.SetRAM(acc3.ID, 0)
 		r, err := s.Call(ramContractName, "buy", array2json([]interface{}{acc2.ID, acc2.ID, 1000}), acc2.ID, acc2.KeyPair)

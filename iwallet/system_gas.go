@@ -37,9 +37,9 @@ var pledgeCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if gasUser == "" {
-			gasUser = sdk.accountName
+			gasUser = accountName
 		}
-		return sendAction("gas.iost", "pledge", sdk.accountName, gasUser, args[0])
+		return sendAction("gas.iost", "pledge", accountName, gasUser, args[0])
 	},
 }
 
@@ -52,9 +52,9 @@ var unpledgeCmd = &cobra.Command{
 	Args:    pledgeCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if gasUser == "" {
-			gasUser = sdk.accountName
+			gasUser = accountName
 		}
-		return sendAction("gas.iost", "unpledge", sdk.accountName, gasUser, args[0])
+		return sendAction("gas.iost", "unpledge", accountName, gasUser, args[0])
 	},
 }
 

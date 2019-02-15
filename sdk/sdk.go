@@ -1,0 +1,501 @@
+package sdk
+
+import (
+	"context"
+	"encoding/base64"
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/rpc/pb"
+	"google.golang.org/grpc"
+)
+
+// IOSTDevSDK ...
+type IOSTDevSDK struct {
+	// the remote server to connect to
+	server string
+
+	// account used for sending tx
+	accountName string
+	keyPair     *account.KeyPair
+	// signing algorithm
+	signAlgo string
+
+	// fields used to fill tx
+	gasLimit    float64
+	gasRatio    float64
+	expiration  int64
+	amountLimit []*rpcpb.AmountLimit
+	delaySecond int64
+
+	// whether to check tx after sending by `SendTx`
+	checkResult         bool
+	checkResultDelay    float32
+	checkResultMaxRetry int32
+
+	// query longest chain when fetching information from blockchain, currently only used in `GetAccountInfo`
+	useLongestChain bool
+
+	// if false, be silent
+	verbose bool
+
+	// chain id set in tx
+	chainID uint32
+
+	// internal connection
+	rpcConn *grpc.ClientConn
+}
+
+// NewIOSTDevSDK creatimg an SDK with reasonable params
+func NewIOSTDevSDK() *IOSTDevSDK {
+	return &IOSTDevSDK{
+		server:              "localhost:30002",
+		checkResult:         true,
+		checkResultDelay:    3,
+		checkResultMaxRetry: 20,
+		signAlgo:            "ed25519",
+		gasLimit:            1000000,
+		gasRatio:            1.0,
+		amountLimit:         []*rpcpb.AmountLimit{{Token: "*", Value: "unlimited"}},
+		expiration:          60 * 5,
+		chainID:             uint32(1024),
+	}
+}
+
+/////////////////////////////////////// getter/setter ///////////////////////////////////////
+
+// SetChainID sets chainID.
+func (s *IOSTDevSDK) SetChainID(chainID uint32) {
+	s.chainID = chainID
+}
+
+// SetAccount ...
+func (s *IOSTDevSDK) SetAccount(name string, kp *account.KeyPair) {
+	s.accountName = name
+	s.keyPair = kp
+}
+
+// SetTxInfo ...
+func (s *IOSTDevSDK) SetTxInfo(gasLimit float64, gasRatio float64, expiration int64, delaySecond int64, amountLimit []*rpcpb.AmountLimit) {
+	s.gasLimit = gasLimit
+	s.gasRatio = gasRatio
+	s.expiration = expiration
+	s.delaySecond = delaySecond
+	if amountLimit != nil && len(amountLimit) != 0 {
+		s.amountLimit = amountLimit
+	}
+}
+
+// SetCheckResult ...
+func (s *IOSTDevSDK) SetCheckResult(checkResult bool, checkResultDelay float32, checkResultMaxRetry int32) {
+	s.checkResult = checkResult
+	s.checkResultDelay = checkResultDelay
+	s.checkResultMaxRetry = checkResultMaxRetry
+}
+
+// SetServer ...
+func (s *IOSTDevSDK) SetServer(server string) {
+	s.server = server
+}
+
+// SetSignAlgo ...
+func (s *IOSTDevSDK) SetSignAlgo(signAlgo string) {
+	s.signAlgo = signAlgo
+}
+
+// SetVerbose ...
+func (s *IOSTDevSDK) SetVerbose(verbose bool) {
+	s.verbose = verbose
+}
+
+// SetUseLongestChain ...
+func (s *IOSTDevSDK) SetUseLongestChain(useLongestChain bool) {
+	s.useLongestChain = useLongestChain
+}
+
+// Connect ...
+func (s *IOSTDevSDK) Connect() (err error) {
+	if s.rpcConn == nil {
+		s.log("Connecting to server", s.server, "...")
+		s.rpcConn, err = grpc.Dial(s.server, grpc.WithInsecure())
+	}
+	return
+}
+
+// CloseConn ...
+func (s *IOSTDevSDK) CloseConn() {
+	if s.rpcConn != nil {
+		s.rpcConn.Close()
+		s.rpcConn = nil
+	}
+}
+
+func (s *IOSTDevSDK) log(a ...interface{}) {
+	if s.verbose {
+		fmt.Println(a...)
+	}
+}
+
+///////////////////////////////////////// wrapper of rpc ////////////////////////////////
+
+// GetContractStorage ...
+func (s *IOSTDevSDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	value, err := client.GetContractStorage(context.Background(), r)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+// GetNodeInfo ...
+func (s *IOSTDevSDK) GetNodeInfo() (*rpcpb.NodeInfoResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	value, err := client.GetNodeInfo(context.Background(), &rpcpb.EmptyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+// GetChainInfo ...
+func (s *IOSTDevSDK) GetChainInfo() (*rpcpb.ChainInfoResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	value, err := client.GetChainInfo(context.Background(), &rpcpb.EmptyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+// GetAccountInfo return account info
+func (s *IOSTDevSDK) GetAccountInfo(id string) (*rpcpb.Account, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	req := &rpcpb.GetAccountRequest{Name: id, ByLongestChain: s.useLongestChain}
+	value, err := client.GetAccount(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+// GetBlockByNum ...
+func (s *IOSTDevSDK) GetBlockByNum(num int64, complete bool) (*rpcpb.BlockResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	return client.GetBlockByNumber(context.Background(), &rpcpb.GetBlockByNumberRequest{Number: num, Complete: complete})
+}
+
+// GetBlockByHash ...
+func (s *IOSTDevSDK) GetBlockByHash(hash string, complete bool) (*rpcpb.BlockResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	return client.GetBlockByHash(context.Background(), &rpcpb.GetBlockByHashRequest{Hash: hash, Complete: complete})
+}
+
+// GetTxByHash ...
+func (s *IOSTDevSDK) GetTxByHash(hash string) (*rpcpb.TransactionResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	return client.GetTxByHash(context.Background(), &rpcpb.TxHashRequest{Hash: hash})
+}
+
+// GetTxReceiptByTxHash ...
+func (s *IOSTDevSDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	return client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHashStr})
+}
+
+// SendTransaction send raw transaction to server
+func (s *IOSTDevSDK) SendTransaction(signedTx *rpcpb.TransactionRequest) (string, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return "", err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	resp, err := client.SendTransaction(context.Background(), signedTx)
+	if err != nil {
+		return "", err
+	}
+	return resp.Hash, nil
+}
+
+////////////////////////////////////// transaction related /////////////////////////////////
+
+// CreateTxFromActions ...
+func (s *IOSTDevSDK) CreateTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
+	if len(s.amountLimit) == 0 {
+		return nil, fmt.Errorf("empty amount limit")
+	}
+
+	txTime := time.Now().UnixNano()
+	expiration := txTime + s.expiration*1e9
+
+	ret := &rpcpb.TransactionRequest{
+		Time:          txTime,
+		Actions:       actions,
+		Signers:       []string{},
+		GasLimit:      s.gasLimit,
+		GasRatio:      s.gasRatio,
+		Expiration:    expiration,
+		PublisherSigs: []*rpcpb.Signature{},
+		Delay:         s.delaySecond * 1e9,
+		ChainId:       s.chainID,
+		AmountLimit:   s.amountLimit,
+		Signatures:    []*rpcpb.Signature{},
+	}
+	return ret, nil
+}
+
+// SignTx ...
+func (s *IOSTDevSDK) SignTx(t *rpcpb.TransactionRequest, signAlgo string) (*rpcpb.TransactionRequest, error) {
+	signAlgorithm := GetSignAlgoByName(signAlgo)
+	txHashBytes := common.Sha3(txToBytes(t, true))
+	publishSig := &rpcpb.Signature{
+		Algorithm: rpcpb.Signature_Algorithm(signAlgorithm),
+		Signature: signAlgorithm.Sign(txHashBytes, s.keyPair.Seckey),
+		PublicKey: signAlgorithm.GetPubkey(s.keyPair.Seckey),
+	}
+	t.PublisherSigs = []*rpcpb.Signature{publishSig}
+	t.Publisher = s.accountName
+	return t, nil
+}
+
+func (s *IOSTDevSDK) checkTransaction(txHash string) error {
+	s.log("Checking transaction receipt...")
+	for i := int32(0); i < s.checkResultMaxRetry; i++ {
+		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
+		txReceipt, err := s.GetTxReceiptByTxHash(txHash)
+		if err != nil {
+			s.log("...", err)
+			continue
+		}
+		if txReceipt == nil {
+			s.log("...")
+			continue
+		}
+		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
+			s.log("Transaction receipt:")
+			s.log(MarshalTextString(txReceipt))
+			return fmt.Errorf(txReceipt.Message)
+		}
+
+		s.log("SUCCESS!")
+		s.log("Transaction receipt:")
+		s.log(MarshalTextString(txReceipt))
+		return nil
+	}
+	return fmt.Errorf("exceeded max retry times")
+}
+
+// SendTx send transaction and check result if sdk.checkResult is set
+func (s *IOSTDevSDK) SendTx(tx *rpcpb.TransactionRequest) (string, error) {
+	signedTx, err := s.SignTx(tx, s.signAlgo)
+	if err != nil {
+		return "", fmt.Errorf("sign tx error %v", err)
+	}
+	s.log("Sending transaction...")
+	s.log("Transaction:")
+	s.log(MarshalTextString(signedTx))
+	txHash, err := s.SendTransaction(signedTx)
+	if err != nil {
+		return "", fmt.Errorf("send tx error %v", err)
+	}
+	s.log("Transaction has been sent.")
+	s.log("The transaction hash is:", txHash)
+	if s.checkResult {
+		if err = s.checkTransaction(txHash); err != nil {
+			return txHash, err
+		}
+	}
+	return txHash, nil
+}
+
+// SendTxFromActions send transaction and check result if sdk.checkResult is set
+func (s *IOSTDevSDK) SendTxFromActions(actions []*rpcpb.Action) (txHash string, err error) {
+	trx, err := s.CreateTxFromActions(actions)
+	if err != nil {
+		return "", err
+	}
+	return s.SendTx(trx)
+}
+
+////////////////////////////////////// some common used contract calling /////////////////////////////////////////////
+
+// PledgeForGasAndRAM ...
+func (s *IOSTDevSDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
+	var acts []*rpcpb.Action
+	acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, s.accountName, gasPledged)))
+	if ram > 0 {
+		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, s.accountName, ram)))
+	}
+	_, err := s.SendTxFromActions(acts)
+	if err != nil {
+		return err
+	}
+	/*
+		info, err := s.GetAccountInfo(s.accountName)
+		if err != nil {
+			return fmt.Errorf("failed to get account info: %v", err)
+		}
+		s.log("Account info of <", s.accountName, ">:")
+		s.log(MarshalTextString(info))
+	*/
+	return nil
+}
+
+// CreateNewAccount ... return txHash
+func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) (string, error) {
+	var acts []*rpcpb.Action
+	acts = append(acts, NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
+	if initialRAM > 0 {
+		acts = append(acts, NewAction("ram.iost", "buy", fmt.Sprintf(`["%v", "%v", %v]`, s.accountName, newID, initialRAM)))
+	}
+	var registerInitialPledge int64 = 10
+	initialGasPledge -= registerInitialPledge
+	if initialGasPledge < 0 {
+		return "", fmt.Errorf("min gas pledge is 10")
+	}
+	if initialGasPledge > 0 {
+		acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
+	}
+	if initialCoins > 0 {
+		acts = append(acts, NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
+	}
+	txHash, err := s.SendTxFromActions(acts)
+	if err != nil {
+		return txHash, err
+	}
+	return txHash, nil
+}
+
+// PublishContract converts contract js code to transaction. If 'send', also send it to chain.
+func (s *IOSTDevSDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (*rpcpb.TransactionRequest, string, error) {
+	fd, err := readFile(codePath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read source code file: %v", err)
+	}
+	code := string(fd)
+
+	fd, err = readFile(abiPath)
+	if err != nil {
+		return nil, "", fmt.Errorf("failed to read abi file: %v", err)
+	}
+	abi := string(fd)
+
+	var info *contract.Info
+	err = json.Unmarshal([]byte(abi), &info)
+	if err != nil {
+		return nil, "", err
+	}
+	c := &contract.Contract{
+		ID:   conID,
+		Code: code,
+		Info: info,
+	}
+	methodName := "setCode"
+	if update {
+		methodName = "updateCode"
+	}
+	marshalMethod := "json"
+	var contractStr string
+	if marshalMethod == "json" {
+		buf, err := json.Marshal(c)
+		if err != nil {
+			return nil, "", err
+		}
+		contractStr = string(buf)
+	} else {
+		buf, err := proto.Marshal(c)
+		if err != nil {
+			return nil, "", err
+		}
+		contractStr = base64.StdEncoding.EncodeToString(buf)
+	}
+	arr := []string{contractStr}
+	if update {
+		arr = append(arr, updateID)
+	}
+	data, err := json.Marshal(arr)
+	if err != nil {
+		return nil, "", err
+	}
+	action := NewAction("system.iost", methodName, string(data))
+	trx, err := s.CreateTxFromActions([]*rpcpb.Action{action})
+	if err != nil {
+		return nil, "", err
+	}
+	txHash, err := s.SendTx(trx)
+	if err != nil {
+		return nil, "", err
+	}
+	return trx, txHash, nil
+}
+
+// GetProducerVoteInfo ...
+func (s *IOSTDevSDK) GetProducerVoteInfo(r *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	value, err := client.GetProducerVoteInfo(context.Background(), r)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}

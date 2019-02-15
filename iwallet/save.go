@@ -16,6 +16,8 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
+	"time"
 
 	"github.com/spf13/cobra"
 )
@@ -41,11 +43,17 @@ var saveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		trx, err := sdk.createTx(actions)
+		trx, err := iwalletSDK.CreateTxFromActions(actions)
 		if err != nil {
 			return err
 		}
-		return saveProto(trx, outputFile)
+		t, err := parseTimeFromStr(txTime)
+		if err != nil {
+			return err
+		}
+		trx.Time = t
+		trx.Expiration = trx.Time + expiration*1e9
+		return sdk.SaveProtoStructToJSONFile(trx, outputFile)
 	},
 }
 
@@ -53,3 +61,17 @@ func init() {
 	rootCmd.AddCommand(saveCmd)
 	saveCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file to save transaction request")
 }
+
+func parseTimeFromStr(s string) (int64, error) {
+	var t time.Time
+	if s == "" {
+		return time.Now().UnixNano(), nil
+	}
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return 0, fmt.Errorf("invalid time %v, should in format %v", s, time.RFC3339)
+	}
+	return t.UnixNano(), nil
+}
+
+var txTime string

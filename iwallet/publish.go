@@ -55,11 +55,11 @@ var publishCmd = &cobra.Command{
 			updateID = args[3]
 		}
 
-		err := sdk.LoadAccount()
+		err := InitAccount()
 		if err != nil {
 			return fmt.Errorf("failed to load account: %v", err)
 		}
-		_, txHash, err := sdk.PublishContract(codePath, abiPath, conID, update, updateID)
+		_, txHash, err := iwalletSDK.PublishContract(codePath, abiPath, conID, update, updateID)
 		if err != nil {
 			return fmt.Errorf("failed to create tx: %v", err)
 		}

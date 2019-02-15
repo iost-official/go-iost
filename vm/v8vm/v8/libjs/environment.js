@@ -465,6 +465,10 @@
     };
     */
 
+    // Function
+    Function.prototype.toString = null;
+    Function = null;
+
     // Functions
     parseFloat = null;
     parseInt = null;
@@ -476,7 +480,6 @@
     unescape = null;
 
     // Fundamental Objects
-    Function = null;
     Boolean = null;
     EvalError = null;
     RangeError = null;
@@ -528,6 +531,7 @@
     IOSTBlockchain = null;
     IOSTInstruction = null;
     IOSTStorage = null;
+    Console = null;
     _IOSTCrypto = null;
     _native_log = null;
     _native_run = null;

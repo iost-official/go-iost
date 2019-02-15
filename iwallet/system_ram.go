@@ -39,10 +39,10 @@ var buyCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if other == "" {
-			other = sdk.accountName
+			other = accountName
 		}
 		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("ram.iost", "buy", sdk.accountName, other, amount)
+		return sendAction("ram.iost", "buy", accountName, other, amount)
 	},
 }
 
@@ -55,10 +55,10 @@ var sellCmd = &cobra.Command{
 	Args:    buyCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if other == "" {
-			other = sdk.accountName
+			other = accountName
 		}
 		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("ram.iost", "sell", sdk.accountName, other, amount)
+		return sendAction("ram.iost", "sell", accountName, other, amount)
 	},
 }
 
@@ -79,7 +79,7 @@ var transferCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		amount, _ := strconv.ParseFloat(args[1], 64)
-		return sendAction("ram.iost", "lend", sdk.accountName, args[0], amount)
+		return sendAction("ram.iost", "lend", accountName, args[0], amount)
 	},
 }
 
