@@ -2,10 +2,11 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/sdk"
 	"os"
 	"time"
+
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -13,7 +14,6 @@ import (
 )
 
 var cfgFile string
-var startTime time.Time
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -22,21 +22,36 @@ var rootCmd = &cobra.Command{
 	Long:          `An IOST RPC client`,
 	SilenceUsage:  true,
 	SilenceErrors: true,
+	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		iwalletSDK = sdk.NewIOSTDevSDK()
+		iwalletSDK.SetChainID(chainID)
+		iwalletSDK.SetServer(server)
+		iwalletSDK.SetVerbose(verbose)
+		iwalletSDK.SetSignAlgo(signAlgo)
+		iwalletSDK.SetCheckResult(checkResult, checkResultDelay, checkResultMaxRetry)
+		limit, err := ParseAmountLimit(amountLimit)
+		if err != nil {
+			return fmt.Errorf("invalid amount limit %v: %v", amountLimit, err)
+		}
+		iwalletSDK.SetTxInfo(gasLimit, gasRatio, expiration, delaySecond, limit)
+		iwalletSDK.SetUseLongestChain(useLongestChain)
+		return iwalletSDK.Connect()
+	},
+	PersistentPostRun: func(cmd *cobra.Command, args []string) {
+		iwalletSDK.CloseConn()
+	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	startTime = time.Now()
-	initSDK()
-	err := rootCmd.Execute()
-	uninitSDK()
-	if verbose {
-		fmt.Println("Executed in", time.Since(startTime))
-	}
-	if err != nil {
+	startTime := time.Now()
+	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
+	}
+	if verbose {
+		fmt.Println("Executed in", time.Since(startTime))
 	}
 }
 
@@ -117,23 +132,3 @@ var (
 
 	chainID uint32
 )
-
-func initSDK() error {
-	iwalletSDK = sdk.NewIOSTDevSDK()
-	iwalletSDK.SetChainID(chainID)
-	iwalletSDK.SetServer(server)
-	iwalletSDK.SetVerbose(verbose)
-	iwalletSDK.SetSignAlgo(signAlgo)
-	iwalletSDK.SetCheckResult(checkResult, checkResultDelay, checkResultMaxRetry)
-	limit, err := ParseAmountLimit(amountLimit)
-	if err != nil {
-		return fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
-	}
-	iwalletSDK.SetTxInfo(gasLimit, gasRatio, expiration, delaySecond, limit)
-	iwalletSDK.SetUseLongestChain(useLongestChain)
-	return iwalletSDK.Connect()
-}
-
-func uninitSDK() {
-	iwalletSDK.CloseConn()
-}
