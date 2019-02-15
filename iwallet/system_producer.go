@@ -17,9 +17,9 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/sdk"
 	"github.com/spf13/cobra"
 )
 
