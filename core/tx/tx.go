@@ -249,6 +249,7 @@ func (t *Tx) DeferTx() *Tx {
 		Signs:        t.Signs,
 		Signers:      t.Signers,
 		ChainID:      t.ChainID,
+		Reserved:     t.Reserved,
 	}
 	return deferTx
 }
