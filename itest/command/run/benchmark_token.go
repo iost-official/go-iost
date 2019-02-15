@@ -447,4 +447,5 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 			slotStartTime = time.Now()
 		}
 	}
+	return nil
 }
