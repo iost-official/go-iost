@@ -42,5 +42,5 @@ var transferCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(transferCmd)
-	transferCmd.Flags().StringVarP(&memo, "memo", "", "", "transfer memo")
+	transferCmd.Flags().StringVarP(&memo, "memo", "", "", "memo of transfer")
 }
