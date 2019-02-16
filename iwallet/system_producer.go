@@ -23,6 +23,12 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var location string
+var url string
+var networkID string
+var isPartner bool
+var publicKey string
+
 var voteCmd = &cobra.Command{
 	Use:     "producer-vote producerID amount",
 	Aliases: []string{"vote"},
@@ -54,10 +60,6 @@ var unvoteCmd = &cobra.Command{
 	},
 }
 
-var location string
-var url string
-var networkID string
-var isPartner bool
 var registerCmd = &cobra.Command{
 	Use:     "producer-register publicKey",
 	Aliases: []string{"register", "reg"},
@@ -87,8 +89,21 @@ var unregisterCmd = &cobra.Command{
 		return sendAction("vote_producer.iost", "applyUnregister", accountName)
 	},
 }
+var pcleanCmd = &cobra.Command{
+	Use:     "producer-clean",
+	Aliases: []string{"pclean"},
+	Short:   "Clean producer info",
+	Long:    `Clean producer info`,
+	Example: `  iwallet sys pclean --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return sendAction("vote_producer.iost", "unregister", accountName)
+	},
+}
 
-var loginCmd = &cobra.Command{
+var ploginCmd = &cobra.Command{
 	Use:     "producer-login",
 	Aliases: []string{"plogin"},
 	Short:   "Producer login as online state",
@@ -101,7 +116,7 @@ var loginCmd = &cobra.Command{
 		return sendAction("vote_producer.iost", "logInProducer", accountName)
 	},
 }
-var logoutCmd = &cobra.Command{
+var plogoutCmd = &cobra.Command{
 	Use:     "producer-logout",
 	Aliases: []string{"plogout"},
 	Short:   "Producer logout as offline state",
@@ -115,7 +130,14 @@ var logoutCmd = &cobra.Command{
 	},
 }
 
-var infoCmd = &cobra.Command{
+func getProducerVoteInfo(account string) (*rpcpb.GetProducerVoteInfoResponse, error) {
+	return iwalletSDK.GetProducerVoteInfo(&rpcpb.GetProducerVoteInfoRequest{
+		Account:        account,
+		ByLongestChain: useLongestChain,
+	})
+}
+
+var pinfoCmd = &cobra.Command{
 	Use:     "producer-info producerID",
 	Aliases: []string{"pinfo"},
 	Short:   "Show producer info",
@@ -128,10 +150,7 @@ var infoCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		info, err := iwalletSDK.GetProducerVoteInfo(&rpcpb.GetProducerVoteInfoRequest{
-			Account:        args[0],
-			ByLongestChain: useLongestChain,
-		})
+		info, err := getProducerVoteInfo(args[0])
 		if err != nil {
 			return err
 		}
@@ -161,7 +180,7 @@ func getProducerList(key string) ([]string, error) {
 	return result, nil
 }
 
-var listCmd = &cobra.Command{
+var plistCmd = &cobra.Command{
 	Use:     "producer-list",
 	Aliases: []string{"plist"},
 	Short:   "Show current/pending producer list",
@@ -182,6 +201,36 @@ var listCmd = &cobra.Command{
 	},
 }
 
+var pupdateCmd = &cobra.Command{
+	Use:     "producer-update",
+	Aliases: []string{"pupdate"},
+	Short:   "Update producer info",
+	Long:    `Update producer info`,
+	Example: `  iwallet sys pupdate --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		info, err := getProducerVoteInfo(accountName)
+		if err != nil {
+			return err
+		}
+		if publicKey == "" {
+			publicKey = info.Pubkey
+		}
+		if location == "" {
+			location = info.Loc
+		}
+		if url == "" {
+			url = info.Url
+		}
+		if networkID == "" {
+			networkID = info.NetId
+		}
+		return sendAction("vote_producer.iost", "updateProducer", accountName, publicKey, location, url, networkID)
+	},
+}
+
 func init() {
 	systemCmd.AddCommand(voteCmd)
 	systemCmd.AddCommand(unvoteCmd)
@@ -192,10 +241,17 @@ func init() {
 	registerCmd.Flags().StringVarP(&networkID, "net_id", "", "", "network ID")
 	registerCmd.Flags().BoolVarP(&isPartner, "partner", "", false, "if is partner instead of producer")
 	systemCmd.AddCommand(unregisterCmd)
+	systemCmd.AddCommand(pcleanCmd)
 
-	systemCmd.AddCommand(loginCmd)
-	systemCmd.AddCommand(logoutCmd)
+	systemCmd.AddCommand(ploginCmd)
+	systemCmd.AddCommand(plogoutCmd)
 
-	systemCmd.AddCommand(infoCmd)
-	systemCmd.AddCommand(listCmd)
+	systemCmd.AddCommand(pinfoCmd)
+	systemCmd.AddCommand(plistCmd)
+
+	systemCmd.AddCommand(pupdateCmd)
+	pupdateCmd.Flags().StringVarP(&publicKey, "pubkey", "", "", "publick key")
+	pupdateCmd.Flags().StringVarP(&location, "location", "", "", "location info")
+	pupdateCmd.Flags().StringVarP(&url, "url", "", "", "url address")
+	pupdateCmd.Flags().StringVarP(&networkID, "net_id", "", "", "network ID")
 }
