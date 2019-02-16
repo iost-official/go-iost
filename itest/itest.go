@@ -142,7 +142,7 @@ func (t *ITest) CreateAccountRoundN(num int, randName bool, check bool, round in
 
 	res := make(chan interface{})
 	go func() {
-		sem := make(semaphore, concurrentNum)
+		sem := make(semaphore, 2000)
 		for i := 0; i < num; i++ {
 			sem.acquire()
 			go func(n int, res chan interface{}) {

@@ -13,6 +13,7 @@ var AccountRoundCommand = cli.Command{
 	Name:      "account_round",
 	ShortName: "a_round",
 	Usage:     "run account test round",
+	Flags:	   AccountRoundFlags,
 	Action:    AccountRoundAction,
 }
 
