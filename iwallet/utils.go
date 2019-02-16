@@ -30,6 +30,15 @@ func checkAccount(cmd *cobra.Command) error {
 	return nil
 }
 
+func checkSigners(signers []string) error {
+	for _, s := range signers {
+		if !(len(strings.Split(s, "@")) == 2) {
+			return fmt.Errorf("signer %v should contrain '@'", s)
+		}
+	}
+	return nil
+}
+
 func getAccountDir() (string, error) {
 	home, err := homedir.Dir()
 	if err != nil {
