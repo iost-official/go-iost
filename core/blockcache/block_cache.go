@@ -224,7 +224,6 @@ func (bcn *BlockCacheNode) updateValidWitness() {
 		bcn.ValidWitness = append(bcn.ValidWitness, w)
 		if w == witness {
 			witness = ""
-			break
 		}
 	}
 	if witness != "" {
