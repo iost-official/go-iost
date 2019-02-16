@@ -1,10 +1,10 @@
 package run
 
 import (
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
 	"strconv"
-	"github.com/iost-official/go-iost/ilog"
 	"time"
 )
 
@@ -13,7 +13,7 @@ var AccountRoundCommand = cli.Command{
 	Name:      "account_round",
 	ShortName: "a_round",
 	Usage:     "run account test round",
-	Flags:	   AccountRoundFlags,
+	Flags:     AccountRoundFlags,
 	Action:    AccountRoundAction,
 }
 
@@ -52,7 +52,7 @@ var AccountRoundAction = func(c *cli.Context) error {
 	start := c.Int("start")
 	round := c.Int("round")
 
-	for i := start; i < start + round; i++ {
+	for i := start; i < start+round; i++ {
 		accounts, err := it.CreateAccountRoundN(10000, false, true, i)
 		if err != nil {
 			return err

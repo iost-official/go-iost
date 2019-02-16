@@ -151,7 +151,7 @@ func (t *ITest) CreateAccountRoundN(num int, randName bool, check bool, round in
 				if randName {
 					name = fmt.Sprintf("acc%08d", rand.Int63n(100000000))
 				} else {
-					name = fmt.Sprintf("acc%08d", round * num + n)
+					name = fmt.Sprintf("acc%08d", round*num+n)
 				}
 
 				account, err := t.CreateAccount(t.GetDefaultAccount(), name, check)
@@ -180,7 +180,6 @@ func (t *ITest) CreateAccountRoundN(num int, randName bool, check bool, round in
 
 	return accounts, nil
 }
-
 
 // CreateAccount will create a account by name
 func (t *ITest) CreateAccount(creator *Account, name string, check bool) (*Account, error) {
