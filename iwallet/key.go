@@ -17,6 +17,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -31,11 +32,12 @@ type key struct {
 
 // keyCmd represents the keyPair command
 var keyCmd = &cobra.Command{
-	Use:   "key",
-	Short: "Create a key pair",
-	Long:  `Create a key pair`,
+	Use:     "key",
+	Short:   "Create a key pair",
+	Long:    `Create a key pair`,
+	Example: `  iwallet key`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		n, err := account.NewKeyPair(nil, sdk.GetSignAlgo())
+		n, err := account.NewKeyPair(nil, sdk.GetSignAlgoByName(signAlgo))
 		if err != nil {
 			return fmt.Errorf("failed to new key pair: %v", err)
 		}

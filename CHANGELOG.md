@@ -1,3 +1,31 @@
+## v3.0.0 rc3
+
+Thu Feb 14 16:37:23 CST 2019
+
+- Improve stability for consensus and synchronizer module.
+
+## v3.0.0 rc2
+
+Wed Feb 13 16:08:40 CST 2019
+
+- Improve stability for consensus module.
+- Optimize usability of iWallet.
+
+## v3.0.0 rc1
+
+Mon Feb 11 18:14:20 CST 2019
+
+- Improve stability.
+- Add 'verify' method to 'IOSTCrypto' object in order to verify signature.
+
+## Everest v2.5.0
+
+Thu Jan 31 14:29:15 CST 2019
+
+- Fix known issue.
+- Improve stability.
+- Add system contract command to iWallet.
+
 ## Everest v2.4.0
 
 Mon Jan 28 16:54:43 CST 2019
@@ -7,6 +35,7 @@ Mon Jan 28 16:54:43 CST 2019
 - Increase block packing time from 300ms to 500ms.
 - Modify 'maxTxLimitTime' from 100ms to 200ms.
 - Increase gas charged for 'setCode'.
+- Disable account referrer reward.
 - Add a reserved field in transaction.
 
 ## Everest v2.3.1
@@ -51,14 +80,12 @@ Thu Jan  3 22:11:50 CST 2019
 
 - Pledge 1Token, get 100000Gas immediately, 1token can generate 100000Gas per day, and the user holds the Gas limit of 300,000 times of the pledge token.
 - Increase Gas charge; now a JS contract transfer costs about 37902Gas, and a system contract (iost.token) costs about 7668Gas.
-- User will be charge a 2% handling fee for the purchase of RAM with the system, then the handling fee will be destroyed.
+- System Contract: buying ram fee changes from 1% to 2%, then the handling fee will be destroyed.
 - RAM can be rent, but can't be traded.
 - Add the fields interface of querying state db; i.e. , you can query all the tokens of an account.
-
 - Add `publish` for iwallet; it publishes js and abi to blockchain. The old `compile` command now can only generate abi file; it cannot publish contract any longer.
 - Iwallet needs amount_limit for every transaction, i.e. `"iost:300|ram:200"` or `"*:unlimited"`.
 - Command flag changes for iwallet: gasLimit -> gas_limit, gasRatio -> gas_ratio (edited).
 - More friendly error message in RPC and iWallet.
-- API `getAccount` returns detailed ram info: used, available, total
-- System Contract: `SignUp` needs the creator pledging 10IOST for gas when creating new account
-- System Contract: buying ram fee changes from 1% to 2%
+- API `getAccount` returns detailed ram info: used, available, total.
+- System Contract: `SignUp` needs the creator pledging 10IOST for gas when creating new account.

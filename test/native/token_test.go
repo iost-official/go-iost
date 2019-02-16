@@ -40,8 +40,8 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	h.Context().Set("stack_height", 0)
 
 	code := &contract.Contract{
-		ID: "system.iost",
-		Info: &contract.Info{Version:"1.0.0"},
+		ID:   "system.iost",
+		Info: &contract.Info{Version: "1.0.0"},
 	}
 
 	e := &native.Impl{}

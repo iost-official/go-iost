@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
+	"strings"
 	"sync"
 	"time"
 
@@ -26,9 +27,10 @@ const (
 	bloomMaxItemCount = 100000
 	bloomErrRate      = 0.001
 
-	msgChanSize         = 1024
-	maxDataLength       = 10000000 // 10MB
-	routingQueryTimeout = 10
+	msgChanSize          = 1024
+	maxDataLength        = 10000000 // 10MB
+	routingQueryTimeout  = 10
+	maxContinuousTimeout = 10
 )
 
 // Peer represents a neighbor which we connect directily.
@@ -43,7 +45,8 @@ type Peer struct {
 	conn        libnet.Conn
 	peerManager *PeerManager
 
-	stream libnet.Stream
+	stream            libnet.Stream
+	continuousTimeout int
 
 	recentMsg      *bloom.BloomFilter
 	bloomMutex     sync.Mutex
@@ -109,7 +112,7 @@ func (p *Peer) Stop() {
 func (p *Peer) write(m *p2pMessage) error {
 
 	// 5 kB/s
-	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+1) * time.Second)
+	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+3) * time.Second)
 	if err := p.stream.SetWriteDeadline(deadline); err != nil {
 		ilog.Warnf("setting write deadline failed. err=%v, pid=%v", err, p.ID())
 		p.peerManager.RemoveNeighbor(p.id)
@@ -118,9 +121,18 @@ func (p *Peer) write(m *p2pMessage) error {
 	_, err := p.stream.Write(m.content())
 	if err != nil {
 		ilog.Warnf("writing message failed. err=%v, pid=%v", err, p.ID())
-		p.peerManager.RemoveNeighbor(p.id)
+		if strings.Contains(err.Error(), "i/o timeout") {
+			p.continuousTimeout++
+			if p.continuousTimeout >= maxContinuousTimeout {
+				ilog.Warnf("max continuous timeout times, remove peer %v", p.ID())
+				p.peerManager.RemoveNeighbor(p.id)
+			}
+		} else {
+			p.peerManager.RemoveNeighbor(p.id)
+		}
 		return err
 	}
+	p.continuousTimeout = 0
 	tagkv := map[string]string{"mtype": m.messageType().String()}
 	byteOutCounter.Add(float64(len(m.content())), tagkv)
 	packetOutCounter.Add(1, tagkv)

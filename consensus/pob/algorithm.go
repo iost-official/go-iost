@@ -2,7 +2,6 @@ package pob
 
 import (
 	"errors"
-	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
@@ -20,11 +19,11 @@ import (
 )
 
 var (
-	errWitness     = errors.New("wrong witness")
-	errSignature   = errors.New("wrong signature")
-	errTxDup       = errors.New("duplicate tx")
-	errDoubleTx    = errors.New("double tx in block")
-	generateTxsNum = 0
+	errWitness                = errors.New("wrong witness")
+	errSignature              = errors.New("wrong signature")
+	errTxDup                  = errors.New("duplicate tx")
+	errDoubleTx               = errors.New("double tx in block")
+	errTxLenUnmatchReceiptLen = errors.New("tx len unmatch receipt len")
 )
 
 func generateBlock(
@@ -83,7 +82,6 @@ func generateBlock(
 	}
 	db.Commit(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
-	generateTxsNum += len(blk.Txs)
 	return blk, nil
 }
 
@@ -92,6 +90,9 @@ func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
 	hash := blk.HeadHash()
 	if !signature.Verify(hash) {
 		return errSignature
+	}
+	if len(blk.Txs) != len(blk.Receipts) {
+		return errTxLenUnmatchReceiptLen
 	}
 	return nil
 }
@@ -130,16 +131,6 @@ func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessL
 				return err
 			}
 
-		}
-		if t.IsDefer() {
-			referredTx, err := chain.GetTx(t.ReferredTx)
-			if err != nil {
-				return fmt.Errorf("get referred tx error, %v", err)
-			}
-			err = t.VerifyDefer(referredTx)
-			if err != nil {
-				return err
-			}
 		}
 	}
 	v := verifier.Verifier{}

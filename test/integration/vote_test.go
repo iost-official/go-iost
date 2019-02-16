@@ -38,8 +38,8 @@ func prepareVote(t *testing.T, s *Simulator, acc *TestAccount) (*tx.TxReceipt, e
 		t.Fatal(err)
 	}
 	s.Visitor.MPut("system.iost-contract_owner", "Contractvoteresult", `s`+acc.ID)
-	s.SetGas(acc.ID, 1e8)
-	s.SetRAM(acc.ID, 1e8)
+	s.SetGas(acc.ID, 1e12)
+	s.SetRAM(acc.ID, 1e12)
 
 	config := make(map[string]interface{})
 	config["resultNumber"] = 2
@@ -67,22 +67,19 @@ func Test_NewVote(t *testing.T) {
 		createAccountsWithResource(s)
 		prepareToken(t, s, acc0)
 
-		Convey("test newVote", func() {
-			r, err := prepareVote(t, s, acc0)
+		r, err := prepareVote(t, s, acc0)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(1999999000*1e8))
+		So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `1`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000","optionNum":4}`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
 
-			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(1999999000*1e8))
-			So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `"1"`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000","optionNum":4}`)
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
+		r, err = s.Call("Contractvoteresult", "getResult", `["1"]`, acc0.ID, acc0.KeyPair)
 
-			r, err = s.Call("Contractvoteresult", "getResult", `["1"]`, acc0.ID, acc0.KeyPair)
-
-			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote_result", "1")), ShouldEqual, `[]`)
-		})
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote_result", "1")), ShouldEqual, `[]`)
 
 	})
 }
@@ -95,42 +92,40 @@ func Test_AddOption(t *testing.T) {
 
 		createAccountsWithResource(s)
 		prepareToken(t, s, acc0)
-		prepareVote(t, s, acc0)
+		r, err := prepareVote(t, s, acc0)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 
-		Convey("test addOption", func() {
-			r, err := s.Call("vote.iost", "addOption", `["1", "option5", true]`, acc0.ID, acc0.KeyPair)
+		r, err = s.Call("vote.iost", "addOption", `["1", "option5", true]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"option1", "option2", "option3", "option4", "option5"})
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option5")), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
 
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"option1", "option2", "option3", "option4", "option5"})
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option5")), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
-
-			r, err = s.Call("vote.iost", "getOption", `["1", "option5"]`, acc0.ID, acc0.KeyPair)
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldEqual, "")
-			So(r.Returns[0], ShouldEqual, `["{\"votes\":\"0\",\"deleted\":0,\"clearTime\":-1}"]`)
-		})
+		r, err = s.Call("vote.iost", "getOption", `["1", "option5"]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(r.Returns[0], ShouldEqual, `["{\"votes\":\"0\",\"deleted\":0,\"clearTime\":-1}"]`)
 	})
 }
 
 func Test_RemoveOption(t *testing.T) {
 	ilog.Stop()
-	Convey("test vote", t, func() {
+	Convey("test remove option", t, func() {
 		s := NewSimulator()
 		defer s.Clear()
 
 		createAccountsWithResource(s)
 		prepareToken(t, s, acc0)
-		prepareVote(t, s, acc0)
+		r, err := prepareVote(t, s, acc0)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 
-		Convey("test removeOption", func() {
-			r, err := s.Call("vote.iost", "removeOption", `["1", "option2", true]`, acc0.ID, acc0.KeyPair)
-
-			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"option1", "option3", "option4"})
-			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000","optionNum":3}`)
-		})
+		r, err = s.Call("vote.iost", "removeOption", `["1", "option2", true]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+		So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"option1", "option3", "option4"})
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000","optionNum":3}`)
 	})
 }
 
@@ -141,12 +136,15 @@ func Test_Vote(t *testing.T) {
 		defer s.Clear()
 
 		s.Head.Number = 0
+		s.GasLimit = 2e8
 
 		createAccountsWithResource(s)
 		prepareToken(t, s, acc0)
-		prepareVote(t, s, acc0)
+		rs, err := prepareVote(t, s, acc0)
+		So(err, ShouldBeNil)
+		So(rs.Status.Message, ShouldEqual, "")
 
-		rs, err := s.Call("vote.iost", "vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+		rs, err = s.Call("vote.iost", "vote", fmt.Sprintf(`["1", "%v", "option3", "5"]`, acc1.ID), acc1.ID, acc1.KeyPair)
 		So(err, ShouldBeNil)
 		So(rs.Status.Message, ShouldEqual, "")
 

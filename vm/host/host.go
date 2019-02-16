@@ -288,17 +288,17 @@ func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
 
 	hashString := string(common.Base58Decode(txHash))
 	cost := Costs["GetCost"]
-	publisher := h.db.GetDelaytx(hashString)
+	publisher, deferTxHash := h.db.GetDelaytx(hashString)
 
-	if publisher == database.NilPrefix {
+	if publisher == "" {
 		return cost, ErrDelaytxNotFound
 	}
 	if publisher != h.Context().Value("publisher").(string) {
-		return cost, ErrCancelDelayForbid
+		return cost, ErrCannotCancelDelay
 	}
 
 	h.db.DelDelaytx(hashString)
-	cost.AddAssign(DelDelayTxCost(len(hashString)+len(publisher), publisher))
+	cost.AddAssign(DelDelayTxCost(len(hashString)+len(publisher)+len(deferTxHash), publisher))
 	return cost, nil
 }
 

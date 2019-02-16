@@ -62,7 +62,7 @@ func NewBlockChain(path string) (Chain, error) {
 			return nil, errors.New("fail to put blocklength")
 		}
 		txTotalByte := common.Int64ToBytes(0)
-		if err := levelDB.Put(blockLength, txTotalByte); err != nil {
+		if err := levelDB.Put(blockTxTotal, txTotalByte); err != nil {
 			return nil, errors.New("fail to put tx total")
 		}
 	}
@@ -133,16 +133,16 @@ func (bc *BlockChain) Push(block *Block) error {
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
 
-		if t.Delay > 0 {
+		if t.Delay > 0 && block.Receipts[i].Status.Code == tx.Success {
 			bc.blockChainDB.Put(append(delaytxPrefix, tHash...), txBytes)
 		}
 		if t.IsDefer() {
 			bc.blockChainDB.Delete(append(delaytxPrefix, t.ReferredTx...))
 		}
-		if cancelHash, exist := t.CanceledDelaytxHash(); exist {
-			if block.Receipts[i].Status.Code == tx.Success {
-				bc.blockChainDB.Delete(append(delaytxPrefix, cancelHash...))
-			}
+
+		canceledDelayHashes := block.Receipts[i].ParseCancelDelaytx()
+		for _, canceledHash := range canceledDelayHashes {
+			bc.blockChainDB.Delete(append(delaytxPrefix, canceledHash...))
 		}
 	}
 	err = bc.blockChainDB.CommitBatch()

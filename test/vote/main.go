@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 	"log"
 	"math/rand"
 	"os"
@@ -16,11 +17,10 @@ import (
 )
 
 var (
-	sdks         = make(map[string]*iwallet.SDK)
+	iostSDKs     = make(map[string]*sdk.IOSTDevSDK)
 	witness      = []string{}
 	accounts     = []string{}
 	server       = "localhost:30002"
-	amountLimit  = "*:unlimited"
 	contractName = ""
 	pledgeGAS    = int64(0)
 	exchangeIOST = false
@@ -30,6 +30,8 @@ func init() {
 	log.SetOutput(os.Stdout)
 	rand.Seed(time.Now().Unix())
 }
+
+var signAlgo = "ed25519"
 
 func parseFlag() {
 	s := flag.String("s", server, "rpc server")        // format: ip1:port1,ip2:port2
@@ -57,38 +59,37 @@ func initSDKs() {
 	accs := append(accounts, witness...)
 	accs = append(accs, "admin")
 	for _, a := range accs {
-		sdk := &iwallet.SDK{}
-		sdk.SetChainID(1024)
-		sdk.SetSignAlgo("ed25519")
-		sdk.SetAccount(a, nil)
-		sdk.SetServer(server)
-		sdk.SetAmountLimit(amountLimit)
-		sdk.SetTxInfo(2000000, 1, 300, 0)
-		sdk.SetCheckResult(true, 3, 10)
-		sdk.SetVerbose(true)
-		sdk.LoadAccount()
-		sdks[a] = sdk
+		iostSDK := sdk.NewIOSTDevSDK()
+		iostSDK.SetChainID(1024)
+		iostSDK.SetSignAlgo("ed25519")
+		kp, err := iwallet.LoadKeyPair(a)
+		if err != nil {
+			panic(err)
+		}
+		iostSDK.SetAccount(a, kp)
+		iostSDK.SetServer(server)
+		iostSDK.SetTxInfo(2000000, 1, 300, 0, nil)
+		iostSDK.SetCheckResult(true, 3, 10)
+		iostSDK.SetVerbose(true)
+		iostSDKs[a] = iostSDK
 	}
 }
 
 func prepareAccounts() {
-	sdk := sdks["admin"]
-	err := sdk.LoadAccount()
+	iostSDK := iostSDKs["admin"]
+	kp, err := iwallet.LoadKeyPair("admin")
 	if err != nil {
-		log.Fatalf("load account failed: %v.", err)
+		panic(err)
 	}
+	iostSDK.SetAccount("admin", kp)
 	if pledgeGAS > 0 {
-		err = sdk.PledgeForGasAndRAM(pledgeGAS, 0)
+		err = iostSDK.PledgeForGasAndRAM(pledgeGAS, 0)
 		if err != nil {
 			log.Fatalf("pledge gas and ram err: %v", err)
 		}
 	}
-	aLgo := sdk.GetSignAlgo()
 	for _, acc := range accounts {
-		if err := sdks[acc].LoadAccount(); err == nil {
-			continue
-		}
-		newKp, err := account.NewKeyPair(nil, aLgo)
+		newKp, err := account.NewKeyPair(nil, sdk.GetSignAlgoByName(signAlgo))
 		if err != nil {
 			log.Fatalf("create key pair failed %v", err)
 		}
@@ -96,15 +97,15 @@ func prepareAccounts() {
 		okey := k
 		akey := k
 
-		_, err = sdk.CreateNewAccount(acc, okey, akey, 1024, 1000, 2100000)
+		_, err = iostSDK.CreateNewAccount(acc, okey, akey, 1024, 1000, 2100000)
 		if err != nil {
 			log.Fatalf("create new account error %v", err)
 		}
-		err = sdk.SaveAccount(acc, newKp)
+		err = iwallet.SaveAccount(acc, newKp)
 		if err != nil {
 			log.Fatalf("saveAccount failed %v", err)
 		}
-		sdks[acc].LoadAccount()
+		iostSDKs[acc].SetAccount(acc, newKp)
 	}
 }
 
@@ -130,7 +131,7 @@ func run() {
 func publish() {
 	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/test/vote/test_data/vote_checker.js"
 	abiPath := codePath + ".abi"
-	_, txHash, err := sdks["admin"].PublishContract(codePath, abiPath, "", false, "")
+	_, txHash, err := iostSDKs["admin"].PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		log.Fatalf("publish contract error: %v", err)
 	}
@@ -139,25 +140,25 @@ func publish() {
 
 func vote() {
 	for _, acc := range accounts {
-		sdk := sdks[acc]
-		sdk.SendTxFromActions([]*rpcpb.Action{
-			iwallet.NewAction(contractName, "vote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*100000)),
+		iostSDK := iostSDKs[acc]
+		iostSDK.SendTxFromActions([]*rpcpb.Action{
+			sdk.NewAction(contractName, "vote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*100000)),
 		})
 	}
 }
 
 func unvote() {
 	for _, acc := range accounts {
-		sdk := sdks[acc]
-		sdk.SendTxFromActions([]*rpcpb.Action{
-			iwallet.NewAction(contractName, "unvote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*1000)),
+		iostSDK := iostSDKs[acc]
+		iostSDK.SendTxFromActions([]*rpcpb.Action{
+			sdk.NewAction(contractName, "unvote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*1000)),
 		})
 	}
 }
 
 func issueIOST() {
-	sdks["admin"].SendTxFromActions([]*rpcpb.Action{
-		iwallet.NewAction(contractName, "issueIOST", `[]`),
+	iostSDKs["admin"].SendTxFromActions([]*rpcpb.Action{
+		sdk.NewAction(contractName, "issueIOST", `[]`),
 	})
 }
 
@@ -166,42 +167,42 @@ func withdrawBlockBonus() {
 		return
 	}
 	for _, acc := range witness {
-		sdk := sdks[acc]
-		sdk.SendTxFromActions([]*rpcpb.Action{
-			iwallet.NewAction(contractName, "exchangeIOST", `[]`),
+		iostSDK := iostSDKs[acc]
+		iostSDK.SendTxFromActions([]*rpcpb.Action{
+			sdk.NewAction(contractName, "exchangeIOST", `[]`),
 		})
 	}
 }
 
 func withdrawVoteBonus() {
 	for _, acc := range witness {
-		sdk := sdks[acc]
-		sdk.SendTxFromActions([]*rpcpb.Action{
-			iwallet.NewAction(contractName, "candidateWithdraw", `[]`),
+		iostSDK := iostSDKs[acc]
+		iostSDK.SendTxFromActions([]*rpcpb.Action{
+			sdk.NewAction(contractName, "candidateWithdraw", `[]`),
 		})
 	}
 }
 
 func topupVoterBonus() {
-	sdk := sdks["admin"]
+	iostSDK := iostSDKs["admin"]
 	for _, acc := range witness {
-		sdk.SendTxFromActions([]*rpcpb.Action{
-			iwallet.NewAction(contractName, "topupVoterBonus", fmt.Sprintf(`["%v", "%v"]`, acc, (rand.Intn(10)+2)*100000)),
+		iostSDK.SendTxFromActions([]*rpcpb.Action{
+			sdk.NewAction(contractName, "topupVoterBonus", fmt.Sprintf(`["%v", "%v"]`, acc, (rand.Intn(10)+2)*100000)),
 		})
 	}
 }
 
 func withdrawVoterBonus() {
 	for _, acc := range accounts {
-		sdk := sdks[acc]
-		sdk.SendTxFromActions([]*rpcpb.Action{
-			iwallet.NewAction(contractName, "voterWithdraw", `[]`),
+		iostSDK := iostSDKs[acc]
+		iostSDK.SendTxFromActions([]*rpcpb.Action{
+			sdk.NewAction(contractName, "voterWithdraw", `[]`),
 		})
 	}
 }
 
 func checkResult() {
-	sdks["admin"].SendTxFromActions([]*rpcpb.Action{
-		iwallet.NewAction(contractName, "checkResult", `[]`),
+	iostSDKs["admin"].SendTxFromActions([]*rpcpb.Action{
+		sdk.NewAction(contractName, "checkResult", `[]`),
 	})
 }

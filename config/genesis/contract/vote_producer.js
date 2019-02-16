@@ -7,6 +7,7 @@ const IOST_DECIMAL = 8;
 const ADMIN_PERMISSION = "active";
 const VOTE_PERMISSION = "vote";
 const ACTIVE_PERMISSION = "active";
+const WITHDRAW_PERMISSION = "operate";
 
 const STATUS_APPLY = 0;
 const STATUS_APPROVED = 1;
@@ -109,10 +110,19 @@ class VoteContract {
         }
     }
 
+    _requireAuthList(accountList, permission) {
+        for (const account of accountList) {
+            if (blockchain.requireAuth(account, permission)) {
+                return
+            }
+        }
+        throw new Error("require auth failed.");
+    }
+
     // call abi and parse result as JSON
     _call(contract, api, args) {
         const ret = blockchain.callWithAuth(contract, api, args);
-        if (ret && Array.isArray(ret) && ret.length === 1) {
+        if (ret && Array.isArray(ret) && ret.length >= 1) {
             return ret[0] === "" ? "" : JSON.parse(ret[0]);
         }
         return ret;
@@ -694,7 +704,7 @@ class VoteContract {
             earnings = earnings.plus(earning);
             if (updateMask) {
                 voterMask = voterMask.plus(earning);
-                this._mapPut(voterMaskPrefix + v.option, voter, voterMask.toFixed(), voter);
+                this._mapPut(voterMaskPrefix + v.option, voter, voterMask.toFixed(), blockchain.publisher());
             }
         }
         return earnings;
@@ -705,7 +715,8 @@ class VoteContract {
     }
 
     voterWithdraw(voter) {
-        this._requireAuth(voter, ACTIVE_PERMISSION);
+        const accountList = [voter, storage.get("adminID")];
+        this._requireAuthList(accountList, WITHDRAW_PERMISSION);
 
         let earnings = this._calVoterBonus(voter, true);
         if (earnings.lte("0")) {
@@ -730,7 +741,7 @@ class VoteContract {
         let earning = candCoef.multi(candKey).minus(candMask);
         if (updateMask) {
             candMask = candMask.plus(earning);
-            this._mapPut(candidateMaskTable, account, candMask.toFixed(), account);
+            this._mapPut(candidateMaskTable, account, candMask.toFixed(), blockchain.publisher());
         }
         return earning;
     }
@@ -740,7 +751,8 @@ class VoteContract {
     }
 
     candidateWithdraw(account) {
-        this._requireAuth(account, ACTIVE_PERMISSION);
+        const accountList = [account, storage.get("adminID")];
+        this._requireAuthList(accountList, WITHDRAW_PERMISSION);
 
         let earnings = this._calCandidateBonus(account, true);
         if (earnings.lte("0")) {

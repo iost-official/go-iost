@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 	"strconv"
 
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -32,10 +33,10 @@ var methodMap = map[string]func(string) (*rpcpb.BlockResponse, error){
 			err = fmt.Errorf("invalid block number: %v", err)
 			return nil, err
 		}
-		return sdk.getGetBlockByNum(num, complete)
+		return iwalletSDK.GetBlockByNum(num, complete)
 	},
 	"hash": func(arg string) (*rpcpb.BlockResponse, error) {
-		return sdk.getGetBlockByHash(arg, complete)
+		return iwalletSDK.GetBlockByHash(arg, complete)
 	},
 }
 
@@ -44,6 +45,8 @@ var blockCmd = &cobra.Command{
 	Use:   "block blockNum|blockHash",
 	Short: "Print block info",
 	Long:  `Print block info by block number or hash`,
+	Example: `  iwallet block 0
+  iwallet block 5dEgmyMURGfe7GxvTLajmaLXTkcqs5JwiJ2C2DE5VvVX -m hash`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
 			cmd.Usage()
@@ -61,7 +64,7 @@ var blockCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		fmt.Println(marshalTextString(blockInfo))
+		fmt.Println(sdk.MarshalTextString(blockInfo))
 		return nil
 	},
 }
