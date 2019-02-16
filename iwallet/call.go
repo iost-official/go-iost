@@ -57,10 +57,17 @@ var callCmd = &cobra.Command{
 				return err
 			}
 		}
+
 		err := InitAccount()
 		if err != nil {
 			return fmt.Errorf("failed to load account: %v", err)
 		}
+
+		if err := checkSigners(signers); err != nil {
+			return err
+		}
+		trx.Signers = signers
+
 		if len(withSigns) != 0 || len(signKeys) != 0 {
 			ilog.Infof("making multi sig...")
 			err = handleMultiSig(trx, withSigns, signKeys)
@@ -68,6 +75,7 @@ var callCmd = &cobra.Command{
 				return fmt.Errorf("multi sig err %v", err)
 			}
 		}
+
 		_, err = iwalletSDK.SendTx(trx)
 		return err
 	},
