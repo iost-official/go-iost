@@ -3,6 +3,10 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -11,9 +15,6 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/native"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 // TestAccount used for writing test cases
@@ -71,7 +72,7 @@ func init() {
 	acc9 = testAccounts[9]
 }
 
-var ContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/genesis/contract/"
+var ContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/contract/"
 
 type fataler interface {
 	Fatal(args ...interface{})
