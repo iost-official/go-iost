@@ -32,8 +32,9 @@ print_bye() {
 
 cd $PREFIX
 
+docker-compose down
 docker-compose pull
-docker-compose restart
+docker-compose up -d
 
 until $($CURL localhost:30001/getNodeInfo &>/dev/null); do
     >&2 printf '.'
