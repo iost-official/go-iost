@@ -33,7 +33,7 @@ func checkAccount(cmd *cobra.Command) error {
 func checkSigners(signers []string) error {
 	for _, s := range signers {
 		if !(len(strings.Split(s, "@")) == 2) {
-			return fmt.Errorf("signer %v should contrain '@'", s)
+			return fmt.Errorf("signer %v should contain '@'", s)
 		}
 	}
 	return nil
