@@ -1,0 +1,33 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "can_update",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "place_order",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "cancel_order",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "take_order",
+            "args": [
+                "string"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,106 @@
+{
+    "lang": "javascript",
+    "version": "1.0.0",
+    "abi": [
+        {
+            "name": "can_update",
+            "args": ["string"]
+        },
+        {
+            "name": "initAdmin",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "newVote",
+            "args": [
+                "string",
+                "string",
+                "json"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "addOption",
+            "args": [
+                "string",
+                "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "removeOption",
+            "args": [
+                "string",
+                "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "getOption",
+            "args": [
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "voteFor",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "vote",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ],
+            "amountLimit": [{
+                "token": "iost",
+                "val": "unlimited"
+            }]
+        },
+        {
+            "name": "unvote",
+            "args": [
+                "string",
+                "string",
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "getVote",
+            "args": [
+                "string",
+                "string"
+            ]
+        },
+        {
+            "name": "getResult",
+            "args": [
+                "string"
+            ]
+        },
+        {
+            "name": "delVote",
+            "args": [
+                "string"
+            ]
+        }
+    ]
+}
