@@ -202,7 +202,7 @@ var (
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 
-			return []interface{}{tokenID}, cost, err
+			return []interface{}{tokenID}, cost, nil
 		},
 	}
 
@@ -292,7 +292,7 @@ var (
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, err
+			return []interface{}{}, cost, nil
 		},
 	}
 
