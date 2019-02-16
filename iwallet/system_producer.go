@@ -89,6 +89,19 @@ var unregisterCmd = &cobra.Command{
 		return sendAction("vote_producer.iost", "applyUnregister", accountName)
 	},
 }
+var pcleanCmd = &cobra.Command{
+	Use:     "producer-clean",
+	Aliases: []string{"pclean"},
+	Short:   "Clean producer info",
+	Long:    `Clean producer info`,
+	Example: `  iwallet sys pclean --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return sendAction("vote_producer.iost", "unregister", accountName)
+	},
+}
 
 var ploginCmd = &cobra.Command{
 	Use:     "producer-login",
@@ -228,6 +241,7 @@ func init() {
 	registerCmd.Flags().StringVarP(&networkID, "net_id", "", "", "network ID")
 	registerCmd.Flags().BoolVarP(&isPartner, "partner", "", false, "if is partner instead of producer")
 	systemCmd.AddCommand(unregisterCmd)
+	systemCmd.AddCommand(pcleanCmd)
 
 	systemCmd.AddCommand(ploginCmd)
 	systemCmd.AddCommand(plogoutCmd)
