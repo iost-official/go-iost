@@ -141,10 +141,7 @@ var infoCmd = &cobra.Command{
 }
 
 func getProducerList(key string) ([]string, error) {
-	response, err := iwalletSDK.GetContractStorage(&rpcpb.GetContractStorageRequest{
-		Id:  "vote_producer.iost",
-		Key: key,
-	})
+	response, err := getContractStorage("vote_producer.iost", key, "")
 	if err != nil {
 		return nil, err
 	}
@@ -155,11 +152,7 @@ func getProducerList(key string) ([]string, error) {
 	}
 	result := make([]string, len(list))
 	for i, producerKey := range list {
-		response, err := iwalletSDK.GetContractStorage(&rpcpb.GetContractStorageRequest{
-			Id:    "vote_producer.iost",
-			Key:   "producerKeyToId",
-			Field: producerKey,
-		})
+		response, err := getContractStorage("vote_producer.iost", "producerKeyToId", producerKey)
 		if err != nil {
 			return nil, err
 		}
