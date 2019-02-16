@@ -71,6 +71,7 @@ func init() {
 	rootCmd.PersistentFlags().Float32VarP(&checkResultDelay, "check_result_delay", "", 3, "rpc checking will occur at [checkResultDelay] seconds after sending to chain.")
 	rootCmd.PersistentFlags().Int32VarP(&checkResultMaxRetry, "check_result_max_retry", "", 20, "max times to call grpc to check tx status")
 	rootCmd.PersistentFlags().StringVarP(&signAlgo, "sign_algo", "", "ed25519", "sign algorithm")
+	rootCmd.PersistentFlags().StringSliceVarP(&signers, "signers", "", []string{}, "additional signers")
 	rootCmd.PersistentFlags().Float64VarP(&gasLimit, "gas_limit", "l", 1000000, "gas limit for a transaction")
 	rootCmd.PersistentFlags().Float64VarP(&gasRatio, "gas_ratio", "p", 1.0, "gas ratio for a transaction")
 	rootCmd.PersistentFlags().StringVarP(&amountLimit, "amount_limit", "", "*:unlimited", "amount limit for one transaction, eg iost:300.00|ram:2000")
@@ -116,6 +117,7 @@ var (
 	accountName string
 	keyPair     *account.KeyPair
 	signAlgo    string
+	signers     []string
 
 	gasLimit    float64
 	gasRatio    float64
