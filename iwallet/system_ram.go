@@ -62,7 +62,7 @@ var sellCmd = &cobra.Command{
 	},
 }
 
-var transferCmd = &cobra.Command{
+var rtransCmd = &cobra.Command{
 	Use:     "ram-transfer receiver amount",
 	Aliases: []string{"ram-trans", "rtrans"},
 	Short:   "Transfer ram",
@@ -88,5 +88,5 @@ func init() {
 	buyCmd.Flags().StringVarP(&other, "ram_receiver", "", "", "who gets the bought ram")
 	systemCmd.AddCommand(sellCmd)
 	sellCmd.Flags().StringVarP(&other, "token_receiver", "", "", "who gets the returned IOST after selling")
-	systemCmd.AddCommand(transferCmd)
+	systemCmd.AddCommand(rtransCmd)
 }

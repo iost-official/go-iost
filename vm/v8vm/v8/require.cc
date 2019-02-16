@@ -18,11 +18,6 @@ std::unordered_map<std::string, const char *> libJS = {
     {"blockchain", reinterpret_cast<char *>(__libjs_blockchain_js)}
 };
 
-static char injectGasFormat[] =
-    "(function(){\n"
-    "const source = \"%s\";\n"
-    "return injectGas(source);\n"
-    "})();";
 static requireFunc CRequire = nullptr;
 
 void InitGoRequire(requireFunc require) {

@@ -7,7 +7,6 @@
 #include "crypto.h"
 
 #include "vm.js.h"
-#include "compile_vm.js.h"
 #include "environment.js.h"
 #include <assert.h>
 #include <cstring>
@@ -23,7 +22,6 @@
 
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
 char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
-char *compileVmJsLib = reinterpret_cast<char *>(__libjs_compile_vm_js);
 
 const char *preloadBlockCode = R"(
 // load Block
