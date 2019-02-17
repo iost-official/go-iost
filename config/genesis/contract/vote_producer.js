@@ -198,7 +198,6 @@ class VoteContract {
         }
         const pro = this._mapGet("producerTable", account);
         if (pro.status === STATUS_APPLY) {
-            this._doRemoveProducer(account, pro.pubkey, false);
             return;
         }
         if (pro.status !== STATUS_APPROVED) {
@@ -260,11 +259,8 @@ class VoteContract {
 
     unregister(account) {
         this._requireAuth(account, VOTE_PERMISSION);
-        if (!storage.mapHas("producerTable", account)) {
-            throw new Error("producer not exists");
-        }
         const pro = this._mapGet("producerTable", account);
-        if (pro.status !== STATUS_UNAPPLY_APPROVED) {
+        if (pro && pro.status !== STATUS_APPLY && pro.status !== STATUS_UNAPPLY_APPROVED) {
             throw new Error("producer can not unregister");
         }
         if (this._inCurrentOrPendingList(account)) {
@@ -276,8 +272,10 @@ class VoteContract {
             account,
             true,
         ]);
-        // will clear votes and score of the producer on stat
-        this._doRemoveProducer(account, pro.pubkey, true);
+        if (pro) {
+            // will clear votes and score of the producer on stat
+            this._doRemoveProducer(account, pro.pubkey, true);
+        }
     }
 
     _inCurrentOrPendingList(account) {

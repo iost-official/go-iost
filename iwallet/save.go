@@ -53,6 +53,12 @@ var saveCmd = &cobra.Command{
 		}
 		trx.Time = t
 		trx.Expiration = trx.Time + expiration*1e9
+
+		if err := checkSigners(signers); err != nil {
+			return err
+		}
+		trx.Signers = signers
+
 		return sdk.SaveProtoStructToJSONFile(trx, outputFile)
 	},
 }
