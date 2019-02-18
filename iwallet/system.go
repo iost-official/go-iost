@@ -17,6 +17,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
@@ -30,25 +31,23 @@ var systemCmd = &cobra.Command{
 	Long:    `Send system contract action to blockchain`,
 }
 
-func actionSender(contract, method string, methodArgs ...interface{}) func(cmd *cobra.Command, args []string) error {
-	return func(cmd *cobra.Command, args []string) error {
-		methodArgsBytes, err := json.Marshal(methodArgs)
-		if err != nil {
-			return err
-		}
-		action := NewAction(contract, method, string(methodArgsBytes))
-		actions := []*rpcpb.Action{action}
-		tx, err := sdk.createTx(actions)
-		if err != nil {
-			return fmt.Errorf("failed to create tx: %v", err)
-		}
-		err = sdk.LoadAccount()
-		if err != nil {
-			return fmt.Errorf("failed to load account: %v", err)
-		}
-		_, err = sdk.SendTx(tx)
+func sendAction(contract, method string, methodArgs ...interface{}) error {
+	methodArgsBytes, err := json.Marshal(methodArgs)
+	if err != nil {
 		return err
 	}
+	action := sdk.NewAction(contract, method, string(methodArgsBytes))
+	actions := []*rpcpb.Action{action}
+	tx, err := iwalletSDK.CreateTxFromActions(actions)
+	if err != nil {
+		return fmt.Errorf("failed to create tx: %v", err)
+	}
+	err = InitAccount()
+	if err != nil {
+		return fmt.Errorf("failed to load account: %v", err)
+	}
+	_, err = iwalletSDK.SendTx(tx)
+	return err
 }
 
 func init() {

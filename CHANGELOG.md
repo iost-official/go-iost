@@ -1,3 +1,16 @@
+## v3.0.0 rc3
+
+Thu Feb 14 16:37:23 CST 2019
+
+- Improve stability for consensus and synchronizer module.
+
+## v3.0.0 rc2
+
+Wed Feb 13 16:08:40 CST 2019
+
+- Improve stability for consensus module.
+- Optimize usability of iWallet.
+
 ## v3.0.0 rc1
 
 Mon Feb 11 18:14:20 CST 2019

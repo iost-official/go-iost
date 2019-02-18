@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/spf13/cobra"
 )
@@ -26,18 +27,17 @@ var receiptCmd = &cobra.Command{
 	Short: "Find receipt",
 	Long:  `Find receipt by transaction hash`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the transaction hash")
+		if err := checkArgsNumber(cmd, args, "transactionHash"); err != nil {
+			return err
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		txReceipt, err := sdk.GetTxReceiptByTxHash(args[0])
+		txReceipt, err := iwalletSDK.GetTxReceiptByTxHash(args[0])
 		if err != nil {
 			return err
 		}
-		fmt.Println(marshalTextString(txReceipt))
+		fmt.Println(sdk.MarshalTextString(txReceipt))
 		return nil
 	},
 }

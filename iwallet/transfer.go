@@ -15,35 +15,32 @@
 package iwallet
 
 import (
-	"fmt"
-	"github.com/iost-official/go-iost/sdk"
-
 	"github.com/spf13/cobra"
 )
 
-// transactionCmd represents the transaction command.
-var transactionCmd = &cobra.Command{
-	Use:     "transaction transactionHash",
-	Aliases: []string{"tx"},
-	Short:   "Find transactions",
-	Long:    `Find transaction by transaction hash`,
+var memo string
+
+var transferCmd = &cobra.Command{
+	Use:     "transfer receiver amount",
+	Aliases: []string{"trans"},
+	Short:   "Transfer IOST",
+	Long:    `Transfer IOST`,
+	Example: `  iwallet transfer test1 100 --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the transaction hash")
-		}
-		return nil
-	},
-	RunE: func(cmd *cobra.Command, args []string) error {
-		txRaw, err := iwalletSDK.GetTxByHash(args[0])
-		if err != nil {
+		if err := checkArgsNumber(cmd, args, "receiver", "amount"); err != nil {
 			return err
 		}
-		fmt.Println(sdk.MarshalTextString(txRaw))
-		return nil
+		if err := checkFloat(cmd, args[1], "amount"); err != nil {
+			return err
+		}
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return sendAction("token.iost", "transfer", "iost", accountName, args[0], args[1], memo)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(transactionCmd)
+	rootCmd.AddCommand(transferCmd)
+	transferCmd.Flags().StringVarP(&memo, "memo", "", "", "memo of transfer")
 }

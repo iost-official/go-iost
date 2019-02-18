@@ -55,6 +55,13 @@ func (t *ITest) GetClients() []*Client {
 	return t.clients
 }
 
+// GetRandClient return a random client
+func (t *ITest) GetRandClient() *Client {
+	cIndex := rand.Intn(len(t.clients))
+	client := t.clients[cIndex]
+	return client
+}
+
 // Load will load the itest from file
 func Load(keysfile, configfile string) (*ITest, error) {
 	ilog.Infof("Load itest from file...")
@@ -125,6 +132,51 @@ func (t *ITest) CreateAccountN(num int, randName bool, check bool) ([]*Account, 
 	ilog.Infof("Create %v account successful!", len(accounts))
 
 	// TODO Get account by rpc, and compare account result
+
+	return accounts, nil
+}
+
+// CreateAccountRoundN will create n accounts concurrently
+func (t *ITest) CreateAccountRoundN(num int, randName bool, check bool, round int) ([]*Account, error) {
+	ilog.Infof("Create %v account... round %v", num, round)
+
+	res := make(chan interface{})
+	go func() {
+		sem := make(semaphore, 2000)
+		for i := 0; i < num; i++ {
+			sem.acquire()
+			go func(n int, res chan interface{}) {
+				defer sem.release()
+				var name string
+				if randName {
+					name = fmt.Sprintf("acc%08d", rand.Int63n(100000000))
+				} else {
+					name = fmt.Sprintf("acc%08d", round*num+n)
+				}
+
+				account, err := t.CreateAccount(t.GetDefaultAccount(), name, check)
+				if err != nil {
+					res <- err
+				} else {
+					res <- account
+				}
+			}(i, res)
+		}
+	}()
+
+	accounts := []*Account{}
+	for i := 0; i < num; i++ {
+		switch value := (<-res).(type) {
+		case error:
+			ilog.Errorf("Create account failed: %v", value)
+		case *Account:
+			accounts = append(accounts, value)
+		default:
+			return accounts, fmt.Errorf("unexpect res: %v", value)
+		}
+	}
+
+	ilog.Infof("Create %v account successful!", len(accounts))
 
 	return accounts, nil
 }

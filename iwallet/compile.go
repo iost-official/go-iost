@@ -52,9 +52,8 @@ var compileCmd = &cobra.Command{
 	Long:    `Generate abi from contract javascript code`,
 	Example: `  iwallet compile ./example.js`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the code path")
+		if err := checkArgsNumber(cmd, args, "codePath"); err != nil {
+			return err
 		}
 		return nil
 	},

@@ -42,7 +42,7 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 		oldTotalPledge, cost := h.GasPledgeTotal(name)
 		finalCost.AddAssign(cost)
 		if oldTotalPledge.Sub(unpledgeAmount).LessThan(database.GasMinPledgeOfUser) {
-			return finalCost, fmt.Errorf("unpledge to much %v - %v less than %v", oldTotalPledge.ToString(), unpledgeAmount.ToString(), database.GasMinPledgeOfUser.ToString())
+			return finalCost, fmt.Errorf("unpledge too much (%v - %v) less than %v", oldTotalPledge.ToString(), unpledgeAmount.ToString(), database.GasMinPledgeOfUser.ToString())
 		}
 		// check personal pledge
 		pledged, cost := h.GasManager.GasPledge(name, pledger)

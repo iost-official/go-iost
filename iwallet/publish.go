@@ -29,15 +29,16 @@ var publishCmd = &cobra.Command{
 	Short:   "Publish a contract",
 	Long:    `Publish a contract by a contract and an abi file`,
 	Example: `  iwallet publish ./example.js ./example.js.abi --account test0
-  iwallet publish ./example.js ./example.js.abi -u ContractXXX --account test0`,
+  iwallet publish -u ./example.js ./example.js.abi ContractXXX --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 2 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the code path and the abi path")
+		var err error
+		if update {
+			err = checkArgsNumber(cmd, args, "codePath", "abiPath", "contractID")
+		} else {
+			err = checkArgsNumber(cmd, args, "codePath", "abiPath")
 		}
-		if update && len(args) < 3 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the contract id")
+		if err != nil {
+			return err
 		}
 		return checkAccount(cmd)
 	},
@@ -54,11 +55,11 @@ var publishCmd = &cobra.Command{
 			updateID = args[3]
 		}
 
-		err := sdk.LoadAccount()
+		err := InitAccount()
 		if err != nil {
 			return fmt.Errorf("failed to load account: %v", err)
 		}
-		_, txHash, err := sdk.PublishContract(codePath, abiPath, conID, update, updateID)
+		_, txHash, err := iwalletSDK.PublishContract(codePath, abiPath, conID, update, updateID)
 		if err != nil {
 			return fmt.Errorf("failed to create tx: %v", err)
 		}

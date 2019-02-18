@@ -510,7 +510,9 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
 
 	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
-		p.p2pService.ConnectBPs(p.blockCache.LinkedRoot().NetID())
+		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
+	} else {
+		p.p2pService.ConnectBPs(nil)
 	}
 
 	if node.Head.Witness != p.account.ReadablePubkey() {

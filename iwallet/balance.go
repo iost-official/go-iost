@@ -16,29 +16,30 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/spf13/cobra"
 )
 
 // accountInfoCmd represents the balance command.
 var accountInfoCmd = &cobra.Command{
-	Use:   "balance accountID",
-	Short: "Check the information of a specified account",
-	Long:  `Check the information of a specified account`,
+	Use:     "balance accountName",
+	Short:   "Check the information of a specified account",
+	Long:    `Check the information of a specified account`,
+	Example: `  iwallet balance test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the account ID")
+		if err := checkArgsNumber(cmd, args, "accountName"); err != nil {
+			return err
 		}
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		id := args[0]
-		info, err := sdk.getAccountInfo(id)
+		info, err := iwalletSDK.GetAccountInfo(id)
 		if err != nil {
 			return err
 		}
-		fmt.Println(marshalTextString(info))
+		fmt.Println(sdk.MarshalTextString(info))
 		return nil
 	},
 }

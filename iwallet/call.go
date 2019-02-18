@@ -16,6 +16,7 @@ package iwallet
 
 import (
 	"fmt"
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -31,7 +32,7 @@ var callCmd = &cobra.Command{
 	An ACTION is a group of 3 arguments: contract name, function name, method parameters.
 	The method parameters should be a string with format '["arg0","arg1",...]'.`,
 	Example: `  iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' --account test0
-  iwallet call --tx_file tx.proto --account test0`,
+  iwallet call --tx_file tx.json --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},
@@ -41,7 +42,7 @@ var callCmd = &cobra.Command{
 			if len(args) != 0 {
 				ilog.Warnf("load tx from file %v, will ignore cmd args %v", txFile, args)
 			}
-			err := loadProto(txFile, trx)
+			err := sdk.LoadProtoStructFromJSONFile(txFile, trx)
 			if err != nil {
 				return err
 			}
@@ -51,23 +52,44 @@ var callCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			trx, err = sdk.createTx(actions)
+			trx, err = iwalletSDK.CreateTxFromActions(actions)
 			if err != nil {
 				return err
 			}
 		}
-		err := sdk.LoadAccount()
+
+		err := InitAccount()
 		if err != nil {
 			return fmt.Errorf("failed to load account: %v", err)
 		}
-		_, err = sdk.SendTx(trx)
+
+		if err := checkSigners(signers); err != nil {
+			return err
+		}
+		trx.Signers = signers
+
+		if len(withSigns) != 0 || len(signKeys) != 0 {
+			ilog.Infof("making multi sig...")
+			err = handleMultiSig(trx, withSigns, signKeys)
+			if err != nil {
+				return fmt.Errorf("multi sig err %v", err)
+			}
+		}
+
+		_, err = iwalletSDK.SendTx(trx)
 		return err
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(callCmd)
-	callCmd.Flags().StringSliceVarP(&sdk.signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
-	callCmd.Flags().StringSliceVarP(&sdk.withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
+	callCmd.Flags().StringSliceVarP(&signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
+	callCmd.Flags().StringSliceVarP(&withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
 	callCmd.Flags().StringVarP(&txFile, "tx_file", "", "", "load tx from this file")
 }
+
+var (
+	// used for multi sig
+	signKeys  []string
+	withSigns []string
+)
