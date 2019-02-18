@@ -27,7 +27,8 @@ var buyCmd = &cobra.Command{
 	Aliases: []string{"buy"},
 	Short:   "Buy ram from system",
 	Long:    `Buy ram from system`,
-	Example: `  iwallet sys buy 100 --account test0`,
+	Example: `  iwallet sys buy 100 --account test0
+  iwallet sys buy 100 --account test0 --ram_receiver test1`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "amount"); err != nil {
 			return err
@@ -51,8 +52,9 @@ var sellCmd = &cobra.Command{
 	Aliases: []string{"sell"},
 	Short:   "Sell unused ram to system",
 	Long:    `Sell unused ram to system`,
-	Example: `  iwallet sys sell 100 --account test0`,
-	Args:    buyCmd.Args,
+	Example: `  iwallet sys sell 100 --account test0
+  iwallet sys sell 100 --account test0 --token_receiver test1`,
+	Args: buyCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		if other == "" {
 			other = accountName
