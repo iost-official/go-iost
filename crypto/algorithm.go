@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"github.com/iost-official/go-iost/crypto/backend"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // AlgorithmBackend is the interface of algorithm backend
@@ -63,7 +64,14 @@ func (a Algorithm) Sign(message []byte, seckey []byte) []byte {
 }
 
 // Verify will verify the message with pubkey and sig
-func (a Algorithm) Verify(message []byte, pubkey []byte, sig []byte) bool {
+func (a Algorithm) Verify(message []byte, pubkey []byte, sig []byte) (ret bool) {
+	// catch ed25519.Verify panic
+	defer func() {
+		if e := recover(); e != nil {
+			ilog.Warnf("verify panic. err=%v", e)
+			ret = false
+		}
+	}()
 	return a.getBackend().Verify(message, pubkey, sig)
 }
 
