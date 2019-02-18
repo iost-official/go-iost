@@ -26,8 +26,7 @@ func (h *Authority) requireContractAuth(id, p string) (bool, contract.Cost) {
 	return false, cost
 }
 
-// RequireAuth check auth
-func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
+func (h *Authority) requireAuth(id, p string, isPublisher bool) (bool, contract.Cost) {
 	if i, ok := h.h.ctx.Value("number").(int64); ok && i == 0 {
 		return true, contract.Cost0()
 	}
@@ -38,7 +37,20 @@ func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
 	authMap := authList.(map[string]int)
 	reenterMap := make(map[string]int)
 
+	if isPublisher {
+		return AuthPublisher(h.h.db, id, p, authMap, reenterMap)
+	}
 	return Auth(h.h.db, id, p, authMap, reenterMap)
+}
+
+// RequireAuth check auth
+func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
+	return h.requireAuth(id, p, false)
+}
+
+// RequirePublisherAuth check publisher auth
+func (h *Authority) RequirePublisherAuth(id string) (bool, contract.Cost) {
+	return h.requireAuth(id, "active", true)
 }
 
 // IsContract to judge the id is contract format
@@ -66,8 +78,7 @@ func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost)
 	return &a, c
 }
 
-// Auth check auth
-func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int) (bool, contract.Cost) { // nolint
+func auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int, publisherOnly bool) (bool, contract.Cost) {
 	if _, ok := reenter[id+"@"+permission]; ok {
 		return false, CommonErrorCost(1)
 	}
@@ -96,10 +107,17 @@ func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 		u = append(u, grp.Items...)
 	}
 
+	var authtype int
+	if publisherOnly {
+		authtype = 1
+	} else {
+		authtype = 0
+	}
+
 	var weight int
 	for _, user := range u {
 		if user.IsKeyPair {
-			if _, ok := auth[user.ID]; ok {
+			if i, ok := auth[user.ID]; ok && i > authtype {
 				weight += user.Weight
 				if weight >= p.Threshold {
 					return true, c
@@ -131,4 +149,14 @@ func Auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 		c.AddAssign(c2)
 		return ok, c
 	}
+}
+
+// Auth check auth
+func Auth(vi *database.Visitor, id, permission string, authMap, reenter map[string]int) (bool, contract.Cost) { // nolint
+	return auth(vi, id, permission, authMap, reenter, false)
+}
+
+// AuthPublisher check publisher auth
+func AuthPublisher(vi *database.Visitor, id, permission string, authMap, reenter map[string]int) (bool, contract.Cost) { // nolint
+	return auth(vi, id, permission, authMap, reenter, true)
 }

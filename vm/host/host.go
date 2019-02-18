@@ -135,7 +135,7 @@ func (h *Host) checkAmountLimitValid(c *contract.Contract) (contract.Cost, error
 
 // CheckPublisher check publisher of tx
 func (h *Host) CheckPublisher(t *tx.Tx) error {
-	b, c := h.RequireAuth(t.Publisher, "active")
+	b, c := h.RequirePublisherAuth(t.Publisher)
 	if !b {
 		return fmt.Errorf("unauthorized publisher: %v", t.Publisher)
 	}
