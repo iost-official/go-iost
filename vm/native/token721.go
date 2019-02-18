@@ -192,6 +192,9 @@ var (
 
 			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, publisher)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			// generate receipt
 			message, err := json.Marshal(args)
@@ -283,6 +286,9 @@ var (
 			}
 			cost0, err = h.MapPut(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+to, tokenID, metaDataJSON, publisher)
 			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			// generate receipt
 			message, err := json.Marshal(args)
