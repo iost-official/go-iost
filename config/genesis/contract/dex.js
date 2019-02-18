@@ -1,6 +1,5 @@
 class DexContract {
-    init() {
-    }
+    init(){}
     _requireAuth(account, permission) {
         const ret = blockchain.requireAuth(account, permission);
         if (ret !== true) {
