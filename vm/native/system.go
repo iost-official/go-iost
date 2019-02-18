@@ -162,6 +162,9 @@ var (
 
 			cost2, err := h.SetCode(con, AdminAccount)
 			cost.AddAssign(cost2)
+			if err != nil {
+				return nil, cost, err
+			}
 
 			cost2, err = h.MapPut("contract_owner", actID, AdminAccount)
 			cost.AddAssign(cost2)
