@@ -195,7 +195,7 @@ docker-compose pull
 # Generate key producer pair
 #
 
-( docker run --rm iostio/iost-node:$VERSION iwallet key; ) >> $PRODUCER_KEY_FILE
+( docker run --rm iostio/iost-node:$VERSION iwallet --verbose=false key; ) >> $PRODUCER_KEY_FILE
 
 #
 # Get genesis info
