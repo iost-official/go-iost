@@ -78,7 +78,7 @@ func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost)
 	return &a, c
 }
 
-func auth(vi *database.Visitor, id, permission string, auth, reenter map[string]int, publisherOnly bool) (bool, contract.Cost) {
+func auth(vi *database.Visitor, id, permission string, authMap, reenter map[string]int, publisherOnly bool) (bool, contract.Cost) {
 	if _, ok := reenter[id+"@"+permission]; ok {
 		return false, CommonErrorCost(1)
 	}
@@ -95,7 +95,7 @@ func auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 		if permission == "owner" || permission == "active" {
 			return false, c
 		}
-		return Auth(vi, id, "active", auth, reenter)
+		return auth(vi, id, "active", authMap, reenter, publisherOnly)
 	}
 
 	u := p.Items
@@ -117,14 +117,14 @@ func auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 	var weight int
 	for _, user := range u {
 		if user.IsKeyPair {
-			if i, ok := auth[user.ID]; ok && i > authtype {
+			if i, ok := authMap[user.ID]; ok && i > authtype {
 				weight += user.Weight
 				if weight >= p.Threshold {
 					return true, c
 				}
 			}
 		} else {
-			ok, cost := Auth(vi, user.ID, user.Permission, auth, reenter)
+			ok, cost := auth(vi, user.ID, user.Permission, authMap, reenter, publisherOnly)
 			c.AddAssign(cost)
 			if ok {
 				weight += user.Weight
@@ -139,13 +139,13 @@ func auth(vi *database.Visitor, id, permission string, auth, reenter map[string]
 		return true, c
 	}
 	if permission == "active" {
-		ok, c2 := Auth(vi, id, "owner", auth, reenter)
+		ok, c2 := auth(vi, id, "owner", authMap, reenter, publisherOnly)
 		c.AddAssign(c2)
 		return ok, c
 	} else if permission == "owner" {
 		return false, c
 	} else {
-		ok, c2 := Auth(vi, id, "active", auth, reenter)
+		ok, c2 := auth(vi, id, "active", authMap, reenter, publisherOnly)
 		c.AddAssign(c2)
 		return ok, c
 	}
