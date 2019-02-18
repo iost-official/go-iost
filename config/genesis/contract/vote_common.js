@@ -15,7 +15,7 @@ const FALSE = 0;
 
 class VoteCommonContract {
     init() {
-        storage.put("current_id", "0");
+        this._put("current_id", "0");
     }
 
     initAdmin(adminID) {
@@ -65,8 +65,8 @@ class VoteCommonContract {
     }
 
     _nextId() {
-        const id = new Int64(storage.get("current_id")).plus(1).toString();
-        storage.put("current_id", id);
+        const id = new BigNumber(this._get("current_id")).plus(1).toFixed();
+        this._put("current_id", id);
         return id;
     }
 
@@ -178,7 +178,7 @@ class VoteCommonContract {
         }
 
         const minVote = info.minVote;
-        if (!minVote || new Float64(minVote).lte(0)) {
+        if (!minVote || new BigNumber(minVote).lte(0)) {
             throw new Error("minVote not valid.");
         }
 
@@ -197,9 +197,6 @@ class VoteCommonContract {
         }
 
         const anyOption = !!info.anyOption; // default to false
-        if (anyOption) {
-            throw new Error("anyOption not implemented");
-        }
 
         let freezeTime = info.freezeTime;
         if (freezeTime === undefined) {
