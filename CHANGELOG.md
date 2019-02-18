@@ -1,3 +1,13 @@
+## v3.0.0 rc4
+
+Mon Feb 18 20:46:06 CST 2019
+
+- Update genesis contract, including 'producer_vote' and 'bonus'.
+- Fix a witness bug.
+- Fix a panic issue in vm crypto library.
+- Fix verification error in 'publish'.
+- Fix safety issue in 'batchVerify'.
+
 ## v3.0.0 rc3
 
 Thu Feb 14 16:37:23 CST 2019
