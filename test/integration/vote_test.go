@@ -71,7 +71,7 @@ func Test_NewVote(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(1999999000*1e8))
-		So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `1`)
+		So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `"1"`)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000","optionNum":4}`)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
 

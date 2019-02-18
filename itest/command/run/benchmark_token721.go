@@ -8,14 +8,15 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/itest"
-	"github.com/urfave/cli"
 	"math"
 	"math/rand"
 	"strconv"
 	"sync"
+
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/itest"
+	"github.com/urfave/cli"
 )
 
 // BenchmarkToken721Command is the subcommand for benchmark.
@@ -189,7 +190,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 		for num := 0; num < tps; num++ {
 			// create 1, issue 1000, transfer 1000, balanceOf 100, ownerOf 100, tokenOfOwner 100, tokenMetadata 100
 			tIndex := rand.Intn(2400)
-			abiName := ""
+			var abiName string
 			switch true {
 			case tIndex <= 0 || len(tokenList) < 5:
 				abiName = createToken721
