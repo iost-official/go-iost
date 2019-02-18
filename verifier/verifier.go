@@ -22,6 +22,7 @@ import (
 var (
 	ErrExpiredTx    = errors.New("expired tx")
 	ErrNotArrivedTx = errors.New("not arrived tx")
+	ErrInvalidMode  = errors.New("invalid mode")
 )
 
 // Verifier ..
@@ -293,12 +294,14 @@ func (v *Verifier) Verify(blk, parent *block.Block, witnessList *blockcache.Witn
 		vi, _ := database.NewBatchVisitor(database.NewBatchVisitorRoot(100, db))
 		isolator.Prepare(blk.Head, vi, getLogger(false))
 		return baseVerify(isolator, c, blk.Txs[1:], blk.Receipts[1:], blk)
-	case 1:
-		bs := batches(blk, info)
-		var batcher Batcher
-		return batchVerify(batcher, blk.Head, c, db, bs, blk)
+		/*  case 1: */
+		// bs := batches(blk, info)
+		// var batcher Batcher
+		// return batchVerify(batcher, blk.Head, c, db, bs, blk)
+		/* } */
+	default:
+		return ErrInvalidMode
 	}
-	return nil
 }
 
 func batches(blk *block.Block, info Info) []*Batch {
