@@ -19,6 +19,7 @@ import (
 var (
 	confirmNumber           int64
 	maxBlockHashQueryNumber int64 = 100
+	blockHashQueryAdvance   int64 = 1000
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
@@ -262,7 +263,7 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
 	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
-		for sy.blockCache.Head().Head.Number+3 < startNumber {
+		for sy.blockCache.Head().Head.Number+blockHashQueryAdvance < startNumber {
 			time.Sleep(500 * time.Millisecond)
 		}
 		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
