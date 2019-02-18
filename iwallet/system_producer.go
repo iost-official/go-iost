@@ -65,7 +65,8 @@ var registerCmd = &cobra.Command{
 	Aliases: []string{"register", "reg"},
 	Short:   "Register as producer",
 	Long:    `Register as producer`,
-	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test0`,
+	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test0
+  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test1 --location PEK --url iost.io --net_id 123 --partner`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "publicKey"); err != nil {
 			return err
@@ -206,7 +207,9 @@ var pupdateCmd = &cobra.Command{
 	Aliases: []string{"pupdate"},
 	Short:   "Update producer info",
 	Long:    `Update producer info`,
-	Example: `  iwallet sys pupdate --account test0`,
+	Example: `  iwallet sys pupdate --account test0
+  iwallet sys pupdate --account test1 --pubkey XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  iwallet sys pupdate --account test2 --location PEK --url iost.io --net_id 123`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},

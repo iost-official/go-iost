@@ -14,6 +14,7 @@ import (
 )
 
 var cfgFile string
+var startTime time.Time
 
 // rootCmd represents the base command when called without any subcommands.
 var rootCmd = &cobra.Command{
@@ -23,6 +24,7 @@ var rootCmd = &cobra.Command{
 	SilenceUsage:  true,
 	SilenceErrors: true,
 	PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+		startTime = time.Now()
 		iwalletSDK = sdk.NewIOSTDevSDK()
 		iwalletSDK.SetChainID(chainID)
 		iwalletSDK.SetServer(server)
@@ -39,19 +41,18 @@ var rootCmd = &cobra.Command{
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
 		iwalletSDK.CloseConn()
+		if verbose {
+			fmt.Println("Executed in", time.Since(startTime))
+		}
 	},
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
-	startTime := time.Now()
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Println(err)
 		os.Exit(1)
-	}
-	if verbose {
-		fmt.Println("Executed in", time.Since(startTime))
 	}
 }
 
