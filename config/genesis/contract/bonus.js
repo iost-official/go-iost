@@ -1,11 +1,11 @@
 const activePermission = "active";
 const totalSupply = 90000000000;
-const blockContribRatio = new Float64("9.6568764571e-11");
+const blockContribRatio = new Float64("1.564349722223e-10");
 
 class BonusContract {
     init() {
         this._initContribute();
-        this._put("blockContrib", "1.98779440");
+        this._put("blockContrib", "3.28513441");
         this._put("lastTime", block.time);
     }
 
