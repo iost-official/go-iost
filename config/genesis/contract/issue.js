@@ -71,6 +71,22 @@ class IssueContract {
         return new Float64(block.time);
     }
 
+    _mapGet(k, f) {
+        const val = storage.mapGet(k, f);
+        if (val === "") {
+            return null;
+        }
+        return JSON.parse(val);
+    }
+
+    _mapPut(k, f, v, p) {
+        storage.mapPut(k, f, JSON.stringify(v), p);
+    }
+
+    _mapDel(k, f) {
+        storage.mapDel(k, f);
+    }
+
     _issueIOST(account, amount) {
         const amountStr = ((typeof amount === "string") ? amount : amount.toFixed(this._get("IOSTDecimal")));
         const args = ["iost", account, amountStr];

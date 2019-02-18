@@ -13,7 +13,7 @@ class RAMContract {
     }
 
     can_update(data) {
-        const admin = storage.get("adminID");
+        const admin = this._get("adminID");
         this._requireAuth(admin, updatePermission);
         return true;
     }
@@ -25,9 +25,21 @@ class RAMContract {
         }
         return JSON.parse(raw);
     }
-
     _put(k, v) {
         storage.put(k, JSON.stringify(v));
+    }
+    _mapGet(k, f) {
+        return JSON.parse(storage.mapGet(k, f));
+    }
+    _mapPut(k, f, v) {
+        storage.mapPut(k, f, JSON.stringify(v));
+    }
+
+    _mapDel(k, f) {
+        const ret = storage.mapDel(k, f);
+        if (ret !== 0) {
+            throw new Error("storage map del failed. ret = " + ret);
+        }
     }
 
     _getTokenName() {
@@ -39,17 +51,14 @@ class RAMContract {
         if(bn !== 0) {
             throw new Error("init out of genesis block");
         }
-        storage.put("adminID", adminID);
+        this._put("adminID", adminID);
     }
-
     _getAdminID() {
-        return storage.get("adminID");
+        return this._get("adminID");
     }
-
     _changeLeftSpace(delta) {
         this._put("leftSpace", this._getLeftSpace() + delta);
     }
-
     _getLeftSpace() {
         if (this._get("leftSpace") === null) {
             throw new Error("no leftSpace key");
@@ -60,11 +69,9 @@ class RAMContract {
         }
         return result;
     }
-
     _changeUsedSpace(delta) {
         this._put("usedSpace", this._getUsedSpace() + delta);
     }
-
     _getUsedSpace() {
         if (this._get("usedSpace") === null) {
             throw new Error("no usedSpace key");
@@ -75,7 +82,6 @@ class RAMContract {
         }
         return result;
     }
-
     _getBalance() {
         if (this._get("balance") === null) {
             throw new Error("no balance key");
@@ -86,7 +92,6 @@ class RAMContract {
         }
         return result;
     }
-
     _changeBalance(delta) {
         this._put("balance", this._getBalance() + delta);
     }
@@ -119,15 +124,12 @@ class RAMContract {
             this._changeUsedSpace(reserve);
         }
     }
-
     _getInitialPrice() {
         return 0.005; // when RAM is empty, every byte worth `priceCoefficient` IOST
     }
-
     _getF() {
         return 1.0;
     }
-
     _price(action, amount) {
         const leftSpace = this._getLeftSpace();
         if (action === "buy") {
@@ -166,11 +168,9 @@ class RAMContract {
         }
         return result
     }
-
     _changeAccountSelfRAM(acc, delta) {
         this._put("SR" + acc, this._getAccountSelfRAM(acc) + delta)
     }
-
     _getAccountTotalRAM(acc) {
         const result = this._get("TR" + acc);
         if (result === null) {
@@ -178,7 +178,6 @@ class RAMContract {
         }
         return result
     }
-
     _changeAccountTotalRAM(acc, delta) {
         this._put("TR" + acc, this._getAccountTotalRAM(acc) + delta)
     }
