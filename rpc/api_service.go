@@ -271,10 +271,10 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 	if err != nil {
 		return nil, err
 	}
-	acc, _ := host.ReadAuth(dbVisitor, req.GetAccount())
-	if acc == nil {
-		return nil, errors.New("account not found")
-	}
+	//acc, _ := host.ReadAuth(dbVisitor, req.GetAccount())
+	//if acc == nil {
+	//	return nil, errors.New("account not found")
+	//}
 	balance := dbVisitor.TokenBalanceFixed(req.GetToken(), req.GetAccount()).ToFloat()
 	// pack frozen balance information
 	frozen := dbVisitor.AllFreezedTokenBalanceFixed(req.GetToken(), req.GetAccount())
