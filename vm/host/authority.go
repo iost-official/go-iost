@@ -78,7 +78,7 @@ func ReadAuth(vi *database.Visitor, id string) (*account.Account, contract.Cost)
 	return &a, c
 }
 
-func auth(vi *database.Visitor, id, permission string, authMap, reenter map[string]int, publisherOnly bool) (bool, contract.Cost) {
+func auth(vi *database.Visitor, id, permission string, authMap, reenter map[string]int, publisherOnly bool) (bool, contract.Cost) { // nolint
 	if _, ok := reenter[id+"@"+permission]; ok {
 		return false, CommonErrorCost(1)
 	}
