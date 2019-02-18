@@ -304,6 +304,7 @@ func (v *Verifier) Verify(blk, parent *block.Block, witnessList *blockcache.Witn
 	}
 }
 
+/*
 func batches(blk *block.Block, info Info) []*Batch {
 	var rtn = make([]*Batch, 0)
 	var k = 0
@@ -317,7 +318,7 @@ func batches(blk *block.Block, info Info) []*Batch {
 		})
 	}
 	return rtn
-}
+}*/
 
 func verifyBlockBase(blk, parent *block.Block, witnessList *blockcache.WitnessList, db database.IMultiValue, c *Config) error {
 	if len(blk.Txs) < 1 || len(blk.Receipts) < 1 {
@@ -435,6 +436,7 @@ func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxRe
 	return nil
 }
 
+/*
 func batchVerify(verifier Batcher, bh *block.BlockHead, c *Config, db database.IMultiValue, batches []*Batch, blk *block.Block) error {
 
 	for _, batch := range batches {
@@ -450,4 +452,4 @@ func batchVerify(verifier Batcher, bh *block.BlockHead, c *Config, db database.I
 		}
 	}
 	return nil
-}
+}*/
