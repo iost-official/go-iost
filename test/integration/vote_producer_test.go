@@ -88,7 +88,7 @@ func Test_InitProducer(t *testing.T) {
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
 
-		So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `1`)
+		So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `"1"`)
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-voteId")), ShouldEqual, `1`)
 		Convey("test init producer", func() {
 			initProducer(s)
