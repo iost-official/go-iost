@@ -17,7 +17,6 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -25,6 +24,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -57,10 +57,12 @@ var accountCmd = &cobra.Command{
 }
 
 var createCmd = &cobra.Command{
-	Use:     "create accountName",
-	Short:   "Create an account on blockchain",
-	Long:    `Create an account on blockchain`,
-	Example: `  iwallet account create test1 --account test0`,
+	Use:   "create accountName",
+	Short: "Create an account on blockchain",
+	Long:  `Create an account on blockchain`,
+	Example: `  iwallet account create test1 --account test0
+  iwallet account create test2 --account test0 --initial_balance 0 --initial_gas_pledge 10 --initial_ram 0
+  iwallet account create test3 --account test0 --owner 7Z9US64vfcyopQpyEwV1FF52HTB8maEacjU4SYeAUrt1 --active 7Z9US64vfcyopQpyEwV1FF52HTB8maEacjU4SYeAUrt1`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "accountName"); err != nil {
 			return err

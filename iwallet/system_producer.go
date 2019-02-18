@@ -234,6 +234,59 @@ var pupdateCmd = &cobra.Command{
 	},
 }
 
+var predeemCmd = &cobra.Command{
+	Use:     "producer-redeem [amount]",
+	Aliases: []string{"predeem"},
+	Short:   "Redeem the contribution value obtained by the block producing to IOST tokens",
+	Long: `Redeem the contribution value obtained by the block producing to IOST tokens
+	Omitting amount argument or zero amount will redeem all contribution value.`,
+	Example: `  iwallet sys producer-redeem --account test0
+  iwallet sys producer-redeem 10 --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			if err := checkFloat(cmd, args[0], "amount"); err != nil {
+				return err
+			}
+		}
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		amount := "0"
+		if len(args) > 0 {
+			amount = args[0]
+		}
+		return sendAction("bonus.iost", "exchangeIOST", accountName, amount)
+	},
+}
+
+var pwithdrawCmd = &cobra.Command{
+	Use:     "producer-withdraw",
+	Aliases: []string{"pwithdraw"},
+	Short:   "Withdraw all voting reward for producer",
+	Long:    `Withdraw all voting reward for producer`,
+	Example: `  iwallet sys producer-withdraw --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return sendAction("vote_producer.iost", "candidateWithdraw", accountName)
+	},
+}
+
+var vwithdrawCmd = &cobra.Command{
+	Use:     "voter-withdraw",
+	Aliases: []string{"vwithdraw"},
+	Short:   "Withdraw all voting reward for voter",
+	Long:    `Withdraw all voting reward for voter`,
+	Example: `  iwallet sys voter-withdraw --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return sendAction("vote_producer.iost", "voterWithdraw", accountName)
+	},
+}
+
 func init() {
 	systemCmd.AddCommand(voteCmd)
 	systemCmd.AddCommand(unvoteCmd)
@@ -257,4 +310,8 @@ func init() {
 	pupdateCmd.Flags().StringVarP(&location, "location", "", "", "location info")
 	pupdateCmd.Flags().StringVarP(&url, "url", "", "", "url address")
 	pupdateCmd.Flags().StringVarP(&networkID, "net_id", "", "", "network ID")
+
+	systemCmd.AddCommand(predeemCmd)
+	systemCmd.AddCommand(pwithdrawCmd)
+	systemCmd.AddCommand(vwithdrawCmd)
 }
