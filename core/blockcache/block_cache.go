@@ -745,6 +745,12 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	}
 
 	bc.updateLinkedRootWitness(parent, bcn)
+	bcn.removeValidWitness(bcn)
+	bc.nmdel(parent.Head.Number)
+	bc.delNode(parent)
+	bcn.SetParent(nil)
+	bc.SetLinkedRoot(bcn)
+
 	err = bc.writeUpdateLinkedRootWitnessWAL()
 	if err != nil {
 		ilog.Errorf("write wal error: %v %v", bcn.HeadHash(), err)
@@ -756,12 +762,6 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	if err != nil {
 		ilog.Errorf("flush mvcc error: %v %v", bcn.HeadHash(), err)
 	}
-
-	bcn.removeValidWitness(bcn)
-	bc.nmdel(parent.Head.Number)
-	bc.delNode(parent)
-	bcn.SetParent(nil)
-	bc.SetLinkedRoot(bcn)
 
 	metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
 
