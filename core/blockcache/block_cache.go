@@ -104,9 +104,9 @@ func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block
 	}
 }
 
-func encodeUpdateLinkedRootWitness(bc *BlockCacheImpl) (b []byte, err error) {
+func encodeUpdateLinkedRootWitness(bc *BlockCacheImpl, bcn *BlockCacheNode) (b []byte, err error) {
 	uwRaw := &UpdateLinkedRootWitnessRaw{
-		BlockHashBytes:    bc.LinkedRoot().HeadHash(),
+		BlockHashBytes:    bcn.HeadHash(),
 		LinkedRootWitness: bc.linkedRootWitness,
 	}
 	b, err = proto.Marshal(uwRaw)
@@ -251,7 +251,7 @@ func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
 	AddGenesis(*block.Block)
-	Link(*BlockCacheNode, bool)
+	Link(*BlockCacheNode)
 	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	Flush(*BlockCacheNode)
@@ -557,7 +557,7 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
-func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
+func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn == nil {
 		return
 	}
@@ -570,9 +570,6 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	bc.leaf[bcn] = bcn.Head.Number
 	bcn.updateValidWitness()
 	bc.updateWitnessList(bcn)
-	if !replay {
-		bc.AddNodeToWAL(bcn)
-	}
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
@@ -745,7 +742,7 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	}
 
 	bc.updateLinkedRootWitness(parent, bcn)
-	err = bc.writeUpdateLinkedRootWitnessWAL()
+	err = bc.writeUpdateLinkedRootWitnessWAL(bcn)
 	if err != nil {
 		ilog.Errorf("write wal error: %v %v", bcn.HeadHash(), err)
 	}
@@ -792,8 +789,8 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	bc.cutWALFiles(bcn)
 }
 
-func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
-	hb, err := encodeUpdateLinkedRootWitness(bc)
+func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL(bcn *BlockCacheNode) (err error) {
+	hb, err := encodeUpdateLinkedRootWitness(bc, bcn)
 	if err != nil {
 		return err
 	}
