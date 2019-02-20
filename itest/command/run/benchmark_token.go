@@ -8,15 +8,16 @@ import (
 
 	"encoding/json"
 	"fmt"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/itest"
-	"github.com/urfave/cli"
 	"math"
 	"math/rand"
 	"strconv"
 	"strings"
 	"sync"
+
+	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/itest"
+	"github.com/urfave/cli"
 )
 
 // BenchmarkTokenCommand is the subcommand for benchmark.
@@ -34,6 +35,10 @@ var BenchmarkTokenFlags = []cli.Flag{
 		Name:  "tps",
 		Value: 50,
 		Usage: "The expected ratio of transactions per second",
+	},
+	cli.BoolFlag{
+		Name:  "check",
+		Usage: "if check receipt",
 	},
 }
 
@@ -62,7 +67,7 @@ type hashItem struct {
 
 // BenchmarkTokenAction is the action of benchmark.
 var BenchmarkTokenAction = func(c *cli.Context) error {
-	itest.Interval = 2 * time.Millisecond
+	itest.Interval = 1000 * time.Millisecond
 	itest.InitAmount = "1000"
 	itest.InitPledge = "1000"
 	itest.InitRAM = "3000"
@@ -191,6 +196,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 		}(hashCh)
 	}
 
+	check := c.Bool("check")
 	contractName := "token.iost"
 	for {
 		trxs := make([]*itest.Transaction, 0)
@@ -199,7 +205,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 		for num := 0; num < tps; num++ {
 			// create 1, issue 1000, transfer 10000, transferFreeze 2000, destroy 100, balanceOf 100, supply 10, totalSupply 10
 			tIndex := rand.Intn(10000)
-			abiName := ""
+			var abiName string
 			switch true {
 			case tIndex <= 0 || len(tokenList) < 5:
 				abiName = createToken
@@ -421,11 +427,13 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 		errList = append(errList, tmpList...)
 		ilog.Warnf("Send %v trxs, got %v hash, %v err", len(trxs), len(hashList), len(errList))
 
-		expire := time.Now().Add(itest.Timeout)
-		for _, hash := range hashList {
-			select {
-			case hashCh <- &hashItem{hash: hash, expire: expire}:
-			case <-time.After(1 * time.Millisecond):
+		if check {
+			expire := time.Now().Add(itest.Timeout)
+			for _, hash := range hashList {
+				select {
+				case hashCh <- &hashItem{hash: hash, expire: expire}:
+				case <-time.After(1 * time.Millisecond):
+				}
 			}
 		}
 

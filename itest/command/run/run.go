@@ -11,6 +11,7 @@ var Command = cli.Command{
 	Flags: Flags,
 	Subcommands: []cli.Command{
 		AccountCaseCommand,
+		AccountRoundCommand,
 		TransferCaseCommand,
 		ContractCaseCommand,
 		CommonVoteCaseCommand,
