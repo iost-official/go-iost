@@ -17,9 +17,9 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -29,6 +29,9 @@ var systemCmd = &cobra.Command{
 	Aliases: []string{"sys"},
 	Short:   "Send system contract action to blockchain",
 	Long:    `Send system contract action to blockchain`,
+	Example: `  iwallet system producer-list
+  iwallet sys producer-list
+  iwallet sys plist`,
 }
 
 func sendAction(contract, method string, methodArgs ...interface{}) error {

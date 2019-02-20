@@ -65,7 +65,8 @@ var registerCmd = &cobra.Command{
 	Aliases: []string{"register", "reg"},
 	Short:   "Register as producer",
 	Long:    `Register as producer`,
-	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test0`,
+	Example: `  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test0
+  iwallet sys register XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX --account test1 --location PEK --url iost.io --net_id 123 --partner`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "publicKey"); err != nil {
 			return err
@@ -206,7 +207,9 @@ var pupdateCmd = &cobra.Command{
 	Aliases: []string{"pupdate"},
 	Short:   "Update producer info",
 	Long:    `Update producer info`,
-	Example: `  iwallet sys pupdate --account test0`,
+	Example: `  iwallet sys pupdate --account test0
+  iwallet sys pupdate --account test1 --pubkey XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+  iwallet sys pupdate --account test2 --location PEK --url iost.io --net_id 123`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		return checkAccount(cmd)
 	},
@@ -228,6 +231,59 @@ var pupdateCmd = &cobra.Command{
 			networkID = info.NetId
 		}
 		return sendAction("vote_producer.iost", "updateProducer", accountName, publicKey, location, url, networkID)
+	},
+}
+
+var predeemCmd = &cobra.Command{
+	Use:     "producer-redeem [amount]",
+	Aliases: []string{"predeem"},
+	Short:   "Redeem the contribution value obtained by the block producing to IOST tokens",
+	Long: `Redeem the contribution value obtained by the block producing to IOST tokens
+	Omitting amount argument or zero amount will redeem all contribution value.`,
+	Example: `  iwallet sys producer-redeem --account test0
+  iwallet sys producer-redeem 10 --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) > 0 {
+			if err := checkFloat(cmd, args[0], "amount"); err != nil {
+				return err
+			}
+		}
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		amount := "0"
+		if len(args) > 0 {
+			amount = args[0]
+		}
+		return sendAction("bonus.iost", "exchangeIOST", accountName, amount)
+	},
+}
+
+var pwithdrawCmd = &cobra.Command{
+	Use:     "producer-withdraw",
+	Aliases: []string{"pwithdraw"},
+	Short:   "Withdraw all voting reward for producer",
+	Long:    `Withdraw all voting reward for producer`,
+	Example: `  iwallet sys producer-withdraw --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return sendAction("vote_producer.iost", "candidateWithdraw", accountName)
+	},
+}
+
+var vwithdrawCmd = &cobra.Command{
+	Use:     "voter-withdraw",
+	Aliases: []string{"vwithdraw"},
+	Short:   "Withdraw all voting reward for voter",
+	Long:    `Withdraw all voting reward for voter`,
+	Example: `  iwallet sys voter-withdraw --account test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		return checkAccount(cmd)
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return sendAction("vote_producer.iost", "voterWithdraw", accountName)
 	},
 }
 
@@ -254,4 +310,8 @@ func init() {
 	pupdateCmd.Flags().StringVarP(&location, "location", "", "", "location info")
 	pupdateCmd.Flags().StringVarP(&url, "url", "", "", "url address")
 	pupdateCmd.Flags().StringVarP(&networkID, "net_id", "", "", "network ID")
+
+	systemCmd.AddCommand(predeemCmd)
+	systemCmd.AddCommand(pwithdrawCmd)
+	systemCmd.AddCommand(vwithdrawCmd)
 }

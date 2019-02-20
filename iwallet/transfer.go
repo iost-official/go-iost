@@ -25,7 +25,8 @@ var transferCmd = &cobra.Command{
 	Aliases: []string{"trans"},
 	Short:   "Transfer IOST",
 	Long:    `Transfer IOST`,
-	Example: `  iwallet transfer test1 100 --account test0`,
+	Example: `  iwallet transfer test1 100 --account test0
+  iwallet transfer test1 100 --account test0 --memo "just for test :D\n中文测试\n😏"`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "receiver", "amount"); err != nil {
 			return err

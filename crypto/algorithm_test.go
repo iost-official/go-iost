@@ -4,11 +4,27 @@ import (
 	"crypto/rand"
 	"reflect"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var algos = []Algorithm{
 	Secp256k1,
 	Ed25519,
+}
+
+func TestVerify(t *testing.T) {
+	for _, algo := range algos {
+		seckey := algo.GenSeckey()
+		pubkey := algo.GetPubkey(seckey)
+		msg := make([]byte, 32)
+		rand.Read(msg)
+		sig := algo.Sign(msg, seckey)
+		assert.True(t, algo.Verify(msg, pubkey, sig))
+		assert.False(t, algo.Verify(msg, pubkey[:31], sig))
+		sig[0]++
+		assert.False(t, algo.Verify(msg, pubkey, sig))
+	}
 }
 
 func BenchmarkSign(b *testing.B) {

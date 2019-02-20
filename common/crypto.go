@@ -7,11 +7,17 @@ import (
 	"hash/crc32"
 
 	"github.com/btcsuite/btcutil/base58"
+	"github.com/iost-official/go-iost/ilog"
 	"golang.org/x/crypto/sha3"
 )
 
 // Sha3 ...
 func Sha3(raw []byte) []byte {
+	defer func() {
+		if e := recover(); e != nil {
+			ilog.Warnf("sha3 panic. err=%v", e)
+		}
+	}()
 	data := sha3.Sum256(raw)
 	return data[:]
 }

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/vm/database"
 
 	"github.com/iost-official/go-iost/core/tx"
 	. "github.com/iost-official/go-iost/verifier"
@@ -33,7 +34,7 @@ func Test_IssueBonus(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(198779440))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(328513441))
 		})
 	})
 }
@@ -69,7 +70,7 @@ func Test_ExchangeIOST(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
-			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(198779440))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(328513441))
 
 			s.Head.Witness = acc2.KeyPair.ReadablePubkey()
 			s.Head.Number = 2
@@ -78,16 +79,76 @@ func Test_ExchangeIOST(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			s.Visitor.Commit()
 
-			So(s.Visitor.TokenBalance("contribute", acc2.ID), ShouldEqual, int64(198779440))
+			So(s.Visitor.TokenBalance("contribute", acc2.ID), ShouldEqual, int64(328513441))
 
 			r, err = s.Call("bonus.iost", "exchangeIOST", fmt.Sprintf(`["%v", "%v"]`, acc1.ID, "1.9"), acc1.ID, acc1.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(8779440))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(138513441))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(190000000))
 			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(99810000000))
+		})
+	})
+}
+
+func Test_UpdateBonus(t *testing.T) {
+	ilog.Stop()
+	Convey("test update bonus", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		r, err := prepareIssue(s, acc0)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		// deploy issue.iost
+		err = setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
+		So(err, ShouldBeNil)
+		r, err = s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
+
+		Convey("test update bonus 1", func() {
+			s.Head.Witness = acc1.KeyPair.ReadablePubkey()
+			s.Head.Number = 1
+
+			So(database.MustUnmarshal(s.Visitor.Get("bonus.iost-blockContrib")), ShouldEqual, `"3.28513441"`)
+			for i := 0; i < 7; i++ {
+				s.Head.Time += 86400 * 1e9
+				r, err = s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
+				So(err, ShouldBeNil)
+				So(r.Status.Message, ShouldEqual, "")
+
+				r, err = s.Call("base.iost", "issueContribute", fmt.Sprintf(`[{"parent":["%v","12345678"]}]`, acc1.ID), acc1.ID, acc1.KeyPair)
+				So(err, ShouldBeNil)
+				So(r.Status.Message, ShouldEqual, "")
+			}
+
+			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(397466566222260))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(2299780636))
+			So(database.MustUnmarshal(s.Visitor.Get("bonus.iost-blockContrib")), ShouldEqual, `"3.28699990"`)
+
+			for i := 0; i < 7; i++ {
+				s.Head.Time += 86400 * 1e9
+				r, err = s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
+				So(err, ShouldBeNil)
+				So(r.Status.Message, ShouldEqual, "")
+
+				r, err = s.Call("base.iost", "issueContribute", fmt.Sprintf(`[{"parent":["%v","12345678"]}]`, acc1.ID), acc1.ID, acc1.KeyPair)
+				So(err, ShouldBeNil)
+				So(r.Status.Message, ShouldEqual, "")
+			}
+
+			So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(795158817680693))
+			So(s.Visitor.TokenBalance("contribute", acc1.ID), ShouldEqual, int64(4600867205))
+			So(database.MustUnmarshal(s.Visitor.Get("bonus.iost-blockContrib")), ShouldEqual, `"3.28886629"`)
 		})
 	})
 }

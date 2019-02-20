@@ -7,12 +7,13 @@ import (
 	"time"
 
 	"fmt"
+	"math/rand"
+	"sync"
+
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
-	"math/rand"
-	"sync"
 )
 
 // BenchmarkSystemCommand is the subcommand for benchmark system.iost.
@@ -149,7 +150,7 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 		for num := 0; num < tps; num++ {
 			// receipt 1, requireAuth 1, setCode 1, updateCode 1, cancelDelayTx 1
 			tIndex := rand.Intn(5)
-			abiName := ""
+			var abiName string
 			switch true {
 			case tIndex <= 0 || len(contractList) == 0:
 				abiName = setCode
