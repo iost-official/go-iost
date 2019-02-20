@@ -241,13 +241,13 @@ func loadAccountFromFile(fileName string, ensureDecrypt bool) (*AccountInfo, err
 func readPasswordFromStdin() ([]byte, error) {
 	for {
 		fmt.Print("Enter Password:  ")
-		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+		bytePassword, err := terminal.ReadPassword(syscall.Stdin)
 		fmt.Println()
 		if err != nil {
 			return nil, err
 		}
 		fmt.Print("Repeat Password:")
-		repeat, err := terminal.ReadPassword(int(syscall.Stdin))
+		repeat, err := terminal.ReadPassword(syscall.Stdin)
 		fmt.Println()
 		if err != nil {
 			return nil, err
