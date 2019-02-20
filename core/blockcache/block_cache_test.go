@@ -180,7 +180,7 @@ func TestBlockCache(t *testing.T) {
 			blk, _ = bc.GetBlockByNumber(4)
 			So(blk, ShouldEqual, nil)
 
-			bc.Flush(b4node)
+			bc.flush(b4node)
 			//bc.Draw()
 
 		})
