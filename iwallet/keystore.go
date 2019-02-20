@@ -240,19 +240,20 @@ func loadAccountFromFile(fileName string, ensureDecrypt bool) (*AccountInfo, err
 
 func readPasswordFromStdin() ([]byte, error) {
 	for {
-		fmt.Print("\nEnter Password:  ")
+		fmt.Print("Enter Password:  ")
 		bytePassword, err := terminal.ReadPassword(int(syscall.Stdin))
+		fmt.Println()
 		if err != nil {
 			return nil, err
 		}
-		fmt.Print("\nRepeat Password:")
+		fmt.Print("Repeat Password:")
 		repeat, err := terminal.ReadPassword(int(syscall.Stdin))
 		fmt.Println()
 		if err != nil {
 			return nil, err
 		}
 		if !bytes.Equal(bytePassword, repeat) {
-			fmt.Printf("\npassword not equal, retry\n")
+			fmt.Println("password not equal, retry")
 			continue
 		}
 		return bytePassword, nil
