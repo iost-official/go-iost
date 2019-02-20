@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -423,13 +424,13 @@ func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey s
 
 // PublishContract converts contract js code to transaction. If 'send', also send it to chain.
 func (s *IOSTDevSDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (*rpcpb.TransactionRequest, string, error) {
-	fd, err := readFile(codePath)
+	fd, err := ioutil.ReadFile(codePath)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read source code file: %v", err)
 	}
 	code := string(fd)
 
-	fd, err = readFile(abiPath)
+	fd, err = ioutil.ReadFile(abiPath)
 	if err != nil {
 		return nil, "", fmt.Errorf("failed to read abi file: %v", err)
 	}

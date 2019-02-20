@@ -24,11 +24,8 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/spf13/cobra"
 )
-
-var signAlgos = []crypto.Algorithm{crypto.Ed25519, crypto.Secp256k1}
 
 var (
 	ownerKey         string
@@ -115,7 +112,12 @@ var createCmd = &cobra.Command{
 		fmt.Println("Active permission key:", akey)
 
 		if autoKey {
-			err = SaveAccount(newName, newKp)
+			accInfo := NewAccountInfo()
+			accInfo.Name = newName
+			kp := &KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
+			accInfo.Keypairs["active"] = kp
+			accInfo.Keypairs["owner"] = kp
+			err = accInfo.save(encrypt)
 			if err != nil {
 				return fmt.Errorf("failed to save account: %v", err)
 			}
@@ -137,43 +139,36 @@ var viewCmd = &cobra.Command{
 		}
 		a := accounts{}
 		a.Dir = dir
-		if len(args) < 1 {
-			for _, algo := range signAlgos {
-				files, err := getFilesAndDirs(dir, algo.String())
-				if err != nil {
-					return err
-				}
-				for _, f := range files {
-					keyPair, err := sdk.LoadKeyPair(f, algo.String())
-					if err != nil {
-						fmt.Println(err)
-						continue
-					}
-					name, err := getAccountName(f, "_"+algo.String())
-					if err != nil {
-						return err
-					}
-					var k key
-					k.Algorithm = keyPair.Algorithm.String()
-					k.Pubkey = common.Base58Encode(keyPair.Pubkey)
-					k.Seckey = common.Base58Encode(keyPair.Seckey)
-					a.Account = append(a.Account, &acc{name, &k})
-				}
+		addAcc := func(ac *AccountInfo) {
+			var k key
+			k.Algorithm = ac.Keypairs["active"].KeyType
+			k.Pubkey = ac.Keypairs["active"].PubKey
+			if ac.isEncrypted() {
+				k.Seckey = "---encrypted secret key---"
+			} else {
+				k.Seckey = ac.Keypairs["active"].RawKey
 			}
-		} else {
-			name := args[0]
-			for _, algo := range signAlgos {
-				f := fmt.Sprintf("%s/%s_%s", dir, name, algo.String())
-				keyPair, err := sdk.LoadKeyPair(f, algo.String())
+			a.Account = append(a.Account, &acc{ac.Name, &k})
+		}
+		if len(args) < 1 {
+			files, err := ioutil.ReadDir(dir)
+			if err != nil {
+				return err
+			}
+			for _, f := range files {
+				ac, err := loadAccountFromFile(dir+"/"+f.Name(), false)
 				if err != nil {
 					continue
 				}
-				var k key
-				k.Algorithm = keyPair.Algorithm.String()
-				k.Pubkey = common.Base58Encode(keyPair.Pubkey)
-				k.Seckey = common.Base58Encode(keyPair.Seckey)
-				a.Account = append(a.Account, &acc{name, &k})
+				addAcc(ac)
 			}
+		} else {
+			name := args[0]
+			ac, err := loadAccountByName(name, false)
+			if err != nil {
+				return err
+			}
+			addAcc(ac)
 		}
 		info, err := json.MarshalIndent(a, "", "    ")
 		if err != nil {
@@ -184,11 +179,13 @@ var viewCmd = &cobra.Command{
 	},
 }
 
+var encrypt bool
 var importCmd = &cobra.Command{
-	Use:     "import accountName accountPrivateKey",
-	Short:   "Import an account by name and private key",
-	Long:    `Import an account by name and private key`,
-	Example: `  iwallet account import test0 XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`,
+	Use:   "import accountName accountPrivateKey",
+	Short: "Import an account by name and private key",
+	Long:  `Import an account by name and private key`,
+	Example: `  iwallet account import test0 XXXXXXXXXXXXXXXXXXXXX
+	iwallet account import test0 active:XXXXXXXXXXXXXXXXXXXXX,owner:YYYYYYYYYYYYYYYYYYYYYYYY`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "accountName", "accountPrivateKey"); err != nil {
 			return err
@@ -197,17 +194,37 @@ var importCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
-		key := args[1]
-		keyPair, err := account.NewKeyPair(common.Base58Decode(key), sdk.GetSignAlgoByName(signAlgo))
-		if err != nil {
-			return err
+		acc := AccountInfo{Name: name, Keypairs: make(map[string]*KeyPairInfo, 0)}
+		keys := strings.Split(args[1], ",")
+		if len(keys) == 1 {
+			key := keys[0]
+			if len(strings.Split(key, ":")) != 1 {
+				return fmt.Errorf("importing one key need not specifying permission")
+			}
+			kp, err := NewKeyPairInfo(key, signAlgo)
+			if err != nil {
+				return err
+			}
+			acc.Keypairs["active"] = kp
+			acc.Keypairs["owner"] = kp
+		} else {
+			for _, permAndKey := range keys {
+				splits := strings.Split(permAndKey, ":")
+				if len(splits) != 2 {
+					return fmt.Errorf("importing more than one keys need specifying permissions")
+				}
+				kp, err := NewKeyPairInfo(splits[1], signAlgo)
+				if err != nil {
+					return err
+				}
+				acc.Keypairs[splits[0]] = kp
+			}
 		}
-		err = SaveAccount(name, keyPair)
+		err := acc.save(encrypt)
 		if err != nil {
 			return fmt.Errorf("failed to save account: %v", err)
 		}
-		fmt.Println("The IOST account ID is:", name)
-		fmt.Println("Active permission key:", keyPair.ReadablePubkey())
+		fmt.Printf("import account %v done\n", name)
 		return nil
 	},
 }
@@ -231,8 +248,12 @@ var deleteCmd = &cobra.Command{
 			return fmt.Errorf("failed to get account dir: %v", err)
 		}
 		found := false
-		for _, algo := range signAlgos {
-			f := fmt.Sprintf("%s/%s_%s", dir, name, algo.String())
+		sufs := []string{".json"}
+		for _, algo := range ValidSignAlgos {
+			sufs = append(sufs, "_"+algo)
+		}
+		for _, suf := range sufs {
+			f := fmt.Sprintf("%s/%s%s", dir, name, suf)
 			err = os.Remove(f)
 			if err == nil {
 				found = true
@@ -266,41 +287,9 @@ func init() {
 	createCmd.Flags().Int64VarP(&initialGasPledge, "initial_gas_pledge", "", 10, "pledge $initial_gas_pledge IOSTs for the new account")
 	createCmd.Flags().Int64VarP(&initialBalance, "initial_balance", "", 0, "transfer $initial_balance IOSTs to the new account")
 
-	accountCmd.AddCommand(viewCmd)
 	accountCmd.AddCommand(importCmd)
+	accountCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "", false, "whether to encrypt local key file")
+
+	accountCmd.AddCommand(viewCmd)
 	accountCmd.AddCommand(deleteCmd)
-}
-
-func getAccountName(file string, suf string) (string, error) {
-	f := file
-	startIndex := strings.LastIndex(f, "/")
-	if startIndex == -1 {
-		return "", fmt.Errorf("file name error")
-	}
-
-	lastIndex := strings.LastIndex(f, suf)
-	if lastIndex == -1 {
-		return "", fmt.Errorf("file name error")
-	}
-
-	return f[startIndex+1 : lastIndex], nil
-}
-
-func getFilesAndDirs(dirPth string, suf string) (files []string, err error) {
-	dir, err := ioutil.ReadDir(dirPth)
-	if err != nil {
-		return nil, err
-	}
-
-	PthSep := string(os.PathSeparator)
-	for _, fi := range dir {
-		if !fi.IsDir() {
-			ok := strings.HasSuffix(fi.Name(), suf)
-			if ok {
-				files = append(files, dirPth+PthSep+fi.Name())
-			}
-		}
-	}
-
-	return files, nil
 }
