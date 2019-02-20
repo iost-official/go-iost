@@ -1252,6 +1252,12 @@
 			"revisionTime": "2018-03-12T00:05:14Z"
 		},
 		{
+			"checksumSHA1": "q+Rqy6Spw6qDSj75TGEZF7nzoFM=",
+			"path": "golang.org/x/crypto/scrypt",
+			"revision": "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06",
+			"revisionTime": "2018-10-23T16:52:47Z"
+		},
+		{
 			"checksumSHA1": "LN1V2pZQwKnoDwcsgXpzG4+Vges=",
 			"path": "golang.org/x/crypto/sha3",
 			"revision": "75e913eb8a8e3d31a97b216de09de106a7b07681",
