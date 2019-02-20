@@ -102,7 +102,11 @@ func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
 	if err != nil {
 		return err
 	}
-	keyPair, err := a.Keypairs["active"].toKeyPair()
+	kp, ok := a.Keypairs[signPerm]
+	if !ok {
+		return fmt.Errorf("invalid permission %v", signPerm)
+	}
+	keyPair, err := kp.toKeyPair()
 	if err != nil {
 		return err
 	}
