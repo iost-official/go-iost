@@ -109,6 +109,7 @@ type AccountInfo struct {
 	Keypairs map[string]*KeyPairInfo `json:"keypairs"`
 }
 
+// NewAccountInfo ...
 func NewAccountInfo() *AccountInfo {
 	return &AccountInfo{Name: "", Keypairs: make(map[string]*KeyPairInfo, 0)}
 }

@@ -231,6 +231,29 @@ var importCmd = &cobra.Command{
 	},
 }
 
+var dumpKeyCmd = &cobra.Command{
+	Use:     "dumpkey accountName",
+	Short:   "Print private key of the account to stdout",
+	Long:    "Print private key of the account to stdout",
+	Example: `  iwallet account dumpkey test0`,
+	Args: func(cmd *cobra.Command, args []string) error {
+		if err := checkArgsNumber(cmd, args, "accountName"); err != nil {
+			return err
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		acc, err := loadAccountByName(args[0], true)
+		if err != nil {
+			return err
+		}
+		for k, v := range acc.Keypairs {
+			fmt.Printf("%v:%v\n", k, v.RawKey)
+		}
+		return nil
+	},
+}
+
 var deleteCmd = &cobra.Command{
 	Use:     "delete accountName",
 	Aliases: []string{"del"},
@@ -294,4 +317,5 @@ func init() {
 
 	accountCmd.AddCommand(viewCmd)
 	accountCmd.AddCommand(deleteCmd)
+	accountCmd.AddCommand(dumpKeyCmd)
 }
