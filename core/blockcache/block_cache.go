@@ -253,7 +253,6 @@ type BlockCache interface {
 	Link(*BlockCacheNode, bool)
 	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
-	Flush(*BlockCacheNode)
 	Find([]byte) (*BlockCacheNode, error)
 	GetBlockByNumber(int64) (*block.Block, error)
 	GetBlockByHash([]byte) (*block.Block, error)
@@ -514,8 +513,8 @@ func (bc *BlockCacheImpl) updateLib(node *BlockCacheNode, confirmLimit int) {
 	for len(node.ValidWitness) >= confirmLimit &&
 		common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
 		blockList[bc.LinkedRoot().Head.Number+1] != nil {
-		// bc.Flush() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
-		bc.Flush(blockList[bc.LinkedRoot().Head.Number+1])
+		// bc.flush() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
+		bc.flush(blockList[bc.LinkedRoot().Head.Number+1])
 	}
 }
 
@@ -720,8 +719,7 @@ func (bc *BlockCacheImpl) delSingle() {
 	}
 }
 
-// Flush is save a block
-func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
+func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
 	parent := bcn.GetParent()
 	if parent != bc.LinkedRoot() {
 		ilog.Errorf("block isn't blockcache root's child")
@@ -737,13 +735,21 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 		return
 	}
 
+	bc.updateLinkedRootWitness(parent, bcn)
+	bcn.removeValidWitness(bcn)
+	bc.nmdel(parent.Head.Number)
+	bc.delNode(parent)
+	bcn.SetParent(nil)
+	bc.SetLinkedRoot(bcn)
+	bc.delSingle()
+	bc.updateLongest()
+
 	//confirm bcn to db
 	err := bc.blockChain.Push(bcn.Block)
 	if err != nil {
 		ilog.Errorf("Database error, BlockChain Push err: %v %v", bcn.HeadHash(), err)
 	}
 
-	bc.updateLinkedRootWitness(parent, bcn)
 	err = bc.writeUpdateLinkedRootWitnessWAL()
 	if err != nil {
 		ilog.Errorf("write wal error: %v %v", bcn.HeadHash(), err)
@@ -755,12 +761,6 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 	if err != nil {
 		ilog.Errorf("flush mvcc error: %v %v", bcn.HeadHash(), err)
 	}
-
-	bcn.removeValidWitness(bcn)
-	bc.nmdel(parent.Head.Number)
-	bc.delNode(parent)
-	bcn.SetParent(nil)
-	bc.SetLinkedRoot(bcn)
 
 	metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
 
@@ -786,8 +786,6 @@ func (bc *BlockCacheImpl) Flush(bcn *BlockCacheNode) {
 		)
 	}
 
-	bc.delSingle()
-	bc.updateLongest()
 	bc.cutWALFiles(bcn)
 }
 
