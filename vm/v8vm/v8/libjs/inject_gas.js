@@ -96,6 +96,9 @@ function checkInvalidKeyword(tokens) {
         if (tokens[i].type === "Keyword" && (tokens[i].value === "try" || tokens[i].value === "catch")) {
             throw new Error("use of try catch is not supported");
         }
+        if (tokens[i].type === "Identifier" && (tokens[i].value === "async" || tokens[i].value === "await")) {
+            throw new Error("use of async or await is not supported");
+        }
     }
 }
 
