@@ -122,7 +122,7 @@ func (a *AccountInfo) decrypt() error {
 	cnt := 0
 	for cnt <= 3 {
 		cnt++
-		password, err := readPasswordFromStdin()
+		password, err := readPasswordFromStdin(false)
 		if err != nil {
 			return err
 		}
@@ -160,7 +160,7 @@ func (a *AccountInfo) save(encrypt bool) error {
 	fileName := dir + "/" + a.Name + ".json"
 	if encrypt {
 		fmt.Println("encrypting seckey, need password")
-		password, err := readPasswordFromStdin()
+		password, err := readPasswordFromStdin(true)
 		if err != nil {
 			return err
 		}
@@ -238,7 +238,7 @@ func loadAccountFromFile(fileName string, ensureDecrypt bool) (*AccountInfo, err
 	return loadAccountFromKeyPair(fileName)
 }
 
-func readPasswordFromStdin() ([]byte, error) {
+func readPasswordFromStdin(repeat bool) ([]byte, error) {
 	for {
 		fmt.Print("Enter Password:  ")
 		bytePassword, err := terminal.ReadPassword(syscall.Stdin)
@@ -246,15 +246,17 @@ func readPasswordFromStdin() ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
-		fmt.Print("Repeat Password:")
-		repeat, err := terminal.ReadPassword(syscall.Stdin)
-		fmt.Println()
-		if err != nil {
-			return nil, err
-		}
-		if !bytes.Equal(bytePassword, repeat) {
-			fmt.Println("password not equal, retry")
-			continue
+		if repeat {
+			fmt.Print("Repeat Password:")
+			repeat, err := terminal.ReadPassword(syscall.Stdin)
+			fmt.Println()
+			if err != nil {
+				return nil, err
+			}
+			if !bytes.Equal(bytePassword, repeat) {
+				fmt.Println("password not equal, retry")
+				continue
+			}
 		}
 		return bytePassword, nil
 	}
