@@ -45,7 +45,7 @@ func TestVerifyBlockHead(t *testing.T) {
 		convey.Convey("Wrong time", func() {
 			blk.Head.Time = stamp - 5
 			err := VerifyBlockHead(blk, parentBlk, chainTop)
-			convey.So(err, convey.ShouldEqual, errOldBlk)
+			convey.So(err, convey.ShouldEqual, errInvalidTime)
 			blk.Head.Time = stamp + 10*1e9
 			err = VerifyBlockHead(blk, parentBlk, chainTop)
 			convey.So(err, convey.ShouldEqual, errFutureBlk)

@@ -9,12 +9,12 @@ import (
 )
 
 var (
-	errFutureBlk  = errors.New("block from future")
-	errOldBlk     = errors.New("block too old")
-	errParentHash = errors.New("wrong parent hash")
-	errNumber     = errors.New("wrong number")
-	errTxHash     = errors.New("wrong txs hash")
-	errMerkleHash = errors.New("wrong tx receipt merkle hash")
+	errFutureBlk   = errors.New("block from future")
+	errParentHash  = errors.New("wrong parent hash")
+	errNumber      = errors.New("wrong number")
+	errTxHash      = errors.New("wrong txs hash")
+	errMerkleHash  = errors.New("wrong tx receipt merkle hash")
+	errInvalidTime = errors.New("block time less than parent block")
 	// errTxReceipt  = errors.New("wrong tx receipt")
 
 	// TxExecTimeLimit the maximum verify execution time of a transaction
@@ -30,8 +30,8 @@ func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Bloc
 	if bh.Time > time.Now().UnixNano()+MaxBlockTimeGap {
 		return errFutureBlk
 	}
-	if bh.Time < lib.Head.Time {
-		return errOldBlk
+	if bh.Time <= parentBlock.Head.Time {
+		return errInvalidTime
 	}
 	if !bytes.Equal(bh.ParentHash, parentBlock.HeadHash()) {
 		return errParentHash
