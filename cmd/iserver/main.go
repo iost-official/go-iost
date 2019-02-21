@@ -18,6 +18,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/iost-official/go-iost/common"
@@ -82,10 +83,7 @@ func main() {
 
 	initLogger(conf.Log)
 
-	seckey := conf.ACC.SecKey
-	conf.ACC.SecKey = seckey[:3] + "******"
-	ilog.Infof("Config Information:\n%v", conf.YamlString())
-	conf.ACC.SecKey = seckey
+	ilog.Infof("Config Information:\n%v", strings.Replace(conf.YamlString(), conf.ACC.SecKey, conf.ACC.SecKey[:3]+"******", -1))
 
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
