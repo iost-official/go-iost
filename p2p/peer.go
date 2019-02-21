@@ -241,8 +241,8 @@ func (p *Peer) handleMessage(msg *p2pMessage) error {
 			ilog.Debugf("receive timeout routing response. pid=%v", p.ID())
 			return nil
 		}
+		p.resetRoutingQueryTime()
 	}
-	p.resetRoutingQueryTime()
 	p.peerManager.HandleMessage(msg, p.id)
 	return nil
 }
