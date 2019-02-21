@@ -11,7 +11,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
@@ -355,7 +354,7 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 
 	var lib *block.Block
 	if baseVariable.Config().Snapshot.Enable {
-		lib, err = snapshot.Load(bc.stateDB)
+		//lib, err = snapshot.Load(bc.stateDB)
 	} else {
 		lib, err = bc.blockChain.Top()
 	}

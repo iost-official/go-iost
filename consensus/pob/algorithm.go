@@ -7,7 +7,6 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
-	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -76,10 +75,6 @@ func generateBlock(
 		return nil, err
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
-	err = snapshot.Save(db, blk)
-	if err != nil {
-		return nil, err
-	}
 	db.Commit(string(blk.HeadHash()))
 	metricsGeneratedBlockCount.Add(1, nil)
 	return blk, nil

@@ -18,6 +18,7 @@ import (
 	_ "net/http/pprof"
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	"github.com/iost-official/go-iost/common"
@@ -81,13 +82,11 @@ func main() {
 	global.SetGlobalConf(conf)
 
 	initLogger(conf.Log)
-	ilog.Infof("Config Information:\n%v", conf.YamlString())
+
+	ilog.Infof("Config Information:\n%v", strings.Replace(conf.YamlString(), conf.ACC.SecKey, conf.ACC.SecKey[:3]+"******", -1))
+
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
-	ilog.Infof("snapshot enable:%v", conf.Snapshot.Enable)
-	if conf.Snapshot.Enable {
-		ilog.Infof("snapshot file path:%v", conf.Snapshot.FilePath)
-	}
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {

@@ -589,7 +589,7 @@ func TestEngine_Danger(t *testing.T) {
 	}
 
 	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
-	if err != nil || cost.ToGas() != int64(5052842) {
+	if err != nil || cost.ToGas() != int64(5052845) {
 		t.Fatalf("LoadAndCall objadd should cost 5052842, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
 	}
 
@@ -617,6 +617,14 @@ func TestEngine_Danger(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "input string too long") {
 		t.Fatalf("LoadAndCall putlong should return error: input string too long, but got %v\n", err)
 	}
+
+	// will fail in compile
+	/*
+	_, _, err = vmPool.LoadAndCall(host, code, "asyncfunc")
+	if err == nil || !strings.Contains(err.Error(), "use of async or await is not supported") {
+		t.Fatalf("LoadAndCall throw should return error: use of async or await is not supported, but got %v\n", err)
+	}
+	*/
 }
 
 // nolint
