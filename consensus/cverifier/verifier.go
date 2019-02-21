@@ -10,11 +10,11 @@ import (
 
 var (
 	errFutureBlk   = errors.New("block from future")
+	errInvalidTime = errors.New("block time less than parent block")
 	errParentHash  = errors.New("wrong parent hash")
 	errNumber      = errors.New("wrong number")
 	errTxHash      = errors.New("wrong txs hash")
 	errMerkleHash  = errors.New("wrong tx receipt merkle hash")
-	errInvalidTime = errors.New("block time less than parent block")
 	// errTxReceipt  = errors.New("wrong tx receipt")
 
 	// TxExecTimeLimit the maximum verify execution time of a transaction
