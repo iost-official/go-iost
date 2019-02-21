@@ -81,13 +81,14 @@ func main() {
 	global.SetGlobalConf(conf)
 
 	initLogger(conf.Log)
+
+	seckey := conf.ACC.SecKey
+	conf.ACC.SecKey = seckey[:3] + "******"
 	ilog.Infof("Config Information:\n%v", conf.YamlString())
+	conf.ACC.SecKey = seckey
+
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
-	ilog.Infof("snapshot enable:%v", conf.Snapshot.Enable)
-	if conf.Snapshot.Enable {
-		ilog.Infof("snapshot file path:%v", conf.Snapshot.FilePath)
-	}
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {
