@@ -21,12 +21,6 @@ func TestVerifyBlockHead(t *testing.T) {
 				Time:   stamp - 1,
 			},
 		}
-		chainTop := &block.Block{
-			Head: &block.BlockHead{
-				Number: 1,
-				Time:   stamp - 4,
-			},
-		}
 		hash := parentBlk.HeadHash()
 		blk := &block.Block{
 			Head: &block.BlockHead{
@@ -38,28 +32,28 @@ func TestVerifyBlockHead(t *testing.T) {
 			},
 		}
 		convey.Convey("Pass", func() {
-			err := VerifyBlockHead(blk, parentBlk, chainTop)
+			err := VerifyBlockHead(blk, parentBlk)
 			convey.So(err, convey.ShouldBeNil)
 		})
 
 		convey.Convey("Wrong time", func() {
 			blk.Head.Time = stamp - 5
-			err := VerifyBlockHead(blk, parentBlk, chainTop)
+			err := VerifyBlockHead(blk, parentBlk)
 			convey.So(err, convey.ShouldEqual, errInvalidTime)
 			blk.Head.Time = stamp + 10*1e9
-			err = VerifyBlockHead(blk, parentBlk, chainTop)
+			err = VerifyBlockHead(blk, parentBlk)
 			convey.So(err, convey.ShouldEqual, errFutureBlk)
 		})
 
 		convey.Convey("Wrong parent", func() {
 			blk.Head.ParentHash = []byte("fake hash")
-			err := VerifyBlockHead(blk, parentBlk, chainTop)
+			err := VerifyBlockHead(blk, parentBlk)
 			convey.So(err, convey.ShouldEqual, errParentHash)
 		})
 
 		convey.Convey("Wrong number", func() {
 			blk.Head.Number = 5
-			err := VerifyBlockHead(blk, parentBlk, chainTop)
+			err := VerifyBlockHead(blk, parentBlk)
 			convey.So(err, convey.ShouldEqual, errNumber)
 		})
 
@@ -67,10 +61,10 @@ func TestVerifyBlockHead(t *testing.T) {
 			tx0 := tx.NewTx(nil, nil, 1000, 1, 300, 0, 0)
 			blk.Txs = append(blk.Txs, tx0)
 			blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
-			err := VerifyBlockHead(blk, parentBlk, chainTop)
+			err := VerifyBlockHead(blk, parentBlk)
 			convey.So(err, convey.ShouldBeNil)
 			blk.Head.TxMerkleHash = []byte("fake hash")
-			err = VerifyBlockHead(blk, parentBlk, chainTop)
+			err = VerifyBlockHead(blk, parentBlk)
 			convey.So(err, convey.ShouldEqual, errTxHash)
 		})
 	})

@@ -25,7 +25,7 @@ var (
 )
 
 // VerifyBlockHead verifies the block head.
-func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
+func VerifyBlockHead(blk *block.Block, parentBlock *block.Block) error {
 	bh := blk.Head
 	if bh.Time > time.Now().UnixNano()+MaxBlockTimeGap {
 		return errFutureBlk
