@@ -3,6 +3,7 @@ package p2p
 import (
 	"bufio"
 	"context"
+	cryrand "crypto/rand"
 	"fmt"
 	"math/rand"
 	"os"
@@ -16,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	p2pb "github.com/iost-official/go-iost/p2p/pb"
 
+	crypto "github.com/libp2p/go-libp2p-crypto"
 	host "github.com/libp2p/go-libp2p-host"
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
 	libnet "github.com/libp2p/go-libp2p-net"
@@ -295,7 +297,17 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 			return
 		case <-time.After(syncRoutingTableInterval):
 			//ilog.Debugf("start sync routing table.")
-			pm.routingQuery([]string{pm.host.ID().Pretty()})
+			_, pubkey, err := crypto.GenerateEd25519Key(cryrand.Reader)
+			if err != nil {
+				ilog.Errorf("Generating ed25519 keypair failed. err=%v", err)
+				continue
+			}
+			randomPid, err := peer.IDFromPublicKey(pubkey)
+			if err != nil {
+				ilog.Errorf("Converting ed25519 pubkey to ID failed. err=%v", err)
+				continue
+			}
+			pm.routingQuery([]string{randomPid.Pretty()})
 		}
 	}
 }
