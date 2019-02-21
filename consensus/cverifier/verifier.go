@@ -19,12 +19,15 @@ var (
 
 	// TxExecTimeLimit the maximum verify execution time of a transaction
 	TxExecTimeLimit = 400 * time.Millisecond
+
+	// MaxBlockTimeGap is the limit of the difference of block time and local time.
+	MaxBlockTimeGap = 1 * time.Second.Nanoseconds()
 )
 
 // VerifyBlockHead verifies the block head.
 func VerifyBlockHead(blk *block.Block, parentBlock *block.Block, lib *block.Block) error {
 	bh := blk.Head
-	if bh.Time > time.Now().UnixNano() {
+	if bh.Time > time.Now().UnixNano()+MaxBlockTimeGap {
 		return errFutureBlk
 	}
 	if bh.Time < lib.Head.Time {
