@@ -427,6 +427,20 @@ func checkReceiptEqual(r *tx.TxReceipt, receipt *tx.TxReceipt) error {
 }
 
 func baseVerify(engine vm.Isolator, c *Config, txs []*tx.Tx, receipts []*tx.TxReceipt, blk *block.Block) error {
+	blockGasLimit := common.MaxBlockGasLimit
+	blockGas := int64(0)
+	for _, r := range receipts {
+		blockGas += r.GasUsage
+	}
+	if blockGas > blockGasLimit {
+		return fmt.Errorf(
+			"Block %v include gas %v, exceeds maximum limit %v",
+			common.Base58Encode(blk.HeadHash()),
+			blockGas/100,
+			blockGasLimit/100,
+		)
+	}
+
 	for k, t := range txs {
 		err := verify(engine, t, receipts[k], c.TxTimeLimit, false, blk)
 		if err != nil {

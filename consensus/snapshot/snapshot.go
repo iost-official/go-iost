@@ -11,14 +11,12 @@ import (
 	"strings"
 
 	"compress/gzip"
-	"encoding/json"
 
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/kv/leveldb"
 )
 
+/*
 // Save the function for saving block's head from snapshot.
 func Save(db db.MVCCDB, blk *block.Block) error {
 	bhJSON, err := json.Marshal(blk.Head)
@@ -47,6 +45,7 @@ func Load(db db.MVCCDB) (*block.Block, error) {
 	blk := &block.Block{Head: bh}
 	return blk, blk.CalculateHeadHash()
 }
+*/
 
 // ToSnapshot the function for saving db to snapshot.
 func ToSnapshot(conf *common.Config) error {

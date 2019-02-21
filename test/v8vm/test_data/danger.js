@@ -58,6 +58,17 @@ class Danger {
     jsonparse() {
         JSON.parse({a:1});
     }
+
+    asyncfunc() {
+        /*
+        let f = async function() {
+            throw new Error("error in promise!!!");
+        };
+        */
+        f()["catch"](function(err) {
+            console.log(err.message);
+        })
+    }
 };
 
 module.exports = function () {
