@@ -10,21 +10,10 @@ import (
 	"github.com/iost-official/go-iost/rpc/pb"
 	"io/ioutil"
 	"os"
+	"strings"
 )
 
 ///////////////////////////// file operation /////////////////////////////
-func readFile(src string) ([]byte, error) {
-	fi, err := os.Open(src)
-	defer fi.Close()
-	if err != nil {
-		return nil, err
-	}
-	fd, err := ioutil.ReadAll(fi)
-	if err != nil {
-		return nil, err
-	}
-	return fd, nil
-}
 
 func writeFile(output string, data []byte) error {
 	f, err := os.Create(output)
@@ -53,7 +42,7 @@ func loadKey(src string) ([]byte, error) {
 	if err != nil {
 		return nil, err
 	}
-	return fd, nil
+	return common.Base58Decode(strings.TrimSpace(string(fd))), nil
 }
 
 // LoadKeyPair ...
@@ -62,7 +51,7 @@ func LoadKeyPair(privKeyFile string, algo string) (*account.KeyPair, error) {
 	if err != nil {
 		return nil, fmt.Errorf("read key file failed: %v", err)
 	}
-	return account.NewKeyPair(common.Base58Decode(string(fsk)), GetSignAlgoByName(algo))
+	return account.NewKeyPair(fsk, GetSignAlgoByName(algo))
 }
 
 // SaveProtoStructToJSONFile ...
@@ -76,7 +65,7 @@ func SaveProtoStructToJSONFile(pb proto.Message, fileName string) error {
 
 // LoadProtoStructFromJSONFile ...
 func LoadProtoStructFromJSONFile(fileName string, pb proto.Message) error {
-	bytes, err := readFile(fileName)
+	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
 		return fmt.Errorf("load signature err %v %v", fileName, err)
 	}
