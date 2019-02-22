@@ -47,7 +47,7 @@ func getPlatform() string {
 }
 
 func setNodeInfoMetrics() {
-	nodeInfoGauge.Set(float64(time.Now().Unix()), map[string]string{
+	nodeInfoGauge.Set(float64(time.Now().Unix()*1e3), map[string]string{
 		"cpu":      strconv.Itoa(runtime.NumCPU()),
 		"mem":      getTotalMem(),
 		"disk":     getDiskSize(),
