@@ -1,6 +1,8 @@
 package iwallet
 
 import (
+	"strconv"
+
 	"github.com/spf13/cobra"
 )
 
@@ -17,7 +19,11 @@ var addpermCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "addPermission", accountName, args[0], args[1])
+		threshold, err := strconv.Atoi(args[1])
+		if err != nil {
+			return err
+		}
+		return sendAction("auth.iost", "addPermission", accountName, args[0], threshold)
 	},
 }
 
@@ -34,7 +40,7 @@ var droppermCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "addPermission", accountName, args[0])
+		return sendAction("auth.iost", "dropPermission", accountName, args[0])
 	},
 }
 
@@ -52,7 +58,11 @@ var assignPermCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "assignPermission", accountName, args[0], args[1], args[2])
+		threshold, err := strconv.Atoi(args[2])
+		if err != nil {
+			return err
+		}
+		return sendAction("auth.iost", "assignPermission", accountName, args[0], args[1], threshold)
 	},
 }
 
@@ -104,7 +114,7 @@ var dropgroupCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "addGroup", accountName, args[0])
+		return sendAction("auth.iost", "dropGroup", accountName, args[0])
 	},
 }
 
@@ -122,7 +132,11 @@ var assignGroupCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "assignGroup", accountName, args[0], args[1], args[2])
+		threshold, err := strconv.Atoi(args[2])
+		if err != nil {
+			return err
+		}
+		return sendAction("auth.iost", "assignGroup", accountName, args[0], args[1], threshold)
 	},
 }
 
