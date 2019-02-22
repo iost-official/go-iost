@@ -1,3 +1,12 @@
+## v3.0.0 rc5
+
+Thu Feb 21 14:52:28 CST 2019
+
+- Fix read auth bug.
+- Optimize P2P routing table query logic.
+- Optimize JS contract safety.
+- Optimize synchronizer block hash query logic.
+
 ## v3.0.0 rc4
 
 Mon Feb 18 20:46:06 CST 2019

@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/go-iost/sdk"
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -47,6 +48,36 @@ func getAccountDir() (string, error) {
 	return home + "/.iwallet", nil
 }
 
+// GetSignAlgoByName ...
+func GetSignAlgoByName(name string) crypto.Algorithm {
+	switch name {
+	case "secp256k1":
+		return crypto.Secp256k1
+	case "ed25519":
+		return crypto.Ed25519
+	default:
+		return crypto.Ed25519
+	}
+}
+
+func loadAccountByName(name string, ensureDecrypt bool) (*AccountInfo, error) {
+	accountDir, err := getAccountDir()
+	if err != nil {
+		return nil, err
+	}
+	fileName := accountDir + "/" + name + ".json"
+	if _, err := os.Stat(fileName); err == nil {
+		return loadAccountFromKeyStore(fileName, ensureDecrypt)
+	}
+	for _, algo := range ValidSignAlgos {
+		fileName := accountDir + "/" + name + "_" + algo
+		if _, err := os.Stat(fileName); err == nil {
+			return loadAccountFromKeyPair(fileName)
+		}
+	}
+	return nil, fmt.Errorf("account not exist")
+}
+
 // LoadKeyPair ...
 func LoadKeyPair(name string) (*account.KeyPair, error) {
 	if name == "" {
@@ -67,7 +98,15 @@ func InitAccount() error {
 
 // LoadAndSetAccountForSDK ...
 func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
-	keyPair, err := LoadKeyPair(accountName)
+	a, err := loadAccountByName(accountName, true)
+	if err != nil {
+		return err
+	}
+	kp, ok := a.Keypairs[signPerm]
+	if !ok {
+		return fmt.Errorf("invalid permission %v", signPerm)
+	}
+	keyPair, err := kp.toKeyPair()
 	if err != nil {
 		return err
 	}
@@ -196,4 +235,41 @@ func ParseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
 		result = append(result, tokenLimit)
 	}
 	return result, nil
+}
+
+// ValidSignAlgos ...
+var ValidSignAlgos = []string{"ed25519", "secp256k1"}
+
+func getAccountNameFromKeyPath(file string, suf string) (string, error) {
+	f := file
+	startIndex := strings.LastIndex(f, "/")
+	//if startIndex == -1 {
+	//	return "", fmt.Errorf("file name error, no '/' in %v", f)
+	//}
+
+	lastIndex := strings.LastIndex(f, suf)
+	if lastIndex == -1 {
+		return "", fmt.Errorf("file name error, no %v in %v", suf, f)
+	}
+
+	return f[startIndex+1 : lastIndex], nil
+}
+
+func getFilesAndDirs(dirPth string, suf string) (files []string, err error) { // nolint
+	dir, err := ioutil.ReadDir(dirPth)
+	if err != nil {
+		return nil, err
+	}
+
+	PthSep := string(os.PathSeparator)
+	for _, fi := range dir {
+		if !fi.IsDir() {
+			ok := strings.HasSuffix(fi.Name(), suf)
+			if ok {
+				files = append(files, dirPth+PthSep+fi.Name())
+			}
+		}
+	}
+
+	return files, nil
 }

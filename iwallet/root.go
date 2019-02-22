@@ -79,6 +79,7 @@ func init() {
 	rootCmd.PersistentFlags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction in seconds")
 	rootCmd.PersistentFlags().Uint32VarP(&chainID, "chain_id", "", uint32(1024), "chain id which distinguishes different network")
 	rootCmd.PersistentFlags().StringVarP(&txTime, "tx_time", "", "", "use the special tx time instead of now, format: 2019-01-22T17:00:39+08:00")
+	rootCmd.PersistentFlags().StringVarP(&signPerm, "sign_permission", "", "active", "permission used to sign transactions")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -119,6 +120,7 @@ var (
 	keyPair     *account.KeyPair
 	signAlgo    string
 	signers     []string
+	signPerm    string
 
 	gasLimit    float64
 	gasRatio    float64
