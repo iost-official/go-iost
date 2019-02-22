@@ -38,7 +38,8 @@ class VoteContract {
                 minVote: PRE_PRODUCER_THRESHOLD,
                 options: [],
                 anyOption: false,
-                freezeTime: VOTE_LOCKTIME
+                freezeTime: VOTE_LOCKTIME,
+                canVote: false,
             }
         ])[0];
         storage.put("voteId", voteId);
@@ -119,6 +120,10 @@ class VoteContract {
         throw new Error("require auth failed.");
     }
 
+    _getAccountList(account) {
+        return [account, storage.get("adminID"), "operator"];
+    }
+
     // call abi and parse result as JSON
     _call(contract, api, args) {
         const ret = blockchain.callWithAuth(contract, api, args);
@@ -162,7 +167,7 @@ class VoteContract {
 
     // register account as a producer
     applyRegister(account, pubkey, loc, url, netId, isProducer) {
-        this._requireAuth(account, VOTE_PERMISSION);
+        this._requireAuthList(this._getAccountList(account), VOTE_PERMISSION);
         if (storage.mapHas("producerTable", account)) {
             throw new Error("producer exists");
         }
@@ -192,7 +197,7 @@ class VoteContract {
 
     // apply remove account from producer list
     applyUnregister(account) {
-        this._requireAuth(account, VOTE_PERMISSION);
+        this._requireAuthList(this._getAccountList(account), VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
@@ -258,7 +263,7 @@ class VoteContract {
     }
 
     unregister(account) {
-        this._requireAuth(account, VOTE_PERMISSION);
+        this._requireAuthList(this._getAccountList(account), VOTE_PERMISSION);
         const pro = this._mapGet("producerTable", account);
         if (pro && pro.status !== STATUS_APPLY && pro.status !== STATUS_UNAPPLY_APPROVED) {
             throw new Error("producer can not unregister");
@@ -390,7 +395,7 @@ class VoteContract {
 
     // update the information of a producer
     updateProducer(account, pubkey, loc, url, netId) {
-        this._requireAuth(account, VOTE_PERMISSION);
+        this._requireAuthList(this._getAccountList(account), VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
@@ -434,7 +439,7 @@ class VoteContract {
 
     // producer log in as online state
     logInProducer(account) {
-        this._requireAuth(account, VOTE_PERMISSION);
+        this._requireAuthList(this._getAccountList(account), VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists, " + account);
         }
@@ -448,14 +453,11 @@ class VoteContract {
 
     // producer log out as offline state
     logOutProducer(account) {
-        this._requireAuth(account, VOTE_PERMISSION);
+        this._requireAuthList(this._getAccountList(account), VOTE_PERMISSION);
         if (!storage.mapHas("producerTable", account)) {
             throw new Error("producer not exists");
         }
         const pro = this._mapGet("producerTable", account);
-        if (this._inCurrentOrPendingList(account)) {
-            throw new Error("producer in pending list or in current list, can't logout");
-        }
         pro.online = false;
         this._mapPut("producerTable", account, pro, blockchain.publisher());
         if (pro.status === STATUS_APPROVED || pro.status === STATUS_UNAPPLY) {
@@ -713,8 +715,7 @@ class VoteContract {
     }
 
     voterWithdraw(voter) {
-        const accountList = [voter, storage.get("adminID")];
-        this._requireAuthList(accountList, WITHDRAW_PERMISSION);
+        this._requireAuthList(this._getAccountList(voter), WITHDRAW_PERMISSION);
 
         let earnings = this._calVoterBonus(voter, true);
         if (earnings.lte("0")) {
@@ -749,8 +750,7 @@ class VoteContract {
     }
 
     candidateWithdraw(account) {
-        const accountList = [account, storage.get("adminID")];
-        this._requireAuthList(accountList, WITHDRAW_PERMISSION);
+        this._requireAuthList(this._getAccountList(account), WITHDRAW_PERMISSION);
 
         let earnings = this._calCandidateBonus(account, true);
         if (earnings.lte("0")) {
@@ -788,7 +788,6 @@ class VoteContract {
         const preList = [];    // list of producers whose vote > threshold
         const waitingRemoveList = this._get("waitingRemoveList") || [];
         const witnessProduced = JSON.parse(storage.globalGet("base.iost", "witness_produced") || '{}');
-        let scores = this._getScores();
         const pendingProducerList = this._get("pendingProducerList");
         const currentProducerList = this._get("currentProducerList");
         const producerMap = this._get("producerMap") || {};
@@ -799,6 +798,8 @@ class VoteContract {
         let scoreTotal = new Float64("0");
         let scoreCount = 0;
         let pendingIdMap = {};
+        let scores = this._getScores();
+        let newScores = {};
         for (const key of pendingProducerList) {
             const account = producerKeyMap[key];
             pendingIdMap[account] = true;
@@ -806,13 +807,16 @@ class VoteContract {
         for (const res of voteRes) {
             const id = res.option;
             const pro = producerMap[id];
-            if (!pro || !pro.online || !pro.isProducer || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
+            if (!pro || !pro.isProducer || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
                 continue;
             }
             const score = new Float64(res.votes).plus(scores[id] || "0");
             scoreTotal = scoreTotal.plus(score);
             scoreCount++;
-            scores[id]  = score.toFixed();
+            newScores[id]  = score.toFixed();
+            if (!pro.online) {
+                continue;
+            }
             if (!pendingIdMap[id]) {
                 preList.push({
                     "id" : id,
@@ -825,6 +829,9 @@ class VoteContract {
             }
         }
 
+        // delete score if votes < threshold
+        scores = newScores;
+
         // update pending list
         let oldPreList = [];
         const oldPreListToRemove = [];
@@ -833,7 +840,14 @@ class VoteContract {
             const account = producerKeyMap[key];
             const pro = producerMap[account];
             const score = new Float64(scores[account] || "0");
-            if (currentProducerList.includes(key) && !witnessProduced[key]) {
+            if (!pro.online) {
+                oldPreListToRemove.push({
+                    "account": account,
+                    "key": pro.pubkey,
+                    "prior": 0,
+                    "score": new Float64("0")
+                });
+            } else if (currentProducerList.includes(key) && !witnessProduced[key]) {
                 oldPreListToRemove.push({
                     "account": account,
                     "key": pro.pubkey,
