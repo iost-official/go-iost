@@ -281,7 +281,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 		return errors.New("reject defertx")
 	}
 	// Add one second delay for tx created time check
-	if !t.IsCreatedBefore(time.Now().UnixNano()+(time.Second).Nanoseconds()) || t.IsExpired(time.Now().UnixNano()) {
+	if !t.IsCreatedBefore(time.Now().UnixNano()+maxTxTimeGap) || t.IsExpired(time.Now().UnixNano()) {
 		return fmt.Errorf("TimeError")
 	}
 	if err := t.VerifySelf(); err != nil {
