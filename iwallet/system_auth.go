@@ -7,7 +7,7 @@ import (
 )
 
 var addpermCmd = &cobra.Command{
-	Use:     "add-permisson permission threshold",
+	Use:     "add-permission permission threshold",
 	Aliases: []string{"addperm"},
 	Short:   "add permission to this account",
 	Long:    "add permission to this account",
