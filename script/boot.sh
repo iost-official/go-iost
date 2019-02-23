@@ -79,13 +79,16 @@ pre_check() {
 init_prefix() {
     if [ -d "$PREFIX" ]; then
         {
+            echo '#########################################'
+            echo '########         WARNING         ########'
+            echo '#########################################'
             echo Warning: path \"$PREFIX\" exists\; this script will remove it.
             echo You may press Ctrl+C now to abort this script.
         }>&2
         ( set -x; sleep 20 )
     fi
     ( set -x; sudo rm -rf $PREFIX)
-    sudo mkdir -p $PREFIX
+    sudo mkdir -p $PREFIX/storage
     sudo chown -R $(id -nu):$(id -ng) $PREFIX
     cd $PREFIX
 }
