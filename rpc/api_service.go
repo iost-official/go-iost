@@ -86,8 +86,8 @@ func (as *APIService) GetRAMInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.R
 
 // GetChainInfo returns the chain info.
 func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.ChainInfoResponse, error) {
-	headBlock := as.bc.Head().Block
-	libBlock := as.bc.LinkedRoot().Block
+	head := as.bc.Head()
+	lib := as.bc.LinkedRoot()
 	netName := "unknown"
 	version := "unknown"
 	if as.bv.Config().Version != nil {
@@ -98,11 +98,12 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 		NetName:         netName,
 		ProtocolVersion: version,
 		ChainId:         as.bv.Config().P2P.ChainID,
-		WitnessList:     as.bc.Head().Active(),
-		HeadBlock:       headBlock.Head.Number,
-		HeadBlockHash:   common.Base58Encode(headBlock.HeadHash()),
-		LibBlock:        libBlock.Head.Number,
-		LibBlockHash:    common.Base58Encode(libBlock.HeadHash()),
+		WitnessList:     head.Active(),
+		LibWitnessList:  lib.Active(),
+		HeadBlock:       head.Head.Number,
+		HeadBlockHash:   common.Base58Encode(head.HeadHash()),
+		LibBlock:        lib.Head.Number,
+		LibBlockHash:    common.Base58Encode(lib.HeadHash()),
 	}, nil
 }
 
