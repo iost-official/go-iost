@@ -7,7 +7,7 @@ import (
 )
 
 var addpermCmd = &cobra.Command{
-	Use:     "addperm permission threshold",
+	Use:     "add-permisson permission threshold",
 	Aliases: []string{"addperm"},
 	Short:   "add permission to this account",
 	Long:    "add permission to this account",
@@ -28,7 +28,7 @@ var addpermCmd = &cobra.Command{
 }
 
 var droppermCmd = &cobra.Command{
-	Use:     "dropperm permission",
+	Use:     "drop-permission permission",
 	Aliases: []string{"dropperm"},
 	Short:   "drop permission of this account",
 	Long:    "drop permission of this account",
@@ -45,7 +45,7 @@ var droppermCmd = &cobra.Command{
 }
 
 var assignPermCmd = &cobra.Command{
-	Use:     "assignperm permission item weight",
+	Use:     "assign-permission permission item weight",
 	Aliases: []string{"assignperm"},
 	Short:   "assign item to permission",
 	Long:    "assign item to permission",
@@ -67,7 +67,7 @@ var assignPermCmd = &cobra.Command{
 }
 
 var revokePermCmd = &cobra.Command{
-	Use:     "revokeperm permission item",
+	Use:     "revoke-permission permission item",
 	Aliases: []string{"revokeperm"},
 	Short:   "revoke item to permission",
 	Long:    "revoke item to permission",
@@ -85,7 +85,7 @@ var revokePermCmd = &cobra.Command{
 }
 
 var addgroupCmd = &cobra.Command{
-	Use:     "addgroup group_name",
+	Use:     "add-group group_name",
 	Aliases: []string{"addgroup"},
 	Short:   "add a group to account",
 	Long:    "add a group to account",
@@ -102,7 +102,7 @@ var addgroupCmd = &cobra.Command{
 }
 
 var dropgroupCmd = &cobra.Command{
-	Use:     "dropgroup group_name",
+	Use:     "drop-group group_name",
 	Aliases: []string{"dropgroup"},
 	Short:   "drop group",
 	Long:    "drop group",
@@ -119,7 +119,7 @@ var dropgroupCmd = &cobra.Command{
 }
 
 var assignGroupCmd = &cobra.Command{
-	Use:     "assignperm permission item weight",
+	Use:     "assign-group permission item weight",
 	Aliases: []string{"assigngroup"},
 	Short:   "assign item to group",
 	Long:    "assign item to group",
@@ -141,7 +141,7 @@ var assignGroupCmd = &cobra.Command{
 }
 
 var revokeGroupCmd = &cobra.Command{
-	Use:     "revokeperm group item",
+	Use:     "revoke-group group item",
 	Aliases: []string{"revokegroup"},
 	Short:   "revoke item to group",
 	Long:    "revoke item to group",
@@ -159,8 +159,8 @@ var revokeGroupCmd = &cobra.Command{
 }
 
 var bindPermCmd = &cobra.Command{
-	Use:     "bindperm permission group",
-	Aliases: []string{"revokegroup"},
+	Use:     "assign-permission-to-group permission group",
+	Aliases: []string{"bindperm"},
 	Short:   "bind permission into a group",
 	Long:    "bind permission into a group",
 	Example: `  iwallet sys bindperm myperm mygroup`,
@@ -176,8 +176,8 @@ var bindPermCmd = &cobra.Command{
 }
 
 var unbindPermCmd = &cobra.Command{
-	Use:     "unbindperm permission group",
-	Aliases: []string{"revokegroup"},
+	Use:     "revoke-pemission-in-group permission group",
+	Aliases: []string{"unbindperm"},
 	Short:   "unbind permission into a group",
 	Long:    "unbind permission into a group",
 	Example: `  iwallet sys unbindperm myperm mygroup`,
