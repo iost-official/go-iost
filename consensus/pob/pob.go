@@ -37,7 +37,7 @@ var (
 
 var (
 	continuousNum     int
-	maxBlockNumber    int64 = 10000
+	maxBlockNumber    int64 = 1024
 	blockReqTimeout         = 3 * time.Second
 	subSlotTime             = 500 * time.Millisecond
 	genBlockTime            = 400 * time.Millisecond
@@ -484,7 +484,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	if !ok {
 		p.verifyDB.Checkout(string(blk.Head.ParentHash))
 		p.txPool.Lock()
-		err := verifyBlock(blk, parentNode.Block, p.blockCache.LinkedRoot().Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
+		err := verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
 		p.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)

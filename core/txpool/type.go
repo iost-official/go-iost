@@ -18,6 +18,7 @@ var (
 	clearInterval = 10 * time.Second
 	filterTime    = int64(90 * time.Second)
 	maxCacheTxs   = 10000
+	maxTxTimeGap  = 5 * time.Second.Nanoseconds()
 
 	metricsReceivedTxCount = metrics.NewCounter("iost_tx_received_count", []string{"from"})
 	metricsTxPoolSize      = metrics.NewGauge("iost_txpool_size", nil)
