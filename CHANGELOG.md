@@ -2,9 +2,9 @@
 
 Sat Feb 23 13:16:25 CST 2019
 
-- Add base metrics
-- Add iwallet permission replacement feature
-- Optimize the verification of transaction time and block time
+- Add base metrics.
+- Add iwallet permission replacement.
+- Optimize verification of transaction time and block time.
 
 ## v3.0.0 rc5
 
