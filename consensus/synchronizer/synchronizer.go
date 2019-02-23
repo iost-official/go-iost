@@ -283,6 +283,9 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
+	if sy.baseVariable.Mode() != global.ModeSync {
+		return
+	}
 	ilog.Debugf("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd.Load())
 	if sy.syncEnd.Load() <= sy.blockCache.Head().Head.Number {
 		sy.baseVariable.SetMode(global.ModeNormal)
