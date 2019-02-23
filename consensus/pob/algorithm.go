@@ -92,8 +92,8 @@ func verifyBasics(blk *block.Block, signature *crypto.Signature) error {
 	return nil
 }
 
-func verifyBlock(blk, parent, lib *block.Block, witnessList *blockcache.WitnessList, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
-	err := cverifier.VerifyBlockHead(blk, parent, lib)
+func verifyBlock(blk, parent *block.Block, witnessList *blockcache.WitnessList, txPool txpool.TxPool, db db.MVCCDB, chain block.Chain, replay bool) error {
+	err := cverifier.VerifyBlockHead(blk, parent)
 	if err != nil {
 		return err
 	}
