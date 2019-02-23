@@ -423,6 +423,7 @@ message ChainInfoResponse {
     string lib_block_hash = 7;
     // the current witness list
     repeated string witness_list = 8;
+    repeated string lib_witness_list = 9;
 }
 
 // The request message containing the tx's hash.

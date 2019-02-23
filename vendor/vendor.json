@@ -928,6 +928,48 @@
 			"revisionTime": "2018-01-03T17:44:51Z"
 		},
 		{
+			"checksumSHA1": "dt0H8QhdCZz9VVcq/zVh8Q11ti8=",
+			"path": "github.com/shirou/gopsutil/cpu",
+			"revision": "9294781cc96294e42b8cb19de82a0ff3b19bb056",
+			"revisionTime": "2019-02-15T16:14:15Z"
+		},
+		{
+			"checksumSHA1": "lLYM6fBUAnJHhjFJU4/K2hor5B4=",
+			"path": "github.com/shirou/gopsutil/disk",
+			"revision": "9294781cc96294e42b8cb19de82a0ff3b19bb056",
+			"revisionTime": "2019-02-15T16:14:15Z"
+		},
+		{
+			"checksumSHA1": "CP0AiEMB8LAFQXE+THAK/zO5Ccs=",
+			"path": "github.com/shirou/gopsutil/host",
+			"revision": "9294781cc96294e42b8cb19de82a0ff3b19bb056",
+			"revisionTime": "2019-02-15T16:14:15Z"
+		},
+		{
+			"checksumSHA1": "GR7l7Ez4ppxIfonl7aJayYRVPWc=",
+			"path": "github.com/shirou/gopsutil/internal/common",
+			"revision": "9294781cc96294e42b8cb19de82a0ff3b19bb056",
+			"revisionTime": "2019-02-15T16:14:15Z"
+		},
+		{
+			"checksumSHA1": "YAHPCqEVGnqHW6/8P1VHMLlDL8M=",
+			"path": "github.com/shirou/gopsutil/mem",
+			"revision": "9294781cc96294e42b8cb19de82a0ff3b19bb056",
+			"revisionTime": "2019-02-15T16:14:15Z"
+		},
+		{
+			"checksumSHA1": "50xGwkjE1MLoxck+2eq82OrC8fc=",
+			"path": "github.com/shirou/gopsutil/net",
+			"revision": "9294781cc96294e42b8cb19de82a0ff3b19bb056",
+			"revisionTime": "2019-02-15T16:14:15Z"
+		},
+		{
+			"checksumSHA1": "QFC6hOzzDeYpRly0MdQXr3vs30w=",
+			"path": "github.com/shirou/gopsutil/process",
+			"revision": "9294781cc96294e42b8cb19de82a0ff3b19bb056",
+			"revisionTime": "2019-02-15T16:14:15Z"
+		},
+		{
 			"checksumSHA1": "5fRTP+zI9WQqNzyHbi2qarMGauQ=",
 			"path": "github.com/sirupsen/logrus",
 			"revision": "ea8897e79973357ba785ac2533559a6297e83c44",
@@ -1246,10 +1288,22 @@
 			"revisionTime": "2018-06-06T01:44:09Z"
 		},
 		{
+			"checksumSHA1": "1MGpGDQqnUoRpv7VEcQrXOBydXE=",
+			"path": "golang.org/x/crypto/pbkdf2",
+			"revision": "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06",
+			"revisionTime": "2018-10-23T16:52:47Z"
+		},
+		{
 			"checksumSHA1": "TQoVgHqUD72/5ALzi9p5W3oyaug=",
 			"path": "golang.org/x/crypto/ripemd160",
 			"revision": "75e913eb8a8e3d31a97b216de09de106a7b07681",
 			"revisionTime": "2018-03-12T00:05:14Z"
+		},
+		{
+			"checksumSHA1": "q+Rqy6Spw6qDSj75TGEZF7nzoFM=",
+			"path": "golang.org/x/crypto/scrypt",
+			"revision": "4d3f4d9ffa16a13f451c3b2999e9c49e9750bf06",
+			"revisionTime": "2018-10-23T16:52:47Z"
 		},
 		{
 			"checksumSHA1": "LN1V2pZQwKnoDwcsgXpzG4+Vges=",
