@@ -215,7 +215,7 @@ func (sy *SyncImpl) checkSync() bool {
 }
 
 func (sy *SyncImpl) checkGenBlock() bool {
-	if sy.baseVariable.Mode() != global.ModeNormal {
+	if sy.baseVariable.Mode() != global.ModeNormal || sy.blockCache.Head().Head.Number <= sy.syncEnd.Load() {
 		return false
 	}
 	bcn := sy.blockCache.Head()
@@ -240,11 +240,15 @@ func (sy *SyncImpl) checkGenBlock() bool {
 			bcn = bcn.GetParent()
 		}
 	}
-	if num > int64(continuousNum) {
+	endNumber := sy.blockCache.Head().Head.Number
+	if num > int64(continuousNum) && sy.syncEnd.Load() < endNumber {
 		ilog.Debugf("num: %v, continuousNum: %v", num, continuousNum)
-		endNumber := sy.blockCache.Head().Head.Number
+		startNumber := height + 1
+		if sy.syncEnd.Load()+1 > startNumber {
+			startNumber = sy.syncEnd.Load() + 1
+		}
 		sy.syncEnd.Store(endNumber)
-		go sy.syncBlocks(height+1, endNumber)
+		go sy.syncBlocks(startNumber, endNumber)
 		return true
 	}
 	return false
