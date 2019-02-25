@@ -58,7 +58,7 @@ type mapEntry struct {
 	next *mapEntry
 }
 
-//DownloadControllerImpl is the implementation of DownloadController.
+// DownloadControllerImpl is the implementation of DownloadController.
 type DownloadControllerImpl struct {
 	hashState      *sync.Map
 	peerState      *sync.Map
