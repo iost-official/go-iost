@@ -97,15 +97,18 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to load account: %v", err)
 		}
+		if err := iwalletSDK.Connect(); err != nil {
+			return err
+		}
 		_, err = iwalletSDK.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
 		if err != nil {
 			return fmt.Errorf("create new account error: %v", err)
 		}
-
 		info, err := iwalletSDK.GetAccountInfo(newName)
 		if err != nil {
 			return fmt.Errorf("failed to get account info: %v", err)
 		}
+		iwalletSDK.CloseConn()
 		fmt.Println("Account info of <", newName, ">:")
 		fmt.Println(sdk.MarshalTextString(info))
 

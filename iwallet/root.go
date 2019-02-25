@@ -37,11 +37,10 @@ var rootCmd = &cobra.Command{
 		}
 		iwalletSDK.SetTxInfo(gasLimit, gasRatio, expiration, delaySecond, limit)
 		iwalletSDK.SetUseLongestChain(useLongestChain)
-		return iwalletSDK.Connect()
+		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		iwalletSDK.CloseConn()
-		if verbose {
+		if verbose && cmd.Use[:4] != "help" {
 			fmt.Println("Executed in", time.Since(startTime))
 		}
 	},

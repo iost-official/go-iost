@@ -188,6 +188,9 @@ var plistCmd = &cobra.Command{
 	Long:    `Show current/pending producer list`,
 	Example: `  iwallet sys plist`,
 	RunE: func(cmd *cobra.Command, args []string) error {
+		if err := iwalletSDK.Connect(); err != nil {
+			return err
+		}
 		currentList, err := getProducerList("currentProducerList")
 		if err != nil {
 			return err
@@ -198,6 +201,7 @@ var plistCmd = &cobra.Command{
 			return err
 		}
 		fmt.Println("Pending producer list:", pendingList)
+		iwalletSDK.CloseConn()
 		return nil
 	},
 }
