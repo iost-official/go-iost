@@ -139,7 +139,7 @@ func (p *PoB) Stop() {
 	p.wg.Wait()
 }
 
-// ChSyncBlock get the chan of verify block.
+// ChSyncBlock is the chan of the blocks from synchronizer.
 func (p *PoB) ChSyncBlock() chan *BlockMessage {
 	return p.chSyncBlock
 }
