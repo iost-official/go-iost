@@ -129,7 +129,7 @@ func TestSynchronizer(t *testing.T) {
 		mockP2PService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(a interface{}, b interface{}, c interface{}) {
 			channel <- *p2p.NewIncomingMessage("abc", a.([]byte), b.(p2p.MessageType))
 		}).AnyTimes()
-		sy, err := NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock
+		sy, err := NewSynchronizer(baseVariable, blockCache, mockP2PService, nil) //mock
 		sy.Start()
 		So(err, ShouldBeNil)
 		err = sy.syncBlocks(1, 15)

@@ -20,6 +20,7 @@ const (
 
 // Consensus is a consensus server.
 type Consensus interface {
+	ChSyncBlock() chan *pob.BlockMessage
 	Start() error
 	Stop()
 }

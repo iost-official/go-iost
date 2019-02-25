@@ -7,6 +7,8 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus"
+	"github.com/iost-official/go-iost/consensus/pob"
 	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -41,6 +43,7 @@ type Synchronizer interface {
 
 //SyncImpl is the implementation of Synchronizer.
 type SyncImpl struct {
+	pob             consensus.Consensus
 	p2pService      p2p.Service
 	blockCache      blockcache.BlockCache
 	lastBcn         *blockcache.BlockCacheNode
@@ -51,22 +54,26 @@ type SyncImpl struct {
 	syncEnd         atomic.Int64
 	lastPrintHeight atomic.Int64
 
-	messageChan    chan p2p.IncomingMessage
-	syncHeightChan chan p2p.IncomingMessage
-	exitSignal     chan struct{}
-	wg             *sync.WaitGroup
+	messageChan     chan p2p.IncomingMessage
+	syncHeightChan  chan p2p.IncomingMessage
+	recvBlockChan   chan p2p.IncomingMessage
+	pobResponseChan chan *pob.BlockMessage
+	exitSignal      chan struct{}
+	wg              *sync.WaitGroup
 }
 
 // NewSynchronizer returns a SyncImpl instance.
-func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service) (*SyncImpl, error) {
+func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, css consensus.Consensus) (*SyncImpl, error) {
 	sy := &SyncImpl{
-		p2pService:   p2pserv,
-		blockCache:   blkcache,
-		baseVariable: basevariable,
-		reqMap:       new(sync.Map),
-		heightMap:    new(sync.Map),
-		lastBcn:      nil,
-		wg:           new(sync.WaitGroup),
+		pob:             css,
+		p2pService:      p2pserv,
+		blockCache:      blkcache,
+		baseVariable:    basevariable,
+		reqMap:          new(sync.Map),
+		heightMap:       new(sync.Map),
+		lastBcn:         nil,
+		wg:              new(sync.WaitGroup),
+		pobResponseChan: make(chan *pob.BlockMessage, 1024),
 	}
 	var err error
 	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
@@ -80,6 +87,7 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		p2p.SyncBlockHashResponse,
 	)
 
+	sy.recvBlockChan = sy.p2pService.Register("consensus channel", p2p.SyncBlockResponse)
 	sy.syncHeightChan = sy.p2pService.Register("sync height", p2p.SyncHeight)
 	sy.exitSignal = make(chan struct{})
 
@@ -93,11 +101,13 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 // Start starts the synchronizer module.
 func (sy *SyncImpl) Start() error {
 	sy.dc.Start()
-	sy.wg.Add(4)
+	sy.wg.Add(5)
+
 	go sy.syncHeightLoop()
 	go sy.messageLoop()
 	go sy.retryDownloadLoop()
 	go sy.initializer()
+	go sy.blockLoop()
 	return nil
 }
 
@@ -123,6 +133,39 @@ func (sy *SyncImpl) initializer() {
 			sy.baseVariable.SetMode(global.ModeNormal)
 			sy.checkSync()
 			return
+		case <-sy.exitSignal:
+			return
+		}
+	}
+}
+
+func (sy *SyncImpl) blockLoop() {
+	ilog.Infof("start sync blockloop")
+	defer sy.wg.Done()
+	for {
+		select {
+		case incomingMessage, ok := <-sy.recvBlockChan:
+			if !ok {
+				ilog.Infof("recvBlockChan has closed")
+				return
+			}
+			var blk block.Block
+			err := blk.Decode(incomingMessage.Data())
+			if err != nil {
+				ilog.Error("fail to decode block")
+				continue
+			}
+			select {
+			case sy.pob.ChSyncBlock() <- &pob.BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From(), Ch: sy.pobResponseChan}:
+				sy.dc.StopTimeout(string(blk.HeadHash()), incomingMessage.From())
+			default:
+			}
+		case vbm, ok := <-sy.pobResponseChan:
+			if !ok {
+				ilog.Infof("pobResponseChan has closed")
+				return
+			}
+			sy.dc.FreePeer(string(vbm.Blk.HeadHash()), vbm.From)
 		case <-sy.exitSignal:
 			return
 		}

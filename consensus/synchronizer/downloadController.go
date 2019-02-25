@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 // DownloadController defines the functions of download controller.
@@ -17,6 +18,8 @@ type DownloadController interface {
 	ReStart()
 	DownloadLoop(mFunc MissionFunc)
 	FreePeerLoop(fpFunc FreePeerFunc)
+	FreePeer(hash string, peerID interface{})
+	StopTimeout(hash string, peerID peer.ID)
 }
 
 const (
@@ -231,7 +234,7 @@ func (dc *DownloadControllerImpl) missionComplete(hash string) {
 	}
 }
 
-func (dc *DownloadControllerImpl) freePeer(hash string, peerID interface{}) {
+func (dc *DownloadControllerImpl) FreePeer(hash string, peerID interface{}) {
 	if pStateIF, ok := dc.peerState.Load(peerID); ok {
 		psMutex, ok := dc.getStateMutex(peerID)
 		if ok {
@@ -297,7 +300,7 @@ func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
 						node, ok = nodeIF.(*mapEntry)
 					}
 					if ok && fpFunc(hash, node.p) {
-						dc.freePeer(hash, peerID)
+						dc.FreePeer(hash, peerID)
 					}
 				}
 			}
@@ -356,7 +359,7 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 				psMutex.Lock()
 				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
 					ilog.Debugf("sync timout, hash=%v, peerID=%s", common.Base58Encode([]byte(hash)), peerID.(p2p.PeerID).Pretty())
-					dc.freePeer(hash, peerID)
+					dc.FreePeer(hash, peerID)
 				})
 				psLen := len(ps)
 				psMutex.Unlock()
@@ -412,5 +415,25 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 		case <-dc.exitSignal:
 			return
 		}
+	}
+}
+
+func (dc *DownloadControllerImpl) StopTimeout(hash string, peerID peer.ID) {
+	psIF, ok := dc.peerState.Load(peerID)
+	if !ok {
+		return
+	}
+	ps, ok := psIF.(timerMap)
+	if !ok {
+		return
+	}
+	psMutex, psmok := dc.getStateMutex(peerID)
+	if !psmok {
+		return
+	}
+	psMutex.Lock()
+	defer psMutex.Unlock()
+	if timer, ok := ps[hash]; ok {
+		timer.Stop()
 	}
 }

@@ -17,6 +17,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 	"github.com/iost-official/go-iost/p2p"
+	peer "github.com/libp2p/go-libp2p-peer"
 )
 
 var (
@@ -44,10 +45,12 @@ var (
 	last2GenBlockTime       = 50 * time.Millisecond
 )
 
-type verifyBlockMessage struct {
-	blk     *block.Block
-	p2pType p2p.MessageType
-	from    string
+//BlockMessage the message for the block from p2p.
+type BlockMessage struct {
+	Blk     *block.Block
+	P2PType p2p.MessageType
+	From    peer.ID
+	Ch      chan *BlockMessage
 }
 
 //PoB is a struct that handles the consensus logic.
@@ -66,7 +69,8 @@ type PoB struct {
 	chRecvBlock      chan p2p.IncomingMessage
 	chRecvBlockHash  chan p2p.IncomingMessage
 	chQueryBlock     chan p2p.IncomingMessage
-	chVerifyBlock    chan *verifyBlockMessage
+	chVerifyBlock    chan *BlockMessage
+	chSyncBlock      chan *BlockMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
 	headNumber       int64
@@ -87,10 +91,11 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		blockReqMap:      new(sync.Map),
 		exitSignal:       make(chan struct{}),
 		quitGenerateMode: make(chan struct{}),
-		chRecvBlock:      p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
+		chRecvBlock:      p2pService.Register("consensus channel", p2p.NewBlock),
 		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
-		chVerifyBlock:    make(chan *verifyBlockMessage, 1024),
+		chVerifyBlock:    make(chan *BlockMessage, 1024),
+		chSyncBlock:      make(chan *BlockMessage, 1024),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 		headNumber:       0,
@@ -132,6 +137,11 @@ func (p *PoB) Start() error {
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 	p.wg.Wait()
+}
+
+// ChVerifyBlock get the chan of verify block.
+func (p *PoB) ChSyncBlock() chan *BlockMessage {
+	return p.chSyncBlock
 }
 
 func (p *PoB) messageLoop() {
@@ -237,14 +247,14 @@ func calculateTime(blk *block.Block) float64 {
 	return float64((time.Now().UnixNano() - blk.Head.Time) / 1e6)
 }
 
-func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
+func (p *PoB) doVerifyBlock(vbm *BlockMessage) {
 	if p.baseVariable.Mode() == global.ModeInit {
 		return
 	}
 	ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
-	blk := vbm.blk
+	blk := vbm.Blk
 
-	switch vbm.p2pType {
+	switch vbm.P2PType {
 	case p2p.NewBlock:
 		t1 := calculateTime(blk)
 		metricsTransferCost.Set(t1, nil)
@@ -270,6 +280,8 @@ func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
 		}
 	case p2p.SyncBlockResponse:
 		err := p.handleRecvBlock(blk)
+		// send message to Sync
+		vbm.Ch <- vbm
 		if err != nil && err != errSingle && err != errDuplicate {
 			ilog.Warnf("received sync block error, err:%v", err)
 			return
@@ -286,18 +298,18 @@ func (p *PoB) verifyLoop() {
 			select {
 			case <-p.quitGenerateMode:
 			}
-			if p.blockCache.Head().Head.Number+maxBlockNumber < vbm.blk.Head.Number {
-				ilog.Debugf("block number is too large, block number:%v", vbm.blk.Head.Number)
+			if p.blockCache.Head().Head.Number+maxBlockNumber < vbm.Blk.Head.Number {
+				ilog.Debugf("block number is too large, block number:%v", vbm.Blk.Head.Number)
 				continue
 			}
 
-			recvTimes := p.recvTimesMap[vbm.from] + 1
+			recvTimes := p.recvTimesMap[vbm.From.Pretty()] + 1
 
-			if recvTimes > maxBlockNumber {
-				p.p2pService.PutPeerToBlack(vbm.from)
+			if recvTimes > maxBlockNumber*2 {
+				p.p2pService.PutPeerToBlack(vbm.From.Pretty())
 				continue
 			}
-			p.recvTimesMap[vbm.from] = recvTimes
+			p.recvTimesMap[vbm.From.Pretty()] = recvTimes
 
 			p.doVerifyBlock(vbm)
 
@@ -320,7 +332,7 @@ func (p *PoB) verifyLoop() {
 }
 
 func (p *PoB) blockLoop() {
-	ilog.Infof("start blockloop")
+	ilog.Infof("start pob blockloop")
 	defer p.wg.Done()
 	for {
 		select {
@@ -335,7 +347,13 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
-			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type(), from: incomingMessage.From().Pretty()}
+			p.chVerifyBlock <- &BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From()}
+		case vbm, ok := <-p.chSyncBlock:
+			if !ok {
+				ilog.Infof("chSyncBlock has closed")
+				return
+			}
+			p.chVerifyBlock <- vbm
 		case <-p.exitSignal:
 			return
 		}
