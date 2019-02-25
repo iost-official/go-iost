@@ -5,6 +5,8 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/account"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
@@ -44,6 +46,7 @@ type Synchronizer interface {
 //SyncImpl is the implementation of Synchronizer.
 type SyncImpl struct {
 	pob             consensus.Consensus
+	account         *account.KeyPair
 	p2pService      p2p.Service
 	blockCache      blockcache.BlockCache
 	lastBcn         *blockcache.BlockCacheNode
@@ -63,9 +66,10 @@ type SyncImpl struct {
 }
 
 // NewSynchronizer returns a SyncImpl instance.
-func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, css consensus.Consensus) (*SyncImpl, error) {
+func NewSynchronizer(account *account.KeyPair, basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, css consensus.Consensus) (*SyncImpl, error) {
 	sy := &SyncImpl{
 		pob:             css,
+		account:         account,
 		p2pService:      p2pserv,
 		blockCache:      blkcache,
 		baseVariable:    basevariable,
@@ -262,7 +266,8 @@ func (sy *SyncImpl) checkGenBlock() bool {
 		return false
 	}
 	bcn := sy.blockCache.Head()
-	for bcn != nil && bcn.Block.Head.Witness == sy.baseVariable.Config().ACC.ID {
+	witness := sy.account.ReadablePubkey()
+	for bcn != nil && bcn.Block.Head.Witness == witness {
 		bcn = bcn.GetParent()
 	}
 	if bcn == nil {
@@ -272,7 +277,6 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	var num int64
 	if bcn != sy.lastBcn {
 		sy.lastBcn = bcn
-		witness := bcn.Block.Head.Witness
 		for i := int64(0); i < confirmNumber*int64(continuousNum); i++ {
 			if bcn == nil {
 				break
