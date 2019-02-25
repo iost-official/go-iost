@@ -48,7 +48,10 @@ func DomainABI() *contract.Contract {
 
 // SystemContractABI return system contract abi
 func SystemContractABI(conID, version string) *contract.Contract {
-	aset, _ := getABISetByVersion(conID, version)
+	aset, err := getABISetByVersion(conID, version)
+	if err != nil {
+		return nil
+	}
 	return ABI(conID, aset, version)
 }
 
