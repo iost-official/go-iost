@@ -599,6 +599,11 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		ilog.Debugf("callback block is a single block, num:%v", bn)
 		return false, false
 	}
+
+	if len(sy.pob.ChSyncBlock()) > 1024-30*peerConNum {
+		ilog.Debugf("sync block size:%v", len(sy.pob.ChSyncBlock()))
+		return false, false
+	}
 	bi := &msgpb.BlockInfo{Number: bn, Hash: bHash}
 	bytes, err := proto.Marshal(bi)
 	if err != nil {

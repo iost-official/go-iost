@@ -31,7 +31,7 @@ const (
 
 const (
 	syncBlockTimeout = 2 * time.Second
-	peerConNum       = 10
+	peerConNum       = 5
 	// Free peer state type
 	Free string = "Free"
 )
@@ -234,6 +234,7 @@ func (dc *DownloadControllerImpl) missionComplete(hash string) {
 	}
 }
 
+// FreePeer to free the peer and the mission
 func (dc *DownloadControllerImpl) FreePeer(hash string, peerID interface{}) {
 	if pStateIF, ok := dc.peerState.Load(peerID); ok {
 		psMutex, ok := dc.getStateMutex(peerID)
@@ -418,6 +419,7 @@ func (dc *DownloadControllerImpl) DownloadLoop(mFunc MissionFunc) {
 	}
 }
 
+// StopTimeout make the timer stop.
 func (dc *DownloadControllerImpl) StopTimeout(hash string, peerID peer.ID) {
 	psIF, ok := dc.peerState.Load(peerID)
 	if !ok {
