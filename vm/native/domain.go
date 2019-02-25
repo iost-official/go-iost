@@ -92,6 +92,7 @@ var (
 				return nil, cost, errors.New("no permission of claimed url")
 			}
 
+			// todo check cid and url valid
 			h.WriteLink(url, cid, applicant)
 			cost.AddAssign(host.Costs["PutCost"])
 			cost.AddAssign(host.Costs["PutCost"])

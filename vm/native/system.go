@@ -194,6 +194,9 @@ var (
 			cost.AddAssign(host.CommonOpCost(1))
 			if version != "" {
 				con = SystemContractABI(conID, version)
+				if con == nil {
+					return nil, cost, errors.New("invalid contractID or version")
+				}
 			} else {
 				if codeRaw[0] == '{' {
 					err = json.Unmarshal([]byte(codeRaw), con)
