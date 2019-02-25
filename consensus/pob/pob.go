@@ -70,7 +70,6 @@ type PoB struct {
 	chRecvBlockHash  chan p2p.IncomingMessage
 	chQueryBlock     chan p2p.IncomingMessage
 	chVerifyBlock    chan *BlockMessage
-	chSyncBlock      chan *BlockMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
 	headNumber       int64
@@ -95,7 +94,6 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chVerifyBlock:    make(chan *BlockMessage, 1024),
-		chSyncBlock:      make(chan *BlockMessage, 1024),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 		headNumber:       0,
@@ -139,9 +137,9 @@ func (p *PoB) Stop() {
 	p.wg.Wait()
 }
 
-// ChSyncBlock is the chan of the blocks from synchronizer.
-func (p *PoB) ChSyncBlock() chan *BlockMessage {
-	return p.chSyncBlock
+// ChVerifyBlock is the chan of the blocks from synchronizer.
+func (p *PoB) ChVerifyBlock() chan *BlockMessage {
+	return p.chVerifyBlock
 }
 
 func (p *PoB) messageLoop() {
@@ -348,12 +346,6 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			p.chVerifyBlock <- &BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From()}
-		case vbm, ok := <-p.chSyncBlock:
-			if !ok {
-				ilog.Infof("chSyncBlock has closed")
-				return
-			}
-			p.chVerifyBlock <- vbm
 		case <-p.exitSignal:
 			return
 		}
