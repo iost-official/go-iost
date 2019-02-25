@@ -8,11 +8,13 @@ import (
 
 	"github.com/golang/mock/gomock"
 	. "github.com/golang/mock/gomock"
+	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	core_mock "github.com/iost-official/go-iost/core/mocks"
+	"github.com/iost-official/go-iost/crypto"
 	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
@@ -117,7 +119,7 @@ func TestSynchronizer(t *testing.T) {
 	baseVariable.EXPECT().Continuous().AnyTimes().Return(0)
 	baseVariable.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 	Convey("Test Synchronizer", t, func() {
-
+		account, _ := account.NewKeyPair(nil, crypto.Secp256k1)
 		blockcache.CleanBlockCacheWAL()
 		blockCache, err := blockcache.NewBlockCache(baseVariable)
 		So(err, ShouldBeNil)
@@ -129,7 +131,7 @@ func TestSynchronizer(t *testing.T) {
 		mockP2PService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any()).Do(func(a interface{}, b interface{}, c interface{}) {
 			channel <- *p2p.NewIncomingMessage("abc", a.([]byte), b.(p2p.MessageType))
 		}).AnyTimes()
-		sy, err := NewSynchronizer(baseVariable, blockCache, mockP2PService) //mock
+		sy, err := NewSynchronizer(account, baseVariable, blockCache, mockP2PService) //mock
 		sy.Start()
 		So(err, ShouldBeNil)
 		err = sy.syncBlocks(1, 15)
