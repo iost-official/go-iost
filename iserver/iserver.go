@@ -72,7 +72,7 @@ func New(conf *common.Config) *IServer {
 
 	rpcServer := rpc.New(txp, blkCache, bv, p2pService)
 
-	sync, err := synchronizer.NewSynchronizer(acc, bv, blkCache, p2pService, consensus)
+	sync, err := synchronizer.NewSynchronizer(acc, bv, blkCache, p2pService, consensus.ChVerifyBlock())
 	if err != nil {
 		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
 	}

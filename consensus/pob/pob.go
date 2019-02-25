@@ -70,7 +70,6 @@ type PoB struct {
 	chRecvBlockHash  chan p2p.IncomingMessage
 	chQueryBlock     chan p2p.IncomingMessage
 	chVerifyBlock    chan *BlockMessage
-	chSyncBlock      chan *BlockMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
 	headNumber       int64
@@ -95,7 +94,6 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		chVerifyBlock:    make(chan *BlockMessage, 1024),
-		chSyncBlock:      make(chan *BlockMessage, 1024),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 		headNumber:       0,
@@ -139,9 +137,9 @@ func (p *PoB) Stop() {
 	p.wg.Wait()
 }
 
-// ChSyncBlock is the chan of the blocks from synchronizer.
-func (p *PoB) ChSyncBlock() chan *BlockMessage {
-	return p.chSyncBlock
+// ChVerifyBlock is the chan of the blocks from synchronizer.
+func (p *PoB) ChVerifyBlock() chan *BlockMessage {
+	return p.chVerifyBlock
 }
 
 func (p *PoB) messageLoop() {
@@ -251,6 +249,31 @@ func (p *PoB) doVerifyBlock(vbm *BlockMessage) {
 	if p.baseVariable.Mode() == global.ModeInit {
 		return
 	}
+	if p.blockCache.Head().Head.Number+maxBlockNumber < vbm.Blk.Head.Number {
+		ilog.Debugf("block number is too large, block number:%v", vbm.Blk.Head.Number)
+	}
+
+	recvTimes := p.recvTimesMap[vbm.From.Pretty()] + 1
+
+	if recvTimes > maxBlockNumber*2 {
+		p.p2pService.PutPeerToBlack(vbm.From.Pretty())
+		return
+	}
+	p.recvTimesMap[vbm.From.Pretty()] = recvTimes
+	defer func() {
+		if p.blockCache.Head().Head.Number > p.headNumber {
+			delta := p.blockCache.Head().Head.Number - p.headNumber
+			p.headNumber += delta
+			for k, v := range p.recvTimesMap {
+				v -= delta
+				if v < 0 {
+					delete(p.recvTimesMap, k)
+				} else {
+					p.recvTimesMap[k] = v
+				}
+			}
+		}
+	}()
 	ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
 	blk := vbm.Blk
 
@@ -298,33 +321,7 @@ func (p *PoB) verifyLoop() {
 			select {
 			case <-p.quitGenerateMode:
 			}
-			if p.blockCache.Head().Head.Number+maxBlockNumber < vbm.Blk.Head.Number {
-				ilog.Debugf("block number is too large, block number:%v", vbm.Blk.Head.Number)
-				continue
-			}
-
-			recvTimes := p.recvTimesMap[vbm.From.Pretty()] + 1
-
-			if recvTimes > maxBlockNumber*2 {
-				p.p2pService.PutPeerToBlack(vbm.From.Pretty())
-				continue
-			}
-			p.recvTimesMap[vbm.From.Pretty()] = recvTimes
-
 			p.doVerifyBlock(vbm)
-
-			if p.blockCache.Head().Head.Number > p.headNumber {
-				delta := p.blockCache.Head().Head.Number - p.headNumber
-				p.headNumber += delta
-				for k, v := range p.recvTimesMap {
-					v -= delta
-					if v < 0 {
-						delete(p.recvTimesMap, k)
-					} else {
-						p.recvTimesMap[k] = v
-					}
-				}
-			}
 		case <-p.exitSignal:
 			return
 		}
@@ -348,12 +345,6 @@ func (p *PoB) blockLoop() {
 				continue
 			}
 			p.chVerifyBlock <- &BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From()}
-		case vbm, ok := <-p.chSyncBlock:
-			if !ok {
-				ilog.Infof("chSyncBlock has closed")
-				return
-			}
-			p.chVerifyBlock <- vbm
 		case <-p.exitSignal:
 			return
 		}

@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/consensus/pob"
 	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
@@ -45,7 +44,6 @@ type Synchronizer interface {
 
 //SyncImpl is the implementation of Synchronizer.
 type SyncImpl struct {
-	pob             consensus.Consensus
 	account         *account.KeyPair
 	p2pService      p2p.Service
 	blockCache      blockcache.BlockCache
@@ -60,15 +58,15 @@ type SyncImpl struct {
 	messageChan     chan p2p.IncomingMessage
 	syncHeightChan  chan p2p.IncomingMessage
 	recvBlockChan   chan p2p.IncomingMessage
+	pobBlockChan    chan *pob.BlockMessage
 	pobResponseChan chan *pob.BlockMessage
 	exitSignal      chan struct{}
 	wg              *sync.WaitGroup
 }
 
 // NewSynchronizer returns a SyncImpl instance.
-func NewSynchronizer(account *account.KeyPair, basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, css consensus.Consensus) (*SyncImpl, error) {
+func NewSynchronizer(account *account.KeyPair, basevariable global.BaseVariable, blkcache blockcache.BlockCache, p2pserv p2p.Service, pbc chan *pob.BlockMessage) (*SyncImpl, error) {
 	sy := &SyncImpl{
-		pob:             css,
 		account:         account,
 		p2pService:      p2pserv,
 		blockCache:      blkcache,
@@ -77,7 +75,8 @@ func NewSynchronizer(account *account.KeyPair, basevariable global.BaseVariable,
 		heightMap:       new(sync.Map),
 		lastBcn:         nil,
 		wg:              new(sync.WaitGroup),
-		pobResponseChan: make(chan *pob.BlockMessage, 1024),
+		pobBlockChan:    pbc,
+		pobResponseChan: make(chan *pob.BlockMessage, cap(pbc)),
 	}
 	var err error
 	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
@@ -160,7 +159,7 @@ func (sy *SyncImpl) blockLoop() {
 				continue
 			}
 			select {
-			case sy.pob.ChSyncBlock() <- &pob.BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From(), Ch: sy.pobResponseChan}:
+			case sy.pobBlockChan <- &pob.BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From(), Ch: sy.pobResponseChan}:
 				sy.dc.StopTimeout(string(blk.HeadHash()), incomingMessage.From())
 			default:
 			}
@@ -600,8 +599,8 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		return false, false
 	}
 
-	if len(sy.pob.ChSyncBlock()) > 1024-30*peerConNum {
-		ilog.Debugf("sync block size:%v", len(sy.pob.ChSyncBlock()))
+	if len(sy.pobBlockChan) > cap(sy.pobBlockChan)-len(sy.p2pService.GetAllNeighbors())*peerConNum {
+		ilog.Debugf("sync block size:%v", len(sy.pobBlockChan))
 		return false, false
 	}
 	bi := &msgpb.BlockInfo{Number: bn, Hash: bHash}
