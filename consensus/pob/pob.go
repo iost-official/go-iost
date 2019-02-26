@@ -37,7 +37,7 @@ var (
 
 var (
 	continuousNum     int
-	maxBlockNumber    int64 = 1024
+	maxBlockNumber    int64 = 10000
 	blockReqTimeout         = 3 * time.Second
 	subSlotTime             = 500 * time.Millisecond
 	genBlockTime            = 400 * time.Millisecond
