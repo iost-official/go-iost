@@ -214,7 +214,10 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 					node.next.prev = node
 					hashMap.Store(node.val, node)
 
-					hState, _ := dc.hashState.LoadOrStore(hash, Wait)
+					hState, ok := dc.hashState.LoadOrStore(hash, Wait)
+					if !ok {
+						waitMissionCount.Add(float64(1), nil)
+					}
 					if hState == Wait {
 						select {
 						case dc.chDownload <- struct{}{}:
@@ -231,6 +234,9 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 func (dc *DownloadControllerImpl) missionComplete(hash string) {
 	if _, ok := dc.hashState.Load(hash); ok {
 		dc.hashState.Store(hash, Done)
+		// Done mission maybe not do request
+		doneBlockCount.Add(float64(1), nil)
+		waitMissionCount.Add(float64(-1), nil)
 	}
 }
 
@@ -261,6 +267,8 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID interface{}) {
 	if hState, ok := dc.hashState.Load(hash); ok {
 		if hState == peerID {
 			dc.hashState.Store(hash, Wait)
+			waitMissionCount.Add(float64(1), nil)
+			downloadMissionCount.Add(float64(-1), nil)
 		}
 	}
 }
@@ -268,9 +276,13 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID interface{}) {
 func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
 	ilog.Debugf("free peer begin")
 	dc.peerState.Range(func(peerID, v interface{}) bool {
+		pID, ok := peerID.(p2p.PeerID)
+		if !ok {
+			ilog.Fatalf("Assert peerID failed: %v", peerID)
+		}
 		ps, ok := v.(timerMap)
 		if !ok {
-			ilog.Errorf("get peerstate error: %s", peerID.(p2p.PeerID).Pretty())
+			ilog.Errorf("get peerstate error: %s", pID.Pretty())
 		}
 		psMutex, psmok := dc.getStateMutex(peerID)
 		hashMap, hmok := dc.getHashMap(peerID)
@@ -287,6 +299,8 @@ func (dc *DownloadControllerImpl) handleFreePeer(fpFunc FreePeerFunc) {
 			hState, ok := dc.hashState.Load(hash)
 			if ok {
 				if hState == Done || hState == Wait {
+					ilog.Warnf("Peer %v's block %v state error", pID.Pretty(), hash)
+
 					psMutex.Lock()
 					delete(ps, hash)
 					psMutex.Unlock()
@@ -357,9 +371,13 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 			mok, mdone := mFunc(hash, node.p, peerID)
 			if mok {
 				dc.hashState.Store(hash, peerID)
+				downloadMissionCount.Add(float64(1), nil)
+				waitMissionCount.Add(float64(-1), nil)
+
 				psMutex.Lock()
 				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
 					ilog.Debugf("sync timeout, hash=%v, peerID=%s", common.Base58Encode([]byte(hash)), peerID.(p2p.PeerID).Pretty())
+					timeoutBlockCount.Add(float64(1), nil)
 					dc.FreePeer(hash, peerID)
 				})
 				psLen := len(ps)
