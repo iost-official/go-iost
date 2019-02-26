@@ -190,7 +190,7 @@ var importCmd = &cobra.Command{
 	Short: "Import an account by name and private key",
 	Long:  `Import an account by name and private key`,
 	Example: `  iwallet account import test0 XXXXXXXXXXXXXXXXXXXXX
-	iwallet account import test0 active:XXXXXXXXXXXXXXXXXXXXX,owner:YYYYYYYYYYYYYYYYYYYYYYYY`,
+  iwallet account import test0 active:XXXXXXXXXXXXXXXXXXXXX,owner:YYYYYYYYYYYYYYYYYYYYYYYY`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "accountName", "accountPrivateKey"); err != nil {
 			return err
