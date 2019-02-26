@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/uber-go/atomic"
 )
 
 // DownloadController defines the functions of download controller.
@@ -69,6 +70,8 @@ type DownloadControllerImpl struct {
 	fpFunc         FreePeerFunc
 	mFunc          MissionFunc
 	wg             *sync.WaitGroup
+	waitCount      atomic.Int64
+	downloadCount  atomic.Int64
 	chDownload     chan struct{}
 	exitSignal     chan struct{}
 }
@@ -88,6 +91,8 @@ func NewDownloadController(fpf FreePeerFunc, mf MissionFunc) (*DownloadControlle
 		mFunc:          mf,
 		wg:             new(sync.WaitGroup),
 	}
+	dc.waitCount.Store(0)
+	dc.downloadCount.Store(0)
 	return dc, nil
 }
 
@@ -103,6 +108,8 @@ func (dc *DownloadControllerImpl) ReStart() {
 	dc.exitSignal = make(chan struct{})
 	dc.wg = new(sync.WaitGroup)
 	dc.newPeerMutex.Unlock()
+	dc.waitCount.Store(0)
+	dc.downloadCount.Store(0)
 	dc.Start()
 }
 
@@ -216,7 +223,8 @@ func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peer
 
 					hState, ok := dc.hashState.LoadOrStore(hash, Wait)
 					if !ok {
-						waitMissionCount.Add(float64(1), nil)
+						dc.waitCount.Add(1)
+						waitMissionCount.Set(float64(dc.waitCount.Load()), nil)
 					}
 					if hState == Wait {
 						select {
@@ -236,7 +244,8 @@ func (dc *DownloadControllerImpl) missionComplete(hash string) {
 		dc.hashState.Store(hash, Done)
 		// Done mission maybe not do request
 		doneBlockCount.Add(float64(1), nil)
-		// waitMissionCount.Add(float64(-1), nil)
+		dc.waitCount.Add(-1)
+		waitMissionCount.Set(float64(dc.waitCount.Load()), nil)
 	}
 }
 
@@ -267,8 +276,10 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID interface{}) {
 	if hState, ok := dc.hashState.Load(hash); ok {
 		if hState == peerID {
 			dc.hashState.Store(hash, Wait)
-			waitMissionCount.Add(float64(1), nil)
-			// downloadMissionCount.Add(float64(-1), nil)
+			dc.waitCount.Add(1)
+			waitMissionCount.Set(float64(dc.waitCount.Load()), nil)
+			dc.downloadCount.Add(-1)
+			downloadMissionCount.Set(float64(dc.downloadCount.Load()), nil)
 		}
 	}
 }
@@ -371,9 +382,10 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 			mok, mdone := mFunc(hash, node.p, peerID)
 			if mok {
 				dc.hashState.Store(hash, peerID)
-				downloadMissionCount.Add(float64(1), nil)
-				// waitMissionCount.Add(float64(-1), nil)
-
+				dc.downloadCount.Add(1)
+				downloadMissionCount.Set(float64(dc.downloadCount.Load()), nil)
+				dc.waitCount.Add(-1)
+				waitMissionCount.Set(float64(dc.waitCount.Load()), nil)
 				psMutex.Lock()
 				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
 					ilog.Debugf("sync timeout, hash=%v, peerID=%s", common.Base58Encode([]byte(hash)), peerID.(p2p.PeerID).Pretty())
