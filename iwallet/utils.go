@@ -19,6 +19,7 @@ import (
 func checkArgsNumber(cmd *cobra.Command, args []string, argNames ...string) error {
 	if len(args) < len(argNames) {
 		cmd.Help()
+		fmt.Println()
 		return fmt.Errorf("missing positional argument: %v", argNames[len(args):])
 	}
 	return nil
@@ -27,6 +28,7 @@ func checkArgsNumber(cmd *cobra.Command, args []string, argNames ...string) erro
 func checkAccount(cmd *cobra.Command) error {
 	if accountName == "" {
 		cmd.Help()
+		fmt.Println()
 		return fmt.Errorf("please provide the account name with flag --account")
 	}
 	return nil
@@ -36,6 +38,7 @@ func checkFloat(cmd *cobra.Command, arg string, argName string) error {
 	_, err := strconv.ParseFloat(arg, 64)
 	if err != nil {
 		cmd.Help()
+		fmt.Println()
 		return fmt.Errorf(`invalid value "%v" for argument "%v": %v`, arg, argName, err)
 	}
 	return nil
