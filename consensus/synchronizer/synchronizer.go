@@ -37,9 +37,6 @@ var (
 type Synchronizer interface {
 	Start() error
 	Stop()
-	CheckSync() bool
-	CheckGenBlock(hash []byte) bool
-	CheckSyncProcess()
 }
 
 //SyncImpl is the implementation of Synchronizer.
@@ -209,7 +206,7 @@ func (sy *SyncImpl) syncHeightLoop() {
 		case <-checkTicker.C:
 			sy.checkSync()
 			sy.checkGenBlock()
-			sy.CheckSyncProcess()
+			sy.checkSyncProcess()
 		case <-sy.exitSignal:
 			syncHeightTicker.Stop()
 			checkTicker.Stop()
@@ -249,7 +246,7 @@ func (sy *SyncImpl) checkSync() bool {
 		ilog.Infof("sync heights: %+v", heights)
 		sy.lastPrintHeight.Store(netHeight)
 	}
-	if netHeight > height+syncNumber {
+	if netHeight > sy.blockCache.Head().Head.Number+syncNumber {
 		sy.baseVariable.SetMode(global.ModeSync)
 		sy.dc.ReStart()
 		sy.syncEnd.Store(netHeight)
@@ -330,8 +327,7 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	return nil
 }
 
-// CheckSyncProcess checks if the end of sync.
-func (sy *SyncImpl) CheckSyncProcess() {
+func (sy *SyncImpl) checkSyncProcess() {
 	if sy.baseVariable.Mode() != global.ModeSync {
 		return
 	}
@@ -478,7 +474,7 @@ func (sy *SyncImpl) handleHashQuery(rh *msgpb.BlockHashQuery, peerID p2p.PeerID)
 }
 
 func (sy *SyncImpl) handleHashResp(rh *msgpb.BlockHashResponse, peerID p2p.PeerID) {
-	ilog.Debugf("receive block hashes: len=%v", len(rh.BlockInfos))
+	ilog.Debugf("receive block hashes: len=%v, peerID=%v", len(rh.BlockInfos), peerID.Pretty())
 	for _, blkInfo := range rh.BlockInfos {
 		if blkInfo.Number > sy.blockCache.LinkedRoot().Head.Number && blkInfo.Number <= sy.syncEnd.Load() {
 			sy.dc.CreateMission(string(blkInfo.Hash), blkInfo.Number, peerID)
