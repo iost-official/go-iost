@@ -310,8 +310,8 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
 	for startNumber <= endNumber {
 		nextStartNumber := startNumber + maxBlockHashQueryNumber
-		if nextStartNumber > endNumber {
-			nextStartNumber = endNumber
+		if nextStartNumber > endNumber+1 {
+			nextStartNumber = endNumber + 1
 		}
 
 		for i := startNumber; i < nextStartNumber; i++ {
