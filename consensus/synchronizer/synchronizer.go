@@ -579,7 +579,7 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		ilog.Errorf("Assert p to int64 failed. p=%v", p)
 		return false, false
 	}
-	ilog.Debugf("callback try sync block, num:%v, hash:%v", bn, hash)
+	ilog.Debugf("callback try sync block, num:%v, hash:%v", bn, common.Base58Encode([]byte(hash)))
 	if bn <= sy.blockCache.LinkedRoot().Head.Number {
 		ilog.Debugf("callback block confirmed, num:%v", bn)
 		return false, true
