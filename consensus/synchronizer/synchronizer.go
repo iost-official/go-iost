@@ -308,21 +308,26 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
-	for endNumber > startNumber+maxBlockHashQueryNumber-1 {
+	for startNumber <= endNumber {
+		nextStartNumber := startNumber + maxBlockHashQueryNumber
+		if nextStartNumber > endNumber {
+			nextStartNumber = endNumber
+		}
+
+		for i := startNumber; i < nextStartNumber; i++ {
+			sy.reqMap.Store(i, true)
+		}
+		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: nextStartNumber - 1, Nums: nil})
+		startNumber = nextStartNumber
+		count := 0
 		for sy.blockCache.Head().Head.Number+blockHashQueryAdvance < startNumber {
 			time.Sleep(500 * time.Millisecond)
+			count += 1
+			if count == 1800*2 {
+				startNumber = sy.blockCache.LinkedRoot().Head.Number
+				break
+			}
 		}
-		for i := startNumber; i < startNumber+maxBlockHashQueryNumber; i++ {
-			sy.reqMap.Store(i, true)
-		}
-		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: startNumber + maxBlockHashQueryNumber - 1, Nums: nil})
-		startNumber += maxBlockHashQueryNumber
-	}
-	if startNumber <= endNumber {
-		for i := startNumber; i <= endNumber; i++ {
-			sy.reqMap.Store(i, true)
-		}
-		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: endNumber, Nums: nil})
 	}
 	return nil
 }

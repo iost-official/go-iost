@@ -30,7 +30,7 @@ const (
 )
 
 const (
-	syncBlockTimeout = 2 * time.Second
+	syncBlockTimeout = 3 * time.Second
 	peerConNum       = 15
 	// Free peer state type
 	Free string = "Free"
@@ -359,7 +359,7 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 				dc.hashState.Store(hash, peerID)
 				psMutex.Lock()
 				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
-					ilog.Debugf("sync timout, hash=%v, peerID=%s", common.Base58Encode([]byte(hash)), peerID.(p2p.PeerID).Pretty())
+					ilog.Debugf("sync timeout, hash=%v, peerID=%s", common.Base58Encode([]byte(hash)), peerID.(p2p.PeerID).Pretty())
 					dc.FreePeer(hash, peerID)
 				})
 				psLen := len(ps)
