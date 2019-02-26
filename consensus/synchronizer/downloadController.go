@@ -236,7 +236,7 @@ func (dc *DownloadControllerImpl) missionComplete(hash string) {
 		dc.hashState.Store(hash, Done)
 		// Done mission maybe not do request
 		doneBlockCount.Add(float64(1), nil)
-		waitMissionCount.Add(float64(-1), nil)
+		// waitMissionCount.Add(float64(-1), nil)
 	}
 }
 
@@ -268,7 +268,7 @@ func (dc *DownloadControllerImpl) FreePeer(hash string, peerID interface{}) {
 		if hState == peerID {
 			dc.hashState.Store(hash, Wait)
 			waitMissionCount.Add(float64(1), nil)
-			downloadMissionCount.Add(float64(-1), nil)
+			// downloadMissionCount.Add(float64(-1), nil)
 		}
 	}
 }
@@ -372,7 +372,7 @@ func (dc *DownloadControllerImpl) handleDownload(peerID interface{}, hashMap *sy
 			if mok {
 				dc.hashState.Store(hash, peerID)
 				downloadMissionCount.Add(float64(1), nil)
-				waitMissionCount.Add(float64(-1), nil)
+				// waitMissionCount.Add(float64(-1), nil)
 
 				psMutex.Lock()
 				ps[hash] = time.AfterFunc(syncBlockTimeout, func() {
