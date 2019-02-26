@@ -177,7 +177,7 @@ func (dc *DownloadControllerImpl) getMapEntry(hashMap *sync.Map, key interface{}
 
 // CreateMission adds a mission.
 func (dc *DownloadControllerImpl) CreateMission(hash string, p interface{}, peerID p2p.PeerID) {
-	ilog.Debugf("create mission peer: %s, hash: %s, num: %v", peerID, common.Base58Encode([]byte(hash)), p.(int64))
+	ilog.Debugf("create mission peer: %s, hash: %s, num: %v", peerID.Pretty(), common.Base58Encode([]byte(hash)), p.(int64))
 
 	dc.newPeerMutex.Lock()
 	if _, ok := dc.peerState.Load(peerID); !ok {
