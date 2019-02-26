@@ -313,6 +313,15 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
 	for startNumber <= endNumber {
+		count := 0
+		for sy.blockCache.Head().Head.Number+blockHashQueryAdvance < startNumber {
+			time.Sleep(500 * time.Millisecond)
+			count++
+			if count == 1800*2 {
+				startNumber = sy.blockCache.LinkedRoot().Head.Number
+				break
+			}
+		}
 		nextStartNumber := startNumber + maxBlockHashQueryNumber
 		if nextStartNumber > endNumber+1 {
 			nextStartNumber = endNumber + 1
@@ -323,15 +332,6 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 		}
 		sy.queryBlockHash(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: nextStartNumber - 1, Nums: nil})
 		startNumber = nextStartNumber
-		count := 0
-		for sy.blockCache.Head().Head.Number+blockHashQueryAdvance < startNumber {
-			time.Sleep(500 * time.Millisecond)
-			count += 1
-			if count == 1800*2 {
-				startNumber = sy.blockCache.LinkedRoot().Head.Number
-				break
-			}
-		}
 	}
 	return nil
 }
