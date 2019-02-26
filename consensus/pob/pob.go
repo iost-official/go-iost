@@ -279,7 +279,6 @@ func (p *PoB) doVerifyBlock(vbm *BlockMessage) {
 	case p2p.SyncBlockResponse:
 		err := p.handleRecvBlock(blk)
 		// send message to Sync
-		vbm.Ch <- vbm
 		if err != nil && err != errSingle && err != errDuplicate {
 			ilog.Warnf("received sync block error, err:%v", err)
 			return
@@ -296,30 +295,31 @@ func (p *PoB) verifyLoop() {
 			select {
 			case <-p.quitGenerateMode:
 			}
-			if p.blockCache.Head().Head.Number+maxBlockNumber < vbm.Blk.Head.Number {
-				ilog.Debugf("block number is too large, block number:%v", vbm.Blk.Head.Number)
-				continue
-			}
-
-			recvTimes := p.recvTimesMap[vbm.From.Pretty()] + 1
-
-			if recvTimes > maxBlockNumber*5 {
-				p.p2pService.PutPeerToBlack(vbm.From.Pretty())
-				continue
-			}
-			p.recvTimesMap[vbm.From.Pretty()] = recvTimes
-			p.doVerifyBlock(vbm)
-			if p.blockCache.Head().Head.Number > p.headNumber {
-				delta := p.blockCache.Head().Head.Number - p.headNumber
-				p.headNumber += delta
-				for k, v := range p.recvTimesMap {
-					v -= delta
-					if v < 0 {
-						delete(p.recvTimesMap, k)
-					} else {
-						p.recvTimesMap[k] = v
+			if vbm.Blk.Head.Number <= p.blockCache.Head().Head.Number+maxBlockNumber {
+				recvTimes := p.recvTimesMap[vbm.From.Pretty()] + 1
+				if recvTimes <= maxBlockNumber*5 {
+					p.recvTimesMap[vbm.From.Pretty()] = recvTimes
+					p.doVerifyBlock(vbm)
+					if p.blockCache.Head().Head.Number > p.headNumber {
+						delta := p.blockCache.Head().Head.Number - p.headNumber
+						p.headNumber = p.blockCache.Head().Head.Number
+						for k, v := range p.recvTimesMap {
+							v -= delta
+							if v < 0 {
+								delete(p.recvTimesMap, k)
+							} else {
+								p.recvTimesMap[k] = v
+							}
+						}
 					}
+				} else {
+					p.p2pService.PutPeerToBlack(vbm.From.Pretty())
 				}
+			} else {
+				ilog.Debugf("block number is too large, block number:%v", vbm.Blk.Head.Number)
+			}
+			if vbm.Ch != nil {
+				vbm.Ch <- vbm
 			}
 		case <-p.exitSignal:
 			return
@@ -343,7 +343,7 @@ func (p *PoB) blockLoop() {
 				ilog.Error("fail to decode block")
 				continue
 			}
-			p.chVerifyBlock <- &BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From()}
+			p.chVerifyBlock <- &BlockMessage{Blk: &blk, P2PType: incomingMessage.Type(), From: incomingMessage.From(), Ch: nil}
 		case <-p.exitSignal:
 			return
 		}
