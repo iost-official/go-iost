@@ -21,8 +21,8 @@ import (
 
 var (
 	confirmNumber           int64
-	maxBlockHashQueryNumber int64 = 50
-	blockHashQueryAdvance   int64 = 500
+	maxBlockHashQueryNumber int64 = 100
+	blockHashQueryAdvance   int64 = 1000
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
@@ -597,7 +597,7 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		return false, true
 	}
 
-	if len(sy.pobBlockChan) > cap(sy.pobBlockChan)-len(sy.p2pService.GetAllNeighbors())*peerConNum {
+	if len(sy.pobBlockChan) > cap(sy.pobBlockChan)-int(sy.dc.DownloadCount()) {
 		ilog.Debugf("sync block size:%v", len(sy.pobBlockChan))
 		return false, false
 	}

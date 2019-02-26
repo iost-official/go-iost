@@ -21,6 +21,7 @@ type DownloadController interface {
 	FreePeerLoop(fpFunc FreePeerFunc)
 	FreePeer(hash string, peerID interface{})
 	StopTimeout(hash string, peerID peer.ID)
+	DownloadCount() int64
 }
 
 const (
@@ -32,7 +33,7 @@ const (
 
 const (
 	syncBlockTimeout = 3 * time.Second
-	peerConNum       = 15
+	peerConNum       = 50
 	// Free peer state type
 	Free string = "Free"
 )
@@ -462,4 +463,9 @@ func (dc *DownloadControllerImpl) StopTimeout(hash string, peerID peer.ID) {
 	if timer, ok := ps[hash]; ok {
 		timer.Stop()
 	}
+}
+
+// DownloadCount returns the number of downloading mission.
+func (dc *DownloadControllerImpl) DownloadCount() int64 {
+	return dc.downloadCount.Load()
 }
