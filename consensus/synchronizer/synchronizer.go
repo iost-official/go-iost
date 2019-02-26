@@ -22,7 +22,7 @@ import (
 var (
 	confirmNumber           int64
 	maxBlockHashQueryNumber int64 = 100
-	blockHashQueryAdvance   int64 = 1000
+	blockHashQueryAdvance   int64 = 900
 	retryTime                     = 5 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
