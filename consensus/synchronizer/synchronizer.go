@@ -150,7 +150,7 @@ func (sy *SyncImpl) blockLoop() {
 				return
 			}
 			verifyBufferLen.Set(float64(len(sy.pobBlockChan)), nil)
-			responseBlockCount.Add(float64(1), nil)
+			responseBlockCount.Add(1, nil)
 
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
@@ -598,10 +598,6 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		return false, false
 	}
 	ilog.Debugf("callback try sync block, num:%v, hash:%v", bn, common.Base58Encode([]byte(hash)))
-	if bn <= sy.blockCache.LinkedRoot().Head.Number {
-		ilog.Debugf("callback block confirmed, num:%v", bn)
-		return false, true
-	}
 	bHash := []byte(hash)
 	if bcn, err := sy.blockCache.Find(bHash); err == nil {
 		if bcn.Type == blockcache.Linked {
@@ -610,6 +606,10 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		}
 		ilog.Debugf("callback block is a single block, num:%v", bn)
 		return false, false
+	}
+	if bn <= sy.blockCache.LinkedRoot().Head.Number {
+		ilog.Debugf("callback block confirmed, num:%v", bn)
+		return false, true
 	}
 
 	if len(sy.pobBlockChan) > cap(sy.pobBlockChan)-len(sy.p2pService.GetAllNeighbors())*peerConNum {
@@ -627,6 +627,6 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		return false, false
 	}
 	sy.p2pService.SendToPeer(pid, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
-	requestBlockCount.Add(float64(1), nil)
+	requestBlockCount.Add(1, nil)
 	return true, false
 }
