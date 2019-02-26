@@ -205,7 +205,6 @@ func (sy *SyncImpl) syncHeightLoop() {
 					}
 				}
 			}
-			//ilog.Infof("sync height from: %s, height: %v, time:%v", req.From().Pretty(), sh.Height, sh.Time)
 			sy.heightMap.Store(req.From(), &sh)
 		case <-checkTicker.C:
 			sy.checkSync()
@@ -223,7 +222,7 @@ func (sy *SyncImpl) checkSync() bool {
 	if sy.baseVariable.Mode() != global.ModeNormal {
 		return false
 	}
-	height := sy.baseVariable.BlockChain().Length() - 1
+	height := sy.blockCache.LinkedRoot().Head.Number
 	heights := make([]int64, 0, 0)
 	heights = append(heights, sy.blockCache.Head().Head.Number)
 	now := time.Now().Unix()
@@ -272,7 +271,7 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	if bcn == nil {
 		return false
 	}
-	height := sy.baseVariable.BlockChain().Length() - 1
+	height := sy.blockCache.LinkedRoot().Head.Number
 	var num int64
 	if bcn != sy.lastBcn {
 		sy.lastBcn = bcn
