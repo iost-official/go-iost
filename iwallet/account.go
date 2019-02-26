@@ -97,15 +97,18 @@ var createCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to load account: %v", err)
 		}
+		if err := iwalletSDK.Connect(); err != nil {
+			return err
+		}
 		_, err = iwalletSDK.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
 		if err != nil {
 			return fmt.Errorf("create new account error: %v", err)
 		}
-
 		info, err := iwalletSDK.GetAccountInfo(newName)
 		if err != nil {
 			return fmt.Errorf("failed to get account info: %v", err)
 		}
+		iwalletSDK.CloseConn()
 		fmt.Println("Account info of <", newName, ">:")
 		fmt.Println(sdk.MarshalTextString(info))
 
@@ -187,7 +190,7 @@ var importCmd = &cobra.Command{
 	Short: "Import an account by name and private key",
 	Long:  `Import an account by name and private key`,
 	Example: `  iwallet account import test0 XXXXXXXXXXXXXXXXXXXXX
-	iwallet account import test0 active:XXXXXXXXXXXXXXXXXXXXX,owner:YYYYYYYYYYYYYYYYYYYYYYYY`,
+  iwallet account import test0 active:XXXXXXXXXXXXXXXXXXXXX,owner:YYYYYYYYYYYYYYYYYYYYYYYY`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "accountName", "accountPrivateKey"); err != nil {
 			return err

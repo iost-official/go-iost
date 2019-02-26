@@ -49,7 +49,11 @@ func sendAction(contract, method string, methodArgs ...interface{}) error {
 	if err != nil {
 		return fmt.Errorf("failed to load account: %v", err)
 	}
+	if err := iwalletSDK.Connect(); err != nil {
+		return err
+	}
 	_, err = iwalletSDK.SendTx(tx)
+	iwalletSDK.CloseConn()
 	return err
 }
 
