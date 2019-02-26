@@ -293,10 +293,10 @@ func (p *PoB) verifyLoop() {
 
 			recvTimes := p.recvTimesMap[vbm.from] + 1
 
-			if recvTimes > maxBlockNumber {
-				p.p2pService.PutPeerToBlack(vbm.from)
-				continue
-			}
+			/*          if recvTimes > maxBlockNumber { */
+			// p.p2pService.PutPeerToBlack(vbm.from)
+			// continue
+			/* } */
 			p.recvTimesMap[vbm.from] = recvTimes
 
 			p.doVerifyBlock(vbm)
