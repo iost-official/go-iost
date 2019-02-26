@@ -149,6 +149,9 @@ func (sy *SyncImpl) blockLoop() {
 				ilog.Infof("recvBlockChan has closed")
 				return
 			}
+			verifyBufferLen.Set(float64(len(sy.pobBlockChan)), nil)
+			responseBlockCount.Add(float64(1), nil)
+
 			var blk block.Block
 			err := blk.Decode(incomingMessage.Data())
 			if err != nil {
@@ -165,6 +168,7 @@ func (sy *SyncImpl) blockLoop() {
 				ilog.Infof("pobResponseChan has closed")
 				return
 			}
+			responseBufferLen.Set(float64(len(sy.pobResponseChan)), nil)
 			sy.dc.FreePeer(string(vbm.Blk.HeadHash()), vbm.From)
 		case <-sy.exitSignal:
 			return
@@ -614,5 +618,6 @@ func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{})
 		return false, false
 	}
 	sy.p2pService.SendToPeer(pid, bytes, p2p.SyncBlockRequest, p2p.UrgentMessage)
+	requestBlockCount.Add(float64(1), nil)
 	return true, false
 }
