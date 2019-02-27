@@ -919,11 +919,27 @@ func (bc *BlockCacheImpl) SetHead(n *BlockCacheNode) {
 
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
+	nmLen := 0
+	bc.number2node.Range(func(k, v interface{}) bool {
+		nmLen++
+		return true
+	})
+
+	hmLen := 0
+	bc.hash2node.Range(func(k, v interface{}) bool {
+		hmLen++
+		return true
+	})
+
+	leafLen := len(bc.leaf)
+
+	mapInfo := fmt.Sprintf("nmLen: %v, hmLen: %v, leafLen: %v", nmLen, hmLen, leafLen)
+
 	linkedTree := treeprint.New()
 	bc.LinkedRoot().drawChildren(linkedTree)
 	singleTree := treeprint.New()
 	bc.singleRoot.drawChildren(singleTree)
-	return linkedTree.String() + "\n" + singleTree.String()
+	return mapInfo + "\n" + linkedTree.String() + "\n" + singleTree.String()
 }
 
 func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
