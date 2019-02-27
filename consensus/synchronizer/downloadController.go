@@ -83,7 +83,7 @@ func NewDownloadController(fpf FreePeerFunc, mf MissionFunc) (*DownloadControlle
 		hashState:      new(sync.Map), // map[string]string
 		peerState:      new(sync.Map), // map[PeerID](map[string]bool)
 		peerStateMutex: new(sync.Map), // map[PeerID](metux)
-		peerMap:        new(sync.Map), // map[PeerID](map[string]bool)
+		peerMap:        new(sync.Map), // map[PeerID](map[string]mapEntry)
 		peerMapMutex:   new(sync.Map), // map[PeerID](metux)
 		newPeerMutex:   new(sync.Mutex),
 		chDownload:     make(chan struct{}, 2),
