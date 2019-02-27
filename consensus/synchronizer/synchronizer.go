@@ -20,7 +20,8 @@ import (
 )
 
 var (
-	confirmNumber           int64
+	confirmNumber int64
+	// blockHashQueryAdvance+maxBlockHashQueryNumber<=pob.maxBlockNumber
 	maxBlockHashQueryNumber int64 = 100
 	blockHashQueryAdvance   int64 = 900
 	retryTime                     = 5 * time.Second
@@ -44,7 +45,6 @@ type SyncImpl struct {
 	account         *account.KeyPair
 	p2pService      p2p.Service
 	blockCache      blockcache.BlockCache
-	lastBcn         *blockcache.BlockCacheNode
 	baseVariable    global.BaseVariable
 	dc              DownloadController
 	reqMap          *sync.Map
@@ -70,7 +70,6 @@ func NewSynchronizer(account *account.KeyPair, basevariable global.BaseVariable,
 		baseVariable:    basevariable,
 		reqMap:          new(sync.Map),
 		heightMap:       new(sync.Map),
-		lastBcn:         nil,
 		wg:              new(sync.WaitGroup),
 		pobBlockChan:    pbc,
 		pobResponseChan: make(chan *pob.BlockMessage, cap(pbc)),
@@ -274,17 +273,15 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	}
 	height := sy.blockCache.LinkedRoot().Head.Number
 	var num int64
-	if bcn != sy.lastBcn {
-		sy.lastBcn = bcn
-		for i := int64(0); i < confirmNumber*int64(continuousNum); i++ {
-			if bcn == nil {
-				break
-			}
-			if witness == bcn.Block.Head.Witness {
-				num++
-			}
-			bcn = bcn.GetParent()
+	witness = bcn.Block.Head.Witness
+	for i := int64(0); i < confirmNumber*int64(continuousNum); i++ {
+		if bcn == nil {
+			break
 		}
+		if witness == bcn.Block.Head.Witness {
+			num++
+		}
+		bcn = bcn.GetParent()
 	}
 	endNumber := sy.blockCache.Head().Head.Number
 	if num > int64(continuousNum) && sy.syncEnd.Load() < endNumber {
