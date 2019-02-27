@@ -122,8 +122,8 @@ func (dc *DownloadControllerImpl) Stop() {
 
 // Start starts the DownloadController.
 func (dc *DownloadControllerImpl) Start() {
-	dc.wg.Add(2)
-	go dc.FreePeerLoop(dc.fpFunc)
+	dc.wg.Add(1)
+	// go dc.FreePeerLoop(dc.fpFunc)
 	go dc.DownloadLoop(dc.mFunc)
 }
 

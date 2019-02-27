@@ -563,11 +563,11 @@ func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
 		ilog.Errorf("Assert p to int64 failed. p=%v", p)
 		return false
 	}
-	if bn <= sy.blockCache.LinkedRoot().Head.Number {
-		return true
-	}
 	bHash := []byte(hash)
 	if _, err := sy.blockCache.Find(bHash); err == nil {
+		return true
+	}
+	if bn <= sy.blockCache.LinkedRoot().Head.Number {
 		return true
 	}
 	return false
