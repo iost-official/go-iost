@@ -83,10 +83,6 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	}
 }
 
-func (bcn *BlockCacheNode) delChild(child *BlockCacheNode) {
-	delete(bcn.Children, child)
-}
-
 func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
 	if parent != nil {
 		bcn.SetParent(parent)
@@ -655,7 +651,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 		bc.hmset(blk.Head.ParentHash, parent)
 	}
 	if nok && newNode.Type == Virtual {
-		bc.singleRoot.delChild(newNode)
+		delete(bc.singleRoot.Children, newNode)
 		newNode.updateVirtualBCN(parent, blk)
 	} else {
 		newNode = NewBCN(parent, blk)
@@ -678,13 +674,12 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	parent := bcn.GetParent()
-	bcn.SetParent(nil)
-	if bcn.Block != nil {
-		bc.hmdel(bcn.HeadHash())
-	}
 	if parent != nil {
-		parent.delChild(bcn)
+		delete(parent.Children, bcn)
+		bcn.SetParent(nil)
 	}
+
+	bc.hmdel(bcn.HeadHash())
 	delete(bc.leaf, bcn)
 }
 
@@ -924,11 +919,27 @@ func (bc *BlockCacheImpl) SetHead(n *BlockCacheNode) {
 
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
+	nmLen := 0
+	bc.number2node.Range(func(k, v interface{}) bool {
+		nmLen++
+		return true
+	})
+
+	hmLen := 0
+	bc.hash2node.Range(func(k, v interface{}) bool {
+		hmLen++
+		return true
+	})
+
+	leafLen := len(bc.leaf)
+
+	mapInfo := fmt.Sprintf("nmLen: %v, hmLen: %v, leafLen: %v", nmLen, hmLen, leafLen)
+
 	linkedTree := treeprint.New()
 	bc.LinkedRoot().drawChildren(linkedTree)
 	singleTree := treeprint.New()
 	bc.singleRoot.drawChildren(singleTree)
-	return linkedTree.String() + "\n" + singleTree.String()
+	return mapInfo + "\n" + linkedTree.String() + "\n" + singleTree.String()
 }
 
 func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
