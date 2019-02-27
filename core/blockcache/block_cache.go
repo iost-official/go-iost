@@ -676,9 +676,9 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	parent := bcn.GetParent()
 	if parent != nil {
 		delete(parent.Children, bcn)
+		bcn.SetParent(nil)
 	}
 
-	bcn.SetParent(nil)
 	bc.hmdel(bcn.HeadHash())
 	delete(bc.leaf, bcn)
 }
