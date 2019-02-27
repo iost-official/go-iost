@@ -675,7 +675,7 @@ func (pm *PeerManager) handleRoutingTableQuery(msg *p2pMessage, from peer.ID) {
 }
 
 // handleRoutingTableResponse stores the peer information received.
-func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage, from peer.ID) {
+func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage, from peer.ID) { // nolint
 
 	data, _ := msg.data()
 	resp := &p2pb.RoutingResponse{}
