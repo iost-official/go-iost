@@ -511,6 +511,12 @@ func (pm *PeerManager) routingQuery(ids []string) {
 		stream, err := pm.newStream(peerID)
 		if err != nil {
 			ilog.Warnf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
+
+			if strings.Contains(err.Error(), "connected to wrong peer") {
+				pm.deletePeerInfo(peerID)
+				continue
+			}
+
 			pm.recordDialFail(peerID)
 			if pm.isDead(peerID) {
 				pm.deletePeerInfo(peerID)
