@@ -75,7 +75,7 @@ func NewSynchronizer(account *account.KeyPair, basevariable global.BaseVariable,
 		pobResponseChan: make(chan *pob.BlockMessage, cap(pbc)),
 	}
 	var err error
-	sy.dc, err = NewDownloadController(sy.checkHasBlock, sy.reqSyncBlock)
+	sy.dc, err = NewDownloadController(sy.reqSyncBlock)
 	if err != nil {
 		return nil, err
 	}
@@ -555,22 +555,6 @@ func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 		return
 	}
 	sy.p2pService.SendToPeer(peerID, b, p2p.SyncBlockResponse, p2p.NormalMessage)
-}
-
-func (sy *SyncImpl) checkHasBlock(hash string, p interface{}) bool {
-	bn, ok := p.(int64)
-	if !ok {
-		ilog.Errorf("Assert p to int64 failed. p=%v", p)
-		return false
-	}
-	bHash := []byte(hash)
-	if _, err := sy.blockCache.Find(bHash); err == nil {
-		return true
-	}
-	if bn <= sy.blockCache.LinkedRoot().Head.Number {
-		return true
-	}
-	return false
 }
 
 func (sy *SyncImpl) reqSyncBlock(hash string, p interface{}, peerID interface{}) (bool, bool) {
