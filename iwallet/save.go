@@ -16,10 +16,10 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
-	"time"
 
 	"github.com/spf13/cobra"
+
+	"github.com/iost-official/go-iost/sdk"
 )
 
 // saveCmd would save a transaction request with given actions to a file.
@@ -30,11 +30,10 @@ var saveCmd = &cobra.Command{
 	Would accept arguments as call actions and create a transaction request from them.
 	An ACTION is a group of 3 arguments: contract name, function name, method parameters.
 	The method parameters should be a string with format '["arg0","arg1",...]'.`,
-	Example: `  iwallet save "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' -o tx.json`,
+	Example: `  iwallet save "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' -j tx.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if outputFile == "" {
-			cmd.Usage()
-			return fmt.Errorf("output file name should be provided with --output flag")
+		if outputTxFile == "" {
+			return errorWithHelp(cmd, "please provide output json file with flag --json/-j")
 		}
 		return nil
 	},
@@ -43,41 +42,18 @@ var saveCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		trx, err := iwalletSDK.CreateTxFromActions(actions)
+		tx, err := initTxFromActions(actions)
 		if err != nil {
 			return err
 		}
-		t, err := parseTimeFromStr(txTime)
-		if err != nil {
-			return err
+		err = sdk.SaveProtoStructToJSONFile(tx, outputTxFile)
+		if err == nil {
+			fmt.Println("Successfully saved transaction request as json file:", outputTxFile)
 		}
-		trx.Time = t
-		trx.Expiration = trx.Time + expiration*1e9
-
-		if err := checkSigners(signers); err != nil {
-			return err
-		}
-		trx.Signers = signers
-
-		return sdk.SaveProtoStructToJSONFile(trx, outputFile)
+		return err
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(saveCmd)
-	saveCmd.Flags().StringVarP(&outputFile, "output", "o", "", "output file to save transaction request")
 }
-
-func parseTimeFromStr(s string) (int64, error) {
-	var t time.Time
-	if s == "" {
-		return time.Now().UnixNano(), nil
-	}
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return 0, fmt.Errorf("invalid time %v, should in format %v", s, time.RFC3339)
-	}
-	return t.UnixNano(), nil
-}
-
-var txTime string

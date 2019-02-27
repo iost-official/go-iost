@@ -15,11 +15,6 @@
 package iwallet
 
 import (
-	"encoding/json"
-	"fmt"
-
-	"github.com/iost-official/go-iost/rpc/pb"
-	"github.com/iost-official/go-iost/sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -32,29 +27,6 @@ var systemCmd = &cobra.Command{
 	Example: `  iwallet system producer-list
   iwallet sys producer-list
   iwallet sys plist`,
-}
-
-func sendAction(contract, method string, methodArgs ...interface{}) error {
-	methodArgsBytes, err := json.Marshal(methodArgs)
-	if err != nil {
-		return err
-	}
-	action := sdk.NewAction(contract, method, string(methodArgsBytes))
-	actions := []*rpcpb.Action{action}
-	tx, err := iwalletSDK.CreateTxFromActions(actions)
-	if err != nil {
-		return fmt.Errorf("failed to create tx: %v", err)
-	}
-	err = InitAccount()
-	if err != nil {
-		return fmt.Errorf("failed to load account: %v", err)
-	}
-	if err := iwalletSDK.Connect(); err != nil {
-		return err
-	}
-	_, err = iwalletSDK.SendTx(tx)
-	iwalletSDK.CloseConn()
-	return err
 }
 
 func init() {

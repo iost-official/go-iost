@@ -16,15 +16,12 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
+
+	"github.com/spf13/cobra"
 
 	"github.com/iost-official/go-iost/rpc/pb"
-	"github.com/spf13/cobra"
+	"github.com/iost-official/go-iost/sdk"
 )
-
-var outputFile string
-var signKeyFile string
-var txFile string
 
 // signCmd represents the command used to sign a transaction.
 var signCmd = &cobra.Command{

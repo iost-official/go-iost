@@ -15,13 +15,14 @@
 package iwallet
 
 import (
-	"fmt"
-	"github.com/iost-official/go-iost/sdk"
+	"github.com/spf13/cobra"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/rpc/pb"
-	"github.com/spf13/cobra"
+	"github.com/iost-official/go-iost/sdk"
 )
+
+var inputTxFile string
 
 // callCmd represents the call command that call a contract with given actions.
 var callCmd = &cobra.Command{
@@ -38,11 +39,11 @@ var callCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		trx := &rpcpb.TransactionRequest{}
-		if txFile != "" {
+		if inputTxFile != "" {
 			if len(args) != 0 {
-				ilog.Warnf("load tx from file %v, will ignore cmd args %v", txFile, args)
+				ilog.Warnf("load tx from file %v, will ignore cmd args %v", inputTxFile, args)
 			}
-			err := sdk.LoadProtoStructFromJSONFile(txFile, trx)
+			err := sdk.LoadProtoStructFromJSONFile(inputTxFile, trx)
 			if err != nil {
 				return err
 			}
@@ -52,44 +53,16 @@ var callCmd = &cobra.Command{
 			if err != nil {
 				return err
 			}
-			trx, err = iwalletSDK.CreateTxFromActions(actions)
+			trx, err = initTxFromActions(actions)
 			if err != nil {
 				return err
 			}
 		}
-
-		err := InitAccount()
-		if err != nil {
-			return fmt.Errorf("failed to load account: %v", err)
-		}
-
-		if err := checkSigners(signers); err != nil {
-			return err
-		}
-		trx.Signers = signers
-
-		if len(withSigns) != 0 || len(signKeys) != 0 {
-			ilog.Infof("making multi sig...")
-			err = handleMultiSig(trx, withSigns, signKeys)
-			if err != nil {
-				return fmt.Errorf("multi sig err %v", err)
-			}
-		}
-
-		_, err = iwalletSDK.SendTx(trx)
-		return err
+		return sendTx(trx)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(callCmd)
-	callCmd.Flags().StringSliceVarP(&signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
-	callCmd.Flags().StringSliceVarP(&withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
-	callCmd.Flags().StringVarP(&txFile, "tx_file", "", "", "load tx from this file")
+	callCmd.Flags().StringVarP(&inputTxFile, "tx_file", "", "", "load tx from this file")
 }
-
-var (
-	// used for multi sig
-	signKeys  []string
-	withSigns []string
-)

@@ -5,12 +5,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/sdk"
-
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/sdk"
 )
 
 var cfgFile string
@@ -77,8 +77,11 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&amountLimit, "amount_limit", "", "*:unlimited", "amount limit for one transaction, eg iost:300.00|ram:2000")
 	rootCmd.PersistentFlags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction in seconds")
 	rootCmd.PersistentFlags().Uint32VarP(&chainID, "chain_id", "", uint32(1024), "chain id which distinguishes different network")
-	rootCmd.PersistentFlags().StringVarP(&txTime, "tx_time", "", "", "use the special tx time instead of now, format: 2019-01-22T17:00:39+08:00")
+	rootCmd.PersistentFlags().StringVarP(&txTime, "tx_time", "", "", fmt.Sprintf("use the special tx time instead of now, format: %v", time.Now().Format(time.RFC3339)))
 	rootCmd.PersistentFlags().StringVarP(&signPerm, "sign_permission", "", "active", "permission used to sign transactions")
+	rootCmd.PersistentFlags().StringSliceVarP(&signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
+	rootCmd.PersistentFlags().StringSliceVarP(&withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
+	rootCmd.PersistentFlags().StringVarP(&outputTxFile, "json", "j", "", "json file to save transaction request")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
@@ -121,11 +124,17 @@ var (
 	signers     []string
 	signPerm    string
 
-	gasLimit    float64
-	gasRatio    float64
-	expiration  int64
-	amountLimit string
-	delaySecond int64
+	gasLimit     float64
+	gasRatio     float64
+	expiration   int64
+	amountLimit  string
+	delaySecond  int64
+	txTime       string
+	outputTxFile string
+
+	// Used for multi sig.
+	signKeys  []string
+	withSigns []string
 
 	checkResult         bool
 	checkResultDelay    float32

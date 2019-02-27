@@ -16,9 +16,10 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/spf13/cobra"
+
+	"github.com/iost-official/go-iost/sdk"
 )
 
 // transactionCmd represents the transaction command.
@@ -28,9 +29,8 @@ var transactionCmd = &cobra.Command{
 	Short:   "Find transactions",
 	Long:    `Find transaction by transaction hash`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the transaction hash")
+		if err := checkArgsNumber(cmd, args, "transactionHash"); err != nil {
+			return err
 		}
 		return nil
 	},

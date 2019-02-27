@@ -1,35 +1,41 @@
 package iwallet
 
 import (
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/mitchellh/go-homedir"
+	"github.com/spf13/cobra"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/sdk"
-	"github.com/mitchellh/go-homedir"
-	"github.com/spf13/cobra"
 )
+
+func errorWithHelp(cmd *cobra.Command, format string, a ...interface{}) error {
+	cmd.Help()
+	fmt.Println()
+	return fmt.Errorf(format, a...)
+}
 
 func checkArgsNumber(cmd *cobra.Command, args []string, argNames ...string) error {
 	if len(args) < len(argNames) {
-		cmd.Help()
-		fmt.Println()
-		return fmt.Errorf("missing positional argument: %v", argNames[len(args):])
+		return errorWithHelp(cmd, "missing positional argument: %v", argNames[len(args):])
 	}
 	return nil
 }
 
 func checkAccount(cmd *cobra.Command) error {
 	if accountName == "" {
-		cmd.Help()
-		fmt.Println()
-		return fmt.Errorf("please provide the account name with flag --account")
+		return errorWithHelp(cmd, "please provide the account name with flag --account/-a")
 	}
 	return nil
 }
@@ -37,9 +43,7 @@ func checkAccount(cmd *cobra.Command) error {
 func checkFloat(cmd *cobra.Command, arg string, argName string) error {
 	_, err := strconv.ParseFloat(arg, 64)
 	if err != nil {
-		cmd.Help()
-		fmt.Println()
-		return fmt.Errorf(`invalid value "%v" for argument "%v": %v`, arg, argName, err)
+		return errorWithHelp(cmd, `invalid value "%v" for argument "%v": %v`, arg, argName, err)
 	}
 	return nil
 }
@@ -51,6 +55,89 @@ func checkSigners(signers []string) error {
 		}
 	}
 	return nil
+}
+
+func parseTimeFromStr(s string) (int64, error) {
+	var t time.Time
+	if s == "" {
+		return time.Now().UnixNano(), nil
+	}
+	t, err := time.Parse(time.RFC3339, s)
+	if err != nil {
+		return 0, fmt.Errorf(`invalid time "%v", should in format "%v"`, s, time.Now().Format(time.RFC3339))
+	}
+	return t.UnixNano(), nil
+}
+
+func initTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
+	tx, err := iwalletSDK.CreateTxFromActions(actions)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := parseTimeFromStr(txTime)
+	if err != nil {
+		return nil, err
+	}
+	tx.Time = t
+	tx.Expiration = tx.Time + expiration*1e9
+
+	if err := checkSigners(signers); err != nil {
+		return nil, err
+	}
+	tx.Signers = signers
+
+	return tx, nil
+}
+
+func initTxFromMethod(contract, method string, methodArgs ...interface{}) (*rpcpb.TransactionRequest, error) {
+	methodArgsBytes, err := json.Marshal(methodArgs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal method args %v: %v", methodArgs, err)
+	}
+	action := sdk.NewAction(contract, method, string(methodArgsBytes))
+	actions := []*rpcpb.Action{action}
+	return initTxFromActions(actions)
+}
+
+func sendTx(tx *rpcpb.TransactionRequest) error {
+	if err := InitAccount(); err != nil {
+		return err
+	}
+	if err := iwalletSDK.Connect(); err != nil {
+		return err
+	}
+	defer iwalletSDK.CloseConn()
+
+	if err := handleMultiSig(tx, withSigns, signKeys); err != nil {
+		return err
+	}
+
+	_, err := iwalletSDK.SendTx(tx)
+	return err
+}
+
+func saveOrSendTx(tx *rpcpb.TransactionRequest) error {
+	if outputTxFile != "" {
+		err := sdk.SaveProtoStructToJSONFile(tx, outputTxFile)
+		if err == nil {
+			if verbose {
+				fmt.Println("Transaction:")
+				fmt.Println(sdk.MarshalTextString(tx))
+			}
+			fmt.Println("Successfully saved transaction request as json file:", outputTxFile)
+		}
+		return err
+	}
+	return sendTx(tx)
+}
+
+func saveOrSendAction(contract, method string, methodArgs ...interface{}) error {
+	tx, err := initTxFromMethod(contract, method, methodArgs...)
+	if err != nil {
+		return err
+	}
+	return saveOrSendTx(tx)
 }
 
 func getAccountDir() (string, error) {
@@ -185,6 +272,10 @@ func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 }
 
 func handleMultiSig(t *rpcpb.TransactionRequest, withSigns []string, signKeys []string) error {
+	if len(withSigns) == 0 && len(signKeys) == 0 {
+		return nil
+	}
+	ilog.Infof("Making multi sig...")
 	sigs := make([]*rpcpb.Signature, 0)
 	if len(withSigns) != 0 && len(signKeys) != 0 {
 		return fmt.Errorf("at least one of --sign_keys and --with_signs should be empty")
