@@ -81,7 +81,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&signPerm, "sign_permission", "", "active", "permission used to sign transactions")
 	rootCmd.PersistentFlags().StringSliceVarP(&signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
 	rootCmd.PersistentFlags().StringSliceVarP(&withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
-	rootCmd.PersistentFlags().StringVarP(&outputTxFile, "json", "j", "", "json file to save transaction request")
+	rootCmd.PersistentFlags().StringVarP(&outputTxFile, "output", "o", "", "output json file to save transaction request")
 
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.

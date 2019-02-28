@@ -22,8 +22,8 @@ import (
 var systemCmd = &cobra.Command{
 	Use:     "system",
 	Aliases: []string{"sys"},
-	Short:   "Send system contract action to blockchain",
-	Long:    `Send system contract action to blockchain`,
+	Short:   "Common system contract actions",
+	Long:    `Common system contract actions`,
 	Example: `  iwallet system producer-list
   iwallet sys producer-list
   iwallet sys plist`,
