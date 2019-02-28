@@ -37,7 +37,7 @@ var (
 
 var (
 	continuousNum     int
-	maxBlockNumber    int64 = 1024
+	maxBlockNumber    int64 = 10000
 	blockReqTimeout         = 3 * time.Second
 	subSlotTime             = 500 * time.Millisecond
 	genBlockTime            = 400 * time.Millisecond
@@ -293,10 +293,10 @@ func (p *PoB) verifyLoop() {
 
 			recvTimes := p.recvTimesMap[vbm.from] + 1
 
-			if recvTimes > maxBlockNumber {
-				p.p2pService.PutPeerToBlack(vbm.from)
-				continue
-			}
+			/*          if recvTimes > maxBlockNumber { */
+			// p.p2pService.PutPeerToBlack(vbm.from)
+			// continue
+			/* } */
 			p.recvTimesMap[vbm.from] = recvTimes
 
 			p.doVerifyBlock(vbm)

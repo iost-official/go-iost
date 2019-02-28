@@ -175,8 +175,9 @@ func (p *Peer) readLoop() {
 		}
 		chainID := binary.BigEndian.Uint32(header[chainIDBegin:chainIDEnd])
 		if chainID != p.peerManager.config.ChainID {
-			ilog.Warnf("mismatched chainID. chainID=%d", chainID)
-			break
+			ilog.Warnf("Mismatched chainID, put peer to blacklist. remotePeer=%v, chainID=%d", p.ID(), chainID)
+			p.peerManager.PutPeerToBlack(p.ID())
+			return
 		}
 		length := binary.BigEndian.Uint32(header[dataLengthBegin:dataLengthEnd])
 		if length > maxDataLength {
