@@ -308,7 +308,7 @@ func (sy *SyncImpl) queryBlockHash(hr *msgpb.BlockHashQuery) {
 }
 
 func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
-	ilog.Debugf("sync Blocks %v, %v", startNumber, endNumber)
+	ilog.Infof("sync Blocks %v, %v", startNumber, endNumber)
 	for startNumber <= endNumber {
 		for sy.blockCache.Head().Head.Number+blockHashQueryAdvance < startNumber {
 			time.Sleep(500 * time.Millisecond)
@@ -331,7 +331,7 @@ func (sy *SyncImpl) checkSyncProcess() {
 	if sy.baseVariable.Mode() != global.ModeSync {
 		return
 	}
-	ilog.Debugf("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd.Load())
+	ilog.Infof("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd.Load())
 	if sy.syncEnd.Load() <= sy.blockCache.Head().Head.Number {
 		sy.baseVariable.SetMode(global.ModeNormal)
 		sy.dc.ReStart()
