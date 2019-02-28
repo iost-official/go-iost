@@ -21,7 +21,7 @@ import (
 var (
 	confirmNumber int64
 	// blockHashQueryAdvance+maxBlockHashQueryNumber<=pob.maxBlockNumber
-	maxBlockHashQueryNumber int64 = 1000
+	maxBlockHashQueryNumber int64 = 100
 	retryTime                     = 3 * time.Second
 	checkTime                     = 3 * time.Second
 	syncHeightTime                = 3 * time.Second
@@ -366,10 +366,8 @@ func (sy *SyncImpl) messageLoop() {
 }
 
 func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashResponse {
-	if end-start+1 > maxBlockHashQueryNumber {
-		return &msgpb.BlockHashResponse{
-			BlockInfos: make([]*msgpb.BlockInfo, 0, 0),
-		}
+	if end > start+maxBlockHashQueryNumber-1 {
+		end = start + maxBlockHashQueryNumber - 1
 	}
 	resp := &msgpb.BlockHashResponse{
 		BlockInfos: make([]*msgpb.BlockInfo, 0, end-start+1),
@@ -409,49 +407,13 @@ func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashRespo
 	return resp
 }
 
-func (sy *SyncImpl) getBlockHashesByNums(nums []int64) *msgpb.BlockHashResponse {
-	if int64(len(nums)) > maxBlockHashQueryNumber {
-		return &msgpb.BlockHashResponse{
-			BlockInfos: make([]*msgpb.BlockInfo, 0, 0),
-		}
-	}
-	resp := &msgpb.BlockHashResponse{
-		BlockInfos: make([]*msgpb.BlockInfo, 0, len(nums)),
-	}
-	var blk *block.Block
-	var err error
-	for _, num := range nums {
-		var hash []byte
-		blk, err = sy.blockCache.GetBlockByNumber(num)
-		if err == nil {
-			hash = blk.HeadHash()
-		} else {
-			hash, err = sy.baseVariable.BlockChain().GetHashByNumber(num)
-			if err != nil {
-				continue
-			}
-		}
-		blkInfo := msgpb.BlockInfo{
-			Number: num,
-			Hash:   hash,
-		}
-		resp.BlockInfos = append(resp.BlockInfos, &blkInfo)
-	}
-	return resp
-}
-
 func (sy *SyncImpl) handleHashQuery(rh *msgpb.BlockHashQuery, peerID p2p.PeerID) {
 	if rh.End < rh.Start || rh.Start < 0 {
 		return
 	}
 	var resp *msgpb.BlockHashResponse
 
-	switch rh.ReqType {
-	case msgpb.RequireType_GETBLOCKHASHES:
-		resp = sy.getBlockHashes(rh.Start, rh.End)
-	case msgpb.RequireType_GETBLOCKHASHESBYNUMBER:
-		resp = sy.getBlockHashesByNums(rh.Nums)
-	}
+	resp = sy.getBlockHashes(rh.Start, rh.End)
 
 	if len(resp.BlockInfos) == 0 {
 		return
