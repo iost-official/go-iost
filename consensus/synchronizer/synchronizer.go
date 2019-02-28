@@ -284,8 +284,8 @@ func (sy *SyncImpl) checkGenBlock() bool {
 		if sy.syncEnd.Load()+1 > startNumber {
 			startNumber = sy.syncEnd.Load() + 1
 		}
-		if startNumber+maxBlockHashQueryNumber < endNumber {
-			endNumber = height + maxBlockHashQueryNumber
+		if startNumber+maxBlockHashQueryNumber-1 < endNumber {
+			endNumber = startNumber + maxBlockHashQueryNumber - 1
 		}
 		sy.syncEnd.Store(endNumber)
 		sy.broadcastBlockHashQuery(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: endNumber, Nums: nil})
@@ -308,7 +308,7 @@ func (sy *SyncImpl) queryBlocksHash(aimNumber int64) error {
 	ilog.Infof("sync Blocks %v, %v", sy.blockCache.LinkedRoot().Head.Number, aimNumber)
 	for sy.blockCache.Head().Head.Number <= aimNumber {
 		startNumber := sy.blockCache.LinkedRoot().Head.Number + 1
-		endNumber := startNumber + maxBlockHashQueryNumber
+		endNumber := startNumber + maxBlockHashQueryNumber - 1
 		if endNumber > aimNumber {
 			endNumber = aimNumber
 		}
