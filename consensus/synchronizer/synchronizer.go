@@ -480,31 +480,6 @@ func (sy *SyncImpl) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
 		blk, err = sy.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
 		if err != nil {
 			ilog.Warnf("Fail to get block. from=%v, num=%v,hash=%v", peerID.Pretty(), rh.Number, common.Base58Encode(rh.Hash))
-			var hash []byte
-			blk, err = sy.blockCache.GetBlockByNumber(rh.Number)
-			if err == nil {
-				hash = blk.HeadHash()
-			} else {
-				hash, err = sy.baseVariable.BlockChain().GetHashByNumber(rh.Number)
-			}
-			if err == nil {
-				resp := &msgpb.BlockHashResponse{
-					BlockInfos: make([]*msgpb.BlockInfo, 0, 1),
-				}
-				blkInfo := msgpb.BlockInfo{
-					Number: rh.Number,
-					Hash:   hash,
-				}
-				resp.BlockInfos = append(resp.BlockInfos, &blkInfo)
-				bytes, err := proto.Marshal(resp)
-				if err != nil {
-					ilog.Errorf("Marshal BlockHashResponse failed:struct=%+v, err=%v", resp, err)
-					return
-				}
-				ilog.Warnf("send block hash response. from=%v, num=%v,hash=%v", peerID.Pretty(), blkInfo.Number, common.Base58Encode(blkInfo.Hash))
-				sy.p2pService.SendToPeer(peerID, bytes, p2p.SyncBlockHashResponse, p2p.NormalMessage)
-
-			}
 			return
 		}
 	}
