@@ -306,13 +306,21 @@ func (sy *SyncImpl) broadcastBlockHashQuery(hr *msgpb.BlockHashQuery) {
 
 func (sy *SyncImpl) queryBlocksHash(aimNumber int64) error {
 	ilog.Infof("sync Blocks %v, %v", sy.blockCache.LinkedRoot().Head.Number, aimNumber)
-	for sy.blockCache.Head().Head.Number <= aimNumber {
+	for sy.blockCache.Head().Head.Number < aimNumber {
 		startNumber := sy.blockCache.LinkedRoot().Head.Number + 1
 		endNumber := startNumber + maxBlockHashQueryNumber - 1
 		if endNumber > aimNumber {
 			endNumber = aimNumber
 		}
 		sy.broadcastBlockHashQuery(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: endNumber, Nums: nil})
+
+		startNumber = sy.blockCache.Head().Head.Number + 1
+		endNumber = startNumber + maxBlockHashQueryNumber - 1
+		if endNumber > aimNumber {
+			endNumber = aimNumber
+		}
+		sy.broadcastBlockHashQuery(&msgpb.BlockHashQuery{ReqType: msgpb.RequireType_GETBLOCKHASHES, Start: startNumber, End: endNumber, Nums: nil})
+
 		time.Sleep(retryTime)
 	}
 	return nil
@@ -366,6 +374,11 @@ func (sy *SyncImpl) messageLoop() {
 }
 
 func (sy *SyncImpl) getBlockHashes(start int64, end int64) *msgpb.BlockHashResponse {
+	if end < start {
+		return &msgpb.BlockHashResponse{
+			BlockInfos: make([]*msgpb.BlockInfo, 0, 0),
+		}
+	}
 	if end > start+maxBlockHashQueryNumber-1 {
 		end = start + maxBlockHashQueryNumber - 1
 	}
