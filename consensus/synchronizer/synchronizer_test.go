@@ -131,7 +131,7 @@ func TestSynchronizer(t *testing.T) {
 		sy, err := NewSynchronizer(account, baseVariable, blockCache, mockP2PService, nil) //mock
 		sy.Start()
 		So(err, ShouldBeNil)
-		err = sy.syncBlocks(1, 15)
+		err = sy.queryBlocksHash(15)
 		So(err, ShouldBeNil)
 		time.Sleep(200 * time.Millisecond)
 		blockcache.CleanBlockCacheWAL()
