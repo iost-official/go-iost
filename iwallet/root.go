@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if verbose && len(cmd.Use) > 3 && cmd.Use[:4] != "help" {
+		if elapsedTime && (len(cmd.Use) < 4 || cmd.Use[:4] != "help") {
 			fmt.Println("Executed in", time.Since(startTime))
 		}
 	},
@@ -64,6 +64,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "configuration file (default $HOME/.iwallet.yaml)")
 
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", true, "print verbose information")
+	rootCmd.PersistentFlags().BoolVarP(&elapsedTime, "elapsed_time", "", false, "print elapsed time")
 	rootCmd.PersistentFlags().StringVarP(&accountName, "account", "a", "", "which account to use")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&useLongestChain, "use_longest", "", false, "get info on longest chain")
@@ -132,7 +133,8 @@ var (
 	checkResultMaxRetry int32
 	useLongestChain     bool
 
-	verbose bool
+	verbose     bool
+	elapsedTime bool
 
 	chainID uint32
 )
