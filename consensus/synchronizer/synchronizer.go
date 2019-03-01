@@ -43,7 +43,6 @@ type Synchronizer interface {
 type SyncImpl struct {
 	p2pService      p2p.Service
 	blockCache      blockcache.BlockCache
-	lastBcn         *blockcache.BlockCacheNode
 	baseVariable    global.BaseVariable
 	dc              DownloadController
 	reqMap          *sync.Map
@@ -65,7 +64,6 @@ func NewSynchronizer(basevariable global.BaseVariable, blkcache blockcache.Block
 		baseVariable: basevariable,
 		reqMap:       new(sync.Map),
 		heightMap:    new(sync.Map),
-		lastBcn:      nil,
 		wg:           new(sync.WaitGroup),
 	}
 	var err error
@@ -227,18 +225,15 @@ func (sy *SyncImpl) checkGenBlock() bool {
 	}
 	height := sy.baseVariable.BlockChain().Length() - 1
 	var num int64
-	if bcn != sy.lastBcn {
-		sy.lastBcn = bcn
-		witness := bcn.Block.Head.Witness
-		for i := int64(0); i < confirmNumber*int64(continuousNum); i++ {
-			if bcn == nil {
-				break
-			}
-			if witness == bcn.Block.Head.Witness {
-				num++
-			}
-			bcn = bcn.GetParent()
+	witness := bcn.Block.Head.Witness
+	for i := int64(0); i < confirmNumber*int64(continuousNum); i++ {
+		if bcn == nil {
+			break
 		}
+		if witness == bcn.Block.Head.Witness {
+			num++
+		}
+		bcn = bcn.GetParent()
 	}
 	if num > int64(continuousNum) {
 		ilog.Debugf("num: %v, continuousNum: %v", num, continuousNum)
@@ -283,6 +278,9 @@ func (sy *SyncImpl) syncBlocks(startNumber int64, endNumber int64) error {
 
 // CheckSyncProcess checks if the end of sync.
 func (sy *SyncImpl) CheckSyncProcess() {
+	if sy.baseVariable.Mode() != global.ModeSync {
+		return
+	}
 	ilog.Debugf("check sync process: now %v, end %v", sy.blockCache.Head().Head.Number, sy.syncEnd.Load())
 	if sy.syncEnd.Load() <= sy.blockCache.Head().Head.Number {
 		sy.baseVariable.SetMode(global.ModeNormal)

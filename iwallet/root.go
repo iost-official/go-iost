@@ -37,11 +37,10 @@ var rootCmd = &cobra.Command{
 		}
 		iwalletSDK.SetTxInfo(gasLimit, gasRatio, expiration, delaySecond, limit)
 		iwalletSDK.SetUseLongestChain(useLongestChain)
-		return iwalletSDK.Connect()
+		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		iwalletSDK.CloseConn()
-		if verbose {
+		if verbose && cmd.Use[:4] != "help" {
 			fmt.Println("Executed in", time.Since(startTime))
 		}
 	},
@@ -51,7 +50,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
+		fmt.Println("\033[38;5;1mERROR:\033[38;5;12m", err)
 		os.Exit(1)
 	}
 }
@@ -70,7 +69,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&checkResult, "check_result", "", true, "check publish/call status after sending to chain")
 	rootCmd.PersistentFlags().Float32VarP(&checkResultDelay, "check_result_delay", "", 3, "rpc checking will occur at [checkResultDelay] seconds after sending to chain.")
-	rootCmd.PersistentFlags().Int32VarP(&checkResultMaxRetry, "check_result_max_retry", "", 20, "max times to call grpc to check tx status")
+	rootCmd.PersistentFlags().Int32VarP(&checkResultMaxRetry, "check_result_max_retry", "", 30, "max times to call grpc to check tx status")
 	rootCmd.PersistentFlags().StringVarP(&signAlgo, "sign_algo", "", "ed25519", "sign algorithm")
 	rootCmd.PersistentFlags().StringSliceVarP(&signers, "signers", "", []string{}, "additional signers")
 	rootCmd.PersistentFlags().Float64VarP(&gasLimit, "gas_limit", "l", 1000000, "gas limit for a transaction")
