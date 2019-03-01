@@ -57,6 +57,11 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 	h.DNS = NewDNS(h)
 	h.Authority = Authority{h: h}
 	h.GasManager = NewGasManager(h)
+
+	if height := h.ctx.Value("number"); height != nil {
+		h.db.Put("reserve.height", strconv.FormatInt(height.(int64), 10))
+	}
+
 	return h
 
 }

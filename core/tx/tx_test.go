@@ -6,6 +6,8 @@ import (
 	"testing"
 	"time"
 
+	"encoding/base64"
+
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -287,4 +289,36 @@ func BenchmarkHash(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		tx.Hash()
 	}
+}
+
+func TestSecpSign(t *testing.T) {
+	txx := &Tx{
+		//Time:       1551062208865000000,
+		//Expiration: 1551062298865000000,
+		Time:        1551062209906000000,
+		Expiration:  1551062299906000000,
+		GasRatio:    100,
+		GasLimit:    200000000,
+		Delay:       0,
+		Publisher:   "testiost2",
+		ChainID:     1023,
+		AmountLimit: []*contract.Amount{{Token: "*", Val: "unlimited"}},
+		Actions: []*Action{
+			{
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       "[\"iost\",\"testiost2\",\"testnetiost\",\"1\",\"ssss\"]",
+			},
+		},
+	}
+	kp, err := account.NewKeyPair(common.Base58Decode("BNkwBQabFLjUBmcJQhKAHYF99Qkx3tfJpSmZ6riyY69n"), crypto.Secp256k1)
+
+	fmt.Println(base64.StdEncoding.EncodeToString(txx.publishHash()))
+
+	signTx, err := SignTx(txx, "testiost2", []*account.KeyPair{kp})
+	if err != nil {
+		t.Fatal(err)
+	}
+	fmt.Println(base64.StdEncoding.EncodeToString(kp.Pubkey))
+	fmt.Println(base64.StdEncoding.EncodeToString(signTx.PublishSigns[0].Sig))
 }
