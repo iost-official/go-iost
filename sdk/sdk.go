@@ -119,6 +119,7 @@ func (s *IOSTDevSDK) SetUseLongestChain(useLongestChain bool) {
 	s.useLongestChain = useLongestChain
 }
 
+// Connected checks if is connected to grpc server.
 func (s *IOSTDevSDK) Connected() bool {
 	return s.rpcConn != nil
 }
@@ -402,7 +403,7 @@ func (s *IOSTDevSDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 }
 
 // CreateNewAccountActions makes actions for creating new account.
-func (s *IOSTDevSDK) CreateNewAcccountActions(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) ([]*rpcpb.Action, error) {
+func (s *IOSTDevSDK) CreateNewAccountActions(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) ([]*rpcpb.Action, error) {
 	var acts []*rpcpb.Action
 	acts = append(acts, NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
@@ -424,7 +425,7 @@ func (s *IOSTDevSDK) CreateNewAcccountActions(newID string, ownerKey string, act
 
 // CreateNewAccount ... return txHash
 func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) (string, error) {
-	acts, err := s.CreateNewAcccountActions(newID, ownerKey, activeKey, initialGasPledge, initialRAM, initialCoins)
+	acts, err := s.CreateNewAccountActions(newID, ownerKey, activeKey, initialGasPledge, initialRAM, initialCoins)
 	if err != nil {
 		return "", err
 	}

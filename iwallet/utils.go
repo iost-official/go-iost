@@ -307,7 +307,7 @@ func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signK
 				return fmt.Errorf("signature contained in %v is invalid", f)
 			}
 			sigs = append(sigs, sig)
-			fmt.Println("Added signature:", f)
+			fmt.Println("Successfully added signature contained in:", f)
 		}
 	}
 	tx.Signatures = sigs
