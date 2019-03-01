@@ -1,3 +1,10 @@
+## v3.0.1
+
+Thu Feb 28 10:49:56 CST 2019
+
+- Fix memory leaks during synchronization.
+- Optimize the routing table policy of the p2p module.
+
 ## v3.0.0
 
 Sat Feb 23 13:16:25 CST 2019
