@@ -15,7 +15,6 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/sdk"
 )
@@ -100,34 +99,43 @@ func initTxFromMethod(contract, method string, methodArgs ...interface{}) (*rpcp
 	return initTxFromActions(actions)
 }
 
-func sendTx(tx *rpcpb.TransactionRequest) error {
+func sendTxGetHash(tx *rpcpb.TransactionRequest) (string, error) {
 	if err := InitAccount(); err != nil {
-		return err
+		return "", err
 	}
-	if err := iwalletSDK.Connect(); err != nil {
-		return err
+	if !iwalletSDK.Connected() {
+		if err := iwalletSDK.Connect(); err != nil {
+			return "", err
+		}
+		defer iwalletSDK.CloseConn()
 	}
-	defer iwalletSDK.CloseConn()
+	if err := handleMultiSig(tx, signatureFiles, signKeyFiles); err != nil {
+		return "", err
+	}
+	return iwalletSDK.SendTx(tx)
+}
 
-	if err := handleMultiSig(tx, withSigns, signKeys); err != nil {
-		return err
-	}
-
-	_, err := iwalletSDK.SendTx(tx)
+func sendTx(tx *rpcpb.TransactionRequest) error {
+	_, err := sendTxGetHash(tx)
 	return err
+}
+
+func saveTx(tx *rpcpb.TransactionRequest) error {
+	err := sdk.SaveProtoStructToJSONFile(tx, outputTxFile)
+	if err != nil {
+		return err
+	}
+	if verbose {
+		fmt.Println("Transaction:")
+		fmt.Println(sdk.MarshalTextString(tx))
+	}
+	fmt.Println("Successfully saved transaction request as json file:", outputTxFile)
+	return nil
 }
 
 func saveOrSendTx(tx *rpcpb.TransactionRequest) error {
 	if outputTxFile != "" {
-		err := sdk.SaveProtoStructToJSONFile(tx, outputTxFile)
-		if err == nil {
-			if verbose {
-				fmt.Println("Transaction:")
-				fmt.Println(sdk.MarshalTextString(tx))
-			}
-			fmt.Println("Successfully saved transaction request as json file:", outputTxFile)
-		}
-		return err
+		return saveTx(tx)
 	}
 	return sendTx(tx)
 }
@@ -271,37 +279,38 @@ func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 	return actions, nil
 }
 
-func handleMultiSig(t *rpcpb.TransactionRequest, withSigns []string, signKeys []string) error {
-	if len(withSigns) == 0 && len(signKeys) == 0 {
+func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signKeyFiles []string) error {
+	if len(signatureFiles) == 0 && len(signKeyFiles) == 0 {
 		return nil
 	}
-	ilog.Infof("Making multi sig...")
 	sigs := make([]*rpcpb.Signature, 0)
-	if len(withSigns) != 0 && len(signKeys) != 0 {
-		return fmt.Errorf("at least one of --sign_keys and --with_signs should be empty")
+	if len(signatureFiles) != 0 && len(signKeyFiles) != 0 {
+		return fmt.Errorf("can not set flags --sign_key_files and --signature_files simultaneously")
 	}
-	if len(signKeys) > 0 {
-		for _, f := range signKeys {
+	if len(signKeyFiles) > 0 {
+		for _, f := range signKeyFiles {
 			kp, err := sdk.LoadKeyPair(f, signAlgo)
 			if err != nil {
-				return fmt.Errorf("sign tx with priv key %v err %v", f, err)
+				return fmt.Errorf("failed to sign tx with private key file %v: %v", f, err)
 			}
-			sigs = append(sigs, sdk.GetSignatureOfTx(t, kp))
+			sigs = append(sigs, sdk.GetSignatureOfTx(tx, kp))
+			fmt.Println("Signed transaction with private key file:", f)
 		}
-	} else if len(withSigns) > 0 {
-		for _, f := range withSigns {
+	} else if len(signatureFiles) > 0 {
+		for _, f := range signatureFiles {
 			sig := &rpcpb.Signature{}
 			err := sdk.LoadProtoStructFromJSONFile(f, sig)
 			if err != nil {
-				return fmt.Errorf("invalid signature file %v", f)
+				return err
 			}
-			if !sdk.VerifySigForTx(t, sig) {
-				return fmt.Errorf("sign verify error %v", f)
+			if !sdk.VerifySigForTx(tx, sig) {
+				return fmt.Errorf("signature contained in %v is invalid", f)
 			}
 			sigs = append(sigs, sig)
+			fmt.Println("Added signature:", f)
 		}
 	}
-	t.Signatures = sigs
+	tx.Signatures = sigs
 	return nil
 }
 

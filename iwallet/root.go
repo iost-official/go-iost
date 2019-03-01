@@ -79,8 +79,8 @@ func init() {
 	rootCmd.PersistentFlags().Uint32VarP(&chainID, "chain_id", "", uint32(1024), "chain id which distinguishes different network")
 	rootCmd.PersistentFlags().StringVarP(&txTime, "tx_time", "", "", fmt.Sprintf("use the special tx time instead of now, format: %v", time.Now().Format(time.RFC3339)))
 	rootCmd.PersistentFlags().StringVarP(&signPerm, "sign_permission", "", "active", "permission used to sign transactions")
-	rootCmd.PersistentFlags().StringSliceVarP(&signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
-	rootCmd.PersistentFlags().StringSliceVarP(&withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
+	rootCmd.PersistentFlags().StringSliceVarP(&signKeyFiles, "sign_key_files", "", []string{}, "optional private key files used for signing, split by comma")
+	rootCmd.PersistentFlags().StringSliceVarP(&signatureFiles, "signature_files", "", []string{}, "optional signature files, split by comma")
 	rootCmd.PersistentFlags().StringVarP(&outputTxFile, "output", "o", "", "output json file to save transaction request")
 
 	// Cobra also supports local flags, which will only run
@@ -133,8 +133,8 @@ var (
 	outputTxFile string
 
 	// Used for multi sig.
-	signKeys  []string
-	withSigns []string
+	signKeyFiles   []string
+	signatureFiles []string
 
 	checkResult         bool
 	checkResultDelay    float32

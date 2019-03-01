@@ -26,8 +26,11 @@ var sendCmd = &cobra.Command{
 	Use:     "send txFile",
 	Short:   "Send transaction onto blockchain by given json file",
 	Long:    `Send transaction onto blockchain by given json file`,
-	Example: `iwallet send tx.json --account test0`,
+	Example: `  iwallet send tx.json --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
+		if err := checkArgsNumber(cmd, args, "txFile"); err != nil {
+			return err
+		}
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {

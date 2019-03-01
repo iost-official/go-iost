@@ -40,7 +40,10 @@ var publishCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return checkAccount(cmd)
+		if outputTxFile == "" {
+			return checkAccount(cmd)
+		}
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		codePath := args[0]
@@ -55,13 +58,20 @@ var publishCmd = &cobra.Command{
 			updateID = args[3]
 		}
 
-		err := InitAccount()
+		actions, err := iwalletSDK.PublishContractActions(codePath, abiPath, conID, update, updateID)
 		if err != nil {
-			return fmt.Errorf("failed to load account: %v", err)
+			return err
 		}
-		_, txHash, err := iwalletSDK.PublishContract(codePath, abiPath, conID, update, updateID)
+		tx, err := initTxFromActions(actions)
 		if err != nil {
-			return fmt.Errorf("failed to create tx: %v", err)
+			return err
+		}
+		if outputTxFile != "" {
+			return saveTx(tx)
+		}
+		txHash, err := sendTxGetHash(tx)
+		if err != nil {
+			return err
 		}
 		if !update {
 			fmt.Println("The contract id is: Contract" + txHash)

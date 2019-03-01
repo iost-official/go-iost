@@ -119,6 +119,10 @@ func (s *IOSTDevSDK) SetUseLongestChain(useLongestChain bool) {
 	s.useLongestChain = useLongestChain
 }
 
+func (s *IOSTDevSDK) Connected() bool {
+	return s.rpcConn != nil
+}
+
 // Connect ...
 func (s *IOSTDevSDK) Connect() (err error) {
 	if s.rpcConn == nil {
@@ -397,8 +401,8 @@ func (s *IOSTDevSDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 	return nil
 }
 
-// CreateNewAccount ... return txHash
-func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) (string, error) {
+// CreateNewAccountActions makes actions for creating new account.
+func (s *IOSTDevSDK) CreateNewAcccountActions(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) ([]*rpcpb.Action, error) {
 	var acts []*rpcpb.Action
 	acts = append(acts, NewAction("auth.iost", "signUp", fmt.Sprintf(`["%v", "%v", "%v"]`, newID, ownerKey, activeKey)))
 	if initialRAM > 0 {
@@ -407,13 +411,22 @@ func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey s
 	var registerInitialPledge int64 = 10
 	initialGasPledge -= registerInitialPledge
 	if initialGasPledge < 0 {
-		return "", fmt.Errorf("min gas pledge is 10")
+		return nil, fmt.Errorf("min gas pledge is 10")
 	}
 	if initialGasPledge > 0 {
 		acts = append(acts, NewAction("gas.iost", "pledge", fmt.Sprintf(`["%v", "%v", "%v"]`, s.accountName, newID, initialGasPledge)))
 	}
 	if initialCoins > 0 {
 		acts = append(acts, NewAction("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, s.accountName, newID, initialCoins)))
+	}
+	return acts, nil
+}
+
+// CreateNewAccount ... return txHash
+func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey string, initialGasPledge int64, initialRAM int64, initialCoins int64) (string, error) {
+	acts, err := s.CreateNewAcccountActions(newID, ownerKey, activeKey, initialGasPledge, initialRAM, initialCoins)
+	if err != nil {
+		return "", err
 	}
 	txHash, err := s.SendTxFromActions(acts)
 	if err != nil {
@@ -422,24 +435,24 @@ func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey s
 	return txHash, nil
 }
 
-// PublishContract converts contract js code to transaction. If 'send', also send it to chain.
-func (s *IOSTDevSDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (*rpcpb.TransactionRequest, string, error) {
+// PublishContractActions makes actions for publishing contract.
+func (s *IOSTDevSDK) PublishContractActions(codePath string, abiPath string, conID string, update bool, updateID string) ([]*rpcpb.Action, error) {
 	fd, err := ioutil.ReadFile(codePath)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to read source code file: %v", err)
+		return nil, fmt.Errorf("failed to read source code file: %v", err)
 	}
 	code := string(fd)
 
 	fd, err = ioutil.ReadFile(abiPath)
 	if err != nil {
-		return nil, "", fmt.Errorf("failed to read abi file: %v", err)
+		return nil, fmt.Errorf("failed to read abi file: %v", err)
 	}
 	abi := string(fd)
 
 	var info *contract.Info
 	err = json.Unmarshal([]byte(abi), &info)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	c := &contract.Contract{
 		ID:   conID,
@@ -455,13 +468,13 @@ func (s *IOSTDevSDK) PublishContract(codePath string, abiPath string, conID stri
 	if marshalMethod == "json" {
 		buf, err := json.Marshal(c)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		contractStr = string(buf)
 	} else {
 		buf, err := proto.Marshal(c)
 		if err != nil {
-			return nil, "", err
+			return nil, err
 		}
 		contractStr = base64.StdEncoding.EncodeToString(buf)
 	}
@@ -471,10 +484,19 @@ func (s *IOSTDevSDK) PublishContract(codePath string, abiPath string, conID stri
 	}
 	data, err := json.Marshal(arr)
 	if err != nil {
-		return nil, "", err
+		return nil, err
 	}
 	action := NewAction("system.iost", methodName, string(data))
-	trx, err := s.CreateTxFromActions([]*rpcpb.Action{action})
+	return []*rpcpb.Action{action}, nil
+}
+
+// PublishContract converts contract js code to transaction. If 'send', also send it to chain.
+func (s *IOSTDevSDK) PublishContract(codePath string, abiPath string, conID string, update bool, updateID string) (*rpcpb.TransactionRequest, string, error) {
+	acts, err := s.PublishContractActions(codePath, abiPath, conID, update, updateID)
+	if err != nil {
+		return nil, "", err
+	}
+	trx, err := s.CreateTxFromActions(acts)
 	if err != nil {
 		return nil, "", err
 	}

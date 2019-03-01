@@ -93,19 +93,28 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("key provided but not valid")
 		}
 
-		if err := InitAccount(); err != nil {
+		// Set account since making actions needs accountName.
+		iwalletSDK.SetAccount(accountName, nil)
+		actions, err := iwalletSDK.CreateNewAcccountActions(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
+		if err != nil {
 			return err
 		}
+		tx, err := initTxFromActions(actions)
+		if err != nil {
+			return err
+		}
+		if outputTxFile != "" {
+			return saveTx(tx)
+		}
+
 		if err := iwalletSDK.Connect(); err != nil {
 			return err
 		}
 		defer iwalletSDK.CloseConn()
 
-		_, err = iwalletSDK.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
-		if err != nil {
-			return fmt.Errorf("create new account error: %v", err)
+		if err := sendTx(tx); err != nil {
+			return err
 		}
-
 		info, err := iwalletSDK.GetAccountInfo(newName)
 		if err != nil {
 			return fmt.Errorf("failed to get account info: %v", err)
