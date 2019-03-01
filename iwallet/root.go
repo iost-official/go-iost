@@ -40,7 +40,7 @@ var rootCmd = &cobra.Command{
 		return nil
 	},
 	PersistentPostRun: func(cmd *cobra.Command, args []string) {
-		if verbose && cmd.Use[:4] != "help" {
+		if verbose && len(cmd.Use) > 3 && cmd.Use[:4] != "help" {
 			fmt.Println("Executed in", time.Since(startTime))
 		}
 	},
