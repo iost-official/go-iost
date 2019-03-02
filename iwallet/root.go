@@ -79,6 +79,7 @@ func init() {
 	rootCmd.PersistentFlags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction in seconds")
 	rootCmd.PersistentFlags().Uint32VarP(&chainID, "chain_id", "", uint32(1024), "chain id which distinguishes different network")
 	rootCmd.PersistentFlags().StringVarP(&txTime, "tx_time", "", "", fmt.Sprintf("use the special tx time instead of now, format: %v", time.Now().Format(time.RFC3339)))
+	rootCmd.PersistentFlags().Uint32VarP(&txTimeDelay, "tx_time_delay", "", 0, "delay the tx time from now")
 	rootCmd.PersistentFlags().StringVarP(&signPerm, "sign_permission", "", "active", "permission used to sign transactions")
 	rootCmd.PersistentFlags().StringSliceVarP(&signKeyFiles, "sign_key_files", "", []string{}, "optional private key files used for signing, split by comma")
 	rootCmd.PersistentFlags().StringSliceVarP(&signatureFiles, "signature_files", "", []string{}, "optional signature files, split by comma")
@@ -131,6 +132,7 @@ var (
 	amountLimit  string
 	delaySecond  int64
 	txTime       string
+	txTimeDelay  uint32
 	outputTxFile string
 
 	// Used for multi sig.

@@ -56,15 +56,19 @@ func checkSigners(signers []string) error {
 	return nil
 }
 
-func parseTimeFromStr(s string) (int64, error) {
-	var t time.Time
-	if s == "" {
-		return time.Now().UnixNano(), nil
+func parseTxTime() (int64, error) {
+	if txTime != "" && txTimeDelay != 0 {
+		return 0, fmt.Errorf("can not set flags --tx_time and --tx_time_delay simultaneously")
 	}
-	t, err := time.Parse(time.RFC3339, s)
-	if err != nil {
-		return 0, fmt.Errorf(`invalid time "%v", should in format "%v"`, s, time.Now().Format(time.RFC3339))
+	if txTime != "" {
+		t, err := time.Parse(time.RFC3339, txTime)
+		if err != nil {
+			return 0, fmt.Errorf(`invalid time "%v", should in format "%v"`, txTime, time.Now().Format(time.RFC3339))
+		}
+		return t.UnixNano(), nil
 	}
+	t := time.Now()
+	t = t.Add(time.Second * time.Duration(txTimeDelay))
 	return t.UnixNano(), nil
 }
 
@@ -74,7 +78,7 @@ func initTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, erro
 		return nil, err
 	}
 
-	t, err := parseTimeFromStr(txTime)
+	t, err := parseTxTime()
 	if err != nil {
 		return nil, err
 	}
@@ -99,8 +103,31 @@ func initTxFromMethod(contract, method string, methodArgs ...interface{}) (*rpcp
 	return initTxFromActions(actions)
 }
 
+func checkTxTime(tx *rpcpb.TransactionRequest) error {
+	timepoint := time.Unix(0, tx.Time)
+	delta := time.Until(timepoint)
+	if delta.Seconds() < 1 {
+		return nil
+	}
+	fmt.Println("The transaction time is:", timepoint.Format(time.RFC3339))
+	seconds := int(delta.Seconds())
+	fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds)
+	time.Sleep(time.Duration(seconds%10) * time.Second)
+	for i := seconds % 10; i < seconds; i += 10 {
+		fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds-i)
+		time.Sleep(10 * time.Second)
+	}
+	return nil
+}
+
 func sendTxGetHash(tx *rpcpb.TransactionRequest) (string, error) {
 	if err := InitAccount(); err != nil {
+		return "", err
+	}
+	if err := handleMultiSig(tx, signatureFiles, signKeyFiles); err != nil {
+		return "", err
+	}
+	if err := checkTxTime(tx); err != nil {
 		return "", err
 	}
 	if !iwalletSDK.Connected() {
@@ -108,9 +135,6 @@ func sendTxGetHash(tx *rpcpb.TransactionRequest) (string, error) {
 			return "", err
 		}
 		defer iwalletSDK.CloseConn()
-	}
-	if err := handleMultiSig(tx, signatureFiles, signKeyFiles); err != nil {
-		return "", err
 	}
 	return iwalletSDK.SendTx(tx)
 }
