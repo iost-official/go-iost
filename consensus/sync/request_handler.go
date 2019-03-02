@@ -19,11 +19,11 @@ type requestHandler struct {
 	done   *sync.WaitGroup
 }
 
-func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bCahin *block.BlockChain) *requestHandler {
+func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bChain *block.BlockChain) *requestHandler {
 	rHandler := &requestHandler{
 		p:      p,
 		bCache: bCache,
-		bChain: bCahin,
+		bChain: bChain,
 
 		requestCh: p.Register("sync request", p2p.SyncBlockHashRequest, p2p.SyncBlockRequest),
 
@@ -35,6 +35,13 @@ func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bCahin *bloc
 	go rHandler.controller()
 
 	return rHandler
+}
+
+// Close will close the sync request handler.
+func (r *requestHandler) Close() {
+	close(r.quitCh)
+	r.done.Wait()
+	ilog.Infof("Stopped sync request handler.")
 }
 
 func (r *requestHandler) controller() {
@@ -58,12 +65,6 @@ func (r *requestHandler) controller() {
 		default:
 		}
 	}
-}
-
-func (r *requestHandler) close() {
-	close(r.quitCh)
-	r.done.Wait()
-	ilog.Infof("Stoped sync request handler.")
 }
 
 func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
