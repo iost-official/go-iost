@@ -31,12 +31,19 @@ print_bye() {
     }>&2
 }
 
+update_container_restart_policy() {
+    # IB-613 fix container restart policy
+    sed -i.bak 's/on-failure/unless-stopped/' $PREFIX/docker-compose.yml
+    rm -f $PREFIX/docker-compose.yml.bak
+}
+
 #
 # main
 #
 
 cd $PREFIX
 
+update_container_restart_policy
 docker-compose pull
 docker-compose up -d
 
