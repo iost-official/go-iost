@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/iost-official/go-iost/ilog"
+
 	"strconv"
 
 	"github.com/iost-official/go-iost/common"
@@ -76,10 +78,17 @@ func NewBlockChain(path string) (Chain, error) {
 }
 
 // SetLength sets blockchain's length.
-func (bc *BlockChain) SetLength(i int64) {
+func (bc *BlockChain) SetLength(l int64) {
 	bc.rw.Lock()
-	bc.length = i
+	oldLength := bc.length
+	bc.length = l
 	bc.rw.Unlock()
+	for i := l; i < oldLength; i++ {
+		err := bc.delBlockByNumber(i)
+		if err != nil {
+			ilog.Error(err)
+		}
+	}
 }
 
 // SetTxTotal sets blockchain's tx total.
@@ -193,6 +202,40 @@ func (bc *BlockChain) getBlockByteByHash(hash []byte) ([]byte, error) {
 	}
 	return blockByte, nil
 }
+func (bc *BlockChain) delBlockByHash(hash []byte) error {
+	blockByte, err := bc.getBlockByteByHash(hash)
+	if err != nil {
+		return err
+	}
+	var blk Block
+	err = blk.Decode(blockByte)
+	if err != nil {
+		return errors.New("fail to decode blockByte")
+	}
+	if blk.TxHashes != nil {
+		for _, txHash := range blk.TxHashes {
+			err = bc.blockChainDB.Delete(append(txPrefix, txHash...))
+			if err != nil {
+				return err
+			}
+		}
+
+	}
+	if blk.ReceiptHashes != nil {
+		for _, rHash := range blk.ReceiptHashes {
+			err = bc.blockChainDB.Delete(append(receiptPrefix, rHash...))
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = bc.blockChainDB.Delete(append(blockPrefix, hash...))
+	if err != nil {
+		return err
+	}
+	return nil
+}
 
 // GetBlockByHash is get block by hash
 func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
@@ -234,6 +277,14 @@ func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 		}
 	}
 	return &blk, nil
+}
+
+func (bc *BlockChain) delBlockByNumber(number int64) error {
+	hash, err := bc.GetHashByNumber(number)
+	if err != nil {
+		return err
+	}
+	return bc.delBlockByHash(hash)
 }
 
 // GetBlockByNumber is get block by number
