@@ -17,6 +17,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/sdk"
@@ -194,6 +195,7 @@ func getProducerList(key string) ([]string, error) {
 		}
 		result[i] = response.Data
 	}
+	sort.Strings(result)
 	return result, nil
 }
 
