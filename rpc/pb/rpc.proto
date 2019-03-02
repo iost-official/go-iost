@@ -675,6 +675,8 @@ message GetContractStorageFieldsResponse {
 message SendTransactionResponse {
     // the final transaction hash
     string hash = 1;
+    // the tx_receipt of execution in advance
+    TxReceipt tx_receipt = 2;
 }
 
 // The message defines get token balance response.

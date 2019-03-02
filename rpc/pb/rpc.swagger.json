@@ -1404,6 +1404,10 @@
         "hash": {
           "type": "string",
           "title": "the final transaction hash"
+        },
+        "tx_receipt": {
+          "$ref": "#/definitions/rpcpbTxReceipt",
+          "title": "the tx_receipt of execution in advance"
         }
       },
       "description": "The message defines send transaction response."

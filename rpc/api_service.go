@@ -464,11 +464,15 @@ func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
 // SendTransaction sends a transaction to iserver.
 func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.SendTransactionResponse, error) {
 	t := toCoreTx(req)
+	ret := &rpcpb.SendTransactionResponse{
+		Hash: common.Base58Encode(t.Hash()),
+	}
 	if as.bv.Config().RPC.TryTx {
-		_, err := as.tryTransaction(t)
+		tr, err := as.tryTransaction(t)
 		if err != nil {
 			return nil, fmt.Errorf("try transaction failed: %v", err)
 		}
+		ret.TxReceipt = toPbTxReceipt(tr)
 	}
 	headBlock := as.bc.Head()
 	dbVisitor, err := as.getStateDBVisitorByHash(headBlock.HeadHash())
@@ -485,9 +489,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 	if err != nil {
 		return nil, err
 	}
-	return &rpcpb.SendTransactionResponse{
-		Hash: common.Base58Encode(t.Hash()),
-	}, nil
+	return ret, nil
 }
 
 // ExecTransaction executes a transaction by the node and returns the receipt.
