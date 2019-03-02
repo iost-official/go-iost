@@ -185,7 +185,7 @@ services:
   iserver:
     image: iostio/iost-node:$VERSION
     container_name: iserver
-    restart: on-failure
+    restart: unless-stopped
     ports:
       - "30000-30003:30000-30003"
     volumes:
