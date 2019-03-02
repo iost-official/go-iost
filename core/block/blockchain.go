@@ -212,21 +212,17 @@ func (bc *BlockChain) delBlockByHash(hash []byte) error {
 	if err != nil {
 		return errors.New("fail to decode blockByte")
 	}
-	if blk.TxHashes != nil {
-		for _, txHash := range blk.TxHashes {
-			err = bc.blockChainDB.Delete(append(txPrefix, txHash...))
-			if err != nil {
-				return err
-			}
+	for _, txHash := range blk.TxHashes {
+		err = bc.blockChainDB.Delete(append(txPrefix, txHash...))
+		if err != nil {
+			return err
 		}
-
 	}
-	if blk.ReceiptHashes != nil {
-		for _, rHash := range blk.ReceiptHashes {
-			err = bc.blockChainDB.Delete(append(receiptPrefix, rHash...))
-			if err != nil {
-				return err
-			}
+
+	for _, rHash := range blk.ReceiptHashes {
+		err = bc.blockChainDB.Delete(append(receiptPrefix, rHash...))
+		if err != nil {
+			return err
 		}
 	}
 
