@@ -12,6 +12,7 @@ type Chain interface {
 	CheckLength()
 	SetLength(i int64)
 	Top() (*Block, error)
+	CleanDB(old, new int64)
 	GetHashByNumber(number int64) ([]byte, error)
 	GetBlockByNumber(number int64) (*Block, error)
 	GetBlockByHash(blockHash []byte) (*Block, error)

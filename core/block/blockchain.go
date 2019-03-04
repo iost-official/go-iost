@@ -77,18 +77,21 @@ func NewBlockChain(path string) (Chain, error) {
 	return BC, err
 }
 
-// SetLength sets blockchain's length.
-func (bc *BlockChain) SetLength(l int64) {
-	bc.rw.Lock()
-	oldLength := bc.length
-	bc.length = l
-	bc.rw.Unlock()
-	for i := l; i < oldLength; i++ {
+// CleanDB clean the blocks between new and old
+func (bc *BlockChain) CleanDB(old, new int64) {
+	for i := new; i < old; i++ {
 		err := bc.delBlockByNumber(i)
 		if err != nil {
 			ilog.Error(err)
 		}
 	}
+}
+
+// SetLength sets blockchain's length.
+func (bc *BlockChain) SetLength(l int64) {
+	bc.rw.Lock()
+	bc.length = l
+	bc.rw.Unlock()
 }
 
 // SetTxTotal sets blockchain's tx total.

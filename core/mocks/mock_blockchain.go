@@ -57,6 +57,16 @@ func (mr *MockChainMockRecorder) CheckLength() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckLength", reflect.TypeOf((*MockChain)(nil).CheckLength))
 }
 
+// CleanDB mocks base method
+func (m *MockChain) CleanDB(arg0, arg1 int64) {
+	m.ctrl.Call(m, "CleanDB", arg0, arg1)
+}
+
+// CleanDB indicates an expected call of CleanDB
+func (mr *MockChainMockRecorder) CleanDB(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanDB", reflect.TypeOf((*MockChain)(nil).CleanDB), arg0, arg1)
+}
+
 // Close mocks base method
 func (m *MockChain) Close() {
 	m.ctrl.Call(m, "Close")
