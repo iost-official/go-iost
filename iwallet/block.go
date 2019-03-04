@@ -16,8 +16,9 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
 	"strconv"
+
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
@@ -49,13 +50,11 @@ var blockCmd = &cobra.Command{
   iwallet block 5dEgmyMURGfe7GxvTLajmaLXTkcqs5JwiJ2C2DE5VvVX -m hash`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if len(args) < 1 {
-			cmd.Usage()
-			return fmt.Errorf("please enter the block number or hash")
+			return errorWithHelp(cmd, "please enter the block number or hash")
 		}
 		_, ok := methodMap[method]
 		if !ok {
-			cmd.Usage()
-			return fmt.Errorf("wrong method: %v", method)
+			return errorWithHelp(cmd, "wrong method: %v", method)
 		}
 		return nil
 	},

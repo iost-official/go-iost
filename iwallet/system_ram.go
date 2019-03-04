@@ -43,7 +43,7 @@ var buyCmd = &cobra.Command{
 			other = accountName
 		}
 		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("ram.iost", "buy", accountName, other, amount)
+		return saveOrSendAction("ram.iost", "buy", accountName, other, amount)
 	},
 }
 
@@ -60,7 +60,7 @@ var sellCmd = &cobra.Command{
 			other = accountName
 		}
 		amount, _ := strconv.ParseFloat(args[0], 64)
-		return sendAction("ram.iost", "sell", accountName, other, amount)
+		return saveOrSendAction("ram.iost", "sell", accountName, other, amount)
 	},
 }
 
@@ -81,7 +81,7 @@ var rtransCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		amount, _ := strconv.ParseFloat(args[1], 64)
-		return sendAction("ram.iost", "lend", accountName, args[0], amount)
+		return saveOrSendAction("ram.iost", "lend", accountName, args[0], amount)
 	},
 }
 

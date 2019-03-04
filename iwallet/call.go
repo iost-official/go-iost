@@ -15,12 +15,9 @@
 package iwallet
 
 import (
-	"fmt"
-	"github.com/iost-official/go-iost/sdk"
-
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
+
+	"github.com/iost-official/go-iost/rpc/pb"
 )
 
 // callCmd represents the call command that call a contract with given actions.
@@ -32,64 +29,27 @@ var callCmd = &cobra.Command{
 	An ACTION is a group of 3 arguments: contract name, function name, method parameters.
 	The method parameters should be a string with format '["arg0","arg1",...]'.`,
 	Example: `  iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' --account test0
-  iwallet call --tx_file tx.json --account test0`,
+  iwallet call "token.iost" "transfer" '["iost","user0001","user0002","123.45",""]' --output tx.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		return checkAccount(cmd)
+		if outputTxFile == "" {
+			return checkAccount(cmd)
+		}
+		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		trx := &rpcpb.TransactionRequest{}
-		if txFile != "" {
-			if len(args) != 0 {
-				ilog.Warnf("load tx from file %v, will ignore cmd args %v", txFile, args)
-			}
-			err := sdk.LoadProtoStructFromJSONFile(txFile, trx)
-			if err != nil {
-				return err
-			}
-		} else {
-			var actions []*rpcpb.Action
-			actions, err := actionsFromFlags(args)
-			if err != nil {
-				return err
-			}
-			trx, err = iwalletSDK.CreateTxFromActions(actions)
-			if err != nil {
-				return err
-			}
-		}
-
-		err := InitAccount()
+		var actions []*rpcpb.Action
+		actions, err := actionsFromFlags(args)
 		if err != nil {
-			return fmt.Errorf("failed to load account: %v", err)
-		}
-
-		if err := checkSigners(signers); err != nil {
 			return err
 		}
-		trx.Signers = signers
-
-		if len(withSigns) != 0 || len(signKeys) != 0 {
-			ilog.Infof("making multi sig...")
-			err = handleMultiSig(trx, withSigns, signKeys)
-			if err != nil {
-				return fmt.Errorf("multi sig err %v", err)
-			}
+		tx, err := initTxFromActions(actions)
+		if err != nil {
+			return err
 		}
-
-		_, err = iwalletSDK.SendTx(trx)
-		return err
+		return saveOrSendTx(tx)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(callCmd)
-	callCmd.Flags().StringSliceVarP(&signKeys, "sign_keys", "", []string{}, "optional private key files used for signing, split by comma")
-	callCmd.Flags().StringSliceVarP(&withSigns, "with_signs", "", []string{}, "optional signatures, split by comma")
-	callCmd.Flags().StringVarP(&txFile, "tx_file", "", "", "load tx from this file")
 }
-
-var (
-	// used for multi sig
-	signKeys  []string
-	withSigns []string
-)
