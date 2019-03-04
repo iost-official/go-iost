@@ -17,6 +17,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"sort"
 
 	"github.com/spf13/cobra"
 
@@ -29,6 +30,7 @@ var url string
 var networkID string
 var isPartner bool
 var publicKey string
+var target string
 
 var voteCmd = &cobra.Command{
 	Use:     "producer-vote producerID amount",
@@ -75,7 +77,10 @@ var registerCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "applyRegister", accountName, args[0], location, url, networkID, !isPartner)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("vote_producer.iost", "applyRegister", target, args[0], location, url, networkID, !isPartner)
 	},
 }
 var unregisterCmd = &cobra.Command{
@@ -88,7 +93,10 @@ var unregisterCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "applyUnregister", accountName)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("vote_producer.iost", "applyUnregister", target)
 	},
 }
 var pcleanCmd = &cobra.Command{
@@ -101,7 +109,10 @@ var pcleanCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "unregister", accountName)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("vote_producer.iost", "unregister", target)
 	},
 }
 
@@ -115,7 +126,10 @@ var ploginCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "logInProducer", accountName)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("vote_producer.iost", "logInProducer", target)
 	},
 }
 var plogoutCmd = &cobra.Command{
@@ -128,7 +142,10 @@ var plogoutCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "logOutProducer", accountName)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("vote_producer.iost", "logOutProducer", target)
 	},
 }
 
@@ -179,6 +196,7 @@ func getProducerList(key string) ([]string, error) {
 		}
 		result[i] = response.Data
 	}
+	sort.Strings(result)
 	return result, nil
 }
 
@@ -219,7 +237,10 @@ var pupdateCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		info, err := getProducerVoteInfo(accountName)
+		if target == "" {
+			target = accountName
+		}
+		info, err := getProducerVoteInfo(target)
 		if err != nil {
 			return err
 		}
@@ -235,7 +256,7 @@ var pupdateCmd = &cobra.Command{
 		if networkID == "" {
 			networkID = info.NetId
 		}
-		return saveOrSendAction("vote_producer.iost", "updateProducer", accountName, publicKey, location, url, networkID)
+		return saveOrSendAction("vote_producer.iost", "updateProducer", target, publicKey, location, url, networkID)
 	},
 }
 
@@ -274,7 +295,10 @@ var pwithdrawCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "candidateWithdraw", accountName)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("vote_producer.iost", "candidateWithdraw", target)
 	},
 }
 
@@ -288,7 +312,10 @@ var vwithdrawCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "voterWithdraw", accountName)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("vote_producer.iost", "voterWithdraw", target)
 	},
 }
 
@@ -297,20 +324,26 @@ func init() {
 	systemCmd.AddCommand(unvoteCmd)
 
 	systemCmd.AddCommand(registerCmd)
+	registerCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 	registerCmd.Flags().StringVarP(&location, "location", "", "", "location info")
 	registerCmd.Flags().StringVarP(&url, "url", "", "", "url address")
 	registerCmd.Flags().StringVarP(&networkID, "net_id", "", "", "network ID")
 	registerCmd.Flags().BoolVarP(&isPartner, "partner", "", false, "if is partner instead of producer")
 	systemCmd.AddCommand(unregisterCmd)
+	unregisterCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 	systemCmd.AddCommand(pcleanCmd)
+	pcleanCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 
 	systemCmd.AddCommand(ploginCmd)
+	ploginCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 	systemCmd.AddCommand(plogoutCmd)
+	plogoutCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 
 	systemCmd.AddCommand(pinfoCmd)
 	systemCmd.AddCommand(plistCmd)
 
 	systemCmd.AddCommand(pupdateCmd)
+	pupdateCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 	pupdateCmd.Flags().StringVarP(&publicKey, "pubkey", "", "", "publick key")
 	pupdateCmd.Flags().StringVarP(&location, "location", "", "", "location info")
 	pupdateCmd.Flags().StringVarP(&url, "url", "", "", "url address")
@@ -318,5 +351,7 @@ func init() {
 
 	systemCmd.AddCommand(predeemCmd)
 	systemCmd.AddCommand(pwithdrawCmd)
+	pwithdrawCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 	systemCmd.AddCommand(vwithdrawCmd)
+	vwithdrawCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 }
