@@ -472,7 +472,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 		if err != nil {
 			return nil, fmt.Errorf("try transaction failed: %v", err)
 		}
-		ret.TxReceipt = toPbTxReceipt(tr)
+		ret.PreTxReceipt = toPbTxReceipt(tr)
 	}
 	headBlock := as.bc.Head()
 	dbVisitor, err := as.getStateDBVisitorByHash(headBlock.HeadHash())
