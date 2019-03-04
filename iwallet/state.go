@@ -32,6 +32,7 @@ var stateCmd = &cobra.Command{
 		if err := iwalletSDK.Connect(); err != nil {
 			return err
 		}
+		defer iwalletSDK.CloseConn()
 		n, err := iwalletSDK.GetNodeInfo()
 		if err != nil {
 			return fmt.Errorf("cannot get node info: %v", err)
@@ -42,7 +43,6 @@ var stateCmd = &cobra.Command{
 			return fmt.Errorf("cannot get chain info: %v", err)
 		}
 		fmt.Println(strings.Replace(sdk.MarshalTextString(c), "{\n", "", 1))
-		iwalletSDK.CloseConn()
 		return nil
 	},
 }
