@@ -43,11 +43,11 @@ func (m *Token721Handler) Token721IDList(tokenName, acc string) []string {
 	if len(ids) == 0 {
 		return []string{}
 	}
-	if (strings.HasPrefix(ids, "@@")) {
+	// adapt new format of map keys
+	if strings.HasPrefix(ids, "@@") {
 		return strings.Split(ids, "@")[2:]
-	} else {
-		return strings.Split(ids, "@")[1:]
 	}
+	return strings.Split(ids, "@")[1:]
 }
 
 // Token721Metadata get token balance of acc
