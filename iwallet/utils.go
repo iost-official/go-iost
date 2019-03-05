@@ -111,8 +111,10 @@ func checkTxTime(tx *rpcpb.TransactionRequest) error {
 	}
 	fmt.Println("The transaction time is:", timepoint.Format(time.RFC3339))
 	seconds := int(delta.Seconds())
-	fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds)
-	time.Sleep(time.Duration(seconds%10) * time.Second)
+	if second%10 > 0 {
+		fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds)
+		time.Sleep(time.Duration(seconds%10) * time.Second)
+	}
 	for i := seconds % 10; i < seconds; i += 10 {
 		fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds-i)
 		time.Sleep(10 * time.Second)
@@ -313,9 +315,13 @@ func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signK
 	}
 	if len(signKeyFiles) > 0 {
 		for _, f := range signKeyFiles {
-			kp, err := sdk.LoadKeyPair(f, signAlgo)
+			accInfo, err := loadAccountFromFile(f, true)
 			if err != nil {
-				return fmt.Errorf("failed to sign tx with private key file %v: %v", f, err)
+				return fmt.Errorf("failed to load account from file %v: %v", f, err)
+			}
+			kp, err := accInfo.Keypairs["active"].toKeyPair()
+			if err != nil {
+				return fmt.Errorf("failed to get key pair from file %v: %v", f, err)
 			}
 			sigs = append(sigs, sdk.GetSignatureOfTx(tx, kp))
 			fmt.Println("Signed transaction with private key file:", f)
