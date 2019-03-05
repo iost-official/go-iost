@@ -26,8 +26,14 @@ func prepareToken(t *testing.T, s *Simulator, pubAcc *TestAccount) {
 
 func prepareVote(t *testing.T, s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 	// deploy vote.iost
+	s.Head.Number = 0
 	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
 	r, err := s.Call("vote.iost", "init", `[]`, acc.ID, acc.KeyPair)
+	if err != nil || r.Status.Code != tx.Success {
+		t.Fatal(err, r)
+	}
+
+	r, err = s.Call("vote.iost", "initAdmin", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
 	if err != nil || r.Status.Code != tx.Success {
 		t.Fatal(err, r)
 	}
@@ -70,9 +76,9 @@ func Test_NewVote(t *testing.T) {
 		r, err := prepareVote(t, s, acc0)
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(1999999000*1e8))
+		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(2000000000*1e8))
 		So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `"1"`)
-		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000","optionNum":4}`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"0","optionNum":4,"canVote":true}`)
 		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", "option1")), ShouldEqual, `{"votes":"0","deleted":0,"clearTime":-1}`)
 
 		r, err = s.Call("Contractvoteresult", "getResult", `["1"]`, acc0.ID, acc0.KeyPair)
@@ -125,7 +131,7 @@ func Test_RemoveOption(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 		So(s.Visitor.MKeys("vote.iost-v_1"), ShouldResemble, []string{"option1", "option3", "option4"})
-		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"1000","optionNum":3}`)
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", "1")), ShouldEqual, `{"deleted":0,"description":"test vote","resultNumber":2,"minVote":10,"anyOption":false,"freezeTime":0,"deposit":"0","optionNum":3,"canVote":true}`)
 	})
 }
 
@@ -257,7 +263,7 @@ func Test_Unvote(t *testing.T) {
 		r, err = s.Call("Contractvoteresult", "getResult", `["1"]`, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote_result", "1")), ShouldEqual, `[{"option":"option4","votes":"400"},{"option":"option3","votes":"200"}]`)
+		So(database.MustUnmarshal(s.Visitor.MGet("Contractvoteresult-vote_result", "1")), ShouldEqual, `[{"option":"option4","votes":"400"},{"option":"option2","votes":"200"}]`)
 
 		// unvote again
 		r, err = s.Call("vote.iost", "unvote", fmt.Sprintf(`["1", "%v", "option2", "95"]`, acc0.ID), acc0.ID, acc0.KeyPair)
@@ -555,5 +561,60 @@ func Test_LargeVote(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(r.Returns[0], ShouldEqual, `["[{\"option\":\"option999\",\"votes\":\"999\"},{\"option\":\"option998\",\"votes\":\"998\"}]"]`)
+	})
+}
+
+func Test_CanVote(t *testing.T) {
+	ilog.Stop()
+	Convey("test latge vote", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		createAccountsWithResource(s)
+		prepareToken(t, s, acc0)
+		prepareVote(t, s, acc0)
+
+		s.Head.Number = 1
+		config := make(map[string]interface{})
+		config["resultNumber"] = 2
+		config["minVote"] = 10
+		config["options"] = []string{"option1", "option2", "option3", "option4"}
+		config["anyOption"] = false
+		config["freezeTime"] = 0
+		config["canVote"] = false
+		params := []interface{}{
+			acc0.ID,
+			"test vote",
+			config,
+		}
+		b, _ := json.Marshal(params)
+		r, err := s.Call("vote.iost", "newVote", string(b), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(r.Returns[0], ShouldEqual, `["2"]`)
+
+		r, err = s.Call("vote.iost", "vote", fmt.Sprintf(`["2", "%v", "option1", "1"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
+
+		r, err = s.Call("vote.iost", "vote", fmt.Sprintf(`["2", "%v", "option1", "1"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote.iost", "setCanVote", `["2", true]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote.iost", "vote", fmt.Sprintf(`["2", "%v", "option1", "1"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote.iost", "setCanVote", `["2", false]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote.iost", "unvote", fmt.Sprintf(`["2", "%v", "option1", "1"]`, acc1.ID), acc1.ID, acc1.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "require auth failed")
 	})
 }

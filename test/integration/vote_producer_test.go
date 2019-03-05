@@ -921,6 +921,35 @@ func Test_UpdatePubkey(t *testing.T) {
 	})
 }
 
+func Test_UnvoteCommon(t *testing.T) {
+	ilog.Stop()
+	Convey("test unvote common", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		s.Head.Number = 0
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		prepareToken(t, s, acc0)
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(t, s)
+
+		s.Head.Number = 1
+		s.Visitor.SetTokenBalance("iost", acc1.ID, 1e15)
+		for idx, acc := range testAccounts[:6] {
+			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc1.ID, acc.ID, idx+2), acc1.ID, acc1.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldEqual, "")
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, idx+2))
+			r, err = s.Call("vote.iost", "unvote", fmt.Sprintf(`["1","%v", "%v", "%v"]`, acc1.ID, acc.ID, idx+2), acc1.ID, acc1.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "require auth failed")
+			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, idx+2))
+		}
+	})
+}
+
 func Test_LogOutInPending(t *testing.T) {
 	ilog.Stop()
 	Convey("test log out in pending", t, func() {
