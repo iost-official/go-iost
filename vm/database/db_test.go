@@ -46,10 +46,11 @@ func TestHandler_Put(t *testing.T) {
 	})
 
 	mockMVCC.EXPECT().Put("state", "m-hello", Any()).Do(func(a, b, c string) {
-		if c != "@1" {
+		if c != "@@1" {
 			t.Fatal(c)
 		}
 	})
+	mockMVCC.EXPECT().Get("state", "reserve.height").Return("", nil)
 	mockMVCC.EXPECT().Has("state", "m-hello-1").Return(false, nil)
 	mockMVCC.EXPECT().Get("state", "m-hello").Return("", nil)
 
@@ -90,6 +91,7 @@ func TestHandler_Get(t *testing.T) {
 	}
 
 	// test of MKeys
+	mockMVCC.EXPECT().Get("state", "reserve.height").Return("", nil)
 	mockMVCC.EXPECT().Get("state", "m-key").Return("@a@b@c", nil)
 
 	strs := v.MKeys("key")

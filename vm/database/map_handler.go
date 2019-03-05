@@ -140,7 +140,11 @@ func (m *MapHandler) MHas(key, field string) bool {
 func (m *MapHandler) MKeys(key string) (fields []string) {
 	if getHeight(m.db) >= common.Ver3_0_3 {
 		s := m.db.Get(MapPrefix + key)
-		return strings.Split(s, ApplicationSeparator)[2:]
+		if strings.HasPrefix(s, "@@") {
+			return strings.Split(s, ApplicationSeparator)[2:]
+		} else {
+			return strings.Split(s, ApplicationSeparator)[1:]
+		}
 	}
 	s := m.db.Get(MapPrefix + key)
 	return strings.Split(s, ApplicationSeparator)[1:]

@@ -175,6 +175,7 @@ func TestHost_MapPut(t *testing.T) {
 		}
 	})
 	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
+	mock.EXPECT().Get("state", "reserve.height").Return("", nil)
 	mock.EXPECT().Get("state", "m-contractName-hello").Return("", nil)
 	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
@@ -210,6 +211,7 @@ func TestHost_MapPut_Owner(t *testing.T) {
 		}
 	})
 	mock.EXPECT().Has("state", "m-contractName-hello-1").Return(false, nil)
+	mock.EXPECT().Get("state", "reserve.height").Return("", nil)
 	mock.EXPECT().Get("state", "m-contractName-hello").Return("", nil)
 	mock.EXPECT().Get("state", "m-contractName-hello-1").Return("", nil)
 
@@ -275,7 +277,7 @@ func TestHost_MapKeys(t *testing.T) {
 	ctx.Set("contract_name", "contractName")
 
 	mock, host := myinit(t, ctx)
-
+	mock.EXPECT().Get("state", "reserve.height").Return("", nil)
 	mock.EXPECT().Get("state", "m-contractName-hello").Return("@a@b@c", nil)
 
 	ans, _ := host.MapKeys("hello")
@@ -291,7 +293,7 @@ func TestHost_MapKeys_Owner(t *testing.T) {
 	ctx.Set("contract_name", "contractName")
 
 	mock, host := myinit(t, ctx)
-
+	mock.EXPECT().Get("state", "reserve.height").Return("", nil)
 	mock.EXPECT().Get("state", "m-contractName-hello").Return("@a@b@c", nil)
 
 	ans, _ := host.MapKeys("hello")
@@ -303,4 +305,3 @@ func TestHost_MapKeys_Owner(t *testing.T) {
 func TestHost_BlockInfo(t *testing.T) {
 
 }
-
