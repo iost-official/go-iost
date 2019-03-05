@@ -16,15 +16,12 @@ package iwallet
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
+
+	"github.com/spf13/cobra"
 
 	"github.com/iost-official/go-iost/rpc/pb"
-	"github.com/spf13/cobra"
+	"github.com/iost-official/go-iost/sdk"
 )
-
-var outputFile string
-var signKeyFile string
-var txFile string
 
 // signCmd represents the command used to sign a transaction.
 var signCmd = &cobra.Command{
@@ -46,16 +43,20 @@ var signCmd = &cobra.Command{
 		trx := &rpcpb.TransactionRequest{}
 		err := sdk.LoadProtoStructFromJSONFile(txFile, trx)
 		if err != nil {
-			return fmt.Errorf("failed to load transaction file: %v", err)
+			return fmt.Errorf("failed to load transaction file %v: %v", txFile, err)
 		}
 		kp, err := sdk.LoadKeyPair(signKeyFile, signAlgo)
 		if err != nil {
-			return fmt.Errorf("failed to load key pair: %v", err)
+			return fmt.Errorf("failed to get key pair by private key file %v: %v", signKeyFile, err)
 		}
 		sig := sdk.GetSignatureOfTx(trx, kp)
+		if verbose {
+			fmt.Println("Signature:")
+			fmt.Println(sdk.MarshalTextString(sig))
+		}
 		err = sdk.SaveProtoStructToJSONFile(sig, outputFile)
 		if err != nil {
-			return fmt.Errorf("failed to save signature: %v", err)
+			return fmt.Errorf("failed to save signature as file %v: %v", outputFile, err)
 		}
 		fmt.Println("Successfully saved signature as:", outputFile)
 		return nil

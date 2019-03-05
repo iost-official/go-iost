@@ -93,22 +93,32 @@ var createCmd = &cobra.Command{
 			return fmt.Errorf("key provided but not valid")
 		}
 
-		err = InitAccount()
+		// Set account since making actions needs accountName.
+		iwalletSDK.SetAccount(accountName, nil)
+		actions, err := iwalletSDK.CreateNewAccountActions(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
 		if err != nil {
-			return fmt.Errorf("failed to load account: %v", err)
+			return err
 		}
+		tx, err := initTxFromActions(actions)
+		if err != nil {
+			return err
+		}
+		if outputTxFile != "" {
+			return saveTx(tx)
+		}
+
 		if err := iwalletSDK.Connect(); err != nil {
 			return err
 		}
-		_, err = iwalletSDK.CreateNewAccount(newName, okey, akey, initialGasPledge, initialRAM, initialBalance)
-		if err != nil {
-			return fmt.Errorf("create new account error: %v", err)
+		defer iwalletSDK.CloseConn()
+
+		if err := sendTx(tx); err != nil {
+			return err
 		}
 		info, err := iwalletSDK.GetAccountInfo(newName)
 		if err != nil {
 			return fmt.Errorf("failed to get account info: %v", err)
 		}
-		iwalletSDK.CloseConn()
 		fmt.Println("Account info of <", newName, ">:")
 		fmt.Println(sdk.MarshalTextString(info))
 
@@ -307,6 +317,7 @@ var deleteCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(accountCmd)
+	accountCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "", false, "whether to encrypt local key file")
 
 	accountCmd.AddCommand(createCmd)
 	createCmd.Flags().StringVarP(&ownerKey, "owner", "", "", "owner key")
@@ -316,8 +327,6 @@ func init() {
 	createCmd.Flags().Int64VarP(&initialBalance, "initial_balance", "", 0, "transfer $initial_balance IOSTs to the new account")
 
 	accountCmd.AddCommand(importCmd)
-	accountCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "", false, "whether to encrypt local key file")
-
 	accountCmd.AddCommand(viewCmd)
 	accountCmd.AddCommand(deleteCmd)
 	accountCmd.AddCommand(dumpKeyCmd)

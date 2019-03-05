@@ -23,7 +23,7 @@ var addpermCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return sendAction("auth.iost", "addPermission", accountName, args[0], threshold)
+		return saveOrSendAction("auth.iost", "addPermission", accountName, args[0], threshold)
 	},
 }
 
@@ -40,7 +40,7 @@ var droppermCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "dropPermission", accountName, args[0])
+		return saveOrSendAction("auth.iost", "dropPermission", accountName, args[0])
 	},
 }
 
@@ -62,7 +62,7 @@ var assignPermCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return sendAction("auth.iost", "assignPermission", accountName, args[0], args[1], threshold)
+		return saveOrSendAction("auth.iost", "assignPermission", accountName, args[0], args[1], threshold)
 	},
 }
 
@@ -80,7 +80,7 @@ var revokePermCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "revokePermission", accountName, args[0], args[1])
+		return saveOrSendAction("auth.iost", "revokePermission", accountName, args[0], args[1])
 	},
 }
 
@@ -97,7 +97,7 @@ var addgroupCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "addGroup", accountName, args[0])
+		return saveOrSendAction("auth.iost", "addGroup", accountName, args[0])
 	},
 }
 
@@ -114,7 +114,7 @@ var dropgroupCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "dropGroup", accountName, args[0])
+		return saveOrSendAction("auth.iost", "dropGroup", accountName, args[0])
 	},
 }
 
@@ -136,7 +136,7 @@ var assignGroupCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return sendAction("auth.iost", "assignGroup", accountName, args[0], args[1], threshold)
+		return saveOrSendAction("auth.iost", "assignGroup", accountName, args[0], args[1], threshold)
 	},
 }
 
@@ -154,7 +154,7 @@ var revokeGroupCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "revokeGroup", accountName, args[0], args[1])
+		return saveOrSendAction("auth.iost", "revokeGroup", accountName, args[0], args[1])
 	},
 }
 
@@ -171,7 +171,7 @@ var bindPermCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "assignPermissionToGroup", accountName, args[0], args[1])
+		return saveOrSendAction("auth.iost", "assignPermissionToGroup", accountName, args[0], args[1])
 	},
 }
 
@@ -188,7 +188,7 @@ var unbindPermCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return sendAction("auth.iost", "revokePermissionInGroup", accountName, args[0], args[1])
+		return saveOrSendAction("auth.iost", "revokePermissionInGroup", accountName, args[0], args[1])
 	},
 }
 
