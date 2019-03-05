@@ -111,7 +111,7 @@ func checkTxTime(tx *rpcpb.TransactionRequest) error {
 	}
 	fmt.Println("The transaction time is:", timepoint.Format(time.RFC3339))
 	seconds := int(delta.Seconds())
-	if second%10 > 0 {
+	if seconds%10 > 0 {
 		fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds)
 		time.Sleep(time.Duration(seconds%10) * time.Second)
 	}
