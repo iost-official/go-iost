@@ -90,7 +90,7 @@ func (b *blockHashSync) NeighborBlockHashs(start, end int64) <-chan *BlockHash {
 
 func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
 	if msg.Type() != p2p.SyncBlockHashResponse {
-		ilog.Warnf("Expect the type %v, but get a unexpected type %v", p2p.SyncHeight, msg.Type())
+		ilog.Warnf("Expect the type %v, but get a unexpected type %v", p2p.SyncBlockHashResponse, msg.Type())
 		return
 	}
 
