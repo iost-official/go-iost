@@ -109,10 +109,14 @@ func (m *MapHandler) clearField303(key string) string {
 
 	if !strings.HasPrefix(s, "@@") {
 		var sb strings.Builder
+		var same map[string]struct{}
 
 		for _, f := range strings.Split(s, ApplicationSeparator)[1:] {
 			if m.MHas(key, f) {
-				sb.WriteString(ApplicationSeparator + f)
+				if _, ok := same[f]; !ok {
+					sb.WriteString(ApplicationSeparator + f)
+					same[f] = struct{}{}
+				}
 			}
 		}
 
