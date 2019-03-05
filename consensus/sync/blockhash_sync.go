@@ -10,11 +10,13 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 )
 
+// Constant of blockhash sync
 const (
 	BlockHashLeastNeighborNumber = 2
 	BlockHashExpiredSeconds      = 60
 )
 
+// BlockHash return the block hash with the Peers that have it.
 type BlockHash struct {
 	Hash   []byte
 	PeerID []p2p.PeerID
