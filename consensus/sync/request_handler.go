@@ -1,17 +1,21 @@
 package sync
 
 import (
+	"sync"
+
+	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"sync"
 )
 
 type requestHandler struct {
 	p      p2p.Service
 	bCache blockcache.BlockCache
-	bChain *block.BlockChain
+	bChain block.Chain
 
 	requestCh chan p2p.IncomingMessage
 
@@ -19,7 +23,7 @@ type requestHandler struct {
 	done   *sync.WaitGroup
 }
 
-func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bChain *block.BlockChain) *requestHandler {
+func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandler {
 	rHandler := &requestHandler{
 		p:      p,
 		bCache: bCache,
@@ -44,15 +48,99 @@ func (r *requestHandler) Close() {
 	ilog.Infof("Stopped sync request handler.")
 }
 
+func (r *requestHandler) getBlockByHash(hash []byte) *block.Block {
+	block, err := r.bCache.GetBlockByHash(hash)
+	if err != nil {
+		block, err := r.bChain.GetBlockByHash(hash)
+		if err != nil {
+			return nil
+		}
+		return block
+	}
+	return block
+}
+
+func (r *requestHandler) getBlockHashResponse(start int64, end int64) *msgpb.BlockHashResponse {
+	blockInfos := make([]*msgpb.BlockInfo, 0)
+	for num := start; num <= end; num++ {
+		// This code is ugly and then optimize the bCache and bChain.
+		var hash []byte
+		if blk, err := r.bCache.GetBlockByNumber(num); err != nil {
+			hash, err = r.bChain.GetHashByNumber(num)
+			if err != nil {
+				ilog.Warnf("Get hash by num %v failed: %v", num, err)
+				continue
+			}
+		} else {
+			hash = blk.HeadHash()
+		}
+		blockInfo := &msgpb.BlockInfo{
+			Number: num,
+			Hash:   hash,
+		}
+		blockInfos = append(blockInfos, blockInfo)
+	}
+
+	return &msgpb.BlockHashResponse{
+		BlockInfos: blockInfos,
+	}
+}
+
+func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
+	blockHashQuery := &msgpb.BlockHashQuery{}
+	if err := proto.Unmarshal(request.Data(), blockHashQuery); err != nil {
+		ilog.Warnf("Unmarshal BlockHashQuery failed: %v", err)
+		return
+	}
+
+	if (blockHashQuery.Start < 0) ||
+		(blockHashQuery.Start > blockHashQuery.End) ||
+		(blockHashQuery.End-blockHashQuery.Start+1 > maxSyncRange) {
+		ilog.Warnf("Receive attack request from peer %v, start: %v, end: %v.", request.From().Pretty(), blockHashQuery.Start, blockHashQuery.End)
+		return
+	}
+
+	blockHashResponse := r.getBlockHashResponse(blockHashQuery.Start, blockHashQuery.End)
+
+	msg, err := proto.Marshal(blockHashResponse)
+	if err != nil {
+		ilog.Warnf("Marshal BlockHashResponse failed: struct=%+v, err=%v", blockHashResponse, err)
+		return
+	}
+	r.p.SendToPeer(request.From(), msg, p2p.SyncBlockHashResponse, p2p.NormalMessage)
+}
+
+func (r *requestHandler) handleBlockRequest(request *p2p.IncomingMessage) {
+	blockInfo := &msgpb.BlockInfo{}
+	if err := proto.Unmarshal(request.Data(), blockInfo); err != nil {
+		ilog.Warnf("Unmarshal BlockInfo failed: %v", err)
+		return
+	}
+
+	block := r.getBlockByHash(blockInfo.Hash)
+	if block == nil {
+		ilog.Warnf("Handle block request failed, from=%v, hash=%v.", request.From().Pretty(), common.Base58Encode(blockInfo.Hash))
+		return
+	}
+
+	msg, err := block.Encode()
+	if err != nil {
+		ilog.Errorf("Encode block failed: %v\nblock: %+v", err, block)
+		return
+	}
+	r.p.SendToPeer(request.From(), msg, p2p.SyncBlockResponse, p2p.NormalMessage)
+}
+
 func (r *requestHandler) controller() {
 	for {
 		select {
 		case request := <-r.requestCh:
+			// TODO: Need a thread pool here.
 			switch request.Type() {
 			case p2p.SyncBlockHashRequest:
-				r.handleBlockHashRequest(&request)
+				go r.handleBlockHashRequest(&request)
 			case p2p.SyncBlockRequest:
-				r.handleBlockRequest(&request)
+				go r.handleBlockRequest(&request)
 			default:
 				ilog.Warnf("Unexcept request type: %v", request.Type())
 			}
@@ -65,10 +153,4 @@ func (r *requestHandler) controller() {
 		default:
 		}
 	}
-}
-
-func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
-}
-
-func (r *requestHandler) handleBlockRequest(request *p2p.IncomingMessage) {
 }

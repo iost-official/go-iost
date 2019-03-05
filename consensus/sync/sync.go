@@ -22,7 +22,7 @@ const (
 type Sync struct {
 	p      p2p.Service
 	bCache blockcache.BlockCache
-	bChain *block.BlockChain
+	bChain block.Chain
 
 	handler       *requestHandler
 	heightSync    *heightSync
@@ -34,7 +34,7 @@ type Sync struct {
 }
 
 // New will return a new synchronizer of blockchain.
-func New(p p2p.Service, bCache blockcache.BlockCache, bChain *block.BlockChain) *Sync {
+func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync {
 	sync := &Sync{
 		p:      p,
 		bCache: bCache,
