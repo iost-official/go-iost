@@ -223,7 +223,6 @@ class VoteContract {
         pro.status = STATUS_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._removeFromWaitList(admin, account);
-        this._initCandidateVars(admin, account, this._getVoteId(), pro);
         this._addToProducerMap(account, pro);
     }
 
@@ -239,7 +238,6 @@ class VoteContract {
             throw new Error("producer not unapplied");
         }
         // will clear votes and score of the producer on stat
-        this._clearCandidateVars(admin, account, this._getVoteId(), pro);
         pro.status = STATUS_UNAPPLY_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._tryRemoveProducer(admin, account, pro);
@@ -258,7 +256,6 @@ class VoteContract {
         pro.status = STATUS_UNAPPLY_APPROVED;
         this._mapPut("producerTable", account, pro);
         this._tryRemoveProducer(admin, account, pro);
-        this._clearCandidateVars(admin, account, this._getVoteId());
         this._removeFromProducerMap(account, pro);
     }
 
@@ -527,10 +524,6 @@ class VoteContract {
             pro = this._mapGet("producerTable", account);
         }
 
-        if (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY) {
-            return;
-        }
-
         if (typeof votes === 'undefined') {
             votes = new Float64(this._call("vote.iost", "getOption", [
                 voteId,
@@ -562,26 +555,6 @@ class VoteContract {
         }
     }
 
-    _clearCandidateVars(admin, account, voteId, pro) {
-        let votes = new Float64(this._call("vote.iost", "getOption", [
-           voteId,
-           account,
-        ]).votes);
-        if (votes && votes.isPositive()) {
-            this._updateCandidateVars(account, votes.negated(), voteId, admin, votes, pro);
-        }
-    }
-
-    _initCandidateVars(admin, account, voteId, pro) {
-        let votes = new Float64(this._call("vote.iost", "getOption", [
-           voteId,
-           account,
-        ]).votes);
-        if (votes && votes.isPositive()) {
-            this._updateCandidateVars(account, votes, voteId, admin, votes);
-        }
-    }
-
     _fixAmount(amount) {
         amount = new Float64(new Float64(amount).toFixed(IOST_DECIMAL));
         if (amount.lte("0")) {
@@ -590,8 +563,19 @@ class VoteContract {
         return amount;
     }
 
+    _checkSwitchOff() {
+        return storage.get("switchOff") === "1";
+    }
+
+    switchOff(off) {
+        storage.put("switchOff", off ? "1" : "0");
+    }
+
     voteFor(payer, voter, producer, amount) {
         this._requireAuth(payer, ACTIVE_PERMISSION);
+        if (this._checkSwitchOff()) {
+            throw new Error("can't vote for now");
+        }
 
         if (!storage.mapHas("producerTable", producer)) {
             throw new Error("producer not exists");
@@ -614,6 +598,9 @@ class VoteContract {
 
     vote(voter, producer, amount) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
+        if (this._checkSwitchOff()) {
+            throw new Error("can't vote for now");
+        }
 
         if (!storage.mapHas("producerTable", producer)) {
             throw new Error("producer not exists");
@@ -635,6 +622,9 @@ class VoteContract {
 
     unvote(voter, producer, amount) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
+        if (this._checkSwitchOff()) {
+            throw new Error("can't unvote for now");
+        }
 
         amount = this._fixAmount(amount);
 
@@ -659,6 +649,9 @@ class VoteContract {
     }
 
     topupVoterBonus(account, amount, payer) {
+        if (this._checkSwitchOff()) {
+            throw new Error("can't topup for now");
+        }
         const voteId = this._getVoteId();
         let votes = new Float64(this._call("vote.iost", "getOption", [
             voteId,
@@ -716,6 +709,9 @@ class VoteContract {
 
     voterWithdraw(voter) {
         this._requireAuthList(this._getAccountList(voter), WITHDRAW_PERMISSION);
+        if (this._checkSwitchOff()) {
+            throw new Error("can't withdraw for now");
+        }
 
         let earnings = this._calVoterBonus(voter, true);
         if (earnings.lte("0")) {
@@ -751,6 +747,9 @@ class VoteContract {
 
     candidateWithdraw(account) {
         this._requireAuthList(this._getAccountList(account), WITHDRAW_PERMISSION);
+        if (this._checkSwitchOff()) {
+            throw new Error("can't withdraw for now");
+        }
 
         let earnings = this._calCandidateBonus(account, true);
         if (earnings.lte("0")) {

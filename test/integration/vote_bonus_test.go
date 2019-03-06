@@ -1,7 +1,6 @@
 package integration
 
 import (
-	"encoding/json"
 	"fmt"
 	"testing"
 
@@ -162,50 +161,6 @@ func Test_VoteBonus(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(30303031+90909093))
 		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(103121212193-90909093))
-
-		// 2. re-register withdraw
-		r, err = s.Call("vote_producer.iost", "approveRegister", fmt.Sprintf(`["%v"]`, acc3.ID), acc0.ID, acc0.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
-		r, err = s.Call("vote_producer.iost", "logInProducer", fmt.Sprintf(`["%v"]`, acc3.ID), acc3.ID, acc3.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
-
-		r, err = s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
-		b, _ := json.Marshal(r.Receipts)
-		So(string(b), ShouldContainSubstring, "1135342.51387031")
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(113637281690131))
-		So(s.Visitor.TokenBalance("iost", "bonus.iost"), ShouldEqual, int64(113535613639795))
-
-		r, err = s.Call("bonus.iost", "exchangeIOST", fmt.Sprintf(`["%s","%s"]`, acc3.ID, "0.00000001"), acc3.ID, acc3.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldContainSubstring, "invalid amount: negative or greater than contribute")
-
-		r, err = s.Call("vote_producer.iost", "candidateWithdraw", fmt.Sprintf(`["%s"]`, acc3.ID), acc3.ID, acc3.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(1435265888+3848497478961))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(113637281690131-3848497478961))
-
-		r, err = s.Call("vote_producer.iost", "candidateWithdraw", fmt.Sprintf(`["%s"]`, acc3.ID), acc3.ID, acc3.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc3.ID), ShouldEqual, int64(1435265888+3848497478961)) // not change
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(113637281690131-3848497478961))
-
-		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(2886494321345))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(106902411101949))
-
-		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%s"]`, acc0.ID), acc0.ID, acc0.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(2886494321345))
-		So(s.Visitor.TokenBalance("iost", "vote_producer.iost"), ShouldEqual, int64(106902411101949))
 	})
 }
 

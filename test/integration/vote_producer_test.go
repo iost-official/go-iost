@@ -361,6 +361,72 @@ func Test_Register(t *testing.T) {
 	})
 }
 
+func Test_SwitchOff(t *testing.T) {
+	ilog.Stop()
+	Convey("test switch off", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		s.Head.Number = 0
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		prepareToken(t, s, acc0)
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(s)
+
+		s.Head.Number = 1
+
+		r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 3), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 3))
+
+		r, err = s.Call("vote_producer.iost", "unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 1), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 2))
+
+		r, err = s.Call("vote_producer.iost", "switchOff", `[true]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 3), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't vote for now")
+
+		r, err = s.Call("vote_producer.iost", "unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 1), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't unvote for now")
+
+		r, err = s.Call("vote_producer.iost", "topupVoterBonus", fmt.Sprintf(`["%v", "%v", "%v"]`, acc1.ID, 1, acc0.ID), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't topup for now")
+
+		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't withdraw for now")
+
+		r, err = s.Call("vote_producer.iost", "candidateWithdraw", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't withdraw for now")
+
+		r, err = s.Call("vote_producer.iost", "switchOff", `[false]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 3), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 5))
+
+		r, err = s.Call("vote_producer.iost", "unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 1), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 4))
+	})
+}
+
 func Test_Unregister2(t *testing.T) {
 	ilog.Stop()
 	Convey("test Unregister2", t, func() {
