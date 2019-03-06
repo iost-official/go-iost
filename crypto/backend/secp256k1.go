@@ -2,6 +2,7 @@ package backend
 
 import (
 	"crypto/rand"
+	"fmt"
 
 	"github.com/ethereum/go-ethereum/crypto/secp256k1"
 	"github.com/iost-official/go-iost/ilog"
@@ -40,4 +41,12 @@ func (b *Secp256k1) GenSeckey() []byte {
 		return nil
 	}
 	return seckey
+}
+
+// CheckSeckey ...
+func (b *Secp256k1) CheckSeckey(seckey []byte) error {
+	if len(seckey) != 32 {
+		return fmt.Errorf("seckey length error secp256k1 seckey length should not be %v", len(seckey))
+	}
+	return nil
 }
