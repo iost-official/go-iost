@@ -127,6 +127,7 @@ func (s *Sync) doBlockhashSync() {
 		ilog.Errorf("Marshal sync block hash message failed: %v", err)
 		return
 	}
+	ilog.Debugf("Syncing block hash in [%v %v]... neighbor height: %v", start, end, s.heightSync.NeighborHeight())
 	s.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 
