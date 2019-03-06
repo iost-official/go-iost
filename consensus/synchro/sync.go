@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	maxSyncRange = 1000
+	maxSyncRange    = 1000
+	maxSyncRangeOld = 100
 )
 
 // Sync is the synchronizer of blockchain.
@@ -112,8 +113,9 @@ func (s *Sync) doBlockhashSync() {
 	if start > end {
 		return
 	}
-	if end-start+1 > maxSyncRange {
-		end = start + maxSyncRange - 1
+	// Temporarily do this to compatibility upgrade
+	if end-start+1 > maxSyncRangeOld {
+		end = start + maxSyncRangeOld - 1
 	}
 
 	blockHashQuery := &msgpb.BlockHashQuery{
