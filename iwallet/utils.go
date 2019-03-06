@@ -245,6 +245,7 @@ func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
 		return err
 	}
 	s.SetAccount(accountName, keyPair)
+	s.SetSignAlgo(kp.KeyType)
 	return nil
 }
 
