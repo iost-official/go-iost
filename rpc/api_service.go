@@ -116,7 +116,7 @@ func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest)
 		txReceipt *tx.TxReceipt
 		err       error
 	)
-	var blockNumber int64
+	blockNumber := int64(-1)
 
 	t, err = as.blockchain.GetTx(txHashBytes)
 	if err != nil {
