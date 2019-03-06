@@ -1,5 +1,4 @@
-const PRE_PRODUCER_THRESHOLD = "2100000";
-const PARTNER_THRESHOLD = "2100000";
+const VOTE_THRESHOLD = "2100000";
 const VOTE_LOCKTIME = 604800;
 const VOTE_STAT_INTERVAL = 1200;
 const SCORE_DECREASE_INTERVAL = 31104000;
@@ -35,7 +34,7 @@ class VoteContract {
             "vote for producer",
             {
                 resultNumber: 2000,
-                minVote: PRE_PRODUCER_THRESHOLD,
+                minVote: VOTE_THRESHOLD,
                 options: [],
                 anyOption: false,
                 freezeTime: VOTE_LOCKTIME,
@@ -84,7 +83,7 @@ class VoteContract {
             "isProducer": true,
             "status": STATUS_APPROVED,
             "online": true,
-        }; 
+        };
         this._mapPut("producerTable", proID, pro, proID);
         this._mapPut("producerKeyToId", proPubkey, proID, proID);
         this._addToProducerMap(proID, pro);
@@ -141,7 +140,7 @@ class VoteContract {
         return JSON.parse(val);
     }
 
-	_put(k, v, p) {
+  	_put(k, v, p) {
         storage.put(k, JSON.stringify(v), p);
     }
 
@@ -519,36 +518,29 @@ class VoteContract {
         this._mapPut(candidateMaskTable, account, candMask.toFixed(), payer);
     }
 
-    _updateCandidateVars(account, amount, voteId, payer, votes, pro) {
-        if (typeof pro === 'undefined') {
-            pro = this._mapGet("producerTable", account);
-        }
-
-        if (typeof votes === 'undefined') {
-            votes = new Float64(this._call("vote.iost", "getOption", [
-                voteId,
-               account,
-            ]).votes);
-        }
-
-        let threshold = PRE_PRODUCER_THRESHOLD;
-        if (!pro.isProducer) {
-            threshold = PARTNER_THRESHOLD;
-        }
+    _updateCandidateVars(account, amount, voteId, payer) {
+        let votes = new Float64(this._call("vote.iost", "getOption", [
+            voteId,
+            account,
+        ]).votes);
 
         if (amount.gt("0")) {
-            if (votes.lt(threshold)) {
+            if (votes.lt(VOTE_THRESHOLD)) {
                 return;
             }
 
-            if (votes.minus(amount).lt(threshold)) {
+            if (votes.minus(amount).lt(VOTE_THRESHOLD)) {
                 this._updateCandidateMask(account, votes, payer);
             } else {
                 this._updateCandidateMask(account, amount, payer);
             }
         } else if (amount.lt("0")) {
-            if (votes.lt(threshold)) {
-                this._updateCandidateMask(account, votes.negated(), payer);
+            if (votes.minus(amount).lt(VOTE_THRESHOLD)){
+                return;
+            }
+
+            if (votes.lt(VOTE_THRESHOLD)) {
+                this._updateCandidateMask(account, votes.minus(amount).negated(), payer);
             } else {
                 this._updateCandidateMask(account, amount, payer);
             }
@@ -690,6 +682,7 @@ class VoteContract {
     _calVoterBonus(voter, updateMask) {
         let userVotes = this.getVote(voter);
         let earnings = new Float64(0);
+        let receipt = {}
         for (const v of userVotes) {
             let voterCoef = this._getVoterCoef(v.option);
             let voterMask = this._getVoterMask(voter, v.option);
@@ -699,7 +692,15 @@ class VoteContract {
                 voterMask = voterMask.plus(earning);
                 this._mapPut(voterMaskPrefix + v.option, voter, voterMask.toFixed(), blockchain.publisher());
             }
+            if (earning.gt("0")){
+                receipt[v.option] = earning
+            }
         }
+        let r = JSON.stringify(receipt)
+        if ( r !== '{}' ) {
+            blockchain.receipt(JSON.stringify(receipt))
+        }
+
         return earnings;
     }
 
@@ -727,7 +728,7 @@ class VoteContract {
             account,
         ]).votes);
 
-        if (candKey.lt(PRE_PRODUCER_THRESHOLD)) {
+        if (candKey.lt(VOTE_THRESHOLD)) {
             candKey = new Float64(0);
         }
 
