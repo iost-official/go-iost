@@ -1,7 +1,6 @@
 package account
 
 import (
-	"fmt"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 )
@@ -18,10 +17,12 @@ func NewKeyPair(seckey []byte, algo crypto.Algorithm) (*KeyPair, error) {
 	if seckey == nil {
 		seckey = algo.GenSeckey()
 	}
-	if (len(seckey) != 32 && algo == crypto.Secp256k1) ||
-		(len(seckey) != 64 && algo == crypto.Ed25519) {
-		return nil, fmt.Errorf("seckey length error")
+
+	err := algo.CheckSeckey(seckey)
+	if err != nil {
+		return nil, err
 	}
+
 	pubkey := algo.GetPubkey(seckey)
 
 	account := &KeyPair{
