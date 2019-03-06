@@ -50,7 +50,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println("\033[38;5;1mERROR:\033[38;5;12m", err)
+		fmt.Println("\033[31mERROR:\033[m", err)
 		os.Exit(1)
 	}
 }
