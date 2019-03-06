@@ -25,10 +25,11 @@ import (
 
 // signCmd represents the command used to sign a transaction.
 var signCmd = &cobra.Command{
-	Use:     "sign txFile keyFile outputFile",
-	Short:   "Sign a tx and save the signature",
-	Long:    `Sign a tx loaded from given file with private key file and save the signature`,
-	Example: `  iwallet sign tx.json ~/.iwallet/test0_ed25519 sign.json`,
+	Use:   "sign txFile keyFile outputFile",
+	Short: "Sign a tx and save the signature",
+	Long:  `Sign a transaction loaded from given txFile with keyFile(account json file or private key file) and save the signature as outputFile`,
+	Example: `  iwallet sign tx.json ~/.iwallet/test0.json sign.json
+  iwallet sign tx.json ~/.iwallet/test0_ed25519 sign.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "txFile", "keyFile", "outputFile"); err != nil {
 			return err
@@ -45,9 +46,13 @@ var signCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to load transaction file %v: %v", txFile, err)
 		}
-		kp, err := sdk.LoadKeyPair(signKeyFile, signAlgo)
+		accInfo, err := loadAccountFromFile(signKeyFile, true)
 		if err != nil {
-			return fmt.Errorf("failed to get key pair by private key file %v: %v", signKeyFile, err)
+			return fmt.Errorf("failed to load account from file %v: %v", signKeyFile, err)
+		}
+		kp, err := accInfo.Keypairs["active"].toKeyPair()
+		if err != nil {
+			return fmt.Errorf("failed to get key pair from file %v: %v", signKeyFile, err)
 		}
 		sig := sdk.GetSignatureOfTx(trx, kp)
 		if verbose {

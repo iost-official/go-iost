@@ -11,6 +11,7 @@ type AlgorithmBackend interface {
 	Verify(message []byte, pubkey []byte, sig []byte) bool
 	GetPubkey(seckey []byte) []byte
 	GenSeckey() []byte
+	CheckSeckey(seckey []byte) error
 }
 
 // Algorithm is the crypto algorithm of signature
@@ -83,4 +84,9 @@ func (a Algorithm) GetPubkey(seckey []byte) []byte {
 // GenSeckey will generate the secret key
 func (a Algorithm) GenSeckey() []byte {
 	return a.getBackend().GenSeckey()
+}
+
+// CheckSeckey ...
+func (a Algorithm) CheckSeckey(seckey []byte) error {
+	return a.getBackend().CheckSeckey(seckey)
 }

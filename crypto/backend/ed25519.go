@@ -1,7 +1,9 @@
 package backend
 
 import (
+	"bytes"
 	"crypto/rand"
+	"fmt"
 
 	"github.com/iost-official/go-iost/ilog"
 	"golang.org/x/crypto/ed25519"
@@ -39,4 +41,16 @@ func (b *Ed25519) GenSeckey() []byte {
 		return nil
 	}
 	return ed25519.NewKeyFromSeed(seed)
+}
+
+// CheckSeckey ...
+func (b *Ed25519) CheckSeckey(seckey []byte) error {
+	if len(seckey) != 64 {
+		return fmt.Errorf("seckey length error ed25519 seckey length should not be %v",
+			len(seckey))
+	}
+	if !bytes.Equal(ed25519.NewKeyFromSeed(seckey[:32]), seckey) {
+		return fmt.Errorf("invalid seckey")
+	}
+	return nil
 }
