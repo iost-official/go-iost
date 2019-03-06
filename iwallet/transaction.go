@@ -28,6 +28,8 @@ var transactionCmd = &cobra.Command{
 	Aliases: []string{"tx"},
 	Short:   "Find transactions",
 	Long:    `Find transaction by transaction hash`,
+	Example: `  iwallet transaction 7MDfKBeZToQnnfNHD58cbZ7o4Y2AktKLmiEg776HLPBT
+  iwallet tx 7MDfKBeZToQnnfNHD58cbZ7o4Y2AktKLmiEg776HLPBT`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "transactionHash"); err != nil {
 			return err
