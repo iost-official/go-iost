@@ -27,10 +27,10 @@ func goVerify(cSbx C.SandboxPtr, algo C.CStr, msg C.CStr, sig C.CStr, pubkey C.C
 	msgBytes := common.Base58Decode(msg.GoString())
 	sigBytes := common.Base58Decode(sig.GoString())
 	pubkeyBytes := common.Base58Decode(pubkey.GoString())
+	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 	if algoStr != "secp256k1" && algoStr != "ed25519" {
 		return 0
 	}
-	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 	if !crypto.NewAlgorithm(algoStr).Verify(msgBytes, pubkeyBytes, sigBytes) {
 		return 0
 	}
