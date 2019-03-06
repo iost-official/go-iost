@@ -25,10 +25,11 @@ import (
 
 // signCmd represents the command used to sign a transaction.
 var signCmd = &cobra.Command{
-	Use:     "sign txFile keyFile outputFile",
-	Short:   "Sign a tx and save the signature",
-	Long:    `Sign a tx loaded from given file with account key file and save the signature`,
-	Example: `  iwallet sign tx.json ~/.iwallet/test0.json sign.json`,
+	Use:   "sign txFile keyFile outputFile",
+	Short: "Sign a tx and save the signature",
+	Long:  `Sign a transaction loaded from given txFile with keyFile(account json file or private key file) and save the signature as outputFile`,
+	Example: `  iwallet sign tx.json ~/.iwallet/test0.json sign.json
+  iwallet sign tx.json ~/.iwallet/test0_ed25519 sign.json`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "txFile", "keyFile", "outputFile"); err != nil {
 			return err
