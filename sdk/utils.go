@@ -2,15 +2,16 @@ package sdk
 
 import (
 	"fmt"
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/rpc/pb"
-	"io/ioutil"
-	"os"
-	"strings"
 )
 
 ///////////////////////////// file operation /////////////////////////////
@@ -67,11 +68,11 @@ func SaveProtoStructToJSONFile(pb proto.Message, fileName string) error {
 func LoadProtoStructFromJSONFile(fileName string, pb proto.Message) error {
 	bytes, err := ioutil.ReadFile(fileName)
 	if err != nil {
-		return fmt.Errorf("load signature err %v %v", fileName, err)
+		return fmt.Errorf("failed to read file %v: %v", fileName, err)
 	}
 	err = jsonpb.UnmarshalString(string(bytes), pb)
 	if err != nil {
-		return fmt.Errorf("not a valid signature json %v %v", fileName, err)
+		return fmt.Errorf("invalid file %v: %v", fileName, err)
 	}
 	return nil
 }

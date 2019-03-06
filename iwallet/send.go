@@ -16,32 +16,33 @@ package iwallet
 
 import (
 	"github.com/spf13/cobra"
+
+	"github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/sdk"
 )
 
-var memo string
-
-var transferCmd = &cobra.Command{
-	Use:     "transfer receiver amount",
-	Aliases: []string{"trans"},
-	Short:   "Transfer IOST",
-	Long:    `Transfer IOST`,
-	Example: `  iwallet transfer test1 100 --account test0
-  iwallet transfer test1 100 --account test0 --memo "just for test :D\n中文测试\n😏"`,
+// sendCmd represents the send command that send a contract with given actions.
+var sendCmd = &cobra.Command{
+	Use:     "send txFile",
+	Short:   "Send transaction onto blockchain by given json file",
+	Long:    `Send transaction onto blockchain by given json file`,
+	Example: `  iwallet send tx.json --account test0`,
 	Args: func(cmd *cobra.Command, args []string) error {
-		if err := checkArgsNumber(cmd, args, "receiver", "amount"); err != nil {
-			return err
-		}
-		if err := checkFloat(cmd, args[1], "amount"); err != nil {
+		if err := checkArgsNumber(cmd, args, "txFile"); err != nil {
 			return err
 		}
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("token.iost", "transfer", "iost", accountName, args[0], args[1], memo)
+		tx := &rpcpb.TransactionRequest{}
+		err := sdk.LoadProtoStructFromJSONFile(args[0], tx)
+		if err != nil {
+			return err
+		}
+		return sendTx(tx)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(transferCmd)
-	transferCmd.Flags().StringVarP(&memo, "memo", "", "", "memo of transfer")
+	rootCmd.AddCommand(sendCmd)
 }
