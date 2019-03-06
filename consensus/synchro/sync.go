@@ -75,6 +75,12 @@ func (s *Sync) IncommingBlock() <-chan *BlockMessage {
 	return s.blockSync.IncommingBlock()
 }
 
+// NeighborHeight will return the median of the head height of the neighbor nodes.
+// If the number of neighbor nodes is less than leastNeighborNumber, return -1.
+func (s *Sync) NeighborHeight() int64 {
+	return s.heightSync.NeighborHeight()
+}
+
 func (s *Sync) doHeightSync() {
 	syncHeight := &msgpb.SyncHeight{
 		Height: s.bCache.Head().Head.Number,
@@ -146,6 +152,7 @@ func (s *Sync) doBlockSync() {
 		end = start + maxSyncRange - 1
 	}
 
+	ilog.Infof("Syncing block in [%v %v]...", start, end)
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
 		if block, err := s.bCache.GetBlockByHash(blockHash.Hash); err == nil && block != nil {
 			continue
