@@ -22,9 +22,9 @@ const (
 
 // BlockMessage define a block from a neighbor node.
 type BlockMessage struct {
-	blk     *block.Block
-	p2pType p2p.MessageType
-	from    string
+	Blk     *block.Block
+	P2PType p2p.MessageType
+	From    string
 }
 
 type blockSync struct {
@@ -113,9 +113,9 @@ func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
 	b.responseCache.Set(string(blk.HeadHash()), "", cache.DefaultExpiration)
 
 	blockMessage := &BlockMessage{
-		blk:     blk,
-		p2pType: msg.Type(),
-		from:    msg.From().Pretty(),
+		Blk:     blk,
+		P2PType: msg.Type(),
+		From:    msg.From().Pretty(),
 	}
 	b.blockCh <- blockMessage
 }
