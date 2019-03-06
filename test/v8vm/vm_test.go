@@ -731,6 +731,7 @@ func TestEngine_Float64(t *testing.T) {
 func TestEngine_Crypto(t *testing.T) {
 	host, code := MyInit(t, "crypto1")
 
+	// test sha3
 	testStr := "hello world"
 	rs, _, err := vmPool.LoadAndCall(host, code, "sha3", testStr)
 	if err != nil {
@@ -740,11 +741,12 @@ func TestEngine_Crypto(t *testing.T) {
 		t.Fatalf("LoadAndCall sha3 invalid result")
 	}
 
+	// test normal case
 	algo := crypto.Ed25519
 	secKey := algo.GenSeckey()
 	pubKey := algo.GetPubkey(secKey)
 	msg := []byte(testStr)
-	rs, _, err = vmPool.LoadAndCall(host, code, "verify", algo.String(), common.Base58Encode(msg),
+	rs, c, err := vmPool.LoadAndCall(host, code, "verify", algo.String(), common.Base58Encode(msg),
 		common.Base58Encode(algo.Sign(msg, secKey)), common.Base58Encode(pubKey))
 	if err != nil {
 		t.Fatalf("LoadAndCall error: %v", err)
@@ -752,15 +754,33 @@ func TestEngine_Crypto(t *testing.T) {
 	if rs[0] != "1" {
 		t.Fatalf("LoadAndCall verify invalid result %v", rs[0])
 	}
-	rs, _, err = vmPool.LoadAndCall(host, code, "verify", algo.String(), common.Base58Encode(msg),
-		common.Base58Encode(algo.Sign(msg[1:], secKey)), common.Base58Encode(pubKey))
+	if c.ToGas() != 285 {
+		t.Fatalf("wrong gas %v", c.ToGas())
+	}
+	rs, c, err = vmPool.LoadAndCall(host, code, "verify", algo.String(), common.Base58Encode(msg[1:]),
+		common.Base58Encode(algo.Sign(msg, secKey)), common.Base58Encode(pubKey))
 	if err != nil {
 		t.Fatalf("LoadAndCall error: %v", err)
 	}
 	if rs[0] != "0" {
 		t.Fatalf("LoadAndCall verify invalid result %v", rs[0])
 	}
+	if c.ToGas() != 284 {
+		t.Fatalf("wrong gas %v", c.ToGas())
+	}
 
+	// test wrong algo
+	rs, c, err = vmPool.LoadAndCall(host, code, "verify", "wrong_algo", common.Base58Encode(msg),
+		common.Base58Encode(algo.Sign(msg, secKey)), common.Base58Encode(pubKey))
+	if err != nil {
+		t.Fatalf("LoadAndCall error: %v", err)
+	}
+	if rs[0] != "0" {
+		t.Fatalf("LoadAndCall verify invalid result %v", rs[0])
+	}
+	if c.ToGas() != 285 {
+		t.Fatalf("wrong gas %v", c.ToGas())
+	}
 }
 
 func TestEngine_ArrayOfFrom(t *testing.T) {
