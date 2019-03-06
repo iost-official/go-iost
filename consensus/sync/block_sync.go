@@ -1,13 +1,23 @@
-package sync
+package synchro
 
 import (
 	"sync"
+	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
+	"github.com/patrickmn/go-cache"
+)
+
+const (
+	requestCacheExpiration     = 10 * time.Second
+	requestCachePurgeInterval  = 2 * time.Second
+	responseCacheExpiration    = 5 * time.Minute
+	responseCachePurgeInterval = 1 * time.Minute
 )
 
 // BlockMessage define a block from a neighbor node.
@@ -18,7 +28,9 @@ type BlockMessage struct {
 }
 
 type blockSync struct {
-	p p2p.Service
+	p             p2p.Service
+	requestCache  *cache.Cache
+	responseCache *cache.Cache
 
 	msgCh   chan p2p.IncomingMessage
 	blockCh chan *BlockMessage
@@ -29,7 +41,9 @@ type blockSync struct {
 
 func newBlockSync(p p2p.Service) *blockSync {
 	b := &blockSync{
-		p: p,
+		p:             p,
+		requestCache:  cache.New(requestCacheExpiration, requestCachePurgeInterval),
+		responseCache: cache.New(responseCacheExpiration, responseCachePurgeInterval),
 
 		msgCh:   p.Register("block from other nodes", p2p.SyncBlockResponse, p2p.NewBlock),
 		blockCh: make(chan *BlockMessage, 1024),
@@ -55,7 +69,13 @@ func (b *blockSync) IncommingBlock() <-chan *BlockMessage {
 }
 
 func (b *blockSync) RequestBlock(hash []byte, peerID p2p.PeerID) {
-	// TODO: Filter duplicate requests in the short term
+	// Filter duplicate requests in the short term
+	_, found := b.requestCache.Get(string(hash))
+	if found {
+		ilog.Debugf("Discard the duplicate request block %v", common.Base58Encode(hash))
+		return
+	}
+	b.requestCache.Set(string(hash), "", cache.DefaultExpiration)
 
 	// Historical issues cause number to be useless.
 	blockInfo := &msgpb.BlockInfo{
@@ -84,7 +104,13 @@ func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
 		return
 	}
 
-	// TODO: Discard the most recently received duplicate block by blk.HeadHash()
+	// Discard the most recently received duplicate block by hash
+	_, found := b.responseCache.Get(string(blk.HeadHash()))
+	if found {
+		ilog.Debugf("Discard the duplicate received block %v", common.Base58Encode(blk.HeadHash()))
+		return
+	}
+	b.responseCache.Set(string(blk.HeadHash()), "", cache.DefaultExpiration)
 
 	blockMessage := &BlockMessage{
 		blk:     blk,
