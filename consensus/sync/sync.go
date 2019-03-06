@@ -1,4 +1,4 @@
-package sync
+package synchro
 
 import (
 	"math/rand"
