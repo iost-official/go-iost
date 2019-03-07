@@ -566,7 +566,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 	}
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 
-	var voter string
+	voter := req.GetName()
 	value, _ := h.GlobalMapGet("vote.iost", "u_1", voter)
 	if value == nil {
 		return ret, nil
@@ -618,14 +618,14 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 	}
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 
-	var candidate string
+	candidate := req.GetName()
 	candCoef, _ := h.GlobalGet("vote_producer.iost", "candCoef")
 	if candCoef == nil {
 		return ret, nil
 	}
 	cc, err := strconv.ParseFloat(candCoef.(string), 64)
 	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cc, err)
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", candCoef, err)
 		return nil, err
 	}
 	candMask, _ := h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
@@ -634,7 +634,7 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 	}
 	cm, err := strconv.ParseFloat(candMask.(string), 64)
 	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cm, err)
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", candMask, err)
 		return nil, err
 	}
 	votes, _ := h.GlobalMapGet("vote.iost", "v_1", candidate)
@@ -643,7 +643,7 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 	}
 	v, err := strconv.ParseFloat(votes.(string), 64)
 	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", v, err)
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", votes, err)
 		return nil, err
 	}
 	if v < 2100000 {
