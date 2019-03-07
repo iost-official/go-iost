@@ -572,7 +572,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 	if value == nil {
 		return ret, nil
 	}
-	var userVotes map[string][]string
+	var userVotes map[string][]interface{}
 	err = json.Unmarshal([]byte(value.(string)), &userVotes)
 	if err != nil {
 		ilog.Errorf("JSON decoding failed. str=%v, err=%v", value, err)
@@ -580,7 +580,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 	}
 
 	for k, v := range userVotes {
-		votes, err := strconv.ParseFloat(v[0], 64)
+		votes, err := strconv.ParseFloat(v[0].(string), 64)
 		if err != nil {
 			ilog.Errorf("Parsing str %v to float64 failed. err=%v", v[0], err)
 			continue
