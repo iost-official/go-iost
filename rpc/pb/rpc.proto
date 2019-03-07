@@ -310,8 +310,12 @@ message TransactionResponse {
 
     // transaction status
     Status status = 1;
+
     // transaction
     Transaction transaction = 2;
+
+    // block number
+    int64 block_number = 3;
 }
 
 // The message defines signature struct.

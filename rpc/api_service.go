@@ -22,7 +22,7 @@ import (
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -117,6 +117,8 @@ func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest)
 		txReceipt *tx.TxReceipt
 		err       error
 	)
+	blockNumber := int64(-1)
+
 	t, err = as.blockchain.GetTx(txHashBytes)
 	if err != nil {
 		status = rpcpb.TransactionResponse_PACKED
@@ -133,12 +135,16 @@ func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest)
 		if err != nil {
 			return nil, errors.New("txreceipt not found")
 		}
-
+		blockNumber, err = as.blockchain.GetBlockNumberByTxHash(txHashBytes)
+		if err != nil {
+			return nil, errors.New("number of block not found")
+		}
 	}
 
 	return &rpcpb.TransactionResponse{
 		Status:      status,
 		Transaction: toPbTx(t, txReceipt),
+		BlockNumber: blockNumber,
 	}, nil
 }
 
