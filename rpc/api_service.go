@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"time"
 
+	simplejson "github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/vm"
 
 	"github.com/iost-official/go-iost/common"
@@ -584,32 +585,40 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 			ilog.Errorf("Parsing str %v to float64 failed. err=%v", v[0], err)
 			continue
 		}
-		voterCoef, _ := h.GlobalMapGet("vote_producer.iost", "voterCoef", k)
-		if voterCoef == nil {
+		value, _ := h.GlobalMapGet("vote_producer.iost", "voterCoef", k)
+		if value == nil {
 			continue
 		}
-		vc, err := strconv.ParseFloat(voterCoef.(string), 64)
+		vc := value.(string)
+		if len(vc) > 1 {
+			vc = vc[1 : len(vc)-1]
+		}
+		voterCoef, err := strconv.ParseFloat(vc, 64)
 		if err != nil {
-			ilog.Errorf("Parsing str %v to float64 failed. err=%v", voterCoef, err)
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", vc, err)
 			continue
 		}
-		voterMask, _ := h.GlobalMapGet("vote_producer.iost", "v_"+k, voter)
-		if voterMask == nil {
+		value, _ = h.GlobalMapGet("vote_producer.iost", "v_"+k, voter)
+		if value == nil {
 			continue
 		}
-		vm, err := strconv.ParseFloat(voterMask.(string), 64)
+		vm := value.(string)
+		if len(vm) > 1 {
+			vm = vm[1 : len(vm)-1]
+		}
+		voterMask, err := strconv.ParseFloat(vm, 64)
 		if err != nil {
-			ilog.Errorf("Parsing str %v to float64 failed. err=%v", voterMask, err)
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", vm, err)
 			continue
 		}
-		earning := vc*votes - vm
+		earning := voterCoef*votes - voterMask
 		ret.Detail[k] = earning
 		ret.Bonus += earning
 	}
 	return ret, nil
 }
 
-// GetCandidateBonus returns the bonus a voter can claim.
+// GetCandidateBonus returns the bonus a candidate can claim.
 func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.CandidateBonus, error) {
 	ret := &rpcpb.CandidateBonus{}
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
@@ -650,8 +659,15 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 		return ret, nil
 	}
 	v := value.(string)
-	if len(v) > 1 {
-		v = v[1 : len(v)-1]
+	j, err := simplejson.NewJson([]byte(v))
+	if err != nil {
+		ilog.Errorf("JSON decoding %v failed. err=%v", v, err)
+		return nil, err
+	}
+	v, err = j.Get("votes").String()
+	if err != nil {
+		ilog.Errorf("Getting votes from json failed. err=%v", err)
+		return nil, err
 	}
 	votes, err := strconv.ParseFloat(v, 64)
 	if err != nil {
