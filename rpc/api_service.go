@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"reflect"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/iost-official/go-iost/vm"
@@ -547,6 +548,59 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 		}
 	}
 }
+
+// GetVoterBonus returns the bonus a voter can claim.
+func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+
+	var voter string
+	value, _ := h.GlobalMapGet("vote.iost", "u_1", voter)
+	if value == nil {
+		// return empty response
+	}
+	var userVotes map[string][]string
+	err = json.Unmarshal([]byte(value.(string)), userVotes)
+	if err != nil {
+		ilog.Errorf("JSON decoding failed. str=%v, err=%v", value, err)
+		return nil, err
+	}
+
+	var detail map[string]float64
+	var bonus float64
+	for k, v := range userVotes {
+		votes, err := strconv.ParseFloat(v[0], 64)
+		clearedVotes, err := strconv.ParseFloat(v[2], 64)
+		voterCoef, err := h.GlobalMapGet("vote_producer.iost", "voterCoef", k)
+		voterMask, err := h.GlobalMapGet("vote_producer.iost", "v_"+k, voter)
+		earning := voterCoef*(votes-clearedVotes) - voterMask
+		detail[k] = earning
+		bonus += earning
+	}
+
+	return &rpcpb.GetContractStorageFieldsResponse{}, nil
+}
+
+// GetCandidateBonus returns the bonus a voter can claim.
+func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+
+	var candidate string
+	candCoef, err := h.GlobalGet("vote_producer.iost", "candCoef")
+	candMask, err := h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
+	votes, _ := h.GlobalMapGet("vote.iost", "v_1", candidate)
+	bonus := candCoef*votes - candMask
+
+	return &rpcpb.GetContractStorageFieldsResponse{}, nil
+}
+
 func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
 	stateDB := as.bv.StateDB().Fork()
 	ok := stateDB.Checkout(string(hash))

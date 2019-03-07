@@ -147,6 +147,18 @@ service ApiService {
         };
     }
 
+    rpc GetVoterBonus (GetAccountRequest) returns (VoterBonus) {
+        option (google.api.http) = {
+            get: "/getVoterBonus/{name}/{by_longest_chain}"
+        };
+    }
+
+    rpc GetCandidateBonus (GetAccountRequest) returns (CandidateBonus) {
+        option (google.api.http) = {
+            get: "/getCandidateBonus/{name}/{by_longest_chain}"
+        };
+    }
+
 }
 
 // The message defines an empty request.
@@ -755,4 +767,18 @@ message SubscribeRequest {
 // The message defines subscribe response.
 message SubscribeResponse {
 	Event event = 1;
+}
+
+// The message defines the getVoterBonus response.
+message VoterBonus {
+    // the totol voter bonus
+    double bonus = 1;
+    // the voter bonus detail
+    map<string, double> detail = 2;
+}
+
+// The message defines the getCandidateBonus response.
+message CandidateBonus {
+    // the candidate bonus
+    double bonus = 1;
 }
