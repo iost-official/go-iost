@@ -572,7 +572,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 		return ret, nil
 	}
 	var userVotes map[string][]string
-	err = json.Unmarshal([]byte(value.(string)), userVotes)
+	err = json.Unmarshal([]byte(value.(string)), &userVotes)
 	if err != nil {
 		ilog.Errorf("JSON decoding failed. str=%v, err=%v", value, err)
 		return nil, err
@@ -619,37 +619,49 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 
 	candidate := req.GetName()
-	candCoef, _ := h.GlobalGet("vote_producer.iost", "candCoef")
-	if candCoef == nil {
+	value, _ := h.GlobalGet("vote_producer.iost", "candCoef")
+	if value == nil {
 		return ret, nil
 	}
-	cc, err := strconv.ParseFloat(candCoef.(string), 64)
+	cc := value.(string)
+	if len(cc) > 1 {
+		cc = cc[1 : len(cc)-1]
+	}
+	candCoef, err := strconv.ParseFloat(cc, 64)
 	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", candCoef, err)
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cc, err)
 		return nil, err
 	}
-	candMask, _ := h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
-	if candMask == nil {
+	value, _ = h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
+	if value == nil {
 		return ret, nil
 	}
-	cm, err := strconv.ParseFloat(candMask.(string), 64)
+	cm := value.(string)
+	if len(cm) > 1 {
+		cm = cm[1 : len(cm)-1]
+	}
+	candMask, err := strconv.ParseFloat(cm, 64)
 	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", candMask, err)
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cm, err)
 		return nil, err
 	}
-	votes, _ := h.GlobalMapGet("vote.iost", "v_1", candidate)
-	if votes == nil {
+	value, _ = h.GlobalMapGet("vote.iost", "v_1", candidate)
+	if value == nil {
 		return ret, nil
 	}
-	v, err := strconv.ParseFloat(votes.(string), 64)
+	v := value.(string)
+	if len(v) > 1 {
+		v = v[1 : len(v)-1]
+	}
+	votes, err := strconv.ParseFloat(v, 64)
 	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", votes, err)
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", v, err)
 		return nil, err
 	}
-	if v < 2100000 {
-		v = 0
+	if votes < 2100000 {
+		votes = 0
 	}
-	ret.Bonus = cc*v - cm
+	ret.Bonus = candCoef*votes - candMask
 	return ret, nil
 }
 
