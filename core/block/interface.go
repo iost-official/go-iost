@@ -25,4 +25,5 @@ type Chain interface {
 	Close()
 	AllDelaytx() ([]*tx.Tx, error)
 	Draw(int64, int64) string
+	GetBlockNumberByTxHash(hash []byte) (int64, error)
 }

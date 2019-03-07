@@ -1614,6 +1614,11 @@
         "transaction": {
           "$ref": "#/definitions/rpcpbTransaction",
           "title": "transaction"
+        },
+        "block_number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
         }
       },
       "description": "The message defines transaction response."

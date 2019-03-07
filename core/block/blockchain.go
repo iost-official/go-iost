@@ -286,6 +286,26 @@ func (bc *BlockChain) delBlockByNumber(number int64) error {
 	return bc.delBlockByHash(hash)
 }
 
+// GetBlockNumberByTxHash is get number of the block by hash of the tx
+func (bc *BlockChain) GetBlockNumberByTxHash(hash []byte) (int64, error) {
+	bTx, err := bc.blockChainDB.Get(append(txPrefix, hash...))
+	if err != nil {
+		return 0, fmt.Errorf("failed to Get the tx: %v", err)
+	}
+
+	blockByte, err := bc.getBlockByteByHash(bTx[:32])
+	if err != nil {
+		return 0, err
+	}
+	var blk Block
+	err = blk.Decode(blockByte)
+	if err != nil {
+		return 0, errors.New("fail to decode blockByte")
+	}
+
+	return blk.Head.Number, nil
+}
+
 // GetBlockByNumber is get block by number
 func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 	hash, err := bc.GetHashByNumber(number)
