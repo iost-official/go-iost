@@ -556,7 +556,10 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 }
 
 // GetVoterBonus returns the bonus a voter can claim.
-func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
+func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.VoterBonus, error) {
+	ret := &rpcpb.VoterBonus{
+		Detail: make(map[string]float64),
+	}
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
@@ -566,7 +569,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetContractS
 	var voter string
 	value, _ := h.GlobalMapGet("vote.iost", "u_1", voter)
 	if value == nil {
-		// return empty response
+		return ret, nil
 	}
 	var userVotes map[string][]string
 	err = json.Unmarshal([]byte(value.(string)), userVotes)
@@ -575,23 +578,40 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetContractS
 		return nil, err
 	}
 
-	var detail map[string]float64
-	var bonus float64
 	for k, v := range userVotes {
 		votes, err := strconv.ParseFloat(v[0], 64)
-		clearedVotes, err := strconv.ParseFloat(v[2], 64)
-		voterCoef, err := h.GlobalMapGet("vote_producer.iost", "voterCoef", k)
-		voterMask, err := h.GlobalMapGet("vote_producer.iost", "v_"+k, voter)
-		earning := voterCoef*(votes-clearedVotes) - voterMask
-		detail[k] = earning
-		bonus += earning
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", v[0], err)
+			continue
+		}
+		voterCoef, _ := h.GlobalMapGet("vote_producer.iost", "voterCoef", k)
+		if voterCoef == nil {
+			continue
+		}
+		vc, err := strconv.ParseFloat(voterCoef.(string), 64)
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", voterCoef, err)
+			continue
+		}
+		voterMask, _ := h.GlobalMapGet("vote_producer.iost", "v_"+k, voter)
+		if voterMask == nil {
+			continue
+		}
+		vm, err := strconv.ParseFloat(voterMask.(string), 64)
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", voterMask, err)
+			continue
+		}
+		earning := vc*votes - vm
+		ret.Detail[k] = earning
+		ret.Bonus += earning
 	}
-
-	return &rpcpb.GetContractStorageFieldsResponse{}, nil
+	return ret, nil
 }
 
 // GetCandidateBonus returns the bonus a voter can claim.
-func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
+func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.CandidateBonus, error) {
+	ret := &rpcpb.CandidateBonus{}
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
@@ -599,12 +619,38 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetContr
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 
 	var candidate string
-	candCoef, err := h.GlobalGet("vote_producer.iost", "candCoef")
-	candMask, err := h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
+	candCoef, _ := h.GlobalGet("vote_producer.iost", "candCoef")
+	if candCoef == nil {
+		return ret, nil
+	}
+	cc, err := strconv.ParseFloat(candCoef.(string), 64)
+	if err != nil {
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cc, err)
+		return nil, err
+	}
+	candMask, _ := h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
+	if candMask == nil {
+		return ret, nil
+	}
+	cm, err := strconv.ParseFloat(candMask.(string), 64)
+	if err != nil {
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cm, err)
+		return nil, err
+	}
 	votes, _ := h.GlobalMapGet("vote.iost", "v_1", candidate)
-	bonus := candCoef*votes - candMask
-
-	return &rpcpb.GetContractStorageFieldsResponse{}, nil
+	if votes == nil {
+		return ret, nil
+	}
+	v, err := strconv.ParseFloat(votes.(string), 64)
+	if err != nil {
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", v, err)
+		return nil, err
+	}
+	if v < 2100000 {
+		v = 0
+	}
+	ret.Bonus = cc*v - cm
+	return ret, nil
 }
 
 func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
