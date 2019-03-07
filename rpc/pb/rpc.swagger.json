@@ -145,6 +145,39 @@
         ]
       }
     },
+    "/getCandidateBonus/{name}/{by_longest_chain}": {
+      "get": {
+        "operationId": "GetCandidateBonus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbCandidateBonus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "account name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get account by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getChainInfo": {
       "get": {
         "summary": "get blockchain information",
@@ -544,6 +577,39 @@
             "in": "path",
             "required": true,
             "type": "string"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getVoterBonus/{name}/{by_longest_chain}": {
+      "get": {
+        "operationId": "GetVoterBonus",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbVoterBonus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "name",
+            "description": "account name",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get account by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
           }
         ],
         "tags": [
@@ -1021,6 +1087,17 @@
       ],
       "default": "PENDING",
       "description": "The enumeration defines block status.\n\n - PENDING: pending in block cache\n - IRREVERSIBLE: irreversible"
+    },
+    "rpcpbCandidateBonus": {
+      "type": "object",
+      "properties": {
+        "bonus": {
+          "type": "number",
+          "format": "double",
+          "title": "the candidate bonus"
+        }
+      },
+      "description": "The message defines the getCandidateBonus response."
     },
     "rpcpbChainInfoResponse": {
       "type": "object",
@@ -1614,6 +1691,11 @@
         "transaction": {
           "$ref": "#/definitions/rpcpbTransaction",
           "title": "transaction"
+        },
+        "block_number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
         }
       },
       "description": "The message defines transaction response."
@@ -1692,6 +1774,25 @@
         }
       },
       "description": "The message defines the account's vote info."
+    },
+    "rpcpbVoterBonus": {
+      "type": "object",
+      "properties": {
+        "bonus": {
+          "type": "number",
+          "format": "double",
+          "title": "the totol voter bonus"
+        },
+        "detail": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "number",
+            "format": "double"
+          },
+          "title": "the voter bonus detail"
+        }
+      },
+      "description": "The message defines the getVoterBonus response."
     }
   }
 }

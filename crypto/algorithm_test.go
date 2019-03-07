@@ -2,6 +2,7 @@ package crypto
 
 import (
 	"crypto/rand"
+	"github.com/iost-official/go-iost/common"
 	"reflect"
 	"testing"
 
@@ -11,6 +12,11 @@ import (
 var algos = []Algorithm{
 	Secp256k1,
 	Ed25519,
+}
+
+func TestCheckSeckey(t *testing.T) {
+	assert.Nil(t, Ed25519.CheckSeckey(common.Base58Decode("2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1")))
+	assert.NotNil(t, Ed25519.CheckSeckey(common.Base58Decode("65Rznad6Ko7gPha1Vnbsgu1bS7hYATdtdVp191jwVrMhW3SynSR6R7qzBgM6cFL74spAQnCWXuqze2YME8UfUFiL")))
 }
 
 func TestVerify(t *testing.T) {

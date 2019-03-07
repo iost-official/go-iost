@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/sdk"
 )
 
@@ -50,7 +49,7 @@ var rootCmd = &cobra.Command{
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println("\033[38;5;1mERROR:\033[38;5;12m", err)
+		fmt.Println("\033[31mERROR:\033[m", err)
 		os.Exit(1)
 	}
 }
@@ -66,6 +65,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", true, "print verbose information")
 	rootCmd.PersistentFlags().BoolVarP(&elapsedTime, "elapsed_time", "", false, "print elapsed time")
 	rootCmd.PersistentFlags().StringVarP(&accountName, "account", "a", "", "which account to use")
+	rootCmd.PersistentFlags().StringVarP(&accountDir, "account_dir", "", "", "$(account_dir)/.iwallet will be used to save accounts (default $HOME/.iwallet)")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&checkResult, "check_result", "", true, "check publish/call status after sending to chain")
@@ -121,7 +121,7 @@ var iwalletSDK *sdk.IOSTDevSDK
 var (
 	server      string
 	accountName string
-	keyPair     *account.KeyPair
+	accountDir  string
 	signAlgo    string
 	signers     []string
 	signPerm    string
