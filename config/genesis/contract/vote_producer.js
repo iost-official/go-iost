@@ -38,8 +38,14 @@ class VoteContract {
         let allKey = new Float64(0);
 
         for (const c of candidates) {
+            if (c.length == 0) {
+                continue
+            }
             storage.mapDel(voterCoefTable, c); // clear voterCoef
             for (const v of voters) {
+                if (v.length == 0) {
+                    continue
+                }
                 storage.mapDel(voterMaskPrefix + c, v); // clear voterMask
             }
             storage.del(candidateCoef); // clear candCoef
@@ -48,6 +54,9 @@ class VoteContract {
 
         let candKeys = {};
         for (const v of voters) {
+            if (v.length == 0) {
+                continue
+            }
             let val = storage.globalMapGet("vote.iost", "u_" + voteId, v);
             if (val === "") {
                 continue
