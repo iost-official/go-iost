@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
 	"strconv"
@@ -612,6 +613,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 			continue
 		}
 		earning := voterCoef*votes - voterMask
+		earning = math.Trunc(earning*1e8) / 1e8
 		ret.Detail[k] = earning
 		ret.Bonus += earning
 	}
@@ -678,6 +680,7 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 		votes = 0
 	}
 	ret.Bonus = candCoef*votes - candMask
+	ret.Bonus = math.Trunc(ret.Bonus*1e8) / 1e8
 	return ret, nil
 }
 
