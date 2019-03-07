@@ -5,10 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"reflect"
 	"sort"
+	"strconv"
 	"time"
 
+	simplejson "github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/vm"
 
 	"github.com/iost-official/go-iost/common"
@@ -553,6 +556,134 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 		}
 	}
 }
+
+// GetVoterBonus returns the bonus a voter can claim.
+func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.VoterBonus, error) {
+	ret := &rpcpb.VoterBonus{
+		Detail: make(map[string]float64),
+	}
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+
+	voter := req.GetName()
+	value, _ := h.GlobalMapGet("vote.iost", "u_1", voter)
+	if value == nil {
+		return ret, nil
+	}
+	var userVotes map[string][]interface{}
+	err = json.Unmarshal([]byte(value.(string)), &userVotes)
+	if err != nil {
+		ilog.Errorf("JSON decoding failed. str=%v, err=%v", value, err)
+		return nil, err
+	}
+
+	for k, v := range userVotes {
+		votes, err := strconv.ParseFloat(v[0].(string), 64)
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", v[0], err)
+			continue
+		}
+		value, _ := h.GlobalMapGet("vote_producer.iost", "voterCoef", k)
+		if value == nil {
+			continue
+		}
+		vc := value.(string)
+		if len(vc) > 1 {
+			vc = vc[1 : len(vc)-1]
+		}
+		voterCoef, err := strconv.ParseFloat(vc, 64)
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", vc, err)
+			continue
+		}
+		value, _ = h.GlobalMapGet("vote_producer.iost", "v_"+k, voter)
+		if value == nil {
+			continue
+		}
+		vm := value.(string)
+		if len(vm) > 1 {
+			vm = vm[1 : len(vm)-1]
+		}
+		voterMask, err := strconv.ParseFloat(vm, 64)
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", vm, err)
+			continue
+		}
+		earning := voterCoef*votes - voterMask
+		earning = math.Trunc(earning*1e8) / 1e8
+		ret.Detail[k] = earning
+		ret.Bonus += earning
+	}
+	return ret, nil
+}
+
+// GetCandidateBonus returns the bonus a candidate can claim.
+func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.CandidateBonus, error) {
+	ret := &rpcpb.CandidateBonus{}
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+
+	candidate := req.GetName()
+	value, _ := h.GlobalGet("vote_producer.iost", "candCoef")
+	if value == nil {
+		return ret, nil
+	}
+	cc := value.(string)
+	if len(cc) > 1 {
+		cc = cc[1 : len(cc)-1]
+	}
+	candCoef, err := strconv.ParseFloat(cc, 64)
+	if err != nil {
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cc, err)
+		return nil, err
+	}
+	value, _ = h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
+	if value == nil {
+		return ret, nil
+	}
+	cm := value.(string)
+	if len(cm) > 1 {
+		cm = cm[1 : len(cm)-1]
+	}
+	candMask, err := strconv.ParseFloat(cm, 64)
+	if err != nil {
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cm, err)
+		return nil, err
+	}
+	value, _ = h.GlobalMapGet("vote.iost", "v_1", candidate)
+	if value == nil {
+		return ret, nil
+	}
+	v := value.(string)
+	j, err := simplejson.NewJson([]byte(v))
+	if err != nil {
+		ilog.Errorf("JSON decoding %v failed. err=%v", v, err)
+		return nil, err
+	}
+	v, err = j.Get("votes").String()
+	if err != nil {
+		ilog.Errorf("Getting votes from json failed. err=%v", err)
+		return nil, err
+	}
+	votes, err := strconv.ParseFloat(v, 64)
+	if err != nil {
+		ilog.Errorf("Parsing str %v to float64 failed. err=%v", v, err)
+		return nil, err
+	}
+	if votes < 2100000 {
+		votes = 0
+	}
+	ret.Bonus = candCoef*votes - candMask
+	ret.Bonus = math.Trunc(ret.Bonus*1e8) / 1e8
+	return ret, nil
+}
+
 func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
 	stateDB := as.bv.StateDB().Fork()
 	ok := stateDB.Checkout(string(hash))
