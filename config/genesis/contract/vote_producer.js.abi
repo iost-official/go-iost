@@ -187,6 +187,10 @@
             "args": [
                 "string"
             ]
+        },
+        {
+            "name": "rebuild",
+            "args": []
         }
     ]
 }
