@@ -14,8 +14,7 @@ import (
 )
 
 const (
-	maxSyncRange    = 1000
-	maxSyncRangeOld = 100
+	maxSyncRange = 1000
 )
 
 // Sync is the synchronizer of blockchain.
@@ -113,24 +112,11 @@ func (s *Sync) doBlockhashSync() {
 	if start > end {
 		return
 	}
-	// Temporarily do this to compatibility upgrade
-	if end-start+1 > maxSyncRangeOld {
-		end = start + maxSyncRangeOld - 1
+	if end-start+1 > maxSyncRange {
+		end = start + maxSyncRange - 1
 	}
 
-	blockHashQuery := &msgpb.BlockHashQuery{
-		ReqType: msgpb.RequireType_GETBLOCKHASHES,
-		Start:   start,
-		End:     end,
-		Nums:    nil,
-	}
-	msg, err := proto.Marshal(blockHashQuery)
-	if err != nil {
-		ilog.Errorf("Marshal sync block hash message failed: %v", err)
-		return
-	}
-	ilog.Debugf("Syncing block hash in [%v %v]... neighbor height: %v", start, end, s.heightSync.NeighborHeight())
-	s.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	s.blockhashSync.RequestBlockHash(start, end)
 }
 
 func (s *Sync) blockhashSyncController() {
