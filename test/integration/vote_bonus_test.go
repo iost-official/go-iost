@@ -470,9 +470,9 @@ func TestRebuild(t *testing.T) {
 	for i := 0; i < 20; i++ {
 		testAcc := &TestAccount{fmt.Sprintf("testvoter%d", i), kp}
 		s.SetAccount(testAcc.ToAccount())
-		s.SetGas(testAcc.ID, 100000000)
-		s.SetRAM(testAcc.ID, 10000)
-		s.Visitor.SetTokenBalance("iost", testAcc.ID, 1e16)
+		s.SetGas(testAcc.ID, 10000000000)
+		s.SetRAM(testAcc.ID, 10000000)
+		s.Visitor.SetTokenBalance("iost", testAcc.ID, 1e17)
 	}
 	for i := 0; i < 60; i++ {
 		testAcc := &TestAccount{fmt.Sprintf("testacc%d", i), kp}
@@ -480,20 +480,19 @@ func TestRebuild(t *testing.T) {
 		s.SetGas(testAcc.ID, 100000000)
 		s.SetRAM(testAcc.ID, 10000)
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`,
-			testAcc.ID, testAcc.KeyPair.ReadablePubkey()), testAcc.ID, testAcc.KeyPair)
+			testAcc.ID, fmt.Sprintf("%d", i)), testAcc.ID, testAcc.KeyPair)
 		assert.Nil(t, err)
 		assert.Equal(t, tx.Success, r.Status.Code)
-		fmt.Println(r)
-		continue
 		for j := 0; j < 20; j++ {
-			voter := &TestAccount{fmt.Sprintf("testvoter%d", i), kp}
+			voter := &TestAccount{fmt.Sprintf("testvoter%d", j), kp}
 			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, voter.ID, testAcc.ID, 2100000), voter.ID, voter.KeyPair)
 			assert.Nil(t, err)
 			assert.Empty(t, r.Status.Message)
 		}
 	}
-	return
+	s.SetGas(acc0.ID, 100000000)
 	ti := time.Now().UnixNano()
+	s.GasLimit = 400000000
 	r, err = s.Call("vote_producer.iost", "rebuild", `[]`, acc0.ID, acc0.KeyPair)
 	fmt.Println(time.Now().UnixNano() - ti)
 	assert.Nil(t, err)
