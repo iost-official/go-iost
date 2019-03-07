@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -175,11 +176,14 @@ func saveOrSendAction(contract, method string, methodArgs ...interface{}) error 
 }
 
 func getAccountDir() (string, error) {
+	if accountDir != "" {
+		return path.Join(accountDir, ".iwallet"), nil
+	}
 	home, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
-	return home + "/.iwallet", nil
+	return path.Join(home, ".iwallet"), nil
 }
 
 // GetSignAlgoByName ...
