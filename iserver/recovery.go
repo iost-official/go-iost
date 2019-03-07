@@ -69,8 +69,8 @@ func recoverDB(bv global.BaseVariable) error {
 			length = blk.Head.Number + 1
 		}
 		oldLength := blockChain.Length()
-		blockChain.SetLength(length)
 		blockChain.CleanDB(oldLength, length)
+		blockChain.SetLength(length)
 	}
 	return nil
 }
