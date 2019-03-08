@@ -586,36 +586,39 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 			ilog.Errorf("Parsing str %v to float64 failed. err=%v", v[0], err)
 			continue
 		}
+		voterCoef := float64(0)
 		value, _ := h.GlobalMapGet("vote_producer.iost", "voterCoef", k)
-		if value == nil {
-			continue
+		if value != nil {
+			vc := value.(string)
+			if len(vc) > 1 {
+				vc = vc[1 : len(vc)-1]
+			}
+			voterCoef, err = strconv.ParseFloat(vc, 64)
+			if err != nil {
+				ilog.Errorf("Parsing str %v to float64 failed. err=%v", vc, err)
+				return nil, err
+			}
 		}
-		vc := value.(string)
-		if len(vc) > 1 {
-			vc = vc[1 : len(vc)-1]
-		}
-		voterCoef, err := strconv.ParseFloat(vc, 64)
-		if err != nil {
-			ilog.Errorf("Parsing str %v to float64 failed. err=%v", vc, err)
-			continue
-		}
+		voterMask := float64(0)
 		value, _ = h.GlobalMapGet("vote_producer.iost", "v_"+k, voter)
-		if value == nil {
-			continue
-		}
-		vm := value.(string)
-		if len(vm) > 1 {
-			vm = vm[1 : len(vm)-1]
-		}
-		voterMask, err := strconv.ParseFloat(vm, 64)
-		if err != nil {
-			ilog.Errorf("Parsing str %v to float64 failed. err=%v", vm, err)
-			continue
+		if value != nil {
+			vm := value.(string)
+			if len(vm) > 1 {
+				vm = vm[1 : len(vm)-1]
+			}
+			voterMask, err = strconv.ParseFloat(vm, 64)
+			if err != nil {
+				ilog.Errorf("Parsing str %v to float64 failed. err=%v", vm, err)
+				return nil, err
+			}
+
 		}
 		earning := voterCoef*votes - voterMask
 		earning = math.Trunc(earning*1e8) / 1e8
-		ret.Detail[k] = earning
-		ret.Bonus += earning
+		if earning > 0 {
+			ret.Detail[k] = earning
+			ret.Bonus += earning
+		}
 	}
 	return ret, nil
 }
@@ -630,31 +633,31 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
 
 	candidate := req.GetName()
+	candCoef := float64(0)
 	value, _ := h.GlobalGet("vote_producer.iost", "candCoef")
-	if value == nil {
-		return ret, nil
+	if value != nil {
+		cc := value.(string)
+		if len(cc) > 1 {
+			cc = cc[1 : len(cc)-1]
+		}
+		candCoef, err = strconv.ParseFloat(cc, 64)
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", cc, err)
+			return nil, err
+		}
 	}
-	cc := value.(string)
-	if len(cc) > 1 {
-		cc = cc[1 : len(cc)-1]
-	}
-	candCoef, err := strconv.ParseFloat(cc, 64)
-	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cc, err)
-		return nil, err
-	}
+	candMask := float64(0)
 	value, _ = h.GlobalMapGet("vote_producer.iost", "candMask", candidate)
-	if value == nil {
-		return ret, nil
-	}
-	cm := value.(string)
-	if len(cm) > 1 {
-		cm = cm[1 : len(cm)-1]
-	}
-	candMask, err := strconv.ParseFloat(cm, 64)
-	if err != nil {
-		ilog.Errorf("Parsing str %v to float64 failed. err=%v", cm, err)
-		return nil, err
+	if value != nil {
+		cm := value.(string)
+		if len(cm) > 1 {
+			cm = cm[1 : len(cm)-1]
+		}
+		candMask, err = strconv.ParseFloat(cm, 64)
+		if err != nil {
+			ilog.Errorf("Parsing str %v to float64 failed. err=%v", cm, err)
+			return nil, err
+		}
 	}
 	value, _ = h.GlobalMapGet("vote.iost", "v_1", candidate)
 	if value == nil {
