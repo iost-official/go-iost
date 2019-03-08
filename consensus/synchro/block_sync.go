@@ -92,7 +92,7 @@ func (b *blockSync) RequestBlock(hash []byte, peerID p2p.PeerID) {
 }
 
 func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
-	if (msg.Type() != p2p.SyncBlockResponse) || (msg.Type() != p2p.NewBlock) {
+	if (msg.Type() != p2p.SyncBlockResponse) && (msg.Type() != p2p.NewBlock) {
 		ilog.Warnf("Expect the type %v and %v, but get a unexpected type %v", p2p.SyncBlockResponse, p2p.NewBlock, msg.Type())
 		return
 	}
@@ -111,6 +111,8 @@ func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
 		return
 	}
 	b.responseCache.Set(string(blk.HeadHash()), "", cache.DefaultExpiration)
+
+	ilog.Debugf("Received block %v from peer %v, num: %v", common.Base58Encode(blk.HeadHash()), msg.From().Pretty(), blk.Head.Number)
 
 	blockMessage := &BlockMessage{
 		Blk:     blk,

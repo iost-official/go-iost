@@ -83,6 +83,8 @@ func (h *heightSync) handleHeightSync(msg *p2p.IncomingMessage) {
 		return
 	}
 
+	ilog.Debugf("Received height %v from peer %v.", syncHeight.Height, msg.From().Pretty())
+
 	h.mutex.Lock()
 	defer h.mutex.Unlock()
 
