@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"path"
 	"strconv"
@@ -107,10 +108,12 @@ func initTxFromMethod(contract, method string, methodArgs ...interface{}) (*rpcp
 func checkTxTime(tx *rpcpb.TransactionRequest) error {
 	timepoint := time.Unix(0, tx.Time)
 	delta := time.Until(timepoint)
+	if math.Abs(delta.Seconds()) > 1 {
+		fmt.Println("The transaction time is:", timepoint.Format(time.RFC3339))
+	}
 	if delta.Seconds() < 1 {
 		return nil
 	}
-	fmt.Println("The transaction time is:", timepoint.Format(time.RFC3339))
 	seconds := int(delta.Seconds())
 	if seconds%10 > 0 {
 		fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds)
