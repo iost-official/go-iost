@@ -4,7 +4,6 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
-	"github.com/iost-official/go-iost/consensus/synchronizer"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
@@ -25,7 +24,6 @@ type Service interface {
 type IServer struct {
 	bv        global.BaseVariable
 	p2p       *p2p.NetService
-	sync      *synchronizer.SyncImpl
 	txp       *txpool.TxPImpl
 	rpcServer *rpc.Server
 	consensus consensus.Consensus
@@ -72,17 +70,11 @@ func New(conf *common.Config) *IServer {
 
 	rpcServer := rpc.New(txp, blkCache, bv, p2pService)
 
-	sync, err := synchronizer.NewSynchronizer(bv, blkCache, p2pService)
-	if err != nil {
-		ilog.Fatalf("synchronizer initialization failed, stop the program! err:%v", err)
-	}
-
 	debug := NewDebugServer(conf.Debug, p2pService, blkCache, bv.BlockChain())
 
 	return &IServer{
 		bv:        bv,
 		p2p:       p2pService,
-		sync:      sync,
 		txp:       txp,
 		rpcServer: rpcServer,
 		consensus: consensus,
@@ -94,7 +86,6 @@ func New(conf *common.Config) *IServer {
 func (s *IServer) Start() error {
 	Services := []Service{
 		s.p2p,
-		s.sync,
 		s.txp,
 		s.consensus,
 		s.rpcServer,
@@ -123,7 +114,6 @@ func (s *IServer) Stop() {
 		s.rpcServer,
 		s.consensus,
 		s.txp,
-		s.sync,
 		s.p2p,
 	}
 	for _, s := range Services {
