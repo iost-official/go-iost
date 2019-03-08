@@ -50,6 +50,7 @@ const (
 	bucketSize        = 1000
 	peerResponseCount = 20
 	maxPeerQuery      = 30
+	maxAddrCount      = 10
 
 	incomingMsgChanSize = 4096
 
@@ -134,7 +135,6 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 func (pm *PeerManager) Start() {
 	pm.parseSeeds()
 	pm.LoadRoutingTable()
-	pm.routingQuery([]string{pm.host.ID().Pretty()})
 
 	pm.wg.Add(4)
 	go pm.dumpRoutingTableLoop()
@@ -289,6 +289,8 @@ func (pm *PeerManager) dumpRoutingTableLoop() {
 }
 
 func (pm *PeerManager) syncRoutingTableLoop() {
+	pm.routingQuery([]string{pm.host.ID().Pretty()})
+
 	defer pm.wg.Done()
 	for {
 		select {
@@ -642,6 +644,9 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 					peerInfo.Addrs = append(peerInfo.Addrs, addr.String())
 				}
 			}
+			if len(peerInfo.Addrs) > maxAddrCount {
+				peerInfo.Addrs = peerInfo.Addrs[:maxAddrCount]
+			}
 			if len(peerInfo.Addrs) > 0 {
 				resp.Peers = append(resp.Peers, peerInfo)
 			}
@@ -748,6 +753,9 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage, from peer.ID)
 					continue
 				}
 				maddrs = append(maddrs, ma)
+			}
+			if len(maddrs) > maxAddrCount {
+				maddrs = maddrs[:maxAddrCount]
 			}
 			if len(maddrs) > 0 {
 				pm.storePeerInfo(pid, maddrs)
