@@ -53,6 +53,7 @@ func (r *requestHandler) getBlockByHash(hash []byte) *block.Block {
 	if err != nil {
 		block, err := r.bChain.GetBlockByHash(hash)
 		if err != nil {
+			ilog.Warnf("Get block by hash %v failed: %v", common.Base58Encode(hash), err)
 			return nil
 		}
 		return block
@@ -93,10 +94,21 @@ func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
 		return
 	}
 
+	// RequireType_GETBLOCKHASHESBYNUMBER is deprecated.
+	if blockHashQuery.ReqType == msgpb.RequireType_GETBLOCKHASHESBYNUMBER {
+		return
+	}
+
 	if (blockHashQuery.Start < 0) ||
 		(blockHashQuery.Start > blockHashQuery.End) ||
 		(blockHashQuery.End-blockHashQuery.Start+1 > maxSyncRange) {
 		ilog.Warnf("Receive attack request from peer %v, start: %v, end: %v.", request.From().Pretty(), blockHashQuery.Start, blockHashQuery.End)
+		return
+	}
+
+	// Because this request is broadcast, so there is this situation.
+	// It will be changed later.
+	if blockHashQuery.Start > r.bCache.Head().Head.Number {
 		return
 	}
 
