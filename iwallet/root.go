@@ -34,6 +34,9 @@ var rootCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("invalid amount limit %v: %v", amountLimit, err)
 		}
+		if !(0 < expiration && expiration <= 90) {
+			return fmt.Errorf("expiration should be in (0, 90]")
+		}
 		iwalletSDK.SetTxInfo(gasLimit, gasRatio, expiration, delaySecond, limit)
 		iwalletSDK.SetUseLongestChain(useLongestChain)
 		return nil
