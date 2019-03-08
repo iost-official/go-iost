@@ -28,58 +28,6 @@ class VoteContract {
         this._initVote();
     }
 
-    rebuild() {
-        const admin = storage.get("adminID");
-        this._requireAuth(admin, ADMIN_PERMISSION);
-
-        const voteId = this._getVoteId();
-        let voters = storage.globalMapKeys("vote.iost", "u_" + voteId);
-        let candidates = storage.globalMapKeys("vote.iost", "v_" + voteId);
-        let allKey = new Float64(0);
-
-        for (const c of candidates) {
-            if (c.length == 0) {
-                continue
-            }
-            storage.mapDel(voterCoefTable, c); // clear voterCoef
-            for (const v of voters) {
-                if (v.length == 0) {
-                    continue
-                }
-                storage.mapDel(voterMaskPrefix + c, v); // clear voterMask
-            }
-            storage.del(candidateCoef); // clear candCoef
-            storage.mapDel(candidateMaskTable, c); // clear candMask
-        }
-
-        let candKeys = {};
-        for (const v of voters) {
-            if (v.length == 0) {
-                continue
-            }
-            let val = storage.globalMapGet("vote.iost", "u_" + voteId, v);
-            if (val === "") {
-                continue
-            }
-            let voteInfo = JSON.parse(val);
-
-            for (const c in voteInfo) {
-                if (candKeys[c] === undefined) {
-                    candKeys[c] = new Float64(0);
-                }
-                candKeys[c] = candKeys[c].plus(voteInfo[c][0]);
-            }
-        }
-
-        for (const c in candKeys) {
-            if (candKeys[c].gte(VOTE_THRESHOLD)) {
-                allKey = allKey.plus(candKeys[c]);
-            }
-        }
-
-        this._put(candidateAllKey, allKey.toFixed()) // reset candAllKey
-    }
-
     _initVote() {
         const voteId = blockchain.callWithAuth("vote.iost", "newVote", [
             "vote_producer.iost",
