@@ -16,6 +16,8 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 )
 
+var errDelaytxNotFound = errors.New("delay tx not found")
+
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
 	global           global.BaseVariable
@@ -74,7 +76,10 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 	}
 	referredTx, err := pool.global.BlockChain().GetTx(txHash)
 	if err != nil {
-		return err
+		referredTx, _, err = pool.GetFromChain(txHash)
+		if err != nil {
+			return errDelaytxNotFound
+		}
 	}
 	deferTx := referredTx.DeferTx()
 	err = pool.verifyDuplicate(deferTx)
