@@ -64,7 +64,7 @@ func (b *blockSync) Close() {
 	ilog.Infof("Stopped block sync.")
 }
 
-func (b *blockSync) IncommingBlock() <-chan *BlockMessage {
+func (b *blockSync) IncomingBlock() <-chan *BlockMessage {
 	return b.blockCh
 }
 

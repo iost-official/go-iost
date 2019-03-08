@@ -49,10 +49,11 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 		done:   new(sync.WaitGroup),
 	}
 
-	sync.done.Add(3)
+	sync.done.Add(4)
 	go sync.heightSyncController()
 	go sync.blockhashSyncController()
 	go sync.blockSyncController()
+	go sync.metricsController()
 
 	return sync
 }
@@ -69,10 +70,10 @@ func (s *Sync) Close() {
 	ilog.Infof("Stopped sync.")
 }
 
-// IncommingBlock will return the blocks from other nodes.
+// IncomingBlock will return the blocks from other nodes.
 // Including passive request and active broadcast.
-func (s *Sync) IncommingBlock() <-chan *BlockMessage {
-	return s.blockSync.IncommingBlock()
+func (s *Sync) IncomingBlock() <-chan *BlockMessage {
+	return s.blockSync.IncomingBlock()
 }
 
 // NeighborHeight will return the median of the head height of the neighbor nodes.
@@ -107,6 +108,11 @@ func (s *Sync) heightSyncController() {
 }
 
 func (s *Sync) doBlockhashSync() {
+	now := time.Now().UnixNano()
+	defer func() {
+		blockHashSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+	}()
+
 	start := s.bCache.LinkedRoot().Head.Number + 1
 	end := s.heightSync.NeighborHeight()
 	if start > end {
@@ -132,6 +138,11 @@ func (s *Sync) blockhashSyncController() {
 }
 
 func (s *Sync) doBlockSync() {
+	now := time.Now().UnixNano()
+	defer func() {
+		blockSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+	}()
+
 	start := s.bCache.LinkedRoot().Head.Number + 1
 	end := s.heightSync.NeighborHeight()
 	if start > end {
@@ -158,6 +169,19 @@ func (s *Sync) blockSyncController() {
 		select {
 		case <-time.After(2 * time.Second):
 			s.doBlockSync()
+		case <-s.quitCh:
+			s.done.Done()
+			return
+		}
+	}
+}
+
+func (s *Sync) metricsController() {
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			neighborHeightGauge.Set(float64(s.heightSync.NeighborHeight()), nil)
+			incomingBlockBufferGauge.Set(float64(len(s.blockSync.IncomingBlock())), nil)
 		case <-s.quitCh:
 			s.done.Done()
 			return
