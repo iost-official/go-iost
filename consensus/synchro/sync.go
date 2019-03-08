@@ -70,10 +70,10 @@ func (s *Sync) Close() {
 	ilog.Infof("Stopped sync.")
 }
 
-// IncommingBlock will return the blocks from other nodes.
+// IncomingBlock will return the blocks from other nodes.
 // Including passive request and active broadcast.
-func (s *Sync) IncommingBlock() <-chan *BlockMessage {
-	return s.blockSync.IncommingBlock()
+func (s *Sync) IncomingBlock() <-chan *BlockMessage {
+	return s.blockSync.IncomingBlock()
 }
 
 // NeighborHeight will return the median of the head height of the neighbor nodes.
@@ -181,7 +181,7 @@ func (s *Sync) metricsController() {
 		select {
 		case <-time.After(2 * time.Second):
 			neighborHeightGauge.Set(float64(s.heightSync.NeighborHeight()), nil)
-			incommingBlockBufferGauge.Set(float64(len(s.blockSync.IncommingBlock())), nil)
+			incomingBlockBufferGauge.Set(float64(len(s.blockSync.IncomingBlock())), nil)
 		case <-s.quitCh:
 			s.done.Done()
 			return
