@@ -615,8 +615,10 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 		}
 		earning := voterCoef*votes - voterMask
 		earning = math.Trunc(earning*1e8) / 1e8
-		ret.Detail[k] = earning
-		ret.Bonus += earning
+		if earning > 0 {
+			ret.Detail[k] = earning
+			ret.Bonus += earning
+		}
 	}
 	return ret, nil
 }
