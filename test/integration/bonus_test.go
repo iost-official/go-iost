@@ -49,7 +49,7 @@ func Test_ExchangeIOST(t *testing.T) {
 		createAccountsWithResource(s)
 		prepareIssue(s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 		prepareFakeBase(t, s)
 
 		// deploy bonus.iost
@@ -113,7 +113,7 @@ func Test_UpdateBonus(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		Convey("test update bonus 1", func() {
 			s.Head.Witness = acc1.KeyPair.ReadablePubkey()

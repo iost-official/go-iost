@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -16,11 +17,11 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func initProducer(s *Simulator) {
+func initProducer(t *testing.T, s *Simulator) {
 	for _, acc := range testAccounts[:6] {
 		r, err := s.Call("vote_producer.iost", "initProducer", fmt.Sprintf(`["%v", "%v"]`, acc.ID, acc.KeyPair.ReadablePubkey()), acc0.ID, acc0.KeyPair)
-		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldEqual, "")
+		assert.Nil(t, err)
+		assert.Empty(t, r.Status.Message)
 	}
 }
 
@@ -94,7 +95,7 @@ func Test_InitProducer(t *testing.T) {
 		So(database.MustUnmarshal(s.Visitor.Get("vote.iost-current_id")), ShouldEqual, `"1"`)
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-voteId")), ShouldEqual, `1`)
 		Convey("test init producer", func() {
-			initProducer(s)
+			initProducer(t, s)
 			list, _ := json.Marshal([]string{acc0.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey(), acc1.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc2.KeyPair.ReadablePubkey()})
 			So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(list))
 
@@ -115,7 +116,7 @@ func Test_Register(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
@@ -148,7 +149,7 @@ func Test_Register(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
@@ -187,7 +188,7 @@ func Test_Register(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
@@ -223,7 +224,7 @@ func Test_Register(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
@@ -256,7 +257,7 @@ func Test_Register(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc6.ID, acc6.KeyPair)
@@ -286,7 +287,7 @@ func Test_Register(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), acc0.ID, acc0.KeyPair)
@@ -331,7 +332,7 @@ func Test_Register(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		r, err := s.Call("vote_producer.iost", "applyRegister", fmt.Sprintf(`["%v", "%v", "loc", "url", "netId", true]`, acc6.ID, acc6.KeyPair.ReadablePubkey()), operator.ID, kp)
@@ -361,6 +362,72 @@ func Test_Register(t *testing.T) {
 	})
 }
 
+func Test_SwitchOff(t *testing.T) {
+	ilog.Stop()
+	Convey("test switch off", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		s.Head.Number = 0
+
+		createAccountsWithResource(s)
+		prepareFakeBase(t, s)
+		prepareToken(t, s, acc0)
+		prepareNewProducerVote(t, s, acc0)
+		initProducer(t, s)
+
+		s.Head.Number = 1
+
+		r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 3), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 3))
+
+		r, err = s.Call("vote_producer.iost", "unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 1), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 2))
+
+		r, err = s.Call("vote_producer.iost", "switchOff", `[true]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 3), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't vote for now")
+
+		r, err = s.Call("vote_producer.iost", "unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 1), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't unvote for now")
+
+		r, err = s.Call("vote_producer.iost", "topupVoterBonus", fmt.Sprintf(`["%v", "%v", "%v"]`, acc1.ID, 1, acc0.ID), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't topup for now")
+
+		r, err = s.Call("vote_producer.iost", "voterWithdraw", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't withdraw for now")
+
+		r, err = s.Call("vote_producer.iost", "candidateWithdraw", fmt.Sprintf(`["%v"]`, acc0.ID), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, "can't withdraw for now")
+
+		r, err = s.Call("vote_producer.iost", "switchOff", `[false]`, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		r, err = s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 3), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 5))
+
+		r, err = s.Call("vote_producer.iost", "unvote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, 1), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc1.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%v","deleted":0,"clearTime":-1}`, 4))
+	})
+}
+
 func Test_Unregister2(t *testing.T) {
 	ilog.Stop()
 	Convey("test Unregister2", t, func() {
@@ -373,7 +440,7 @@ func Test_Unregister2(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
@@ -608,7 +675,7 @@ func Test_TakeTurns(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
@@ -701,7 +768,7 @@ func Test_KickOut(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
@@ -799,7 +866,7 @@ func Test_UpdatePubkey(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:9] {
@@ -866,7 +933,7 @@ func Test_LogOutInPending(t *testing.T) {
 		prepareFakeBase(t, s)
 		prepareToken(t, s, acc0)
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		s.Head.Number = 1
 		for _, acc := range testAccounts[6:] {
