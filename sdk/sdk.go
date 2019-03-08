@@ -63,7 +63,7 @@ func NewIOSTDevSDK() *IOSTDevSDK {
 		gasLimit:            1000000,
 		gasRatio:            1.0,
 		amountLimit:         []*rpcpb.AmountLimit{{Token: "*", Value: "unlimited"}},
-		expiration:          60 * 5,
+		expiration:          90,
 		chainID:             uint32(1024),
 	}
 }
