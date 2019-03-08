@@ -57,7 +57,7 @@ func Test_IOSTIssue(t *testing.T) {
 		})
 
 		prepareNewProducerVote(t, s, acc0)
-		initProducer(s)
+		initProducer(t, s)
 
 		Convey("test issueIOST", func() {
 			s.Head.Time += 4 * 3 * 1e9

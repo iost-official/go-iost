@@ -1,6 +1,6 @@
 {
     "lang": "javascript",
-    "version": "1.0.2",
+    "version": "1.0.4",
     "abi": [
         {
             "name": "can_update",
@@ -31,6 +31,12 @@
                 "string",
                 "string",
                 "string",
+                "bool"
+            ]
+        },
+        {
+            "name": "switchOff",
+            "args": [
                 "bool"
             ]
         },
