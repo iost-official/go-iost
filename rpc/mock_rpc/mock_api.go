@@ -86,6 +86,19 @@ func (mr *MockApiServiceServerMockRecorder) GetBlockByNumber(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByNumber", reflect.TypeOf((*MockApiServiceServer)(nil).GetBlockByNumber), arg0, arg1)
 }
 
+// GetCandidateBonus mocks base method
+func (m *MockApiServiceServer) GetCandidateBonus(arg0 context.Context, arg1 *pb.GetAccountRequest) (*pb.CandidateBonus, error) {
+	ret := m.ctrl.Call(m, "GetCandidateBonus", arg0, arg1)
+	ret0, _ := ret[0].(*pb.CandidateBonus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCandidateBonus indicates an expected call of GetCandidateBonus
+func (mr *MockApiServiceServerMockRecorder) GetCandidateBonus(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCandidateBonus", reflect.TypeOf((*MockApiServiceServer)(nil).GetCandidateBonus), arg0, arg1)
+}
+
 // GetChainInfo mocks base method
 func (m *MockApiServiceServer) GetChainInfo(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.ChainInfoResponse, error) {
 	ret := m.ctrl.Call(m, "GetChainInfo", arg0, arg1)
@@ -266,6 +279,19 @@ func (m *MockApiServiceServer) GetTxReceiptByTxHash(arg0 context.Context, arg1 *
 // GetTxReceiptByTxHash indicates an expected call of GetTxReceiptByTxHash
 func (mr *MockApiServiceServerMockRecorder) GetTxReceiptByTxHash(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTxReceiptByTxHash", reflect.TypeOf((*MockApiServiceServer)(nil).GetTxReceiptByTxHash), arg0, arg1)
+}
+
+// GetVoterBonus mocks base method
+func (m *MockApiServiceServer) GetVoterBonus(arg0 context.Context, arg1 *pb.GetAccountRequest) (*pb.VoterBonus, error) {
+	ret := m.ctrl.Call(m, "GetVoterBonus", arg0, arg1)
+	ret0, _ := ret[0].(*pb.VoterBonus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetVoterBonus indicates an expected call of GetVoterBonus
+func (mr *MockApiServiceServerMockRecorder) GetVoterBonus(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoterBonus", reflect.TypeOf((*MockApiServiceServer)(nil).GetVoterBonus), arg0, arg1)
 }
 
 // SendTransaction mocks base method
