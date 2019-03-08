@@ -1,6 +1,6 @@
 {
     "lang": "javascript",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "abi": [
         {
             "name": "can_update",
@@ -23,6 +23,13 @@
                 "token": "iost",
                 "val": "unlimited"
             }]
+        },
+        {
+            "name": "setCanVote",
+            "args": [
+                "string",
+                "bool"
+            ]
         },
         {
             "name": "addOption",
