@@ -176,12 +176,17 @@ func (g *GasHandler) GasPledge(name string, pledger string) *common.Fixed {
 func (g *GasHandler) PledgerInfo(name string) []PledgerInfo {
 	pledgees := g.MapHandler.MKeys(GasContractName + Separator + name + GasPledgeKey)
 	result := make([]PledgerInfo, 0)
+	usedPledgees := make(map[string]bool)
 	for _, pledgee := range pledgees {
+		if _, ok := usedPledgees[pledgee]; ok {
+			continue
+		}
+		usedPledgees[pledgee] = true
 		s := g.MapHandler.MGet(GasContractName+Separator+name+GasPledgeKey, pledgee)
 		v := MustUnmarshal(s)
 		pledge, ok := v.(*common.Fixed)
-		if !ok {
-			return make([]PledgerInfo, 0)
+		if !ok || pledge.IsZero() {
+			continue
 		}
 		result = append(result, PledgerInfo{pledgee, pledge})
 	}
