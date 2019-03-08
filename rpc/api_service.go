@@ -596,7 +596,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 			voterCoef, err = strconv.ParseFloat(vc, 64)
 			if err != nil {
 				ilog.Errorf("Parsing str %v to float64 failed. err=%v", vc, err)
-				continue
+				return nil, err
 			}
 		}
 		voterMask := float64(0)
@@ -609,7 +609,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 			voterMask, err = strconv.ParseFloat(vm, 64)
 			if err != nil {
 				ilog.Errorf("Parsing str %v to float64 failed. err=%v", vm, err)
-				continue
+				return nil, err
 			}
 
 		}
