@@ -12,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 )
 
+// requestHandler is responsible for processing synchronization requests from other nodes.
 type requestHandler struct {
 	p      p2p.Service
 	bCache blockcache.BlockCache

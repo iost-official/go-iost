@@ -16,6 +16,7 @@ const (
 	heightExpiredSeconds = 60
 )
 
+// heightSync is responsible for maintaining the height of neighbor nodes.
 type heightSync struct {
 	neighborHeight map[p2p.PeerID]*msgpb.SyncHeight
 	mutex          *sync.RWMutex
