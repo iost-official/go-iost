@@ -310,7 +310,7 @@ func (p *PoB) verifyLoop() {
 				}
 			}
 
-			height := p.blockChain.Length() - 1
+			height := p.blockCache.Head().Head.Number
 			syncNumber := int64(len(p.blockCache.LinkedRoot().Active())) * int64(p.baseVariable.Continuous())
 			if p.sync.NeighborHeight() > height+syncNumber {
 				p.baseVariable.SetMode(global.ModeSync)
