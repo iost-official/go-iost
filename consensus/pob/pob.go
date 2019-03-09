@@ -8,6 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/synchro"
 	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -44,29 +45,23 @@ var (
 	last2GenBlockTime       = 50 * time.Millisecond
 )
 
-type verifyBlockMessage struct {
-	blk     *block.Block
-	p2pType p2p.MessageType
-	from    string
-}
-
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
-	account          *account.KeyPair
-	baseVariable     global.BaseVariable
-	blockChain       block.Chain
-	blockCache       blockcache.BlockCache
-	txPool           txpool.TxPool
-	p2pService       p2p.Service
-	verifyDB         db.MVCCDB
-	produceDB        db.MVCCDB
-	blockReqMap      *sync.Map
+	account      *account.KeyPair
+	baseVariable global.BaseVariable
+	blockChain   block.Chain
+	blockCache   blockcache.BlockCache
+	txPool       txpool.TxPool
+	p2pService   p2p.Service
+	verifyDB     db.MVCCDB
+	produceDB    db.MVCCDB
+	blockReqMap  *sync.Map
+	sync         *synchro.Sync
+
 	exitSignal       chan struct{}
 	quitGenerateMode chan struct{}
-	chRecvBlock      chan p2p.IncomingMessage
 	chRecvBlockHash  chan p2p.IncomingMessage
 	chQueryBlock     chan p2p.IncomingMessage
-	chVerifyBlock    chan *verifyBlockMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
 	headNumber       int64
@@ -87,10 +82,8 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		blockReqMap:      new(sync.Map),
 		exitSignal:       make(chan struct{}),
 		quitGenerateMode: make(chan struct{}),
-		chRecvBlock:      p2pService.Register("consensus channel", p2p.NewBlock, p2p.SyncBlockResponse),
 		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
 		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
-		chVerifyBlock:    make(chan *verifyBlockMessage, 1024),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 		headNumber:       0,
@@ -120,9 +113,11 @@ func (p *PoB) recoverBlockcache() error {
 
 //Start make the PoB run.
 func (p *PoB) Start() error {
-	p.wg.Add(4)
+	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
+	p.baseVariable.SetMode(global.ModeNormal)
+
+	p.wg.Add(3)
 	go p.messageLoop()
-	go p.blockLoop()
 	go p.verifyLoop()
 	go p.scheduleLoop()
 	return nil
@@ -132,6 +127,8 @@ func (p *PoB) Start() error {
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 	p.wg.Wait()
+
+	p.sync.Close()
 }
 
 func (p *PoB) messageLoop() {
@@ -237,14 +234,13 @@ func calculateTime(blk *block.Block) float64 {
 	return float64((time.Now().UnixNano() - blk.Head.Time) / 1e6)
 }
 
-func (p *PoB) doVerifyBlock(vbm *verifyBlockMessage) {
+func (p *PoB) doVerifyBlock(blkMsg *synchro.BlockMessage) {
 	if p.baseVariable.Mode() == global.ModeInit {
 		return
 	}
-	ilog.Debugf("verify block chan size:%v", len(p.chVerifyBlock))
-	blk := vbm.blk
+	blk := blkMsg.Blk
 
-	switch vbm.p2pType {
+	switch blkMsg.P2PType {
 	case p2p.NewBlock:
 		t1 := calculateTime(blk)
 		metricsTransferCost.Set(t1, nil)
@@ -282,24 +278,24 @@ func (p *PoB) verifyLoop() {
 	defer p.wg.Done()
 	for {
 		select {
-		case vbm := <-p.chVerifyBlock:
+		case blkMsg := <-p.sync.IncomingBlock():
 			select {
 			case <-p.quitGenerateMode:
 			}
-			if p.blockCache.Head().Head.Number+maxBlockNumber < vbm.blk.Head.Number {
-				ilog.Debugf("block number is too large, block number:%v", vbm.blk.Head.Number)
+			if p.blockCache.Head().Head.Number+maxBlockNumber < blkMsg.Blk.Head.Number {
+				ilog.Debugf("block number is too large, block number:%v", blkMsg.Blk.Head.Number)
 				continue
 			}
 
-			recvTimes := p.recvTimesMap[vbm.from] + 1
+			recvTimes := p.recvTimesMap[blkMsg.From] + 1
 
 			/*          if recvTimes > maxBlockNumber { */
 			// p.p2pService.PutPeerToBlack(vbm.from)
 			// continue
 			/* } */
-			p.recvTimesMap[vbm.from] = recvTimes
+			p.recvTimesMap[blkMsg.From] = recvTimes
 
-			p.doVerifyBlock(vbm)
+			p.doVerifyBlock(blkMsg)
 
 			if p.blockCache.Head().Head.Number > p.headNumber {
 				delta := p.blockCache.Head().Head.Number - p.headNumber
@@ -313,29 +309,14 @@ func (p *PoB) verifyLoop() {
 					}
 				}
 			}
-		case <-p.exitSignal:
-			return
-		}
-	}
-}
 
-func (p *PoB) blockLoop() {
-	ilog.Infof("start blockloop")
-	defer p.wg.Done()
-	for {
-		select {
-		case incomingMessage, ok := <-p.chRecvBlock:
-			if !ok {
-				ilog.Infof("chRecvBlock has closed")
-				return
+			height := p.blockCache.Head().Head.Number
+			syncNumber := int64(len(p.blockCache.LinkedRoot().Active())) * int64(p.baseVariable.Continuous())
+			if p.sync.NeighborHeight() > height+syncNumber {
+				p.baseVariable.SetMode(global.ModeSync)
+			} else {
+				p.baseVariable.SetMode(global.ModeNormal)
 			}
-			var blk block.Block
-			err := blk.Decode(incomingMessage.Data())
-			if err != nil {
-				ilog.Error("fail to decode block")
-				continue
-			}
-			p.chVerifyBlock <- &verifyBlockMessage{blk: &blk, p2pType: incomingMessage.Type(), from: incomingMessage.From().Pretty()}
 		case <-p.exitSignal:
 			return
 		}
