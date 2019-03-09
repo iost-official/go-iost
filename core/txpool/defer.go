@@ -77,16 +77,20 @@ func (d *DeferServer) toIndex(delayTx *tx.Tx) *tx.Tx {
 	}
 }
 
+func (d *DeferServer) delDeferIndex(idx *tx.Tx) {
+	d.rw.Lock()
+	d.pool.Remove(idx)
+	delete(d.idxMap, string(idx.ReferredTx))
+	d.rw.Unlock()
+}
+
 // DelDeferTx deletes a tx in defer server.
 func (d *DeferServer) DelDeferTx(deferTx *tx.Tx) error {
 	idx := &tx.Tx{
 		ReferredTx: deferTx.ReferredTx,
 		Time:       deferTx.Time,
 	}
-	d.rw.Lock()
-	d.pool.Remove(idx)
-	delete(d.idxMap, string(idx.ReferredTx))
-	d.rw.Unlock()
+	d.delDeferIndex(idx)
 	return nil
 }
 
@@ -177,13 +181,15 @@ func (d *DeferServer) deferTicker() {
 				err := d.txpool.AddDefertx(idx.ReferredTx)
 				if err == ErrCacheFull {
 					d.nextScheduleTime.Store(idx.Time)
+					ilog.Infof("Adding defertx failed, txpool is full, retry after one second.")
 					break
 				}
+				if err == errDelaytxNotFound {
+					ilog.Error("Adding defertx failed, delaytx not found, delete defer index")
+					d.delDeferIndex(idx)
+				}
 				if err == nil || err == ErrDupChainTx || err == ErrDupPendingTx {
-					d.rw.Lock()
-					d.pool.Remove(idx)
-					delete(d.idxMap, string(idx.ReferredTx))
-					d.rw.Unlock()
+					d.delDeferIndex(idx)
 				}
 				d.rw.RLock()
 				ok = iter.Next()
