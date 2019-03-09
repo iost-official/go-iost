@@ -64,8 +64,6 @@ type PoB struct {
 	chQueryBlock     chan p2p.IncomingMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
-	headNumber       int64
-	recvTimesMap     map[string]int64
 }
 
 // New init a new PoB.
@@ -86,14 +84,11 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
-		headNumber:       0,
-		recvTimesMap:     make(map[string]int64, 0),
 	}
 	continuousNum = baseVariable.Continuous()
 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
-	p.headNumber = p.blockCache.Head().Head.Number
 
 	return &p
 }
@@ -287,28 +282,7 @@ func (p *PoB) verifyLoop() {
 				continue
 			}
 
-			recvTimes := p.recvTimesMap[blkMsg.From] + 1
-
-			/*          if recvTimes > maxBlockNumber { */
-			// p.p2pService.PutPeerToBlack(vbm.from)
-			// continue
-			/* } */
-			p.recvTimesMap[blkMsg.From] = recvTimes
-
 			p.doVerifyBlock(blkMsg)
-
-			if p.blockCache.Head().Head.Number > p.headNumber {
-				delta := p.blockCache.Head().Head.Number - p.headNumber
-				p.headNumber += delta
-				for k, v := range p.recvTimesMap {
-					v -= delta
-					if v < 0 {
-						delete(p.recvTimesMap, k)
-					} else {
-						p.recvTimesMap[k] = v
-					}
-				}
-			}
 
 			height := p.blockCache.Head().Head.Number
 			libHeight := p.blockCache.LinkedRoot().Head.Number
