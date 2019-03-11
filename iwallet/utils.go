@@ -3,6 +3,7 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bitly/go-simplejson"
 	"io/ioutil"
 	"math"
 	"os"
@@ -300,6 +301,22 @@ func SaveAccount(name string, kp *account.KeyPair) error {
 	return nil
 }
 
+func argsFormatter(data string) (string, error) {
+	js, err := simplejson.NewJson([]byte(data))
+	if err != nil {
+		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
+	}
+	_, err = js.Array()
+	if err != nil {
+		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
+	}
+	b, err := js.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 	argc := len(args)
 	if argc%3 != 0 {
@@ -307,7 +324,11 @@ func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 	}
 	var actions = make([]*rpcpb.Action, 0)
 	for i := 0; i < len(args); i += 3 {
-		act := sdk.NewAction(args[i], args[i+1], args[i+2]) // Add some checks here.
+		v, err := argsFormatter(args[i+2])
+		if err != nil {
+			return nil, err
+		}
+		act := sdk.NewAction(args[i], args[i+1], v)
 		actions = append(actions, act)
 	}
 	return actions, nil
