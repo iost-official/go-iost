@@ -37,12 +37,13 @@ func (pool *TxPImpl) testPendingTxsNum() int64 {
 
 func (pool *TxPImpl) testBlockListNum() int64 {
 	var r int64
-	pool.blockList.Range(func(key, value interface{}) bool {
+	pool.blockchainWrapper.blockList.Range(func(key, value interface{}) bool {
 		r++
 		return true
 	})
 	return r
 }
+
 
 func TestNewTxPImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
@@ -343,7 +344,7 @@ func TestNewTxPImplB(t *testing.T) {
 			txCnt := 10
 			blockCnt := 3
 			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
-			txPool.blockCache.Head().Head.Number = 0
+			BlockCache.Head().Head.Number = 0
 			for i := 0; i < blockCnt; i++ {
 				//ilog.Info(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
 				bcn := BlockCache.Add(blockList[i])
@@ -432,7 +433,7 @@ func TestNewTxPImplB(t *testing.T) {
 			err = txPool.AddTx(t3)
 			So(err, ShouldBeNil)
 
-			pt, _ := txPool.PendingTx()
+			pt := txPool.pendingTx
 			iter := pt.Iter()
 			trx, ok := iter.Next()
 			for _, expectTx := range []*tx.Tx{t5, t4, t2, t3, t1} {
@@ -457,7 +458,7 @@ func BenchmarkAddBlock(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		txPool.addBlock(blockList[0])
+		txPool.blockchainWrapper.addBlock(blockList[0])
 	}
 
 	b.StopTimer()
