@@ -321,27 +321,36 @@ func (s *IOSTDevSDK) SignTx(t *rpcpb.TransactionRequest, signAlgo string) (*rpcp
 
 func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 	s.log("Checking transaction receipt...")
+	receiptPrinted := false
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
-		txReceipt, err := s.GetTxReceiptByTxHash(txHash)
+		r, err := s.GetTxByHash(txHash)
 		if err != nil {
-			s.log("...", err)
+			return err
+		}
+		if r.Status == rpcpb.TransactionResponse_PENDING {
+			s.log("...Transaction has been sent! Waiting for being packed...")
 			continue
 		}
-		if txReceipt == nil {
-			s.log("...")
+		if r.Status == rpcpb.TransactionResponse_PACKED {
+			txReceipt := r.Transaction.TxReceipt
+			if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
+				s.log("Transaction executed err:")
+				s.log(MarshalTextString(txReceipt))
+				return fmt.Errorf(txReceipt.Message)
+			}
+			if !receiptPrinted {
+				s.log("Transaction receipt:")
+				s.log(MarshalTextString(txReceipt))
+				receiptPrinted = true
+			}
+			s.log("...Transaction has been packed! Waiting for being irreversible...")
 			continue
 		}
-		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
-			s.log("Transaction receipt:")
-			s.log(MarshalTextString(txReceipt))
-			return fmt.Errorf(txReceipt.Message)
+		if r.Status == rpcpb.TransactionResponse_IRREVERSIBLE {
+			s.log("SUCCESS! Transaction has been irreversible")
+			return nil
 		}
-
-		s.log("SUCCESS!")
-		s.log("Transaction receipt:")
-		s.log(MarshalTextString(txReceipt))
-		return nil
 	}
 	return fmt.Errorf("exceeded max retry times")
 }
