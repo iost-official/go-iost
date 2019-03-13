@@ -1,3 +1,13 @@
+## v3.0.2
+
+Wed Mar 13 16:46:33 CST 2019
+
+- Rewrite synchronization module.
+- Improve iwallet availability.
+- Reduce the data size of p2p routing syncing.
+- RPC: Add query interface of vote reward and block reward.
+- RPC: Transaction query returns information to increase the Block number.
+
 ## v3.0.1
 
 Thu Feb 28 10:49:56 CST 2019
