@@ -9,7 +9,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro"
-	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -311,8 +311,8 @@ func (p *PoB) verifyLoop() {
 			}
 
 			height := p.blockCache.Head().Head.Number
-			syncNumber := int64(len(p.blockCache.LinkedRoot().Active())) * int64(p.baseVariable.Continuous())
-			if p.sync.NeighborHeight() > height+syncNumber {
+			libHeight := p.blockCache.LinkedRoot().Head.Number
+			if (height-libHeight < 240) && (p.sync.NeighborHeight() > height+120) {
 				p.baseVariable.SetMode(global.ModeSync)
 			} else {
 				p.baseVariable.SetMode(global.ModeNormal)

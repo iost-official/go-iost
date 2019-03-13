@@ -1,0 +1,30 @@
+syntax = "proto3";
+
+package msgpb;
+
+message BlockInfo {
+    int64 number = 1;
+    bytes hash = 2;
+}
+
+enum RequireType{
+    GETBLOCKHASHES = 0;
+    GETBLOCKHASHESBYNUMBER = 1;
+}
+
+message BlockHashQuery {
+    RequireType reqType =1;
+    int64 start = 2;
+    int64 end = 3;
+    repeated int64 nums = 4;
+}
+
+
+message BlockHashResponse {
+    repeated BlockInfo blockInfos = 1;
+}
+
+message SyncHeight {
+    int64 height = 1;
+    int64 time = 2;
+}
