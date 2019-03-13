@@ -332,18 +332,17 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 			s.log("...Transaction has been sent! Waiting for being packed...")
 			continue
 		}
+		txReceipt := r.Transaction.TxReceipt
+		if !receiptPrinted {
+			s.log("Transaction receipt:")
+			s.log(MarshalTextString(txReceipt))
+			receiptPrinted = true
+		}
+		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
+			s.log("Transaction executed err")
+			return fmt.Errorf(txReceipt.Message)
+		}
 		if r.Status == rpcpb.TransactionResponse_PACKED {
-			txReceipt := r.Transaction.TxReceipt
-			if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
-				s.log("Transaction executed err:")
-				s.log(MarshalTextString(txReceipt))
-				return fmt.Errorf(txReceipt.Message)
-			}
-			if !receiptPrinted {
-				s.log("Transaction receipt:")
-				s.log(MarshalTextString(txReceipt))
-				receiptPrinted = true
-			}
 			s.log("...Transaction has been packed! Waiting for being irreversible...")
 			continue
 		}
