@@ -138,12 +138,6 @@ class VoteCommonContract {
         const pos = findPos(0, preOrder.length);
         preOrder.splice(pos, 0, option);
 
-        if (preOrder.length > info.resultNumber) {
-            const deleted = preOrder.splice(info.resultNumber, preOrder.length - info.resultNumber);
-            for (const o of deleted) {
-                delete(preResult[o]);
-            }
-        }
         this._mapPut("preResult", voteId, preResult);
         this._mapPut("preOrder", voteId, preOrder);
     }
@@ -196,6 +190,11 @@ class VoteCommonContract {
             }
         }
 
+        let canVote = true;
+        if (info.canVote !== undefined) {
+            canVote = !!info.canVote;
+        }
+
         const anyOption = !!info.anyOption; // default to false
 
         let freezeTime = info.freezeTime;
@@ -221,6 +220,7 @@ class VoteCommonContract {
             freezeTime: freezeTime,
             deposit: bn > 0 ? newVoteFee : "0",
             optionNum: options.length,
+            canVote: canVote,
         };
         for (const option of options) {
             const optionInfo = {
@@ -236,6 +236,17 @@ class VoteCommonContract {
         this._mapPut("preResult", voteId, {}); // pay by system
 
         return voteId;
+    }
+
+    setCanVote(voteId, canVote) {
+        const admin = storage.get("adminID");
+        if (!blockchain.requireAuth(admin, adminPermission)) {
+            this._requireOwner(voteId);
+        }
+
+        const info = this._mapGet("voteInfo", voteId);
+        info.canVote = canVote;
+        this._mapPut("voteInfo", voteId, info, blockchain.publisher());
     }
 
     addOption(voteId, option, clearVote) {
@@ -360,6 +371,13 @@ class VoteCommonContract {
         }
     }
 
+    _checkCanVote(voteId, info) {
+        if (!info || info.canVote === undefined || info.canVote) {
+            return;
+        }
+        this._requireOwner(voteId);
+    }
+
     voteFor(voteId, payer, account, option, amount) {
         this._checkVote(voteId);
         this._checkDel(voteId);
@@ -368,6 +386,8 @@ class VoteCommonContract {
         if (!storage.mapHas(optionPrefix + voteId, option)) {
             throw new Error("option does not exist");
         }
+        const info = this._mapGet("voteInfo", voteId);
+        this._checkCanVote(voteId, info);
 
         amount = this._fixAmount(amount);
         blockchain.deposit(payer, amount.toFixed(), "");
@@ -393,7 +413,6 @@ class VoteCommonContract {
             return;
         }
 
-        const info = this._mapGet("voteInfo", voteId);
         const votes = amount.plus(optionInfo.votes);
         optionInfo.votes = votes.toFixed();
         this._mapPut(optionPrefix + voteId, option, optionInfo, payer);
@@ -414,6 +433,9 @@ class VoteCommonContract {
         if (!storage.mapHas(userVotePrefix + voteId, account)) {
             throw new Error("account didn't vote.");
         }
+        const info = this._mapGet("voteInfo", voteId);
+        this._checkCanVote(voteId, info);
+
         let userVotes = this._mapGet(userVotePrefix + voteId, account);
         if (!userVotes[option]) {
             throw new Error("account didn't vote for this option.");
@@ -430,7 +452,6 @@ class VoteCommonContract {
         }
         let freezeTime = tx.time;
 
-        const info = this._mapGet("voteInfo", voteId);
         if (info.deleted === FALSE) {
             freezeTime += info.freezeTime*1e9;
         }

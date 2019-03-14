@@ -3,8 +3,11 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/bitly/go-simplejson"
 	"io/ioutil"
+	"math"
 	"os"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -106,10 +109,12 @@ func initTxFromMethod(contract, method string, methodArgs ...interface{}) (*rpcp
 func checkTxTime(tx *rpcpb.TransactionRequest) error {
 	timepoint := time.Unix(0, tx.Time)
 	delta := time.Until(timepoint)
+	if math.Abs(delta.Seconds()) > 1 {
+		fmt.Println("The transaction time is:", timepoint.Format(time.RFC3339))
+	}
 	if delta.Seconds() < 1 {
 		return nil
 	}
-	fmt.Println("The transaction time is:", timepoint.Format(time.RFC3339))
 	seconds := int(delta.Seconds())
 	if seconds%10 > 0 {
 		fmt.Printf("Waiting %v seconds to reach the transaction time...\n", seconds)
@@ -175,11 +180,14 @@ func saveOrSendAction(contract, method string, methodArgs ...interface{}) error 
 }
 
 func getAccountDir() (string, error) {
+	if accountDir != "" {
+		return path.Join(accountDir, ".iwallet"), nil
+	}
 	home, err := homedir.Dir()
 	if err != nil {
 		return "", err
 	}
-	return home + "/.iwallet", nil
+	return path.Join(home, ".iwallet"), nil
 }
 
 // GetSignAlgoByName ...
@@ -293,6 +301,22 @@ func SaveAccount(name string, kp *account.KeyPair) error {
 	return nil
 }
 
+func argsFormatter(data string) (string, error) {
+	js, err := simplejson.NewJson([]byte(data))
+	if err != nil {
+		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
+	}
+	_, err = js.Array()
+	if err != nil {
+		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
+	}
+	b, err := js.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
 func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 	argc := len(args)
 	if argc%3 != 0 {
@@ -300,7 +324,11 @@ func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 	}
 	var actions = make([]*rpcpb.Action, 0)
 	for i := 0; i < len(args); i += 3 {
-		act := sdk.NewAction(args[i], args[i+1], args[i+2]) // Add some checks here.
+		v, err := argsFormatter(args[i+2])
+		if err != nil {
+			return nil, err
+		}
+		act := sdk.NewAction(args[i], args[i+1], v)
 		actions = append(actions, act)
 	}
 	return actions, nil

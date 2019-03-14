@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/ilog"
@@ -49,10 +49,11 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 		done:   new(sync.WaitGroup),
 	}
 
-	sync.done.Add(3)
+	sync.done.Add(4)
 	go sync.heightSyncController()
 	go sync.blockhashSyncController()
 	go sync.blockSyncController()
+	go sync.metricsController()
 
 	return sync
 }
@@ -69,10 +70,16 @@ func (s *Sync) Close() {
 	ilog.Infof("Stopped sync.")
 }
 
-// IncommingBlock will return the blocks from other nodes.
+// IncomingBlock will return the blocks from other nodes.
 // Including passive request and active broadcast.
-func (s *Sync) IncommingBlock() <-chan *BlockMessage {
-	return s.blockSync.IncommingBlock()
+func (s *Sync) IncomingBlock() <-chan *BlockMessage {
+	return s.blockSync.IncomingBlock()
+}
+
+// NeighborHeight will return the median of the head height of the neighbor nodes.
+// If the number of neighbor nodes is less than leastNeighborNumber, return -1.
+func (s *Sync) NeighborHeight() int64 {
+	return s.heightSync.NeighborHeight()
 }
 
 func (s *Sync) doHeightSync() {
@@ -101,6 +108,11 @@ func (s *Sync) heightSyncController() {
 }
 
 func (s *Sync) doBlockhashSync() {
+	now := time.Now().UnixNano()
+	defer func() {
+		blockHashSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+	}()
+
 	start := s.bCache.LinkedRoot().Head.Number + 1
 	end := s.heightSync.NeighborHeight()
 	if start > end {
@@ -110,18 +122,7 @@ func (s *Sync) doBlockhashSync() {
 		end = start + maxSyncRange - 1
 	}
 
-	blockHashQuery := &msgpb.BlockHashQuery{
-		ReqType: msgpb.RequireType_GETBLOCKHASHES,
-		Start:   start,
-		End:     end,
-		Nums:    nil,
-	}
-	msg, err := proto.Marshal(blockHashQuery)
-	if err != nil {
-		ilog.Errorf("Marshal sync block hash message failed: %v", err)
-		return
-	}
-	s.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	s.blockhashSync.RequestBlockHash(start, end)
 }
 
 func (s *Sync) blockhashSyncController() {
@@ -137,6 +138,11 @@ func (s *Sync) blockhashSyncController() {
 }
 
 func (s *Sync) doBlockSync() {
+	now := time.Now().UnixNano()
+	defer func() {
+		blockSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+	}()
+
 	start := s.bCache.LinkedRoot().Head.Number + 1
 	end := s.heightSync.NeighborHeight()
 	if start > end {
@@ -146,6 +152,7 @@ func (s *Sync) doBlockSync() {
 		end = start + maxSyncRange - 1
 	}
 
+	ilog.Infof("Syncing block in [%v %v]...", start, end)
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
 		if block, err := s.bCache.GetBlockByHash(blockHash.Hash); err == nil && block != nil {
 			continue
@@ -162,6 +169,19 @@ func (s *Sync) blockSyncController() {
 		select {
 		case <-time.After(2 * time.Second):
 			s.doBlockSync()
+		case <-s.quitCh:
+			s.done.Done()
+			return
+		}
+	}
+}
+
+func (s *Sync) metricsController() {
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			neighborHeightGauge.Set(float64(s.heightSync.NeighborHeight()), nil)
+			incomingBlockBufferGauge.Set(float64(len(s.blockSync.IncomingBlock())), nil)
 		case <-s.quitCh:
 			s.done.Done()
 			return

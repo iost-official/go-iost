@@ -9,7 +9,6 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/sdk"
 )
 
@@ -34,6 +33,9 @@ var rootCmd = &cobra.Command{
 		limit, err := ParseAmountLimit(amountLimit)
 		if err != nil {
 			return fmt.Errorf("invalid amount limit %v: %v", amountLimit, err)
+		}
+		if !(0 < expiration && expiration <= 90) {
+			return fmt.Errorf("expiration should be in (0, 90]")
 		}
 		iwalletSDK.SetTxInfo(gasLimit, gasRatio, expiration, delaySecond, limit)
 		iwalletSDK.SetUseLongestChain(useLongestChain)
@@ -66,6 +68,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", true, "print verbose information")
 	rootCmd.PersistentFlags().BoolVarP(&elapsedTime, "elapsed_time", "", false, "print elapsed time")
 	rootCmd.PersistentFlags().StringVarP(&accountName, "account", "a", "", "which account to use")
+	rootCmd.PersistentFlags().StringVarP(&accountDir, "account_dir", "", "", "$(account_dir)/.iwallet will be used to save accounts (default $HOME/.iwallet)")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&checkResult, "check_result", "", true, "check publish/call status after sending to chain")
@@ -76,7 +79,7 @@ func init() {
 	rootCmd.PersistentFlags().Float64VarP(&gasLimit, "gas_limit", "l", 1000000, "gas limit for a transaction")
 	rootCmd.PersistentFlags().Float64VarP(&gasRatio, "gas_ratio", "p", 1.0, "gas ratio for a transaction")
 	rootCmd.PersistentFlags().StringVarP(&amountLimit, "amount_limit", "", "*:unlimited", "amount limit for one transaction, eg iost:300.00|ram:2000")
-	rootCmd.PersistentFlags().Int64VarP(&expiration, "expiration", "e", 60*5, "expiration time for a transaction in seconds")
+	rootCmd.PersistentFlags().Int64VarP(&expiration, "expiration", "e", 90, "expiration time for a transaction in seconds")
 	rootCmd.PersistentFlags().Uint32VarP(&chainID, "chain_id", "", uint32(1024), "chain id which distinguishes different network")
 	rootCmd.PersistentFlags().StringVarP(&txTime, "tx_time", "", "", fmt.Sprintf("use the special tx time instead of now, format: %v", time.Now().Format(time.RFC3339)))
 	rootCmd.PersistentFlags().Uint32VarP(&txTimeDelay, "tx_time_delay", "", 0, "delay the tx time from now")
@@ -121,7 +124,7 @@ var iwalletSDK *sdk.IOSTDevSDK
 var (
 	server      string
 	accountName string
-	keyPair     *account.KeyPair
+	accountDir  string
 	signAlgo    string
 	signers     []string
 	signPerm    string

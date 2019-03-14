@@ -1,21 +1,6 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package iwallet
 
 import (
-	"encoding/json"
 	"fmt"
 	"sort"
 
@@ -178,28 +163,6 @@ var pinfoCmd = &cobra.Command{
 	},
 }
 
-func getProducerList(key string) ([]string, error) {
-	response, err := getContractStorage("vote_producer.iost", key, "")
-	if err != nil {
-		return nil, err
-	}
-	var list []string
-	err = json.Unmarshal([]byte(response.Data), &list)
-	if err != nil {
-		return nil, err
-	}
-	result := make([]string, len(list))
-	for i, producerKey := range list {
-		response, err := getContractStorage("vote_producer.iost", "producerKeyToId", producerKey)
-		if err != nil {
-			return nil, err
-		}
-		result[i] = response.Data
-	}
-	sort.Strings(result)
-	return result, nil
-}
-
 var plistCmd = &cobra.Command{
 	Use:     "producer-list",
 	Aliases: []string{"plist"},
@@ -211,16 +174,20 @@ var plistCmd = &cobra.Command{
 			return err
 		}
 		defer iwalletSDK.CloseConn()
-		currentList, err := getProducerList("currentProducerList")
+		chainInfo, err := iwalletSDK.GetChainInfo()
 		if err != nil {
-			return err
+			return fmt.Errorf("cannot get chain info: %v", err)
 		}
-		fmt.Println("Current producer list:", currentList)
-		pendingList, err := getProducerList("pendingProducerList")
-		if err != nil {
-			return err
+		result := make([]string, len(chainInfo.WitnessList))
+		for i, producerKey := range chainInfo.WitnessList {
+			response, err := getContractStorage("vote_producer.iost", "producerKeyToId", producerKey)
+			if err != nil {
+				return fmt.Errorf("cannot get producer id of %v: %v", producerKey, err)
+			}
+			result[i] = response.Data
 		}
-		fmt.Println("Pending producer list:", pendingList)
+		sort.Strings(result)
+		fmt.Println("Current producer list:", result)
 		return nil
 	},
 }

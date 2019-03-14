@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -14,6 +14,7 @@ import (
 const (
 	BlockHashLeastNeighborNumber = 2
 	BlockHashExpiredSeconds      = 60
+	BlockHashMaxRequestRange     = 100
 )
 
 // BlockHash return the block hash with the Peers that have it.
@@ -28,6 +29,7 @@ type blockHashs struct {
 }
 
 type blockHashSync struct {
+	p                  p2p.Service
 	neighborBlockHashs map[p2p.PeerID]*blockHashs
 	mutex              *sync.RWMutex
 
@@ -39,6 +41,9 @@ type blockHashSync struct {
 
 func newBlockHashSync(p p2p.Service) *blockHashSync {
 	b := &blockHashSync{
+		p:                  p,
+		neighborBlockHashs: make(map[p2p.PeerID]*blockHashs),
+		mutex:              new(sync.RWMutex),
 
 		msgCh: p.Register("sync block hash response", p2p.SyncBlockHashResponse),
 
@@ -86,8 +91,44 @@ func (b *blockHashSync) NeighborBlockHashs(start, end int64) <-chan *BlockHash {
 				}
 			}
 		}
+		close(ch)
 	}()
 	return ch
+}
+
+func (b *blockHashSync) RequestBlockHash(start, end int64) {
+	ilog.Debugf("Syncing block hash in [%v %v]...", start, end)
+
+	// Temporarily do this to compatibility upgrade
+	for i := int64(0); i < (end-start+1)/int64(BlockHashMaxRequestRange); i++ {
+		blockHashQuery := &msgpb.BlockHashQuery{
+			ReqType: msgpb.RequireType_GETBLOCKHASHES,
+			Start:   start + i*int64(BlockHashMaxRequestRange),
+			End:     start + (i+1)*int64(BlockHashMaxRequestRange) - 1,
+			Nums:    nil,
+		}
+		msg, err := proto.Marshal(blockHashQuery)
+		if err != nil {
+			ilog.Errorf("Marshal sync block hash message failed: %v", err)
+			continue
+		}
+		b.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	}
+
+	if (end-start+1)%int64(BlockHashMaxRequestRange) > 0 {
+		blockHashQuery := &msgpb.BlockHashQuery{
+			ReqType: msgpb.RequireType_GETBLOCKHASHES,
+			Start:   end - ((end - start + 1) % int64(BlockHashMaxRequestRange)) + 1,
+			End:     end,
+			Nums:    nil,
+		}
+		msg, err := proto.Marshal(blockHashQuery)
+		if err != nil {
+			ilog.Errorf("Marshal sync block hash message failed: %v", err)
+			return
+		}
+		b.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	}
 }
 
 func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
@@ -115,12 +156,20 @@ func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
 		hashs[blockInfo.Number] = blockInfo.Hash
 	}
 
+	ilog.Debugf("Received block hash for peer %v, len %v.", msg.From().Pretty(), len(blockHashResponse.BlockInfos))
+
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	b.neighborBlockHashs[msg.From()] = &blockHashs{
-		hashs: hashs,
-		time:  time.Now().Unix(),
+	if bHashs, ok := b.neighborBlockHashs[msg.From()]; ok {
+		for k, v := range hashs {
+			bHashs.hashs[k] = v
+		}
+	} else {
+		b.neighborBlockHashs[msg.From()] = &blockHashs{
+			hashs: hashs,
+			time:  time.Now().Unix(),
+		}
 	}
 }
 

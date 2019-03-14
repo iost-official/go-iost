@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
@@ -64,7 +64,7 @@ func (b *blockSync) Close() {
 	ilog.Infof("Stopped block sync.")
 }
 
-func (b *blockSync) IncommingBlock() <-chan *BlockMessage {
+func (b *blockSync) IncomingBlock() <-chan *BlockMessage {
 	return b.blockCh
 }
 
@@ -92,7 +92,7 @@ func (b *blockSync) RequestBlock(hash []byte, peerID p2p.PeerID) {
 }
 
 func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
-	if (msg.Type() != p2p.SyncBlockResponse) || (msg.Type() != p2p.NewBlock) {
+	if (msg.Type() != p2p.SyncBlockResponse) && (msg.Type() != p2p.NewBlock) {
 		ilog.Warnf("Expect the type %v and %v, but get a unexpected type %v", p2p.SyncBlockResponse, p2p.NewBlock, msg.Type())
 		return
 	}
@@ -111,6 +111,8 @@ func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
 		return
 	}
 	b.responseCache.Set(string(blk.HeadHash()), "", cache.DefaultExpiration)
+
+	ilog.Debugf("Received block %v from peer %v, num: %v", common.Base58Encode(blk.HeadHash()), msg.From().Pretty(), blk.Head.Number)
 
 	blockMessage := &BlockMessage{
 		Blk:     blk,
