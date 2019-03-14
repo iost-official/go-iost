@@ -15,8 +15,8 @@ import (
 
 const (
 	requestCacheExpiration     = 10 * time.Second
-	requestCachePurgeInterval  = 2 * time.Second
-	responseCacheExpiration    = 5 * time.Minute
+	requestCachePurgeInterval  = 1 * time.Minute
+	responseCacheExpiration    = 10 * time.Second
 	responseCachePurgeInterval = 1 * time.Minute
 )
 
