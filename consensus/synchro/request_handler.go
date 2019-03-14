@@ -159,13 +159,9 @@ func (r *requestHandler) controller() {
 			default:
 				ilog.Warnf("Unexcept request type: %v", request.Type())
 			}
-		default:
-		}
-		select {
 		case <-r.quitCh:
 			r.done.Done()
 			return
-		default:
 		}
 	}
 }
