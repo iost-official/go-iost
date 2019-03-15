@@ -93,17 +93,30 @@ func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache 
 	return &p
 }
 
-func (p *PoB) recoverBlockcache() error {
-	err := p.blockCache.Recover(p)
-	if err != nil {
-		ilog.Error("Failed to recover blockCache, err: ", err)
-		ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
-		err = p.blockCache.NewWAL(p.baseVariable.Config())
-		if err != nil {
-			ilog.Error(" Failed to NewWAL, err: ", err)
+func (p *PoB) recoverBlockcache() (err error) {
+	v := blockcache.RecoveryVariable{
+		Blk:      make(chan *block.Block),
+		Finished: make(chan struct{}),
+		Broken:   make(chan error),
+	}
+	go p.blockCache.Recover(v)
+	for {
+		select {
+		case b := <-v.Blk:
+			p.RecoverBlock(b)
+			v.Finished <- struct{}{}
+		case err = <-v.Broken:
+			if err != nil {
+				ilog.Error("Failed to recover blockCache, err: ", err)
+				ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
+				err = p.blockCache.NewWAL(p.baseVariable.Config())
+				if err != nil {
+					ilog.Error(" Failed to NewWAL, err: ", err)
+				}
+			}
+			return
 		}
 	}
-	return err
 }
 
 //Start make the PoB run.

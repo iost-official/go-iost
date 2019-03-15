@@ -242,6 +242,12 @@ func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 	}
 }
 
+type RecoveryVariable struct {
+	Blk      chan *block.Block
+	Finished chan struct{}
+	Broken   chan error
+}
+
 // BlockCache defines BlockCache's API
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
@@ -256,7 +262,7 @@ type BlockCache interface {
 	Head() *BlockCacheNode
 	Draw() string
 	CleanDir() error
-	Recover(p conAlgo) (err error)
+	Recover(RecoveryVariable)
 	NewWAL(config *common.Config) (err error)
 	AddNodeToWAL(bcn *BlockCacheNode)
 }
@@ -394,33 +400,35 @@ func (bc *BlockCacheImpl) NewWAL(config *common.Config) (err error) {
 }
 
 // Recover recover previews block cache
-func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
+func (bc *BlockCacheImpl) Recover(v RecoveryVariable) {
 	if bc.wal.HasDecoder() {
 		//Get All entries
 		_, entries, err := bc.wal.ReadAll()
 		if err != nil {
-			return err
+			v.Broken <- err
+			return
 		}
 		ilog.Info("Recover block start")
 		for i, entry := range entries {
 			if i%2000 == 0 {
 				ilog.Infof("Recover block progress:%v/%v", i, len(entries))
 			}
-			err := bc.apply(entry, p)
+			err := bc.apply(entry, v)
 			if err != nil {
-				return err
+				v.Broken <- err
+				return
 			}
 		}
 	}
-	return
+	close(v.Broken)
 }
 
-func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
+func (bc *BlockCacheImpl) apply(entry wal.Entry, v RecoveryVariable) (err error) {
 	var bcMessage BcMessage
 	proto.Unmarshal(entry.Data, &bcMessage)
 	switch bcMessage.Type {
 	case BcMessageType_LinkType:
-		err = bc.applyLink(bcMessage.Data, p)
+		err = bc.applyLink(bcMessage.Data, v)
 		if err != nil {
 			return
 		}
@@ -439,13 +447,14 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 	return
 }
 
-func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
+func (bc *BlockCacheImpl) applyLink(b []byte, v RecoveryVariable) (err error) {
 	block, witnessList, serialNum, err := decodeBCN(b)
 	if string(bc.LinkedRoot().HeadHash()) == string(block.HeadHash()) {
 		bc.LinkedRoot().WitnessList = witnessList
 		bc.LinkedRoot().SerialNum = serialNum
 	}
-	p.RecoverBlock(&block)
+	v.Blk <- &block
+	<-v.Finished
 	return err
 }
 
