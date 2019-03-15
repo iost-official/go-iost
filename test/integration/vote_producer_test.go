@@ -1021,20 +1021,20 @@ func Test_LogOutInPending(t *testing.T) {
 		// 0	: 4				, 2
 		// 1	: 6				, 3
 		// 2	: 8				, 4
-		// 3	: 10 - 1.261	, 5
-		// 4	: 12 - 1.911	, 6
-		// 5	: 14 - 1.911	, 7
-		// 6	: 16 - 1.911	, 8
-		// 7	: 18 - 1.911	, 9
-		// 8	: 20 - 1.911	, 10
-		// 9	: 22 - 0.65		, 11
+		// 3	: 10 - 1.151	, 5
+		// 4	: 12 - 1.801	, 6
+		// 5	: 14 - 1.801	, 7
+		// 6	: 16 - 1.801	, 8
+		// 7	: 18 - 1.801	, 9
+		// 8	: 20 - 1.801	, 10
+		// 9	: 11 - 0.65		, 11
 		// 9, 8, 7, 6, 5, 4
 		currentList = pendingList
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-currentProducerList")), ShouldEqual, string(currentList))
 		// 8, 7, 6, 5, 4, 3
 		pendingList, _ = json.Marshal([]string{acc8.KeyPair.ReadablePubkey(), acc7.KeyPair.ReadablePubkey(), acc6.KeyPair.ReadablePubkey(), acc5.KeyPair.ReadablePubkey(), acc4.KeyPair.ReadablePubkey(), acc3.KeyPair.ReadablePubkey()})
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-pendingProducerList")), ShouldEqual, string(pendingList))
-		scores = `{"user_9":"213500000","user_8":"180890000.00000000","user_7":"160890000.00000000","user_6":"140890000.00000000","user_5":"120890000.00000000","user_4":"100890000.00000000","user_3":"87390000.00000000","user_2":"80000000","user_1":"60000000","user_0":"40000000"}`
+		scores = `{"user_9":"103500000","user_8":"181990000.00000000","user_7":"161990000.00000000","user_6":"141990000.00000000","user_5":"121990000.00000000","user_4":"101990000.00000000","user_3":"88490000.00000000","user_2":"80000000","user_1":"60000000","user_0":"40000000"}`
 		So(database.MustUnmarshal(s.Visitor.Get("vote_producer.iost-producerScores")), ShouldEqual, scores)
 	})
 }
