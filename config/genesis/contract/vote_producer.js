@@ -810,7 +810,8 @@ class VoteContract {
             if (!pro || !pro.isProducer || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
                 continue;
             }
-            const score = new Float64(res.votes).plus(scores[id] || "0");
+            const incScore = new Float64(pro.online ? res.votes : "0");
+            const score = incScore.plus(scores[id] || "0");
             scoreTotal = scoreTotal.plus(score);
             scoreCount++;
             newScores[id]  = score.toFixed();
@@ -911,6 +912,8 @@ class VoteContract {
                 const score = new Float64(scores[account] || "0").minus(scoreAvg);
                 if (score.gte("0")) {
                     scores[account] = score.toFixed(IOST_DECIMAL);
+                } else {
+                    delete(scores[account]);
                 }
             }
         } else {
