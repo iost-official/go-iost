@@ -554,3 +554,62 @@ func Test_Exception(t *testing.T) {
 		//So(r.Status.Message, ShouldContainSubstring, "test exception")
 	})
 }
+
+func Test_Arguments(t *testing.T) {
+	ilog.Stop()
+	Convey("test of arguments", t, func() {
+		s := NewSimulator()
+		defer s.Clear()
+
+		createAccountsWithResource(s)
+		createToken(t, s, acc0)
+
+		ca, err := s.Compile("Contractarguments", "./test_data/arguments", "./test_data/arguments.js")
+		if err != nil || ca == nil {
+			t.Fatal(err)
+		}
+		cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Code, ShouldEqual, tx.Success)
+
+		arguments := `["abc",1,true,{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+
+		arguments = `[{"c":1,"d":2,"a":3,"b":4},1,true,{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, `error parse string arg &{"a":3,"b":4,"c":1,"d":2}`)
+
+		arguments = `["abc",{"c":1,"d":2,"a":3,"b":4},true,{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, `error parse number arg &{"a":3,"b":4,"c":1,"d":2}`)
+
+		arguments = `["abc",1,{"c":1,"d":2,"a":3,"b":4},{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, `error parse bool arg &{"a":3,"b":4,"c":1,"d":2}`)
+
+		arguments = `[10,1,true,{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, `error parse string arg &{10}`)
+
+		arguments = `["abc",true,true,{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, `error parse number arg &{true}`)
+
+		arguments = `["abc",1,"abc",{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, `error parse bool arg &{abc}`)
+
+		arguments = `["abc",1,true,1]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+	})
+}
