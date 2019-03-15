@@ -153,7 +153,7 @@ func (r *requestHandler) controller() {
 			case p2p.SyncBlockHashRequest:
 				go r.handleBlockHashRequest(&request)
 			case p2p.SyncBlockRequest:
-				go r.handleBlockRequest(&request, p2p.SyncBlockHashResponse, p2p.NormalMessage)
+				go r.handleBlockRequest(&request, p2p.SyncBlockResponse, p2p.NormalMessage)
 			case p2p.NewBlockRequest:
 				go r.handleBlockRequest(&request, p2p.NewBlock, p2p.UrgentMessage)
 			default:
