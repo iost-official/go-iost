@@ -123,7 +123,7 @@ func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
 	r.p.SendToPeer(request.From(), msg, p2p.SyncBlockHashResponse, p2p.NormalMessage)
 }
 
-func (r *requestHandler) handleBlockRequest(request *p2p.IncomingMessage, priority p2p.MessagePriority) {
+func (r *requestHandler) handleBlockRequest(request *p2p.IncomingMessage, mtype p2p.MessageType, priority p2p.MessagePriority) {
 	blockInfo := &msgpb.BlockInfo{}
 	if err := proto.Unmarshal(request.Data(), blockInfo); err != nil {
 		ilog.Warnf("Unmarshal BlockInfo failed: %v", err)
@@ -141,7 +141,7 @@ func (r *requestHandler) handleBlockRequest(request *p2p.IncomingMessage, priori
 		ilog.Errorf("Encode block failed: %v\nblock: %+v", err, block)
 		return
 	}
-	r.p.SendToPeer(request.From(), msg, p2p.SyncBlockResponse, priority)
+	r.p.SendToPeer(request.From(), msg, mtype, priority)
 }
 
 func (r *requestHandler) controller() {
@@ -153,9 +153,9 @@ func (r *requestHandler) controller() {
 			case p2p.SyncBlockHashRequest:
 				go r.handleBlockHashRequest(&request)
 			case p2p.SyncBlockRequest:
-				go r.handleBlockRequest(&request, p2p.NormalMessage)
+				go r.handleBlockRequest(&request, p2p.SyncBlockHashResponse, p2p.NormalMessage)
 			case p2p.NewBlockRequest:
-				go r.handleBlockRequest(&request, p2p.UrgentMessage)
+				go r.handleBlockRequest(&request, p2p.NewBlock, p2p.UrgentMessage)
 			default:
 				ilog.Warnf("Unexcept request type: %v", request.Type())
 			}
