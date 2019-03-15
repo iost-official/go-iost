@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
@@ -66,7 +67,15 @@ type PoB struct {
 }
 
 // New init a new PoB.
-func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+	// TODO: Move the code to account struct.
+	accSecKey := baseVariable.Config().ACC.SecKey
+	accAlgo := baseVariable.Config().ACC.Algorithm
+	account, err := account.NewKeyPair(common.Base58Decode(accSecKey), crypto.NewAlgorithm(accAlgo))
+	if err != nil {
+		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
+	}
+
 	p := PoB{
 		account:      account,
 		baseVariable: baseVariable,
