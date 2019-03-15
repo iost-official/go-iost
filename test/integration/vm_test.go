@@ -577,6 +577,11 @@ func Test_Arguments(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 
+		arguments = `[null,1,true,{}]`
+		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldContainSubstring, `error parse string arg &{<nil>}`)
+
 		arguments = `[{"c":1,"d":2,"a":3,"b":4},1,true,{}]`
 		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
