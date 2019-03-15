@@ -587,10 +587,10 @@ func Test_Arguments(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldContainSubstring, `error parse string arg &{"a":3,"b":4,"c":1,"d":2}`)
 
-		arguments = `["abc",{"c":1,"d":2,"a":3,"b":4},true,{}]`
+		arguments = `["abc",[{"c":1,"d":2,"a":3,"b":4}],true,{}]`
 		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
-		So(r.Status.Message, ShouldContainSubstring, `error parse number arg &{"a":3,"b":4,"c":1,"d":2}`)
+		So(r.Status.Message, ShouldContainSubstring, `error parse number arg &[{"a":3,"b":4,"c":1,"d":2}]`)
 
 		arguments = `["abc",1,{"c":1,"d":2,"a":3,"b":4},{}]`
 		r, err = s.Call(cname, "test", arguments, acc0.ID, acc0.KeyPair)

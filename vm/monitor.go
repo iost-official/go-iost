@@ -294,7 +294,7 @@ func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	arr, err := js.Array()
 	if err != nil {
 		ilog.Error(js.EncodePretty())
-		return nil, fmt.Errorf("error args should be array, %v, %v", err, data)
+		return nil, fmt.Errorf("error args should be array, %v, %v", err, formatErrorArg(js))
 	}
 
 	if len(arr) != len(abi.Args) {
@@ -339,7 +339,9 @@ func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 }
 
 func formatErrorArg(arg *simplejson.Json) string {
-	if _, err := arg.Map(); err == nil {
+	_, errm := arg.Map()
+	_, erra := arg.Array()
+	if errm == nil || erra == nil {
 		if b, err := arg.Encode(); err == nil {
 			return "&" + string(b)
 		}
