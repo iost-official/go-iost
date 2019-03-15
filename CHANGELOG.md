@@ -1,3 +1,11 @@
+## v3.0.3
+
+Fri Mar 15 16:36:17 CST 2019
+
+- Fix high cpu load problem.
+- Tune synchro module parameters.
+- Improve stability for vm.
+
 ## v3.0.2
 
 Wed Mar 13 16:46:33 CST 2019
