@@ -28,6 +28,7 @@ type blockHashs struct {
 	time  int64
 }
 
+// blockHashSync is responsible for maintaining the recent blockhash status of neighbor nodes.
 type blockHashSync struct {
 	p                  p2p.Service
 	neighborBlockHashs map[p2p.PeerID]*blockHashs

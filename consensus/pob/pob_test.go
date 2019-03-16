@@ -34,6 +34,10 @@ func testRun(t *testing.T) {
 	id2Seckey[account2.ReadablePubkey()] = account2.Seckey
 	id2Seckey[account3.ReadablePubkey()] = account3.Seckey
 	baseVariable, _ := global.New(&common.Config{
+		ACC: &common.ACCConfig{
+			SecKey:    "2xbQ9NK2HbwykSXCrkMUaXgL59UwidX8pDV9bTc8ebsyEMxBnpWX2CLD3kNY2ASiSCH3rb6SWGGFNd3afM3k41zS",
+			Algorithm: "ed25519",
+		},
 		DB: &common.DBConfig{
 			LdbPath: "Fakedb/",
 		},
@@ -56,7 +60,7 @@ func testRun(t *testing.T) {
 	channel := make(chan p2p.IncomingMessage, 1024)
 	mockP2PService.EXPECT().Register(gomock.Any(), gomock.Any()).Return(channel).AnyTimes()
 	txPool, _ := txpool.NewTxPoolImpl(baseVariable, blockCache, mockP2PService) //mock
-	pob := New(account1, baseVariable, blockCache, txPool, mockP2PService)
+	pob := New(baseVariable, blockCache, txPool, mockP2PService)
 	pob.Start()
 	fmt.Println(time.Now().Second())
 	fmt.Println(time.Now().Nanosecond())

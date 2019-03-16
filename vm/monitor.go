@@ -18,7 +18,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
-	"github.com/iost-official/go-iost/vm/v8vm"
+	v8 "github.com/iost-official/go-iost/vm/v8vm"
 )
 
 // Monitor ...
@@ -294,7 +294,7 @@ func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 	arr, err := js.Array()
 	if err != nil {
 		ilog.Error(js.EncodePretty())
-		return nil, fmt.Errorf("error args should be array, %v, %v", err, js)
+		return nil, fmt.Errorf("error args should be array, %v, %v", err, formatErrorArg(js))
 	}
 
 	if len(arr) != len(abi.Args) {
@@ -305,35 +305,47 @@ func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 		case "string":
 			s, err := js.GetIndex(i).String()
 			if err != nil {
-				return nil, fmt.Errorf("error parse string arg %v, %v", js.GetIndex(i), err)
+				return nil, fmt.Errorf("error parse string arg %v, %v", formatErrorArg(js.GetIndex(i)), err)
 			}
 			rtn = append(rtn, s)
 		case "bool":
 			s, err := js.GetIndex(i).Bool()
 			if err != nil {
-				return nil, fmt.Errorf("error parse bool arg %v, %v", js.GetIndex(i), err)
+				return nil, fmt.Errorf("error parse bool arg %v, %v", formatErrorArg(js.GetIndex(i)), err)
 			}
 			rtn = append(rtn, s)
 		case "number":
 			s, err := js.GetIndex(i).Int64()
 			if err != nil {
-				return nil, fmt.Errorf("error parse number arg %v, %v", js.GetIndex(i), err)
+				return nil, fmt.Errorf("error parse number arg %v, %v", formatErrorArg(js.GetIndex(i)), err)
 			}
 			rtn = append(rtn, s)
 		case "json":
 			s, err := js.GetIndex(i).Encode()
 			if err != nil {
-				return nil, fmt.Errorf("error parse json arg %v, %v", js.GetIndex(i), err)
+				return nil, fmt.Errorf("error parse json arg %v, %v", formatErrorArg(js.GetIndex(i)), err)
 			}
 			// make sure s is a valid json
 			_, err = simplejson.NewJson(s)
 			if err != nil {
 				ilog.Error(string(s))
-				return nil, fmt.Errorf("error parse json arg %v, %v", js.GetIndex(i), err)
+				return nil, fmt.Errorf("error parse json arg %v, %v", formatErrorArg(js.GetIndex(i)), err)
 			}
 			rtn = append(rtn, s)
 		}
 	}
 
 	return rtn, nil
+}
+
+func formatErrorArg(arg *simplejson.Json) string {
+	_, errm := arg.Map()
+	_, erra := arg.Array()
+	if errm == nil || erra == nil {
+		if b, err := arg.Encode(); err == nil {
+			return "&" + string(b)
+		}
+		return "&{}"
+	}
+	return fmt.Sprintf("%v", arg)
 }

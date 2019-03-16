@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
@@ -61,39 +62,42 @@ type PoB struct {
 	exitSignal       chan struct{}
 	quitGenerateMode chan struct{}
 	chRecvBlockHash  chan p2p.IncomingMessage
-	chQueryBlock     chan p2p.IncomingMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
-	headNumber       int64
-	recvTimesMap     map[string]int64
 }
 
 // New init a new PoB.
-func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+	// TODO: Move the code to account struct.
+	accSecKey := baseVariable.Config().ACC.SecKey
+	accAlgo := baseVariable.Config().ACC.Algorithm
+	account, err := account.NewKeyPair(common.Base58Decode(accSecKey), crypto.NewAlgorithm(accAlgo))
+	if err != nil {
+		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
+	}
+
 	p := PoB{
-		account:          account,
-		baseVariable:     baseVariable,
-		blockChain:       baseVariable.BlockChain(),
-		blockCache:       blockCache,
-		txPool:           txPool,
-		p2pService:       p2pService,
-		verifyDB:         baseVariable.StateDB(),
-		produceDB:        baseVariable.StateDB().Fork(),
-		blockReqMap:      new(sync.Map),
+		account:      account,
+		baseVariable: baseVariable,
+		blockChain:   baseVariable.BlockChain(),
+		blockCache:   blockCache,
+		txPool:       txPool,
+		p2pService:   p2pService,
+		verifyDB:     baseVariable.StateDB(),
+		produceDB:    baseVariable.StateDB().Fork(),
+		blockReqMap:  new(sync.Map),
+		sync:         nil,
+
 		exitSignal:       make(chan struct{}),
 		quitGenerateMode: make(chan struct{}),
 		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
-		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
-		headNumber:       0,
-		recvTimesMap:     make(map[string]int64, 0),
 	}
 	continuousNum = baseVariable.Continuous()
 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
-	p.headNumber = p.blockCache.Head().Head.Number
 
 	return &p
 }
@@ -154,19 +158,6 @@ func (p *PoB) messageLoop() {
 				}
 				p.handleRecvBlockHash(&blkInfo, incomingMessage.From())
 			}
-		case incomingMessage, ok := <-p.chQueryBlock:
-			if !ok {
-				ilog.Infof("chQueryBlock has closed")
-				return
-			}
-			if p.baseVariable.Mode() == global.ModeNormal {
-				var rh msgpb.BlockInfo
-				err := proto.Unmarshal(incomingMessage.Data(), &rh)
-				if err != nil {
-					continue
-				}
-				p.handleBlockQuery(&rh, incomingMessage.From())
-			}
 		case <-p.exitSignal:
 			return
 		}
@@ -193,24 +184,6 @@ func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
 		p.blockReqMap.Delete(string(blkInfo.Hash))
 	}))
 	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
-}
-
-func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
-	var blk *block.Block
-	blk, err := p.blockCache.GetBlockByHash(rh.Hash)
-	if err != nil {
-		blk, err = p.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
-		if err != nil {
-			ilog.Errorf("handle block query failed to get block.")
-			return
-		}
-	}
-	b, err := blk.Encode()
-	if err != nil {
-		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
-		return
-	}
-	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
 }
 
 func (p *PoB) broadcastBlockHash(blk *block.Block) {
@@ -287,28 +260,7 @@ func (p *PoB) verifyLoop() {
 				continue
 			}
 
-			recvTimes := p.recvTimesMap[blkMsg.From] + 1
-
-			/*          if recvTimes > maxBlockNumber { */
-			// p.p2pService.PutPeerToBlack(vbm.from)
-			// continue
-			/* } */
-			p.recvTimesMap[blkMsg.From] = recvTimes
-
 			p.doVerifyBlock(blkMsg)
-
-			if p.blockCache.Head().Head.Number > p.headNumber {
-				delta := p.blockCache.Head().Head.Number - p.headNumber
-				p.headNumber += delta
-				for k, v := range p.recvTimesMap {
-					v -= delta
-					if v < 0 {
-						delete(p.recvTimesMap, k)
-					} else {
-						p.recvTimesMap[k] = v
-					}
-				}
-			}
 
 			height := p.blockCache.Head().Head.Number
 			libHeight := p.blockCache.LinkedRoot().Head.Number

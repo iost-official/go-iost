@@ -1,14 +1,12 @@
 package iserver
 
 import (
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc"
@@ -50,12 +48,6 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	accSecKey := conf.ACC.SecKey
-	acc, err := account.NewKeyPair(common.Base58Decode(accSecKey), crypto.NewAlgorithm(conf.ACC.Algorithm))
-	if err != nil {
-		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
-	}
-
 	blkCache, err := blockcache.NewBlockCache(bv)
 	if err != nil {
 		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
@@ -66,7 +58,7 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 
-	consensus := consensus.New(consensus.Pob, acc, bv, blkCache, txp, p2pService)
+	consensus := consensus.New(consensus.Pob, bv, blkCache, txp, p2pService)
 
 	rpcServer := rpc.New(txp, blkCache, bv, p2pService)
 

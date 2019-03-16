@@ -15,8 +15,8 @@ import (
 
 const (
 	requestCacheExpiration     = 10 * time.Second
-	requestCachePurgeInterval  = 2 * time.Second
-	responseCacheExpiration    = 5 * time.Minute
+	requestCachePurgeInterval  = 1 * time.Minute
+	responseCacheExpiration    = 10 * time.Second
 	responseCachePurgeInterval = 1 * time.Minute
 )
 
@@ -27,6 +27,7 @@ type BlockMessage struct {
 	From    string
 }
 
+// blockSync is responsible for receiving neighbor's block and removing duplicate requests and responses.
 type blockSync struct {
 	p             p2p.Service
 	requestCache  *cache.Cache

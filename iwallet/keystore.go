@@ -6,17 +6,18 @@ import (
 	"crypto/cipher"
 	"crypto/rand"
 	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
+	"strings"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/sdk"
 	"golang.org/x/crypto/scrypt"
 	"golang.org/x/crypto/ssh/terminal"
-	"io"
-	"io/ioutil"
-	"os"
-	"strings"
-	"syscall"
 )
 
 // KeyPairInfo ...
@@ -238,18 +239,48 @@ func loadAccountFromFile(fileName string, ensureDecrypt bool) (*AccountInfo, err
 	return loadAccountFromKeyPair(fileName)
 }
 
+func readPassword(prompt string) (pw []byte, err error) {
+	fd := int(os.Stdin.Fd())
+	if terminal.IsTerminal(fd) {
+		fmt.Fprint(os.Stderr, prompt)
+		pw, err = terminal.ReadPassword(fd)
+		fmt.Fprintln(os.Stderr)
+		return
+	}
+
+	var b [1]byte
+	for {
+		n, err := os.Stdin.Read(b[:])
+		// terminal.ReadPassword discards any '\r', so we do the same
+		if n > 0 && b[0] != '\r' {
+			if b[0] == '\n' {
+				return pw, nil
+			}
+			pw = append(pw, b[0])
+			// limit size, so that a wrong input won't fill up the memory
+			if len(pw) > 1024 {
+				err = errors.New("password too long")
+			}
+		}
+		if err != nil {
+			// terminal.ReadPassword accepts EOF-terminated passwords
+			// if non-empty, so we do the same
+			if err == io.EOF && len(pw) > 0 {
+				err = nil
+			}
+			return pw, err
+		}
+	}
+}
+
 func readPasswordFromStdin(repeat bool) ([]byte, error) {
 	for {
-		fmt.Print("Enter Password:  ")
-		bytePassword, err := terminal.ReadPassword(syscall.Stdin)
-		fmt.Println()
+		bytePassword, err := readPassword("Enter Password:  ")
 		if err != nil {
 			return nil, err
 		}
 		if repeat {
-			fmt.Print("Repeat Password:")
-			repeat, err := terminal.ReadPassword(syscall.Stdin)
-			fmt.Println()
+			repeat, err := readPassword("Enter Password:  ")
 			if err != nil {
 				return nil, err
 			}
