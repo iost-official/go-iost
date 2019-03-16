@@ -1,3 +1,9 @@
+## v3.0.4
+
+Sat Mar 16 20:58:46 CST 2019
+
+- Optimize RPC stability.
+
 ## v3.0.3
 
 Fri Mar 15 16:36:17 CST 2019
