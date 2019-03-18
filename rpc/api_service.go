@@ -58,10 +58,11 @@ func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.Bas
 // GetNodeInfo returns information abount node.
 func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.NodeInfoResponse, error) {
 	res := &rpcpb.NodeInfoResponse{
-		BuildTime: global.BuildTime,
-		GitHash:   global.GitHash,
-		Mode:      as.bv.Mode().String(),
-		Network:   &rpcpb.NetworkInfo{},
+		BuildTime:   global.BuildTime,
+		GitHash:     global.GitHash,
+		CodeVersion: global.CodeVersion,
+		Mode:        as.bv.Mode().String(),
+		Network:     &rpcpb.NetworkInfo{},
 	}
 	p2pNeighbors := as.p2pService.GetAllNeighbors()
 	networkInfo := &rpcpb.NetworkInfo{
