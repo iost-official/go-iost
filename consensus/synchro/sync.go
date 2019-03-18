@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -162,8 +163,20 @@ func (s *Sync) doBlockSync() {
 
 		rand.Seed(time.Now().UnixNano())
 		peerID := blockHash.PeerID[rand.Int()%len(blockHash.PeerID)]
-		s.blockSync.RequestBlock(blockHash.Hash, peerID)
+		s.blockSync.RequestBlock(blockHash.Hash, peerID, p2p.SyncBlockRequest)
 	}
+}
+
+func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
+	// TODO: Confirm whether you need to judge the synchronization mode to skip directly.
+	_, err := s.bCache.Find(blockHash.Hash)
+	if err == nil {
+		ilog.Debug("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
+		return
+	}
+
+	// New block hash just have 0 number peer ID.
+	s.blockSync.RequestBlock(blockHash.Hash, blockHash.PeerID[0], p2p.NewBlockRequest)
 }
 
 func (s *Sync) blockSyncController() {
@@ -171,6 +184,8 @@ func (s *Sync) blockSyncController() {
 		select {
 		case <-time.After(2 * time.Second):
 			s.doBlockSync()
+		case blockHash := <-s.blockhashSync.NewBlockHashs():
+			s.doNewBlockSync(blockHash)
 		case <-s.quitCh:
 			s.done.Done()
 			return
