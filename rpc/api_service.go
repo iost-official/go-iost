@@ -691,6 +691,50 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 	return ret, nil
 }
 
+// GetTokenInfo returns the information of a given token.
+func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoRequest) (*rpcpb.TokenInfo, error) {
+	var token404 = errors.New("token not found")
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+
+	symbol := req.GetSymbol()
+	ret := &rpcpb.TokenInfo{Symbol: symbol}
+	value, _ := h.GlobalMapGet("token.iost", "TI"+symbol, "fullName")
+	if value == nil {
+		return nil, token404
+	}
+	ret.FullName = value.(string)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "issuer")
+	if value == nil {
+		return nil, token404
+	}
+	ret.Issuer = value.(string)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "supply")
+	if value == nil {
+		return nil, token404
+	}
+	ret.CurrentSupply = value.(int64)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "totalSupply")
+	if value == nil {
+		return nil, token404
+	}
+	ret.TotalSupply = value.(int64)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "decimal")
+	if value == nil {
+		return nil, token404
+	}
+	ret.Decimal = int32(value.(int64))
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "canTransfer")
+	if value == nil {
+		return nil, token404
+	}
+	ret.CanTransfer = value.(bool)
+	return ret, nil
+}
+
 func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
 	stateDB := as.bv.StateDB().Fork()
 	ok := stateDB.Checkout(string(hash))

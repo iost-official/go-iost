@@ -532,6 +532,39 @@
         ]
       }
     },
+    "/getTokenInfo/{symbol}/{by_longest_chain}": {
+      "get": {
+        "operationId": "GetTokenInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbTokenInfo"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbol",
+            "description": "token symbol",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get tokeninfo by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getTxByHash/{hash}": {
       "get": {
         "summary": "get transaction by hash",
@@ -1532,6 +1565,44 @@
         }
       },
       "description": "The message defines subscribe response."
+    },
+    "rpcpbTokenInfo": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "title": "token symbol"
+        },
+        "full_name": {
+          "type": "string",
+          "title": "token full name"
+        },
+        "issuer": {
+          "type": "string",
+          "title": "token issuer"
+        },
+        "total_supply": {
+          "type": "string",
+          "format": "int64",
+          "title": "the amount of total supply"
+        },
+        "current_supply": {
+          "type": "string",
+          "format": "int64",
+          "title": "the amount of current supply"
+        },
+        "decimal": {
+          "type": "integer",
+          "format": "int32",
+          "title": "token decimal"
+        },
+        "can_transfer": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "whether the token can be transfered"
+        }
+      },
+      "description": "The message defines the token information."
     },
     "rpcpbTransaction": {
       "type": "object",
