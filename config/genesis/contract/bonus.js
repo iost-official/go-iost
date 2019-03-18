@@ -1,4 +1,5 @@
 const activePermission = "active";
+const withdrawPermission = "operate";
 const totalSupply = 90000000000;
 const blockContribRatio = new Float64("1.564349722223e-10");
 
@@ -110,13 +111,7 @@ class BonusContract {
 
     // exchangeIOST with contribute
     exchangeIOST(account, amount) {
-        this._requireAuth(account, activePermission);
-
-        const lastExchangeTime = this._get(account) || 0;
-        const currentTime = block.time;
-        if (currentTime - lastExchangeTime < 86400000000000) {
-            throw new Error("last exchange less than one day.");
-        }
+        this._requireAuth(account, withdrawPermission);
 
         const contribute = blockchain.callWithAuth("token.iost", "balanceOf", [
             "contribute",
@@ -139,8 +134,6 @@ class BonusContract {
         if (amount.gt(totalBonus)) {
             throw new Error("left bonus not enough, please wait");
         }
-
-        this._put(account, currentTime, account);
 
         blockchain.callWithAuth("token.iost", "destroy", [
             "contribute",
