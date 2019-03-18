@@ -24,10 +24,11 @@ type Sync struct {
 	bCache blockcache.BlockCache
 	bChain block.Chain
 
-	handler       *requestHandler
-	heightSync    *heightSync
-	blockhashSync *blockHashSync
-	blockSync     *blockSync
+	handler         *requestHandler
+	rangeController *rangeController
+	heightSync      *heightSync
+	blockhashSync   *blockHashSync
+	blockSync       *blockSync
 
 	quitCh chan struct{}
 	done   *sync.WaitGroup
@@ -40,10 +41,11 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 		bCache: bCache,
 		bChain: bChain,
 
-		handler:       newRequestHandler(p, bCache, bChain),
-		heightSync:    newHeightSync(p),
-		blockhashSync: newBlockHashSync(p),
-		blockSync:     newBlockSync(p),
+		handler:         newRequestHandler(p, bCache, bChain),
+		rangeController: newRangeController(bCache),
+		heightSync:      newHeightSync(p),
+		blockhashSync:   newBlockHashSync(p),
+		blockSync:       newBlockSync(p),
 
 		quitCh: make(chan struct{}),
 		done:   new(sync.WaitGroup),
@@ -113,13 +115,13 @@ func (s *Sync) doBlockhashSync() {
 		blockHashSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
 	}()
 
-	start := s.bCache.LinkedRoot().Head.Number + 1
-	end := s.heightSync.NeighborHeight()
+	start, end := s.rangeController.SyncRange()
+	nHeight := s.heightSync.NeighborHeight()
+	if nHeight < end {
+		end = nHeight
+	}
 	if start > end {
 		return
-	}
-	if end-start+1 > maxSyncRange {
-		end = start + maxSyncRange - 1
 	}
 
 	s.blockhashSync.RequestBlockHash(start, end)
@@ -143,13 +145,13 @@ func (s *Sync) doBlockSync() {
 		blockSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
 	}()
 
-	start := s.bCache.LinkedRoot().Head.Number + 1
-	end := s.heightSync.NeighborHeight()
+	start, end := s.rangeController.SyncRange()
+	nHeight := s.heightSync.NeighborHeight()
+	if nHeight < end {
+		end = nHeight
+	}
 	if start > end {
 		return
-	}
-	if end-start+1 > maxSyncRange {
-		end = start + maxSyncRange - 1
 	}
 
 	ilog.Infof("Syncing block in [%v %v]...", start, end)
