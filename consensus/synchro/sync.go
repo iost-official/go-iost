@@ -171,7 +171,7 @@ func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 	// TODO: Confirm whether you need to judge the synchronization mode to skip directly.
 	_, err := s.bCache.Find(blockHash.Hash)
 	if err == nil {
-		ilog.Debug("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
+		ilog.Debugf("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
 		return
 	}
 
