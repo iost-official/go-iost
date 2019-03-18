@@ -1,17 +1,16 @@
 package native
 
 import (
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm/host"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/iost-official/go-iost/common"
-	"errors"
+	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/vm/host"
 	"regexp"
 )
 
 var tokenABIsV2 *abiSet
-
 
 func init() {
 	tokenABIsV2 = newAbiSet()
@@ -28,14 +27,14 @@ func init() {
 	tokenABIsV2.Register(destroyTokenABIV2)
 }
 
-func refineAmount(amountStr string, decimal int64) (string, error)  {
+func refineAmount(amountStr string, decimal int64) (string, error) {
 	matched, err := regexp.MatchString("^([0-9]+[.])?[0-9]+$", amountStr)
 	if err != nil || !matched {
-		return "", fmt.Errorf("amount should only contain numbers and dot")
+		return "", fmt.Errorf("invalid amount %v %v", amountStr, err)
 	}
 	amount, err := common.NewFixed(amountStr, int(decimal))
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("invalid amount %v %v", amountStr, err)
 	}
 	return amount.ToString(), nil
 }
