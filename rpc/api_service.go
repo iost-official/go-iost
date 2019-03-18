@@ -474,6 +474,10 @@ func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
 // SendTransaction sends a transaction to iserver.
 func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.SendTransactionResponse, error) {
 	t := toCoreTx(req)
+	err := checkBadTx(t)
+	if err != nil {
+		return nil, err
+	}
 	ret := &rpcpb.SendTransactionResponse{
 		Hash: common.Base58Encode(t.Hash()),
 	}

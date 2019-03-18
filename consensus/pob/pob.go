@@ -263,8 +263,7 @@ func (p *PoB) verifyLoop() {
 			p.doVerifyBlock(blkMsg)
 
 			height := p.blockCache.Head().Head.Number
-			libHeight := p.blockCache.LinkedRoot().Head.Number
-			if (height-libHeight < 240) && (p.sync.NeighborHeight() > height+120) {
+			if p.sync.NeighborHeight() > height+120 {
 				p.baseVariable.SetMode(global.ModeSync)
 			} else {
 				p.baseVariable.SetMode(global.ModeNormal)
