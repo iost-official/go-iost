@@ -45,6 +45,7 @@ type blockHashSync struct {
 func newBlockHashSync(p p2p.Service) *blockHashSync {
 	b := &blockHashSync{
 		p:                  p,
+		newBlockHashCh:     make(chan *BlockHash, 1024),
 		neighborBlockHashs: make(map[p2p.PeerID]*blockHashs),
 		mutex:              new(sync.RWMutex),
 
