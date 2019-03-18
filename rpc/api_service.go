@@ -256,12 +256,9 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 	// pack frozen balance information
 	frozen := dbVisitor.AllFreezedTokenBalanceFixed("iost", req.GetName())
-	for _, f := range frozen {
-		ret.FrozenBalances = append(ret.FrozenBalances, &rpcpb.FrozenBalance{
-			Amount: f.Amount.ToFloat(),
-			Time:   f.Ftime,
-		})
-	}
+	unfrozen, stillFrozen := as.getUnfrozenToken(frozen, req.ByLongestChain)
+	ret.FrozenBalances = stillFrozen
+	ret.Balance += unfrozen
 
 	voteInfo := dbVisitor.GetAccountVoteInfo(req.GetName())
 	for _, v := range voteInfo {
@@ -288,16 +285,10 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 	balance := dbVisitor.TokenBalanceFixed(req.GetToken(), req.GetAccount()).ToFloat()
 	// pack frozen balance information
 	frozen := dbVisitor.AllFreezedTokenBalanceFixed(req.GetToken(), req.GetAccount())
-	frozenBalances := make([]*rpcpb.FrozenBalance, 0)
-	for _, f := range frozen {
-		frozenBalances = append(frozenBalances, &rpcpb.FrozenBalance{
-			Amount: f.Amount.ToFloat(),
-			Time:   f.Ftime,
-		})
-	}
+	unfrozen, stillFrozen := as.getUnfrozenToken(frozen, req.ByLongestChain)
 	return &rpcpb.GetTokenBalanceResponse{
-		Balance:        balance,
-		FrozenBalances: frozenBalances,
+		Balance:        balance + unfrozen,
+		FrozenBalances: stillFrozen,
 	}, nil
 }
 
@@ -770,4 +761,26 @@ func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, *
 		return db, b, nil
 	}
 	return nil, nil, err
+}
+
+func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemFixed, longestChain bool) (float64, []*rpcpb.FrozenBalance) {
+	var blockTime int64
+	if longestChain {
+		blockTime = as.bc.Head().Head.Time
+	} else {
+		blockTime = as.bc.LinkedRoot().Head.Time
+	}
+	var unfrozen float64
+	var stillFrozen []*rpcpb.FrozenBalance
+	for _, f := range frozens {
+		if f.Ftime <= blockTime {
+			unfrozen += f.Amount.ToFloat()
+		} else {
+			stillFrozen = append(stillFrozen, &rpcpb.FrozenBalance{
+				Amount: f.Amount.ToFloat(),
+				Time:   f.Ftime,
+			})
+		}
+	}
+	return unfrozen, stillFrozen
 }
