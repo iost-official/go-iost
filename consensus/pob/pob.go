@@ -74,6 +74,9 @@ func New(baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txP
 		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
 	}
 
+	// TODO: Organize the owner and lifecycle of all metrics.
+	metricsMode.Set(float64(baseVariable.Mode()), nil)
+
 	p := PoB{
 		account:      account,
 		baseVariable: baseVariable,
