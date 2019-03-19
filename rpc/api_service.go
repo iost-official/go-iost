@@ -99,15 +99,16 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 		version = as.bv.Config().Version.ProtocolVersion
 	}
 	return &rpcpb.ChainInfoResponse{
-		NetName:         netName,
-		ProtocolVersion: version,
-		ChainId:         as.bv.Config().P2P.ChainID,
-		WitnessList:     head.Active(),
-		LibWitnessList:  lib.Active(),
-		HeadBlock:       head.Head.Number,
-		HeadBlockHash:   common.Base58Encode(head.HeadHash()),
-		LibBlock:        lib.Head.Number,
-		LibBlockHash:    common.Base58Encode(lib.HeadHash()),
+		NetName:            netName,
+		ProtocolVersion:    version,
+		ChainId:            as.bv.Config().P2P.ChainID,
+		WitnessList:        head.Active(),
+		LibWitnessList:     lib.Active(),
+		PendingWitnessList: head.Pending(),
+		HeadBlock:          head.Head.Number,
+		HeadBlockHash:      common.Base58Encode(head.HeadHash()),
+		LibBlock:           lib.Head.Number,
+		LibBlockHash:       common.Base58Encode(lib.HeadHash()),
 	}, nil
 }
 

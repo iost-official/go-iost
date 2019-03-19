@@ -2,7 +2,7 @@ package iwallet
 
 import (
 	"fmt"
-	"sort"
+	"sync"
 
 	"github.com/spf13/cobra"
 
@@ -178,16 +178,30 @@ var plistCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("cannot get chain info: %v", err)
 		}
-		result := make([]string, len(chainInfo.WitnessList))
-		for i, producerKey := range chainInfo.WitnessList {
-			response, err := getContractStorage("vote_producer.iost", "producerKeyToId", producerKey)
-			if err != nil {
-				return fmt.Errorf("cannot get producer id of %v: %v", producerKey, err)
+
+		var getWitnessName = func(pks []string) []string {
+			result := make([]string, len(pks))
+			var wg sync.WaitGroup
+			wg.Add(len(pks))
+			for i, producerKey := range pks {
+				i, producerKey := i, producerKey
+				go func() {
+					response, err := getContractStorage("vote_producer.iost", "producerKeyToId", producerKey)
+					if err != nil {
+						fmt.Printf("cannot get producer id of %v: %v", producerKey, err)
+						return
+					}
+					result[i] = response.Data
+					wg.Done()
+				}()
 			}
-			result[i] = response.Data
+			wg.Wait()
+			return result
 		}
-		sort.Strings(result)
-		fmt.Println("Current producer list:", result)
+
+		currentPlist, pendingPlist := getWitnessName(chainInfo.WitnessList), getWitnessName(chainInfo.PendingWitnessList)
+		fmt.Println("Current producer list:", currentPlist)
+		fmt.Println("Pending producer list:", pendingPlist)
 		return nil
 	},
 }
