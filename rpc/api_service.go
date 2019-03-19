@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/go-iost/vm"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -38,13 +39,14 @@ type APIService struct {
 	p2pService p2p.Service
 	txpool     txpool.TxPool
 	blockchain block.Chain
+	consensus  consensus.Consensus
 	bv         global.BaseVariable
 
 	quitCh chan struct{}
 }
 
 // NewAPIService returns a new APIService instance.
-func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, quitCh chan struct{}) *APIService {
+func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, consensus consensus.Consensus, quitCh chan struct{}) *APIService {
 	return &APIService{
 		p2pService: p2pService,
 		txpool:     tp,
@@ -61,7 +63,7 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		BuildTime:   global.BuildTime,
 		GitHash:     global.GitHash,
 		CodeVersion: global.CodeVersion,
-		Mode:        as.bv.Mode().String(),
+		Mode:        as.consensus.Mode(),
 		Network:     &rpcpb.NetworkInfo{},
 	}
 	p2pNeighbors := as.p2pService.GetAllNeighbors()

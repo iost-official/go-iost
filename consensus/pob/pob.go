@@ -38,11 +38,11 @@ var (
 )
 
 var (
-	continuousNum     int
-	maxBlockNumber    int64 = 10000
-	subSlotTime             = 500 * time.Millisecond
-	genBlockTime            = 400 * time.Millisecond
-	last2GenBlockTime       = 50 * time.Millisecond
+	blockNumPerWitness = 6
+	maxBlockNumber     = int64(10000)
+	subSlotTime        = 500 * time.Millisecond
+	genBlockTime       = 400 * time.Millisecond
+	last2GenBlockTime  = 50 * time.Millisecond
 )
 
 //PoB is a struct that handles the consensus logic.
@@ -74,7 +74,7 @@ func New(baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txP
 	}
 
 	// TODO: Organize the owner and lifecycle of all metrics.
-	metricsMode.Set(float64(baseVariable.Mode()), nil)
+	metricsMode.Set(float64(2), nil)
 
 	p := PoB{
 		account:      account,
@@ -92,7 +92,6 @@ func New(baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txP
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
 	}
-	continuousNum = baseVariable.Continuous()
 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
@@ -113,10 +112,9 @@ func (p *PoB) recoverBlockcache() error {
 	return err
 }
 
-//Start make the PoB run.
+// Start make the PoB run.
 func (p *PoB) Start() error {
 	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
-	p.baseVariable.SetMode(global.ModeNormal)
 
 	p.wg.Add(2)
 	go p.verifyLoop()
@@ -124,7 +122,7 @@ func (p *PoB) Start() error {
 	return nil
 }
 
-//Stop make the PoB stop
+// Stop make the PoB stop.
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 	p.wg.Wait()
@@ -132,11 +130,18 @@ func (p *PoB) Stop() {
 	p.sync.Close()
 }
 
-func (p *PoB) broadcastBlockHash(blk *block.Block) {
-	if p.baseVariable.Mode() != global.ModeNormal {
-		return
+// Mode return the mode of pob.
+func (p *PoB) Mode() string {
+	if p.sync == nil {
+		return "ModeInit"
+	} else if p.sync.IsCatchingUp() {
+		return "ModeSync"
+	} else {
+		return "ModeNormal"
 	}
+}
 
+func (p *PoB) broadcastBlockHash(blk *block.Block) {
 	blkInfo := &msgpb.BlockInfo{
 		Number: blk.Head.Number,
 		Hash:   blk.HeadHash(),
@@ -154,9 +159,6 @@ func calculateTime(blk *block.Block) float64 {
 }
 
 func (p *PoB) doVerifyBlock(blkMsg *synchro.BlockMessage) {
-	if p.baseVariable.Mode() == global.ModeInit {
-		return
-	}
 	blk := blkMsg.Blk
 
 	switch blkMsg.P2PType {
@@ -167,7 +169,7 @@ func (p *PoB) doVerifyBlock(blkMsg *synchro.BlockMessage) {
 		t2 := calculateTime(blk)
 		metricsTimeCost.Set(t2, nil)
 		if err == errSingle || err == nil {
-			go p.broadcastBlockHash(blk)
+			p.broadcastBlockHash(blk)
 		}
 		if err != nil && err != errSingle && err != errDuplicate {
 			ilog.Warnf("received new block error, err:%v", err)
@@ -198,12 +200,6 @@ func (p *PoB) verifyLoop() {
 
 			p.doVerifyBlock(blkMsg)
 
-			height := p.blockCache.Head().Head.Number
-			if p.sync.NeighborHeight() > height+120 {
-				p.baseVariable.SetMode(global.ModeSync)
-			} else {
-				p.baseVariable.SetMode(global.ModeNormal)
-			}
 		case <-p.exitSignal:
 			return
 		}
@@ -221,17 +217,22 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			time.Sleep(time.Millisecond)
-			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
+			if p.sync.IsCatchingUp() {
+				metricsMode.Set(float64(1), nil)
+				continue
+			} else {
+				metricsMode.Set(float64(0), nil)
+			}
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			if slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != slotOfSec(t.Unix()) && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = slotOfSec(t.Unix())
 				generateBlockTicker := time.NewTicker(subSlotTime)
-				for num := 0; num < continuousNum; num++ {
+				for num := 0; num < blockNumPerWitness; num++ {
 					p.gen(num, pTx, head)
-					if num == continuousNum-1 {
+					if num == blockNumPerWitness-1 {
 						break
 					}
 					select {
@@ -256,7 +257,7 @@ func (p *PoB) scheduleLoop() {
 
 func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) {
 	limitTime := genBlockTime
-	if num >= continuousNum-2 {
+	if num >= blockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
 	p.txPool.Lock()
@@ -345,7 +346,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		node.SerialNum = parentNode.SerialNum + 1
 	}
 
-	if node.SerialNum >= int64(p.baseVariable.Continuous()) {
+	if node.SerialNum >= int64(blockNumPerWitness) {
 		return errOutOfLimit
 	}
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
