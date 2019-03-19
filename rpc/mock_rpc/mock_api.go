@@ -255,6 +255,19 @@ func (mr *MockApiServiceServerMockRecorder) GetTokenBalance(arg0, arg1 interface
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTokenBalance", reflect.TypeOf((*MockApiServiceServer)(nil).GetTokenBalance), arg0, arg1)
 }
 
+// GetTokenInfo mocks base method
+func (m *MockApiServiceServer) GetTokenInfo(arg0 context.Context, arg1 *pb.GetTokenInfoRequest) (*pb.TokenInfo, error) {
+	ret := m.ctrl.Call(m, "GetTokenInfo", arg0, arg1)
+	ret0, _ := ret[0].(*pb.TokenInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTokenInfo indicates an expected call of GetTokenInfo
+func (mr *MockApiServiceServerMockRecorder) GetTokenInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTokenInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetTokenInfo), arg0, arg1)
+}
+
 // GetTxByHash mocks base method
 func (m *MockApiServiceServer) GetTxByHash(arg0 context.Context, arg1 *pb.TxHashRequest) (*pb.TransactionResponse, error) {
 	ret := m.ctrl.Call(m, "GetTxByHash", arg0, arg1)

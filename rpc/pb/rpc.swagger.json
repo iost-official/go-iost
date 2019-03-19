@@ -1177,13 +1177,25 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "the active witness list of lat irreversible block"
         },
         "pending_witness_list": {
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "the pending witness list"
+        },
+        "head_block_time": {
+          "type": "string",
+          "format": "int64",
+          "title": "the head block time"
+        },
+        "lib_block_time": {
+          "type": "string",
+          "format": "int64",
+          "title": "the last irreversible block time"
         }
       },
       "description": "The message defines chain information response."

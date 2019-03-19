@@ -109,6 +109,8 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 		HeadBlockHash:      common.Base58Encode(head.HeadHash()),
 		LibBlock:           lib.Head.Number,
 		LibBlockHash:       common.Base58Encode(lib.HeadHash()),
+		HeadBlockTime:      head.Head.Time,
+		LibBlockTime:       lib.Head.Time,
 	}, nil
 }
 

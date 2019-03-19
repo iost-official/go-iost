@@ -184,7 +184,7 @@ var plistCmd = &cobra.Command{
 			var wg sync.WaitGroup
 			wg.Add(len(pks))
 			for i, producerKey := range pks {
-				i, producerKey := i, producerKey
+				i, producerKey := i, producerKey // bind current value to closure
 				go func() {
 					response, err := getContractStorage("vote_producer.iost", "producerKeyToId", producerKey)
 					if err != nil {
