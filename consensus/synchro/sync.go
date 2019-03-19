@@ -52,10 +52,11 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 		done:   new(sync.WaitGroup),
 	}
 
-	sync.done.Add(4)
-	go sync.heightSyncController()
-	go sync.blockhashSyncController()
-	go sync.blockSyncController()
+	sync.done.Add(5)
+	go sync.syncHeightController()
+	go sync.syncBlockhashController()
+	go sync.syncBlockController()
+	go sync.syncNewBlockController()
 	go sync.metricsController()
 
 	return sync
@@ -98,7 +99,7 @@ func (s *Sync) doHeightSync() {
 	s.p.Broadcast(msg, p2p.SyncHeight, p2p.UrgentMessage)
 }
 
-func (s *Sync) heightSyncController() {
+func (s *Sync) syncHeightController() {
 	for {
 		select {
 		case <-time.After(1 * time.Second):
@@ -128,7 +129,7 @@ func (s *Sync) doBlockhashSync() {
 	s.blockhashSync.RequestBlockHash(start, end)
 }
 
-func (s *Sync) blockhashSyncController() {
+func (s *Sync) syncBlockhashController() {
 	for {
 		select {
 		case <-time.After(2 * time.Second):
@@ -167,6 +168,18 @@ func (s *Sync) doBlockSync() {
 	}
 }
 
+func (s *Sync) syncBlockController() {
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			s.doBlockSync()
+		case <-s.quitCh:
+			s.done.Done()
+			return
+		}
+	}
+}
+
 func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 	// TODO: Confirm whether you need to judge the synchronization mode to skip directly.
 	_, err := s.bCache.Find(blockHash.Hash)
@@ -179,11 +192,9 @@ func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 	s.blockSync.RequestBlock(blockHash.Hash, blockHash.PeerID[0], p2p.NewBlockRequest)
 }
 
-func (s *Sync) blockSyncController() {
+func (s *Sync) syncNewBlockController() {
 	for {
 		select {
-		case <-time.After(2 * time.Second):
-			s.doBlockSync()
 		case blockHash := <-s.blockhashSync.NewBlockHashs():
 			s.doNewBlockSync(blockHash)
 		case <-s.quitCh:
