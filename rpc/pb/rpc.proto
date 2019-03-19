@@ -159,6 +159,12 @@ service ApiService {
         };
     }
 
+    rpc GetTokenInfo (GetTokenInfoRequest) returns (TokenInfo) {
+        option (google.api.http) = {
+            get: "/getTokenInfo/{symbol}/{by_longest_chain}"
+        };
+    }
+
 }
 
 // The message defines an empty request.
@@ -196,6 +202,8 @@ message NodeInfoResponse {
     string mode = 3;
     // network connection information
     NetworkInfo network = 4;
+    // code version string
+    string code_version = 5;
 }
 
 // The message defines transaction amount limit struct.
@@ -439,8 +447,14 @@ message ChainInfoResponse {
     string lib_block_hash = 7;
     // the current witness list
     repeated string witness_list = 8;
+    // the active witness list of lat irreversible block
     repeated string lib_witness_list = 9;
+    // the pending witness list
     repeated string pending_witness_list = 10;
+    // the head block time
+    int64 head_block_time = 11;
+    // the last irreversible block time
+    int64 lib_block_time = 12;
 }
 
 // The request message containing the tx's hash.
@@ -786,4 +800,30 @@ message VoterBonus {
 message CandidateBonus {
     // the candidate bonus
     double bonus = 1;
+}
+
+// The message defines the get tokeninfo request.
+message GetTokenInfoRequest {
+    // token symbol
+    string symbol = 1;
+    // get tokeninfo by longest chain's head block or last irreversible block
+    bool by_longest_chain = 2;
+}
+
+// The message defines the token information.
+message TokenInfo {
+    // token symbol
+    string symbol = 1;
+    // token full name
+    string full_name = 2;
+    // token issuer
+    string issuer = 3;
+    // the amount of total supply
+    int64 total_supply = 4;
+    // the amount of current supply
+    int64 current_supply = 5;
+    // token decimal
+    int32 decimal = 6;
+    // whether the token can be transfered
+    bool can_transfer = 7;
 }
