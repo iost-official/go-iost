@@ -219,14 +219,13 @@ func (p *PoB) scheduleLoop() {
 			time.Sleep(time.Millisecond)
 			if p.sync.IsCatchingUp() {
 				metricsMode.Set(float64(1), nil)
-				continue
 			} else {
 				metricsMode.Set(float64(0), nil)
 			}
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			if slotFlag != slotOfSec(t.Unix()) && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != slotOfSec(t.Unix()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = slotOfSec(t.Unix())
 				generateBlockTicker := time.NewTicker(subSlotTime)
