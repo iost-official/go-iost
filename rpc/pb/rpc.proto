@@ -440,6 +440,7 @@ message ChainInfoResponse {
     // the current witness list
     repeated string witness_list = 8;
     repeated string lib_witness_list = 9;
+    repeated string pending_witness_list = 10;
 }
 
 // The request message containing the tx's hash.
