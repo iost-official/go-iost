@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -24,10 +25,11 @@ type Sync struct {
 	bCache blockcache.BlockCache
 	bChain block.Chain
 
-	handler       *requestHandler
-	heightSync    *heightSync
-	blockhashSync *blockHashSync
-	blockSync     *blockSync
+	handler         *requestHandler
+	rangeController *rangeController
+	heightSync      *heightSync
+	blockhashSync   *blockHashSync
+	blockSync       *blockSync
 
 	quitCh chan struct{}
 	done   *sync.WaitGroup
@@ -40,10 +42,11 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 		bCache: bCache,
 		bChain: bChain,
 
-		handler:       newRequestHandler(p, bCache, bChain),
-		heightSync:    newHeightSync(p),
-		blockhashSync: newBlockHashSync(p),
-		blockSync:     newBlockSync(p),
+		handler:         newRequestHandler(p, bCache, bChain),
+		rangeController: newRangeController(bCache),
+		heightSync:      newHeightSync(p),
+		blockhashSync:   newBlockHashSync(p),
+		blockSync:       newBlockSync(p),
 
 		quitCh: make(chan struct{}),
 		done:   new(sync.WaitGroup),
@@ -113,13 +116,13 @@ func (s *Sync) doBlockhashSync() {
 		blockHashSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
 	}()
 
-	start := s.bCache.LinkedRoot().Head.Number + 1
-	end := s.heightSync.NeighborHeight()
+	start, end := s.rangeController.SyncRange()
+	nHeight := s.heightSync.NeighborHeight()
+	if nHeight < end {
+		end = nHeight
+	}
 	if start > end {
 		return
-	}
-	if end-start+1 > maxSyncRange {
-		end = start + maxSyncRange - 1
 	}
 
 	s.blockhashSync.RequestBlockHash(start, end)
@@ -143,13 +146,13 @@ func (s *Sync) doBlockSync() {
 		blockSyncTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
 	}()
 
-	start := s.bCache.LinkedRoot().Head.Number + 1
-	end := s.heightSync.NeighborHeight()
+	start, end := s.rangeController.SyncRange()
+	nHeight := s.heightSync.NeighborHeight()
+	if nHeight < end {
+		end = nHeight
+	}
 	if start > end {
 		return
-	}
-	if end-start+1 > maxSyncRange {
-		end = start + maxSyncRange - 1
 	}
 
 	ilog.Infof("Syncing block in [%v %v]...", start, end)
@@ -160,8 +163,20 @@ func (s *Sync) doBlockSync() {
 
 		rand.Seed(time.Now().UnixNano())
 		peerID := blockHash.PeerID[rand.Int()%len(blockHash.PeerID)]
-		s.blockSync.RequestBlock(blockHash.Hash, peerID)
+		s.blockSync.RequestBlock(blockHash.Hash, peerID, p2p.SyncBlockRequest)
 	}
+}
+
+func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
+	// TODO: Confirm whether you need to judge the synchronization mode to skip directly.
+	_, err := s.bCache.Find(blockHash.Hash)
+	if err == nil {
+		ilog.Debugf("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
+		return
+	}
+
+	// New block hash just have 0 number peer ID.
+	s.blockSync.RequestBlock(blockHash.Hash, blockHash.PeerID[0], p2p.NewBlockRequest)
 }
 
 func (s *Sync) blockSyncController() {
@@ -169,6 +184,8 @@ func (s *Sync) blockSyncController() {
 		select {
 		case <-time.After(2 * time.Second):
 			s.doBlockSync()
+		case blockHash := <-s.blockhashSync.NewBlockHashs():
+			s.doNewBlockSync(blockHash)
 		case <-s.quitCh:
 			s.done.Done()
 			return
