@@ -1145,6 +1145,12 @@
           "items": {
             "type": "string"
           }
+        },
+        "pending_witness_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
         }
       },
       "description": "The message defines chain information response."
