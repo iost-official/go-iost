@@ -76,6 +76,33 @@
         ]
       }
     },
+    "/getBatchContractStorage": {
+      "post": {
+        "summary": "get batch contract storage",
+        "operationId": "GetBatchContractStorage",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetBatchContractStorageResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetBatchContractStorageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getBlockByHash/{hash}/{complete}": {
       "get": {
         "summary": "get block by hash",
@@ -905,6 +932,20 @@
       "default": "CONTRACT_RECEIPT",
       "title": "- CONTRACT_RECEIPT: contract receipt\n - CONTRACT_EVENT: contract event"
     },
+    "GetBatchContractStorageRequestKeyField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "the key in StateDB"
+        },
+        "field": {
+          "type": "string",
+          "title": "get the value from StateDB, fields is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)"
+        }
+      },
+      "description": "The message defines GetContractStorage request params."
+    },
     "SignatureAlgorithm": {
       "type": "string",
       "enum": [
@@ -1278,6 +1319,50 @@
           "title": "median gas ratio in head block"
         }
       }
+    },
+    "rpcpbGetBatchContractStorageRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "contract id"
+        },
+        "key_fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GetBatchContractStorageRequestKeyField"
+          },
+          "title": "the batch query"
+        },
+        "by_longest_chain": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "get data by longest chain's head block or last irreversible block"
+        }
+      },
+      "description": "The message defines get batch contract storage request."
+    },
+    "rpcpbGetBatchContractStorageResponse": {
+      "type": "object",
+      "properties": {
+        "datas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "the repeated json string data"
+        },
+        "block_hash": {
+          "type": "string",
+          "title": "block hash"
+        },
+        "block_number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
+        }
+      },
+      "description": "The message defines get batch contract storage response."
     },
     "rpcpbGetContractStorageFieldsRequest": {
       "type": "object",
