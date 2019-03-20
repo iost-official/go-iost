@@ -51,6 +51,7 @@ func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.Bas
 		p2pService: p2pService,
 		txpool:     tp,
 		blockchain: bv.BlockChain(),
+		consensus:  consensus,
 		bc:         bcache,
 		bv:         bv,
 		quitCh:     quitCh,
