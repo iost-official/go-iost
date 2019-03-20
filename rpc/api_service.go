@@ -63,6 +63,7 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		CodeVersion: global.CodeVersion,
 		Mode:        as.bv.Mode().String(),
 		Network:     &rpcpb.NetworkInfo{},
+		ServerTime:  time.Now().UnixNano(),
 	}
 	p2pNeighbors := as.p2pService.GetAllNeighbors()
 	networkInfo := &rpcpb.NetworkInfo{

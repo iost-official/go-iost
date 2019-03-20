@@ -204,6 +204,8 @@ message NodeInfoResponse {
     NetworkInfo network = 4;
     // code version string
     string code_version = 5;
+    // server time
+    int64 server_time = 6;
 }
 
 // The message defines transaction amount limit struct.

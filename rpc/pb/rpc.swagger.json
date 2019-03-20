@@ -1495,6 +1495,11 @@
         "code_version": {
           "type": "string",
           "title": "code version string"
+        },
+        "server_time": {
+          "type": "string",
+          "format": "int64",
+          "title": "server time"
         }
       },
       "description": "The message containing the node's information."
