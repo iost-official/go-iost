@@ -10,6 +10,9 @@ var BuildTime string
 // GitHash git hash
 var GitHash string
 
+// CodeVersion is the version string of code
+var CodeVersion string
+
 var globalConf *common.Config
 
 // SetGlobalConf ...
