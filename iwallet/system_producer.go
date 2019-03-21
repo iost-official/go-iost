@@ -248,7 +248,10 @@ var predeemCmd = &cobra.Command{
 		if len(args) > 0 {
 			amount = args[0]
 		}
-		return saveOrSendAction("bonus.iost", "exchangeIOST", accountName, amount)
+		if target == "" {
+			target = accountName
+		}
+		return saveOrSendAction("bonus.iost", "exchangeIOST", target, amount)
 	},
 }
 
@@ -317,6 +320,7 @@ func init() {
 	pupdateCmd.Flags().StringVarP(&networkID, "net_id", "", "", "network ID")
 
 	systemCmd.AddCommand(predeemCmd)
+	predeemCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 	systemCmd.AddCommand(pwithdrawCmd)
 	pwithdrawCmd.Flags().StringVarP(&target, "target", "", "", "target account (default is the account by flag --account himself/herself)")
 	systemCmd.AddCommand(vwithdrawCmd)
