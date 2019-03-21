@@ -1,6 +1,6 @@
 {
     "lang": "javascript",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "abi": [
         {
             "name": "can_update",
