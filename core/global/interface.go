@@ -13,7 +13,4 @@ type BaseVariable interface {
 	StateDB() db.MVCCDB
 	Config() *common.Config
 	BlockChain() block.Chain
-	Mode() TMode
-	SetMode(m TMode)
-	Continuous() int
 }
