@@ -87,6 +87,7 @@ func main() {
 
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
+	ilog.Infof("code version:%v", global.CodeVersion)
 
 	err := initMetrics(conf.Metrics)
 	if err != nil {

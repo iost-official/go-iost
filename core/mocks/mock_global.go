@@ -8,7 +8,6 @@ import (
 	gomock "github.com/golang/mock/gomock"
 	common "github.com/iost-official/go-iost/common"
 	block "github.com/iost-official/go-iost/core/block"
-	global "github.com/iost-official/go-iost/core/global"
 	db "github.com/iost-official/go-iost/db"
 	reflect "reflect"
 )
@@ -58,40 +57,6 @@ func (m *MockBaseVariable) Config() *common.Config {
 // Config indicates an expected call of Config
 func (mr *MockBaseVariableMockRecorder) Config() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Config", reflect.TypeOf((*MockBaseVariable)(nil).Config))
-}
-
-// Continuous mocks base method
-func (m *MockBaseVariable) Continuous() int {
-	ret := m.ctrl.Call(m, "Continuous")
-	ret0, _ := ret[0].(int)
-	return ret0
-}
-
-// Continuous indicates an expected call of Continuous
-func (mr *MockBaseVariableMockRecorder) Continuous() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Continuous", reflect.TypeOf((*MockBaseVariable)(nil).Continuous))
-}
-
-// Mode mocks base method
-func (m *MockBaseVariable) Mode() global.TMode {
-	ret := m.ctrl.Call(m, "Mode")
-	ret0, _ := ret[0].(global.TMode)
-	return ret0
-}
-
-// Mode indicates an expected call of Mode
-func (mr *MockBaseVariableMockRecorder) Mode() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Mode", reflect.TypeOf((*MockBaseVariable)(nil).Mode))
-}
-
-// SetMode mocks base method
-func (m *MockBaseVariable) SetMode(arg0 global.TMode) {
-	m.ctrl.Call(m, "SetMode", arg0)
-}
-
-// SetMode indicates an expected call of SetMode
-func (mr *MockBaseVariableMockRecorder) SetMode(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetMode", reflect.TypeOf((*MockBaseVariable)(nil).SetMode), arg0)
 }
 
 // StateDB mocks base method

@@ -67,7 +67,11 @@ func (r *rangeController) updateStart() {
 	if head > r.head {
 		// Normal case
 		r.head = head
-		r.setStart(head - maxSyncRange/2)
+		if lib+1 < r.head-maxSyncRange/2 {
+			r.setStart(r.head - maxSyncRange/2)
+		} else {
+			r.setStart(lib + 1)
+		}
 	} else {
 		// When the network does not reach a consensus for a long time.
 		r.setStart(lib + 1)

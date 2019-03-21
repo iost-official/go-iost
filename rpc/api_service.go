@@ -15,6 +15,7 @@ import (
 	"github.com/iost-official/go-iost/vm"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -38,17 +39,19 @@ type APIService struct {
 	p2pService p2p.Service
 	txpool     txpool.TxPool
 	blockchain block.Chain
+	consensus  consensus.Consensus
 	bv         global.BaseVariable
 
 	quitCh chan struct{}
 }
 
 // NewAPIService returns a new APIService instance.
-func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, quitCh chan struct{}) *APIService {
+func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, consensus consensus.Consensus, quitCh chan struct{}) *APIService {
 	return &APIService{
 		p2pService: p2pService,
 		txpool:     tp,
 		blockchain: bv.BlockChain(),
+		consensus:  consensus,
 		bc:         bcache,
 		bv:         bv,
 		quitCh:     quitCh,
@@ -58,10 +61,12 @@ func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.Bas
 // GetNodeInfo returns information abount node.
 func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.NodeInfoResponse, error) {
 	res := &rpcpb.NodeInfoResponse{
-		BuildTime: global.BuildTime,
-		GitHash:   global.GitHash,
-		Mode:      as.bv.Mode().String(),
-		Network:   &rpcpb.NetworkInfo{},
+		BuildTime:   global.BuildTime,
+		GitHash:     global.GitHash,
+		CodeVersion: global.CodeVersion,
+		Mode:        as.consensus.Mode(),
+		Network:     &rpcpb.NetworkInfo{},
+		ServerTime:  time.Now().UnixNano(),
 	}
 	p2pNeighbors := as.p2pService.GetAllNeighbors()
 	networkInfo := &rpcpb.NetworkInfo{
@@ -98,15 +103,18 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 		version = as.bv.Config().Version.ProtocolVersion
 	}
 	return &rpcpb.ChainInfoResponse{
-		NetName:         netName,
-		ProtocolVersion: version,
-		ChainId:         as.bv.Config().P2P.ChainID,
-		WitnessList:     head.Active(),
-		LibWitnessList:  lib.Active(),
-		HeadBlock:       head.Head.Number,
-		HeadBlockHash:   common.Base58Encode(head.HeadHash()),
-		LibBlock:        lib.Head.Number,
-		LibBlockHash:    common.Base58Encode(lib.HeadHash()),
+		NetName:            netName,
+		ProtocolVersion:    version,
+		ChainId:            as.bv.Config().P2P.ChainID,
+		WitnessList:        head.Active(),
+		LibWitnessList:     lib.Active(),
+		PendingWitnessList: head.Pending(),
+		HeadBlock:          head.Head.Number,
+		HeadBlockHash:      common.Base58Encode(head.HeadHash()),
+		LibBlock:           lib.Head.Number,
+		LibBlockHash:       common.Base58Encode(lib.HeadHash()),
+		HeadBlockTime:      head.Head.Time,
+		LibBlockTime:       lib.Head.Time,
 	}, nil
 }
 
@@ -256,12 +264,9 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 	// pack frozen balance information
 	frozen := dbVisitor.AllFreezedTokenBalanceFixed("iost", req.GetName())
-	for _, f := range frozen {
-		ret.FrozenBalances = append(ret.FrozenBalances, &rpcpb.FrozenBalance{
-			Amount: f.Amount.ToFloat(),
-			Time:   f.Ftime,
-		})
-	}
+	unfrozen, stillFrozen := as.getUnfrozenToken(frozen, req.ByLongestChain)
+	ret.FrozenBalances = stillFrozen
+	ret.Balance += unfrozen
 
 	voteInfo := dbVisitor.GetAccountVoteInfo(req.GetName())
 	for _, v := range voteInfo {
@@ -288,16 +293,10 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 	balance := dbVisitor.TokenBalanceFixed(req.GetToken(), req.GetAccount()).ToFloat()
 	// pack frozen balance information
 	frozen := dbVisitor.AllFreezedTokenBalanceFixed(req.GetToken(), req.GetAccount())
-	frozenBalances := make([]*rpcpb.FrozenBalance, 0)
-	for _, f := range frozen {
-		frozenBalances = append(frozenBalances, &rpcpb.FrozenBalance{
-			Amount: f.Amount.ToFloat(),
-			Time:   f.Ftime,
-		})
-	}
+	unfrozen, stillFrozen := as.getUnfrozenToken(frozen, req.ByLongestChain)
 	return &rpcpb.GetTokenBalanceResponse{
-		Balance:        balance,
-		FrozenBalances: frozenBalances,
+		Balance:        balance + unfrozen,
+		FrozenBalances: stillFrozen,
 	}, nil
 }
 
@@ -431,6 +430,48 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 	}
 	return &rpcpb.GetContractStorageResponse{
 		Data:        data,
+		BlockHash:   common.Base58Encode(bcn.HeadHash()),
+		BlockNumber: bcn.Head.Number,
+	}, nil
+}
+
+// GetBatchContractStorage returns contract storage corresponding to the given keys and fields.
+func (as *APIService) GetBatchContractStorage(ctx context.Context, req *rpcpb.GetBatchContractStorageRequest) (*rpcpb.GetBatchContractStorageResponse, error) {
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	var datas []string
+
+	keyFields := req.GetKeyFields()
+	if len(keyFields) > 50 {
+		keyFields = keyFields[:50]
+	}
+
+	for _, keyField := range keyFields {
+		var data string
+		var value interface{}
+		switch {
+		case keyField.Field == "":
+			value, _ = h.GlobalGet(req.GetId(), keyField.Key)
+		default:
+			value, _ = h.GlobalMapGet(req.GetId(), keyField.Key, keyField.Field)
+		}
+		if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
+			data = value.(string)
+		} else {
+			bytes, err := json.Marshal(value)
+			if err != nil {
+				return nil, fmt.Errorf("cannot unmarshal %v", value)
+			}
+			data = string(bytes)
+		}
+		datas = append(datas, data)
+	}
+
+	return &rpcpb.GetBatchContractStorageResponse{
+		Datas:       datas,
 		BlockHash:   common.Base58Encode(bcn.HeadHash()),
 		BlockNumber: bcn.Head.Number,
 	}, nil
@@ -691,6 +732,50 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 	return ret, nil
 }
 
+// GetTokenInfo returns the information of a given token.
+func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoRequest) (*rpcpb.TokenInfo, error) {
+	var token404 = errors.New("token not found")
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+
+	symbol := req.GetSymbol()
+	ret := &rpcpb.TokenInfo{Symbol: symbol}
+	value, _ := h.GlobalMapGet("token.iost", "TI"+symbol, "fullName")
+	if value == nil {
+		return nil, token404
+	}
+	ret.FullName = value.(string)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "issuer")
+	if value == nil {
+		return nil, token404
+	}
+	ret.Issuer = value.(string)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "supply")
+	if value == nil {
+		return nil, token404
+	}
+	ret.CurrentSupply = value.(int64)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "totalSupply")
+	if value == nil {
+		return nil, token404
+	}
+	ret.TotalSupply = value.(int64)
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "decimal")
+	if value == nil {
+		return nil, token404
+	}
+	ret.Decimal = int32(value.(int64))
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "canTransfer")
+	if value == nil {
+		return nil, token404
+	}
+	ret.CanTransfer = value.(bool)
+	return ret, nil
+}
+
 func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
 	stateDB := as.bv.StateDB().Fork()
 	ok := stateDB.Checkout(string(hash))
@@ -726,4 +811,26 @@ func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, *
 		return db, b, nil
 	}
 	return nil, nil, err
+}
+
+func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemFixed, longestChain bool) (float64, []*rpcpb.FrozenBalance) {
+	var blockTime int64
+	if longestChain {
+		blockTime = as.bc.Head().Head.Time
+	} else {
+		blockTime = as.bc.LinkedRoot().Head.Time
+	}
+	var unfrozen float64
+	var stillFrozen []*rpcpb.FrozenBalance
+	for _, f := range frozens {
+		if f.Ftime <= blockTime {
+			unfrozen += f.Amount.ToFloat()
+		} else {
+			stillFrozen = append(stillFrozen, &rpcpb.FrozenBalance{
+				Amount: f.Amount.ToFloat(),
+				Time:   f.Ftime,
+			})
+		}
+	}
+	return unfrozen, stillFrozen
 }
