@@ -80,10 +80,9 @@ func (s *Sync) IncomingBlock() <-chan *BlockMessage {
 	return s.blockSync.IncomingBlock()
 }
 
-// NeighborHeight will return the median of the head height of the neighbor nodes.
-// If the number of neighbor nodes is less than leastNeighborNumber, return -1.
-func (s *Sync) NeighborHeight() int64 {
-	return s.heightSync.NeighborHeight()
+// IsCatchingUp will return whether it is catching up with other nodes.
+func (s *Sync) IsCatchingUp() bool {
+	return s.bCache.Head().Head.Number+120 < s.heightSync.NeighborHeight()
 }
 
 func (s *Sync) doHeightSync() {
