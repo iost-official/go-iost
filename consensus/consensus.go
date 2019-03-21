@@ -21,6 +21,7 @@ const (
 type Consensus interface {
 	Start() error
 	Stop()
+	Mode() string
 }
 
 // New returns the different consensus strategy.
