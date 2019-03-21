@@ -68,6 +68,8 @@ func (r *rangeController) updateStart() {
 		// Normal case
 		r.head = head
 		if lib+1 < r.head-maxSyncRange/2 {
+			// TODO: This affects the maximum synchronization speed.
+			// Sync End: head+500 is not enough. head+1000 is ok.
 			r.setStart(r.head - maxSyncRange/2)
 		} else {
 			r.setStart(lib + 1)
