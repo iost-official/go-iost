@@ -97,9 +97,6 @@ func TestNewTxPImpl(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-			return database.MustMarshal("4"), nil
-		})
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})
@@ -279,9 +276,6 @@ func TestNewTxPImplB(t *testing.T) {
 		statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 		statedb.EXPECT().Close().AnyTimes()
 
-		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-			return database.MustMarshal("4"), nil
-		})
 		statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 			return database.MustMarshal("[\"a1\",\"a2\",\"a3\",\"a4\"]"), nil
 		})

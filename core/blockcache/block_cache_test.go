@@ -58,9 +58,6 @@ func TestBlockCache(t *testing.T) {
 	statedb.EXPECT().Checkout(Any()).AnyTimes().Return(true)
 	statedb.EXPECT().Size().AnyTimes().Return(int64(10000), nil)
 
-	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-		return database.MustMarshal("1"), nil
-	})
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal("[\"aaaa\",\"bbbbb\"]"), nil
 	})
@@ -226,9 +223,6 @@ func TestVote(t *testing.T) {
 
 	tpl := "[\"a1\",\"a2\",\"a3\",\"a4\",\"a5\"]"
 	//tpl1 := "[\"b1\",\"b2\",\"b3\",\"b4\",\"b5\"]"
-	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingBlockNumber").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
-		return database.MustMarshal("5"), nil
-	})
 	statedb.EXPECT().Get("state", "b-vote_producer.iost-"+"pendingProducerList").AnyTimes().DoAndReturn(func(table string, key string) (string, error) {
 		return database.MustMarshal(tpl), nil
 	})
