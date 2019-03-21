@@ -69,7 +69,7 @@ func (b *blockSync) IncomingBlock() <-chan *BlockMessage {
 	return b.blockCh
 }
 
-func (b *blockSync) RequestBlock(hash []byte, peerID p2p.PeerID) {
+func (b *blockSync) RequestBlock(hash []byte, peerID p2p.PeerID, mtype p2p.MessageType) {
 	// Filter duplicate requests in the short term
 	_, found := b.requestCache.Get(string(hash))
 	if found {
@@ -89,7 +89,7 @@ func (b *blockSync) RequestBlock(hash []byte, peerID p2p.PeerID) {
 		return
 	}
 
-	b.p.SendToPeer(peerID, msg, p2p.SyncBlockRequest, p2p.UrgentMessage)
+	b.p.SendToPeer(peerID, msg, mtype, p2p.UrgentMessage)
 }
 
 func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {

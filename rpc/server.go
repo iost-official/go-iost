@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/txpool"
@@ -47,7 +48,7 @@ func p(pp interface{}) error {
 }
 
 // New returns a new rpc server instance.
-func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service) *Server {
+func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, consensus consensus.Consensus) *Server {
 	s := &Server{
 		grpcAddr:     bv.Config().RPC.GRPCAddr,
 		gatewayAddr:  bv.Config().RPC.GatewayAddr,
@@ -69,7 +70,7 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 			),
 		),
 		grpc.MaxConcurrentStreams(maxConcurrentStreams))
-	apiService := NewAPIService(tp, bc, bv, p2pService, s.quitCh)
+	apiService := NewAPIService(tp, bc, bv, p2pService, consensus, s.quitCh)
 	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
 	return s
 }

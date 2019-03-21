@@ -60,6 +60,19 @@ func (mr *MockApiServiceServerMockRecorder) GetAccount(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccount", reflect.TypeOf((*MockApiServiceServer)(nil).GetAccount), arg0, arg1)
 }
 
+// GetBatchContractStorage mocks base method
+func (m *MockApiServiceServer) GetBatchContractStorage(arg0 context.Context, arg1 *pb.GetBatchContractStorageRequest) (*pb.GetBatchContractStorageResponse, error) {
+	ret := m.ctrl.Call(m, "GetBatchContractStorage", arg0, arg1)
+	ret0, _ := ret[0].(*pb.GetBatchContractStorageResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBatchContractStorage indicates an expected call of GetBatchContractStorage
+func (mr *MockApiServiceServerMockRecorder) GetBatchContractStorage(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBatchContractStorage", reflect.TypeOf((*MockApiServiceServer)(nil).GetBatchContractStorage), arg0, arg1)
+}
+
 // GetBlockByHash mocks base method
 func (m *MockApiServiceServer) GetBlockByHash(arg0 context.Context, arg1 *pb.GetBlockByHashRequest) (*pb.BlockResponse, error) {
 	ret := m.ctrl.Call(m, "GetBlockByHash", arg0, arg1)
@@ -253,6 +266,19 @@ func (m *MockApiServiceServer) GetTokenBalance(arg0 context.Context, arg1 *pb.Ge
 // GetTokenBalance indicates an expected call of GetTokenBalance
 func (mr *MockApiServiceServerMockRecorder) GetTokenBalance(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTokenBalance", reflect.TypeOf((*MockApiServiceServer)(nil).GetTokenBalance), arg0, arg1)
+}
+
+// GetTokenInfo mocks base method
+func (m *MockApiServiceServer) GetTokenInfo(arg0 context.Context, arg1 *pb.GetTokenInfoRequest) (*pb.TokenInfo, error) {
+	ret := m.ctrl.Call(m, "GetTokenInfo", arg0, arg1)
+	ret0, _ := ret[0].(*pb.TokenInfo)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetTokenInfo indicates an expected call of GetTokenInfo
+func (mr *MockApiServiceServerMockRecorder) GetTokenInfo(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTokenInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetTokenInfo), arg0, arg1)
 }
 
 // GetTxByHash mocks base method

@@ -70,7 +70,8 @@ func (r *requestHandler) getBlockHashResponse(start int64, end int64) *msgpb.Blo
 		if blk, err := r.bCache.GetBlockByNumber(num); err != nil {
 			hash, err = r.bChain.GetHashByNumber(num)
 			if err != nil {
-				ilog.Warnf("Get hash by num %v failed: %v", num, err)
+				ilog.Debugf("Get hash by num %v failed: %v", num, err)
+				// TODO: Maybe should break.
 				continue
 			}
 		} else {
