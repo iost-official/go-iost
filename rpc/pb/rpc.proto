@@ -115,6 +115,14 @@ service ApiService {
         };
     }
 
+    // get batch contract storage
+    rpc GetBatchContractStorage (GetBatchContractStorageRequest) returns (GetBatchContractStorageResponse) {
+        option (google.api.http) = {
+            post: "/getBatchContractStorage"
+            body: "*"
+        };
+    }
+
     // get contract fields storage
     rpc GetContractStorageFields (GetContractStorageFieldsRequest) returns (GetContractStorageFieldsResponse) {
         option (google.api.http) = {
@@ -204,6 +212,8 @@ message NodeInfoResponse {
     NetworkInfo network = 4;
     // code version string
     string code_version = 5;
+    // server time
+    int64 server_time = 6;
 }
 
 // The message defines transaction amount limit struct.
@@ -676,6 +686,34 @@ message GetContractStorageRequest {
 message GetContractStorageResponse {
     // the json string data
     string data = 1;
+    // block hash
+    string block_hash = 2;
+    // block number
+    int64 block_number = 3;
+}
+
+// The message defines get batch contract storage request.
+message GetBatchContractStorageRequest {
+    // contract id
+    string id = 1;
+
+    // The message defines GetContractStorage request params.
+    message KeyField {
+        // the key in StateDB
+        string key = 1;
+        // get the value from StateDB, fields is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)
+        string field = 2;
+    }
+    // the batch query
+    repeated KeyField key_fields = 2;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 3;
+}
+
+// The message defines get batch contract storage response.
+message GetBatchContractStorageResponse {
+    // the repeated json string data
+    repeated string datas = 1;
     // block hash
     string block_hash = 2;
     // block number

@@ -66,6 +66,7 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		CodeVersion: global.CodeVersion,
 		Mode:        as.consensus.Mode(),
 		Network:     &rpcpb.NetworkInfo{},
+		ServerTime:  time.Now().UnixNano(),
 	}
 	p2pNeighbors := as.p2pService.GetAllNeighbors()
 	networkInfo := &rpcpb.NetworkInfo{
@@ -429,6 +430,48 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 	}
 	return &rpcpb.GetContractStorageResponse{
 		Data:        data,
+		BlockHash:   common.Base58Encode(bcn.HeadHash()),
+		BlockNumber: bcn.Head.Number,
+	}, nil
+}
+
+// GetBatchContractStorage returns contract storage corresponding to the given keys and fields.
+func (as *APIService) GetBatchContractStorage(ctx context.Context, req *rpcpb.GetBatchContractStorageRequest) (*rpcpb.GetBatchContractStorageResponse, error) {
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	var datas []string
+
+	keyFields := req.GetKeyFields()
+	if len(keyFields) > 50 {
+		keyFields = keyFields[:50]
+	}
+
+	for _, keyField := range keyFields {
+		var data string
+		var value interface{}
+		switch {
+		case keyField.Field == "":
+			value, _ = h.GlobalGet(req.GetId(), keyField.Key)
+		default:
+			value, _ = h.GlobalMapGet(req.GetId(), keyField.Key, keyField.Field)
+		}
+		if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
+			data = value.(string)
+		} else {
+			bytes, err := json.Marshal(value)
+			if err != nil {
+				return nil, fmt.Errorf("cannot unmarshal %v", value)
+			}
+			data = string(bytes)
+		}
+		datas = append(datas, data)
+	}
+
+	return &rpcpb.GetBatchContractStorageResponse{
+		Datas:       datas,
 		BlockHash:   common.Base58Encode(bcn.HeadHash()),
 		BlockNumber: bcn.Head.Number,
 	}, nil
