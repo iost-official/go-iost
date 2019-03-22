@@ -1,3 +1,11 @@
+## v3.0.5
+
+Fri Mar 22 13:55:49 CST 2019
+
+- Add new RPC api.
+- Add refine amount.
+- Optimize synchronization logic.
+
 ## v3.0.4
 
 Sat Mar 16 20:58:46 CST 2019
