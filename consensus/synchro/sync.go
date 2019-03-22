@@ -76,13 +76,28 @@ func (s *Sync) Close() {
 
 // IncomingBlock will return the blocks from other nodes.
 // Including passive request and active broadcast.
-func (s *Sync) IncomingBlock() <-chan *BlockMessage {
+func (s *Sync) IncomingBlock() <-chan *block.Block {
 	return s.blockSync.IncomingBlock()
 }
 
 // IsCatchingUp will return whether it is catching up with other nodes.
 func (s *Sync) IsCatchingUp() bool {
 	return s.bCache.Head().Head.Number+120 < s.heightSync.NeighborHeight()
+}
+
+// BroadcastBlockInfo will broadcast new block information to neighbor nodes.
+func (s *Sync) BroadcastBlockInfo(block *block.Block) {
+	// The block.Head.Number may not be used.
+	blockInfo := &msgpb.BlockInfo{
+		Number: block.Head.Number,
+		Hash:   block.HeadHash(),
+	}
+	msg, err := proto.Marshal(blockInfo)
+	if err != nil {
+		ilog.Errorf("Marshal sync height message failed: %v", err)
+		return
+	}
+	s.p.Broadcast(msg, p2p.NewBlockHash, p2p.UrgentMessage)
 }
 
 func (s *Sync) doHeightSync() {

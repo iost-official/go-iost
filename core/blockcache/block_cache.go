@@ -54,14 +54,14 @@ var (
 // BlockCacheNode is the implementation of BlockCacheNode
 type BlockCacheNode struct { //nolint:golint
 	*block.Block
+	WitnessList
 	rw           sync.RWMutex
 	parent       *BlockCacheNode
 	Children     map[*BlockCacheNode]bool
 	Type         BCNType
 	walIndex     uint64
 	ValidWitness []string
-	WitnessList
-	SerialNum int64
+	SerialNum    int64
 }
 
 // GetParent returns the node's parent node.
