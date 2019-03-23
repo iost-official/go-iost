@@ -232,6 +232,7 @@ func (p *PoB) scheduleLoop() {
 func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) {
 	now := time.Now().UnixNano()
 	defer func() {
+		// TODO: Confirm the most appropriate metrics definition.
 		generateBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
 		generateBlockCount.Add(1, nil)
 	}()

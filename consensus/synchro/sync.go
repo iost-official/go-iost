@@ -195,7 +195,19 @@ func (s *Sync) syncBlockController() {
 }
 
 func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
-	// TODO: Confirm whether you need to judge the synchronization mode to skip directly.
+	if s.IsCatchingUp() {
+		// Synchronous mode does not process new block.
+		return
+	}
+
+	// May not need to judge number.
+	lib := s.bCache.LinkedRoot().Head.Number
+	head := s.bCache.Head().Head.Number
+	if (blockHash.Number <= lib) || (blockHash.Number > head+1000) {
+		ilog.Debugf("New block hash exceed range %v to %v.", lib, head+1000)
+		return
+	}
+
 	_, err := s.bCache.Find(blockHash.Hash)
 	if err == nil {
 		ilog.Debugf("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
