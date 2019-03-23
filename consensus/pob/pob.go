@@ -269,7 +269,7 @@ func (p *PoB) printStatistics(num int64, blk *block.Block) {
 		action = "Gen"
 	}
 	ptx, _ := p.txPool.PendingTx()
-	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%fms",
+	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%.0fms",
 		action,
 		num,
 		blk.Head.Witness[:10],
