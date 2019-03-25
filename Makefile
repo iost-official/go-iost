@@ -1,6 +1,6 @@
 GO = go
 
-VERSION = 3.0.1
+VERSION = 3.0.5
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -21,7 +21,7 @@ ifeq ($(shell uname),Linux)
 	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
 endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
-LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD)
+LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD) -X github.com/iost-official/go-iost/core/global.CodeVersion=$(VERSION)
 
 .PHONY: all build iserver iwallet itest lint test e2e_test k8s_test image push devimage swagger protobuf install clean debug clear_debug_file
 

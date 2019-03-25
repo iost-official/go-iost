@@ -5,7 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -20,6 +20,7 @@ const (
 // BlockHash return the block hash with the Peers that have it.
 type BlockHash struct {
 	Hash   []byte
+	Number int64
 	PeerID []p2p.PeerID
 }
 
@@ -28,12 +29,15 @@ type blockHashs struct {
 	time  int64
 }
 
+// blockHashSync is responsible for maintaining the recent blockhash status of neighbor nodes.
 type blockHashSync struct {
 	p                  p2p.Service
+	newBlockHashCh     chan *BlockHash
 	neighborBlockHashs map[p2p.PeerID]*blockHashs
 	mutex              *sync.RWMutex
 
-	msgCh chan p2p.IncomingMessage
+	msg1Ch chan p2p.IncomingMessage
+	msg2Ch chan p2p.IncomingMessage
 
 	quitCh chan struct{}
 	done   *sync.WaitGroup
@@ -42,16 +46,19 @@ type blockHashSync struct {
 func newBlockHashSync(p p2p.Service) *blockHashSync {
 	b := &blockHashSync{
 		p:                  p,
+		newBlockHashCh:     make(chan *BlockHash, 1024),
 		neighborBlockHashs: make(map[p2p.PeerID]*blockHashs),
 		mutex:              new(sync.RWMutex),
 
-		msgCh: p.Register("sync block hash response", p2p.SyncBlockHashResponse),
+		msg1Ch: p.Register("new block hash", p2p.NewBlockHash),
+		msg2Ch: p.Register("sync block hash response", p2p.SyncBlockHashResponse),
 
 		quitCh: make(chan struct{}),
 		done:   new(sync.WaitGroup),
 	}
 
-	b.done.Add(2)
+	b.done.Add(3)
+	go b.newBlockHashController()
 	go b.syncBlockHashResponseController()
 	go b.expirationController()
 
@@ -62,6 +69,11 @@ func (b *blockHashSync) Close() {
 	close(b.quitCh)
 	b.done.Wait()
 	ilog.Infof("Stopped block hash sync.")
+}
+
+// NewBlockHashs will return received new block hash.
+func (b *blockHashSync) NewBlockHashs() <-chan *BlockHash {
+	return b.newBlockHashCh
 }
 
 // NeighborBlockHashs will return all block hashs of neighbor nodes between start height and end height.
@@ -79,6 +91,7 @@ func (b *blockHashSync) NeighborBlockHashs(start, end int64) <-chan *BlockHash {
 				} else {
 					hashs[key] = &BlockHash{
 						Hash:   blockHashs.hashs[num],
+						Number: num,
 						PeerID: []p2p.PeerID{peerID},
 					}
 				}
@@ -131,6 +144,34 @@ func (b *blockHashSync) RequestBlockHash(start, end int64) {
 	}
 }
 
+func (b *blockHashSync) handleNewBlockHash(msg *p2p.IncomingMessage) {
+	blockInfo := &msgpb.BlockInfo{}
+	err := proto.Unmarshal(msg.Data(), blockInfo)
+	if err != nil {
+		ilog.Warnf("Unmarshal new block hash failed: %v", err)
+		return
+	}
+
+	blockHash := &BlockHash{
+		Hash:   blockInfo.Hash,
+		Number: blockInfo.Number,
+		PeerID: []p2p.PeerID{msg.From()},
+	}
+	b.newBlockHashCh <- blockHash
+}
+
+func (b *blockHashSync) newBlockHashController() {
+	for {
+		select {
+		case msg := <-b.msg1Ch:
+			b.handleNewBlockHash(&msg)
+		case <-b.quitCh:
+			b.done.Done()
+			return
+		}
+	}
+}
+
 func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
 	if msg.Type() != p2p.SyncBlockHashResponse {
 		ilog.Warnf("Expect the type %v, but get a unexpected type %v", p2p.SyncBlockHashResponse, msg.Type())
@@ -176,7 +217,7 @@ func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
 func (b *blockHashSync) syncBlockHashResponseController() {
 	for {
 		select {
-		case msg := <-b.msgCh:
+		case msg := <-b.msg2Ch:
 			b.handleSyncBlockHashResponse(&msg)
 		case <-b.quitCh:
 			b.done.Done()

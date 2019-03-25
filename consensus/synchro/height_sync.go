@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/consensus/synchronizer/pb"
+	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -16,6 +16,7 @@ const (
 	heightExpiredSeconds = 60
 )
 
+// heightSync is responsible for maintaining the height of neighbor nodes.
 type heightSync struct {
 	neighborHeight map[p2p.PeerID]*msgpb.SyncHeight
 	mutex          *sync.RWMutex

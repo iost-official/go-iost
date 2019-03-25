@@ -521,6 +521,23 @@ func request_ApiService_GetContractStorage_0(ctx context.Context, marshaler runt
 
 }
 
+func request_ApiService_GetBatchContractStorage_0(ctx context.Context, marshaler runtime.Marshaler, client ApiServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetBatchContractStorageRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.GetBatchContractStorage(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
 func request_ApiService_GetContractStorageFields_0(ctx context.Context, marshaler runtime.Marshaler, client ApiServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
 	var protoReq GetContractStorageFieldsRequest
 	var metadata runtime.ServerMetadata
@@ -669,6 +686,44 @@ func request_ApiService_GetCandidateBonus_0(ctx context.Context, marshaler runti
 	}
 
 	msg, err := client.GetCandidateBonus(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func request_ApiService_GetTokenInfo_0(ctx context.Context, marshaler runtime.Marshaler, client ApiServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq GetTokenInfoRequest
+	var metadata runtime.ServerMetadata
+
+	var (
+		val string
+		ok  bool
+		err error
+		_   = err
+	)
+
+	val, ok = pathParams["symbol"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "symbol")
+	}
+
+	protoReq.Symbol, err = runtime.String(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "symbol", err)
+	}
+
+	val, ok = pathParams["by_longest_chain"]
+	if !ok {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "missing parameter %s", "by_longest_chain")
+	}
+
+	protoReq.ByLongestChain, err = runtime.Bool(val)
+
+	if err != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "type mismatch, parameter: %s, error: %v", "by_longest_chain", err)
+	}
+
+	msg, err := client.GetTokenInfo(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
@@ -1031,6 +1086,26 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
+	mux.Handle("POST", pattern_ApiService_GetBatchContractStorage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ApiService_GetBatchContractStorage_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ApiService_GetBatchContractStorage_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("POST", pattern_ApiService_GetContractStorageFields_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1151,6 +1226,26 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
+	mux.Handle("GET", pattern_ApiService_GetTokenInfo_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ApiService_GetTokenInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ApiService_GetTokenInfo_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	return nil
 }
 
@@ -1187,6 +1282,8 @@ var (
 
 	pattern_ApiService_GetContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorage"}, ""))
 
+	pattern_ApiService_GetBatchContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getBatchContractStorage"}, ""))
+
 	pattern_ApiService_GetContractStorageFields_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorageFields"}, ""))
 
 	pattern_ApiService_SendTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"sendTx"}, ""))
@@ -1198,6 +1295,8 @@ var (
 	pattern_ApiService_GetVoterBonus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getVoterBonus", "name", "by_longest_chain"}, ""))
 
 	pattern_ApiService_GetCandidateBonus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getCandidateBonus", "name", "by_longest_chain"}, ""))
+
+	pattern_ApiService_GetTokenInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getTokenInfo", "symbol", "by_longest_chain"}, ""))
 )
 
 var (
@@ -1233,6 +1332,8 @@ var (
 
 	forward_ApiService_GetContractStorage_0 = runtime.ForwardResponseMessage
 
+	forward_ApiService_GetBatchContractStorage_0 = runtime.ForwardResponseMessage
+
 	forward_ApiService_GetContractStorageFields_0 = runtime.ForwardResponseMessage
 
 	forward_ApiService_SendTransaction_0 = runtime.ForwardResponseMessage
@@ -1244,4 +1345,6 @@ var (
 	forward_ApiService_GetVoterBonus_0 = runtime.ForwardResponseMessage
 
 	forward_ApiService_GetCandidateBonus_0 = runtime.ForwardResponseMessage
+
+	forward_ApiService_GetTokenInfo_0 = runtime.ForwardResponseMessage
 )

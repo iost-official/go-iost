@@ -1,3 +1,35 @@
+## v3.0.5
+
+Fri Mar 22 13:55:49 CST 2019
+
+- Add new RPC api.
+- Add refine amount.
+- Optimize synchronization logic.
+
+## v3.0.4
+
+Sat Mar 16 20:58:46 CST 2019
+
+- Optimize RPC stability.
+
+## v3.0.3
+
+Fri Mar 15 16:36:17 CST 2019
+
+- Fix high cpu load problem.
+- Tune synchro module parameters.
+- Improve stability for vm.
+
+## v3.0.2
+
+Wed Mar 13 16:46:33 CST 2019
+
+- Rewrite synchronization module.
+- Improve iwallet availability.
+- Reduce the data size of p2p routing syncing.
+- RPC: Add query interface of vote reward and block reward.
+- RPC: Transaction query returns information to increase the Block number.
+
 ## v3.0.1
 
 Thu Feb 28 10:49:56 CST 2019

@@ -5,15 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro"
-	msgpb "github.com/iost-official/go-iost/consensus/synchronizer/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
@@ -21,13 +20,13 @@ import (
 )
 
 var (
-	metricsGeneratedBlockCount   = metrics.NewCounter("iost_pob_generated_block", nil)
-	metricsVerifyBlockCount      = metrics.NewCounter("iost_pob_verify_block", nil)
-	metricsConfirmedLength       = metrics.NewGauge("iost_pob_confirmed_length", nil)
-	metricsMode                  = metrics.NewGauge("iost_node_mode", nil)
-	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
-	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
-	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
+	generateBlockCount         = metrics.NewCounter("iost_pob_generated_block", nil)
+	verifyBlockCount           = metrics.NewCounter("iost_pob_verify_block", nil)
+	generateBlockTimeGauge     = metrics.NewGauge("iost_pob_generate_block_time", nil)
+	verifyBlockTimeGauge       = metrics.NewGauge("iost_pob_verify_block_time", nil)
+	receiveBlockDelayTimeGauge = metrics.NewGauge("iost_pob_receive_block_delay_time", nil)
+	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 )
 
 var (
@@ -37,12 +36,11 @@ var (
 )
 
 var (
-	continuousNum     int
-	maxBlockNumber    int64 = 10000
-	blockReqTimeout         = 3 * time.Second
-	subSlotTime             = 500 * time.Millisecond
-	genBlockTime            = 400 * time.Millisecond
-	last2GenBlockTime       = 50 * time.Millisecond
+	blockNumPerWitness = 6
+	maxBlockNumber     = int64(10000)
+	subSlotTime        = 500 * time.Millisecond
+	genBlockTime       = 400 * time.Millisecond
+	last2GenBlockTime  = 50 * time.Millisecond
 )
 
 //PoB is a struct that handles the consensus logic.
@@ -55,45 +53,46 @@ type PoB struct {
 	p2pService   p2p.Service
 	verifyDB     db.MVCCDB
 	produceDB    db.MVCCDB
-	blockReqMap  *sync.Map
 	sync         *synchro.Sync
 
 	exitSignal       chan struct{}
 	quitGenerateMode chan struct{}
-	chRecvBlockHash  chan p2p.IncomingMessage
-	chQueryBlock     chan p2p.IncomingMessage
 	wg               *sync.WaitGroup
 	mu               *sync.RWMutex
-	headNumber       int64
-	recvTimesMap     map[string]int64
 }
 
 // New init a new PoB.
-func New(account *account.KeyPair, baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(baseVariable global.BaseVariable, blockCache blockcache.BlockCache, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+	// TODO: Move the code to account struct.
+	accSecKey := baseVariable.Config().ACC.SecKey
+	accAlgo := baseVariable.Config().ACC.Algorithm
+	account, err := account.NewKeyPair(common.Base58Decode(accSecKey), crypto.NewAlgorithm(accAlgo))
+	if err != nil {
+		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
+	}
+
+	// TODO: Organize the owner and lifecycle of all metrics.
+	metricsMode.Set(float64(2), nil)
+
 	p := PoB{
-		account:          account,
-		baseVariable:     baseVariable,
-		blockChain:       baseVariable.BlockChain(),
-		blockCache:       blockCache,
-		txPool:           txPool,
-		p2pService:       p2pService,
-		verifyDB:         baseVariable.StateDB(),
-		produceDB:        baseVariable.StateDB().Fork(),
-		blockReqMap:      new(sync.Map),
+		account:      account,
+		baseVariable: baseVariable,
+		blockChain:   baseVariable.BlockChain(),
+		blockCache:   blockCache,
+		txPool:       txPool,
+		p2pService:   p2pService,
+		verifyDB:     baseVariable.StateDB(),
+		produceDB:    baseVariable.StateDB().Fork(),
+		sync:         nil,
+
 		exitSignal:       make(chan struct{}),
 		quitGenerateMode: make(chan struct{}),
-		chRecvBlockHash:  p2pService.Register("consensus block head", p2p.NewBlockHash),
-		chQueryBlock:     p2pService.Register("consensus query block", p2p.NewBlockRequest),
 		wg:               new(sync.WaitGroup),
 		mu:               new(sync.RWMutex),
-		headNumber:       0,
-		recvTimesMap:     make(map[string]int64, 0),
 	}
-	continuousNum = baseVariable.Continuous()
 
 	p.recoverBlockcache()
 	close(p.quitGenerateMode)
-	p.headNumber = p.blockCache.Head().Head.Number
 
 	return &p
 }
@@ -111,19 +110,17 @@ func (p *PoB) recoverBlockcache() error {
 	return err
 }
 
-//Start make the PoB run.
+// Start make the PoB run.
 func (p *PoB) Start() error {
 	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
-	p.baseVariable.SetMode(global.ModeNormal)
 
-	p.wg.Add(3)
-	go p.messageLoop()
+	p.wg.Add(2)
 	go p.verifyLoop()
 	go p.scheduleLoop()
 	return nil
 }
 
-//Stop make the PoB stop
+// Stop make the PoB stop.
 func (p *PoB) Stop() {
 	close(p.exitSignal)
 	p.wg.Wait()
@@ -131,193 +128,54 @@ func (p *PoB) Stop() {
 	p.sync.Close()
 }
 
-func (p *PoB) messageLoop() {
-	defer p.wg.Done()
-	for {
-		if p.baseVariable.Mode() != global.ModeInit {
-			break
-		}
-		time.Sleep(time.Second)
-	}
-	for {
-		select {
-		case incomingMessage, ok := <-p.chRecvBlockHash:
-			if !ok {
-				ilog.Infof("chRecvBlockHash has closed")
-				return
-			}
-			if p.baseVariable.Mode() == global.ModeNormal {
-				var blkInfo msgpb.BlockInfo
-				err := proto.Unmarshal(incomingMessage.Data(), &blkInfo)
-				if err != nil {
-					continue
-				}
-				p.handleRecvBlockHash(&blkInfo, incomingMessage.From())
-			}
-		case incomingMessage, ok := <-p.chQueryBlock:
-			if !ok {
-				ilog.Infof("chQueryBlock has closed")
-				return
-			}
-			if p.baseVariable.Mode() == global.ModeNormal {
-				var rh msgpb.BlockInfo
-				err := proto.Unmarshal(incomingMessage.Data(), &rh)
-				if err != nil {
-					continue
-				}
-				p.handleBlockQuery(&rh, incomingMessage.From())
-			}
-		case <-p.exitSignal:
-			return
-		}
-	}
-}
-
-func (p *PoB) handleRecvBlockHash(blkInfo *msgpb.BlockInfo, peerID p2p.PeerID) {
-	_, ok := p.blockReqMap.Load(string(blkInfo.Hash))
-	if ok {
-		//ilog.Debug("block in block request map, block number: ", blkInfo.Number)
-		return
-	}
-	_, err := p.blockCache.Find(blkInfo.Hash)
-	if err == nil {
-		ilog.Debug("duplicate block, block number: ", blkInfo.Number)
-		return
-	}
-	bytes, err := proto.Marshal(blkInfo)
-	if err != nil {
-		ilog.Debugf("fail to Marshal requestblock, %v", err)
-		return
-	}
-	p.blockReqMap.Store(string(blkInfo.Hash), time.AfterFunc(blockReqTimeout, func() {
-		p.blockReqMap.Delete(string(blkInfo.Hash))
-	}))
-	p.p2pService.SendToPeer(peerID, bytes, p2p.NewBlockRequest, p2p.UrgentMessage)
-}
-
-func (p *PoB) handleBlockQuery(rh *msgpb.BlockInfo, peerID p2p.PeerID) {
-	var blk *block.Block
-	blk, err := p.blockCache.GetBlockByHash(rh.Hash)
-	if err != nil {
-		blk, err = p.baseVariable.BlockChain().GetBlockByHash(rh.Hash)
-		if err != nil {
-			ilog.Errorf("handle block query failed to get block.")
-			return
-		}
-	}
-	b, err := blk.Encode()
-	if err != nil {
-		ilog.Errorf("Fail to encode block: %v, err=%v", rh.Number, err)
-		return
-	}
-	p.p2pService.SendToPeer(peerID, b, p2p.NewBlock, p2p.UrgentMessage)
-}
-
-func (p *PoB) broadcastBlockHash(blk *block.Block) {
-	if p.baseVariable.Mode() != global.ModeNormal {
-		return
-	}
-
-	blkInfo := &msgpb.BlockInfo{
-		Number: blk.Head.Number,
-		Hash:   blk.HeadHash(),
-	}
-	b, err := proto.Marshal(blkInfo)
-	if err != nil {
-		ilog.Errorf("fail to encode block hash, err=%v, blockHash=%+v", err, *blkInfo)
+// Mode return the mode of pob.
+func (p *PoB) Mode() string {
+	if p.sync == nil {
+		return "ModeInit"
+	} else if p.sync.IsCatchingUp() {
+		return "ModeSync"
 	} else {
-		p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage)
+		return "ModeNormal"
 	}
 }
 
-func calculateTime(blk *block.Block) float64 {
-	return float64((time.Now().UnixNano() - blk.Head.Time) / 1e6)
-}
+func (p *PoB) doVerifyBlock(blk *block.Block) {
+	now := time.Now().UnixNano()
+	receiveBlockDelayTimeGauge.Set(float64(now-blk.Head.Time), nil)
+	defer func() {
+		verifyBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+		verifyBlockCount.Add(1, nil)
+	}()
 
-func (p *PoB) doVerifyBlock(blkMsg *synchro.BlockMessage) {
-	if p.baseVariable.Mode() == global.ModeInit {
+	head := p.blockCache.Head().Head.Number
+	if blk.Head.Number > head+maxBlockNumber {
+		ilog.Debugf("Block number %v is %v higher than head number %v", blk.Head.Number, maxBlockNumber, head)
 		return
 	}
-	blk := blkMsg.Blk
 
-	switch blkMsg.P2PType {
-	case p2p.NewBlock:
-		t1 := calculateTime(blk)
-		metricsTransferCost.Set(t1, nil)
-		timer, ok := p.blockReqMap.Load(string(blk.HeadHash()))
-		if ok {
-			t, ok := timer.(*time.Timer)
-			if ok {
-				t.Stop()
-			}
-		} else {
-			p.blockReqMap.Store(string(blk.HeadHash()), nil)
+	err := p.handleRecvBlock(blk)
+	if err != nil {
+		if err != errSingle && err != errDuplicate {
+			ilog.Warnf("Verify block failed: %v", err)
 		}
-		err := p.handleRecvBlock(blk)
-		t2 := calculateTime(blk)
-		metricsTimeCost.Set(t2, nil)
-		if err == errSingle || err == nil {
-			go p.broadcastBlockHash(blk)
-		}
-		p.blockReqMap.Delete(string(blk.HeadHash()))
-		if err != nil && err != errSingle && err != errDuplicate {
-			ilog.Warnf("received new block error, err:%v", err)
-			return
-		}
-	case p2p.SyncBlockResponse:
-		err := p.handleRecvBlock(blk)
-		if err != nil && err != errSingle && err != errDuplicate {
-			ilog.Warnf("received sync block error, err:%v", err)
-			return
-		}
+		return
 	}
-	metricsVerifyBlockCount.Add(1, nil)
+
+	if !p.sync.IsCatchingUp() {
+		p.sync.BroadcastBlockInfo(blk)
+	}
 }
 
 func (p *PoB) verifyLoop() {
-	defer p.wg.Done()
 	for {
 		select {
-		case blkMsg := <-p.sync.IncomingBlock():
+		case blk := <-p.sync.IncomingBlock():
 			select {
 			case <-p.quitGenerateMode:
 			}
-			if p.blockCache.Head().Head.Number+maxBlockNumber < blkMsg.Blk.Head.Number {
-				ilog.Debugf("block number is too large, block number:%v", blkMsg.Blk.Head.Number)
-				continue
-			}
-
-			recvTimes := p.recvTimesMap[blkMsg.From] + 1
-
-			/*          if recvTimes > maxBlockNumber { */
-			// p.p2pService.PutPeerToBlack(vbm.from)
-			// continue
-			/* } */
-			p.recvTimesMap[blkMsg.From] = recvTimes
-
-			p.doVerifyBlock(blkMsg)
-
-			if p.blockCache.Head().Head.Number > p.headNumber {
-				delta := p.blockCache.Head().Head.Number - p.headNumber
-				p.headNumber += delta
-				for k, v := range p.recvTimesMap {
-					v -= delta
-					if v < 0 {
-						delete(p.recvTimesMap, k)
-					} else {
-						p.recvTimesMap[k] = v
-					}
-				}
-			}
-
-			height := p.blockCache.Head().Head.Number
-			syncNumber := int64(len(p.blockCache.LinkedRoot().Active())) * int64(p.baseVariable.Continuous())
-			if p.sync.NeighborHeight() > height+syncNumber {
-				p.baseVariable.SetMode(global.ModeSync)
-			} else {
-				p.baseVariable.SetMode(global.ModeNormal)
-			}
+			p.doVerifyBlock(blk)
 		case <-p.exitSignal:
+			p.wg.Done()
 			return
 		}
 	}
@@ -334,18 +192,22 @@ func (p *PoB) scheduleLoop() {
 		select {
 		case <-time.After(time.Duration(nextSchedule)):
 			time.Sleep(time.Millisecond)
-			metricsMode.Set(float64(p.baseVariable.Mode()), nil)
+			if p.sync.IsCatchingUp() {
+				metricsMode.Set(float64(1), nil)
+			} else {
+				metricsMode.Set(float64(0), nil)
+			}
 			t := time.Now()
 			pTx, _ := p.txPool.PendingTx() // TODO fix later
 			head := p.blockCache.Head()
 			witnessList := head.Active()
-			if slotFlag != slotOfSec(t.Unix()) && p.baseVariable.Mode() == global.ModeNormal && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != slotOfSec(t.Unix()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = slotOfSec(t.Unix())
 				generateBlockTicker := time.NewTicker(subSlotTime)
-				for num := 0; num < continuousNum; num++ {
+				for num := 0; num < blockNumPerWitness; num++ {
 					p.gen(num, pTx, head)
-					if num == continuousNum-1 {
+					if num == blockNumPerWitness-1 {
 						break
 					}
 					select {
@@ -370,8 +232,15 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) {
+	now := time.Now().UnixNano()
+	defer func() {
+		// TODO: Confirm the most appropriate metrics definition.
+		generateBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+		generateBlockCount.Add(1, nil)
+	}()
+
 	limitTime := genBlockTime
-	if num >= continuousNum-2 {
+	if num >= blockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
 	p.txPool.Lock()
@@ -381,14 +250,14 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 		ilog.Error(err)
 		return
 	}
-	p.printStatistics(num, blk)
+
 	blkByte, err := blk.Encode()
 	if err != nil {
 		ilog.Error(err)
 		return
 	}
 	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
-	metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+
 	err = p.handleRecvBlock(blk)
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
@@ -396,17 +265,22 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	}
 }
 
-func (p *PoB) printStatistics(num int, blk *block.Block) {
+func (p *PoB) printStatistics(num int64, blk *block.Block) {
+	action := "Rec"
+	if blk.Head.Witness == p.account.ReadablePubkey() {
+		action = "Gen"
+	}
 	ptx, _ := p.txPool.PendingTx()
-	ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
+	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%dms",
+		action,
 		num,
-		p.account.ReadablePubkey()[:10],
+		blk.Head.Witness[:10],
 		blk.Head.Time,
 		blk.Head.Number,
 		p.blockCache.LinkedRoot().Head.Number,
 		len(blk.Txs),
 		ptx.Size(),
-		calculateTime(blk),
+		(time.Now().UnixNano()-blk.Head.Time)/1e6,
 	)
 }
 
@@ -460,7 +334,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		node.SerialNum = parentNode.SerialNum + 1
 	}
 
-	if node.SerialNum >= int64(p.baseVariable.Continuous()) {
+	if node.SerialNum >= int64(blockNumPerWitness) {
 		return errOutOfLimit
 	}
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
@@ -490,10 +364,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		p.p2pService.ConnectBPs(nil)
 	}
 
-	if node.Head.Witness != p.account.ReadablePubkey() {
-		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
-			node.SerialNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
-	}
+	p.printStatistics(node.SerialNum, node.Block)
 
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node, replay)

@@ -92,12 +92,6 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 }
 
 func (pool *TxPImpl) loop() {
-	for {
-		if pool.global.Mode() != global.ModeInit {
-			break
-		}
-		time.Sleep(time.Second)
-	}
 	pool.initBlockTx()
 	workerCnt := (runtime.NumCPU() + 1) / 2
 	if workerCnt == 0 {

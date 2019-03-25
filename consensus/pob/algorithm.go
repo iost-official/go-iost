@@ -76,7 +76,6 @@ func generateBlock(
 	}
 	blk.Sign = acc.Sign(blk.HeadHash())
 	db.Commit(string(blk.HeadHash()))
-	metricsGeneratedBlockCount.Add(1, nil)
 	return blk, nil
 }
 

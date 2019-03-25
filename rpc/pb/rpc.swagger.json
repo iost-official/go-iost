@@ -76,6 +76,33 @@
         ]
       }
     },
+    "/getBatchContractStorage": {
+      "post": {
+        "summary": "get batch contract storage",
+        "operationId": "GetBatchContractStorage",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetBatchContractStorageResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetBatchContractStorageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getBlockByHash/{hash}/{complete}": {
       "get": {
         "summary": "get block by hash",
@@ -532,6 +559,39 @@
         ]
       }
     },
+    "/getTokenInfo/{symbol}/{by_longest_chain}": {
+      "get": {
+        "operationId": "GetTokenInfo",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbTokenInfo"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "symbol",
+            "description": "token symbol",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get tokeninfo by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getTxByHash/{hash}": {
       "get": {
         "summary": "get transaction by hash",
@@ -872,6 +932,20 @@
       "default": "CONTRACT_RECEIPT",
       "title": "- CONTRACT_RECEIPT: contract receipt\n - CONTRACT_EVENT: contract event"
     },
+    "GetBatchContractStorageRequestKeyField": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "the key in StateDB"
+        },
+        "field": {
+          "type": "string",
+          "title": "get the value from StateDB, fields is needed if StateDB[key] is a map.(we get StateDB[key][field] in this case)"
+        }
+      },
+      "description": "The message defines GetContractStorage request params."
+    },
     "SignatureAlgorithm": {
       "type": "string",
       "enum": [
@@ -1144,7 +1218,25 @@
           "type": "array",
           "items": {
             "type": "string"
-          }
+          },
+          "title": "the active witness list of lat irreversible block"
+        },
+        "pending_witness_list": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "the pending witness list"
+        },
+        "head_block_time": {
+          "type": "string",
+          "format": "int64",
+          "title": "the head block time"
+        },
+        "lib_block_time": {
+          "type": "string",
+          "format": "int64",
+          "title": "the last irreversible block time"
         }
       },
       "description": "The message defines chain information response."
@@ -1227,6 +1319,50 @@
           "title": "median gas ratio in head block"
         }
       }
+    },
+    "rpcpbGetBatchContractStorageRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "contract id"
+        },
+        "key_fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GetBatchContractStorageRequestKeyField"
+          },
+          "title": "the batch query"
+        },
+        "by_longest_chain": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "get data by longest chain's head block or last irreversible block"
+        }
+      },
+      "description": "The message defines get batch contract storage request."
+    },
+    "rpcpbGetBatchContractStorageResponse": {
+      "type": "object",
+      "properties": {
+        "datas": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "the repeated json string data"
+        },
+        "block_hash": {
+          "type": "string",
+          "title": "block hash"
+        },
+        "block_number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
+        }
+      },
+      "description": "The message defines get batch contract storage response."
     },
     "rpcpbGetContractStorageFieldsRequest": {
       "type": "object",
@@ -1440,6 +1576,15 @@
         "network": {
           "$ref": "#/definitions/rpcpbNetworkInfo",
           "title": "network connection information"
+        },
+        "code_version": {
+          "type": "string",
+          "title": "code version string"
+        },
+        "server_time": {
+          "type": "string",
+          "format": "int64",
+          "title": "server time"
         }
       },
       "description": "The message containing the node's information."
@@ -1532,6 +1677,44 @@
         }
       },
       "description": "The message defines subscribe response."
+    },
+    "rpcpbTokenInfo": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string",
+          "title": "token symbol"
+        },
+        "full_name": {
+          "type": "string",
+          "title": "token full name"
+        },
+        "issuer": {
+          "type": "string",
+          "title": "token issuer"
+        },
+        "total_supply": {
+          "type": "string",
+          "format": "int64",
+          "title": "the amount of total supply"
+        },
+        "current_supply": {
+          "type": "string",
+          "format": "int64",
+          "title": "the amount of current supply"
+        },
+        "decimal": {
+          "type": "integer",
+          "format": "int32",
+          "title": "token decimal"
+        },
+        "can_transfer": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "whether the token can be transfered"
+        }
+      },
+      "description": "The message defines the token information."
     },
     "rpcpbTransaction": {
       "type": "object",

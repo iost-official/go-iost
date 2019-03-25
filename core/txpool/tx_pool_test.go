@@ -122,7 +122,6 @@ func TestNewTxPImpl(t *testing.T) {
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
 		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
-		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
 				LdbPath: "DB/",
@@ -305,7 +304,6 @@ func TestNewTxPImplB(t *testing.T) {
 		gbl := core_mock.NewMockBaseVariable(ctl)
 		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
 		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
-		gbl.EXPECT().Mode().AnyTimes().Return(global.ModeNormal)
 		config := common.Config{
 			DB: &common.DBConfig{
 				LdbPath: "DB/",
