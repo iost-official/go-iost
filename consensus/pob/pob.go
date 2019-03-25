@@ -269,7 +269,7 @@ func (p *PoB) printStatistics(num int64, blk *block.Block) {
 		action = "Gen"
 	}
 	ptx, _ := p.txPool.PendingTx()
-	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%.0fms",
+	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%dms",
 		action,
 		num,
 		blk.Head.Witness[:10],
@@ -278,7 +278,7 @@ func (p *PoB) printStatistics(num int64, blk *block.Block) {
 		p.blockCache.LinkedRoot().Head.Number,
 		len(blk.Txs),
 		ptx.Size(),
-		float64((time.Now().UnixNano()-blk.Head.Time)/1e6),
+		(time.Now().UnixNano()-blk.Head.Time)/1e6,
 	)
 }
 
