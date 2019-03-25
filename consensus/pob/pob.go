@@ -198,8 +198,7 @@ func (p *PoB) scheduleLoop() {
 				metricsMode.Set(float64(0), nil)
 			}
 			t := time.Now()
-			pTx, _ := p.txPool.PendingTx() // TODO fix later
-			head := p.blockCache.Head()
+			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
 			if slotFlag != slotOfSec(t.Unix()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
@@ -213,8 +212,7 @@ func (p *PoB) scheduleLoop() {
 					select {
 					case <-generateBlockTicker.C:
 					}
-					pTx, _ = p.txPool.PendingTx()
-					head = p.blockCache.Head()
+					pTx, head = p.txPool.PendingTx()
 					witnessList = head.Active()
 					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break

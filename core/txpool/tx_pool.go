@@ -124,7 +124,10 @@ func (pool *TxPImpl) Lock() {
 
 // PendingTx is return pendingTx
 func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
-	return pool.pendingTx, nil // nil will be removed later
+	// lock here and `AddLinkedNode`, so txs and bcn are consistent
+	pool.mu.Lock()
+	defer pool.mu.Unlock()
+	return pool.pendingTx, pool.txMigrater.forkChain.GetNewHead()
 }
 
 // Release release the txpool
