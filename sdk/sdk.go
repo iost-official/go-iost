@@ -399,14 +399,6 @@ func (s *IOSTDevSDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 	if err != nil {
 		return err
 	}
-	/*
-		info, err := s.GetAccountInfo(s.accountName)
-		if err != nil {
-			return fmt.Errorf("failed to get account info: %v", err)
-		}
-		s.log("Account info of <", s.accountName, ">:")
-		s.log(MarshalTextString(info))
-	*/
 	return nil
 }
 
