@@ -20,6 +20,7 @@ const (
 // BlockHash return the block hash with the Peers that have it.
 type BlockHash struct {
 	Hash   []byte
+	Number int64
 	PeerID []p2p.PeerID
 }
 
@@ -90,6 +91,7 @@ func (b *blockHashSync) NeighborBlockHashs(start, end int64) <-chan *BlockHash {
 				} else {
 					hashs[key] = &BlockHash{
 						Hash:   blockHashs.hashs[num],
+						Number: num,
 						PeerID: []p2p.PeerID{peerID},
 					}
 				}
@@ -152,6 +154,7 @@ func (b *blockHashSync) handleNewBlockHash(msg *p2p.IncomingMessage) {
 
 	blockHash := &BlockHash{
 		Hash:   blockInfo.Hash,
+		Number: blockInfo.Number,
 		PeerID: []p2p.PeerID{msg.From()},
 	}
 	b.newBlockHashCh <- blockHash

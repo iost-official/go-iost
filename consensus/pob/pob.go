@@ -5,11 +5,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro"
-	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
@@ -22,13 +20,13 @@ import (
 )
 
 var (
-	metricsGeneratedBlockCount   = metrics.NewCounter("iost_pob_generated_block", nil)
-	metricsVerifyBlockCount      = metrics.NewCounter("iost_pob_verify_block", nil)
-	metricsConfirmedLength       = metrics.NewGauge("iost_pob_confirmed_length", nil)
-	metricsMode                  = metrics.NewGauge("iost_node_mode", nil)
-	metricsTimeCost              = metrics.NewGauge("iost_time_cost", nil)
-	metricsTransferCost          = metrics.NewGauge("iost_transfer_cost", nil)
-	metricsGenerateBlockTimeCost = metrics.NewGauge("iost_generate_block_time_cost", nil)
+	generateBlockCount         = metrics.NewCounter("iost_pob_generated_block", nil)
+	verifyBlockCount           = metrics.NewCounter("iost_pob_verify_block", nil)
+	generateBlockTimeGauge     = metrics.NewGauge("iost_pob_generate_block_time", nil)
+	verifyBlockTimeGauge       = metrics.NewGauge("iost_pob_verify_block_time", nil)
+	receiveBlockDelayTimeGauge = metrics.NewGauge("iost_pob_receive_block_delay_time", nil)
+	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 )
 
 var (
@@ -141,66 +139,43 @@ func (p *PoB) Mode() string {
 	}
 }
 
-func (p *PoB) broadcastBlockHash(blk *block.Block) {
-	blkInfo := &msgpb.BlockInfo{
-		Number: blk.Head.Number,
-		Hash:   blk.HeadHash(),
+func (p *PoB) doVerifyBlock(blk *block.Block) {
+	now := time.Now().UnixNano()
+	receiveBlockDelayTimeGauge.Set(float64(now-blk.Head.Time), nil)
+	defer func() {
+		verifyBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+		verifyBlockCount.Add(1, nil)
+	}()
+
+	head := p.blockCache.Head().Head.Number
+	if blk.Head.Number > head+maxBlockNumber {
+		ilog.Debugf("Block number %v is %v higher than head number %v", blk.Head.Number, maxBlockNumber, head)
+		return
 	}
-	b, err := proto.Marshal(blkInfo)
+
+	err := p.handleRecvBlock(blk)
 	if err != nil {
-		ilog.Errorf("fail to encode block hash, err=%v, blockHash=%+v", err, *blkInfo)
-	} else {
-		p.p2pService.Broadcast(b, p2p.NewBlockHash, p2p.UrgentMessage)
+		if err != errSingle && err != errDuplicate {
+			ilog.Warnf("Verify block failed: %v", err)
+		}
+		return
 	}
-}
 
-func calculateTime(blk *block.Block) float64 {
-	return float64((time.Now().UnixNano() - blk.Head.Time) / 1e6)
-}
-
-func (p *PoB) doVerifyBlock(blkMsg *synchro.BlockMessage) {
-	blk := blkMsg.Blk
-
-	switch blkMsg.P2PType {
-	case p2p.NewBlock:
-		t1 := calculateTime(blk)
-		metricsTransferCost.Set(t1, nil)
-		err := p.handleRecvBlock(blk)
-		t2 := calculateTime(blk)
-		metricsTimeCost.Set(t2, nil)
-		if err == errSingle || err == nil {
-			p.broadcastBlockHash(blk)
-		}
-		if err != nil && err != errSingle && err != errDuplicate {
-			ilog.Warnf("received new block error, err:%v", err)
-			return
-		}
-	case p2p.SyncBlockResponse:
-		err := p.handleRecvBlock(blk)
-		if err != nil && err != errSingle && err != errDuplicate {
-			ilog.Warnf("received sync block error, err:%v", err)
-			return
-		}
+	if !p.sync.IsCatchingUp() {
+		p.sync.BroadcastBlockInfo(blk)
 	}
-	metricsVerifyBlockCount.Add(1, nil)
 }
 
 func (p *PoB) verifyLoop() {
-	defer p.wg.Done()
 	for {
 		select {
-		case blkMsg := <-p.sync.IncomingBlock():
+		case blk := <-p.sync.IncomingBlock():
 			select {
 			case <-p.quitGenerateMode:
 			}
-			if p.blockCache.Head().Head.Number+maxBlockNumber < blkMsg.Blk.Head.Number {
-				ilog.Debugf("block number is too large, block number:%v", blkMsg.Blk.Head.Number)
-				continue
-			}
-
-			p.doVerifyBlock(blkMsg)
-
+			p.doVerifyBlock(blk)
 		case <-p.exitSignal:
+			p.wg.Done()
 			return
 		}
 	}
@@ -255,6 +230,13 @@ func (p *PoB) scheduleLoop() {
 }
 
 func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) {
+	now := time.Now().UnixNano()
+	defer func() {
+		// TODO: Confirm the most appropriate metrics definition.
+		generateBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+		generateBlockCount.Add(1, nil)
+	}()
+
 	limitTime := genBlockTime
 	if num >= blockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
@@ -266,14 +248,14 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 		ilog.Error(err)
 		return
 	}
-	p.printStatistics(num, blk)
+
 	blkByte, err := blk.Encode()
 	if err != nil {
 		ilog.Error(err)
 		return
 	}
 	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
-	metricsGenerateBlockTimeCost.Set(calculateTime(blk), nil)
+
 	err = p.handleRecvBlock(blk)
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
@@ -281,17 +263,22 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	}
 }
 
-func (p *PoB) printStatistics(num int, blk *block.Block) {
+func (p *PoB) printStatistics(num int64, blk *block.Block) {
+	action := "Rec"
+	if blk.Head.Witness == p.account.ReadablePubkey() {
+		action = "Gen"
+	}
 	ptx, _ := p.txPool.PendingTx()
-	ilog.Infof("Gen block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%vms",
+	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%dms",
+		action,
 		num,
-		p.account.ReadablePubkey()[:10],
+		blk.Head.Witness[:10],
 		blk.Head.Time,
 		blk.Head.Number,
 		p.blockCache.LinkedRoot().Head.Number,
 		len(blk.Txs),
 		ptx.Size(),
-		calculateTime(blk),
+		(time.Now().UnixNano()-blk.Head.Time)/1e6,
 	)
 }
 
@@ -375,10 +362,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		p.p2pService.ConnectBPs(nil)
 	}
 
-	if node.Head.Witness != p.account.ReadablePubkey() {
-		ilog.Infof("Rec block - @%v id:%v..., num:%v, t:%v, txs:%v, confirmed:%v, et:%vms",
-			node.SerialNum, node.Head.Witness[:10], node.Head.Number, node.Head.Time, len(node.Txs), p.blockCache.LinkedRoot().Head.Number, calculateTime(node.Block))
-	}
+	p.printStatistics(node.SerialNum, node.Block)
 
 	for child := range node.Children {
 		p.addExistingBlock(child.Block, node, replay)
