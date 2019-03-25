@@ -9,6 +9,7 @@ import (
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -134,7 +135,7 @@ func TestNewTxPImpl(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
-		BlockCache, err := blockcache.NewBlockCache(gbl)
+		BlockCache, err := blockcache.NewBlockCache(gbl.Config(), gbl.BlockChain(), gbl.StateDB())
 		So(err, ShouldBeNil)
 
 		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
@@ -316,7 +317,7 @@ func TestNewTxPImplB(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
-		BlockCache, err := blockcache.NewBlockCache(gbl)
+		BlockCache, err := blockcache.NewBlockCache(gbl.Config(), gbl.BlockChain(), gbl.StateDB())
 		So(err, ShouldBeNil)
 
 		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
@@ -621,7 +622,8 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 
 	conf := &common.Config{}
 
-	gl, _ := global.New(conf)
+	chainBase, _ := chainbase.New(conf)
+	gl := global.New(chainBase, conf)
 
 	blockList := genBlocks(accountList, witnessList, 1, 1, true)
 
@@ -631,7 +633,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 	//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
 	blockcache.CleanBlockCacheWAL()
-	BlockCache, _ := blockcache.NewBlockCache(gl)
+	BlockCache, _ := blockcache.NewBlockCache(gl.Config(), gl.BlockChain(), gl.StateDB())
 
 	txPool, _ := NewTxPoolImpl(gl, BlockCache, node)
 
