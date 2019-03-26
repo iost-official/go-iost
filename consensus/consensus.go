@@ -1,9 +1,9 @@
 package consensus
 
 import (
+	"github.com/iost-official/go-iost/chainbase"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/pob"
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -25,11 +25,11 @@ type Consensus interface {
 }
 
 // New returns the different consensus strategy.
-func New(cType Type, baseVariable global.BaseVariable, blkcache blockcache.BlockCache, txPool txpool.TxPool, service p2p.Service) Consensus {
+func New(cType Type, conf *common.Config, chainBase *chainbase.ChainBase, txPool txpool.TxPool, service p2p.Service) Consensus {
 	switch cType {
 	case Pob:
-		return pob.New(baseVariable, blkcache, txPool, service)
+		return pob.New(conf, chainBase, txPool, service)
 	default:
-		return pob.New(baseVariable, blkcache, txPool, service)
+		return pob.New(conf, chainBase, txPool, service)
 	}
 }
