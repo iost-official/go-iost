@@ -57,7 +57,7 @@ func NewDeferServer(txpool *TxPImpl) (*DeferServer, error) {
 }
 
 func (d *DeferServer) buildIndex() error {
-	txs, err := d.txpool.global.BlockChain().AllDelaytx()
+	txs, err := d.txpool.bChain.AllDelaytx()
 	ilog.Info("defer index num: ", len(txs))
 	if err != nil {
 		return err

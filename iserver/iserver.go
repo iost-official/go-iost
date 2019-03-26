@@ -50,7 +50,7 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	txp, err := txpool.NewTxPoolImpl(bv, chainBase.BlockCache(), p2pService)
+	txp, err := txpool.NewTxPoolImpl(chainBase.BlockChain(), chainBase.BlockCache(), p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
