@@ -68,6 +68,7 @@ func getABISetByVersion(conID string, version string) (aset *abiSet, err error) 
 	abiMap["token.iost"] = make(map[string]*abiSet)
 	abiMap["token.iost"]["1.0.0"] = tokenABIs
 	abiMap["token.iost"]["1.0.2"] = tokenABIsV2
+	abiMap["token.iost"]["1.0.3"] = tokenABIsV3
 	abiMap["token721.iost"] = make(map[string]*abiSet)
 	abiMap["token721.iost"]["1.0.0"] = token721ABIs
 

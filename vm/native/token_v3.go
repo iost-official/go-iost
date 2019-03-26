@@ -51,10 +51,6 @@ var (
 
 			//fmt.Printf("token transfer %v %v %v %v\n", tokenSym, from, to, amountStr)
 
-			if from == to {
-				return []interface{}{}, cost, nil
-			}
-
 			// get token info
 			ok, cost0 := checkTokenExists(h, tokenSym)
 			cost.AddAssign(cost0)
@@ -114,13 +110,9 @@ var (
 			}
 
 			publisher := h.Context().Value("publisher").(string)
-			// set balance
+
+			// change 'from' balance
 			fbalance, cost0, err := getBalance(h, tokenSym, from, publisher)
-			cost.AddAssign(cost0)
-			if err != nil {
-				return nil, cost, err
-			}
-			tbalance, cost0, err := getBalance(h, tokenSym, to, publisher)
 			cost.AddAssign(cost0)
 			if err != nil {
 				return nil, cost, err
@@ -133,17 +125,22 @@ var (
 				amountFixed := &common.Fixed{Value: amount, Decimal: decimal}
 				return nil, cost, fmt.Errorf("balance not enough %v < %v", fBalanceFixed.ToString(), amountFixed.ToString())
 			}
+			fbalance -= amount
+			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
+			cost.AddAssign(cost0)
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas
 			}
 
-			fbalance -= amount
+			// change 'to' balance
+			tbalance, cost0, err := getBalance(h, tokenSym, to, publisher)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, err
+			}
 			tbalance += amount
-
 			cost0 = setBalance(h, tokenSym, to, tbalance, publisher)
 			//fmt.Printf("transfer set %v %v %v\n", tokenSym, to, tbalance)
-			cost.AddAssign(cost0)
-			cost0 = setBalance(h, tokenSym, from, fbalance, publisher)
 			cost.AddAssign(cost0)
 
 			// generate receipt
