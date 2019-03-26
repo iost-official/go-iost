@@ -175,6 +175,10 @@ L:
 			)
 			continue L
 		}
+		if t.Delay > 0 {
+			ilog.Debug("Ignore delay tx.")
+			continue L
+		}
 		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
 			ilog.Errorf(
 				"Tx %v is expired, tx time is %v, tx expiration time is %v, blk time is %v",
