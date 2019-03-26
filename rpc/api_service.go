@@ -14,6 +14,7 @@ import (
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/vm"
 
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/consensus/cverifier"
@@ -23,6 +24,7 @@ import (
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc/pb"
@@ -39,21 +41,23 @@ type APIService struct {
 	p2pService p2p.Service
 	txpool     txpool.TxPool
 	blockchain block.Chain
+	stateDB    db.MVCCDB
 	consensus  consensus.Consensus
-	bv         global.BaseVariable
+	config     *common.Config
 
 	quitCh chan struct{}
 }
 
 // NewAPIService returns a new APIService instance.
-func NewAPIService(tp txpool.TxPool, bcache blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, consensus consensus.Consensus, quitCh chan struct{}) *APIService {
+func NewAPIService(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config, p2pService p2p.Service, consensus consensus.Consensus, quitCh chan struct{}) *APIService {
 	return &APIService{
 		p2pService: p2pService,
 		txpool:     tp,
-		blockchain: bv.BlockChain(),
+		blockchain: chainBase.BlockChain(),
 		consensus:  consensus,
-		bc:         bcache,
-		bv:         bv,
+		bc:         chainBase.BlockCache(),
+		stateDB:    chainBase.StateDB(),
+		config:     config,
 		quitCh:     quitCh,
 	}
 }
@@ -98,14 +102,14 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 	lib := as.bc.LinkedRoot()
 	netName := "unknown"
 	version := "unknown"
-	if as.bv.Config().Version != nil {
-		netName = as.bv.Config().Version.NetName
-		version = as.bv.Config().Version.ProtocolVersion
+	if as.config.Version != nil {
+		netName = as.config.Version.NetName
+		version = as.config.Version.ProtocolVersion
 	}
 	return &rpcpb.ChainInfoResponse{
 		NetName:            netName,
 		ProtocolVersion:    version,
-		ChainId:            as.bv.Config().P2P.ChainID,
+		ChainId:            as.config.P2P.ChainID,
 		WitnessList:        head.Active(),
 		LibWitnessList:     lib.Active(),
 		PendingWitnessList: head.Pending(),
@@ -503,7 +507,7 @@ func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
 		Time:       time.Now().UnixNano(),
 	}
 	v := verifier.Verifier{}
-	stateDB := as.bv.StateDB().Fork()
+	stateDB := as.stateDB.Fork()
 	ok := stateDB.Checkout(string(topBlock.HeadHash()))
 	if !ok {
 		return nil, fmt.Errorf("failed to checkout blockhash: %s", common.Base58Encode(topBlock.HeadHash()))
@@ -521,7 +525,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 	ret := &rpcpb.SendTransactionResponse{
 		Hash: common.Base58Encode(t.Hash()),
 	}
-	if as.bv.Config().RPC.TryTx {
+	if as.config.RPC.TryTx {
 		tr, err := as.tryTransaction(t)
 		if err != nil {
 			return nil, fmt.Errorf("try transaction failed: %v", err)
@@ -548,7 +552,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
-	if !as.bv.Config().RPC.ExecTx {
+	if !as.config.RPC.ExecTx {
 		return nil, errors.New("The node has't enabled this method")
 	}
 	t := toCoreTx(req)
@@ -777,7 +781,7 @@ func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoR
 }
 
 func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
-	stateDB := as.bv.StateDB().Fork()
+	stateDB := as.stateDB.Fork()
 	ok := stateDB.Checkout(string(hash))
 	if !ok {
 		b2s := func(x *blockcache.BlockCacheNode) string {

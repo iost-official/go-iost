@@ -8,9 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/iost-official/go-iost/chainbase"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
@@ -48,13 +48,13 @@ func p(pp interface{}) error {
 }
 
 // New returns a new rpc server instance.
-func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2pService p2p.Service, consensus consensus.Consensus) *Server {
+func New(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config, p2pService p2p.Service, consensus consensus.Consensus) *Server {
 	s := &Server{
-		grpcAddr:     bv.Config().RPC.GRPCAddr,
-		gatewayAddr:  bv.Config().RPC.GatewayAddr,
-		allowOrigins: bv.Config().RPC.AllowOrigins,
+		grpcAddr:     config.RPC.GRPCAddr,
+		gatewayAddr:  config.RPC.GatewayAddr,
+		allowOrigins: config.RPC.AllowOrigins,
 		quitCh:       make(chan struct{}),
-		enable:       bv.Config().RPC.Enable,
+		enable:       config.RPC.Enable,
 	}
 	s.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(
@@ -70,7 +70,7 @@ func New(tp txpool.TxPool, bc blockcache.BlockCache, bv global.BaseVariable, p2p
 			),
 		),
 		grpc.MaxConcurrentStreams(maxConcurrentStreams))
-	apiService := NewAPIService(tp, bc, bv, p2pService, consensus, s.quitCh)
+	apiService := NewAPIService(tp, chainBase, config, p2pService, consensus, s.quitCh)
 	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
 	return s
 }
