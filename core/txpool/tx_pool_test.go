@@ -9,14 +9,13 @@ import (
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/global"
 	core_mock "github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/db"
 	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
@@ -116,10 +115,7 @@ func TestNewTxPImpl(t *testing.T) {
 		base.EXPECT().Close().AnyTimes()
 		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
-		gbl := core_mock.NewMockBaseVariable(ctl)
-		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
-		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
-		config := common.Config{
+		config := &common.Config{
 			DB: &common.DBConfig{
 				LdbPath: "DB/",
 			},
@@ -128,14 +124,13 @@ func TestNewTxPImpl(t *testing.T) {
 			},
 		}
 		defer os.RemoveAll("DB/")
-		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
-		BlockCache, err := blockcache.NewBlockCache(gbl.Config(), gbl.BlockChain(), gbl.StateDB())
+		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(base, BlockCache, p2pMock)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
@@ -219,7 +214,7 @@ func TestNewTxPImpl(t *testing.T) {
 			r1 := txPool.ExistTxs(t.Hash(), bcn.Block)
 			So(r1, ShouldEqual, NotFound)
 		})
-		stopTest(gbl)
+		stopTest(base, statedb)
 	})
 
 }
@@ -295,10 +290,7 @@ func TestNewTxPImplB(t *testing.T) {
 		base.EXPECT().Close().AnyTimes()
 		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
-		gbl := core_mock.NewMockBaseVariable(ctl)
-		gbl.EXPECT().StateDB().AnyTimes().Return(statedb)
-		gbl.EXPECT().BlockChain().AnyTimes().Return(base)
-		config := common.Config{
+		config := &common.Config{
 			DB: &common.DBConfig{
 				LdbPath: "DB/",
 			},
@@ -307,14 +299,13 @@ func TestNewTxPImplB(t *testing.T) {
 			},
 		}
 		defer os.RemoveAll("DB/")
-		gbl.EXPECT().Config().AnyTimes().Return(&config)
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
-		BlockCache, err := blockcache.NewBlockCache(gbl.Config(), gbl.BlockChain(), gbl.StateDB())
+		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(base, BlockCache, p2pMock)
 		So(err, ShouldBeNil)
 
 		txPool.Start()
@@ -437,14 +428,14 @@ func TestNewTxPImplB(t *testing.T) {
 
 		})
 
-		stopTest(gbl)
+		stopTest(base, statedb)
 	})
 
 }
 
 //result 55.3 ns/op
 func BenchmarkAddBlock(b *testing.B) {
-	_, accountList, witnessList, txPool, gl := envInit(b)
+	_, accountList, witnessList, txPool, bChain, stateDB := envInit(b)
 	listTxCnt := 500
 	blockList := genBlocks(accountList, witnessList, 1, listTxCnt, true)
 
@@ -454,14 +445,14 @@ func BenchmarkAddBlock(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest(gl)
+	stopTest(bChain, stateDB)
 
 }
 
 //result 472185 ns/op  tps:2147
 // no verify 17730 ns/op tps:58823
 func BenchmarkAddTx(b *testing.B) {
-	_, accountList, witnessList, txPool, gl := envInit(b)
+	_, accountList, witnessList, txPool, bChain, stateDB := envInit(b)
 	listTxCnt := 10
 	blockCnt := 100
 	blockList := genNodes(accountList, witnessList, blockCnt, listTxCnt, true)
@@ -482,7 +473,7 @@ func BenchmarkAddTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest(gl)
+	stopTest(bChain, stateDB)
 }
 
 //result 4445 ns/op
@@ -531,7 +522,7 @@ func BenchmarkEncodeTx(b *testing.B) {
 //result 3.8S ~ 4.2S  10000 tx verify
 func BenchmarkVerifyTx(b *testing.B) {
 
-	_, accountList, _, txPool, gl := envInit(b)
+	_, accountList, _, txPool, bChain, stateDB := envInit(b)
 
 	t := genTx(accountList[0], tx.MaxExpiration)
 
@@ -543,7 +534,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 	}
 
 	b.StopTimer()
-	stopTest(gl)
+	stopTest(bChain, stateDB)
 }
 
 //result 1 goroutine 3.8S ~ 4.2S  10000 tx verify
@@ -584,7 +575,7 @@ func BenchmarkVerifyTx(b *testing.B) {
 	stopTest(gl)
 }*/
 
-func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string, *TxPImpl, global.BaseVariable) {
+func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string, *TxPImpl, block.Chain, db.MVCCDB) {
 	//ctl := gomock.NewController(t)
 
 	var accountList []*account.KeyPair
@@ -616,30 +607,30 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 
 	conf := &common.Config{}
 
-	chainBase, _ := chainbase.New(conf)
-	gl := global.New(chainBase, conf)
+	bChain, _ := block.NewBlockChain(conf.DB.LdbPath + dbPath3)
+	stateDB, _ := db.NewMVCCDB(conf.DB.LdbPath + dbPath2)
 
 	blockList := genBlocks(accountList, witnessList, 1, 1, true)
 
-	gl.BlockChain().Push(blockList[0])
+	bChain.Push(blockList[0])
 	//base := core_mock.NewMockChain(ctl)
 	//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
 	//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
 	blockcache.CleanBlockCacheWAL()
-	BlockCache, _ := blockcache.NewBlockCache(gl.Config(), gl.BlockChain(), gl.StateDB())
+	BlockCache, _ := blockcache.NewBlockCache(conf, bChain, stateDB)
 
-	txPool, _ := NewTxPoolImpl(gl, BlockCache, node)
+	txPool, _ := NewTxPoolImpl(bChain, BlockCache, node)
 
 	txPool.Start()
 	b.ResetTimer()
 
-	return BlockCache, accountList, witnessList, txPool, gl
+	return BlockCache, accountList, witnessList, txPool, bChain, stateDB
 }
 
-func stopTest(gl global.BaseVariable) {
-	gl.StateDB().Close()
-	gl.BlockChain().Close()
+func stopTest(bChain block.Chain, stateDB db.MVCCDB) {
+	stateDB.Close()
+	bChain.Close()
 	os.RemoveAll(dbPath1)
 	os.RemoveAll(dbPath2)
 	os.RemoveAll(dbPath3)
