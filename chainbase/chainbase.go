@@ -50,8 +50,14 @@ func New(conf *common.Config) (*ChainBase, error) {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
 
+	bCache, err := blockcache.NewBlockCache(conf, bChain, stateDB)
+	if err != nil {
+		return nil, fmt.Errorf("blockcache initialization failed, stop the program! err:%v", err)
+	}
+
 	return &ChainBase{
 		bChain:  bChain,
+		bCache:  bCache,
 		stateDB: stateDB,
 	}, nil
 }
@@ -66,4 +72,9 @@ func (c *ChainBase) StateDB() db.MVCCDB {
 // BlockChain return the block chain database.
 func (c *ChainBase) BlockChain() block.Chain {
 	return c.bChain
+}
+
+// BlockCache return the block cache.
+func (c *ChainBase) BlockCache() blockcache.BlockCache {
+	return c.bCache
 }

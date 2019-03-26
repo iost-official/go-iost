@@ -4,7 +4,6 @@ import (
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
-	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
@@ -51,21 +50,16 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	blkCache, err := blockcache.NewBlockCache(conf, bv.BlockChain(), bv.StateDB())
-	if err != nil {
-		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
-	}
-
-	txp, err := txpool.NewTxPoolImpl(bv, blkCache, p2pService)
+	txp, err := txpool.NewTxPoolImpl(bv, chainBase.BlockCache(), p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 
-	consensus := consensus.New(consensus.Pob, bv, blkCache, txp, p2pService)
+	consensus := consensus.New(consensus.Pob, bv, chainBase.BlockCache(), txp, p2pService)
 
-	rpcServer := rpc.New(txp, blkCache, bv, p2pService, consensus)
+	rpcServer := rpc.New(txp, chainBase.BlockCache(), bv, p2pService, consensus)
 
-	debug := NewDebugServer(conf.Debug, p2pService, blkCache, bv.BlockChain())
+	debug := NewDebugServer(conf.Debug, p2pService, chainBase.BlockCache(), chainBase.BlockChain())
 
 	return &IServer{
 		bv:        bv,
