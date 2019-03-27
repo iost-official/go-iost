@@ -4,15 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"strconv"
 	"sync"
-
-	"os"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
@@ -330,8 +328,8 @@ func (bc *BlockCacheImpl) nmdel(num int64) {
 }
 
 // NewBlockCache return a new BlockCache instance
-func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
-	w, err := wal.Create(baseVariable.Config().DB.LdbPath+blockCacheWALDir, []byte("block_cache_wal"))
+func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (*BlockCacheImpl, error) {
+	w, err := wal.Create(conf.DB.LdbPath+blockCacheWALDir, []byte("block_cache_wal"))
 	if err != nil {
 		return nil, err
 	}
@@ -342,14 +340,14 @@ func NewBlockCache(baseVariable global.BaseVariable) (*BlockCacheImpl, error) {
 		hash2node:         new(sync.Map),
 		number2node:       new(sync.Map),
 		leaf:              make(map[*BlockCacheNode]int64),
-		blockChain:        baseVariable.BlockChain(),
-		stateDB:           baseVariable.StateDB().Fork(),
+		blockChain:        bChain,
+		stateDB:           stateDB.Fork(),
 		wal:               w,
 	}
 	bc.linkedRoot.Head.Number = -1
 
 	var lib *block.Block
-	if baseVariable.Config().Snapshot.Enable {
+	if conf.Snapshot.Enable {
 		//lib, err = snapshot.Load(bc.stateDB)
 	} else {
 		lib, err = bc.blockChain.Top()

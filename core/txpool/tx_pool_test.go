@@ -9,6 +9,7 @@ import (
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -37,13 +38,12 @@ func (pool *TxPImpl) testPendingTxsNum() int64 {
 
 func (pool *TxPImpl) testBlockListNum() int64 {
 	var r int64
-	pool.blockchainWrapper.blockList.Range(func(key, value interface{}) bool {
+	pool.blockList.Range(func(key, value interface{}) bool {
 		r++
 		return true
 	})
 	return r
 }
-
 
 func TestNewTxPImpl(t *testing.T) {
 	Convey("test NewTxPoolServer", t, func() {
@@ -132,7 +132,7 @@ func TestNewTxPImpl(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
-		BlockCache, err := blockcache.NewBlockCache(gbl)
+		BlockCache, err := blockcache.NewBlockCache(gbl.Config(), gbl.BlockChain(), gbl.StateDB())
 		So(err, ShouldBeNil)
 
 		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
@@ -311,7 +311,7 @@ func TestNewTxPImplB(t *testing.T) {
 
 		So(err, ShouldBeNil)
 		blockcache.CleanBlockCacheWAL()
-		BlockCache, err := blockcache.NewBlockCache(gbl)
+		BlockCache, err := blockcache.NewBlockCache(gbl.Config(), gbl.BlockChain(), gbl.StateDB())
 		So(err, ShouldBeNil)
 
 		txPool, err := NewTxPoolImpl(gbl, BlockCache, p2pMock)
@@ -336,7 +336,7 @@ func TestNewTxPImplB(t *testing.T) {
 			txCnt := 10
 			blockCnt := 3
 			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
-			BlockCache.Head().Head.Number = 0
+			txPool.blockCache.Head().Head.Number = 0
 			for i := 0; i < blockCnt; i++ {
 				//ilog.Info(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
 				bcn := BlockCache.Add(blockList[i])
@@ -425,7 +425,7 @@ func TestNewTxPImplB(t *testing.T) {
 			err = txPool.AddTx(t3)
 			So(err, ShouldBeNil)
 
-			pt := txPool.pendingTx
+			pt, _ := txPool.PendingTx()
 			iter := pt.Iter()
 			trx, ok := iter.Next()
 			for _, expectTx := range []*tx.Tx{t5, t4, t2, t3, t1} {
@@ -450,7 +450,7 @@ func BenchmarkAddBlock(b *testing.B) {
 
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		txPool.blockchainWrapper.addBlock(blockList[0])
+		txPool.addBlock(blockList[0])
 	}
 
 	b.StopTimer()
@@ -616,7 +616,8 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 
 	conf := &common.Config{}
 
-	gl, _ := global.New(conf)
+	chainBase, _ := chainbase.New(conf)
+	gl := global.New(chainBase, conf)
 
 	blockList := genBlocks(accountList, witnessList, 1, 1, true)
 
@@ -626,7 +627,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 	//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
 	blockcache.CleanBlockCacheWAL()
-	BlockCache, _ := blockcache.NewBlockCache(gl)
+	BlockCache, _ := blockcache.NewBlockCache(gl.Config(), gl.BlockChain(), gl.StateDB())
 
 	txPool, _ := NewTxPoolImpl(gl, BlockCache, node)
 

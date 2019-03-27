@@ -1,6 +1,7 @@
 package iserver
 
 import (
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -32,10 +33,12 @@ type IServer struct {
 func New(conf *common.Config) *IServer {
 	tx.ChainID = conf.P2P.ChainID
 
-	bv, err := global.New(conf)
+	chainBase, err := chainbase.New(conf)
 	if err != nil {
-		ilog.Fatalf("create global failed. err=%v", err)
+		ilog.Fatalf("New chainbase failed: %v.", err)
 	}
+	bv := global.New(chainBase, conf)
+
 	if err := checkGenesis(bv); err != nil {
 		ilog.Fatalf("Check genesis failed: %v", err)
 	}
@@ -48,7 +51,7 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	blkCache, err := blockcache.NewBlockCache(bv)
+	blkCache, err := blockcache.NewBlockCache(conf, bv.BlockChain(), bv.StateDB())
 	if err != nil {
 		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
 	}

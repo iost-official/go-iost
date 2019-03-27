@@ -87,10 +87,7 @@ func TestBlockCache(t *testing.T) {
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 	base.EXPECT().TxTotal().AnyTimes().Return(int64(10))
 	base.EXPECT().Size().AnyTimes().Return(int64(10000), nil)
-	global := core_mock.NewMockBaseVariable(ctl)
-	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().StateDB().AnyTimes().Return(statedb)
-	config := common.Config{
+	config := &common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "./",
 		},
@@ -98,11 +95,10 @@ func TestBlockCache(t *testing.T) {
 			Enable: false,
 		},
 	}
-	global.EXPECT().Config().AnyTimes().Return(&config)
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
 			CleanBlockCacheWAL()
-			bc, _ := NewBlockCache(global)
+			bc, _ := NewBlockCache(config, base, statedb)
 			defer bc.CleanDir()
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			_ = bc.Add(b1)
@@ -113,7 +109,7 @@ func TestBlockCache(t *testing.T) {
 
 		Convey("Flush", func() {
 			CleanBlockCacheWAL()
-			bc, _ := NewBlockCache(global)
+			bc, _ := NewBlockCache(config, base, statedb)
 			defer bc.CleanDir()
 			bc.Add(b1)
 			//bc.Draw()
@@ -142,7 +138,7 @@ func TestBlockCache(t *testing.T) {
 
 		Convey("GetBlockbyNumber", func() {
 			CleanBlockCacheWAL()
-			bc, _ := NewBlockCache(global)
+			bc, _ := NewBlockCache(config, base, statedb)
 			defer bc.CleanDir()
 			b1node := bc.Add(b1)
 			bc.Link(b1node, false)
@@ -184,7 +180,7 @@ func TestBlockCache(t *testing.T) {
 
 		Convey("UpdateInfo", func() {
 			CleanBlockCacheWAL()
-			bc, err := NewBlockCache(global)
+			bc, err := NewBlockCache(config, base, statedb)
 			defer bc.CleanDir()
 			So(err, ShouldBeNil)
 			netId := []string{"accaaaaNetId", "accbbbbbNetId"}
@@ -237,10 +233,7 @@ func TestVote(t *testing.T) {
 	base := core_mock.NewMockChain(ctl)
 	base.EXPECT().Top().AnyTimes().Return(b0, nil)
 	base.EXPECT().Push(Any()).AnyTimes().Return(nil)
-	global := core_mock.NewMockBaseVariable(ctl)
-	global.EXPECT().BlockChain().AnyTimes().Return(base)
-	global.EXPECT().StateDB().AnyTimes().Return(statedb)
-	config := common.Config{
+	config := &common.Config{
 		DB: &common.DBConfig{
 			LdbPath: "./",
 		},
@@ -248,7 +241,6 @@ func TestVote(t *testing.T) {
 			Enable: false,
 		},
 	}
-	global.EXPECT().Config().AnyTimes().Return(&config)
 
 	Convey("test api", t, func() {
 		var wl WitnessList
@@ -262,7 +254,7 @@ func TestVote(t *testing.T) {
 
 	})
 	Convey("test update", t, func() {
-		bc, err := NewBlockCache(global)
+		bc, err := NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 		defer bc.CleanDir()
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
@@ -278,7 +270,7 @@ func TestVote(t *testing.T) {
 
 	})
 	Convey("test info", t, func() {
-		bc, _ := NewBlockCache(global)
+		bc, _ := NewBlockCache(config, base, statedb)
 		defer bc.CleanDir()
 		for _, v := range bc.linkedRoot.NetID() {
 			So("33", ShouldEqual, v)
