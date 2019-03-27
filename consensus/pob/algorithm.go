@@ -97,7 +97,7 @@ func verifyBlock(blk, parent *block.Block, witnessList *blockcache.WitnessList, 
 		return err
 	}
 
-	if replay == false && witnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
+	if replay == false && common.WitnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(witnessList.Active()), witnessList.Active())
 		return errWitness

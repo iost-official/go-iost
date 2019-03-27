@@ -162,7 +162,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
-	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
+	if common.IsWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
 	} else {
 		p.p2pService.ConnectBPs(nil)
@@ -190,7 +190,7 @@ func (p *PoB) verifyLoop() {
 
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
-	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
+	nextSchedule := common.TimeUntilNextSchedule(time.Now().UnixNano())
 	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 	pubkey := p.account.ReadablePubkey()
 
@@ -207,9 +207,9 @@ func (p *PoB) scheduleLoop() {
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			if slotFlag != slotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != common.SlotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && common.WitnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
-				slotFlag = slotOfNanoSec(t.UnixNano())
+				slotFlag = common.SlotOfNanoSec(t.UnixNano())
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				for num := 0; num < blockNumPerWitness; num++ {
 					p.gen(num, pTx, head)
@@ -221,14 +221,14 @@ func (p *PoB) scheduleLoop() {
 					}
 					pTx, head = p.txPool.PendingTx()
 					witnessList = head.Active()
-					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
+					if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break
 					}
 				}
 				close(p.quitGenerateMode)
 				generateBlockTicker.Stop()
 			}
-			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
+			nextSchedule = common.TimeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
@@ -315,7 +315,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	node, _ := p.blockCache.Find(blk.HeadHash())
 
 	if parentNode.Block.Head.Witness != blk.Head.Witness ||
-		slotOfNanoSec(parentNode.Block.Head.Time) != slotOfNanoSec(blk.Head.Time) {
+		common.SlotOfNanoSec(parentNode.Block.Head.Time) != common.SlotOfNanoSec(blk.Head.Time) {
 		node.SerialNum = 0
 	} else {
 		node.SerialNum = parentNode.SerialNum + 1
