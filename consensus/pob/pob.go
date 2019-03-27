@@ -199,9 +199,9 @@ func (p *PoB) scheduleLoop() {
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			if slotFlag != slotOfSec(t.Unix()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != slotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
-				slotFlag = slotOfSec(t.Unix())
+				slotFlag = slotOfNanoSec(t.UnixNano())
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				for num := 0; num < blockNumPerWitness; num++ {
 					p.gen(num, pTx, head)
@@ -325,7 +325,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	node, _ := p.blockCache.Find(blk.HeadHash())
 
 	if parentNode.Block.Head.Witness != blk.Head.Witness ||
-		slotOfSec(parentNode.Block.Head.Time/1e9) != slotOfSec(blk.Head.Time/1e9) {
+		slotOfNanoSec(parentNode.Block.Head.Time) != slotOfNanoSec(blk.Head.Time) {
 		node.SerialNum = 0
 	} else {
 		node.SerialNum = parentNode.SerialNum + 1
