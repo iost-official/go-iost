@@ -1,18 +1,16 @@
-package iserver
+package chainbase
 
 import (
 	"fmt"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
 )
 
-func checkGenesis(bv global.BaseVariable) error {
-	blockChain := bv.BlockChain()
-	stateDB := bv.StateDB()
-	conf := bv.Config()
+func (c *ChainBase) checkGenesis(conf *common.Config) error {
+	blockChain := c.BlockChain()
+	stateDB := c.StateDB()
 	if !conf.Snapshot.Enable && blockChain.Length() == int64(0) { //blockchaindb is empty
 		// TODO: remove the module of starting iserver from yaml.
 
@@ -43,10 +41,9 @@ func checkGenesis(bv global.BaseVariable) error {
 	return nil
 }
 
-func recoverDB(bv global.BaseVariable) error {
-	blockChain := bv.BlockChain()
-	stateDB := bv.StateDB()
-	conf := bv.Config()
+func (c *ChainBase) recoverDB(conf *common.Config) error {
+	blockChain := c.BlockChain()
+	stateDB := c.StateDB()
 
 	if conf.Snapshot.Enable {
 		/*

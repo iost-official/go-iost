@@ -10,7 +10,6 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
@@ -20,7 +19,7 @@ var errDelaytxNotFound = errors.New("delay tx not found")
 
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
-	global           global.BaseVariable
+	bChain           block.Chain
 	blockCache       blockcache.BlockCache
 	p2pService       p2p.Service
 	forkChain        *forkChain
@@ -34,9 +33,9 @@ type TxPImpl struct {
 }
 
 // NewTxPoolImpl returns a default TxPImpl instance.
-func NewTxPoolImpl(global global.BaseVariable, blockCache blockcache.BlockCache, p2pService p2p.Service) (*TxPImpl, error) {
+func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pService p2p.Service) (*TxPImpl, error) {
 	p := &TxPImpl{
-		global:           global,
+		bChain:           bChain,
 		blockCache:       blockCache,
 		p2pService:       p2pService,
 		forkChain:        new(forkChain),
@@ -74,7 +73,7 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return ErrCacheFull
 	}
-	referredTx, err := pool.global.BlockChain().GetTx(txHash)
+	referredTx, err := pool.bChain.GetTx(txHash)
 	if err != nil {
 		referredTx, _, err = pool.GetFromChain(txHash)
 		if err != nil {
@@ -260,8 +259,8 @@ func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
 
 func (pool *TxPImpl) initBlockTx() {
 	filterLimit := time.Now().UnixNano() - filterTime
-	for i := pool.global.BlockChain().Length() - 1; i > 0; i-- {
-		blk, err := pool.global.BlockChain().GetBlockByNumber(i)
+	for i := pool.bChain.Length() - 1; i > 0; i-- {
+		blk, err := pool.bChain.GetBlockByNumber(i)
 		if err != nil {
 			break
 		}

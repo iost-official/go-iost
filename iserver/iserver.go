@@ -4,8 +4,6 @@ import (
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
@@ -21,7 +19,8 @@ type Service interface {
 
 // IServer is application for IOST.
 type IServer struct {
-	bv        global.BaseVariable
+	config    *common.Config
+	cBase     *chainbase.ChainBase
 	p2p       *p2p.NetService
 	txp       *txpool.TxPImpl
 	rpcServer *rpc.Server
@@ -37,38 +36,26 @@ func New(conf *common.Config) *IServer {
 	if err != nil {
 		ilog.Fatalf("New chainbase failed: %v.", err)
 	}
-	bv := global.New(chainBase, conf)
-
-	if err := checkGenesis(bv); err != nil {
-		ilog.Fatalf("Check genesis failed: %v", err)
-	}
-	if err := recoverDB(bv); err != nil {
-		ilog.Fatalf("Recover DB failed: %v", err)
-	}
 
 	p2pService, err := p2p.NewNetService(conf.P2P)
 	if err != nil {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	blkCache, err := blockcache.NewBlockCache(conf, bv.BlockChain(), bv.StateDB())
-	if err != nil {
-		ilog.Fatalf("blockcache initialization failed, stop the program! err:%v", err)
-	}
-
-	txp, err := txpool.NewTxPoolImpl(bv, blkCache, p2pService)
+	txp, err := txpool.NewTxPoolImpl(chainBase.BlockChain(), chainBase.BlockCache(), p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 
-	consensus := consensus.New(consensus.Pob, bv, blkCache, txp, p2pService)
+	consensus := consensus.New(consensus.Pob, conf, chainBase, txp, p2pService)
 
-	rpcServer := rpc.New(txp, blkCache, bv, p2pService, consensus)
+	rpcServer := rpc.New(txp, chainBase, conf, p2pService, consensus)
 
-	debug := NewDebugServer(conf.Debug, p2pService, blkCache, bv.BlockChain())
+	debug := NewDebugServer(conf.Debug, p2pService, chainBase.BlockCache(), chainBase.BlockChain())
 
 	return &IServer{
-		bv:        bv,
+		config:    conf,
+		cBase:     chainBase,
 		p2p:       p2pService,
 		txp:       txp,
 		rpcServer: rpcServer,
@@ -90,7 +77,7 @@ func (s *IServer) Start() error {
 			return err
 		}
 	}
-	conf := s.bv.Config()
+	conf := s.config
 	if conf.Debug != nil {
 		if err := s.debug.Start(); err != nil {
 			return err
@@ -101,7 +88,7 @@ func (s *IServer) Start() error {
 
 // Stop stops iserver application.
 func (s *IServer) Stop() {
-	conf := s.bv.Config()
+	conf := s.config
 	if conf.Debug != nil {
 		s.debug.Stop()
 	}
@@ -114,6 +101,5 @@ func (s *IServer) Stop() {
 	for _, s := range Services {
 		s.Stop()
 	}
-	s.bv.BlockChain().Close()
-	s.bv.StateDB().Close()
+	s.cBase.Close()
 }

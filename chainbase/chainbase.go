@@ -50,10 +50,31 @@ func New(conf *common.Config) (*ChainBase, error) {
 		return nil, fmt.Errorf("new statedb failed, stop the program. err: %v", err)
 	}
 
-	return &ChainBase{
+	c := &ChainBase{
 		bChain:  bChain,
 		stateDB: stateDB,
-	}, nil
+	}
+
+	if err := c.checkGenesis(conf); err != nil {
+		return nil, fmt.Errorf("Check genesis failed: %v", err)
+	}
+	if err := c.recoverDB(conf); err != nil {
+		return nil, fmt.Errorf("Recover DB failed: %v", err)
+	}
+
+	bCache, err := blockcache.NewBlockCache(conf, bChain, stateDB)
+	if err != nil {
+		return nil, fmt.Errorf("blockcache initialization failed, stop the program! err:%v", err)
+	}
+	c.bCache = bCache
+
+	return c, nil
+}
+
+// Close will close the chainbase.
+func (c *ChainBase) Close() {
+	c.bChain.Close()
+	c.stateDB.Close()
 }
 
 // =============== Temporarily compatible ===============
@@ -66,4 +87,9 @@ func (c *ChainBase) StateDB() db.MVCCDB {
 // BlockChain return the block chain database.
 func (c *ChainBase) BlockChain() block.Chain {
 	return c.bChain
+}
+
+// BlockCache return the block cache.
+func (c *ChainBase) BlockCache() blockcache.BlockCache {
+	return c.bCache
 }
