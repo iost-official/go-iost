@@ -357,7 +357,7 @@ func TestVerifyBlock(t *testing.T) {
 			Head: &block.BlockHead{
 				Number:  1,
 				Time:    rootTime,
-				Witness: witnessOfSlot(rootTime, witnessList),
+				Witness: witnessOfNanoSec(rootTime, witnessList),
 			},
 		}
 		tx0 := &tx.Tx{
@@ -374,13 +374,13 @@ func TestVerifyBlock(t *testing.T) {
 		}
 		curTime := time.Now().UnixNano()
 		hash := rootBlk.HeadHash()
-		witness := witnessOfSlot(curTime, witnessList)
+		witness := witnessOfNanoSec(curTime, witnessList)
 		blk := &block.Block{
 			Head: &block.BlockHead{
 				Number:     2,
 				ParentHash: hash,
 				Time:       curTime,
-				Witness:    witnessOfSlot(curTime, witnessList),
+				Witness:    witnessOfNanoSec(curTime, witnessList),
 			},
 			Txs:      []*tx.Tx{},
 			Receipts: []*tx.TxReceipt{},

@@ -14,10 +14,7 @@ func isWitness(w string, witnessList []string) bool {
 }
 
 func witnessOfNanoSec(nanosec int64, witnessList []string) string {
-	return witnessOfSlot(nanosec/int64(common.SlotTime), witnessList)
-}
-
-func witnessOfSlot(slot int64, witnessList []string) string {
+	slot := nanosec / int64(common.SlotTime)
 	index := slot % int64(len(witnessList))
 	witness := witnessList[index]
 	return witness
