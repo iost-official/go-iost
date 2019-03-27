@@ -47,6 +47,8 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 
+	chainBase.SetTxPool(txp)
+
 	consensus := consensus.New(consensus.Pob, conf, chainBase, txp, p2pService)
 
 	rpcServer := rpc.New(txp, chainBase, conf, p2pService, consensus)

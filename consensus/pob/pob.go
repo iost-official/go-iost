@@ -39,7 +39,6 @@ var (
 	blockNumPerWitness = 6
 	maxBlockNumber     = int64(10000)
 	subSlotTime        = 500 * time.Millisecond
-	genBlockTime       = 400 * time.Millisecond
 	last2GenBlockTime  = 50 * time.Millisecond
 )
 
@@ -200,9 +199,9 @@ func (p *PoB) scheduleLoop() {
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			if slotFlag != slotOfSec(t.Unix()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != slotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
-				slotFlag = slotOfSec(t.Unix())
+				slotFlag = slotOfNanoSec(t.UnixNano())
 				generateBlockTicker := time.NewTicker(subSlotTime)
 				for num := 0; num < blockNumPerWitness; num++ {
 					p.gen(num, pTx, head)
@@ -237,7 +236,7 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 		generateBlockCount.Add(1, nil)
 	}()
 
-	limitTime := genBlockTime
+	limitTime := common.MaxBlockTimeLimit
 	if num >= blockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
@@ -326,7 +325,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	node, _ := p.blockCache.Find(blk.HeadHash())
 
 	if parentNode.Block.Head.Witness != blk.Head.Witness ||
-		slotOfSec(parentNode.Block.Head.Time/1e9) != slotOfSec(blk.Head.Time/1e9) {
+		slotOfNanoSec(parentNode.Block.Head.Time) != slotOfNanoSec(blk.Head.Time) {
 		node.SerialNum = 0
 	} else {
 		node.SerialNum = parentNode.SerialNum + 1

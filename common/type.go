@@ -1,7 +1,9 @@
 package common
 
+import "time"
+
 // consts
 const (
 	VoteInterval = 1200
-	SlotLength   = 3
+	SlotTime     = 3 * time.Second
 )

@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/consensus/snapshot"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 )
@@ -17,6 +18,7 @@ type ChainBase struct {
 	bChain  block.Chain
 	bCache  blockcache.BlockCache
 	stateDB db.MVCCDB
+	txPool  txpool.TxPool
 }
 
 // New will return a ChainBase.
@@ -92,4 +94,9 @@ func (c *ChainBase) BlockChain() block.Chain {
 // BlockCache return the block cache.
 func (c *ChainBase) BlockCache() blockcache.BlockCache {
 	return c.bCache
+}
+
+// SetTxPool will inject the tx pool for chainbase.
+func (c *ChainBase) SetTxPool(txPool txpool.TxPool) {
+	c.txPool = txPool
 }
