@@ -152,7 +152,9 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
+	p.mu.Lock()
 	err := p.Add(blk, false)
+	p.mu.Unlock()
 	if err != nil {
 		if err != errSingle && err != errDuplicate {
 			ilog.Warnf("Verify block failed: %v", err)
@@ -255,7 +257,9 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	}
 	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 
+	p.mu.Lock()
 	err = p.Add(blk, false)
+	p.mu.Unlock()
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
 		return
@@ -282,9 +286,6 @@ func (p *PoB) printStatistics(num int64, blk *block.Block) {
 }
 
 func (p *PoB) Add(blk *block.Block, replay bool) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
