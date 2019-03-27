@@ -162,6 +162,12 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
+	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
+		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
+	} else {
+		p.p2pService.ConnectBPs(nil)
+	}
+
 	if !p.sync.IsCatchingUp() {
 		p.sync.BroadcastBlockInfo(blk)
 	}
@@ -337,12 +343,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	p.txPool.AddLinkedNode(node)
 
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-
-	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
-		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
-	} else {
-		p.p2pService.ConnectBPs(nil)
-	}
 
 	p.printStatistics(node.SerialNum, node.Block)
 
