@@ -11,8 +11,9 @@ import (
 
 // Constant of limit
 var (
-	MaxBlockGasLimit = int64(800000000)
-	MaxTxTimeLimit   = 200 * time.Millisecond
+	MaxBlockGasLimit  = int64(800000000)
+	MaxTxTimeLimit    = 200 * time.Millisecond
+	MaxBlockTimeLimit = 400 * time.Millisecond
 )
 
 // ACCConfig account of the system

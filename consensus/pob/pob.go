@@ -39,7 +39,6 @@ var (
 	blockNumPerWitness = 6
 	maxBlockNumber     = int64(10000)
 	subSlotTime        = 500 * time.Millisecond
-	genBlockTime       = 400 * time.Millisecond
 	last2GenBlockTime  = 50 * time.Millisecond
 )
 
@@ -237,7 +236,7 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 		generateBlockCount.Add(1, nil)
 	}()
 
-	limitTime := genBlockTime
+	limitTime := common.MaxBlockTimeLimit
 	if num >= blockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
