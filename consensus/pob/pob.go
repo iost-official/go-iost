@@ -152,7 +152,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
-	err := p.handleRecvBlock(blk)
+	err := p.Add(blk, false)
 	if err != nil {
 		if err != errSingle && err != errDuplicate {
 			ilog.Warnf("Verify block failed: %v", err)
@@ -255,7 +255,7 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	}
 	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 
-	err = p.handleRecvBlock(blk)
+	err = p.Add(blk, false)
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
 		return
@@ -281,25 +281,7 @@ func (p *PoB) printStatistics(num int64, blk *block.Block) {
 	)
 }
 
-// RecoverBlock recover block from block cache wal
-func (p *PoB) RecoverBlock(blk *block.Block) error {
-	_, err := p.blockCache.Find(blk.HeadHash())
-	if err == nil {
-		return errDuplicate
-	}
-	err = verifyBasics(blk, blk.Sign)
-	if err != nil {
-		return err
-	}
-	parent, err := p.blockCache.Find(blk.Head.ParentHash)
-	p.blockCache.Add(blk)
-	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent, true)
-	}
-	return errSingle
-}
-
-func (p *PoB) handleRecvBlock(blk *block.Block) error {
+func (p *PoB) Add(blk *block.Block, replay bool) error {
 	p.mu.Lock()
 	defer p.mu.Unlock()
 
@@ -316,7 +298,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent, false)
+		return p.addExistingBlock(blk, parent, replay)
 	}
 	return errSingle
 }
