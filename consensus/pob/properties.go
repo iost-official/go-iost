@@ -1,11 +1,9 @@
 package pob
 
 import (
-	"github.com/iost-official/go-iost/common"
-)
+	"time"
 
-var (
-	second2nanosecond int64 = 1000000000
+	"github.com/iost-official/go-iost/common"
 )
 
 func isWitness(w string, witnessList []string) bool {
@@ -18,11 +16,7 @@ func isWitness(w string, witnessList []string) bool {
 }
 
 func witnessOfNanoSec(nanosec int64, witnessList []string) string {
-	return witnessOfSec(nanosec/second2nanosecond, witnessList)
-}
-
-func witnessOfSec(sec int64, witnessList []string) string {
-	return witnessOfSlot(sec/common.SlotLength, witnessList)
+	return witnessOfSlot(nanosec/int64(common.SlotLength*time.Second), witnessList)
 }
 
 func witnessOfSlot(slot int64, witnessList []string) string {
@@ -36,6 +30,6 @@ func slotOfSec(sec int64) int64 {
 }
 
 func timeUntilNextSchedule(timeSec int64) int64 {
-	currentSlot := timeSec / (second2nanosecond * common.SlotLength)
-	return (currentSlot+1)*second2nanosecond*common.SlotLength - timeSec
+	currentSlot := timeSec / int64(common.SlotLength*time.Second)
+	return (currentSlot+1)*int64(common.SlotLength*time.Second) - timeSec
 }
