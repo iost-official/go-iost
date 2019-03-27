@@ -5,7 +5,6 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/genesis"
-	"github.com/iost-official/go-iost/core/global"
 	"github.com/iost-official/go-iost/ilog"
 )
 
