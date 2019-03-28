@@ -12,14 +12,17 @@ import (
 type TxPool interface {
 	Start() error
 	Stop()
-	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
 	AddTx(tx *tx.Tx) error
 	DelTx(hash []byte) error
-	DelTxList(delList []*tx.Tx)
-	ExistTxs(hash []byte, chainBlock *block.Block) FRet
 	GetFromPending(hash []byte) (*tx.Tx, error)
-	GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error)
+	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
+
+	// TODO: The following interfaces need to be removed from txpool.
 	Lock()
 	Release()
-	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
+
+	// TODO: The following interfaces need to be moved from txpool to chainbase.
+	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
+	ExistTxs(hash []byte, chainBlock *block.Block) FRet
+	GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error)
 }

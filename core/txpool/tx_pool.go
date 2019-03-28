@@ -236,13 +236,6 @@ func (pool *TxPImpl) DelTx(hash []byte) error {
 	return nil
 }
 
-// DelTxList deletes the tx list in txpool.
-func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
-	for _, t := range delList {
-		pool.pendingTx.Del(t.Hash())
-	}
-}
-
 // ExistTxs determine if the transaction exists
 func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
 	var r FRet

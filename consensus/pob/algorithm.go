@@ -51,7 +51,7 @@ func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 		ilog.Debugf("time spent per tx: %v", t2.Nanoseconds()/int64(len(blk.Txs)))
 	}
 	if err != nil {
-		go txPool.DelTxList(dropList)
+		go delTxList(txPool, dropList)
 		ilog.Errorf("Gen is err: %v", err)
 		return nil, err
 	}
@@ -64,4 +64,10 @@ func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 	blk.Sign = acc.Sign(blk.HeadHash())
 	db.Commit(string(blk.HeadHash()))
 	return blk, nil
+}
+
+func delTxList(txPool txpool.TxPool, delList []*tx.Tx) {
+	for _, t := range delList {
+		txPool.DelTx(t.Hash())
+	}
 }
