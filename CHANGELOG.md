@@ -1,3 +1,11 @@
+## v3.0.6
+
+Thu Mar 28 12:50:15 CST 2019
+
+- Add server time in getNodeInfo.
+- Add tokeninfo RPC.
+- Refactoring code structure.
+
 ## v3.0.5
 
 Fri Mar 22 13:55:49 CST 2019
