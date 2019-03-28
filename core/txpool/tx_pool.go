@@ -19,31 +19,29 @@ var errDelaytxNotFound = errors.New("delay tx not found")
 
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
-	bChain           block.Chain
-	blockCache       blockcache.BlockCache
-	p2pService       p2p.Service
-	forkChain        *forkChain
-	blockList        *sync.Map // map[string]*blockTx
-	pendingTx        *SortedTxMap
-	mu               sync.RWMutex
-	chP2PTx          chan p2p.IncomingMessage
-	deferServer      *DeferServer
-	quitGenerateMode chan struct{}
-	quitCh           chan struct{}
+	bChain      block.Chain
+	blockCache  blockcache.BlockCache
+	p2pService  p2p.Service
+	forkChain   *forkChain
+	blockList   *sync.Map // map[string]*blockTx
+	pendingTx   *SortedTxMap
+	mu          sync.RWMutex
+	chP2PTx     chan p2p.IncomingMessage
+	deferServer *DeferServer
+	quitCh      chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPImpl instance.
 func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pService p2p.Service) (*TxPImpl, error) {
 	p := &TxPImpl{
-		bChain:           bChain,
-		blockCache:       blockCache,
-		p2pService:       p2pService,
-		forkChain:        new(forkChain),
-		blockList:        new(sync.Map),
-		pendingTx:        NewSortedTxMap(),
-		chP2PTx:          p2pService.Register("txpool message", p2p.PublishTx),
-		quitGenerateMode: make(chan struct{}),
-		quitCh:           make(chan struct{}),
+		bChain:     bChain,
+		blockCache: blockCache,
+		p2pService: p2pService,
+		forkChain:  new(forkChain),
+		blockList:  new(sync.Map),
+		pendingTx:  NewSortedTxMap(),
+		chP2PTx:    p2pService.Register("txpool message", p2p.PublishTx),
+		quitCh:     make(chan struct{}),
 	}
 	p.forkChain.SetNewHead(blockCache.Head())
 	deferServer, err := NewDeferServer(p)
@@ -51,7 +49,6 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 		return nil, err
 	}
 	p.deferServer = deferServer
-	close(p.quitGenerateMode)
 	return p, nil
 }
 
@@ -118,24 +115,13 @@ func (pool *TxPImpl) loop() {
 	}
 }
 
-// Lock lock the txpool
-func (pool *TxPImpl) Lock() {
-}
-
 // PendingTx is return pendingTx
 func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 	return pool.pendingTx, pool.forkChain.NewHead
 }
 
-// Release release the txpool
-func (pool *TxPImpl) Release() {
-}
-
 func (pool *TxPImpl) verifyWorkers() {
 	for v := range pool.chP2PTx {
-		select {
-		case <-pool.quitGenerateMode:
-		}
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {

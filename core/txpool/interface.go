@@ -17,10 +17,6 @@ type TxPool interface {
 	GetFromPending(hash []byte) (*tx.Tx, error)
 	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
 
-	// TODO: The following interfaces need to be removed from txpool.
-	Lock()
-	Release()
-
 	// TODO: The following interfaces need to be moved from txpool to chainbase.
 	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
 	ExistTxs(hash []byte, chainBlock *block.Block) FRet
