@@ -7,7 +7,7 @@ metadata:
 spec:
   containers:
   - name: itest
-    image: "iostio/iost-node:3.0.5-$COMMIT"
+    image: "iostio/iost-node:3.0.6-$COMMIT"
     imagePullPolicy: "IfNotPresent"
     command: ['/bin/bash', '-c', 'sleep infinity']
     resources:
