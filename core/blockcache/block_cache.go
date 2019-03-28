@@ -18,7 +18,7 @@ import (
 	"github.com/xlab/treeprint"
 )
 
-//go:generate mockgen -destination ../mocks/mock_blockcache.go -package core_mock github.com/iost-official/go-iost/core/blockcache BlockCache
+//go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/core/blockcache BlockCache
 
 var (
 	metricsTxTotal = metrics.NewGauge("iost_tx_total", nil)

@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/blockcache/mock"
 	core_mock "github.com/iost-official/go-iost/core/mocks"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
@@ -328,7 +329,7 @@ func (p *peer) NewSync(ctrl *gomock.Controller) {
 	p2pService.EXPECT().Broadcast(gomock.Any(), gomock.Any(), gomock.Any()).Do(p.p2pBroadcast).AnyTimes()
 	p2pService.EXPECT().SendToPeer(gomock.Any(), gomock.Any(), gomock.Any(), gomock.Any()).Do(p.p2pSendToPeer).AnyTimes()
 
-	bCache := core_mock.NewMockBlockCache(ctrl)
+	bCache := mock.NewMockBlockCache(ctrl)
 	bCache.EXPECT().Head().DoAndReturn(p.bcacheHead).AnyTimes()
 	bCache.EXPECT().LinkedRoot().DoAndReturn(p.bcacheLinkedRoot).AnyTimes()
 	bCache.EXPECT().Find(gomock.Any()).DoAndReturn(p.bcacheFind).AnyTimes()
