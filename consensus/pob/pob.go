@@ -152,12 +152,20 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
-	err := p.handleRecvBlock(blk)
+	p.mu.Lock()
+	err := p.Add(blk, false)
+	p.mu.Unlock()
 	if err != nil {
 		if err != errSingle && err != errDuplicate {
 			ilog.Warnf("Verify block failed: %v", err)
 		}
 		return
+	}
+
+	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
+		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
+	} else {
+		p.p2pService.ConnectBPs(nil)
 	}
 
 	if !p.sync.IsCatchingUp() {
@@ -255,7 +263,9 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	}
 	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 
-	err = p.handleRecvBlock(blk)
+	p.mu.Lock()
+	err = p.Add(blk, false)
+	p.mu.Unlock()
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
 		return
@@ -281,28 +291,8 @@ func (p *PoB) printStatistics(num int64, blk *block.Block) {
 	)
 }
 
-// RecoverBlock recover block from block cache wal
-func (p *PoB) RecoverBlock(blk *block.Block) error {
-	_, err := p.blockCache.Find(blk.HeadHash())
-	if err == nil {
-		return errDuplicate
-	}
-	err = verifyBasics(blk, blk.Sign)
-	if err != nil {
-		return err
-	}
-	parent, err := p.blockCache.Find(blk.Head.ParentHash)
-	p.blockCache.Add(blk)
-	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent, true)
-	}
-	return errSingle
-}
-
-func (p *PoB) handleRecvBlock(blk *block.Block) error {
-	p.mu.Lock()
-	defer p.mu.Unlock()
-
+// Add will add a block to block cache and verify it.
+func (p *PoB) Add(blk *block.Block, replay bool) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -316,7 +306,7 @@ func (p *PoB) handleRecvBlock(blk *block.Block) error {
 	parent, err := p.blockCache.Find(blk.Head.ParentHash)
 	p.blockCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent, false)
+		return p.addExistingBlock(blk, parent, replay)
 	}
 	return errSingle
 }
@@ -354,12 +344,6 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 	p.txPool.AddLinkedNode(node)
 
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-
-	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
-		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
-	} else {
-		p.p2pService.ConnectBPs(nil)
-	}
 
 	p.printStatistics(node.SerialNum, node.Block)
 
