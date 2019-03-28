@@ -42,7 +42,6 @@ type PoB struct {
 	blockCache blockcache.BlockCache
 	txPool     txpool.TxPool
 	p2pService p2p.Service
-	verifyDB   db.MVCCDB
 	produceDB  db.MVCCDB
 	sync       *synchro.Sync
 	cBase      *chainbase.ChainBase
@@ -73,7 +72,6 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 		blockCache: cBase.BlockCache(),
 		txPool:     txPool,
 		p2pService: p2pService,
-		verifyDB:   cBase.StateDB(),
 		produceDB:  cBase.StateDB().Fork(),
 		sync:       nil,
 		cBase:      cBase,
@@ -84,23 +82,10 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 		mu:               new(sync.RWMutex),
 	}
 
-	p.recoverBlockcache()
+	p.cBase.Recover()
 	close(p.quitGenerateMode)
 
 	return &p
-}
-
-func (p *PoB) recoverBlockcache() error {
-	err := p.blockCache.Recover(p.cBase)
-	if err != nil {
-		ilog.Error("Failed to recover blockCache, err: ", err)
-		ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
-		err = p.blockCache.NewWAL(p.conf)
-		if err != nil {
-			ilog.Error(" Failed to NewWAL, err: ", err)
-		}
-	}
-	return err
 }
 
 // Start make the PoB run.

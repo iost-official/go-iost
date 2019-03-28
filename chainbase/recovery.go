@@ -69,3 +69,16 @@ func (c *ChainBase) recoverDB(conf *common.Config) error {
 	}
 	return nil
 }
+
+func (c *ChainBase) Recover() error {
+	err := c.bCache.Recover(c)
+	if err != nil {
+		ilog.Error("Failed to recover blockCache, err: ", err)
+		ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
+		err = c.bCache.NewWAL(c.config)
+		if err != nil {
+			ilog.Error(" Failed to NewWAL, err: ", err)
+		}
+	}
+	return err
+}
