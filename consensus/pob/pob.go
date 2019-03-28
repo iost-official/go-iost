@@ -52,6 +52,7 @@ type PoB struct {
 	verifyDB   db.MVCCDB
 	produceDB  db.MVCCDB
 	sync       *synchro.Sync
+	cBase      *chainbase.ChainBase
 
 	exitSignal       chan struct{}
 	quitGenerateMode chan struct{}
@@ -60,7 +61,7 @@ type PoB struct {
 }
 
 // New init a new PoB.
-func New(conf *common.Config, chainBase *chainbase.ChainBase, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
 	// TODO: Move the code to account struct.
 	accSecKey := conf.ACC.SecKey
 	accAlgo := conf.ACC.Algorithm
@@ -75,13 +76,14 @@ func New(conf *common.Config, chainBase *chainbase.ChainBase, txPool txpool.TxPo
 	p := PoB{
 		account:    account,
 		conf:       conf,
-		blockChain: chainBase.BlockChain(),
-		blockCache: chainBase.BlockCache(),
+		blockChain: cBase.BlockChain(),
+		blockCache: cBase.BlockCache(),
 		txPool:     txPool,
 		p2pService: p2pService,
-		verifyDB:   chainBase.StateDB(),
-		produceDB:  chainBase.StateDB().Fork(),
+		verifyDB:   cBase.StateDB(),
+		produceDB:  cBase.StateDB().Fork(),
 		sync:       nil,
+		cBase:      cBase,
 
 		exitSignal:       make(chan struct{}),
 		quitGenerateMode: make(chan struct{}),
