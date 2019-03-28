@@ -4,7 +4,7 @@ Thu Mar 28 12:50:15 CST 2019
 
 - Add server time in getNodeInfo.
 - Add tokeninfo RPC.
-- Refactoring code structure.
+- Refactor code structure.
 
 ## v3.0.5
 
