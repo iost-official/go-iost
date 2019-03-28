@@ -82,7 +82,6 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 		mu:               new(sync.RWMutex),
 	}
 
-	p.cBase.Recover()
 	close(p.quitGenerateMode)
 
 	return &p

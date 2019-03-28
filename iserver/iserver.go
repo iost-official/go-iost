@@ -32,7 +32,7 @@ type IServer struct {
 func New(conf *common.Config) *IServer {
 	tx.ChainID = conf.P2P.ChainID
 
-	chainBase, err := chainbase.New(conf)
+	cBase, err := chainbase.New(conf)
 	if err != nil {
 		ilog.Fatalf("New chainbase failed: %v.", err)
 	}
@@ -42,22 +42,23 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	txp, err := txpool.NewTxPoolImpl(chainBase.BlockChain(), chainBase.BlockCache(), p2pService)
+	txp, err := txpool.NewTxPoolImpl(cBase.BlockChain(), cBase.BlockCache(), p2pService)
 	if err != nil {
 		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
 	}
 
-	chainBase.SetTxPool(txp)
+	cBase.SetTxPool(txp)
+	cBase.Recover()
 
-	consensus := consensus.New(consensus.Pob, conf, chainBase, txp, p2pService)
+	consensus := consensus.New(consensus.Pob, conf, cBase, txp, p2pService)
 
-	rpcServer := rpc.New(txp, chainBase, conf, p2pService, consensus)
+	rpcServer := rpc.New(txp, cBase, conf, p2pService, consensus)
 
-	debug := NewDebugServer(conf.Debug, p2pService, chainBase.BlockCache(), chainBase.BlockChain())
+	debug := NewDebugServer(conf.Debug, p2pService, cBase.BlockCache(), cBase.BlockChain())
 
 	return &IServer{
 		config:    conf,
-		cBase:     chainBase,
+		cBase:     cBase,
 		p2p:       p2pService,
 		txp:       txp,
 		rpcServer: rpcServer,
