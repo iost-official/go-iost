@@ -291,6 +291,7 @@ func (p *PoB) printStatistics(num int64, blk *block.Block) {
 	)
 }
 
+// Add will add a block to block cache and verify it.
 func (p *PoB) Add(blk *block.Block, replay bool) error {
 	_, err := p.blockCache.Find(blk.HeadHash())
 	if err == nil {
