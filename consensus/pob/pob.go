@@ -150,9 +150,6 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 	err := p.cBase.Add(blk, false, false)
 	p.mu.Unlock()
 	if err != nil {
-		if err != chainbase.ErrSingle && err != chainbase.ErrDuplicate {
-			ilog.Warnf("Verify block failed: %v", err)
-		}
 		return
 	}
 
