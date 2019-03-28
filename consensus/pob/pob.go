@@ -98,7 +98,7 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 }
 
 func (p *PoB) recoverBlockcache() error {
-	err := p.blockCache.Recover(p)
+	err := p.blockCache.Recover(p.cBase)
 	if err != nil {
 		ilog.Error("Failed to recover blockCache, err: ", err)
 		ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
@@ -154,7 +154,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 	}
 
 	p.mu.Lock()
-	err := p.Add(blk, false)
+	err := p.cBase.Add(blk, false, false)
 	p.mu.Unlock()
 	if err != nil {
 		if err != errSingle && err != errDuplicate {
@@ -267,7 +267,7 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 
 	p.mu.Lock()
-	err = p.Add(blk, false)
+	err = p.cBase.Add(blk, false, true)
 	p.mu.Unlock()
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
