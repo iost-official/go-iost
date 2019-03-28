@@ -169,7 +169,6 @@ type peer struct {
 
 	id     p2p.PeerID
 	blocks map[int]bool
-	// Mutex for blocks.
 	mu     sync.RWMutex
 	quitCh chan struct{}
 
@@ -218,6 +217,8 @@ func (p *peer) addBlocks(start int, end int) {
 }
 
 func (p *peer) setLib(lib int) {
+	p.mu.Lock()
+	defer p.mu.Unlock()
 	if _, ok := p.dCenter.blocks[lib]; !ok {
 		panic(fmt.Sprintf("node %v does not exist in data center", lib))
 	}
@@ -276,9 +277,13 @@ func (p *peer) p2pSendToPeer(to p2p.PeerID, msg []byte, typ p2p.MessageType, _ p
 	p.mCenter.sendToPeer(p.id, to, msg, typ)
 }
 func (p *peer) bcacheHead() *blockcache.BlockCacheNode {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	return p.head
 }
 func (p *peer) bcacheLinkedRoot() *blockcache.BlockCacheNode {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	return p.lib
 }
 func (p *peer) bcacheFind(hash []byte) (*blockcache.BlockCacheNode, error) {
@@ -299,6 +304,8 @@ func (p *peer) bcacheGetBlockByHash(hash []byte) (*block.Block, error) {
 	return b.Block, nil
 }
 func (p *peer) bcacheGetBlockByNumber(num int64) (*block.Block, error) {
+	p.mu.RLock()
+	defer p.mu.RUnlock()
 	// Same logic with blockcache.BlockCacheImpl.GetBlockByNumber().
 	if num < p.lib.Head.Number || num > p.head.Head.Number {
 		return nil, errors.New("block not found")
@@ -381,7 +388,7 @@ func TestBasic(t *testing.T) {
 		peers[i].addBlocks(1, 7)
 	}
 	time.Sleep(5 * time.Second)
-	if getID(peers[0].head.Block) != 7 {
+	if getID(peers[0].bcacheHead().Block) != 7 {
 		t.Fatalf("Peer0's head should be 7")
 	}
 
@@ -389,7 +396,7 @@ func TestBasic(t *testing.T) {
 		peers[i].addBlocks(10004, 10009)
 	}
 	time.Sleep(5 * time.Second)
-	if getID(peers[0].head.Block) != 10009 {
+	if getID(peers[0].bcacheHead().Block) != 10009 {
 		t.Fatalf("Peer0's head should be 100009")
 	}
 
@@ -397,7 +404,7 @@ func TestBasic(t *testing.T) {
 		peers[i].addBlocks(20006, 20010)
 	}
 	time.Sleep(5 * time.Second)
-	if getID(peers[0].head.Block) != 20010 {
+	if getID(peers[0].bcacheHead().Block) != 20010 {
 		t.Fatalf("Peer0's head should be 20010")
 	}
 }

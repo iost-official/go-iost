@@ -28,6 +28,7 @@ var (
 // CacheStatus ...
 type CacheStatus int
 
+// ConAlgo ...
 type ConAlgo interface {
 	Add(*block.Block, bool) error
 }
