@@ -73,12 +73,7 @@ func (c *ChainBase) recoverDB(conf *common.Config) error {
 func (c *ChainBase) Recover() error {
 	err := c.bCache.Recover(c)
 	if err != nil {
-		ilog.Error("Failed to recover blockCache, err: ", err)
-		ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
-		err = c.bCache.NewWAL(c.config)
-		if err != nil {
-			ilog.Error(" Failed to NewWAL, err: ", err)
-		}
+		return fmt.Errorf("recover blockCache failed: %v", err)
 	}
-	return err
+	return nil
 }

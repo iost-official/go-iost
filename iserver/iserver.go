@@ -48,7 +48,9 @@ func New(conf *common.Config) *IServer {
 	}
 
 	cBase.SetTxPool(txp)
-	cBase.Recover()
+	if err := cBase.Recover(); err != nil {
+		ilog.Fatalf("Recover chainbase failed: %v", err)
+	}
 
 	consensus := consensus.New(consensus.Pob, conf, cBase, txp, p2pService)
 
