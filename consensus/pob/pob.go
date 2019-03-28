@@ -1,7 +1,6 @@
 package pob
 
 import (
-	"errors"
 	"sync"
 	"time"
 
@@ -27,12 +26,6 @@ var (
 	receiveBlockDelayTimeGauge = metrics.NewGauge("iost_pob_receive_block_delay_time", nil)
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
 	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
-)
-
-var (
-	errSingle     = errors.New("single block")
-	errDuplicate  = errors.New("duplicate block")
-	errOutOfLimit = errors.New("block out of limit in one slot")
 )
 
 var (
@@ -157,7 +150,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 	err := p.cBase.Add(blk, false, false)
 	p.mu.Unlock()
 	if err != nil {
-		if err != errSingle && err != errDuplicate {
+		if err != chainbase.ErrSingle && err != chainbase.ErrDuplicate {
 			ilog.Warnf("Verify block failed: %v", err)
 		}
 		return

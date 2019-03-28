@@ -11,9 +11,9 @@ import (
 )
 
 var (
-	errSingle     = errors.New("single block")
-	errDuplicate  = errors.New("duplicate block")
-	errOutOfLimit = errors.New("block out of limit in one slot")
+	ErrSingle     = errors.New("single block")
+	ErrDuplicate  = errors.New("duplicate block")
+	ErrOutOfLimit = errors.New("block out of limit in one slot")
 )
 
 func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, gen bool) {
@@ -44,7 +44,7 @@ func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, ge
 func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 	_, err := c.bCache.Find(blk.HeadHash())
 	if err == nil {
-		return errDuplicate
+		return ErrDuplicate
 	}
 
 	err = verifyBasics(blk, blk.Sign)
@@ -57,7 +57,7 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 	if err == nil && parent.Type == blockcache.Linked {
 		return c.addExistingBlock(blk, parent, replay, gen)
 	}
-	return errSingle
+	return ErrSingle
 }
 
 func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool, gen bool) error {
@@ -71,7 +71,7 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 	}
 
 	if node.SerialNum >= int64(common.BlockNumPerWitness) {
-		return errOutOfLimit
+		return ErrOutOfLimit
 	}
 	ok := c.stateDB.Checkout(string(blk.HeadHash()))
 	if !ok {
