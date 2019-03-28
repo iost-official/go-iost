@@ -120,7 +120,6 @@ func (pool *TxPImpl) loop() {
 
 // Lock lock the txpool
 func (pool *TxPImpl) Lock() {
-	pool.quitGenerateMode = make(chan struct{})
 }
 
 // PendingTx is return pendingTx
@@ -130,7 +129,6 @@ func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 
 // Release release the txpool
 func (pool *TxPImpl) Release() {
-	close(pool.quitGenerateMode)
 }
 
 func (pool *TxPImpl) verifyWorkers() {
