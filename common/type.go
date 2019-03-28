@@ -4,8 +4,9 @@ import "time"
 
 // consts
 const (
-	VoteInterval = 1200
-	SlotTime     = 3 * time.Second
+	VoteInterval       = 1200
+	SlotTime           = 3 * time.Second
+	BlockNumPerWitness = 6
 )
 
 func IsWitness(w string, witnessList []string) bool {

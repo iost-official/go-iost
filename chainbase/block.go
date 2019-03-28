@@ -2,25 +2,40 @@ package chainbase
 
 import (
 	"errors"
-	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/synchro"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/metrics"
-	"github.com/iost-official/go-iost/p2p"
 )
 
+var (
+	errSingle     = errors.New("single block")
+	errDuplicate  = errors.New("duplicate block")
+	errOutOfLimit = errors.New("block out of limit in one slot")
+)
+
+func (c *ChainBase) printStatistics(num int64, blk *block.Block) {
+	action := "Rec"
+	action = "Gen"
+	ptx, _ := c.txPool.PendingTx()
+	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%dms",
+		action,
+		num,
+		blk.Head.Witness[:10],
+		blk.Head.Time,
+		blk.Head.Number,
+		c.bCache.LinkedRoot().Head.Number,
+		len(blk.Txs),
+		ptx.Size(),
+		(time.Now().UnixNano()-blk.Head.Time)/1e6,
+	)
+}
+
 // Add will add a block to block cache and verify it.
-func (p *PoB) Add(blk *block.Block, replay bool) error {
-	_, err := p.blockCache.Find(blk.HeadHash())
+func (c *ChainBase) Add(blk *block.Block, replay bool) error {
+	_, err := c.bCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
 	}
@@ -30,16 +45,16 @@ func (p *PoB) Add(blk *block.Block, replay bool) error {
 		return err
 	}
 
-	parent, err := p.blockCache.Find(blk.Head.ParentHash)
-	p.blockCache.Add(blk)
+	parent, err := c.bCache.Find(blk.Head.ParentHash)
+	c.bCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent, replay)
+		return c.addExistingBlock(blk, parent, replay)
 	}
 	return errSingle
 }
 
-func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool) error {
-	node, _ := p.blockCache.Find(blk.HeadHash())
+func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool) error {
+	node, _ := c.bCache.Find(blk.HeadHash())
 
 	if parentNode.Block.Head.Witness != blk.Head.Witness ||
 		common.SlotOfNanoSec(parentNode.Block.Head.Time) != common.SlotOfNanoSec(blk.Head.Time) {
@@ -48,34 +63,32 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		node.SerialNum = parentNode.SerialNum + 1
 	}
 
-	if node.SerialNum >= int64(blockNumPerWitness) {
+	if node.SerialNum >= int64(common.BlockNumPerWitness) {
 		return errOutOfLimit
 	}
-	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
+	ok := c.stateDB.Checkout(string(blk.HeadHash()))
 	if !ok {
-		p.verifyDB.Checkout(string(blk.Head.ParentHash))
-		p.txPool.Lock()
-		err := verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
-		p.txPool.Release()
+		c.stateDB.Checkout(string(blk.Head.ParentHash))
+		c.txPool.Lock()
+		err := verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, c.txPool, c.stateDB, c.bChain, replay)
+		c.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
-			p.blockCache.Del(node)
+			c.bCache.Del(node)
 			return err
 		}
-		p.verifyDB.Commit(string(blk.HeadHash()))
+		c.stateDB.Commit(string(blk.HeadHash()))
 	}
-	p.blockCache.Link(node, replay)
-	p.blockCache.UpdateLib(node)
+	c.bCache.Link(node, replay)
+	c.bCache.UpdateLib(node)
 	// After UpdateLib, the block head active witness list will be right
 	// So AddLinkedNode need execute after UpdateLib
-	p.txPool.AddLinkedNode(node)
+	c.txPool.AddLinkedNode(node)
 
-	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-
-	p.printStatistics(node.SerialNum, node.Block)
+	c.printStatistics(node.SerialNum, node.Block)
 
 	for child := range node.Children {
-		p.addExistingBlock(child.Block, node, replay)
+		c.addExistingBlock(child.Block, node, replay)
 	}
 	return nil
 }

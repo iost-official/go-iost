@@ -36,10 +36,9 @@ var (
 )
 
 var (
-	blockNumPerWitness = 6
-	maxBlockNumber     = int64(10000)
-	subSlotTime        = 500 * time.Millisecond
-	last2GenBlockTime  = 50 * time.Millisecond
+	maxBlockNumber    = int64(10000)
+	subSlotTime       = 500 * time.Millisecond
+	last2GenBlockTime = 50 * time.Millisecond
 )
 
 //PoB is a struct that handles the consensus logic.
@@ -162,6 +161,8 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
+	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+
 	if common.IsWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
 	} else {
@@ -211,9 +212,9 @@ func (p *PoB) scheduleLoop() {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = common.SlotOfNanoSec(t.UnixNano())
 				generateBlockTicker := time.NewTicker(subSlotTime)
-				for num := 0; num < blockNumPerWitness; num++ {
+				for num := 0; num < common.BlockNumPerWitness; num++ {
 					p.gen(num, pTx, head)
-					if num == blockNumPerWitness-1 {
+					if num == common.BlockNumPerWitness-1 {
 						break
 					}
 					select {
@@ -245,7 +246,7 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	}()
 
 	limitTime := common.MaxBlockTimeLimit
-	if num >= blockNumPerWitness-2 {
+	if num >= common.BlockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
 	p.txPool.Lock()
@@ -270,6 +271,7 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
 		return
 	}
+	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
 }
 
 func (p *PoB) printStatistics(num int64, blk *block.Block) {
@@ -321,7 +323,7 @@ func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCac
 		node.SerialNum = parentNode.SerialNum + 1
 	}
 
-	if node.SerialNum >= int64(blockNumPerWitness) {
+	if node.SerialNum >= int64(common.BlockNumPerWitness) {
 		return errOutOfLimit
 	}
 	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
