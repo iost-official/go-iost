@@ -15,6 +15,7 @@ import (
 
 // ChainBase will maintain blockchain data for memory and hard disk.
 type ChainBase struct {
+	config  *common.Config
 	bChain  block.Chain
 	bCache  blockcache.BlockCache
 	stateDB db.MVCCDB
@@ -53,6 +54,7 @@ func New(conf *common.Config) (*ChainBase, error) {
 	}
 
 	c := &ChainBase{
+		config:  conf,
 		bChain:  bChain,
 		stateDB: stateDB,
 	}
