@@ -16,9 +16,16 @@ var (
 	errOutOfLimit = errors.New("block out of limit in one slot")
 )
 
-func (c *ChainBase) printStatistics(num int64, blk *block.Block) {
-	action := "Rec"
-	action = "Gen"
+func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, gen bool) {
+	action := "Recover"
+	if !replay {
+		if gen {
+			action = "Generate"
+		} else {
+			action = "Receive"
+		}
+
+	}
 	ptx, _ := c.txPool.PendingTx()
 	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%dms",
 		action,
@@ -34,7 +41,7 @@ func (c *ChainBase) printStatistics(num int64, blk *block.Block) {
 }
 
 // Add will add a block to block cache and verify it.
-func (c *ChainBase) Add(blk *block.Block, replay bool) error {
+func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 	_, err := c.bCache.Find(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -48,12 +55,12 @@ func (c *ChainBase) Add(blk *block.Block, replay bool) error {
 	parent, err := c.bCache.Find(blk.Head.ParentHash)
 	c.bCache.Add(blk)
 	if err == nil && parent.Type == blockcache.Linked {
-		return c.addExistingBlock(blk, parent, replay)
+		return c.addExistingBlock(blk, parent, replay, gen)
 	}
 	return errSingle
 }
 
-func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool) error {
+func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool, gen bool) error {
 	node, _ := c.bCache.Find(blk.HeadHash())
 
 	if parentNode.Block.Head.Witness != blk.Head.Witness ||
@@ -85,10 +92,10 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 	// So AddLinkedNode need execute after UpdateLib
 	c.txPool.AddLinkedNode(node)
 
-	c.printStatistics(node.SerialNum, node.Block)
+	c.printStatistics(node.SerialNum, node.Block, replay, gen)
 
 	for child := range node.Children {
-		c.addExistingBlock(child.Block, node, replay)
+		c.addExistingBlock(child.Block, node, replay, gen)
 	}
 	return nil
 }
