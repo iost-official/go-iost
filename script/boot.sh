@@ -190,6 +190,8 @@ services:
       - "30000-30003:30000-30003"
     volumes:
       - $PREFIX:/var/lib/iserver:Z
+    ulimits:
+      nofile: 51200
 EOF
 
 docker-compose pull
