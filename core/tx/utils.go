@@ -67,12 +67,16 @@ func checkBadAction(action *Action) error {
 		if err != nil {
 			return fmt.Errorf("invalid amount: %v, %v", err, data)
 		}
+		err = checkAmount(amount, "iost")
+		if err != nil {
+			return fmt.Errorf("invalid amount: %v, %v", err, data)
+		}
 		f, err := common.NewFixed(amount, -1)
 		if err != nil {
 			return fmt.Errorf("invalid amount: %v, %v", err, data)
 		}
-		if f.Decimal > 2 {
-			return fmt.Errorf("invalid decimal: %v", data)
+		if f.ShrinkDecimal().Decimal > 2 {
+			return fmt.Errorf("decimal should not exceed 2: %v", data)
 		}
 	}
 	return nil
