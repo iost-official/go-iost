@@ -18,6 +18,8 @@ import (
 	"github.com/xlab/treeprint"
 )
 
+//go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/core/blockcache BlockCache
+
 var (
 	metricsTxTotal = metrics.NewGauge("iost_tx_total", nil)
 	metricsDBSize  = metrics.NewGauge("iost_db_size", []string{"Name"})
@@ -26,7 +28,8 @@ var (
 // CacheStatus ...
 type CacheStatus int
 
-type conAlgo interface {
+// ConAlgo ...
+type ConAlgo interface {
 	Add(*block.Block, bool, bool) error
 }
 
@@ -254,7 +257,7 @@ type BlockCache interface {
 	Head() *BlockCacheNode
 	Draw() string
 	CleanDir() error
-	Recover(p conAlgo) (err error)
+	Recover(p ConAlgo) (err error)
 	AddNodeToWAL(bcn *BlockCacheNode)
 }
 
@@ -381,7 +384,7 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 }
 
 // Recover recover previews block cache
-func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
+func (bc *BlockCacheImpl) Recover(p ConAlgo) (err error) {
 	if bc.wal.HasDecoder() {
 		//Get All entries
 		_, entries, err := bc.wal.ReadAll()
@@ -402,7 +405,7 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 	return
 }
 
-func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
+func (bc *BlockCacheImpl) apply(entry wal.Entry, p ConAlgo) (err error) {
 	var bcMessage BcMessage
 	proto.Unmarshal(entry.Data, &bcMessage)
 	switch bcMessage.Type {
@@ -426,7 +429,7 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 	return
 }
 
-func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
+func (bc *BlockCacheImpl) applyLink(b []byte, p ConAlgo) (err error) {
 	block, witnessList, serialNum, err := decodeBCN(b)
 	if string(bc.LinkedRoot().HeadHash()) == string(block.HeadHash()) {
 		bc.LinkedRoot().WitnessList = witnessList

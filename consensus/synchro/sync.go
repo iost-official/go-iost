@@ -65,6 +65,7 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 // Close will close the synchronizer of blockchain.
 func (s *Sync) Close() {
 	s.handler.Close()
+	s.rangeController.Close()
 	s.heightSync.Close()
 	s.blockhashSync.Close()
 	s.blockSync.Close()
