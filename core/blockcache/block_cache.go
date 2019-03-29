@@ -18,6 +18,8 @@ import (
 	"github.com/xlab/treeprint"
 )
 
+//go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/core/blockcache BlockCache
+
 var (
 	metricsTxTotal = metrics.NewGauge("iost_tx_total", nil)
 	metricsDBSize  = metrics.NewGauge("iost_db_size", []string{"Name"})
@@ -26,8 +28,9 @@ var (
 // CacheStatus ...
 type CacheStatus int
 
-type conAlgo interface {
-	Add(*block.Block, bool) error
+// ConAlgo ...
+type ConAlgo interface {
+	Add(*block.Block, bool, bool) error
 }
 
 const (
@@ -254,8 +257,7 @@ type BlockCache interface {
 	Head() *BlockCacheNode
 	Draw() string
 	CleanDir() error
-	Recover(p conAlgo) (err error)
-	NewWAL(config *common.Config) (err error)
+	Recover(p ConAlgo) (err error)
 	AddNodeToWAL(bcn *BlockCacheNode)
 }
 
@@ -381,18 +383,8 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 	return &bc, nil
 }
 
-// NewWAL New wal when old one is not recoverable. Move Old File into Corrupted for later analysis.
-func (bc *BlockCacheImpl) NewWAL(config *common.Config) (err error) {
-	walPath := config.DB.LdbPath + blockCacheWALDir
-	corruptWalPath := config.DB.LdbPath + blockCacheWALDir + "Corrupted"
-	os.Rename(walPath, corruptWalPath)
-	bc.wal, err = wal.Create(walPath, []byte("block_cache_wal"))
-	return
-
-}
-
 // Recover recover previews block cache
-func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
+func (bc *BlockCacheImpl) Recover(p ConAlgo) (err error) {
 	if bc.wal.HasDecoder() {
 		//Get All entries
 		_, entries, err := bc.wal.ReadAll()
@@ -413,7 +405,7 @@ func (bc *BlockCacheImpl) Recover(p conAlgo) (err error) {
 	return
 }
 
-func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
+func (bc *BlockCacheImpl) apply(entry wal.Entry, p ConAlgo) (err error) {
 	var bcMessage BcMessage
 	proto.Unmarshal(entry.Data, &bcMessage)
 	switch bcMessage.Type {
@@ -437,13 +429,13 @@ func (bc *BlockCacheImpl) apply(entry wal.Entry, p conAlgo) (err error) {
 	return
 }
 
-func (bc *BlockCacheImpl) applyLink(b []byte, p conAlgo) (err error) {
+func (bc *BlockCacheImpl) applyLink(b []byte, p ConAlgo) (err error) {
 	block, witnessList, serialNum, err := decodeBCN(b)
 	if string(bc.LinkedRoot().HeadHash()) == string(block.HeadHash()) {
 		bc.LinkedRoot().WitnessList = witnessList
 		bc.LinkedRoot().SerialNum = serialNum
 	}
-	p.Add(&block, true)
+	p.Add(&block, true, false)
 	return err
 }
 
