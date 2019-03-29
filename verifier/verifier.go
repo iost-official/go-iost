@@ -179,6 +179,10 @@ L:
 			ilog.Debug("Ignore delay tx.")
 			continue L
 		}
+		if tx.CheckBadTx(t) != nil {
+			ilog.Errorf("bad tx %v", t)
+			continue L
+		}
 		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
 			ilog.Errorf(
 				"Tx %v is expired, tx time is %v, tx expiration time is %v, blk time is %v",
