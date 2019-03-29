@@ -85,7 +85,11 @@ func (b *blockHashSync) NeighborBlockHashs(start, end int64) <-chan *BlockHash {
 			hashs := make(map[string]*BlockHash)
 			b.mutex.RLock()
 			for peerID, blockHashs := range b.neighborBlockHashs {
-				key := string(blockHashs.hashs[num])
+				h, ok := blockHashs.hashs[num]
+				if !ok {
+					continue
+				}
+				key := string(h)
 				if blockHash, ok := hashs[key]; ok {
 					blockHash.PeerID = append(blockHash.PeerID, peerID)
 				} else {
