@@ -1,3 +1,10 @@
+## v3.0.7
+
+Fri Mar 29 16:47:15 CST 2019
+
+- Add an RPC interface prompt message.
+- Refactor code structure.
+
 ## v3.0.6
 
 Thu Mar 28 12:50:15 CST 2019

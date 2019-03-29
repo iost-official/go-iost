@@ -32,7 +32,7 @@ spec:
     spec:
       containers:
         - name: iserver
-          image: "iostio/iost-node:3.0.6-$COMMIT"
+          image: "iostio/iost-node:3.0.7-$COMMIT"
           imagePullPolicy: "IfNotPresent"
           command:
             - /bin/bash
