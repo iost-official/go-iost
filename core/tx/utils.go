@@ -31,7 +31,7 @@ func checkAmount(amount string, token string) error {
 	return nil
 }
 
-func checkBadAction(action *Action) error {
+func checkBadAction(action *Action) error { // nolint:gocyclo
 	data := action.Data
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
