@@ -1,8 +1,53 @@
 package common
 
-import "time"
+import (
+	"sync"
+	"time"
 
-// consts
+	"github.com/iost-official/go-iost/metrics"
+)
+
+// Mode
+type ModeType uint
+
+const (
+	ModeNormal ModeType = iota
+	ModeSync
+	ModeInit
+)
+
+var (
+	mode      = ModeInit
+	modeMutex = new(sync.RWMutex)
+	modeGauge = metrics.NewGauge("iost_node_mode", nil)
+)
+
+// Mode return the mode of pob.
+func Mode() string {
+	modeMutex.RLock()
+	defer modeMutex.RUnlock()
+
+	switch mode {
+	case ModeNormal:
+		return "ModeNormal"
+	case ModeSync:
+		return "ModeSync"
+	case ModeInit:
+		return "ModeInit"
+	default:
+		return "Undefined"
+	}
+}
+
+func SetMode(m ModeType) {
+	modeMutex.Lock()
+	defer modeMutex.Unlock()
+
+	mode = m
+	modeGauge.Set(float64(mode), nil)
+}
+
+// Witness
 const (
 	VoteInterval       = 1200
 	SlotTime           = 3 * time.Second

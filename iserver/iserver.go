@@ -54,7 +54,7 @@ func New(conf *common.Config) *IServer {
 
 	consensus := consensus.New(consensus.Pob, conf, cBase, txp, p2pService)
 
-	rpcServer := rpc.New(txp, cBase, conf, p2pService, consensus)
+	rpcServer := rpc.New(txp, cBase, conf, p2pService)
 
 	debug := NewDebugServer(conf.Debug, p2pService, cBase.BlockCache(), cBase.BlockChain())
 
