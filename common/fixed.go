@@ -86,7 +86,8 @@ func (f *Fixed) ChangeDecimal(targetDecimal int) *Fixed {
 	return &Fixed{Value: value, Decimal: decimal}
 }
 
-func (f *Fixed) shrinkDecimal() *Fixed {
+// ShrinkDecimal remove trailing 0s
+func (f *Fixed) ShrinkDecimal() *Fixed {
 	value := f.Value
 	decimal := f.Decimal
 	for value%10 == 0 && decimal > 0 {
@@ -141,8 +142,8 @@ func (f *Fixed) Sub(other *Fixed) *Fixed {
 
 // Multiply ...
 func (f *Fixed) Multiply(other *Fixed) *Fixed {
-	fpnNew := f.shrinkDecimal()
-	otherNew := other.shrinkDecimal()
+	fpnNew := f.ShrinkDecimal()
+	otherNew := other.ShrinkDecimal()
 	if multiplyOverflow(fpnNew.Value, otherNew.Value) {
 		f.Err = errOverflow
 		return nil

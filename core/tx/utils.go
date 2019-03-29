@@ -1,10 +1,9 @@
-package rpc
+package tx
 
 import (
 	"fmt"
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/tx"
 	"math"
 	"regexp"
 	"strconv"
@@ -32,17 +31,17 @@ func checkAmount(amount string, token string) error {
 	return nil
 }
 
-func checkBadAction(action *tx.Action) error {
+func checkBadAction(action *Action) error { // nolint:gocyclo
+	data := action.Data
+	js, err := simplejson.NewJson([]byte(data))
+	if err != nil {
+		return fmt.Errorf("invalid json array: %v, %v", err, data)
+	}
+	arr, err := js.Array()
+	if err != nil {
+		return fmt.Errorf("invalid json array: %v, %v", err, data)
+	}
 	if action.Contract == "token.iost" && action.ActionName == "transfer" {
-		data := action.Data
-		js, err := simplejson.NewJson([]byte(data))
-		if err != nil {
-			return fmt.Errorf("invalid json array: %v, %v", err, data)
-		}
-		arr, err := js.Array()
-		if err != nil {
-			return fmt.Errorf("invalid json array: %v, %v", err, data)
-		}
 		if len(arr) != 5 {
 			return fmt.Errorf("wrong args num: %v", data)
 		}
@@ -60,10 +59,31 @@ func checkBadAction(action *tx.Action) error {
 		}
 		return nil
 	}
+	if action.Contract == "gas.iost" && (action.ActionName == "pledge" || action.ActionName == "unpledge") {
+		if len(arr) != 3 {
+			return fmt.Errorf("wrong args num: %v", data)
+		}
+		amount, err := js.GetIndex(2).String()
+		if err != nil {
+			return fmt.Errorf("invalid amount: %v, %v", err, data)
+		}
+		err = checkAmount(amount, "iost")
+		if err != nil {
+			return fmt.Errorf("invalid amount: %v, %v", err, data)
+		}
+		f, err := common.NewFixed(amount, -1)
+		if err != nil {
+			return fmt.Errorf("invalid amount: %v, %v", err, data)
+		}
+		if f.ShrinkDecimal().Decimal > 2 {
+			return fmt.Errorf("decimal should not exceed 2: %v", data)
+		}
+	}
 	return nil
 }
 
-func checkBadTx(tx *tx.Tx) error {
+// CheckBadTx ...
+func CheckBadTx(tx *Tx) error {
 	for _, a := range tx.Actions {
 		err := checkBadAction(a)
 		if err != nil {
