@@ -1,7 +1,6 @@
 package pob
 
 import (
-	"errors"
 	"sync"
 	"time"
 
@@ -30,16 +29,9 @@ var (
 )
 
 var (
-	errSingle     = errors.New("single block")
-	errDuplicate  = errors.New("duplicate block")
-	errOutOfLimit = errors.New("block out of limit in one slot")
-)
-
-var (
-	blockNumPerWitness = 6
-	maxBlockNumber     = int64(10000)
-	subSlotTime        = 500 * time.Millisecond
-	last2GenBlockTime  = 50 * time.Millisecond
+	maxBlockNumber    = int64(10000)
+	subSlotTime       = 500 * time.Millisecond
+	last2GenBlockTime = 50 * time.Millisecond
 )
 
 //PoB is a struct that handles the consensus logic.
@@ -50,9 +42,9 @@ type PoB struct {
 	blockCache blockcache.BlockCache
 	txPool     txpool.TxPool
 	p2pService p2p.Service
-	verifyDB   db.MVCCDB
 	produceDB  db.MVCCDB
 	sync       *synchro.Sync
+	cBase      *chainbase.ChainBase
 
 	exitSignal       chan struct{}
 	quitGenerateMode chan struct{}
@@ -61,7 +53,7 @@ type PoB struct {
 }
 
 // New init a new PoB.
-func New(conf *common.Config, chainBase *chainbase.ChainBase, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
 	// TODO: Move the code to account struct.
 	accSecKey := conf.ACC.SecKey
 	accAlgo := conf.ACC.Algorithm
@@ -76,13 +68,13 @@ func New(conf *common.Config, chainBase *chainbase.ChainBase, txPool txpool.TxPo
 	p := PoB{
 		account:    account,
 		conf:       conf,
-		blockChain: chainBase.BlockChain(),
-		blockCache: chainBase.BlockCache(),
+		blockChain: cBase.BlockChain(),
+		blockCache: cBase.BlockCache(),
 		txPool:     txPool,
 		p2pService: p2pService,
-		verifyDB:   chainBase.StateDB(),
-		produceDB:  chainBase.StateDB().Fork(),
+		produceDB:  cBase.StateDB().Fork(),
 		sync:       nil,
+		cBase:      cBase,
 
 		exitSignal:       make(chan struct{}),
 		quitGenerateMode: make(chan struct{}),
@@ -90,23 +82,9 @@ func New(conf *common.Config, chainBase *chainbase.ChainBase, txPool txpool.TxPo
 		mu:               new(sync.RWMutex),
 	}
 
-	p.recoverBlockcache()
 	close(p.quitGenerateMode)
 
 	return &p
-}
-
-func (p *PoB) recoverBlockcache() error {
-	err := p.blockCache.Recover(p)
-	if err != nil {
-		ilog.Error("Failed to recover blockCache, err: ", err)
-		ilog.Info("Don't Recover, Move old file to BlockCacheWALCorrupted")
-		err = p.blockCache.NewWAL(p.conf)
-		if err != nil {
-			ilog.Error(" Failed to NewWAL, err: ", err)
-		}
-	}
-	return err
 }
 
 // Start make the PoB run.
@@ -153,16 +131,15 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 	}
 
 	p.mu.Lock()
-	err := p.Add(blk, false)
+	err := p.cBase.Add(blk, false, false)
 	p.mu.Unlock()
 	if err != nil {
-		if err != errSingle && err != errDuplicate {
-			ilog.Warnf("Verify block failed: %v", err)
-		}
 		return
 	}
 
-	if isWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
+	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+
+	if common.IsWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
 	} else {
 		p.p2pService.ConnectBPs(nil)
@@ -190,7 +167,7 @@ func (p *PoB) verifyLoop() {
 
 func (p *PoB) scheduleLoop() {
 	defer p.wg.Done()
-	nextSchedule := timeUntilNextSchedule(time.Now().UnixNano())
+	nextSchedule := common.TimeUntilNextSchedule(time.Now().UnixNano())
 	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 	pubkey := p.account.ReadablePubkey()
 
@@ -207,13 +184,13 @@ func (p *PoB) scheduleLoop() {
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			if slotFlag != slotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && witnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != common.SlotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && common.WitnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
-				slotFlag = slotOfNanoSec(t.UnixNano())
+				slotFlag = common.SlotOfNanoSec(t.UnixNano())
 				generateBlockTicker := time.NewTicker(subSlotTime)
-				for num := 0; num < blockNumPerWitness; num++ {
+				for num := 0; num < common.BlockNumPerWitness; num++ {
 					p.gen(num, pTx, head)
-					if num == blockNumPerWitness-1 {
+					if num == common.BlockNumPerWitness-1 {
 						break
 					}
 					select {
@@ -221,14 +198,14 @@ func (p *PoB) scheduleLoop() {
 					}
 					pTx, head = p.txPool.PendingTx()
 					witnessList = head.Active()
-					if witnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
+					if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
 						break
 					}
 				}
 				close(p.quitGenerateMode)
 				generateBlockTicker.Stop()
 			}
-			nextSchedule = timeUntilNextSchedule(time.Now().UnixNano())
+			nextSchedule = common.TimeUntilNextSchedule(time.Now().UnixNano())
 			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
 			return
@@ -245,7 +222,7 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	}()
 
 	limitTime := common.MaxBlockTimeLimit
-	if num >= blockNumPerWitness-2 {
+	if num >= common.BlockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
 	p.txPool.Lock()
@@ -264,91 +241,11 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
 
 	p.mu.Lock()
-	err = p.Add(blk, false)
+	err = p.cBase.Add(blk, false, true)
 	p.mu.Unlock()
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
 		return
 	}
-}
-
-func (p *PoB) printStatistics(num int64, blk *block.Block) {
-	action := "Rec"
-	if blk.Head.Witness == p.account.ReadablePubkey() {
-		action = "Gen"
-	}
-	ptx, _ := p.txPool.PendingTx()
-	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%dms",
-		action,
-		num,
-		blk.Head.Witness[:10],
-		blk.Head.Time,
-		blk.Head.Number,
-		p.blockCache.LinkedRoot().Head.Number,
-		len(blk.Txs),
-		ptx.Size(),
-		(time.Now().UnixNano()-blk.Head.Time)/1e6,
-	)
-}
-
-// Add will add a block to block cache and verify it.
-func (p *PoB) Add(blk *block.Block, replay bool) error {
-	_, err := p.blockCache.Find(blk.HeadHash())
-	if err == nil {
-		return errDuplicate
-	}
-
-	err = verifyBasics(blk, blk.Sign)
-	if err != nil {
-		return err
-	}
-
-	parent, err := p.blockCache.Find(blk.Head.ParentHash)
-	p.blockCache.Add(blk)
-	if err == nil && parent.Type == blockcache.Linked {
-		return p.addExistingBlock(blk, parent, replay)
-	}
-	return errSingle
-}
-
-func (p *PoB) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool) error {
-	node, _ := p.blockCache.Find(blk.HeadHash())
-
-	if parentNode.Block.Head.Witness != blk.Head.Witness ||
-		slotOfNanoSec(parentNode.Block.Head.Time) != slotOfNanoSec(blk.Head.Time) {
-		node.SerialNum = 0
-	} else {
-		node.SerialNum = parentNode.SerialNum + 1
-	}
-
-	if node.SerialNum >= int64(blockNumPerWitness) {
-		return errOutOfLimit
-	}
-	ok := p.verifyDB.Checkout(string(blk.HeadHash()))
-	if !ok {
-		p.verifyDB.Checkout(string(blk.Head.ParentHash))
-		p.txPool.Lock()
-		err := verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, p.txPool, p.verifyDB, p.blockChain, replay)
-		p.txPool.Release()
-		if err != nil {
-			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
-			p.blockCache.Del(node)
-			return err
-		}
-		p.verifyDB.Commit(string(blk.HeadHash()))
-	}
-	p.blockCache.Link(node, replay)
-	p.blockCache.UpdateLib(node)
-	// After UpdateLib, the block head active witness list will be right
-	// So AddLinkedNode need execute after UpdateLib
-	p.txPool.AddLinkedNode(node)
-
 	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-
-	p.printStatistics(node.SerialNum, node.Block)
-
-	for child := range node.Children {
-		p.addExistingBlock(child.Block, node, replay)
-	}
-	return nil
 }

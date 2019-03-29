@@ -30,7 +30,7 @@ type CacheStatus int
 
 // ConAlgo ...
 type ConAlgo interface {
-	Add(*block.Block, bool) error
+	Add(*block.Block, bool, bool) error
 }
 
 const (
@@ -258,7 +258,6 @@ type BlockCache interface {
 	Draw() string
 	CleanDir() error
 	Recover(p ConAlgo) (err error)
-	NewWAL(config *common.Config) (err error)
 	AddNodeToWAL(bcn *BlockCacheNode)
 }
 
@@ -384,16 +383,6 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 	return &bc, nil
 }
 
-// NewWAL New wal when old one is not recoverable. Move Old File into Corrupted for later analysis.
-func (bc *BlockCacheImpl) NewWAL(config *common.Config) (err error) {
-	walPath := config.DB.LdbPath + blockCacheWALDir
-	corruptWalPath := config.DB.LdbPath + blockCacheWALDir + "Corrupted"
-	os.Rename(walPath, corruptWalPath)
-	bc.wal, err = wal.Create(walPath, []byte("block_cache_wal"))
-	return
-
-}
-
 // Recover recover previews block cache
 func (bc *BlockCacheImpl) Recover(p ConAlgo) (err error) {
 	if bc.wal.HasDecoder() {
@@ -446,7 +435,7 @@ func (bc *BlockCacheImpl) applyLink(b []byte, p ConAlgo) (err error) {
 		bc.LinkedRoot().WitnessList = witnessList
 		bc.LinkedRoot().SerialNum = serialNum
 	}
-	p.Add(&block, true)
+	p.Add(&block, true, false)
 	return err
 }
 
