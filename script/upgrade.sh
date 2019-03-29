@@ -37,6 +37,21 @@ update_container_restart_policy() {
     rm -f $PREFIX/docker-compose.yml.bak
 }
 
+update_container_ulimit() {
+    # IB-638 increase ulimit
+    grep -q nofile $PREFIX/docker-compose.yml && return
+    _SYS=$(uname)
+    if [ x$_SYS = x"Linux" ]; then
+        sed -i -e '/volumes/{n;a\    ulimits:\n      nofile: 51200' -e '}' $PREFIX/docker-compose.yml
+    elif [ x$_SYS = x"Darwin" ]; then
+        sed -i '' -e '/volumes/{n;a\
+            \    ulimits:' -e ';a\
+            \      nofile: 51200' -e '}' $PREFIX/docker-compose.yml
+    else
+        >&2 echo System not recognized !
+    fi
+}
+
 #
 # main
 #
@@ -44,6 +59,7 @@ update_container_restart_policy() {
 cd $PREFIX
 
 update_container_restart_policy
+update_container_ulimit
 docker-compose pull
 docker-compose up -d
 
