@@ -96,6 +96,7 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 	// After UpdateLib, the block head active witness list will be right
 	// So AddLinkedNode need execute after UpdateLib
 	c.txPool.AddLinkedNode(node)
+	ilog.Infof("node %d %s active list: %v", node.Head.Number, common.Base58Encode(node.HeadHash()), node.Active())
 
 	c.printStatistics(node.SerialNum, node.Block, replay, gen)
 
