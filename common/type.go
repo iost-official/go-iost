@@ -7,9 +7,10 @@ import (
 	"github.com/iost-official/go-iost/metrics"
 )
 
-// Mode
+// ModeType is the type of mode.
 type ModeType uint
 
+// Constant of mode type.
 const (
 	ModeNormal ModeType = iota
 	ModeSync
@@ -22,7 +23,7 @@ var (
 	modeGauge = metrics.NewGauge("iost_node_mode", nil)
 )
 
-// Mode return the mode of pob.
+// Mode will return the mode of iserver.
 func Mode() string {
 	modeMutex.RLock()
 	defer modeMutex.RUnlock()
@@ -39,6 +40,7 @@ func Mode() string {
 	}
 }
 
+// SetMode will set the mode of iserver.
 func SetMode(m ModeType) {
 	modeMutex.Lock()
 	defer modeMutex.Unlock()
