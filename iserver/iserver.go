@@ -7,6 +7,7 @@ import (
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/metrics/exporter"
 	"github.com/iost-official/go-iost/p2p"
 	"github.com/iost-official/go-iost/rpc"
 )
@@ -26,16 +27,20 @@ type IServer struct {
 	rpcServer *rpc.Server
 	consensus consensus.Consensus
 	debug     *DebugServer
+	exporter  *exporter.Exporter
 }
 
 // New returns a iserver application
 func New(conf *common.Config) *IServer {
+
 	tx.ChainID = conf.P2P.ChainID
 
 	cBase, err := chainbase.New(conf)
 	if err != nil {
 		ilog.Fatalf("New chainbase failed: %v.", err)
 	}
+
+	exporter := exporter.New()
 
 	p2pService, err := p2p.NewNetService(conf.P2P)
 	if err != nil {
@@ -66,6 +71,7 @@ func New(conf *common.Config) *IServer {
 		rpcServer: rpcServer,
 		consensus: consensus,
 		debug:     debug,
+		exporter:  exporter,
 	}
 }
 
@@ -106,5 +112,6 @@ func (s *IServer) Stop() {
 	for _, s := range Services {
 		s.Stop()
 	}
+	s.exporter.Close()
 	s.cBase.Close()
 }
