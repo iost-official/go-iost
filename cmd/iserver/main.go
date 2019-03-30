@@ -93,7 +93,6 @@ func main() {
 	if err != nil {
 		ilog.Errorf("init metrics failed. err=%v", err)
 	}
-	setNodeInfoMetrics()
 
 	server := iserver.New(conf)
 	server.Start()
