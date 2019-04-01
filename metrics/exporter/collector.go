@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	updateInterval = 15
+	updateInterval = 5 // This value effects irate
 )
 
 var (
