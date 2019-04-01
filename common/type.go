@@ -4,6 +4,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 )
 
@@ -84,7 +85,10 @@ func SlotOfNanoSec(nanosec int64) int64 {
 }
 
 // TimeUntilNextSchedule will return the time left in the next slot.
-func TimeUntilNextSchedule(timeSec int64) int64 {
-	currentSlot := timeSec / int64(SlotTime)
-	return (currentSlot+1)*int64(SlotTime) - timeSec
+func TimeUntilNextSchedule() time.Duration {
+	now := time.Duration(time.Now().UnixNano())
+	currentSlot := now / SlotTime
+	nextSchedule := (currentSlot+1)*SlotTime - now
+	ilog.Debugf("The nextSchedule: %.2f", nextSchedule.Seconds())
+	return nextSchedule
 }

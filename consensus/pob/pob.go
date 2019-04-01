@@ -151,25 +151,24 @@ func (p *PoB) verifyLoop() {
 }
 
 func (p *PoB) scheduleLoop() {
-	defer p.wg.Done()
-	nextSchedule := common.TimeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 	pubkey := p.account.ReadablePubkey()
 
 	var slotFlag int64
 	for {
 		select {
-		case <-time.After(time.Duration(nextSchedule)):
+		case <-time.After(common.TimeUntilNextSchedule()):
 			time.Sleep(time.Millisecond)
 			if p.sync.IsCatchingUp() {
 				common.SetMode(common.ModeSync)
+				// When the iserver is catching up, the generate block is not performed.
+				continue
 			} else {
 				common.SetMode(common.ModeNormal)
 			}
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
 			witnessList := head.Active()
-			if slotFlag != common.SlotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && common.WitnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
+			if slotFlag != common.SlotOfNanoSec(t.UnixNano()) && common.WitnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
 				p.quitGenerateMode = make(chan struct{})
 				slotFlag = common.SlotOfNanoSec(t.UnixNano())
 				generateBlockTicker := time.NewTicker(subSlotTime)
@@ -190,9 +189,8 @@ func (p *PoB) scheduleLoop() {
 				close(p.quitGenerateMode)
 				generateBlockTicker.Stop()
 			}
-			nextSchedule = common.TimeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
 		case <-p.exitSignal:
+			p.wg.Done()
 			return
 		}
 	}
