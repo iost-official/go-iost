@@ -735,6 +735,12 @@
 			"revisionTime": "2018-10-10T10:43:39Z"
 		},
 		{
+			"checksumSHA1": "IdBAvtVSv0sbi8sEsLovnZubims=",
+			"path": "github.com/lufia/iostat",
+			"revision": "9f7362b77ad333b26c01c99de52a11bdb650ded2",
+			"revisionTime": "2017-06-05T15:08:45Z"
+		},
+		{
 			"checksumSHA1": "AYZGozgchqe4WcKH/jCZI1flnP8=",
 			"path": "github.com/magiconair/properties",
 			"revision": "c2353362d570a7bfa228149c62842019201cfb71",
