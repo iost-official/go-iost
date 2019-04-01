@@ -448,6 +448,7 @@ func (bc *BlockCacheImpl) applyUpdateActive(b []byte) (err error) {
 		block, ok := bc.hmget(blockHeadHash)
 		if ok {
 			block.SetActive(witnessList.Active())
+			ilog.Infof("Set node %d active to :%v", block.Head.Number, block.Active())
 		}
 	}
 	return
@@ -537,7 +538,10 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 	node.ValidWitness = newValidWitness
 	node.SetActive(bc.LinkedRoot().Pending())
 	ilog.Infof("update node:%d activelist to %v", node.Head.Number, node.Active())
-	bc.writeUpdateActiveWAL(node)
+	err := bc.writeUpdateActiveWAL(node)
+	if err != nil {
+		ilog.Errorf("Write updateactive to wal failed. err=%v, activelist=%v", err, bc.LinkedRoot().Pending())
+	}
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
