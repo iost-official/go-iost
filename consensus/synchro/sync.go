@@ -133,14 +133,6 @@ func (s *Sync) doBlockhashSync() {
 	}()
 
 	start, end := s.rangeController.SyncRange()
-	nHeight := s.heightSync.NeighborHeight()
-	if nHeight < end {
-		end = nHeight
-	}
-	if start > end {
-		return
-	}
-
 	s.blockhashSync.RequestBlockHash(start, end)
 }
 
@@ -163,14 +155,6 @@ func (s *Sync) doBlockSync() {
 	}()
 
 	start, end := s.rangeController.SyncRange()
-	nHeight := s.heightSync.NeighborHeight()
-	if nHeight < end {
-		end = nHeight
-	}
-	if start > end {
-		return
-	}
-
 	ilog.Infof("Syncing block in [%v %v]...", start, end)
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
 		if block, err := s.bCache.GetBlockByHash(blockHash.Hash); err == nil && block != nil {
