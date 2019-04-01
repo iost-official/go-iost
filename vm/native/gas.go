@@ -30,7 +30,7 @@ func init() {
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
-func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fixed) (contract.Cost, error) {
+func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fixed) (contract.Cost, error) { // nolint:gocyclo
 	finalCost := contract.Cost0()
 	if pledgeAmountF.IsZero() {
 		return finalCost, fmt.Errorf("invalid pledge amount %v", pledgeAmountF.ToString())
