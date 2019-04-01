@@ -101,20 +101,25 @@ func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
 		return
 	}
 
-	if (blockHashQuery.Start < 0) ||
-		(blockHashQuery.Start > blockHashQuery.End) ||
-		(blockHashQuery.End-blockHashQuery.Start+1 > maxSyncRange) {
+	start := blockHashQuery.Start
+	end := blockHashQuery.End
+
+	if (start < 0) || (start > end) || (end-start+1 > maxSyncRange) {
 		ilog.Warnf("Receive attack request from peer %v, start: %v, end: %v.", request.From().Pretty(), blockHashQuery.Start, blockHashQuery.End)
 		return
 	}
 
+	head := r.bCache.Head().Head.Number
 	// Because this request is broadcast, so there is this situation.
 	// It will be changed later.
-	if blockHashQuery.Start > r.bCache.Head().Head.Number {
+	if start > head {
 		return
 	}
+	if end > head {
+		end = head
+	}
 
-	blockHashResponse := r.getBlockHashResponse(blockHashQuery.Start, blockHashQuery.End)
+	blockHashResponse := r.getBlockHashResponse(start, end)
 
 	msg, err := proto.Marshal(blockHashResponse)
 	if err != nil {

@@ -25,7 +25,6 @@ var (
 	verifyBlockTimeGauge       = metrics.NewGauge("iost_pob_verify_block_time", nil)
 	receiveBlockDelayTimeGauge = metrics.NewGauge("iost_pob_receive_block_delay_time", nil)
 	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
-	metricsMode                = metrics.NewGauge("iost_node_mode", nil)
 )
 
 var (
@@ -61,9 +60,6 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 	if err != nil {
 		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
 	}
-
-	// TODO: Organize the owner and lifecycle of all metrics.
-	metricsMode.Set(float64(2), nil)
 
 	p := PoB{
 		account:    account,
@@ -103,17 +99,6 @@ func (p *PoB) Stop() {
 	p.wg.Wait()
 
 	p.sync.Close()
-}
-
-// Mode return the mode of pob.
-func (p *PoB) Mode() string {
-	if p.sync == nil {
-		return "ModeInit"
-	} else if p.sync.IsCatchingUp() {
-		return "ModeSync"
-	} else {
-		return "ModeNormal"
-	}
 }
 
 func (p *PoB) doVerifyBlock(blk *block.Block) {
@@ -177,9 +162,9 @@ func (p *PoB) scheduleLoop() {
 		case <-time.After(time.Duration(nextSchedule)):
 			time.Sleep(time.Millisecond)
 			if p.sync.IsCatchingUp() {
-				metricsMode.Set(float64(1), nil)
+				common.SetMode(common.ModeSync)
 			} else {
-				metricsMode.Set(float64(0), nil)
+				common.SetMode(common.ModeNormal)
 			}
 			t := time.Now()
 			pTx, head := p.txPool.PendingTx()
