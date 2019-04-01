@@ -16,7 +16,6 @@ import (
 
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -42,19 +41,17 @@ type APIService struct {
 	txpool     txpool.TxPool
 	blockchain block.Chain
 	stateDB    db.MVCCDB
-	consensus  consensus.Consensus
 	config     *common.Config
 
 	quitCh chan struct{}
 }
 
 // NewAPIService returns a new APIService instance.
-func NewAPIService(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config, p2pService p2p.Service, consensus consensus.Consensus, quitCh chan struct{}) *APIService {
+func NewAPIService(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config, p2pService p2p.Service, quitCh chan struct{}) *APIService {
 	return &APIService{
 		p2pService: p2pService,
 		txpool:     tp,
 		blockchain: chainBase.BlockChain(),
-		consensus:  consensus,
 		bc:         chainBase.BlockCache(),
 		stateDB:    chainBase.StateDB(),
 		config:     config,
@@ -68,7 +65,7 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		BuildTime:   global.BuildTime,
 		GitHash:     global.GitHash,
 		CodeVersion: global.CodeVersion,
-		Mode:        as.consensus.Mode(),
+		Mode:        common.Mode(),
 		Network:     &rpcpb.NetworkInfo{},
 		ServerTime:  time.Now().UnixNano(),
 	}

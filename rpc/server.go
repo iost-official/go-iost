@@ -10,7 +10,6 @@ import (
 
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
@@ -48,7 +47,7 @@ func p(pp interface{}) error {
 }
 
 // New returns a new rpc server instance.
-func New(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config, p2pService p2p.Service, consensus consensus.Consensus) *Server {
+func New(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config, p2pService p2p.Service) *Server {
 	s := &Server{
 		grpcAddr:     config.RPC.GRPCAddr,
 		gatewayAddr:  config.RPC.GatewayAddr,
@@ -70,7 +69,7 @@ func New(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config
 			),
 		),
 		grpc.MaxConcurrentStreams(maxConcurrentStreams))
-	apiService := NewAPIService(tp, chainBase, config, p2pService, consensus, s.quitCh)
+	apiService := NewAPIService(tp, chainBase, config, p2pService, s.quitCh)
 	rpcpb.RegisterApiServiceServer(s.grpcServer, apiService)
 	return s
 }
