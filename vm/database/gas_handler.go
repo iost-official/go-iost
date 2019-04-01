@@ -211,6 +211,10 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 		ilog.Errorf("PGasAtTime durationSeconds invalid %v = %v - %v", durationSeconds, t, gasUpdateTime)
 	}
 	rate := g.GasPledgeTotal(name).Multiply(GasIncreaseRate)
+	if rate == nil {
+		// this line is compatible, since 'rate' was never nil
+		rate = g.GasPledgeTotal(name).ChangeDecimal(0).Multiply(GasIncreaseRate)
+	}
 	limit := g.GasLimit(name)
 	//fmt.Printf("PGasAtTime user %v stock %v rate %v limit %v durationSeconds %v\n", name, result, rate, limit, durationSeconds)
 	delta := rate.TimesF(durationSeconds)
@@ -218,9 +222,16 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 		ilog.Errorf("PGasAtTime may overflow rate %v durationSeconds %v", rate, durationSeconds)
 		return
 	}
-	result = result.Add(delta)
-	if limit.LessThan(result) {
+	finalResult := delta.Add(result)
+	if finalResult == nil {
+		// this line is compatible, since 'finalResult' was never nil
+		ilog.Errorf("PGasAtTime may overflow result %v delta %v", result, delta)
+		return
+	}
+	if limit.LessThan(finalResult) {
 		result = limit
+	} else {
+		result = finalResult
 	}
 	return
 }
