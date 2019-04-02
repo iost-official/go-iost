@@ -56,7 +56,7 @@ func SetMode(m ModeType) {
 
 // Witness
 var (
-	VoteInterval       = 1200
+	VoteInterval       = int64(1200)
 	SlotTime           = 3 * time.Second
 	BlockNumPerWitness = 6
 )

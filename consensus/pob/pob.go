@@ -165,8 +165,8 @@ func (p *PoB) scheduleLoop() {
 			p.quitGenerateMode = make(chan struct{})
 			generateBlockTicker := time.NewTicker(subSlotTime)
 			for num := 0; num < common.BlockNumPerWitness; num++ {
-				pTx, head = p.txPool.PendingTx()
-				witnessList = head.Active()
+				pTx, head := p.txPool.PendingTx()
+				witnessList := head.Active()
 				if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
 					break
 				}
