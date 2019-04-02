@@ -55,7 +55,7 @@ func SetMode(m ModeType) {
 }
 
 // Witness
-const (
+var (
 	VoteInterval       = 1200
 	SlotTime           = 3 * time.Second
 	BlockNumPerWitness = 6
@@ -91,4 +91,13 @@ func TimeUntilNextSchedule() time.Duration {
 	nextSchedule := (currentSlot+1)*SlotTime - now
 	ilog.Debugf("The nextSchedule: %.2f", nextSchedule.Seconds())
 	return nextSchedule
+}
+
+// NextSlotTime will return the time in the next slot.
+func NextSlotTime() time.Time {
+	currentSlot := time.Now().UnixNano() / int64(SlotTime)
+	nextSlotUnixNano := (currentSlot + 1) * int64(SlotTime)
+	nextSlotTime := time.Unix(nextSlotUnixNano/int64(time.Second), nextSlotUnixNano%int64(time.Second))
+	ilog.Debugf("The next slot: %v", nextSlotTime)
+	return nextSlotTime
 }
