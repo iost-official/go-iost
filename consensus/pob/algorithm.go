@@ -1,6 +1,7 @@
 package pob
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
@@ -24,6 +25,10 @@ func generateBlock(
 
 	ilog.Debug("generate Block start")
 	st := time.Now()
+	witnessList := head.Active()
+	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != acc.ReadablePubkey() {
+		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), acc.ReadablePubkey())
+	}
 	blk := &block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
