@@ -23,6 +23,10 @@ var (
 	modeGauge = metrics.NewGauge("iost_node_mode", nil)
 )
 
+func init() {
+	modeGauge.Set(float64(mode), nil)
+}
+
 // Mode will return the mode of iserver.
 func Mode() string {
 	modeMutex.RLock()
