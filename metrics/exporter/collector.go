@@ -36,6 +36,7 @@ func New() *Exporter {
 	}
 
 	for key, collectorFactory := range factories {
+		ilog.Infof("Add node metrics: %v", key)
 		collectorInstance, err := collectorFactory()
 		if err != nil {
 			ilog.Errorf("Create metrics %v failed: %v", key, err)
@@ -52,7 +53,6 @@ func New() *Exporter {
 
 func registerCollector(collector string, enabled bool, factory func() (collector, error)) {
 	if enabled {
-		ilog.Infof("Start metrics: %v", collector)
 		factories[collector] = factory
 	}
 }
