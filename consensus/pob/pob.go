@@ -151,13 +151,9 @@ func (p *PoB) verifyLoop() {
 }
 
 func (p *PoB) scheduleLoop() {
-	pubkey := p.account.ReadablePubkey()
-
-	var slotFlag int64
 	for {
 		select {
 		case <-time.After(common.TimeUntilNextSchedule()):
-			time.Sleep(time.Millisecond)
 			if p.sync.IsCatchingUp() {
 				common.SetMode(common.ModeSync)
 				// When the iserver is catching up, the generate block is not performed.
@@ -165,30 +161,25 @@ func (p *PoB) scheduleLoop() {
 			} else {
 				common.SetMode(common.ModeNormal)
 			}
-			t := time.Now()
-			pTx, head := p.txPool.PendingTx()
-			witnessList := head.Active()
-			if slotFlag != common.SlotOfNanoSec(t.UnixNano()) && common.WitnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
-				p.quitGenerateMode = make(chan struct{})
-				slotFlag = common.SlotOfNanoSec(t.UnixNano())
-				generateBlockTicker := time.NewTicker(subSlotTime)
-				for num := 0; num < common.BlockNumPerWitness; num++ {
-					p.gen(num, pTx, head)
-					if num == common.BlockNumPerWitness-1 {
-						break
-					}
-					select {
-					case <-generateBlockTicker.C:
-					}
-					pTx, head = p.txPool.PendingTx()
-					witnessList = head.Active()
-					if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
-						break
-					}
+			// TODO: quitGenerateMode and generateBlockTicker need to redesign.
+			p.quitGenerateMode = make(chan struct{})
+			generateBlockTicker := time.NewTicker(subSlotTime)
+			for num := 0; num < common.BlockNumPerWitness; num++ {
+				pTx, head = p.txPool.PendingTx()
+				witnessList = head.Active()
+				if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
+					break
 				}
-				close(p.quitGenerateMode)
-				generateBlockTicker.Stop()
+				p.gen(num, pTx, head)
+				if num == common.BlockNumPerWitness-1 {
+					break
+				}
+				select {
+				case <-generateBlockTicker.C:
+				}
 			}
+			close(p.quitGenerateMode)
+			generateBlockTicker.Stop()
 		case <-p.exitSignal:
 			p.wg.Done()
 			return
