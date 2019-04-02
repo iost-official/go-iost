@@ -123,8 +123,9 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 
 	if err != nil {
 		actionDesc := action.String()
-		if len(actionDesc) > 100 {
-			actionDesc = actionDesc[:100] + "..."
+		actionRune := []rune(actionDesc)
+		if len(actionRune) > 100 {
+			actionDesc = string(actionRune[:100]) + "..."
 		}
 		if strings.Contains(err.Error(), "execution killed") {
 			status = &tx.Status{
