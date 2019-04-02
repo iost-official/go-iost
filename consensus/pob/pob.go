@@ -151,48 +151,37 @@ func (p *PoB) verifyLoop() {
 }
 
 func (p *PoB) scheduleLoop() {
-	defer p.wg.Done()
-	nextSchedule := common.TimeUntilNextSchedule(time.Now().UnixNano())
-	ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
-	pubkey := p.account.ReadablePubkey()
-
-	var slotFlag int64
 	for {
 		select {
-		case <-time.After(time.Duration(nextSchedule)):
-			time.Sleep(time.Millisecond)
+		case <-time.After(common.TimeUntilNextSchedule()):
 			if p.sync.IsCatchingUp() {
 				common.SetMode(common.ModeSync)
+				// When the iserver is catching up, the generate block is not performed.
+				continue
 			} else {
 				common.SetMode(common.ModeNormal)
 			}
-			t := time.Now()
-			pTx, head := p.txPool.PendingTx()
-			witnessList := head.Active()
-			if slotFlag != common.SlotOfNanoSec(t.UnixNano()) && !p.sync.IsCatchingUp() && common.WitnessOfNanoSec(t.UnixNano(), witnessList) == pubkey {
-				p.quitGenerateMode = make(chan struct{})
-				slotFlag = common.SlotOfNanoSec(t.UnixNano())
-				generateBlockTicker := time.NewTicker(subSlotTime)
-				for num := 0; num < common.BlockNumPerWitness; num++ {
-					p.gen(num, pTx, head)
-					if num == common.BlockNumPerWitness-1 {
-						break
-					}
-					select {
-					case <-generateBlockTicker.C:
-					}
-					pTx, head = p.txPool.PendingTx()
-					witnessList = head.Active()
-					if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != pubkey {
-						break
-					}
+			// TODO: quitGenerateMode and generateBlockTicker need to redesign.
+			p.quitGenerateMode = make(chan struct{})
+			generateBlockTicker := time.NewTicker(subSlotTime)
+			for num := 0; num < common.BlockNumPerWitness; num++ {
+				pTx, head := p.txPool.PendingTx()
+				witnessList := head.Active()
+				if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
+					break
 				}
-				close(p.quitGenerateMode)
-				generateBlockTicker.Stop()
+				p.gen(num, pTx, head)
+				if num == common.BlockNumPerWitness-1 {
+					break
+				}
+				select {
+				case <-generateBlockTicker.C:
+				}
 			}
-			nextSchedule = common.TimeUntilNextSchedule(time.Now().UnixNano())
-			ilog.Debugf("nextSchedule: %.2f", time.Duration(nextSchedule).Seconds())
+			close(p.quitGenerateMode)
+			generateBlockTicker.Stop()
 		case <-p.exitSignal:
+			p.wg.Done()
 			return
 		}
 	}
