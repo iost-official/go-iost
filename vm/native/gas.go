@@ -30,7 +30,7 @@ func init() {
 }
 
 // Pledge Change all gas related storage here. If pledgeAmount > 0. pledge. If pledgeAmount < 0, unpledge.
-func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fixed) (contract.Cost, error) {
+func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fixed) (contract.Cost, error) { // nolint:gocyclo
 	finalCost := contract.Cost0()
 	if pledgeAmountF.IsZero() {
 		return finalCost, fmt.Errorf("invalid pledge amount %v", pledgeAmountF.ToString())
@@ -56,6 +56,10 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 	limitDelta := pledgeAmountF.Multiply(database.GasLimit)
 	totalDelta := pledgeAmountF
 	gasDelta := pledgeAmountF.Multiply(database.GasImmediateReward)
+	if gasDelta == nil {
+		// this line is compatible, since 'gasDelta' was never nil
+		return finalCost, fmt.Errorf("gas overflow")
+	}
 	if pledgeAmountF.IsNegative() {
 		// unpledge should not change current generated gas
 		gasDelta = database.EmptyGas()
@@ -97,15 +101,24 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Fix
 	limitOld, cost := h.GasManager.GasLimit(name)
 	finalCost.AddAssign(cost)
 	limitNew := limitOld.Add(limitDelta)
+	if limitNew == nil {
+		// this line is compatible, since 'limitNew' was never nil
+		limitNew = limitOld.ChangeDecimal(2).Add(limitDelta.ChangeDecimal(2))
+	}
 	if limitNew.Value <= 0 {
 		return finalCost, fmt.Errorf("change gasLimit failed! current: %v, delta %v", limitOld.ToString(), limitDelta.ToString())
 	}
+	// gas limit will never overflow
 	cost = h.GasManager.SetGasLimit(name, limitNew)
 	finalCost.AddAssign(cost)
 	// change stock
 	gasOld, cost := h.GasManager.GasStock(name)
 	finalCost.AddAssign(cost)
 	gasNew := gasOld.Add(gasDelta)
+	if gasNew == nil {
+		// this line is compatible, since 'gasNew' was never nil
+		gasNew = gasOld.ChangeDecimal(2).Add(gasDelta.ChangeDecimal(2))
+	}
 	if limitNew.LessThan(gasNew) {
 		// clear the gas above the new limit.
 		gasNew = limitNew

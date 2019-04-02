@@ -116,7 +116,10 @@ func UnifyDecimal(a *Fixed, b *Fixed) (*Fixed, *Fixed, error) {
 // Equals check equal
 func (f *Fixed) Equals(other *Fixed) bool {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
-	f.Err = err
+	if err != nil {
+		// one number overflows, so they cannot be equal
+		return false
+	}
 	return fpnNew.Value == otherNew.Value
 }
 
@@ -181,15 +184,43 @@ func (f *Fixed) Div(i int64) *Fixed {
 // LessThan ...
 func (f *Fixed) LessThan(other *Fixed) bool {
 	fpnNew, otherNew, err := UnifyDecimal(f, other)
-	f.Err = err
-	return fpnNew.Value < otherNew.Value
+	if err == nil {
+		return fpnNew.Value < otherNew.Value
+	}
+	// so one number overflows
+	if f.IsNegative() {
+		if other.IsZero() || other.IsPositive() {
+			return true
+		}
+		// they are both negative
+		if f.Decimal < other.Decimal {
+			// eg: "-50000" < "-1.00000001"
+			return true
+		}
+		return false
+	}
+	if f.IsZero() {
+		if other.IsPositive() {
+			return true
+		}
+		// other must be negative, since they cannot be both zero, or else UnifyDecimal will not return error
+		return false
+	}
+	// f is positive now
+	if other.IsNegative() || other.IsZero() {
+		return false
+	}
+	// they are both positive
+	if f.Decimal > other.Decimal {
+		// eg: "1.00000001" < "50000"
+		return true
+	}
+	return false
 }
 
 // BiggerThan ...
 func (f *Fixed) BiggerThan(other *Fixed) bool {
-	fpnNew, otherNew, err := UnifyDecimal(f, other)
-	f.Err = err
-	return fpnNew.Value > otherNew.Value
+	return other.LessThan(f)
 }
 
 // NewFixed generate Fixed from string and decimal, will truncate if decimal is smaller. Decimal < 0 means auto detecting decimal
