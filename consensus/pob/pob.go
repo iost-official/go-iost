@@ -153,7 +153,7 @@ func (p *PoB) verifyLoop() {
 func (p *PoB) scheduleLoop() {
 	for {
 		select {
-		case <-time.After(common.TimeUntilNextSchedule()):
+		case <-time.After(time.Until(common.NextSlotTime())):
 			if p.sync.IsCatchingUp() {
 				common.SetMode(common.ModeSync)
 				// When the iserver is catching up, the generate block is not performed.
