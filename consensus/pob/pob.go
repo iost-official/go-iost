@@ -153,12 +153,11 @@ func (p *PoB) doGenerateBlock(slot int64) {
 	p.mu.Lock()
 	for num := 0; num < common.BlockNumPerWitness; num++ {
 		<-time.After(time.Until(common.TimeOfBlock(slot, int64(num))))
-		pTx, head := p.txPool.PendingTx()
-		witnessList := head.Active()
+		witnessList := p.blockCache.Head().Active()
 		if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
 			break
 		}
-		p.gen(num, pTx, head)
+		p.gen(num)
 	}
 	p.mu.Unlock()
 }
@@ -176,13 +175,14 @@ func (p *PoB) generateLoop() {
 	}
 }
 
-func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) {
+func (p *PoB) gen(num int) {
 	now := time.Now().UnixNano()
 	defer func() {
 		// TODO: Confirm the most appropriate metrics definition.
 		generateBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
 		generateBlockCount.Add(1, nil)
 	}()
+	pTx, head := p.txPool.PendingTx()
 
 	limitTime := common.MaxBlockTimeLimit
 	if num >= common.BlockNumPerWitness-2 {
