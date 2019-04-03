@@ -1,6 +1,7 @@
 package pob
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/account"
@@ -24,26 +25,29 @@ func generateBlock(
 
 	ilog.Debug("generate Block start")
 	st := time.Now()
-	topBlock := head.Block
+	witnessList := head.Active()
+	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != acc.ReadablePubkey() {
+		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), acc.ReadablePubkey())
+	}
 	blk := &block.Block{
 		Head: &block.BlockHead{
 			Version:    0,
-			ParentHash: topBlock.HeadHash(),
+			ParentHash: head.HeadHash(),
 			Info:       make([]byte, 0),
-			Number:     topBlock.Head.Number + 1,
+			Number:     head.Head.Number + 1,
 			Witness:    acc.ReadablePubkey(),
 			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	db.Checkout(string(topBlock.HeadHash()))
+	db.Checkout(string(head.HeadHash()))
 
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
 	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
-	dropList, _, err := v.Gen(blk, topBlock, &head.WitnessList, db, pTx, &verifier.Config{
+	dropList, _, err := v.Gen(blk, head.Block, &head.WitnessList, db, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: common.MaxTxTimeLimit,

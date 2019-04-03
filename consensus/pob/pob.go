@@ -174,9 +174,7 @@ func (p *PoB) scheduleLoop() {
 				if num == common.BlockNumPerWitness-1 {
 					break
 				}
-				select {
-				case <-generateBlockTicker.C:
-				}
+				<-generateBlockTicker.C
 			}
 			close(p.quitGenerateMode)
 			generateBlockTicker.Stop()
