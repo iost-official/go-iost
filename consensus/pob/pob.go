@@ -182,14 +182,13 @@ func (p *PoB) gen(num int) {
 		generateBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
 		generateBlockCount.Add(1, nil)
 	}()
-	pTx, head := p.txPool.PendingTx()
 
 	limitTime := common.MaxBlockTimeLimit
 	if num >= common.BlockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
 	p.txPool.Lock()
-	blk, err := p.generateBlock(limitTime, pTx, head)
+	blk, err := p.generateBlock(limitTime)
 	p.txPool.Release()
 	if err != nil {
 		ilog.Error(err)
