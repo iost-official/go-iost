@@ -69,7 +69,7 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 	node, _ := c.bCache.Find(blk.HeadHash())
 
 	if parentNode.Block.Head.Witness != blk.Head.Witness ||
-		common.SlotOfNanoSec(parentNode.Block.Head.Time) != common.SlotOfNanoSec(blk.Head.Time) {
+		common.SlotOfUnixNano(parentNode.Block.Head.Time) != common.SlotOfUnixNano(blk.Head.Time) {
 		node.SerialNum = 0
 	} else {
 		node.SerialNum = parentNode.SerialNum + 1

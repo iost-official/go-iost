@@ -57,7 +57,7 @@ func SetMode(m ModeType) {
 // Witness
 var (
 	VoteInterval       = int64(1200)
-	SlotTime           = 3 * time.Second
+	SlotInterval       = 3 * time.Second
 	BlockNumPerWitness = 6
 )
 
@@ -73,31 +73,22 @@ func IsWitness(w string, witnessList []string) bool {
 
 // WitnessOfNanoSec will return which witness is the current time.
 func WitnessOfNanoSec(nanosec int64, witnessList []string) string {
-	slot := nanosec / int64(SlotTime)
+	slot := nanosec / int64(SlotInterval)
 	index := slot % int64(len(witnessList))
 	witness := witnessList[index]
 	return witness
 }
 
-// SlotOfNanoSec will return current slot number.
-func SlotOfNanoSec(nanosec int64) int64 {
-	return nanosec / int64(SlotTime)
-}
-
-// TimeUntilNextSchedule will return the time left in the next slot.
-func TimeUntilNextSchedule() time.Duration {
-	now := time.Duration(time.Now().UnixNano())
-	currentSlot := now / SlotTime
-	nextSchedule := (currentSlot+1)*SlotTime - now
-	ilog.Debugf("The nextSchedule: %.2f", nextSchedule.Seconds())
-	return nextSchedule
+// SlotOfUnixNano will return the slot number of unixnano.
+func SlotOfUnixNano(unixnano int64) int64 {
+	return unixnano / int64(SlotInterval)
 }
 
 // NextSlotTime will return the time in the next slot.
 func NextSlotTime() time.Time {
-	currentSlot := time.Now().UnixNano() / int64(SlotTime)
-	nextSlotUnixNano := (currentSlot + 1) * int64(SlotTime)
+	currentSlot := time.Now().UnixNano() / int64(SlotInterval)
+	nextSlotUnixNano := (currentSlot + 1) * int64(SlotInterval)
 	nextSlotTime := time.Unix(nextSlotUnixNano/int64(time.Second), nextSlotUnixNano%int64(time.Second))
-	ilog.Debugf("The next slot: %v", nextSlotTime)
+	ilog.Debugf("The next slot: %v", nextSlotTime.UnixNano())
 	return nextSlotTime
 }
