@@ -189,7 +189,7 @@ func (p *PoB) gen(num int) {
 		limitTime = last2GenBlockTime
 	}
 	p.txPool.Lock()
-	blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime, pTx, head)
+	blk, err := p.generateBlock(limitTime, pTx, head)
 	p.txPool.Release()
 	if err != nil {
 		ilog.Error(err)

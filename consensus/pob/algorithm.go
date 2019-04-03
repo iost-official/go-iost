@@ -4,24 +4,19 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
 )
 
-func generateBlock(
-	acc *account.KeyPair,
-	txPool txpool.TxPool,
-	db db.MVCCDB,
-	limitTime time.Duration,
-	pTx *txpool.SortedTxMap,
-	head *blockcache.BlockCacheNode) (*block.Block, error) {
+func (p *PoB) generateBlock(limitTime time.Duration, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) (*block.Block, error) {
+	acc := p.account
+	txPool := p.txPool
+	db := p.produceDB
 
 	ilog.Debug("generate Block start")
 	st := time.Now()
