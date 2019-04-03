@@ -9,8 +9,8 @@ import (
 
 func TestNextSlot(t *testing.T) {
 	assert := assert.New(t)
-	SlotInterval = 1 * time.Millisecond
-	for i := 0; i < 1000; i++ {
+	SlotInterval = 10 * time.Millisecond
+	for i := 0; i < 100; i++ {
 		slot := NextSlot()
 		select {
 		case <-time.After(time.Until(TimeOfBlock(slot, 0))):
