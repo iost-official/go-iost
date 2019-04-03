@@ -744,36 +744,49 @@ func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoR
 
 	symbol := req.GetSymbol()
 	ret := &rpcpb.TokenInfo{Symbol: symbol}
+
 	value, _ := h.GlobalMapGet("token.iost", "TI"+symbol, "fullName")
 	if value == nil {
 		return nil, token404
 	}
 	ret.FullName = value.(string)
+
 	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "issuer")
 	if value == nil {
 		return nil, token404
 	}
 	ret.Issuer = value.(string)
+
 	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "supply")
 	if value == nil {
 		return nil, token404
 	}
 	ret.CurrentSupply = value.(int64)
+
 	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "totalSupply")
 	if value == nil {
 		return nil, token404
 	}
 	ret.TotalSupply = value.(int64)
+
 	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "decimal")
 	if value == nil {
 		return nil, token404
 	}
 	ret.Decimal = int32(value.(int64))
+
 	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "canTransfer")
 	if value == nil {
 		return nil, token404
 	}
 	ret.CanTransfer = value.(bool)
+
+	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "onlyIssuerCanTransfer")
+	if value == nil {
+		return nil, token404
+	}
+	ret.OnlyIssuerCanTransfer = value.(bool)
+
 	return ret, nil
 }
 
