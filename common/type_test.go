@@ -16,8 +16,8 @@ func TestNextSlotTime(t *testing.T) {
 		select {
 		case <-time.After(time.Until(NextSlotTime())):
 			t := time.Now()
-			assert.NotEqual(slotFlag, SlotOfNanoSec(t.UnixNano()), "Can't enter the same slot twice.")
-			slotFlag = SlotOfNanoSec(t.UnixNano())
+			assert.NotEqual(slotFlag, SlotOfUnixNano(t.UnixNano()), "Can't enter the same slot twice.")
+			slotFlag = SlotOfUnixNano(t.UnixNano())
 			ilog.Debugf("Current slot: %v", slotFlag)
 		}
 	}

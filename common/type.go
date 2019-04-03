@@ -79,9 +79,9 @@ func WitnessOfNanoSec(nanosec int64, witnessList []string) string {
 	return witness
 }
 
-// SlotOfNanoSec will return current slot number.
-func SlotOfNanoSec(nanosec int64) int64 {
-	return nanosec / int64(SlotInterval)
+// SlotOfUnixNano will return the slot number of unixnano.
+func SlotOfUnixNano(unixnano int64) int64 {
+	return unixnano / int64(SlotInterval)
 }
 
 // NextSlotTime will return the time in the next slot.
