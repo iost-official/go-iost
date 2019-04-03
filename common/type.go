@@ -4,7 +4,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 )
 
@@ -83,15 +82,6 @@ func WitnessOfNanoSec(nanosec int64, witnessList []string) string {
 // SlotOfUnixNano will return the slot number of unixnano.
 func SlotOfUnixNano(unixnano int64) int64 {
 	return unixnano / int64(SlotInterval)
-}
-
-// NextSlotTime will return the time in the next slot.
-func NextSlotTime() time.Time {
-	currentSlot := time.Now().UnixNano() / int64(SlotInterval)
-	nextSlotUnixNano := (currentSlot + 1) * int64(SlotInterval)
-	nextSlotTime := time.Unix(nextSlotUnixNano/int64(time.Second), nextSlotUnixNano%int64(time.Second))
-	ilog.Debugf("The next slot: %v", nextSlotTime.UnixNano())
-	return nextSlotTime
 }
 
 // NextSlot will return the slot number in the next slot.
