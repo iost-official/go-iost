@@ -148,9 +148,9 @@ func (p *PoB) doGenerateBlock() {
 		common.SetMode(common.ModeSync)
 		// When the iserver is catching up, the generate block is not performed.
 		return
-	} else {
-		common.SetMode(common.ModeNormal)
 	}
+	common.SetMode(common.ModeNormal)
+
 	// TODO: quitGenerateMode and generateBlockTicker need to redesign.
 	generateBlockTicker := time.NewTicker(subSlotTime)
 	p.mu.Lock()
