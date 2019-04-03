@@ -89,7 +89,7 @@ func (p *PoB) Start() error {
 
 	p.wg.Add(2)
 	go p.verifyLoop()
-	go p.scheduleLoop()
+	go p.generateLoop()
 	return nil
 }
 
@@ -150,34 +150,38 @@ func (p *PoB) verifyLoop() {
 	}
 }
 
-func (p *PoB) scheduleLoop() {
+func (p *PoB) doGenerateBlock() {
+	if p.sync.IsCatchingUp() {
+		common.SetMode(common.ModeSync)
+		// When the iserver is catching up, the generate block is not performed.
+		return
+	} else {
+		common.SetMode(common.ModeNormal)
+	}
+	// TODO: quitGenerateMode and generateBlockTicker need to redesign.
+	p.quitGenerateMode = make(chan struct{})
+	generateBlockTicker := time.NewTicker(subSlotTime)
+	for num := 0; num < common.BlockNumPerWitness; num++ {
+		pTx, head := p.txPool.PendingTx()
+		witnessList := head.Active()
+		if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
+			break
+		}
+		p.gen(num, pTx, head)
+		if num == common.BlockNumPerWitness-1 {
+			break
+		}
+		<-generateBlockTicker.C
+	}
+	close(p.quitGenerateMode)
+	generateBlockTicker.Stop()
+}
+
+func (p *PoB) generateLoop() {
 	for {
 		select {
 		case <-time.After(time.Until(common.NextSlotTime())):
-			if p.sync.IsCatchingUp() {
-				common.SetMode(common.ModeSync)
-				// When the iserver is catching up, the generate block is not performed.
-				continue
-			} else {
-				common.SetMode(common.ModeNormal)
-			}
-			// TODO: quitGenerateMode and generateBlockTicker need to redesign.
-			p.quitGenerateMode = make(chan struct{})
-			generateBlockTicker := time.NewTicker(subSlotTime)
-			for num := 0; num < common.BlockNumPerWitness; num++ {
-				pTx, head := p.txPool.PendingTx()
-				witnessList := head.Active()
-				if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
-					break
-				}
-				p.gen(num, pTx, head)
-				if num == common.BlockNumPerWitness-1 {
-					break
-				}
-				<-generateBlockTicker.C
-			}
-			close(p.quitGenerateMode)
-			generateBlockTicker.Stop()
+			p.doGenerateBlock()
 		case <-p.exitSignal:
 			p.wg.Done()
 			return
