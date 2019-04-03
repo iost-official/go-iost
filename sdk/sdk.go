@@ -307,15 +307,17 @@ func (s *IOSTDevSDK) CreateTxFromActions(actions []*rpcpb.Action) (*rpcpb.Transa
 
 // SignTx ...
 func (s *IOSTDevSDK) SignTx(t *rpcpb.TransactionRequest, signAlgo string) (*rpcpb.TransactionRequest, error) {
-	signAlgorithm := GetSignAlgoByName(signAlgo)
-	txHashBytes := common.Sha3(txToBytes(t, true))
-	publishSig := &rpcpb.Signature{
-		Algorithm: rpcpb.Signature_Algorithm(signAlgorithm),
-		Signature: signAlgorithm.Sign(txHashBytes, s.keyPair.Seckey),
-		PublicKey: signAlgorithm.GetPubkey(s.keyPair.Seckey),
-	}
-	t.PublisherSigs = []*rpcpb.Signature{publishSig}
 	t.Publisher = s.accountName
+	if len(t.PublisherSigs) == 0 {
+		signAlgorithm := GetSignAlgoByName(signAlgo)
+		txHashBytes := common.Sha3(txToBytes(t, true))
+		publishSig := &rpcpb.Signature{
+			Algorithm: rpcpb.Signature_Algorithm(signAlgorithm),
+			Signature: signAlgorithm.Sign(txHashBytes, s.keyPair.Seckey),
+			PublicKey: signAlgorithm.GetPubkey(s.keyPair.Seckey),
+		}
+		t.PublisherSigs = []*rpcpb.Signature{publishSig}
+	}
 	return t, nil
 }
 
@@ -359,6 +361,10 @@ func (s *IOSTDevSDK) SendTx(tx *rpcpb.TransactionRequest) (string, error) {
 	signedTx, err := s.SignTx(tx, s.signAlgo)
 	if err != nil {
 		return "", fmt.Errorf("sign tx error %v", err)
+	}
+	err = VerifySignature(signedTx)
+	if err != nil {
+		return "", err
 	}
 	s.log("Sending transaction...")
 	s.log("Transaction:")

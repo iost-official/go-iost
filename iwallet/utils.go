@@ -131,7 +131,7 @@ func sendTxGetHash(tx *rpcpb.TransactionRequest) (string, error) {
 	if err := InitAccount(); err != nil {
 		return "", err
 	}
-	if err := handleMultiSig(tx, signatureFiles, signKeyFiles); err != nil {
+	if err := handleMultiSig(tx, signatureFiles, signKeyFiles, asPublisherSign); err != nil {
 		return "", err
 	}
 	if err := checkTxTime(tx); err != nil {
@@ -334,7 +334,7 @@ func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
 	return actions, nil
 }
 
-func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signKeyFiles []string) error {
+func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signKeyFiles []string, asPublisherSign bool) error {
 	if len(signatureFiles) == 0 && len(signKeyFiles) == 0 {
 		return nil
 	}
@@ -352,7 +352,7 @@ func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signK
 			if err != nil {
 				return fmt.Errorf("failed to get key pair from file %v: %v", f, err)
 			}
-			sigs = append(sigs, sdk.GetSignatureOfTx(tx, kp))
+			sigs = append(sigs, sdk.GetSignatureOfTx(tx, kp, asPublisherSign))
 			fmt.Println("Signed transaction with private key file:", f)
 		}
 	} else if len(signatureFiles) > 0 {
@@ -362,14 +362,15 @@ func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signK
 			if err != nil {
 				return err
 			}
-			if !sdk.VerifySigForTx(tx, sig) {
-				return fmt.Errorf("signature contained in %v is invalid", f)
-			}
 			sigs = append(sigs, sig)
 			fmt.Println("Successfully added signature contained in:", f)
 		}
 	}
-	tx.Signatures = sigs
+	if asPublisherSign {
+		tx.PublisherSigs = sigs
+	} else {
+		tx.Signatures = sigs
+	}
 	return nil
 }
 
