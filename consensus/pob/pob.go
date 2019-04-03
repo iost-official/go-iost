@@ -29,7 +29,6 @@ var (
 
 var (
 	maxBlockNumber    = int64(10000)
-	subSlotTime       = 500 * time.Millisecond
 	last2GenBlockTime = 50 * time.Millisecond
 )
 
@@ -143,7 +142,7 @@ func (p *PoB) verifyLoop() {
 	}
 }
 
-func (p *PoB) doGenerateBlock() {
+func (p *PoB) doGenerateBlock(slot int64) {
 	if p.sync.IsCatchingUp() {
 		common.SetMode(common.ModeSync)
 		// When the iserver is catching up, the generate block is not performed.
@@ -151,30 +150,25 @@ func (p *PoB) doGenerateBlock() {
 	}
 	common.SetMode(common.ModeNormal)
 
-	// TODO: quitGenerateMode and generateBlockTicker need to redesign.
-	generateBlockTicker := time.NewTicker(subSlotTime)
 	p.mu.Lock()
 	for num := 0; num < common.BlockNumPerWitness; num++ {
+		<-time.After(time.Until(common.TimeOfBlock(slot, int64(num))))
 		pTx, head := p.txPool.PendingTx()
 		witnessList := head.Active()
 		if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
 			break
 		}
 		p.gen(num, pTx, head)
-		if num == common.BlockNumPerWitness-1 {
-			break
-		}
-		<-generateBlockTicker.C
 	}
-	generateBlockTicker.Stop()
 	p.mu.Unlock()
 }
 
 func (p *PoB) generateLoop() {
 	for {
+		slot := common.NextSlot()
 		select {
-		case <-time.After(time.Until(common.NextSlotTime())):
-			p.doGenerateBlock()
+		case <-time.After(time.Until(common.TimeOfBlock(slot, 0))):
+			p.doGenerateBlock(slot)
 		case <-p.exitSignal:
 			p.wg.Done()
 			return
