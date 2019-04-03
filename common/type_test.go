@@ -8,13 +8,13 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestTimeUntilNextSchedule(t *testing.T) {
+func TestNextSlotTime(t *testing.T) {
 	assert := assert.New(t)
 	var slotFlag int64
 	SlotTime = 1 * time.Millisecond
 	for i := 0; i < 1000; i++ {
 		select {
-		case <-time.After(TimeUntilNextSchedule()):
+		case <-time.After(time.Until(NextSlotTime())):
 			t := time.Now()
 			assert.NotEqual(slotFlag, SlotOfNanoSec(t.UnixNano()), "Can't enter the same slot twice.")
 			slotFlag = SlotOfNanoSec(t.UnixNano())

@@ -84,20 +84,11 @@ func SlotOfNanoSec(nanosec int64) int64 {
 	return nanosec / int64(SlotTime)
 }
 
-// TimeUntilNextSchedule will return the time left in the next slot.
-func TimeUntilNextSchedule() time.Duration {
-	now := time.Duration(time.Now().UnixNano())
-	currentSlot := now / SlotTime
-	nextSchedule := (currentSlot+1)*SlotTime - now
-	ilog.Debugf("The nextSchedule: %.2f", nextSchedule.Seconds())
-	return nextSchedule
-}
-
 // NextSlotTime will return the time in the next slot.
 func NextSlotTime() time.Time {
 	currentSlot := time.Now().UnixNano() / int64(SlotTime)
 	nextSlotUnixNano := (currentSlot + 1) * int64(SlotTime)
 	nextSlotTime := time.Unix(nextSlotUnixNano/int64(time.Second), nextSlotUnixNano%int64(time.Second))
-	ilog.Debugf("The next slot: %v", nextSlotTime)
+	ilog.Debugf("The next slot: %v", nextSlotTime.UnixNano())
 	return nextSlotTime
 }
