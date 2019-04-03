@@ -11,7 +11,7 @@ import (
 func TestNextSlotTime(t *testing.T) {
 	assert := assert.New(t)
 	var slotFlag int64
-	SlotTime = 1 * time.Millisecond
+	SlotInterval = 1 * time.Millisecond
 	for i := 0; i < 1000; i++ {
 		select {
 		case <-time.After(time.Until(NextSlotTime())):
