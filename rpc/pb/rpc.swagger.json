@@ -1712,6 +1712,11 @@
           "type": "boolean",
           "format": "boolean",
           "title": "whether the token can be transfered"
+        },
+        "only_issuer_can_transfer": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "whether the token can only be transfered by issuer"
         }
       },
       "description": "The message defines the token information."

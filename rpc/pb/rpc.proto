@@ -864,4 +864,6 @@ message TokenInfo {
     int32 decimal = 6;
     // whether the token can be transfered
     bool can_transfer = 7;
+    // whether the token can only be transfered by issuer
+    bool only_issuer_can_transfer = 8;
 }
