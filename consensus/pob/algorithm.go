@@ -13,7 +13,6 @@ import (
 
 func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 	acc := p.account
-	txPool := p.txPool
 	db := p.produceDB
 	pTx, head := p.txPool.PendingTx()
 
@@ -51,7 +50,7 @@ func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 		ilog.Debugf("time spent per tx: %v", t2.Nanoseconds()/int64(len(blk.Txs)))
 	}
 	if err != nil {
-		go delTxList(txPool, dropList)
+		go p.delTxList(dropList)
 		ilog.Errorf("Gen is err: %v", err)
 		return nil, err
 	}
@@ -66,8 +65,8 @@ func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 	return blk, nil
 }
 
-func delTxList(txPool txpool.TxPool, delList []*tx.Tx) {
+func (p *PoB) delTxList(delList []*tx.Tx) {
 	for _, t := range delList {
-		txPool.DelTx(t.Hash())
+		p.txPool.DelTx(t.Hash())
 	}
 }
