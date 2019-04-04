@@ -187,9 +187,7 @@ func (p *PoB) gen(num int) {
 	if num >= common.BlockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
-	p.txPool.Lock()
 	blk, err := p.generateBlock(limitTime)
-	p.txPool.Release()
 	if err != nil {
 		ilog.Error(err)
 		return
