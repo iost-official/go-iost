@@ -95,7 +95,7 @@ protobuf:
 	./script/gen_protobuf.sh
 
 install:
-	go install ./cmd/iserver/
+	go install -ldflags "$(LD_FLAGS)" ./cmd/iserver/
 	go install ./cmd/iwallet/
 	go install ./cmd/itest/
 
