@@ -40,7 +40,7 @@ var signCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to get key pair from file %v: %v", signKeyFile, err)
 		}
-		sig := sdk.GetSignatureOfTx(trx, kp)
+		sig := sdk.GetSignatureOfTx(trx, kp, asPublisherSign)
 		if verbose {
 			fmt.Println("Signature:")
 			fmt.Println(sdk.MarshalTextString(sig))

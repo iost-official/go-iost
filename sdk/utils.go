@@ -97,8 +97,8 @@ func toRPCSign(sig *crypto.Signature) *rpcpb.Signature {
 }
 
 // GetSignatureOfTx ...
-func GetSignatureOfTx(t *rpcpb.TransactionRequest, kp *account.KeyPair) *rpcpb.Signature {
-	hash := common.Sha3(txToBytes(t, false))
+func GetSignatureOfTx(t *rpcpb.TransactionRequest, kp *account.KeyPair, withSign bool) *rpcpb.Signature {
+	hash := common.Sha3(txToBytes(t, withSign))
 	sig := toRPCSign(kp.Sign(hash))
 	return sig
 }
@@ -137,9 +137,24 @@ func CheckPubKey(k string) bool {
 }
 
 // VerifySigForTx ...
-func VerifySigForTx(t *rpcpb.TransactionRequest, sig *rpcpb.Signature) bool {
-	hash := common.Sha3(txToBytes(t, false))
+func VerifySigForTx(t *rpcpb.TransactionRequest, sig *rpcpb.Signature, withSign bool) bool {
+	hash := common.Sha3(txToBytes(t, withSign))
 	return GetSignAlgoByEnum(sig.Algorithm).Verify(hash, sig.PublicKey, sig.Signature)
+}
+
+// VerifySignature verify signature of a signed tx
+func VerifySignature(tx *rpcpb.TransactionRequest) error {
+	for _, sig := range tx.Signatures {
+		if !VerifySigForTx(tx, sig, false) {
+			return fmt.Errorf("invalid signature %v", tx)
+		}
+	}
+	for _, sig := range tx.PublisherSigs {
+		if !VerifySigForTx(tx, sig, true) {
+			return fmt.Errorf("invalid publisher signature %v", tx)
+		}
+	}
+	return nil
 }
 
 // NewAction ...
