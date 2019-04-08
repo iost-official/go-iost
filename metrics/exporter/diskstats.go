@@ -13,6 +13,15 @@ import (
 	"github.com/iost-official/go-iost/metrics"
 )
 
+var (
+	descs = []metrics.Gauge{
+		metrics.NewGauge("node_disk_reads_completed_total", []string{"dev"}),
+		metrics.NewGauge("node_disk_read_bytes_total", []string{"dev"}),
+		metrics.NewGauge("node_disk_writes_completed_total", []string{"dev"}),
+		metrics.NewGauge("node_disk_written_bytes_total", []string{"dev"}),
+	}
+)
+
 type diskstatsCollector struct {
 	dev   string
 	descs []metrics.Gauge
@@ -29,13 +38,8 @@ func newDiskstatsCollector() (collector, error) {
 		return nil, err
 	}
 	return &diskstatsCollector{
-		dev: dev,
-		descs: []metrics.Gauge{
-			metrics.NewGauge("node_disk_reads_completed_total", []string{"dev"}),
-			metrics.NewGauge("node_disk_read_bytes_total", []string{"dev"}),
-			metrics.NewGauge("node_disk_writes_completed_total", []string{"dev"}),
-			metrics.NewGauge("node_disk_written_bytes_total", []string{"dev"}),
-		},
+		dev:   dev,
+		descs: descs,
 	}, nil
 }
 
