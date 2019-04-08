@@ -2,7 +2,9 @@ package synchro
 
 import (
 	"sync"
+	"time"
 
+	"github.com/Jeffail/tunny"
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
@@ -12,9 +14,14 @@ import (
 	"github.com/iost-official/go-iost/p2p"
 )
 
+var (
+	workerPoolSize = 1
+	timeout        = 8 * time.Second
+)
+
 // requestHandler is responsible for processing synchronization requests from other nodes.
 type requestHandler struct {
-	worker *requestHandlerWorker
+	pool *tunny.Pool
 
 	requestCh chan p2p.IncomingMessage
 
@@ -23,8 +30,9 @@ type requestHandler struct {
 }
 
 func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandler {
+	worker := newRequestHandlerWorker(p, bCache, bChain)
 	rHandler := &requestHandler{
-		worker: newRequestHandlerWorker(p, bCache, bChain),
+		pool: tunny.NewFunc(workerPoolSize, worker.process),
 
 		requestCh: p.Register("sync request", p2p.SyncBlockHashRequest, p2p.SyncBlockRequest, p2p.NewBlockRequest),
 
@@ -46,7 +54,10 @@ func (r *requestHandler) Close() {
 }
 
 func (r *requestHandler) handle(request *p2p.IncomingMessage) {
-	r.worker.process(request)
+	_, err := r.pool.ProcessTimed(request, timeout)
+	if err == tunny.ErrJobTimedOut {
+		ilog.Warnf("Request %+v timed out", request)
+	}
 }
 
 func (r *requestHandler) controller() {
