@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	workerPoolSize = 1
+	workerPoolSize = 2
 	timeout        = 8 * time.Second
 )
 
