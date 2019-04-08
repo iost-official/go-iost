@@ -81,9 +81,7 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 	ok := c.stateDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		c.stateDB.Checkout(string(blk.Head.ParentHash))
-		c.txPool.Lock()
 		err := verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, c.txPool, c.stateDB, c.bChain, replay)
-		c.txPool.Release()
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
 			c.bCache.Del(node)

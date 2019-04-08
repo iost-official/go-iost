@@ -4,30 +4,21 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
 )
 
-func generateBlock(
-	acc *account.KeyPair,
-	txPool txpool.TxPool,
-	db db.MVCCDB,
-	limitTime time.Duration,
-	pTx *txpool.SortedTxMap,
-	head *blockcache.BlockCacheNode) (*block.Block, error) {
-
+func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 	ilog.Debug("generate Block start")
+
 	st := time.Now()
+	pTx, head := p.txPool.PendingTx()
 	witnessList := head.Active()
-	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != acc.ReadablePubkey() {
-		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), acc.ReadablePubkey())
+	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != p.account.ReadablePubkey() {
+		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), p.account.ReadablePubkey())
 	}
 	blk := &block.Block{
 		Head: &block.BlockHead{
@@ -35,19 +26,19 @@ func generateBlock(
 			ParentHash: head.HeadHash(),
 			Info:       make([]byte, 0),
 			Number:     head.Head.Number + 1,
-			Witness:    acc.ReadablePubkey(),
+			Witness:    p.account.ReadablePubkey(),
 			Time:       time.Now().UnixNano(),
 		},
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	db.Checkout(string(head.HeadHash()))
+	p.produceDB.Checkout(string(head.HeadHash()))
 
 	// call vote
 	v := verifier.Verifier{}
 	t1 := time.Now()
 	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
-	dropList, _, err := v.Gen(blk, head.Block, &head.WitnessList, db, pTx, &verifier.Config{
+	dropList, _, err := v.Gen(blk, head.Block, &head.WitnessList, p.produceDB, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: common.MaxTxTimeLimit,
@@ -57,7 +48,7 @@ func generateBlock(
 		ilog.Debugf("time spent per tx: %v", t2.Nanoseconds()/int64(len(blk.Txs)))
 	}
 	if err != nil {
-		go txPool.DelTxList(dropList)
+		go p.delTxList(dropList)
 		ilog.Errorf("Gen is err: %v", err)
 		return nil, err
 	}
@@ -67,7 +58,13 @@ func generateBlock(
 	if err != nil {
 		return nil, err
 	}
-	blk.Sign = acc.Sign(blk.HeadHash())
-	db.Commit(string(blk.HeadHash()))
+	blk.Sign = p.account.Sign(blk.HeadHash())
+	p.produceDB.Commit(string(blk.HeadHash()))
 	return blk, nil
+}
+
+func (p *PoB) delTxList(delList []*tx.Tx) {
+	for _, t := range delList {
+		p.txPool.DelTx(t.Hash())
+	}
 }
