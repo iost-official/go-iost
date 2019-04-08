@@ -14,9 +14,7 @@ import (
 
 // requestHandler is responsible for processing synchronization requests from other nodes.
 type requestHandler struct {
-	p      p2p.Service
-	bCache blockcache.BlockCache
-	bChain block.Chain
+	worker *requestHandlerWorker
 
 	requestCh chan p2p.IncomingMessage
 
@@ -26,9 +24,7 @@ type requestHandler struct {
 
 func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandler {
 	rHandler := &requestHandler{
-		p:      p,
-		bCache: bCache,
-		bChain: bChain,
+		worker: newRequestHandlerWorker(p, bCache, bChain),
 
 		requestCh: p.Register("sync request", p2p.SyncBlockHashRequest, p2p.SyncBlockRequest, p2p.NewBlockRequest),
 
@@ -49,7 +45,39 @@ func (r *requestHandler) Close() {
 	ilog.Infof("Stopped sync request handler.")
 }
 
-func (r *requestHandler) getBlockByHash(hash []byte) *block.Block {
+func (r *requestHandler) handle(request *p2p.IncomingMessage) {
+	r.worker.process(request)
+}
+
+func (r *requestHandler) controller() {
+	for {
+		select {
+		case request := <-r.requestCh:
+			go r.handle(&request)
+		case <-r.quitCh:
+			r.done.Done()
+			return
+		}
+	}
+}
+
+type requestHandlerWorker struct {
+	p      p2p.Service
+	bCache blockcache.BlockCache
+	bChain block.Chain
+}
+
+func newRequestHandlerWorker(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandlerWorker {
+	r := &requestHandlerWorker{
+		p:      p,
+		bCache: bCache,
+		bChain: bChain,
+	}
+
+	return r
+}
+
+func (r *requestHandlerWorker) getBlockByHash(hash []byte) *block.Block {
 	block, err := r.bCache.GetBlockByHash(hash)
 	if err != nil {
 		block, err := r.bChain.GetBlockByHash(hash)
@@ -62,7 +90,7 @@ func (r *requestHandler) getBlockByHash(hash []byte) *block.Block {
 	return block
 }
 
-func (r *requestHandler) getBlockHashResponse(start int64, end int64) *msgpb.BlockHashResponse {
+func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) *msgpb.BlockHashResponse {
 	blockInfos := make([]*msgpb.BlockInfo, 0)
 	for num := start; num <= end; num++ {
 		// This code is ugly and then optimize the bCache and bChain.
@@ -89,7 +117,7 @@ func (r *requestHandler) getBlockHashResponse(start int64, end int64) *msgpb.Blo
 	}
 }
 
-func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
+func (r *requestHandlerWorker) handleBlockHashRequest(request *p2p.IncomingMessage) {
 	blockHashQuery := &msgpb.BlockHashQuery{}
 	if err := proto.Unmarshal(request.Data(), blockHashQuery); err != nil {
 		ilog.Warnf("Unmarshal BlockHashQuery failed: %v", err)
@@ -129,7 +157,7 @@ func (r *requestHandler) handleBlockHashRequest(request *p2p.IncomingMessage) {
 	r.p.SendToPeer(request.From(), msg, p2p.SyncBlockHashResponse, p2p.NormalMessage)
 }
 
-func (r *requestHandler) handleBlockRequest(request *p2p.IncomingMessage, mtype p2p.MessageType, priority p2p.MessagePriority) {
+func (r *requestHandlerWorker) handleBlockRequest(request *p2p.IncomingMessage, mtype p2p.MessageType, priority p2p.MessagePriority) {
 	blockInfo := &msgpb.BlockInfo{}
 	if err := proto.Unmarshal(request.Data(), blockInfo); err != nil {
 		ilog.Warnf("Unmarshal BlockInfo failed: %v", err)
@@ -150,24 +178,23 @@ func (r *requestHandler) handleBlockRequest(request *p2p.IncomingMessage, mtype 
 	r.p.SendToPeer(request.From(), msg, mtype, priority)
 }
 
-func (r *requestHandler) controller() {
-	for {
-		select {
-		case request := <-r.requestCh:
-			// TODO: Need a thread pool here.
-			switch request.Type() {
-			case p2p.SyncBlockHashRequest:
-				go r.handleBlockHashRequest(&request)
-			case p2p.SyncBlockRequest:
-				go r.handleBlockRequest(&request, p2p.SyncBlockResponse, p2p.NormalMessage)
-			case p2p.NewBlockRequest:
-				go r.handleBlockRequest(&request, p2p.NewBlock, p2p.UrgentMessage)
-			default:
-				ilog.Warnf("Unexcept request type: %v", request.Type())
-			}
-		case <-r.quitCh:
-			r.done.Done()
-			return
-		}
+func (r *requestHandlerWorker) process(payload interface{}) interface{} {
+	request, ok := payload.(*p2p.IncomingMessage)
+	if !ok {
+		ilog.Warnf("Assert payload %+v to IncomingMessage failed", payload)
+		return nil
 	}
+
+	switch request.Type() {
+	case p2p.SyncBlockHashRequest:
+		r.handleBlockHashRequest(request)
+	case p2p.SyncBlockRequest:
+		r.handleBlockRequest(request, p2p.SyncBlockResponse, p2p.NormalMessage)
+	case p2p.NewBlockRequest:
+		r.handleBlockRequest(request, p2p.NewBlock, p2p.UrgentMessage)
+	default:
+		ilog.Warnf("Unexcept request type: %v", request.Type())
+	}
+
+	return nil
 }
