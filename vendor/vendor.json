@@ -3,6 +3,12 @@
 	"ignore": "test",
 	"package": [
 		{
+			"checksumSHA1": "IQ5aq98x8BA/FAzyEc4tv+qVrj8=",
+			"path": "github.com/Jeffail/tunny",
+			"revision": "4921fff29480bad359ad2fb3271fb461c8ffe1fc",
+			"revisionTime": "2018-11-08T20:56:50Z"
+		},
+		{
 			"checksumSHA1": "kto0asmOE+Nuhj7T8cvrvIwq2ak=",
 			"path": "github.com/aristanetworks/goarista/monotime",
 			"revision": "59652c8de980f3fef4d4f996665828d89574dbef",
