@@ -88,7 +88,7 @@ func (p *PoB) Start() error {
 	p.wg.Add(3)
 	go p.verifyLoop()
 	go p.generateLoop()
-	go p.metricsLoop()
+	go p.tickerLoop()
 	return nil
 }
 
@@ -119,12 +119,6 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 	p.mu.Unlock()
 	if err != nil {
 		return
-	}
-
-	if common.IsWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
-		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
-	} else {
-		p.p2pService.ConnectBPs(nil)
 	}
 
 	if !p.sync.IsCatchingUp() {
@@ -253,16 +247,24 @@ func (p *PoB) delTxList(delList []*tx.Tx) {
 	}
 }
 
-func (p *PoB) metricsLoop() {
+func (p *PoB) tickerLoop() {
 	for {
 		select {
 		case <-time.After(2 * time.Second):
+			metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+
 			if p.sync.IsCatchingUp() {
 				common.SetMode(common.ModeSync)
 			} else {
 				common.SetMode(common.ModeNormal)
 			}
-			metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+
+			head := p.blockCache.Head()
+			if common.IsWitness(p.account.ReadablePubkey(), head.Active()) {
+				p.p2pService.ConnectBPs(head.NetID())
+			} else {
+				p.p2pService.ConnectBPs(nil)
+			}
 		case <-p.exitSignal:
 			p.wg.Done()
 			return
