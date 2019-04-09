@@ -21,9 +21,10 @@ const (
 // Sync is the synchronizer of blockchain.
 // It includes requestHandler, heightSync, blockhashSync, blockSync.
 type Sync struct {
-	p      p2p.Service
-	bCache blockcache.BlockCache
-	bChain block.Chain
+	p       p2p.Service
+	bCache  blockcache.BlockCache
+	bChain  block.Chain
+	blockCh chan *block.Block
 
 	handler         *requestHandler
 	rangeController *rangeController
@@ -38,9 +39,10 @@ type Sync struct {
 // New will return a new synchronizer of blockchain.
 func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync {
 	sync := &Sync{
-		p:      p,
-		bCache: bCache,
-		bChain: bChain,
+		p:       p,
+		bCache:  bCache,
+		bChain:  bChain,
+		blockCh: make(chan *block.Block, 1024),
 
 		handler:         newRequestHandler(p, bCache, bChain),
 		rangeController: newRangeController(bCache),
@@ -52,11 +54,12 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 		done:   new(sync.WaitGroup),
 	}
 
-	sync.done.Add(5)
+	sync.done.Add(6)
 	go sync.syncHeightController()
 	go sync.syncBlockhashController()
 	go sync.syncBlockController()
-	go sync.syncNewBlockController()
+	go sync.handleNewBlockHashController()
+	go sync.handleBlockController()
 	go sync.metricsController()
 
 	return sync
@@ -75,10 +78,10 @@ func (s *Sync) Close() {
 	ilog.Infof("Stopped sync.")
 }
 
-// IncomingBlock will return the blocks from other nodes.
+// ValidBlock will return the valid blocks from other nodes.
 // Including passive request and active broadcast.
-func (s *Sync) IncomingBlock() <-chan *block.Block {
-	return s.blockSync.IncomingBlock()
+func (s *Sync) ValidBlock() <-chan *block.Block {
+	return s.blockCh
 }
 
 // IsCatchingUp will return whether it is catching up with other nodes.
@@ -213,11 +216,33 @@ func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 	s.blockSync.RequestBlock(blockHash.Hash, blockHash.PeerID[0], p2p.NewBlockRequest)
 }
 
-func (s *Sync) syncNewBlockController() {
+func (s *Sync) handleNewBlockHashController() {
 	for {
 		select {
 		case blockHash := <-s.blockhashSync.NewBlockHashs():
 			s.doNewBlockSync(blockHash)
+		case <-s.quitCh:
+			s.done.Done()
+			return
+		}
+	}
+}
+
+func (s *Sync) doBlockFilter(block *block.Block) {
+	head := s.bCache.Head().Head.Number
+	if block.Head.Number > head+maxSyncRange {
+		ilog.Debugf("Block number %v is %v higher than head number %v", block.Head.Number, maxSyncRange, head)
+		return
+	}
+
+	s.blockCh <- block
+}
+
+func (s *Sync) handleBlockController() {
+	for {
+		select {
+		case block := <-s.blockSync.IncomingBlock():
+			s.doBlockFilter(block)
 		case <-s.quitCh:
 			s.done.Done()
 			return

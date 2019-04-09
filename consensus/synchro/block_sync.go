@@ -38,9 +38,9 @@ func newBlockSync(p p2p.Service) *blockSync {
 		p:             p,
 		requestCache:  cache.New(requestCacheExpiration, requestCachePurgeInterval),
 		responseCache: cache.New(responseCacheExpiration, responseCachePurgeInterval),
+		blockCh:       make(chan *block.Block, 1024),
 
-		msgCh:   p.Register("block from other nodes", p2p.SyncBlockResponse, p2p.NewBlock),
-		blockCh: make(chan *block.Block, 1024),
+		msgCh: p.Register("block from other nodes", p2p.SyncBlockResponse, p2p.NewBlock),
 
 		quitCh: make(chan struct{}),
 		done:   new(sync.WaitGroup),
@@ -58,6 +58,7 @@ func (b *blockSync) Close() {
 	ilog.Infof("Stopped block sync.")
 }
 
+// IncomingBlock will return the blocks from other nodes.
 func (b *blockSync) IncomingBlock() <-chan *block.Block {
 	return b.blockCh
 }

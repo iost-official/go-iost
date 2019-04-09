@@ -108,12 +108,6 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		verifyBlockCount.Add(1, nil)
 	}()
 
-	head := p.blockCache.Head().Head.Number
-	if blk.Head.Number > head+maxBlockNumber {
-		ilog.Debugf("Block number %v is %v higher than head number %v", blk.Head.Number, maxBlockNumber, head)
-		return
-	}
-
 	p.mu.Lock()
 	err := p.cBase.Add(blk, false, false)
 	p.mu.Unlock()
@@ -129,7 +123,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 func (p *PoB) verifyLoop() {
 	for {
 		select {
-		case blk := <-p.sync.IncomingBlock():
+		case blk := <-p.sync.ValidBlock():
 			p.doVerifyBlock(blk)
 		case <-p.exitSignal:
 			p.wg.Done()
