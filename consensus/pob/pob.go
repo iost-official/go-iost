@@ -193,12 +193,7 @@ func (p *PoB) gen(num int) {
 		return
 	}
 
-	blkByte, err := blk.Encode()
-	if err != nil {
-		ilog.Error(err)
-		return
-	}
-	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+	p.sync.BroadcastBlock(blk)
 
 	err = p.cBase.Add(blk, false, true)
 	if err != nil {
