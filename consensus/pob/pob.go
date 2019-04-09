@@ -27,18 +27,17 @@ var (
 	generateBlockTimeGauge     = metrics.NewGauge("iost_pob_generate_block_time", nil)
 	verifyBlockTimeGauge       = metrics.NewGauge("iost_pob_verify_block_time", nil)
 	receiveBlockDelayTimeGauge = metrics.NewGauge("iost_pob_receive_block_delay_time", nil)
-	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	libNumberGauge             = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	headNumberGauge            = metrics.NewGauge("iost_pob_head_length", nil)
 )
 
 var (
-	maxBlockNumber    = int64(10000)
 	last2GenBlockTime = 50 * time.Millisecond
 )
 
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
 	account    *account.KeyPair
-	conf       *common.Config
 	blockChain block.Chain
 	blockCache blockcache.BlockCache
 	txPool     txpool.TxPool
@@ -64,7 +63,6 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 
 	p := PoB{
 		account:    account,
-		conf:       conf,
 		blockChain: cBase.BlockChain(),
 		blockCache: cBase.BlockCache(),
 		txPool:     txPool,
@@ -115,6 +113,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
+	// TODO: Not all successful link blocks will go to this logic.
 	if !p.sync.IsCatchingUp() {
 		p.sync.BroadcastBlockInfo(blk)
 	}
@@ -245,7 +244,8 @@ func (p *PoB) tickerLoop() {
 	for {
 		select {
 		case <-time.After(2 * time.Second):
-			metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+			libNumberGauge.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+			headNumberGauge.Set(float64(p.blockCache.Head().Head.Number), nil)
 
 			if p.sync.IsCatchingUp() {
 				common.SetMode(common.ModeSync)
