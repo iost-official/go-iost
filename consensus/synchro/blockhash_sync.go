@@ -14,7 +14,6 @@ import (
 const (
 	BlockHashLeastNeighborNumber = 2
 	BlockHashExpiredSeconds      = 60
-	BlockHashMaxRequestRange     = 100
 )
 
 // BlockHash return the block hash with the Peers that have it.
@@ -116,36 +115,18 @@ func (b *blockHashSync) NeighborBlockHashs(start, end int64) <-chan *BlockHash {
 func (b *blockHashSync) RequestBlockHash(start, end int64) {
 	ilog.Debugf("Syncing block hash in [%v %v]...", start, end)
 
-	// Temporarily do this to compatibility upgrade
-	for i := int64(0); i < (end-start+1)/int64(BlockHashMaxRequestRange); i++ {
-		blockHashQuery := &msgpb.BlockHashQuery{
-			ReqType: msgpb.RequireType_GETBLOCKHASHES,
-			Start:   start + i*int64(BlockHashMaxRequestRange),
-			End:     start + (i+1)*int64(BlockHashMaxRequestRange) - 1,
-			Nums:    nil,
-		}
-		msg, err := proto.Marshal(blockHashQuery)
-		if err != nil {
-			ilog.Errorf("Marshal sync block hash message failed: %v", err)
-			continue
-		}
-		b.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	blockHashQuery := &msgpb.BlockHashQuery{
+		ReqType: msgpb.RequireType_GETBLOCKHASHES,
+		Start:   start,
+		End:     end,
+		Nums:    nil,
 	}
-
-	if (end-start+1)%int64(BlockHashMaxRequestRange) > 0 {
-		blockHashQuery := &msgpb.BlockHashQuery{
-			ReqType: msgpb.RequireType_GETBLOCKHASHES,
-			Start:   end - ((end - start + 1) % int64(BlockHashMaxRequestRange)) + 1,
-			End:     end,
-			Nums:    nil,
-		}
-		msg, err := proto.Marshal(blockHashQuery)
-		if err != nil {
-			ilog.Errorf("Marshal sync block hash message failed: %v", err)
-			return
-		}
-		b.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
+	msg, err := proto.Marshal(blockHashQuery)
+	if err != nil {
+		ilog.Errorf("Marshal sync block hash message failed: %v", err)
+		return
 	}
+	b.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 
 func (b *blockHashSync) handleNewBlockHash(msg *p2p.IncomingMessage) {
@@ -206,15 +187,9 @@ func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	if bHashs, ok := b.neighborBlockHashs[msg.From()]; ok {
-		for k, v := range hashs {
-			bHashs.hashs[k] = v
-		}
-	} else {
-		b.neighborBlockHashs[msg.From()] = &blockHashs{
-			hashs: hashs,
-			time:  time.Now().Unix(),
-		}
+	b.neighborBlockHashs[msg.From()] = &blockHashs{
+		hashs: hashs,
+		time:  time.Now().Unix(),
 	}
 }
 
