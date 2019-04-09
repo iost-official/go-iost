@@ -56,7 +56,7 @@ func (r *requestHandler) Close() {
 func (r *requestHandler) handle(request *p2p.IncomingMessage) {
 	_, err := r.pool.ProcessTimed(request, timeout)
 	if err == tunny.ErrJobTimedOut {
-		ilog.Warnf("The request %v from %v timed out", request.Type(), request.From())
+		ilog.Warnf("The request %v from %v timed out", request.Type(), request.From().Pretty())
 	}
 }
 
