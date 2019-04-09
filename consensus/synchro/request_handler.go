@@ -16,7 +16,7 @@ import (
 
 var (
 	workerPoolSize = 2
-	timeout        = 8 * time.Second
+	timeout        = 2 * time.Second
 )
 
 // requestHandler is responsible for processing synchronization requests from other nodes.
@@ -56,7 +56,7 @@ func (r *requestHandler) Close() {
 func (r *requestHandler) handle(request *p2p.IncomingMessage) {
 	_, err := r.pool.ProcessTimed(request, timeout)
 	if err == tunny.ErrJobTimedOut {
-		ilog.Warnf("Request %+v timed out", request)
+		ilog.Warnf("The request %v from %v timed out", request.Type(), request.From())
 	}
 }
 
