@@ -187,15 +187,9 @@ func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
 	b.mutex.Lock()
 	defer b.mutex.Unlock()
 
-	if bHashs, ok := b.neighborBlockHashs[msg.From()]; ok {
-		for k, v := range hashs {
-			bHashs.hashs[k] = v
-		}
-	} else {
-		b.neighborBlockHashs[msg.From()] = &blockHashs{
-			hashs: hashs,
-			time:  time.Now().Unix(),
-		}
+	b.neighborBlockHashs[msg.From()] = &blockHashs{
+		hashs: hashs,
+		time:  time.Now().Unix(),
 	}
 }
 
