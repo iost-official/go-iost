@@ -346,7 +346,7 @@ func (p *peer) NewSync(ctrl *gomock.Controller) {
 	go func() {
 		for {
 			select {
-			case b := <-p.sync.IncomingBlock():
+			case b := <-p.sync.ValidBlock():
 				p.pobDoVerifyBlock(b)
 			case <-p.quitCh:
 				return

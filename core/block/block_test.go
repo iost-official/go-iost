@@ -2,13 +2,99 @@ package block
 
 import (
 	"bytes"
+	"fmt"
 	"testing"
 
 	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/smartystreets/goconvey/convey"
 )
+
+func TestVerifyBasics(t *testing.T) {
+	convey.Convey("Test of verifyBasics", t, func() {
+		secKey := common.Sha3([]byte("secKey of id0"))
+		account0, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
+		secKey = common.Sha3([]byte("secKey of id1"))
+		account1, _ := account.NewKeyPair(secKey, crypto.Secp256k1)
+		// witnessList := []string{account0.ReadablePubkey(), account1.ReadablePubkey(), "id2"}
+		convey.Convey("Normal (self block)", func() {
+			blk := &Block{
+				Head: &BlockHead{
+					Time:    1,
+					Witness: account1.ReadablePubkey(),
+				},
+			}
+			blk.CalculateHeadHash()
+			//info := generateHeadInfo(blk.Head)
+			hash := blk.HeadHash()
+			blk.Sign = account1.Sign(hash)
+			err := blk.VerifySelf()
+			convey.So(err, convey.ShouldBeNil)
+		})
+
+		convey.Convey("Normal (other's block)", func() {
+			blk := &Block{
+				Head: &BlockHead{
+					Time:    0,
+					Witness: account0.ReadablePubkey(),
+				},
+			}
+			blk.CalculateHeadHash()
+			hash := blk.HeadHash()
+			blk.Sign = account0.Sign(hash)
+			err := blk.VerifySelf()
+			convey.So(err, convey.ShouldBeNil)
+		})
+
+		convey.Convey("Wrong witness/pubkey/signature", func() {
+			blk := &Block{
+				Head: &BlockHead{
+					Time:    1,
+					Witness: account0.ReadablePubkey(),
+				},
+			}
+			blk.CalculateHeadHash()
+			//err := verifyBasics(blk.Head, blk.Sign)
+			//convey.So(err, convey.ShouldEqual, errWitness)
+
+			blk.Head.Witness = account1.ReadablePubkey()
+			hash := blk.HeadHash()
+			blk.Sign = account0.Sign(hash)
+			err := blk.VerifySelf()
+			convey.So(err.Error(), convey.ShouldEqual, fmt.Errorf("The signature of block %v is wrong", common.Base58Encode(blk.HeadHash())).Error())
+		})
+		/*
+		   convey.Convey("Slot witness duplicate", func() {
+		           blk := &block.Block{
+		                   Head: &block.BlockHead{
+		                           Time:    0,
+		                           Witness: account0.ID,
+		                   },
+		           }
+		           blk.CalculateHeadHash()
+		           hash, _ := blk.HeadHash()
+		           blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+		           err := verifyBasics(blk.Head, blk.Sign)
+		           convey.So(err, convey.ShouldBeNil)
+
+		           staticProperty.addSlot(0)
+		           blk = &block.Block{
+		                   Head: &block.BlockHead{
+		                           Time:    0,
+		                           Witness: account0.ID,
+		                   },
+		           }
+		   blk.CalculateHeadHash()
+		           hash, _ = blk.HeadHash()
+		           blk.Sign = account0.Sign(crypto.Secp256k1, hash)
+		           err = verifyBasics(blk.Head, blk.Sign)
+		           convey.So(err, convey.ShouldEqual, errSlot)
+		   })
+		*/
+	})
+}
 
 func TestBlockHeadSerialize(t *testing.T) {
 	convey.Convey("Test of block head encode and decode", t, func() {
