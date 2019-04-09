@@ -101,6 +101,16 @@ func (s *Sync) BroadcastBlockInfo(block *block.Block) {
 	s.p.Broadcast(msg, p2p.NewBlockHash, p2p.UrgentMessage)
 }
 
+// BroadcastBlock will broadcast new block to neighbor nodes.
+func (s *Sync) BroadcastBlock(block *block.Block) {
+	msg, err := block.Encode()
+	if err != nil {
+		ilog.Errorf("Encode block failed: %v", err)
+		return
+	}
+	s.p.Broadcast(msg, p2p.NewBlock, p2p.UrgentMessage)
+}
+
 func (s *Sync) doHeightSync() {
 	syncHeight := &msgpb.SyncHeight{
 		Height: s.bCache.Head().Head.Number,

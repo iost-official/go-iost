@@ -1,6 +1,7 @@
 package pob
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,12 +11,14 @@ import (
 	"github.com/iost-official/go-iost/consensus/synchro"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/verifier"
 )
 
 var (
@@ -82,9 +85,10 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 func (p *PoB) Start() error {
 	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
 
-	p.wg.Add(2)
+	p.wg.Add(3)
 	go p.verifyLoop()
 	go p.generateLoop()
+	go p.tickerLoop()
 	return nil
 }
 
@@ -117,14 +121,6 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
-	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-
-	if common.IsWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
-		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
-	} else {
-		p.p2pService.ConnectBPs(nil)
-	}
-
 	if !p.sync.IsCatchingUp() {
 		p.sync.BroadcastBlockInfo(blk)
 	}
@@ -143,12 +139,10 @@ func (p *PoB) verifyLoop() {
 }
 
 func (p *PoB) doGenerateBlock(slot int64) {
+	// When the iserver is catching up, the generate block is not performed.
 	if p.sync.IsCatchingUp() {
-		common.SetMode(common.ModeSync)
-		// When the iserver is catching up, the generate block is not performed.
 		return
 	}
-	common.SetMode(common.ModeNormal)
 
 	p.mu.Lock()
 	for num := 0; num < common.BlockNumPerWitness; num++ {
@@ -193,17 +187,87 @@ func (p *PoB) gen(num int) {
 		return
 	}
 
-	blkByte, err := blk.Encode()
-	if err != nil {
-		ilog.Error(err)
-		return
-	}
-	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+	p.sync.BroadcastBlock(blk)
 
 	err = p.cBase.Add(blk, false, true)
 	if err != nil {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
 		return
 	}
-	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+}
+
+func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
+	st := time.Now()
+	pTx, head := p.txPool.PendingTx()
+	witnessList := head.Active()
+	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != p.account.ReadablePubkey() {
+		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), p.account.ReadablePubkey())
+	}
+	blk := &block.Block{
+		Head: &block.BlockHead{
+			Version:    0,
+			ParentHash: head.HeadHash(),
+			Info:       make([]byte, 0),
+			Number:     head.Head.Number + 1,
+			Witness:    p.account.ReadablePubkey(),
+			Time:       time.Now().UnixNano(),
+		},
+		Txs:      []*tx.Tx{},
+		Receipts: []*tx.TxReceipt{},
+	}
+	p.produceDB.Checkout(string(head.HeadHash()))
+
+	// call vote
+	v := verifier.Verifier{}
+	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
+	dropList, _, err := v.Gen(blk, head.Block, &head.WitnessList, p.produceDB, pTx, &verifier.Config{
+		Mode:        0,
+		Timeout:     limitTime - time.Now().Sub(st),
+		TxTimeLimit: common.MaxTxTimeLimit,
+	})
+	if err != nil {
+		go p.delTxList(dropList)
+		ilog.Errorf("Gen is err: %v", err)
+		return nil, err
+	}
+	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
+	err = blk.CalculateHeadHash()
+	if err != nil {
+		return nil, err
+	}
+	blk.Sign = p.account.Sign(blk.HeadHash())
+	p.produceDB.Commit(string(blk.HeadHash()))
+	return blk, nil
+}
+
+func (p *PoB) delTxList(delList []*tx.Tx) {
+	for _, t := range delList {
+		p.txPool.DelTx(t.Hash())
+	}
+}
+
+func (p *PoB) tickerLoop() {
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+
+			if p.sync.IsCatchingUp() {
+				common.SetMode(common.ModeSync)
+			} else {
+				common.SetMode(common.ModeNormal)
+			}
+
+			head := p.blockCache.Head()
+			if common.IsWitness(p.account.ReadablePubkey(), head.Active()) {
+				p.p2pService.ConnectBPs(head.NetID())
+			} else {
+				p.p2pService.ConnectBPs(nil)
+			}
+		case <-p.exitSignal:
+			p.wg.Done()
+			return
+		}
+	}
 }
