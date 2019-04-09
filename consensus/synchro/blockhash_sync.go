@@ -14,7 +14,6 @@ import (
 const (
 	BlockHashLeastNeighborNumber = 2
 	BlockHashExpiredSeconds      = 60
-	BlockHashMaxRequestRange     = 100
 )
 
 // BlockHash return the block hash with the Peers that have it.
