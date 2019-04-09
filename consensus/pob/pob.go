@@ -170,11 +170,7 @@ func (p *PoB) gen(num int) {
 		generateBlockCount.Add(1, nil)
 	}()
 
-	limitTime := common.MaxBlockTimeLimit
-	if num >= common.BlockNumPerWitness-2 {
-		limitTime = last2GenBlockTime
-	}
-	blk, err := p.generateBlock(limitTime)
+	blk, err := p.generateBlock(num)
 	if err != nil {
 		ilog.Error(err)
 		return
@@ -189,12 +185,16 @@ func (p *PoB) gen(num int) {
 	}
 }
 
-func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
+func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	st := time.Now()
 	pTx, head := p.txPool.PendingTx()
 	witnessList := head.Active()
 	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != p.account.ReadablePubkey() {
 		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), p.account.ReadablePubkey())
+	}
+	limitTime := common.MaxBlockTimeLimit
+	if num >= common.BlockNumPerWitness-2 {
+		limitTime = last2GenBlockTime
 	}
 	blk := &block.Block{
 		Head: &block.BlockHead{
