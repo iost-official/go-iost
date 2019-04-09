@@ -212,8 +212,6 @@ func (p *PoB) gen(num int) {
 }
 
 func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
-	ilog.Debug("generate Block start")
-
 	st := time.Now()
 	pTx, head := p.txPool.PendingTx()
 	witnessList := head.Active()
@@ -236,17 +234,12 @@ func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 
 	// call vote
 	v := verifier.Verifier{}
-	t1 := time.Now()
 	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
 	dropList, _, err := v.Gen(blk, head.Block, &head.WitnessList, p.produceDB, pTx, &verifier.Config{
 		Mode:        0,
 		Timeout:     limitTime - time.Now().Sub(st),
 		TxTimeLimit: common.MaxTxTimeLimit,
 	})
-	t2 := time.Since(t1)
-	if len(blk.Txs) != 0 {
-		ilog.Debugf("time spent per tx: %v", t2.Nanoseconds()/int64(len(blk.Txs)))
-	}
 	if err != nil {
 		go p.delTxList(dropList)
 		ilog.Errorf("Gen is err: %v", err)
