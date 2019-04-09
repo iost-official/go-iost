@@ -148,7 +148,7 @@ func (p *PoB) doGenerateBlock(slot int64) {
 		<-time.After(time.Until(common.TimeOfBlock(slot, int64(num))))
 		blk, err := p.generateBlock(num)
 		if err != nil {
-			ilog.Error(err)
+			ilog.Errorf("Generate block failed: %v", err)
 			// Maybe should break.
 			continue
 		}
@@ -206,19 +206,21 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	p.produceDB.Checkout(string(head.HeadHash()))
 
-	// call vote
-	v := verifier.Verifier{}
+	p.produceDB.Checkout(string(head.HeadHash()))
+	v := &verifier.Verifier{}
 	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
-	dropList, _, err := v.Gen(blk, head.Block, &head.WitnessList, p.produceDB, pTx, &verifier.Config{
-		Mode:        0,
-		Timeout:     limitTime - time.Now().Sub(st),
-		TxTimeLimit: common.MaxTxTimeLimit,
-	})
+	dropList, _, err := v.Gen(
+		blk, head.Block, &head.WitnessList, p.produceDB, pTx,
+		&verifier.Config{
+			Mode:        0,
+			Timeout:     limitTime - time.Now().Sub(st),
+			TxTimeLimit: common.MaxTxTimeLimit,
+		},
+	)
 	if err != nil {
+		// TODO: Maybe should synchronous
 		go p.delTxList(dropList)
-		ilog.Errorf("Gen is err: %v", err)
 		return nil, err
 	}
 	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
@@ -226,6 +228,7 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	blk.CalculateHeadHash()
 	blk.Sign = p.account.Sign(blk.HeadHash())
 	p.produceDB.Commit(string(blk.HeadHash()))
+
 	return blk, nil
 }
 
