@@ -85,9 +85,10 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 func (p *PoB) Start() error {
 	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
 
-	p.wg.Add(2)
+	p.wg.Add(3)
 	go p.verifyLoop()
 	go p.generateLoop()
+	go p.metricsLoop()
 	return nil
 }
 
@@ -120,8 +121,6 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
-	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-
 	if common.IsWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
 		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
 	} else {
@@ -146,12 +145,10 @@ func (p *PoB) verifyLoop() {
 }
 
 func (p *PoB) doGenerateBlock(slot int64) {
+	// When the iserver is catching up, the generate block is not performed.
 	if p.sync.IsCatchingUp() {
-		common.SetMode(common.ModeSync)
-		// When the iserver is catching up, the generate block is not performed.
 		return
 	}
-	common.SetMode(common.ModeNormal)
 
 	p.mu.Lock()
 	for num := 0; num < common.BlockNumPerWitness; num++ {
@@ -208,7 +205,6 @@ func (p *PoB) gen(num int) {
 		ilog.Errorf("[pob] handle block from myself, err:%v", err)
 		return
 	}
-	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
 }
 
 func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
@@ -259,5 +255,22 @@ func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 func (p *PoB) delTxList(delList []*tx.Tx) {
 	for _, t := range delList {
 		p.txPool.DelTx(t.Hash())
+	}
+}
+
+func (p *PoB) metricsLoop() {
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			if p.sync.IsCatchingUp() {
+				common.SetMode(common.ModeSync)
+			} else {
+				common.SetMode(common.ModeNormal)
+			}
+			metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+		case <-p.exitSignal:
+			p.wg.Done()
+			return
+		}
 	}
 }
