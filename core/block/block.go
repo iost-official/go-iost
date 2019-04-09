@@ -2,8 +2,10 @@ package block
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	blockpb "github.com/iost-official/go-iost/core/block/pb"
 	"github.com/iost-official/go-iost/core/merkletree"
@@ -218,4 +220,19 @@ func (b *Block) EncodeM() ([]byte, error) {
 		return nil, errors.New("fail to encode blockraw")
 	}
 	return brByte, nil
+}
+
+// VerifySelf verify block's signature and some base fields.
+func (b *Block) VerifySelf() error {
+	signature := b.Sign
+	signature.SetPubkey(account.DecodePubkey(b.Head.Witness))
+	hash := b.HeadHash()
+	if !signature.Verify(hash) {
+		return fmt.Errorf("The signature of block %v is wrong", common.Base58Encode(hash))
+	}
+	if len(b.Txs) != len(b.Receipts) {
+		return fmt.Errorf("Tx len %v unmatch receipt len %v", len(b.Txs), len(b.Receipts))
+	}
+	return nil
+
 }

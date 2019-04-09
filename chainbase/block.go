@@ -47,7 +47,7 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 		return errDuplicate
 	}
 
-	err = verifyBasics(blk, blk.Sign)
+	err = blk.VerifySelf()
 	if err != nil {
 		ilog.Warnf("Verify block basics failed: %v", err)
 		return err
