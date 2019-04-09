@@ -1,3 +1,16 @@
+## v3.0.8
+
+Tue Apr  9 11:16:15 CST 2019
+
+- Update metrics of system info.
+- Add the onlyIssuerCanTransfer field to the tokeninfo interface.
+- Add a more detailed system recovery log.
+- Fix sync module bug.
+- Fix the panic of Fixed lib.
+- Fix bugs that generate block time errors.
+- Fix the install command of the Makefile.
+- Fix iwallet multi-signature function.
+
 ## v3.0.7
 
 Fri Mar 29 16:47:15 CST 2019
