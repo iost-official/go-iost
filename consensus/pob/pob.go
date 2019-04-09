@@ -223,10 +223,7 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	}
 	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
-	err = blk.CalculateHeadHash()
-	if err != nil {
-		return nil, err
-	}
+	blk.CalculateHeadHash()
 	blk.Sign = p.account.Sign(blk.HeadHash())
 	p.produceDB.Commit(string(blk.HeadHash()))
 	return blk, nil
