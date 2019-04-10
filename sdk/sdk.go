@@ -324,6 +324,8 @@ func (s *IOSTDevSDK) SignTx(t *rpcpb.TransactionRequest, signAlgo string) (*rpcp
 func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 	s.log("Checking transaction receipt...")
 	receiptPrinted := false
+	packedPrinted := false
+	irreversiblePrinted := false
 	for i := int32(0); i < s.checkResultMaxRetry; i++ {
 		time.Sleep(time.Duration(s.checkResultDelay*1000) * time.Millisecond)
 		r, err := s.GetTxByHash(txHash)
@@ -331,7 +333,14 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 			return err
 		}
 		if r.Status == rpcpb.TransactionResponse_PENDING {
-			s.log("...Transaction has been sent! Waiting for being packed...")
+			if s.verbose {
+				if !packedPrinted {
+					fmt.Print("Transaction has been sent! Waiting for being packed...")
+					packedPrinted = true
+				} else {
+					fmt.Print("...")
+				}
+			}
 			continue
 		}
 		txReceipt := r.Transaction.TxReceipt
@@ -345,11 +354,18 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 			return fmt.Errorf(txReceipt.Message)
 		}
 		if r.Status == rpcpb.TransactionResponse_PACKED {
-			s.log("...Transaction has been packed! Waiting for being irreversible...")
+			if s.verbose {
+				if !irreversiblePrinted {
+					fmt.Print("Transaction has been packed! Waiting for being irreversible...")
+					irreversiblePrinted = true
+				} else {
+					fmt.Print("...")
+				}
+			}
 			continue
 		}
 		if r.Status == rpcpb.TransactionResponse_IRREVERSIBLE {
-			s.log("SUCCESS! Transaction has been irreversible")
+			s.log("\nSUCCESS! Transaction has been irreversible")
 			return nil
 		}
 	}
@@ -405,14 +421,6 @@ func (s *IOSTDevSDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 	if err != nil {
 		return err
 	}
-	/*
-		info, err := s.GetAccountInfo(s.accountName)
-		if err != nil {
-			return fmt.Errorf("failed to get account info: %v", err)
-		}
-		s.log("Account info of <", s.accountName, ">:")
-		s.log(MarshalTextString(info))
-	*/
 	return nil
 }
 
