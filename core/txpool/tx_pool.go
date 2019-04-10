@@ -49,6 +49,7 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 		return nil, err
 	}
 	p.deferServer = deferServer
+	p.initBlockTx()
 	return p, nil
 }
 
@@ -91,7 +92,6 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 }
 
 func (pool *TxPImpl) loop() {
-	pool.initBlockTx()
 	workerCnt := (runtime.NumCPU() + 1) / 2
 	if workerCnt == 0 {
 		workerCnt = 1
