@@ -146,8 +146,7 @@ func TestBlockSerialize(t *testing.T) {
 		blk.Receipts = append(blk.Receipts, &receipt)
 		blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 		blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
-		err = blk.CalculateHeadHash()
-		convey.So(err, convey.ShouldBeNil)
+		blk.CalculateHeadHash()
 		blk.Sign = a1.Sign(blk.HeadHash())
 		convey.So(blk.Sign, convey.ShouldNotBeNil)
 		convey.Convey("Test of block encode and decode", func() {

@@ -137,14 +137,28 @@ func (p *PoB) doGenerateBlock(slot int64) {
 		return
 	}
 
+	// IsMyGenerateBlockTime
+	witnessList := p.blockCache.Head().Active()
+	if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
+		return
+	}
+
 	p.mu.Lock()
 	for num := 0; num < common.BlockNumPerWitness; num++ {
 		<-time.After(time.Until(common.TimeOfBlock(slot, int64(num))))
-		witnessList := p.blockCache.Head().Active()
-		if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
-			break
+		blk, err := p.generateBlock(num)
+		if err != nil {
+			ilog.Errorf("Generate block failed: %v", err)
+			// Maybe should break.
+			continue
 		}
-		p.gen(num)
+		p.sync.BroadcastBlock(blk)
+		err = p.cBase.Add(blk, false, true)
+		if err != nil {
+			ilog.Errorf("[pob] handle block from myself, err:%v", err)
+			// Maybe should break.
+			continue
+		}
 	}
 	p.mu.Unlock()
 }
@@ -162,7 +176,7 @@ func (p *PoB) generateLoop() {
 	}
 }
 
-func (p *PoB) gen(num int) {
+func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	now := time.Now().UnixNano()
 	defer func() {
 		// TODO: Confirm the most appropriate metrics definition.
@@ -170,31 +184,15 @@ func (p *PoB) gen(num int) {
 		generateBlockCount.Add(1, nil)
 	}()
 
-	limitTime := common.MaxBlockTimeLimit
-	if num >= common.BlockNumPerWitness-2 {
-		limitTime = last2GenBlockTime
-	}
-	blk, err := p.generateBlock(limitTime)
-	if err != nil {
-		ilog.Error(err)
-		return
-	}
-
-	p.sync.BroadcastBlock(blk)
-
-	err = p.cBase.Add(blk, false, true)
-	if err != nil {
-		ilog.Errorf("[pob] handle block from myself, err:%v", err)
-		return
-	}
-}
-
-func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 	st := time.Now()
 	pTx, head := p.txPool.PendingTx()
 	witnessList := head.Active()
 	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != p.account.ReadablePubkey() {
 		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), p.account.ReadablePubkey())
+	}
+	limitTime := common.MaxBlockTimeLimit
+	if num >= common.BlockNumPerWitness-2 {
+		limitTime = last2GenBlockTime
 	}
 	blk := &block.Block{
 		Head: &block.BlockHead{
@@ -208,29 +206,29 @@ func (p *PoB) generateBlock(limitTime time.Duration) (*block.Block, error) {
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-	p.produceDB.Checkout(string(head.HeadHash()))
 
-	// call vote
-	v := verifier.Verifier{}
+	p.produceDB.Checkout(string(head.HeadHash()))
+	v := &verifier.Verifier{}
 	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
-	dropList, _, err := v.Gen(blk, head.Block, &head.WitnessList, p.produceDB, pTx, &verifier.Config{
-		Mode:        0,
-		Timeout:     limitTime - time.Now().Sub(st),
-		TxTimeLimit: common.MaxTxTimeLimit,
-	})
+	dropList, _, err := v.Gen(
+		blk, head.Block, &head.WitnessList, p.produceDB, pTx,
+		&verifier.Config{
+			Mode:        0,
+			Timeout:     limitTime - time.Now().Sub(st),
+			TxTimeLimit: common.MaxTxTimeLimit,
+		},
+	)
 	if err != nil {
+		// TODO: Maybe should synchronous
 		go p.delTxList(dropList)
-		ilog.Errorf("Gen is err: %v", err)
 		return nil, err
 	}
 	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
-	err = blk.CalculateHeadHash()
-	if err != nil {
-		return nil, err
-	}
+	blk.CalculateHeadHash()
 	blk.Sign = p.account.Sign(blk.HeadHash())
 	p.produceDB.Commit(string(blk.HeadHash()))
+
 	return blk, nil
 }
 
