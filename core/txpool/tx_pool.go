@@ -117,27 +117,15 @@ func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 
 func (pool *TxPImpl) verifyWorkers() {
 	for v := range pool.chP2PTx {
-		var t tx.Tx
+		t := &tx.Tx{}
 		err := t.Decode(v.Data())
 		if err != nil {
 			ilog.Errorf("decode tx error. err=%v", err)
 			continue
 		}
-		pool.mu.Lock()
-		ret := pool.verifyDuplicate(&t)
-		if ret != nil {
-			pool.mu.Unlock()
-			continue
+		if err := pool.AddTx(t, "p2p"); err != nil {
+			ilog.Debugf("Add tx failed: %v", err)
 		}
-		ret = pool.verifyTx(&t)
-		if ret != nil {
-			pool.mu.Unlock()
-			continue
-		}
-		pool.pendingTx.Add(&t)
-		pool.mu.Unlock()
-		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
-		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
 	}
 }
 
@@ -171,7 +159,7 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error 
 }
 
 // AddTx add the transaction
-func (pool *TxPImpl) AddTx(t *tx.Tx) error {
+func (pool *TxPImpl) AddTx(t *tx.Tx, from string) error {
 	err := pool.verifyDuplicate(t)
 	if err != nil {
 		return err
@@ -188,7 +176,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 	)
 
 	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
-	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
+	metricsReceivedTxCount.Add(1, map[string]string{"from": from})
 	return nil
 }
 
