@@ -1,6 +1,7 @@
 package pob
 
 import (
+	"fmt"
 	"sync"
 	"time"
 
@@ -10,12 +11,14 @@ import (
 	"github.com/iost-official/go-iost/consensus/synchro"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics"
 	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/verifier"
 )
 
 var (
@@ -24,19 +27,17 @@ var (
 	generateBlockTimeGauge     = metrics.NewGauge("iost_pob_generate_block_time", nil)
 	verifyBlockTimeGauge       = metrics.NewGauge("iost_pob_verify_block_time", nil)
 	receiveBlockDelayTimeGauge = metrics.NewGauge("iost_pob_receive_block_delay_time", nil)
-	metricsConfirmedLength     = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	libNumberGauge             = metrics.NewGauge("iost_pob_confirmed_length", nil)
+	headNumberGauge            = metrics.NewGauge("iost_pob_head_length", nil)
 )
 
 var (
-	maxBlockNumber    = int64(10000)
-	subSlotTime       = 500 * time.Millisecond
 	last2GenBlockTime = 50 * time.Millisecond
 )
 
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
 	account    *account.KeyPair
-	conf       *common.Config
 	blockChain block.Chain
 	blockCache blockcache.BlockCache
 	txPool     txpool.TxPool
@@ -45,10 +46,9 @@ type PoB struct {
 	sync       *synchro.Sync
 	cBase      *chainbase.ChainBase
 
-	exitSignal       chan struct{}
-	quitGenerateMode chan struct{}
-	wg               *sync.WaitGroup
-	mu               *sync.RWMutex
+	exitSignal chan struct{}
+	wg         *sync.WaitGroup
+	mu         *sync.RWMutex
 }
 
 // New init a new PoB.
@@ -63,7 +63,6 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 
 	p := PoB{
 		account:    account,
-		conf:       conf,
 		blockChain: cBase.BlockChain(),
 		blockCache: cBase.BlockCache(),
 		txPool:     txPool,
@@ -72,13 +71,10 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 		sync:       nil,
 		cBase:      cBase,
 
-		exitSignal:       make(chan struct{}),
-		quitGenerateMode: make(chan struct{}),
-		wg:               new(sync.WaitGroup),
-		mu:               new(sync.RWMutex),
+		exitSignal: make(chan struct{}),
+		wg:         new(sync.WaitGroup),
+		mu:         new(sync.RWMutex),
 	}
-
-	close(p.quitGenerateMode)
 
 	return &p
 }
@@ -87,9 +83,10 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 func (p *PoB) Start() error {
 	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
 
-	p.wg.Add(2)
+	p.wg.Add(3)
 	go p.verifyLoop()
-	go p.scheduleLoop()
+	go p.generateLoop()
+	go p.tickerLoop()
 	return nil
 }
 
@@ -109,12 +106,6 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		verifyBlockCount.Add(1, nil)
 	}()
 
-	head := p.blockCache.Head().Head.Number
-	if blk.Head.Number > head+maxBlockNumber {
-		ilog.Debugf("Block number %v is %v higher than head number %v", blk.Head.Number, maxBlockNumber, head)
-		return
-	}
-
 	p.mu.Lock()
 	err := p.cBase.Add(blk, false, false)
 	p.mu.Unlock()
@@ -122,14 +113,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 		return
 	}
 
-	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-
-	if common.IsWitness(p.account.ReadablePubkey(), p.blockCache.Head().Active()) {
-		p.p2pService.ConnectBPs(p.blockCache.Head().NetID())
-	} else {
-		p.p2pService.ConnectBPs(nil)
-	}
-
+	// TODO: Not all successful link blocks will go to this logic.
 	if !p.sync.IsCatchingUp() {
 		p.sync.BroadcastBlockInfo(blk)
 	}
@@ -138,10 +122,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 func (p *PoB) verifyLoop() {
 	for {
 		select {
-		case blk := <-p.sync.IncomingBlock():
-			select {
-			case <-p.quitGenerateMode:
-			}
+		case blk := <-p.sync.ValidBlock():
 			p.doVerifyBlock(blk)
 		case <-p.exitSignal:
 			p.wg.Done()
@@ -150,34 +131,44 @@ func (p *PoB) verifyLoop() {
 	}
 }
 
-func (p *PoB) scheduleLoop() {
+func (p *PoB) doGenerateBlock(slot int64) {
+	// When the iserver is catching up, the generate block is not performed.
+	if p.sync.IsCatchingUp() {
+		return
+	}
+
+	// IsMyGenerateBlockTime
+	witnessList := p.blockCache.Head().Active()
+	if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
+		return
+	}
+
+	p.mu.Lock()
+	for num := 0; num < common.BlockNumPerWitness; num++ {
+		<-time.After(time.Until(common.TimeOfBlock(slot, int64(num))))
+		blk, err := p.generateBlock(num)
+		if err != nil {
+			ilog.Errorf("Generate block failed: %v", err)
+			// Maybe should break.
+			continue
+		}
+		p.sync.BroadcastBlock(blk)
+		err = p.cBase.Add(blk, false, true)
+		if err != nil {
+			ilog.Errorf("[pob] handle block from myself, err:%v", err)
+			// Maybe should break.
+			continue
+		}
+	}
+	p.mu.Unlock()
+}
+
+func (p *PoB) generateLoop() {
 	for {
+		slot := common.NextSlot()
 		select {
-		case <-time.After(time.Until(common.NextSlotTime())):
-			if p.sync.IsCatchingUp() {
-				common.SetMode(common.ModeSync)
-				// When the iserver is catching up, the generate block is not performed.
-				continue
-			} else {
-				common.SetMode(common.ModeNormal)
-			}
-			// TODO: quitGenerateMode and generateBlockTicker need to redesign.
-			p.quitGenerateMode = make(chan struct{})
-			generateBlockTicker := time.NewTicker(subSlotTime)
-			for num := 0; num < common.BlockNumPerWitness; num++ {
-				pTx, head := p.txPool.PendingTx()
-				witnessList := head.Active()
-				if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
-					break
-				}
-				p.gen(num, pTx, head)
-				if num == common.BlockNumPerWitness-1 {
-					break
-				}
-				<-generateBlockTicker.C
-			}
-			close(p.quitGenerateMode)
-			generateBlockTicker.Stop()
+		case <-time.After(time.Until(common.TimeOfBlock(slot, 0))):
+			p.doGenerateBlock(slot)
 		case <-p.exitSignal:
 			p.wg.Done()
 			return
@@ -185,7 +176,7 @@ func (p *PoB) scheduleLoop() {
 	}
 }
 
-func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheNode) {
+func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	now := time.Now().UnixNano()
 	defer func() {
 		// TODO: Confirm the most appropriate metrics definition.
@@ -193,31 +184,82 @@ func (p *PoB) gen(num int, pTx *txpool.SortedTxMap, head *blockcache.BlockCacheN
 		generateBlockCount.Add(1, nil)
 	}()
 
+	st := time.Now()
+	pTx, head := p.txPool.PendingTx()
+	witnessList := head.Active()
+	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != p.account.ReadablePubkey() {
+		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), p.account.ReadablePubkey())
+	}
 	limitTime := common.MaxBlockTimeLimit
 	if num >= common.BlockNumPerWitness-2 {
 		limitTime = last2GenBlockTime
 	}
-	p.txPool.Lock()
-	blk, err := generateBlock(p.account, p.txPool, p.produceDB, limitTime, pTx, head)
-	p.txPool.Release()
-	if err != nil {
-		ilog.Error(err)
-		return
+	blk := &block.Block{
+		Head: &block.BlockHead{
+			Version:    0,
+			ParentHash: head.HeadHash(),
+			Info:       make([]byte, 0),
+			Number:     head.Head.Number + 1,
+			Witness:    p.account.ReadablePubkey(),
+			Time:       time.Now().UnixNano(),
+		},
+		Txs:      []*tx.Tx{},
+		Receipts: []*tx.TxReceipt{},
 	}
 
-	blkByte, err := blk.Encode()
+	p.produceDB.Checkout(string(head.HeadHash()))
+	v := &verifier.Verifier{}
+	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
+	dropList, _, err := v.Gen(
+		blk, head.Block, &head.WitnessList, p.produceDB, pTx,
+		&verifier.Config{
+			Mode:        0,
+			Timeout:     limitTime - time.Now().Sub(st),
+			TxTimeLimit: common.MaxTxTimeLimit,
+		},
+	)
 	if err != nil {
-		ilog.Error(err)
-		return
+		// TODO: Maybe should synchronous
+		go p.delTxList(dropList)
+		return nil, err
 	}
-	p.p2pService.Broadcast(blkByte, p2p.NewBlock, p2p.UrgentMessage)
+	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
+	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
+	blk.CalculateHeadHash()
+	blk.Sign = p.account.Sign(blk.HeadHash())
+	p.produceDB.Commit(string(blk.HeadHash()))
 
-	p.mu.Lock()
-	err = p.cBase.Add(blk, false, true)
-	p.mu.Unlock()
-	if err != nil {
-		ilog.Errorf("[pob] handle block from myself, err:%v", err)
-		return
+	return blk, nil
+}
+
+func (p *PoB) delTxList(delList []*tx.Tx) {
+	for _, t := range delList {
+		p.txPool.DelTx(t.Hash())
 	}
-	metricsConfirmedLength.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+}
+
+func (p *PoB) tickerLoop() {
+	for {
+		select {
+		case <-time.After(2 * time.Second):
+			libNumberGauge.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
+			headNumberGauge.Set(float64(p.blockCache.Head().Head.Number), nil)
+
+			if p.sync.IsCatchingUp() {
+				common.SetMode(common.ModeSync)
+			} else {
+				common.SetMode(common.ModeNormal)
+			}
+
+			head := p.blockCache.Head()
+			if common.IsWitness(p.account.ReadablePubkey(), head.Active()) {
+				p.p2pService.ConnectBPs(head.NetID())
+			} else {
+				p.p2pService.ConnectBPs(nil)
+			}
+		case <-p.exitSignal:
+			p.wg.Done()
+			return
+		}
+	}
 }

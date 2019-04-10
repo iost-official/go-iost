@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 
@@ -34,17 +35,19 @@ type DeferServer struct {
 	rw               *sync.RWMutex
 	nextScheduleTime atomic.Int64
 
-	txpool *TxPImpl
+	bChain block.Chain
+	txpool TxPool
 
 	quitCh chan struct{}
 }
 
 // NewDeferServer returns a new DeferServer instance.
-func NewDeferServer(txpool *TxPImpl) (*DeferServer, error) {
+func NewDeferServer(txpool TxPool, bChain block.Chain) (*DeferServer, error) {
 	deferServer := &DeferServer{
 		pool:   redblacktree.NewWith(compareDeferTx),
 		idxMap: make(map[string]*tx.Tx),
 		rw:     new(sync.RWMutex),
+		bChain: bChain,
 		txpool: txpool,
 		quitCh: make(chan struct{}),
 	}
@@ -57,7 +60,7 @@ func NewDeferServer(txpool *TxPImpl) (*DeferServer, error) {
 }
 
 func (d *DeferServer) buildIndex() error {
-	txs, err := d.txpool.bChain.AllDelaytx()
+	txs, err := d.bChain.AllDelaytx()
 	ilog.Info("defer index num: ", len(txs))
 	if err != nil {
 		return err
@@ -198,6 +201,22 @@ func (d *DeferServer) deferTicker() {
 			if !ok {
 				d.nextScheduleTime.Store(math.MaxInt64)
 			}
+		}
+	}
+}
+
+// ProcessDelaytx will process the delay tx.
+func (d *DeferServer) ProcessDelaytx(blk *block.Block) {
+	for i, t := range blk.Txs {
+		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
+			d.StoreDeferTx(t)
+		}
+		if t.IsDefer() {
+			d.DelDeferTx(t)
+		}
+		canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
+		for _, canceledHash := range canceledDelayHashes {
+			d.DelDeferTxByHash(canceledHash)
 		}
 	}
 }

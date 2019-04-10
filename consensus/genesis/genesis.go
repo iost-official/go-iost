@@ -210,10 +210,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	}
 	blk.Head.TxMerkleHash = blk.CalculateTxMerkleHash()
 	blk.Head.TxReceiptMerkleHash = blk.CalculateTxReceiptMerkleHash()
-	err = blk.CalculateHeadHash()
-	if err != nil {
-		return nil, err
-	}
+	blk.CalculateHeadHash()
 	db.Commit(string(blk.HeadHash()))
 	return blk, nil
 }

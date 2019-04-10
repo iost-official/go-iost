@@ -3,7 +3,6 @@ package txpool
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"sync"
 	"time"
 
@@ -19,39 +18,37 @@ var errDelaytxNotFound = errors.New("delay tx not found")
 
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
-	bChain           block.Chain
-	blockCache       blockcache.BlockCache
-	p2pService       p2p.Service
-	forkChain        *forkChain
-	blockList        *sync.Map // map[string]*blockTx
-	pendingTx        *SortedTxMap
-	mu               sync.RWMutex
-	chP2PTx          chan p2p.IncomingMessage
-	deferServer      *DeferServer
-	quitGenerateMode chan struct{}
-	quitCh           chan struct{}
+	bChain      block.Chain
+	blockCache  blockcache.BlockCache
+	p2pService  p2p.Service
+	forkChain   *forkChain
+	blockList   *sync.Map // map[string]*blockTx
+	pendingTx   *SortedTxMap
+	mu          sync.RWMutex
+	chP2PTx     chan p2p.IncomingMessage
+	deferServer *DeferServer
+	quitCh      chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPImpl instance.
 func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pService p2p.Service) (*TxPImpl, error) {
 	p := &TxPImpl{
-		bChain:           bChain,
-		blockCache:       blockCache,
-		p2pService:       p2pService,
-		forkChain:        new(forkChain),
-		blockList:        new(sync.Map),
-		pendingTx:        NewSortedTxMap(),
-		chP2PTx:          p2pService.Register("txpool message", p2p.PublishTx),
-		quitGenerateMode: make(chan struct{}),
-		quitCh:           make(chan struct{}),
+		bChain:     bChain,
+		blockCache: blockCache,
+		p2pService: p2pService,
+		forkChain:  new(forkChain),
+		blockList:  new(sync.Map),
+		pendingTx:  NewSortedTxMap(),
+		chP2PTx:    p2pService.Register("txpool message", p2p.PublishTx),
+		quitCh:     make(chan struct{}),
 	}
 	p.forkChain.SetNewHead(blockCache.Head())
-	deferServer, err := NewDeferServer(p)
+	deferServer, err := NewDeferServer(p, bChain)
 	if err != nil {
 		return nil, err
 	}
 	p.deferServer = deferServer
-	close(p.quitGenerateMode)
+	p.initBlockTx()
 	return p, nil
 }
 
@@ -94,12 +91,7 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 }
 
 func (pool *TxPImpl) loop() {
-	pool.initBlockTx()
-	workerCnt := (runtime.NumCPU() + 1) / 2
-	if workerCnt == 0 {
-		workerCnt = 1
-	}
-	for i := 0; i < workerCnt; i++ {
+	for i := 0; i < 2; i++ {
 		go pool.verifyWorkers()
 	}
 	clearTx := time.NewTicker(clearInterval)
@@ -118,28 +110,13 @@ func (pool *TxPImpl) loop() {
 	}
 }
 
-// Lock lock the txpool
-func (pool *TxPImpl) Lock() {
-	pool.mu.Lock()
-	pool.quitGenerateMode = make(chan struct{})
-}
-
 // PendingTx is return pendingTx
 func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 	return pool.pendingTx, pool.forkChain.NewHead
 }
 
-// Release release the txpool
-func (pool *TxPImpl) Release() {
-	close(pool.quitGenerateMode)
-	pool.mu.Unlock()
-}
-
 func (pool *TxPImpl) verifyWorkers() {
 	for v := range pool.chP2PTx {
-		select {
-		case <-pool.quitGenerateMode:
-		}
 		var t tx.Tx
 		err := t.Decode(v.Data())
 		if err != nil {
@@ -164,26 +141,11 @@ func (pool *TxPImpl) verifyWorkers() {
 	}
 }
 
-func (pool *TxPImpl) processDelaytx(blk *block.Block) {
-	for i, t := range blk.Txs {
-		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
-			pool.deferServer.StoreDeferTx(t)
-		}
-		if t.IsDefer() {
-			pool.deferServer.DelDeferTx(t)
-		}
-		canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
-		for _, canceledHash := range canceledDelayHashes {
-			pool.deferServer.DelDeferTxByHash(canceledHash)
-		}
-	}
-}
-
 // AddLinkedNode add the findBlock
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
-	pool.processDelaytx(linkedNode.Block)
+	pool.deferServer.ProcessDelaytx(linkedNode.Block)
 	err := pool.addBlock(linkedNode.Block)
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
@@ -234,13 +196,6 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 func (pool *TxPImpl) DelTx(hash []byte) error {
 	pool.pendingTx.Del(hash)
 	return nil
-}
-
-// DelTxList deletes the tx list in txpool.
-func (pool *TxPImpl) DelTxList(delList []*tx.Tx) {
-	for _, t := range delList {
-		pool.pendingTx.Del(t.Hash())
-	}
 }
 
 // ExistTxs determine if the transaction exists

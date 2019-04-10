@@ -2,8 +2,10 @@ package block
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	blockpb "github.com/iost-official/go-iost/core/block/pb"
 	"github.com/iost-official/go-iost/core/merkletree"
@@ -85,8 +87,8 @@ func (b *BlockHead) Decode(bhByte []byte) error {
 	return nil
 }
 
-func (b *BlockHead) hash() ([]byte, error) {
-	return common.Sha3(b.ToBytes()), nil
+func (b *BlockHead) hash() []byte {
+	return common.Sha3(b.ToBytes())
 }
 
 // Block is the implementation of block
@@ -180,14 +182,13 @@ func (b *Block) Decode(blockByte []byte) error {
 		b.TxHashes = br.TxHashes
 		b.ReceiptHashes = br.ReceiptHashes
 	}
-	return b.CalculateHeadHash()
+	b.CalculateHeadHash()
+	return nil
 }
 
 // CalculateHeadHash calculate the hash of the head
-func (b *Block) CalculateHeadHash() error {
-	var err error
-	b.hash, err = b.Head.hash()
-	return err
+func (b *Block) CalculateHeadHash() {
+	b.hash = b.Head.hash()
 }
 
 // HeadHash return block hash
@@ -218,4 +219,19 @@ func (b *Block) EncodeM() ([]byte, error) {
 		return nil, errors.New("fail to encode blockraw")
 	}
 	return brByte, nil
+}
+
+// VerifySelf verify block's signature and some base fields.
+func (b *Block) VerifySelf() error {
+	signature := b.Sign
+	signature.SetPubkey(account.DecodePubkey(b.Head.Witness))
+	hash := b.HeadHash()
+	if !signature.Verify(hash) {
+		return fmt.Errorf("The signature of block %v is wrong", common.Base58Encode(hash))
+	}
+	if len(b.Txs) != len(b.Receipts) {
+		return fmt.Errorf("Tx len %v unmatch receipt len %v", len(b.Txs), len(b.Receipts))
+	}
+	return nil
+
 }
