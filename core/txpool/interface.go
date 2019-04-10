@@ -14,6 +14,7 @@ type TxPool interface {
 	Stop()
 	AddTx(tx *tx.Tx) error
 	DelTx(hash []byte) error
+	AddDefertx(hash []byte) error
 	GetFromPending(hash []byte) (*tx.Tx, error)
 	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
 

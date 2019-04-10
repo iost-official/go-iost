@@ -3,7 +3,6 @@ package txpool
 import (
 	"errors"
 	"fmt"
-	"runtime"
 	"sync"
 	"time"
 
@@ -44,11 +43,12 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 		quitCh:     make(chan struct{}),
 	}
 	p.forkChain.SetNewHead(blockCache.Head())
-	deferServer, err := NewDeferServer(p)
+	deferServer, err := NewDeferServer(p, bChain)
 	if err != nil {
 		return nil, err
 	}
 	p.deferServer = deferServer
+	p.initBlockTx()
 	return p, nil
 }
 
@@ -91,12 +91,7 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 }
 
 func (pool *TxPImpl) loop() {
-	pool.initBlockTx()
-	workerCnt := (runtime.NumCPU() + 1) / 2
-	if workerCnt == 0 {
-		workerCnt = 1
-	}
-	for i := 0; i < workerCnt; i++ {
+	for i := 0; i < 2; i++ {
 		go pool.verifyWorkers()
 	}
 	clearTx := time.NewTicker(clearInterval)
