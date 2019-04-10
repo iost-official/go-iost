@@ -7,6 +7,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 
@@ -198,6 +199,22 @@ func (d *DeferServer) deferTicker() {
 			if !ok {
 				d.nextScheduleTime.Store(math.MaxInt64)
 			}
+		}
+	}
+}
+
+// ProcessDelaytx will process the delay tx.
+func (d *DeferServer) ProcessDelaytx(blk *block.Block) {
+	for i, t := range blk.Txs {
+		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
+			d.StoreDeferTx(t)
+		}
+		if t.IsDefer() {
+			d.DelDeferTx(t)
+		}
+		canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
+		for _, canceledHash := range canceledDelayHashes {
+			d.DelDeferTxByHash(canceledHash)
 		}
 	}
 }

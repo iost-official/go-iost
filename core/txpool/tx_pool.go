@@ -146,26 +146,11 @@ func (pool *TxPImpl) verifyWorkers() {
 	}
 }
 
-func (pool *TxPImpl) processDelaytx(blk *block.Block) {
-	for i, t := range blk.Txs {
-		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
-			pool.deferServer.StoreDeferTx(t)
-		}
-		if t.IsDefer() {
-			pool.deferServer.DelDeferTx(t)
-		}
-		canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
-		for _, canceledHash := range canceledDelayHashes {
-			pool.deferServer.DelDeferTxByHash(canceledHash)
-		}
-	}
-}
-
 // AddLinkedNode add the findBlock
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
-	pool.processDelaytx(linkedNode.Block)
+	pool.deferServer.ProcessDelaytx(linkedNode.Block)
 	err := pool.addBlock(linkedNode.Block)
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
