@@ -2,30 +2,29 @@
 
 class Console {
     constructor() {
-        this._cLog = _cLog;
     }
     _format(...args) {
         let formatStr = format(...args);
         return formatStr;
     }
+}
 
-    debug(...args) {
-        this._cLog('Debug', this._format(...args));
+(function(){
+    let _log = _cLog;
+    let P = Console.prototype;
+    P.debug = function(...args) {
+        _log('Debug', this._format(...args));
     }
-
-    info(...args) {
-        this._cLog('Info', this._format(...args));
+    P.info = function(...args) {
+        _log('Info', this._format(...args));
     }
-
-    warn(...args) {
-        this._cLog('Warn', this._format(...args));
+    P.warn = function(...args) {
+        _log('Warn', this._format(...args));
     }
-
-    error(...args) {
-        this._cLog('Error', this._format(...args));
+    P.error = function(...args) {
+        _log('Error', this._format(...args));
     }
-
-    log(...args) {
+    P.log = function(...args) {
         this.info(...args)
     }
-}
+})();

@@ -64,27 +64,27 @@ let IOSTContractStorage = (function () {
 
     let globalStorage = function () {
         // payer not used
-        this.get = function (c, k) {
+        this.globalGet = function (c, k) {
             let p = "";
             return storage.globalGet(c, k, p);
         }
-        this.has = function (c, k) {
+        this.globalHas = function (c, k) {
             let p = "";
             return storage.globalHas(c, k, p);
         }
-        this.mapHas = function (c, k, f) {
+        this.globalMapHas = function (c, k, f) {
             let p = "";
             return storage.globalMapHas(c, k, f, p);
         };
-        this.mapGet = function (c, k, f) {
+        this.globalMapGet = function (c, k, f) {
             let p = "";
             return storage.globalMapGet(c, k, f, p);
         };
-        this.mapKeys = function (c, k) {
+        this.globalMapKeys = function (c, k) {
             let p = "";
             return JSON.parse(storage.globalMapKeys(c, k, p));
         };
-        this.mapLen = function (c, k) {
+        this.globalMapLen = function (c, k) {
             let p = "";
             return storage.globalMapLen(c, k, p);
         };
@@ -118,13 +118,13 @@ let IOSTContractStorage = (function () {
         // map Delete a (k, f) pair. use k + f to delete value.
         // mapDel(key, field)
         mapDel: mapStorageObj.mapDel,
-        // currently not supported, don't use.
-        globalGet: globalStorageObj.get,
-        globalHas: globalStorageObj.has,
-        globalMapHas: globalStorageObj.mapHas,
-        globalMapGet: globalStorageObj.mapGet,
-        globalMapKeys: globalStorageObj.mapKeys,
-        globalMapLen: globalStorageObj.mapLen,
+
+        globalGet: globalStorageObj.globalGet,
+        globalHas: globalStorageObj.globalHas,
+        globalMapHas: globalStorageObj.globalMapHas,
+        globalMapGet: globalStorageObj.globalMapGet,
+        globalMapKeys: globalStorageObj.globalMapKeys,
+        globalMapLen: globalStorageObj.globalMapLen,
     }
 })();
 
