@@ -36,18 +36,6 @@ func (m *MockTxPool) EXPECT() *MockTxPoolMockRecorder {
 	return m.recorder
 }
 
-// AddDefertx mocks base method
-func (m *MockTxPool) AddDefertx(arg0 []byte) error {
-	ret := m.ctrl.Call(m, "AddDefertx", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// AddDefertx indicates an expected call of AddDefertx
-func (mr *MockTxPoolMockRecorder) AddDefertx(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddDefertx", reflect.TypeOf((*MockTxPool)(nil).AddDefertx), arg0)
-}
-
 // AddLinkedNode mocks base method
 func (m *MockTxPool) AddLinkedNode(arg0 *blockcache.BlockCacheNode) error {
 	ret := m.ctrl.Call(m, "AddLinkedNode", arg0)
@@ -61,15 +49,15 @@ func (mr *MockTxPoolMockRecorder) AddLinkedNode(arg0 interface{}) *gomock.Call {
 }
 
 // AddTx mocks base method
-func (m *MockTxPool) AddTx(arg0 *tx.Tx, arg1 string) error {
-	ret := m.ctrl.Call(m, "AddTx", arg0, arg1)
+func (m *MockTxPool) AddTx(arg0 *tx.Tx) error {
+	ret := m.ctrl.Call(m, "AddTx", arg0)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // AddTx indicates an expected call of AddTx
-func (mr *MockTxPoolMockRecorder) AddTx(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTx", reflect.TypeOf((*MockTxPool)(nil).AddTx), arg0, arg1)
+func (mr *MockTxPoolMockRecorder) AddTx(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddTx", reflect.TypeOf((*MockTxPool)(nil).AddTx), arg0)
 }
 
 // DelTx mocks base method
@@ -82,6 +70,16 @@ func (m *MockTxPool) DelTx(arg0 []byte) error {
 // DelTx indicates an expected call of DelTx
 func (mr *MockTxPoolMockRecorder) DelTx(arg0 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DelTx", reflect.TypeOf((*MockTxPool)(nil).DelTx), arg0)
+}
+
+// DelTxList mocks base method
+func (m *MockTxPool) DelTxList(arg0 []*tx.Tx) {
+	m.ctrl.Call(m, "DelTxList", arg0)
+}
+
+// DelTxList indicates an expected call of DelTxList
+func (mr *MockTxPoolMockRecorder) DelTxList(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DelTxList", reflect.TypeOf((*MockTxPool)(nil).DelTxList), arg0)
 }
 
 // ExistTxs mocks base method
@@ -123,6 +121,16 @@ func (mr *MockTxPoolMockRecorder) GetFromPending(arg0 interface{}) *gomock.Call 
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromPending", reflect.TypeOf((*MockTxPool)(nil).GetFromPending), arg0)
 }
 
+// Lock mocks base method
+func (m *MockTxPool) Lock() {
+	m.ctrl.Call(m, "Lock")
+}
+
+// Lock indicates an expected call of Lock
+func (mr *MockTxPoolMockRecorder) Lock() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Lock", reflect.TypeOf((*MockTxPool)(nil).Lock))
+}
+
 // PendingTx mocks base method
 func (m *MockTxPool) PendingTx() (*txpool.SortedTxMap, *blockcache.BlockCacheNode) {
 	ret := m.ctrl.Call(m, "PendingTx")
@@ -134,6 +142,16 @@ func (m *MockTxPool) PendingTx() (*txpool.SortedTxMap, *blockcache.BlockCacheNod
 // PendingTx indicates an expected call of PendingTx
 func (mr *MockTxPoolMockRecorder) PendingTx() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "PendingTx", reflect.TypeOf((*MockTxPool)(nil).PendingTx))
+}
+
+// Release mocks base method
+func (m *MockTxPool) Release() {
+	m.ctrl.Call(m, "Release")
+}
+
+// Release indicates an expected call of Release
+func (mr *MockTxPoolMockRecorder) Release() *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Release", reflect.TypeOf((*MockTxPool)(nil).Release))
 }
 
 // Start mocks base method
