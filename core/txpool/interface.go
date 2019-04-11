@@ -12,7 +12,7 @@ import (
 type TxPool interface {
 	Start() error
 	Stop()
-	AddTx(tx *tx.Tx, from string) error
+	AddTx(tx *tx.Tx) error
 	DelTx(hash []byte) error
 	AddDefertx(hash []byte) error
 	GetFromPending(hash []byte) (*tx.Tx, error)

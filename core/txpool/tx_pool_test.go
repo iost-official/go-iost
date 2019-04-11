@@ -138,10 +138,10 @@ func TestNewTxPImpl(t *testing.T) {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			err := txPool.AddTx(t, "rpc")
+			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			err = txPool.AddTx(t, "rpc")
+			err = txPool.AddTx(t)
 			So(err, ShouldEqual, ErrDupPendingTx)
 		})
 		Convey("txTimeOut", func() {
@@ -166,7 +166,7 @@ func TestNewTxPImpl(t *testing.T) {
 			t := genTx(accountList[0], int64(30*time.Millisecond))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
-			err := txPool.AddTx(t, "rpc")
+			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			time.Sleep(50 * time.Millisecond)
@@ -177,7 +177,7 @@ func TestNewTxPImpl(t *testing.T) {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			err := txPool.AddTx(t, "rpc")
+			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			r1 := txPool.ExistTxs(t.Hash(), nil)
@@ -313,7 +313,7 @@ func TestNewTxPImplB(t *testing.T) {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			err := txPool.AddTx(t, "rpc")
+			err := txPool.AddTx(t)
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			e := txPool.DelTx(t.Hash())
@@ -342,7 +342,7 @@ func TestNewTxPImplB(t *testing.T) {
 			So(bcn, ShouldNotBeNil)
 
 			for i := 0; i < 6-3; i++ {
-				err := txPool.AddTx(forkBlock.Txs[i], "rpc")
+				err := txPool.AddTx(forkBlock.Txs[i])
 				So(err, ShouldBeNil)
 			}
 
@@ -405,15 +405,15 @@ func TestNewTxPImplB(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			println("before add tx")
-			err = txPool.AddTx(t4, "rpc")
+			err = txPool.AddTx(t4)
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t2, "rpc")
+			err = txPool.AddTx(t2)
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t5, "rpc")
+			err = txPool.AddTx(t5)
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t1, "rpc")
+			err = txPool.AddTx(t1)
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t3, "rpc")
+			err = txPool.AddTx(t3)
 			So(err, ShouldBeNil)
 
 			pt, _ := txPool.PendingTx()
