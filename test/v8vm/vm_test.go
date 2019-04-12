@@ -16,7 +16,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
-	"github.com/iost-official/go-iost/vm/v8vm"
+	v8 "github.com/iost-official/go-iost/vm/v8vm"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
@@ -44,7 +44,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_ratio", int64(100))
-	var gasLimit = int64(10000)
+	var gasLimit = int64(10000000)
 	if len(optional) > 0 {
 		gasLimit = optional[0].(int64)
 	}
@@ -620,10 +620,10 @@ func TestEngine_Danger(t *testing.T) {
 
 	// will fail in compile
 	/*
-	_, _, err = vmPool.LoadAndCall(host, code, "asyncfunc")
-	if err == nil || !strings.Contains(err.Error(), "use of async or await is not supported") {
-		t.Fatalf("LoadAndCall throw should return error: use of async or await is not supported, but got %v\n", err)
-	}
+		_, _, err = vmPool.LoadAndCall(host, code, "asyncfunc")
+		if err == nil || !strings.Contains(err.Error(), "use of async or await is not supported") {
+			t.Fatalf("LoadAndCall throw should return error: use of async or await is not supported, but got %v\n", err)
+		}
 	*/
 }
 
@@ -900,4 +900,28 @@ func TestEngine_JSON(t *testing.T) {
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"a":{"b":{"c":""}}} {"a":{"b":{"c":""}}}`)
 	})
+}
+
+func TestEngine_Libstring(t *testing.T) {
+	host, code := MyInit(t, "libstring")
+	_, cost, err := vmPool.LoadAndCall(host, code, "ops")
+
+	if err != nil {
+		t.Fatalf("LoadAndCall ops error: %v\n", err)
+	}
+	if cost.ToGas() != 1082 {
+		t.Errorf("cost except 1082, got %d\n", cost.ToGas())
+	}
+}
+
+func TestEngine_Libbignumber(t *testing.T) {
+	host, code := MyInit(t, "libbignumber")
+	_, cost, err := vmPool.LoadAndCall(host, code, "ops")
+
+	if err != nil {
+		t.Fatalf("LoadAndCall ops error: %v\n", err)
+	}
+	if cost.ToGas() != 15976 {
+		t.Errorf("cost except 15976, got %d\n", cost.ToGas())
+	}
 }

@@ -196,7 +196,7 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	}
 	blk := &block.Block{
 		Head: &block.BlockHead{
-			Version:    0,
+			Version:    block.V1,
 			ParentHash: head.HeadHash(),
 			Info:       make([]byte, 0),
 			Number:     head.Head.Number + 1,

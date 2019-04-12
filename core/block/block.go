@@ -13,6 +13,12 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 )
 
+// BlockHead versions
+const (
+	V0 int64 = iota
+	V1
+)
+
 // BlockHead is the struct of block head.
 type BlockHead struct { // nolint
 	Version             int64

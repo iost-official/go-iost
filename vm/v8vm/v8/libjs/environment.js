@@ -68,92 +68,107 @@
 
     const Stringincludes = String.prototype.includes;
     String.prototype.includes = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return Stringincludes.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return Stringincludes.call(s, ...arguments);
     };
 
     const StringendsWith = String.prototype.endsWith;
     String.prototype.endsWith = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringendsWith.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringendsWith.call(s, ...arguments);
     };
 
     const StringindexOf = String.prototype.indexOf;
     String.prototype.indexOf = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringindexOf.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringindexOf.call(s, ...arguments);
     };
 
     const StringlastIndexOf = String.prototype.lastIndexOf;
     String.prototype.lastIndexOf = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringlastIndexOf.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringlastIndexOf.call(s, ...arguments);
     };
 
     const Stringreplace = String.prototype.replace;
     String.prototype.replace = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return Stringreplace.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return Stringreplace.call(s, ...arguments);
     };
 
     const Stringsearch = String.prototype.search;
     String.prototype.search = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return Stringsearch.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return Stringsearch.call(s, ...arguments);
     };
 
     const Stringsplit = String.prototype.split;
     String.prototype.split = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return Stringsplit.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return Stringsplit.call(s, ...arguments);
     };
 
     const StringstartsWith = String.prototype.startsWith;
     String.prototype.startsWith = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringstartsWith.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringstartsWith.call(s, ...arguments);
     };
 
     const Stringslice = String.prototype.slice;
     String.prototype.slice = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return Stringslice.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return Stringslice.call(s, ...arguments);
     };
 
     const Stringsubstring = String.prototype.substring;
     String.prototype.substring = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return Stringsubstring.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return Stringsubstring.call(s, ...arguments);
     };
 
     const StringtoLowerCase = String.prototype.toLowerCase;
     String.prototype.toLowerCase = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringtoLowerCase.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringtoLowerCase.call(s, ...arguments);
     };
 
     const StringtoUpperCase = String.prototype.toUpperCase;
     String.prototype.toUpperCase = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringtoUpperCase.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringtoUpperCase.call(s, ...arguments);
     };
 
     const Stringtrim = String.prototype.trim;
     String.prototype.trim = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return Stringtrim.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return Stringtrim.call(s, ...arguments);
     };
 
     const StringtrimLeft = String.prototype.trimLeft;
     String.prototype.trimLeft = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringtrimLeft.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringtrimLeft.call(s, ...arguments);
     };
 
     const StringtrimRight = String.prototype.trimRight;
     String.prototype.trimRight = function() {
-        _IOSTInstruction_counter.incr(1 + this.length * 0.1);
-        return StringtrimRight.call(this, ...arguments);
+        let s = Stringconstructor(this);
+        _IOSTInstruction_counter.incr(1 + s.length * 0.1);
+        return StringtrimRight.call(s, ...arguments);
     };
 
     const Stringrepeat = String.prototype.repeat;
@@ -451,7 +466,7 @@
         if (arguments[0] === undefined || arguments[0] === null) {
             _IOSTInstruction_counter.incr(10);
         } else {
-            _IOSTInstruction_counter.incr(10 + arguments[0].toString().length);
+            _IOSTInstruction_counter.incr(10 + Stringconstructor(arguments[0]).length);
         }
         return JSONparse.call(this, ...arguments);
     };
@@ -475,8 +490,25 @@
     escape = null;
     unescape = null;
 
-    // Fundamental Objects
+    // Function
+    const Functionconstructor = Function;
+    Function.prototype.toString = function(){
+        if (!(this instanceof Functionconstructor)) {
+            throw new Error;
+        }
+        return `function ${this.name}() { [native code] }`;
+    };
     Function = null;
+
+    // Error
+    Object.defineProperty(Error, "stackTraceLimit", {
+        enumerable: false,
+        configurable: false,
+        writable: false,
+        value: 0,
+    });
+
+    // Fundamental Objects
     Boolean = null;
     EvalError = null;
     RangeError = null;
@@ -535,6 +567,8 @@
     _cLog = null;
 
     // BigNumber
+    const OrigBigNumber = BigNumber;
+    const BigNumbertoString = BigNumber.prototype.toString;
     const BigNumberconstructor = BigNumber.prototype.constructor;
     BigNumber.prototype.constructor = function() {
         _IOSTInstruction_counter.incr(20);
@@ -550,9 +584,10 @@
     const BigNumberdiv = BigNumber.prototype.div;
     BigNumber.prototype.dividedBy = BigNumber.prototype.div = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 10);
         }
         return BigNumberdiv.call(this, ...arguments);
     };
@@ -560,9 +595,10 @@
     const BigNumberidiv = BigNumber.prototype.idiv;
     BigNumber.prototype.dividedToIntegerBy = BigNumber.prototype.idiv = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 10);
         }
         return BigNumberidiv.call(this, ...arguments);
     };
@@ -570,25 +606,27 @@
     const BigNumberpow = BigNumber.prototype.pow;
     BigNumber.prototype.exponentiatedBy = BigNumber.prototype.pow = function () {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * arguments[0].toString().length * 10);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * argStr.length * 10);
         }
         return BigNumberpow.call(this, ...arguments);
     };
 
     const BigNumberintegerValue = BigNumber.prototype.integerValue;
     BigNumber.prototype.integerValue = function() {
-        _IOSTInstruction_counter.incr(20 + this.toString().length * 4);
+        _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 4);
         return BigNumberintegerValue.call(this, ...arguments);
     };
 
     const BigNumbereq = BigNumber.prototype.eq;
     BigNumber.prototype.isEqualTo = BigNumber.prototype.eq = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 2);
         }
         return BigNumbereq.call(this, ...arguments);
     };
@@ -602,9 +640,10 @@
     const BigNumbergt = BigNumber.prototype.gt;
     BigNumber.prototype.isGreaterThan = BigNumber.prototype.gt = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 2);
         }
         return BigNumbergt.call(this, ...arguments);
     };
@@ -612,9 +651,10 @@
     const BigNumbergte = BigNumber.prototype.gte;
     BigNumber.prototype.isGreaterThanOrEqualTo = BigNumber.prototype.gte = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 2);
         }
         return BigNumbergte.call(this, ...arguments);
     };
@@ -628,9 +668,10 @@
     const BigNumberlt = BigNumber.prototype.lt;
     BigNumber.prototype.isLessThan = BigNumber.prototype.lt = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 2);
         }
         return BigNumberlt.call(this, ...arguments);
     };
@@ -638,9 +679,10 @@
     const BigNumberlte = BigNumber.prototype.lte;
     BigNumber.prototype.isLessThanOrEqualTo = BigNumber.prototype.lte = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 2);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 2);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 2);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 2);
         }
         return BigNumberlte.call(this, ...arguments);
     };
@@ -672,9 +714,10 @@
     const BigNumberminus = BigNumber.prototype.minus;
     BigNumber.prototype.minus = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 10);
         }
         return BigNumberminus.call(this, ...arguments);
     };
@@ -682,9 +725,10 @@
     const BigNumbermod = BigNumber.prototype.mod;
     BigNumber.prototype.mod = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 10);
         }
         return BigNumbermod.call(this, ...arguments);
     };
@@ -692,9 +736,10 @@
     const BigNumbertimes = BigNumber.prototype.times;
     BigNumber.prototype.multipliedBy = BigNumber.prototype.times = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 4);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 4);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 4);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 4);
         }
         return BigNumbertimes.call(this, ...arguments);
     };
@@ -708,22 +753,23 @@
     const BigNumberplus = BigNumber.prototype.plus;
     BigNumber.prototype.plus = function() {
         if (arguments[0] == null) {
-            _IOSTInstruction_counter.incr(20 + this.toString().length * 10);
+            _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 10);
         } else {
-            _IOSTInstruction_counter.incr(20 + (this.toString().length + arguments[0].toString().length) * 10);
+            let argStr = (arguments[0] instanceof OrigBigNumber) ? BigNumbertoString.call(arguments[0]) : Stringconstructor(arguments[0]);
+            _IOSTInstruction_counter.incr(20 + (BigNumbertoString.call(this).length + argStr.length) * 10);
         }
         return BigNumberplus.call(this, ...arguments);
     };
 
     const BigNumbersqrt = BigNumber.prototype.sqrt;
     BigNumber.prototype.squareRoot = BigNumber.prototype.sqrt = function() {
-        _IOSTInstruction_counter.incr(20 + this.toString().length * 4);
+        _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 4);
         return BigNumbersqrt.call(this, ...arguments);
     };
 
     const BigNumbertoFixed = BigNumber.prototype.toFixed;
     BigNumber.prototype.toFixed = function() {
-        _IOSTInstruction_counter.incr(20 + this.toString().length * 4);
+        _IOSTInstruction_counter.incr(20 + BigNumbertoString.call(this).length * 4);
         return BigNumbertoFixed.call(this, ...arguments);
     };
 
@@ -732,7 +778,6 @@
         POW_PRECISION: 50,
         ROUNDING_MODE: BigNumber.ROUND_DOWN
     });
-    const OrigBigNumber = BigNumber;
     BigNumber = OrigBigNumber.prototype.constructor;
     BigNumber.prototype = OrigBigNumber.prototype;
     BigNumber.isBigNumber = OrigBigNumber.isBigNumber;
