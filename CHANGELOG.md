@@ -1,3 +1,12 @@
+## v3.0.9
+
+Fri Apr 12 14:18:46 CST 2019
+
+- Add goroutine pool for request handler of synchro.
+- Clean up code for consensus/pob.
+- Clean up code for core/txpool.
+- Improve stability for vm.
+
 ## v3.0.8
 
 Tue Apr  9 11:16:15 CST 2019
