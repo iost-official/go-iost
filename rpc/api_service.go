@@ -498,7 +498,7 @@ func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.G
 func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
 	topBlock := as.bc.Head()
 	blkHead := &block.BlockHead{
-		Version:    0,
+		Version:    block.V1,
 		ParentHash: topBlock.HeadHash(),
 		Number:     topBlock.Head.Number + 1,
 		Time:       time.Now().UnixNano(),

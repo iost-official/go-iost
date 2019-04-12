@@ -191,7 +191,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 	}
 
 	blockHead := block.BlockHead{
-		Version:    0,
+		Version:    block.V0,
 		ParentHash: nil,
 		Number:     0,
 		Witness:    "0",
