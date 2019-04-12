@@ -172,15 +172,20 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error 
 
 // AddTx add the transaction
 func (pool *TxPImpl) AddTx(t *tx.Tx) error {
+	pool.mu.Lock()
 	err := pool.verifyDuplicate(t)
 	if err != nil {
+		pool.mu.Unlock()
 		return err
 	}
 	err = pool.verifyTx(t)
 	if err != nil {
+		pool.mu.Unlock()
 		return err
 	}
 	pool.pendingTx.Add(t)
+	pool.mu.Unlock()
+
 	ilog.Debugf(
 		"Added %v to pendingTx, now size is %v.",
 		common.Base58Encode(t.Hash()),
