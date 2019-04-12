@@ -181,7 +181,7 @@ func TestNewTxPImpl(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			r1 := txPool.ExistTxs(t.Hash(), nil)
-			So(r1, ShouldEqual, FoundPending)
+			So(r1, ShouldEqual, false)
 		})
 		Convey("ExistTxs FoundChain", func() {
 
@@ -207,12 +207,12 @@ func TestNewTxPImpl(t *testing.T) {
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			for i := 0; i < txCnt; i++ {
 				r1 := txPool.ExistTxs(b[0].Txs[i].Hash(), bcn.Block)
-				So(r1, ShouldEqual, FoundChain)
+				So(r1, ShouldEqual, true)
 			}
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			r1 := txPool.ExistTxs(t.Hash(), bcn.Block)
-			So(r1, ShouldEqual, NotFound)
+			So(r1, ShouldEqual, false)
 		})
 		stopTest(base, statedb)
 	})
