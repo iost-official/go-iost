@@ -856,9 +856,9 @@ message TokenInfo {
     string full_name = 2;
     // token issuer
     string issuer = 3;
-    // the amount of total supply
+    // the amount of total supply, the result is total_supply_float multiplied by deciaml
     int64 total_supply = 4;
-    // the amount of current supply
+    // the amount of current supply, the result is current_supply_float multiplied by deciaml
     int64 current_supply = 5;
     // token decimal
     int32 decimal = 6;
@@ -866,4 +866,8 @@ message TokenInfo {
     bool can_transfer = 7;
     // whether the token can only be transfered by issuer
     bool only_issuer_can_transfer = 8;
+    // the amount of total supply
+    double total_supply_float = 9;
+    // the amount of current supply
+    double current_supply_float = 10;
 }

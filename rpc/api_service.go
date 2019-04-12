@@ -775,6 +775,9 @@ func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoR
 	}
 	ret.Decimal = int32(value.(int64))
 
+	ret.TotalSupplyFloat = float64(ret.TotalSupply) / math.Pow10(int(ret.Decimal))
+	ret.CurrentSupplyFloat = float64(ret.CurrentSupply) / math.Pow10(int(ret.Decimal))
+
 	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "canTransfer")
 	if value == nil {
 		return nil, token404
