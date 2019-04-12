@@ -42,17 +42,13 @@ func verifyBlock(blk, parent *block.Block, witnessList *blockcache.WitnessList, 
 			// base tx
 			continue
 		}
-		exist := txPool.ExistTxs(t.Hash(), parent)
-		switch exist {
-		case txpool.FoundChain:
+		if txPool.ExistTxs(t.Hash(), parent) {
 			ilog.Infof("FoundChain: %v, %v", t, common.Base58Encode(t.Hash()))
 			return errTxDup
-		case txpool.NotFound:
-			err := t.VerifySelf()
-			if err != nil {
-				return err
-			}
-
+		}
+		err := t.VerifySelf()
+		if err != nil {
+			return err
 		}
 	}
 	v := verifier.Verifier{}

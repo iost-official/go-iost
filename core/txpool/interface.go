@@ -20,6 +20,6 @@ type TxPool interface {
 
 	// TODO: The following interfaces need to be moved from txpool to chainbase.
 	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
-	ExistTxs(hash []byte, chainBlock *block.Block) FRet
+	ExistTxs(hash []byte, chainBlock *block.Block) bool
 	GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error)
 }

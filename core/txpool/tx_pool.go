@@ -204,17 +204,8 @@ func (pool *TxPImpl) DelTx(hash []byte) error {
 }
 
 // ExistTxs determine if the transaction exists
-func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
-	var r FRet
-	switch {
-	case pool.existTxInPending(hash):
-		r = FoundPending
-	case pool.existTxInChain(hash, chainBlock):
-		r = FoundChain
-	default:
-		r = NotFound
-	}
-	return r
+func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) bool {
+	return pool.existTxInChain(hash, chainBlock)
 }
 
 func (pool *TxPImpl) initBlockTx() {
