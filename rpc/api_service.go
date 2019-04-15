@@ -540,7 +540,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 	if err != nil {
 		return nil, err
 	}
-	err = as.txpool.AddTx(t)
+	err = as.txpool.AddTx(t, "rpc")
 	if err != nil {
 		return nil, err
 	}
