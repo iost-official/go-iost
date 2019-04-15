@@ -71,6 +71,7 @@ func (t *TxManager) handleTx(payload interface{}) interface{} {
 		ilog.Debugf("Add tx failed: %v", err)
 		return nil
 	}
+	t.p.Broadcast(transaction.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	return nil
 }
 

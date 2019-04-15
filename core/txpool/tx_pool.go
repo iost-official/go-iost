@@ -20,7 +20,6 @@ var errDelaytxNotFound = errors.New("delay tx not found")
 type TxPImpl struct {
 	bChain     block.Chain
 	blockCache blockcache.BlockCache
-	p2pService p2p.Service
 	forkChain  *forkChain
 	blockList  *sync.Map // map[string]*blockTx
 	pendingTx  *SortedTxMap
@@ -33,7 +32,6 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 	p := &TxPImpl{
 		bChain:     bChain,
 		blockCache: blockCache,
-		p2pService: p2pService,
 		forkChain:  new(forkChain),
 		blockList:  new(sync.Map),
 		pendingTx:  NewSortedTxMap(),
@@ -152,7 +150,6 @@ func (pool *TxPImpl) AddTx(t *tx.Tx, from string) error {
 		pool.pendingTx.Size(),
 	)
 
-	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	metricsReceivedTxCount.Add(1, map[string]string{"from": from})
 	return nil
 }

@@ -544,6 +544,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 	if err != nil {
 		return nil, err
 	}
+	as.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	return ret, nil
 }
 
