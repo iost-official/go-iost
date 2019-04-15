@@ -18,15 +18,14 @@ var errDelaytxNotFound = errors.New("delay tx not found")
 
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
-	bChain      block.Chain
-	blockCache  blockcache.BlockCache
-	p2pService  p2p.Service
-	forkChain   *forkChain
-	blockList   *sync.Map // map[string]*blockTx
-	pendingTx   *SortedTxMap
-	mu          sync.RWMutex
-	deferServer *DeferServer
-	quitCh      chan struct{}
+	bChain     block.Chain
+	blockCache blockcache.BlockCache
+	p2pService p2p.Service
+	forkChain  *forkChain
+	blockList  *sync.Map // map[string]*blockTx
+	pendingTx  *SortedTxMap
+	mu         sync.RWMutex
+	quitCh     chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPImpl instance.
@@ -41,25 +40,18 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 		quitCh:     make(chan struct{}),
 	}
 	p.forkChain.SetNewHead(blockCache.Head())
-	deferServer, err := NewDeferServer(p, bChain)
-	if err != nil {
-		return nil, err
-	}
-	p.deferServer = deferServer
 	p.initBlockTx()
 	return p, nil
 }
 
 // Start starts the jobs.
 func (pool *TxPImpl) Start() error {
-	go pool.deferServer.Start()
 	go pool.loop()
 	return nil
 }
 
 // Stop stops all the jobs.
 func (pool *TxPImpl) Stop() {
-	pool.deferServer.Stop()
 	close(pool.quitCh)
 }
 
@@ -114,7 +106,6 @@ func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
-	pool.deferServer.ProcessDelaytx(linkedNode.Block)
 	err := pool.addBlock(linkedNode.Block)
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
