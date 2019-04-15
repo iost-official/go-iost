@@ -2,6 +2,7 @@ package txmanager
 
 import (
 	"sync"
+	"time"
 
 	"github.com/Jeffail/tunny"
 	"github.com/iost-official/go-iost/core/tx"
@@ -50,7 +51,7 @@ func New(p p2p.Service, txPool txpool.TxPool) *TxManager {
 func (t *TxManager) Close() {
 	close(t.quitCh)
 	t.done.Wait()
-	ilog.Infof("Stopped tx filter.")
+	ilog.Infof("Stopped tx manager.")
 }
 
 func (t *TxManager) handleTx(payload interface{}) interface{} {

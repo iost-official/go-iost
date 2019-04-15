@@ -25,7 +25,6 @@ type TxPImpl struct {
 	blockList   *sync.Map // map[string]*blockTx
 	pendingTx   *SortedTxMap
 	mu          sync.RWMutex
-	chP2PTx     chan p2p.IncomingMessage
 	deferServer *DeferServer
 	quitCh      chan struct{}
 }
@@ -39,7 +38,6 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 		forkChain:  new(forkChain),
 		blockList:  new(sync.Map),
 		pendingTx:  NewSortedTxMap(),
-		chP2PTx:    p2pService.Register("txpool message", p2p.PublishTx),
 		quitCh:     make(chan struct{}),
 	}
 	p.forkChain.SetNewHead(blockCache.Head())
