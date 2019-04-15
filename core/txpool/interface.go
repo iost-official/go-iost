@@ -10,8 +10,7 @@ import (
 
 // TxPool defines all the API of txpool package.
 type TxPool interface {
-	Start() error
-	Stop()
+	Close()
 	AddTx(tx *tx.Tx, from string) error
 	DelTx(hash []byte) error
 	AddDefertx(hash []byte) error

@@ -11,7 +11,6 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/p2p"
 )
 
 var errDelaytxNotFound = errors.New("delay tx not found")
@@ -28,7 +27,7 @@ type TxPImpl struct {
 }
 
 // NewTxPoolImpl returns a default TxPImpl instance.
-func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pService p2p.Service) (*TxPImpl, error) {
+func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache) (*TxPImpl, error) {
 	p := &TxPImpl{
 		bChain:     bChain,
 		blockCache: blockCache,
@@ -43,13 +42,8 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 	return p, nil
 }
 
-// Start starts the jobs.
-func (pool *TxPImpl) Start() error {
-	return nil
-}
-
-// Stop stops all the jobs.
-func (pool *TxPImpl) Stop() {
+// Close will close the tx pool.
+func (pool *TxPImpl) Close() {
 	close(pool.quitCh)
 }
 

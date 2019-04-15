@@ -5,7 +5,6 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/metrics/exporter"
 	"github.com/iost-official/go-iost/p2p"
@@ -23,7 +22,6 @@ type IServer struct {
 	config    *common.Config
 	cBase     *chainbase.ChainBase
 	p2p       *p2p.NetService
-	txp       *txpool.TxPImpl
 	rpcServer *rpc.Server
 	consensus consensus.Consensus
 	debug     *DebugServer
@@ -47,19 +45,13 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	txp, err := txpool.NewTxPoolImpl(cBase.BlockChain(), cBase.BlockCache(), p2pService)
-	if err != nil {
-		ilog.Fatalf("txpool initialization failed, stop the program! err:%v", err)
-	}
-
-	cBase.SetTxPool(txp)
 	if err := cBase.Recover(); err != nil {
 		ilog.Fatalf("Recover chainbase failed: %v", err)
 	}
 
-	consensus := consensus.New(consensus.Pob, conf, cBase, txp, p2pService)
+	consensus := consensus.New(consensus.Pob, conf, cBase, cBase.TxPool(), p2pService)
 
-	rpcServer := rpc.New(txp, cBase, conf, p2pService)
+	rpcServer := rpc.New(cBase.TxPool(), cBase, conf, p2pService)
 
 	debug := NewDebugServer(conf.Debug, p2pService, cBase.BlockCache(), cBase.BlockChain())
 
@@ -67,7 +59,6 @@ func New(conf *common.Config) *IServer {
 		config:    conf,
 		cBase:     cBase,
 		p2p:       p2pService,
-		txp:       txp,
 		rpcServer: rpcServer,
 		consensus: consensus,
 		debug:     debug,
@@ -79,7 +70,6 @@ func New(conf *common.Config) *IServer {
 func (s *IServer) Start() error {
 	Services := []Service{
 		s.p2p,
-		s.txp,
 		s.consensus,
 		s.rpcServer,
 	}
@@ -106,7 +96,6 @@ func (s *IServer) Stop() {
 	Services := []Service{
 		s.rpcServer,
 		s.consensus,
-		s.txp,
 		s.p2p,
 	}
 	for _, s := range Services {
