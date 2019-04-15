@@ -39,12 +39,12 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pServ
 	}
 	p.forkChain.SetNewHead(blockCache.Head())
 	p.initBlockTx()
+	go p.loop()
 	return p, nil
 }
 
 // Start starts the jobs.
 func (pool *TxPImpl) Start() error {
-	go pool.loop()
 	return nil
 }
 
