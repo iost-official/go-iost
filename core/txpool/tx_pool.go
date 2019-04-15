@@ -91,9 +91,6 @@ func (pool *TxPImpl) AddDefertx(txHash []byte) error {
 }
 
 func (pool *TxPImpl) loop() {
-	for i := 0; i < 2; i++ {
-		go pool.verifyWorkers()
-	}
 	clearTx := time.NewTicker(clearInterval)
 	defer clearTx.Stop()
 	for {
@@ -113,20 +110,6 @@ func (pool *TxPImpl) loop() {
 // PendingTx is return pendingTx
 func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 	return pool.pendingTx, pool.forkChain.NewHead
-}
-
-func (pool *TxPImpl) verifyWorkers() {
-	for v := range pool.chP2PTx {
-		t := &tx.Tx{}
-		err := t.Decode(v.Data())
-		if err != nil {
-			ilog.Errorf("decode tx error. err=%v", err)
-			continue
-		}
-		if err := pool.AddTx(t, "p2p"); err != nil {
-			ilog.Debugf("Add tx failed: %v", err)
-		}
-	}
 }
 
 // AddLinkedNode add the findBlock
