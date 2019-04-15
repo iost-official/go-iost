@@ -9,6 +9,7 @@ import (
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro"
+	"github.com/iost-official/go-iost/consensus/txmanager"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
@@ -44,6 +45,7 @@ type PoB struct {
 	p2pService p2p.Service
 	produceDB  db.MVCCDB
 	sync       *synchro.Sync
+	txManager  *txmanager.TxManager
 	cBase      *chainbase.ChainBase
 
 	exitSignal chan struct{}
@@ -69,6 +71,7 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 		p2pService: p2pService,
 		produceDB:  cBase.StateDB().Fork(),
 		sync:       nil,
+		txManager:  nil,
 		cBase:      cBase,
 
 		exitSignal: make(chan struct{}),
@@ -82,6 +85,7 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 // Start make the PoB run.
 func (p *PoB) Start() error {
 	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
+	p.txManager = txmanager.New(p.p2pService, p.txPool)
 
 	p.wg.Add(3)
 	go p.verifyLoop()
@@ -95,6 +99,7 @@ func (p *PoB) Stop() {
 	close(p.exitSignal)
 	p.wg.Wait()
 
+	p.txManager.Close()
 	p.sync.Close()
 }
 
