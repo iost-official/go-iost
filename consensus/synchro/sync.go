@@ -24,7 +24,6 @@ const (
 type Sync struct {
 	p       p2p.Service
 	bCache  blockcache.BlockCache
-	bChain  block.Chain
 	blockCh chan *block.Block
 
 	handler         *requestHandler
@@ -42,7 +41,6 @@ func New(cBase *chainbase.ChainBase, p p2p.Service) *Sync {
 	sync := &Sync{
 		p:       p,
 		bCache:  cBase.BlockCache(),
-		bChain:  cBase.BlockChain(),
 		blockCh: make(chan *block.Block, 1024),
 
 		handler:         newRequestHandler(cBase, p),

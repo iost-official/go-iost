@@ -20,14 +20,16 @@ var (
 type Block struct {
 	*block.Block
 	*blockcache.WitnessList
+	Irreversible bool
 }
 
 // HeadBlock will return the head block of chainbase.
 func (c *ChainBase) HeadBlock() *Block {
 	head := c.bCache.Head()
 	block := &Block{
-		Block:       head.Block,
-		WitnessList: &head.WitnessList,
+		Block:        head.Block,
+		WitnessList:  &head.WitnessList,
+		Irreversible: false,
 	}
 	return block
 }
@@ -36,10 +38,48 @@ func (c *ChainBase) HeadBlock() *Block {
 func (c *ChainBase) LIBlock() *Block {
 	lib := c.bCache.LinkedRoot()
 	block := &Block{
-		Block:       lib.Block,
-		WitnessList: &lib.WitnessList,
+		Block:        lib.Block,
+		WitnessList:  &lib.WitnessList,
+		Irreversible: true,
 	}
 	return block
+}
+
+// GetBlockByHash will return the block by hash.
+// If block is not exist, it will return nil and false.
+func (c *ChainBase) GetBlockByHash(hash []byte) (*Block, bool) {
+	block, err := c.bCache.GetBlockByHash(hash)
+	if err != nil {
+		block, err := c.bChain.GetBlockByHash(hash)
+		if err != nil {
+			ilog.Warnf("Get block by hash %v failed: %v", common.Base58Encode(hash), err)
+			return nil, false
+		}
+		return &Block{
+			Block:        block,
+			Irreversible: true,
+		}, true
+	}
+	return &Block{
+		Block:        block,
+		Irreversible: false,
+	}, true
+}
+
+// GetBlockHashByNum will return the block hash by number.
+// If block hash is not exist, it will return nil and false.
+func (c *ChainBase) GetBlockHashByNum(num int64) ([]byte, bool) {
+	var hash []byte
+	if blk, err := c.bCache.GetBlockByNumber(num); err != nil {
+		hash, err = c.bChain.GetHashByNumber(num)
+		if err != nil {
+			ilog.Debugf("Get hash by num %v failed: %v", num, err)
+			return nil, false
+		}
+	} else {
+		hash = blk.HeadHash()
+	}
+	return hash, true
 }
 
 func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, gen bool) {
