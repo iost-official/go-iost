@@ -10,7 +10,6 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -22,8 +21,8 @@ const (
 // Sync is the synchronizer of blockchain.
 // It includes requestHandler, heightSync, blockhashSync, blockSync.
 type Sync struct {
+	cBase   *chainbase.ChainBase
 	p       p2p.Service
-	bCache  blockcache.BlockCache
 	blockCh chan *block.Block
 
 	handler         *requestHandler
@@ -39,8 +38,8 @@ type Sync struct {
 // New will return a new synchronizer of blockchain.
 func New(cBase *chainbase.ChainBase, p p2p.Service) *Sync {
 	sync := &Sync{
+		cBase:   cBase,
 		p:       p,
-		bCache:  cBase.BlockCache(),
 		blockCh: make(chan *block.Block, 1024),
 
 		handler:         newRequestHandler(cBase, p),
@@ -85,7 +84,7 @@ func (s *Sync) ValidBlock() <-chan *block.Block {
 
 // IsCatchingUp will return whether it is catching up with other nodes.
 func (s *Sync) IsCatchingUp() bool {
-	return s.bCache.Head().Head.Number+120 < s.heightSync.NeighborHeight()
+	return s.cBase.HeadBlock().Head.Number+120 < s.heightSync.NeighborHeight()
 }
 
 // BroadcastBlockInfo will broadcast new block information to neighbor nodes.
@@ -115,7 +114,7 @@ func (s *Sync) BroadcastBlock(block *block.Block) {
 
 func (s *Sync) doHeightSync() {
 	syncHeight := &msgpb.SyncHeight{
-		Height: s.bCache.Head().Head.Number,
+		Height: s.cBase.HeadBlock().Head.Number,
 		Time:   time.Now().Unix(),
 	}
 	msg, err := proto.Marshal(syncHeight)
@@ -169,7 +168,8 @@ func (s *Sync) doBlockSync() {
 	start, end := s.rangeController.SyncRange()
 	ilog.Infof("Syncing block in [%v %v]...", start, end)
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
-		if block, err := s.bCache.GetBlockByHash(blockHash.Hash); err == nil && block != nil {
+		_, ok := s.cBase.GetBlockByHash(blockHash.Hash)
+		if ok {
 			continue
 		}
 
@@ -198,15 +198,15 @@ func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 	}
 
 	// May not need to judge number.
-	lib := s.bCache.LinkedRoot().Head.Number
-	head := s.bCache.Head().Head.Number
+	lib := s.cBase.LIBlock().Head.Number
+	head := s.cBase.HeadBlock().Head.Number
 	if (blockHash.Number <= lib) || (blockHash.Number > head+1000) {
 		ilog.Debugf("New block hash exceed range %v to %v.", lib, head+1000)
 		return
 	}
 
-	_, err := s.bCache.Find(blockHash.Hash)
-	if err == nil {
+	_, ok := s.cBase.GetBlockByHash(blockHash.Hash)
+	if ok {
 		ilog.Debugf("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
 		return
 	}
@@ -228,7 +228,7 @@ func (s *Sync) handleNewBlockHashController() {
 }
 
 func (s *Sync) doBlockFilter(block *block.Block) {
-	head := s.bCache.Head().Head.Number
+	head := s.cBase.HeadBlock().Head.Number
 	if block.Head.Number > head+maxSyncRange {
 		ilog.Debugf("Block number %v is %v higher than head number %v", block.Head.Number, maxSyncRange, head)
 		return
