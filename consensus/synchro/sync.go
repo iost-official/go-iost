@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
@@ -37,15 +38,15 @@ type Sync struct {
 }
 
 // New will return a new synchronizer of blockchain.
-func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync {
+func New(cBase *chainbase.ChainBase, p p2p.Service) *Sync {
 	sync := &Sync{
 		p:       p,
-		bCache:  bCache,
-		bChain:  bChain,
+		bCache:  cBase.BlockCache(),
+		bChain:  cBase.BlockChain(),
 		blockCh: make(chan *block.Block, 1024),
 
-		handler:         newRequestHandler(p, bCache, bChain),
-		rangeController: newRangeController(bCache),
+		handler:         newRequestHandler(cBase, p),
+		rangeController: newRangeController(cBase),
 		heightSync:      newHeightSync(p),
 		blockhashSync:   newBlockHashSync(p),
 		blockSync:       newBlockSync(p),

@@ -109,3 +109,11 @@ func (c *ChainBase) BlockCache() blockcache.BlockCache {
 func (c *ChainBase) TxPool() txpool.TxPool {
 	return c.txPool
 }
+
+// NewMock will return the chainbase composed of blockchain and blockcache.
+func NewMock(bChain block.Chain, bCache blockcache.BlockCache) *ChainBase {
+	return &ChainBase{
+		bChain: bChain,
+		bCache: bCache,
+	}
+}

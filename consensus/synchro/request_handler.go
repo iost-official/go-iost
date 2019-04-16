@@ -6,6 +6,7 @@ import (
 
 	"github.com/Jeffail/tunny"
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
@@ -29,8 +30,8 @@ type requestHandler struct {
 	done   *sync.WaitGroup
 }
 
-func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandler {
-	worker := newRequestHandlerWorker(p, bCache, bChain)
+func newRequestHandler(cBase *chainbase.ChainBase, p p2p.Service) *requestHandler {
+	worker := newRequestHandlerWorker(cBase, p)
 	rHandler := &requestHandler{
 		pool: tunny.NewFunc(workerPoolSize, worker.process),
 
@@ -78,11 +79,11 @@ type requestHandlerWorker struct {
 	bChain block.Chain
 }
 
-func newRequestHandlerWorker(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandlerWorker {
+func newRequestHandlerWorker(cBase *chainbase.ChainBase, p p2p.Service) *requestHandlerWorker {
 	r := &requestHandlerWorker{
 		p:      p,
-		bCache: bCache,
-		bChain: bChain,
+		bCache: cBase.BlockCache(),
+		bChain: cBase.BlockChain(),
 	}
 
 	return r
