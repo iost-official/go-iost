@@ -19,7 +19,6 @@ import (
 	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	p2p_mock "github.com/iost-official/go-iost/p2p/mocks"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -56,11 +55,6 @@ func TestNewTxPImpl(t *testing.T) {
 			},
 		}
 		b0.CalculateHeadHash()
-		p2pMock := p2p_mock.NewMockService(ctl)
-
-		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
-		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
 		var accountList []*account.KeyPair
 		var witnessList []string
@@ -130,10 +124,9 @@ func TestNewTxPImpl(t *testing.T) {
 		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(base, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(base, BlockCache)
 		So(err, ShouldBeNil)
 
-		txPool.Start()
 		Convey("AddTx", func() {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
@@ -231,11 +224,6 @@ func TestNewTxPImplB(t *testing.T) {
 			},
 		}
 		b0.CalculateHeadHash()
-		p2pMock := p2p_mock.NewMockService(ctl)
-
-		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
-		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
 		var accountList []*account.KeyPair
 		var witnessList []string
@@ -305,10 +293,9 @@ func TestNewTxPImplB(t *testing.T) {
 		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(base, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(base, BlockCache)
 		So(err, ShouldBeNil)
 
-		txPool.Start()
 		Convey("delPending", func() {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
@@ -599,12 +586,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 		witnessList = append(witnessList, newAccount.ReadablePubkey())
 	}
 
-	config := &common.P2PConfig{
-		ListenAddr: "0.0.0.0:8088",
-	}
-
-	node, _ := p2p.NewNetService(config)
-
 	conf := &common.Config{}
 
 	bChain, _ := block.NewBlockChain(conf.DB.LdbPath + dbPath3)
@@ -620,9 +601,8 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 	blockcache.CleanBlockCacheWAL()
 	BlockCache, _ := blockcache.NewBlockCache(conf, bChain, stateDB)
 
-	txPool, _ := NewTxPoolImpl(bChain, BlockCache, node)
+	txPool, _ := NewTxPoolImpl(bChain, BlockCache)
 
-	txPool.Start()
 	b.ResetTimer()
 
 	return BlockCache, accountList, witnessList, txPool, bChain, stateDB

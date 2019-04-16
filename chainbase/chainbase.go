@@ -72,13 +72,20 @@ func New(conf *common.Config) (*ChainBase, error) {
 	}
 	c.bCache = bCache
 
+	txPool, err := txpool.NewTxPoolImpl(bChain, bCache)
+	if err != nil {
+		return nil, fmt.Errorf("txpool initialization failed, stop the program! err:%v", err)
+	}
+	c.txPool = txPool
+
 	return c, nil
 }
 
 // Close will close the chainbase.
 func (c *ChainBase) Close() {
-	c.bChain.Close()
+	c.txPool.Close()
 	c.stateDB.Close()
+	c.bChain.Close()
 }
 
 // =============== Temporarily compatible ===============
@@ -98,7 +105,7 @@ func (c *ChainBase) BlockCache() blockcache.BlockCache {
 	return c.bCache
 }
 
-// SetTxPool will inject the tx pool for chainbase.
-func (c *ChainBase) SetTxPool(txPool txpool.TxPool) {
-	c.txPool = txPool
+// TxPool will return the tx pool.
+func (c *ChainBase) TxPool() txpool.TxPool {
+	return c.txPool
 }
