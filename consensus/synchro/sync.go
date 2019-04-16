@@ -168,9 +168,12 @@ func (s *Sync) doBlockSync() {
 	start, end := s.rangeController.SyncRange()
 	ilog.Infof("Syncing block in [%v %v]...", start, end)
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
-		_, ok := s.cBase.GetBlockByHash(blockHash.Hash)
-		if ok {
+		block, err := s.cBase.BlockCache().GetBlockByHash(blockHash.Hash)
+		if err == nil && block != nil {
 			continue
+		}
+		if block == nil {
+			ilog.Error("Block %v should not be nil.", blockHash.Hash)
 		}
 
 		rand.Seed(time.Now().UnixNano())
@@ -205,8 +208,8 @@ func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 		return
 	}
 
-	_, ok := s.cBase.GetBlockByHash(blockHash.Hash)
-	if ok {
+	_, err := s.cBase.BlockCache().Find(blockHash.Hash)
+	if err == nil {
 		ilog.Debugf("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
 		return
 	}
