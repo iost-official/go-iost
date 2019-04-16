@@ -173,7 +173,7 @@ func (s *Sync) doBlockSync() {
 			continue
 		}
 		if block == nil {
-			ilog.Error("Block %v should not be nil.", blockHash.Hash)
+			ilog.Errorf("Block %v should not be nil.", blockHash.Hash)
 		}
 
 		rand.Seed(time.Now().UnixNano())
