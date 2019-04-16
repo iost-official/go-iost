@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/ilog"
 )
 
@@ -13,20 +13,20 @@ type rangeController struct {
 	start int64
 	mutex *sync.RWMutex
 
-	head   int64
-	bCache blockcache.BlockCache
+	head  int64
+	cBase *chainbase.ChainBase
 
 	quitCh chan struct{}
 	done   *sync.WaitGroup
 }
 
-func newRangeController(bCache blockcache.BlockCache) *rangeController {
+func newRangeController(cBase *chainbase.ChainBase) *rangeController {
 	r := &rangeController{
 		start: 0,
 		mutex: new(sync.RWMutex),
 
-		head:   0,
-		bCache: bCache,
+		head:  0,
+		cBase: cBase,
 
 		quitCh: make(chan struct{}),
 		done:   new(sync.WaitGroup),
@@ -62,8 +62,8 @@ func (r *rangeController) setStart(start int64) {
 }
 
 func (r *rangeController) updateStart() {
-	head := r.bCache.Head().Head.Number
-	lib := r.bCache.LinkedRoot().Head.Number
+	head := r.cBase.HeadBlock().Head.Number
+	lib := r.cBase.LIBlock().Head.Number
 	if head > r.head {
 		// Normal case
 		r.head = head

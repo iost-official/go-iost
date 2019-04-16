@@ -38,12 +38,12 @@ var (
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
 	account    *account.KeyPair
-	txPool     txpool.TxPool
+	cBase      *chainbase.ChainBase
 	p2pService p2p.Service
+	txPool     txpool.TxPool
 	produceDB  db.MVCCDB
 	sync       *synchro.Sync
 	txManager  *txmanager.TxManager
-	cBase      *chainbase.ChainBase
 
 	exitSignal chan struct{}
 	wg         *sync.WaitGroup
@@ -62,12 +62,12 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, p2pService p2p.Service
 
 	p := PoB{
 		account:    account,
-		txPool:     cBase.TxPool(),
+		cBase:      cBase,
 		p2pService: p2pService,
+		txPool:     cBase.TxPool(),
 		produceDB:  cBase.StateDB().Fork(),
 		sync:       nil,
 		txManager:  nil,
-		cBase:      cBase,
 
 		exitSignal: make(chan struct{}),
 		wg:         new(sync.WaitGroup),
@@ -79,7 +79,7 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, p2pService p2p.Service
 
 // Start make the PoB run.
 func (p *PoB) Start() error {
-	p.sync = synchro.New(p.p2pService, p.cBase.BlockCache(), p.cBase.BlockChain())
+	p.sync = synchro.New(p.cBase, p.p2pService)
 	p.txManager = txmanager.New(p.p2pService, p.txPool)
 
 	p.wg.Add(3)

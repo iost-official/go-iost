@@ -11,6 +11,7 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
@@ -340,7 +341,8 @@ func (p *peer) NewSync(ctrl *gomock.Controller) {
 	bChain := core_mock.NewMockChain(ctrl)
 	bChain.EXPECT().GetHashByNumber(gomock.Any()).Return(nil, errors.New("fail to get hash by number")).AnyTimes()
 
-	p.sync = New(p2pService, bCache, bChain)
+	cBase := chainbase.NewMock(bChain, bCache)
+	p.sync = New(cBase, p2pService)
 
 	// Mock pob.
 	go func() {
