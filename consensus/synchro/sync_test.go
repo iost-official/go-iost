@@ -340,6 +340,7 @@ func (p *peer) NewSync(ctrl *gomock.Controller) {
 	// bChain will be used if failed to do bCache.GetBlockByNumber() in synchro.requestHandler.getBlockHashResponse().
 	bChain := core_mock.NewMockChain(ctrl)
 	bChain.EXPECT().GetHashByNumber(gomock.Any()).Return(nil, errors.New("fail to get hash by number")).AnyTimes()
+	bChain.EXPECT().GetBlockByHash(gomock.Any()).Return(nil, errors.New("fail to get block by hash")).AnyTimes()
 
 	cBase := chainbase.NewMock(bChain, bCache)
 	p.sync = New(cBase, p2pService)
