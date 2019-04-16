@@ -39,7 +39,6 @@ var (
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
 	account    *account.KeyPair
-	blockChain block.Chain
 	blockCache blockcache.BlockCache
 	txPool     txpool.TxPool
 	p2pService p2p.Service
@@ -54,7 +53,7 @@ type PoB struct {
 }
 
 // New init a new PoB.
-func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(conf *common.Config, cBase *chainbase.ChainBase, p2pService p2p.Service) *PoB {
 	// TODO: Move the code to account struct.
 	accSecKey := conf.ACC.SecKey
 	accAlgo := conf.ACC.Algorithm
@@ -65,9 +64,8 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 
 	p := PoB{
 		account:    account,
-		blockChain: cBase.BlockChain(),
 		blockCache: cBase.BlockCache(),
-		txPool:     txPool,
+		txPool:     cBase.TxPool(),
 		p2pService: p2pService,
 		produceDB:  cBase.StateDB().Fork(),
 		sync:       nil,
@@ -84,7 +82,7 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 
 // Start make the PoB run.
 func (p *PoB) Start() error {
-	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
+	p.sync = synchro.New(p.p2pService, p.blockCache, p.cBase.BlockChain())
 	p.txManager = txmanager.New(p.p2pService, p.txPool)
 
 	p.wg.Add(3)

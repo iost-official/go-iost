@@ -49,7 +49,7 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("Recover chainbase failed: %v", err)
 	}
 
-	consensus := consensus.New(consensus.Pob, conf, cBase, cBase.TxPool(), p2pService)
+	consensus := consensus.New(consensus.Pob, conf, cBase, p2pService)
 
 	rpcServer := rpc.New(cBase.TxPool(), cBase, conf, p2pService)
 
