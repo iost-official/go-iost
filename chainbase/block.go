@@ -16,6 +16,32 @@ var (
 	errOutOfLimit = errors.New("block out of limit in one slot")
 )
 
+// Block will describe the block of chainbase.
+type Block struct {
+	*block.Block
+	*blockcache.WitnessList
+}
+
+// HeadBlock will return the head block of chainbase.
+func (c *ChainBase) HeadBlock() *Block {
+	head := c.bCache.Head()
+	block := &Block{
+		Block:       head.Block,
+		WitnessList: &head.WitnessList,
+	}
+	return block
+}
+
+// LIBlock will return the last irreversible block of chainbase.
+func (c *ChainBase) LIBlock() *Block {
+	lib := c.bCache.LinkedRoot()
+	block := &Block{
+		Block:       lib.Block,
+		WitnessList: &lib.WitnessList,
+	}
+	return block
+}
+
 func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, gen bool) {
 	action := "Recover"
 	if !replay {
