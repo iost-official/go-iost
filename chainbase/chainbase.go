@@ -78,6 +78,10 @@ func New(conf *common.Config) (*ChainBase, error) {
 	}
 	c.txPool = txPool
 
+	if err := c.recoverBlockCache(); err != nil {
+		return nil, fmt.Errorf("recover chainbase failed: %v", err)
+	}
+
 	return c, nil
 }
 

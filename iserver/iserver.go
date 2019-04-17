@@ -45,10 +45,6 @@ func New(conf *common.Config) *IServer {
 		ilog.Fatalf("network initialization failed, stop the program! err:%v", err)
 	}
 
-	if err := cBase.Recover(); err != nil {
-		ilog.Fatalf("Recover chainbase failed: %v", err)
-	}
-
 	consensus := consensus.New(consensus.Pob, conf, cBase, p2pService)
 
 	rpcServer := rpc.New(cBase.TxPool(), cBase, conf, p2pService)
