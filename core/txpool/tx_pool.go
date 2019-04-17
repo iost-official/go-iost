@@ -13,8 +13,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 )
 
-var errDelaytxNotFound = errors.New("delay tx not found")
-
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
 	bChain     block.Chain
@@ -45,31 +43,6 @@ func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache) (*TxPIm
 // Close will close the tx pool.
 func (pool *TxPImpl) Close() {
 	close(pool.quitCh)
-}
-
-// AddDefertx adds defer transaction.
-func (pool *TxPImpl) AddDefertx(txHash []byte) error {
-	if pool.pendingTx.Size() > maxCacheTxs {
-		return ErrCacheFull
-	}
-	referredTx, err := pool.bChain.GetTx(txHash)
-	if err != nil {
-		referredTx, _, err = pool.GetFromChain(txHash)
-		if err != nil {
-			return errDelaytxNotFound
-		}
-	}
-	deferTx := referredTx.DeferTx()
-	err = pool.verifyDuplicate(deferTx)
-	if err != nil {
-		return err
-	}
-	err = deferTx.VerifySelf()
-	if err != nil {
-		return err
-	}
-	pool.pendingTx.Add(deferTx)
-	return nil
 }
 
 func (pool *TxPImpl) loop() {
@@ -156,7 +129,8 @@ func (pool *TxPImpl) DelTx(hash []byte) error {
 
 // ExistTxs determine if the transaction exists
 func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) bool {
-	return pool.existTxInChain(hash, chainBlock)
+	t, _ := pool.getTxAndReceiptInChain(hash, chainBlock)
+	return t != nil
 }
 
 func (pool *TxPImpl) initBlockTx() {
@@ -216,6 +190,7 @@ func (pool *TxPImpl) findBlock(hash []byte) (*blockTx, bool) {
 
 func (pool *TxPImpl) getTxAndReceiptInChain(txHash []byte, block *block.Block) (*tx.Tx, *tx.TxReceipt) {
 	if block == nil {
+		ilog.Errorf("When get tx %v in chain, the block is nil!", common.Base58Encode(txHash))
 		return nil, nil
 	}
 	blkHash := block.HeadHash()
@@ -238,11 +213,6 @@ func (pool *TxPImpl) getTxAndReceiptInChain(txHash []byte, block *block.Block) (
 	}
 }
 
-func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
-	t, _ := pool.getTxAndReceiptInChain(txHash, block)
-	return t != nil
-}
-
 func (pool *TxPImpl) getTxAndReceiptInBlock(txHash []byte, blockHash []byte) (*tx.Tx, *tx.TxReceipt) {
 	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
@@ -262,17 +232,13 @@ func (pool *TxPImpl) clearBlock() {
 }
 
 func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
-	if pool.existTxInPending(t.Hash()) {
+	if pool.pendingTx.Get(t.Hash()) != nil {
 		return ErrDupPendingTx
 	}
-	if pool.existTxInChain(t.Hash(), pool.forkChain.GetNewHead().Block) {
+	if t, _ := pool.getTxAndReceiptInChain(t.Hash(), pool.forkChain.GetNewHead().Block); t != nil {
 		return ErrDupChainTx
 	}
 	return nil
-}
-
-func (pool *TxPImpl) existTxInPending(hash []byte) bool {
-	return pool.pendingTx.Get(hash) != nil
 }
 
 func (pool *TxPImpl) clearTimeoutTx() {

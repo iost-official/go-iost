@@ -70,8 +70,8 @@ func (c *ChainBase) recoverDB(conf *common.Config) error {
 	return nil
 }
 
-// Recover will recover chainbase data from WAL.
-func (c *ChainBase) Recover() error {
+// recoverBlockCache will recover chainbase data from WAL.
+func (c *ChainBase) recoverBlockCache() error {
 	err := c.bCache.Recover(c)
 	if err != nil {
 		return fmt.Errorf("recover blockCache failed: %v", err)

@@ -181,19 +181,21 @@ func (d *DeferServer) deferTicker() {
 					d.nextScheduleTime.Store(idx.Time)
 					break
 				}
-				err := d.txpool.AddDefertx(idx.ReferredTx)
-				if err == ErrCacheFull {
-					d.nextScheduleTime.Store(idx.Time)
-					ilog.Infof("Adding defertx failed, txpool is full, retry after one second.")
-					break
-				}
-				if err == errDelaytxNotFound {
-					ilog.Error("Adding defertx failed, delaytx not found, delete defer index")
-					d.delDeferIndex(idx)
-				}
-				if err == nil || err == ErrDupChainTx || err == ErrDupPendingTx {
-					d.delDeferIndex(idx)
-				}
+				/*
+					err := d.txpool.AddDefertx(idx.ReferredTx)
+					if err == ErrCacheFull {
+						d.nextScheduleTime.Store(idx.Time)
+						ilog.Infof("Adding defertx failed, txpool is full, retry after one second.")
+						break
+					}
+					if err == errDelaytxNotFound {
+						ilog.Error("Adding defertx failed, delaytx not found, delete defer index")
+						d.delDeferIndex(idx)
+					}
+					if err == nil || err == ErrDupChainTx || err == ErrDupPendingTx {
+						d.delDeferIndex(idx)
+					}
+				*/
 				d.rw.RLock()
 				ok = iter.Next()
 				d.rw.RUnlock()
