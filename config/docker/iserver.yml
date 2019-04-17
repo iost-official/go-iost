@@ -15,7 +15,7 @@ snapshot:
 p2p:
   listenaddr: 0.0.0.0:30000
   seednodes:
-  chainid: 1024
+  chainid: 1020
   version: 1
   datapath: /var/lib/iserver/p2p/
   inboundConn: 15

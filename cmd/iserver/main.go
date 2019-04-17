@@ -23,6 +23,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/iserver"
 	"github.com/iost-official/go-iost/metrics"
@@ -80,6 +81,7 @@ func main() {
 	conf := common.NewConfig(*configFile)
 
 	global.SetGlobalConf(conf)
+	version.InitChainConf(conf)
 
 	initLogger(conf.Log)
 
