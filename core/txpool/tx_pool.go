@@ -13,8 +13,6 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 )
 
-var errDelaytxNotFound = errors.New("delay tx not found")
-
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
 	bChain     block.Chain
