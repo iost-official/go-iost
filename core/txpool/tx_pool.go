@@ -156,7 +156,8 @@ func (pool *TxPImpl) DelTx(hash []byte) error {
 
 // ExistTxs determine if the transaction exists
 func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) bool {
-	return pool.existTxInChain(hash, chainBlock)
+	t, _ := pool.getTxAndReceiptInChain(hash, chainBlock)
+	return t != nil
 }
 
 func (pool *TxPImpl) initBlockTx() {
@@ -216,6 +217,7 @@ func (pool *TxPImpl) findBlock(hash []byte) (*blockTx, bool) {
 
 func (pool *TxPImpl) getTxAndReceiptInChain(txHash []byte, block *block.Block) (*tx.Tx, *tx.TxReceipt) {
 	if block == nil {
+		ilog.Errorf("When get tx %v in chain, the block is nil!", common.Base58Encode(txHash))
 		return nil, nil
 	}
 	blkHash := block.HeadHash()
@@ -236,11 +238,6 @@ func (pool *TxPImpl) getTxAndReceiptInChain(txHash []byte, block *block.Block) (
 			}
 		}
 	}
-}
-
-func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
-	t, _ := pool.getTxAndReceiptInChain(txHash, block)
-	return t != nil
 }
 
 func (pool *TxPImpl) getTxAndReceiptInBlock(txHash []byte, blockHash []byte) (*tx.Tx, *tx.TxReceipt) {
@@ -265,7 +262,7 @@ func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
 	if pool.existTxInPending(t.Hash()) {
 		return ErrDupPendingTx
 	}
-	if pool.existTxInChain(t.Hash(), pool.forkChain.GetNewHead().Block) {
+	if t, _ := pool.getTxAndReceiptInChain(t.Hash(), pool.forkChain.GetNewHead().Block); t != nil {
 		return ErrDupChainTx
 	}
 	return nil
