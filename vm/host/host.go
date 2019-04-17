@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 )
@@ -170,7 +171,14 @@ func (h *Host) CheckSigners(t *tx.Tx) error {
 
 // CheckAmountLimit check amountLimit of tx valid
 func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
+	tokenMap := make(map[string]bool)
 	for _, limit := range amountLimit {
+		if version.IsFork3_1_0(h.BlockNumber()) {
+			if tokenMap[limit.Token] {
+				return fmt.Errorf("duplicated token in amountLimit: %s", limit.Token)
+			}
+			tokenMap[limit.Token] = true
+		}
 		decimal := h.DB().Decimal(limit.Token)
 		if limit.Token == "*" {
 			decimal = 0

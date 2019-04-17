@@ -177,6 +177,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	}
 	i.h.Context().GSet("gas_limit", vmGasLimit)
 	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
+	i.h.Context().GSet("amount_total", make(map[string]*common.Fixed))
 
 	i.tr = tx.NewTxReceipt(i.t.Hash())
 
