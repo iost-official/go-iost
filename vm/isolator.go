@@ -228,7 +228,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") ||
 			(vmGasLimit < actionCost.ToGas()) ||
 			(!i.genesisMode && !i.blockBaseMode && i.h.TotalGas(i.t.Publisher).Value/i.t.GasRatio < i.h.GasPaid()+vmGasLimit) {
-			ilog.Errorf("out of gas vmGasLimit %v actionCost %v totalGas %v gasPaid %v", vmGasLimit, actionCost.ToGas(), i.h.TotalGas(i.t.Publisher).ToString(), i.h.GasPaid())
+			ilog.Debugf("out of gas vmGasLimit %v actionCost %v totalGas %v gasPaid %v", vmGasLimit, actionCost.ToGas(), i.h.TotalGas(i.t.Publisher).ToString(), i.h.GasPaid())
 			status.Code = tx.ErrorRuntime
 			status.Message = "out of gas"
 			actionCost.CPU = vmGasLimit
@@ -243,8 +243,8 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		i.h.PayCost(actionCost, i.publisherID)
 
 		if status.Code != tx.Success {
-			if !(status.Code == tx.ErrorTimeout && i.limit < common.MaxTxTimeLimit) {
-				ilog.Warnf("isolator run action %v failed, status %v, will rollback", action, status)
+			if status.Code == tx.ErrorTimeout && i.limit >= common.MaxTxTimeLimit {
+				ilog.Warnf("isolator run action %v failed, status=%+v, will rollback", action, status)
 			}
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
