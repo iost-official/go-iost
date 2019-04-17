@@ -47,31 +47,6 @@ func (pool *TxPImpl) Close() {
 	close(pool.quitCh)
 }
 
-// AddDefertx adds defer transaction.
-func (pool *TxPImpl) AddDefertx(txHash []byte) error {
-	if pool.pendingTx.Size() > maxCacheTxs {
-		return ErrCacheFull
-	}
-	referredTx, err := pool.bChain.GetTx(txHash)
-	if err != nil {
-		referredTx, _, err = pool.GetFromChain(txHash)
-		if err != nil {
-			return errDelaytxNotFound
-		}
-	}
-	deferTx := referredTx.DeferTx()
-	err = pool.verifyDuplicate(deferTx)
-	if err != nil {
-		return err
-	}
-	err = deferTx.VerifySelf()
-	if err != nil {
-		return err
-	}
-	pool.pendingTx.Add(deferTx)
-	return nil
-}
-
 func (pool *TxPImpl) loop() {
 	clearTx := time.NewTicker(clearInterval)
 	defer clearTx.Stop()
@@ -259,17 +234,13 @@ func (pool *TxPImpl) clearBlock() {
 }
 
 func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
-	if pool.existTxInPending(t.Hash()) {
+	if pool.pendingTx.Get(t.Hash()) != nil {
 		return ErrDupPendingTx
 	}
 	if t, _ := pool.getTxAndReceiptInChain(t.Hash(), pool.forkChain.GetNewHead().Block); t != nil {
 		return ErrDupChainTx
 	}
 	return nil
-}
-
-func (pool *TxPImpl) existTxInPending(hash []byte) bool {
-	return pool.pendingTx.Get(hash) != nil
 }
 
 func (pool *TxPImpl) clearTimeoutTx() {
