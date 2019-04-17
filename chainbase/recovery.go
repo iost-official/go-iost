@@ -19,16 +19,16 @@ func (c *ChainBase) checkGenesis(conf *common.Config) error {
 
 		blk, err := genesis.GenGenesisByFile(c.stateDB, conf.Genesis)
 		if err != nil {
-			return fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
+			return fmt.Errorf("new GenGenesis failed: %v", err)
 		}
 		err = c.bChain.Push(blk)
 		if err != nil {
-			return fmt.Errorf("push block in blockChain failed, stop the program. err: %v", err)
+			return fmt.Errorf("push block to blockChain failed: %v", err)
 		}
 
 		err = c.stateDB.Flush(string(blk.HeadHash()))
 		if err != nil {
-			return fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
+			return fmt.Errorf("flush stateDB failed: %v", err)
 		}
 		ilog.Infof("Created Genesis.")
 
