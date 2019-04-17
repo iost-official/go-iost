@@ -565,7 +565,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	bcn.updateValidWitness()
 	bc.updateWitnessList(bcn)
 	if !replay {
-		bc.AddNodeToWAL(bcn)
+		//bc.AddNodeToWAL(bcn)
 	}
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
@@ -751,7 +751,10 @@ func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
 	}
 
 	ilog.Debug("confirm: ", bcn.Head.Number)
-	err = bc.stateDB.Flush(string(bcn.HeadHash()))
+	if bcn.Head.Number < 10 {
+		err = bc.stateDB.Flush(string(bcn.HeadHash()))
+
+	}
 
 	if err != nil {
 		ilog.Errorf("flush mvcc error: %v %v", bcn.HeadHash(), err)

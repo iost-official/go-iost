@@ -79,8 +79,10 @@ func NewBlockChain(path string) (Chain, error) {
 
 // CleanDB clean the blocks between new and old
 func (bc *BlockChain) CleanDB(old, new int64) {
-	for i := new; i < old; i++ {
-		err := bc.delBlockByNumber(i)
+	for i := old - 1; i >= new; i-- {
+		ilog.Info("Clean DB Number: ", i)
+
+		err := bc.Pop()
 		if err != nil {
 			ilog.Error(err)
 		}
@@ -113,6 +115,29 @@ func (bc *BlockChain) TxTotal() int64 {
 	bc.rw.RLock()
 	defer bc.rw.RUnlock()
 	return bc.txTotal
+}
+
+// Pop pop last block from database
+func (bc *BlockChain) Pop() error {
+	var blk *Block
+	number := bc.Length()
+	err := bc.blockChainDB.BeginBatch()
+	if err != nil {
+		return errors.New("fail to begin batch")
+	}
+
+	blk, err = bc.delBlockByNumber(number)
+	if err != nil {
+		return fmt.Errorf("fail to put block, err:%s", err)
+	}
+
+	err = bc.blockChainDB.CommitBatch()
+	if err != nil {
+		return fmt.Errorf("fail to put block, err:%s", err)
+	}
+	bc.SetLength(number - 1)
+	bc.SetTxTotal(bc.txTotal - int64(len(blk.Txs)))
+	return nil
 }
 
 // Push save the block to database
@@ -205,35 +230,63 @@ func (bc *BlockChain) getBlockByteByHash(hash []byte) ([]byte, error) {
 	}
 	return blockByte, nil
 }
-func (bc *BlockChain) delBlockByHash(hash []byte) error {
+func (bc *BlockChain) delBlockByHash(hash []byte) (*Block, error) {
 	blockByte, err := bc.getBlockByteByHash(hash)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	var blk Block
 	err = blk.Decode(blockByte)
 	if err != nil {
-		return errors.New("fail to decode blockByte")
+		return nil, errors.New("fail to decode blockByte")
+	}
+	for i, t := range blk.Txs {
+		tHash := t.Hash()
+		bc.blockChainDB.Delete(append(txPrefix, tHash...))
+		bc.blockChainDB.Delete(append(bTxPrefix, append(hash, tHash...)...))
+
+		// save receipt
+		rHash := blk.Receipts[i].Hash()
+		bc.blockChainDB.Delete(append(txReceiptPrefix, tHash...))
+		bc.blockChainDB.Delete(append(receiptPrefix, rHash...))
+		bc.blockChainDB.Delete(append(bReceiptPrefix, append(hash, rHash...)...))
+
+		if t.Delay > 0 && blk.Receipts[i].Status.Code == tx.Success {
+			bc.blockChainDB.Delete(append(delaytxPrefix, tHash...))
+		}
+		//TODO zrliu: Put it Back
+		/*
+			if t.IsDefer() {
+				bc.blockChainDB.Put(append(delaytxPrefix, t.ReferredTx...))
+			}
+
+
+				canceledDelayHashes := blk.Receipts[i].ParseCancelDelaytx()
+				for _, _ := range canceledDelayHashes {
+					bc.blockChainDB.Put(append(delaytxPrefix, canceledHash...))
+				}
+		*/
+
 	}
 	for _, txHash := range blk.TxHashes {
 		err = bc.blockChainDB.Delete(append(txPrefix, txHash...))
 		if err != nil {
-			return err
+			ilog.Error(err)
 		}
 	}
 
 	for _, rHash := range blk.ReceiptHashes {
 		err = bc.blockChainDB.Delete(append(receiptPrefix, rHash...))
 		if err != nil {
-			return err
+			ilog.Error(err)
 		}
 	}
 
 	err = bc.blockChainDB.Delete(append(blockPrefix, hash...))
 	if err != nil {
-		return err
+		ilog.Error(err)
 	}
-	return nil
+	return &blk, nil
 }
 
 // GetBlockByHash is get block by hash
@@ -278,10 +331,10 @@ func (bc *BlockChain) GetBlockByHash(hash []byte) (*Block, error) {
 	return &blk, nil
 }
 
-func (bc *BlockChain) delBlockByNumber(number int64) error {
+func (bc *BlockChain) delBlockByNumber(number int64) (*Block, error) {
 	hash, err := bc.GetHashByNumber(number)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	return bc.delBlockByHash(hash)
 }
