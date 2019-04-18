@@ -5,15 +5,20 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/verifier"
 )
 
 var (
 	errSingle     = errors.New("single block")
 	errDuplicate  = errors.New("duplicate block")
 	errOutOfLimit = errors.New("block out of limit in one slot")
+	errWitness    = errors.New("wrong witness")
+	errTxDup      = errors.New("duplicate tx")
+	errDoubleTx   = errors.New("double tx in block")
 )
 
 // Block will describe the block of chainbase.
@@ -151,7 +156,7 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 	ok := c.stateDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		c.stateDB.Checkout(string(blk.Head.ParentHash))
-		err := verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, c.txPool, c.stateDB, c.bChain, replay)
+		err := c.verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, replay)
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
 			c.bCache.Del(node)
@@ -174,4 +179,44 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 		c.addExistingBlock(child.Block, node, replay, gen)
 	}
 	return nil
+}
+
+func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcache.WitnessList, replay bool) error {
+	err := cverifier.VerifyBlockHead(blk, parent)
+	if err != nil {
+		return err
+	}
+
+	if replay == false && common.WitnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
+		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
+			blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(witnessList.Active()), witnessList.Active())
+		return errWitness
+	}
+	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
+	blkTxSet := make(map[string]bool, len(blk.Txs))
+	for i, t := range blk.Txs {
+		if blkTxSet[string(t.Hash())] {
+			return errDoubleTx
+		}
+		blkTxSet[string(t.Hash())] = true
+
+		if i == 0 {
+			// base tx
+			continue
+		}
+		if c.txPool.ExistTxs(t.Hash(), parent) {
+			ilog.Infof("FoundChain: %v, %v", t, common.Base58Encode(t.Hash()))
+			return errTxDup
+		}
+		err := t.VerifySelf()
+		if err != nil {
+			return err
+		}
+	}
+	v := verifier.Verifier{}
+	return v.Verify(blk, parent, witnessList, c.stateDB, &verifier.Config{
+		Mode:        0,
+		Timeout:     common.MaxBlockTimeLimit,
+		TxTimeLimit: common.MaxTxTimeLimit,
+	})
 }
