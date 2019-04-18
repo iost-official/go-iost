@@ -33,6 +33,7 @@ type Host struct {
 	DNS
 	Authority
 	GasManager
+	Rules *version.Rules
 
 	logger  *ilog.Logger
 	ctx     *Context
@@ -50,6 +51,7 @@ func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.L
 		monitor: monitor,
 		logger:  logger,
 	}
+	h.Rules = version.NewRules(h.BlockNumber())
 	h.DBHandler = NewDBHandler(h)
 	h.Info = NewInfo(h)
 	h.Teller = NewTeller(h)
@@ -75,7 +77,10 @@ func (h *Host) SetContext(ctx *Context) {
 
 // BlockNumber get block number in host
 func (h *Host) BlockNumber() int64 {
-	return h.ctx.Value("number").(int64)
+	if num, ok := h.ctx.Value("number").(int64); ok {
+		return num
+	}
+	return 0
 }
 
 // Call  call a new contract in this context
@@ -173,7 +178,7 @@ func (h *Host) CheckSigners(t *tx.Tx) error {
 func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
 	tokenMap := make(map[string]bool)
 	for _, limit := range amountLimit {
-		if version.IsFork3_1_0(h.BlockNumber()) {
+		if h.Rules.IsFork3_1_0 {
 			if tokenMap[limit.Token] {
 				return fmt.Errorf("duplicated token in amountLimit: %s", limit.Token)
 			}

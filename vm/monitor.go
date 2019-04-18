@@ -13,7 +13,6 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
@@ -181,7 +180,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				token = args[0].(string)
 				from := args[1].(string)
 				to := args[2].(string)
-				if version.IsFork3_1_0(h.BlockNumber()) {
+				if h.Rules.IsFork3_1_0 {
 					if !h.IsContract(from) {
 						amount, _ = common.NewFixed(args[3].(string), h.DB().Decimal(token))
 					}
@@ -221,7 +220,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 					fmt.Errorf("token %s exceed amountLimit in abi. need %v",
 						token, amount.ToString())
 			}
-			if version.IsFork3_1_0(h.BlockNumber()) {
+			if h.Rules.IsFork3_1_0 {
 				if !checkLimit(txAmountLimit, token, amountTotal[token]) {
 					return nil, cost,
 						fmt.Errorf("token %s exceed amountLimit in tx. need %v",

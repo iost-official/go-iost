@@ -49,3 +49,15 @@ func IsFork3_1_0(num int64) bool {
 func isForked(v, num int64) bool {
 	return v <= num
 }
+
+// Rules wraps original IsXxx functions
+type Rules struct {
+	IsFork3_1_0 bool
+}
+
+// NewRules create Rules for each block
+func NewRules(num int64) *Rules {
+	return &Rules{
+		IsFork3_1_0: IsFork3_1_0(num),
+	}
+}
