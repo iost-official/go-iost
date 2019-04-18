@@ -75,14 +75,6 @@ func (h *Host) SetContext(ctx *Context) {
 
 }
 
-// BlockNumber get block number in host
-func (h *Host) BlockNumber() int64 {
-	if num, ok := h.ctx.Value("number").(int64); ok {
-		return num
-	}
-	return 0
-}
-
 // Call  call a new contract in this context
 func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, contract.Cost, error) {
 
