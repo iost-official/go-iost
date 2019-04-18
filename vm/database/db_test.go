@@ -6,6 +6,7 @@ import (
 	"os"
 
 	. "github.com/golang/mock/gomock"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/db"
 )
 
@@ -27,7 +28,7 @@ func TestHandler_Put(t *testing.T) {
 	mockMVCC := NewMockIMultiValue(mockCtl)
 
 	length := 100
-	v := NewVisitor(length, mockMVCC)
+	v := NewVisitor(length, mockMVCC, version.NewRules(0))
 
 	mockMVCC.EXPECT().Put(Any(), Any(), Any()).DoAndReturn(func(table string, key string, value string) error {
 		if !(table == "state" && key == "b-hello" && value == "world") {
@@ -63,7 +64,7 @@ func TestHandler_Get(t *testing.T) {
 	mockMVCC := NewMockIMultiValue(mockCtl)
 
 	length := 100
-	v := NewVisitor(length, mockMVCC)
+	v := NewVisitor(length, mockMVCC, version.NewRules(0))
 
 	// test of Get
 	mockMVCC.EXPECT().Get(Any(), Any()).DoAndReturn(func(table string, key string) (value string, err error) {
@@ -104,7 +105,7 @@ func TestWriteCache(t *testing.T) {
 	mockMVCC := NewMockIMultiValue(mockCtl)
 
 	length := 100
-	v := NewVisitor(length, mockMVCC)
+	v := NewVisitor(length, mockMVCC, version.NewRules(0))
 
 	//mockMVCC.EXPECT().Put(Any(), Any(), Any()).DoAndReturn(func(table string, key string, value string) error {
 	//	if !(table == "state" && key == "b-hello" && value == "world") {
@@ -134,7 +135,7 @@ func TestMultiWork(t *testing.T) {
 
 	length := 100
 
-	v := NewVisitor(length, mvccdb)
+	v := NewVisitor(length, mvccdb, version.NewRules(0))
 
 	v.Put("hello", "world")
 
@@ -159,8 +160,8 @@ func TestMultiVisitor(t *testing.T) {
 
 	defer closeMVCCDB(mvccdb)
 	length := 100
-	v1 := NewVisitor(length, mvccdb)
-	v2 := NewVisitor(length, mvccdb)
+	v1 := NewVisitor(length, mvccdb, version.NewRules(0))
+	v2 := NewVisitor(length, mvccdb, version.NewRules(0))
 
 	v1.Put("hello", "world")
 	v1.Commit()

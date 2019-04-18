@@ -1,5 +1,7 @@
 package database
 
+import "github.com/iost-official/go-iost/core/version"
+
 // Visitor combine of every handler, to be api of database
 type Visitor struct {
 	BasicHandler
@@ -15,8 +17,8 @@ type Visitor struct {
 }
 
 // NewVisitor get a visitor of a DB, with cache length determined
-func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
-	db := newChainbaseAdapter(cb)
+func NewVisitor(cacheLength int, cb IMultiValue, rules *version.Rules) *Visitor {
+	db := newChainbaseAdapter(cb, rules)
 	lruDB := NewLRU(cacheLength, db)
 	cachedDB := NewWriteCache(lruDB)
 	v := &Visitor{
@@ -35,8 +37,8 @@ func NewVisitor(cacheLength int, cb IMultiValue) *Visitor {
 }
 
 // NewBatchVisitorRoot get LRU to next step
-func NewBatchVisitorRoot(cacheLength int, cb IMultiValue) *LRU {
-	db := newChainbaseAdapter(cb)
+func NewBatchVisitorRoot(cacheLength int, cb IMultiValue, rules *version.Rules) *LRU {
+	db := newChainbaseAdapter(cb, rules)
 	lruDB := NewLRU(cacheLength, db)
 	return lruDB
 }

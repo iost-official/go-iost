@@ -7,6 +7,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
@@ -15,7 +16,7 @@ import (
 
 func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
-	vi := database.NewVisitor(100, db)
+	vi := database.NewVisitor(100, db, version.NewRules(0))
 	vi.MPut("auth.iost-auth", "issuer0", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 	vi.MPut("auth.iost-auth", "user0", database.MustMarshal(`{"id":"user0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user0","is_key_pair":true,"weight":1}],"threshold":1}}}`))
 	vi.MPut("auth.iost-auth", "user1", database.MustMarshal(`{"id":"user1","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"user1","is_key_pair":true,"weight":1}],"threshold":1}}}`))
@@ -36,7 +37,7 @@ func InitVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.Set("publisher", "")
 
 	// pm := NewMonitor()
-	h := host.NewHost(ctx, vi, nil, nil)
+	h := host.NewHost(ctx, vi, version.NewRules(0), nil, nil)
 	h.Context().Set("stack_height", 0)
 
 	code := &contract.Contract{

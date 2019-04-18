@@ -65,7 +65,7 @@ func (m *batcherImpl) Batch(bh *block.BlockHead, db database.IMultiValue, provid
 		errs     = make([]error, thread)
 	)
 
-	bvr := database.NewBatchVisitorRoot(10000, db)
+	bvr := database.NewBatchVisitorRoot(10000, db, bh.Rules())
 	for i := 0; i < thread; i++ {
 		i2 := i
 		t := provider.Tx()
@@ -179,7 +179,7 @@ func (m *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, check
 		errs    = make([]error, thread)
 	)
 
-	bvr := database.NewBatchVisitorRoot(10000, db)
+	bvr := database.NewBatchVisitorRoot(10000, db, bh.Rules())
 	for i := 0; i < thread; i++ {
 		i2 := i
 		go func() {

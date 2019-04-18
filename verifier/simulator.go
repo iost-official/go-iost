@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm"
@@ -38,7 +39,7 @@ func NewSimulator() *Simulator {
 	v := Verifier{}
 
 	s := &Simulator{
-		Visitor:  database.NewVisitor(0, mvccdb),
+		Visitor:  database.NewVisitor(0, mvccdb, version.NewRules(0)),
 		Verifier: &v,
 		Mvcc:     mvccdb,
 		Head: &block.BlockHead{

@@ -1,5 +1,7 @@
 package database
 
+import "github.com/iost-official/go-iost/core/version"
+
 // WriteCache ...
 type WriteCache struct {
 	m  map[string]*Record
@@ -27,6 +29,11 @@ func NewWriteCache(db database) *WriteCache {
 		m:  make(map[string]*Record),
 		db: db,
 	}
+}
+
+// Rules ...
+func (w *WriteCache) Rules() *version.Rules {
+	return w.db.Rules()
 }
 
 // Get ...

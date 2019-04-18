@@ -6,6 +6,7 @@ import (
 	"time"
 
 	. "github.com/golang/mock/gomock"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/vm/database"
 )
 
@@ -32,11 +33,11 @@ func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, *Host) {
 	mockCtrl := NewController(t)
 	defer mockCtrl.Finish()
 	db := database.NewMockIMultiValue(mockCtrl)
-	bdb := database.NewVisitor(100, db)
+	bdb := database.NewVisitor(100, db, version.NewRules(0))
 
 	//monitor := Monitor{}
 
-	host := NewHost(ctx, bdb, nil, nil)
+	host := NewHost(ctx, bdb, version.NewRules(0), nil, nil)
 	return db, host
 }
 
@@ -303,4 +304,3 @@ func TestHost_MapKeys_Owner(t *testing.T) {
 func TestHost_BlockInfo(t *testing.T) {
 
 }
-

@@ -1,7 +1,8 @@
 package database
 
 import (
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru"
+	"github.com/iost-official/go-iost/core/version"
 )
 
 // LRU lru cache
@@ -27,6 +28,11 @@ func NewLRU(length int, db database) *LRU {
 		cache: c,
 		db:    db,
 	}
+}
+
+// Rules get rules of db
+func (m *LRU) Rules() *version.Rules {
+	return m.db.Rules()
 }
 
 // Get get from cache

@@ -7,12 +7,14 @@ import (
 	"time"
 
 	"flag"
+	"runtime/pprof"
+
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
-	"github.com/iost-official/go-iost/vm/v8vm"
-	"runtime/pprof"
+	v8 "github.com/iost-official/go-iost/vm/v8vm"
 )
 
 var vmPool *v8.VMPool
@@ -26,7 +28,7 @@ func init() {
 // MyInit init host and contract
 func MyInit(conName string, optional ...interface{}) (*host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath("simple.json")
-	vi := database.NewVisitor(100, db)
+	vi := database.NewVisitor(100, db, version.NewRules(0))
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_ratio", int64(100))
@@ -36,7 +38,7 @@ func MyInit(conName string, optional ...interface{}) (*host.Host, *contract.Cont
 	}
 	ctx.GSet("gas_limit", gasLimit)
 	ctx.Set("contract_name", conName)
-	h := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
+	h := host.NewHost(ctx, vi, version.NewRules(0), nil, ilog.DefaultLogger())
 
 	code := &contract.Contract{
 		ID: conName,

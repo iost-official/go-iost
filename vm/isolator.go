@@ -56,7 +56,7 @@ func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 
 	i.blockBaseCtx = host.NewContext(nil)
 	i.blockBaseCtx = loadBlkInfo(i.blockBaseCtx, bh)
-	i.h = host.NewHost(i.blockBaseCtx, db, staticMonitor, logger)
+	i.h = host.NewHost(i.blockBaseCtx, db, bh.Rules(), staticMonitor, logger)
 	i.h.ReadSettings()
 	return nil
 }

@@ -554,11 +554,12 @@ func (bc *BlockCacheImpl) updateWitnessList(h *BlockCacheNode) error {
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 	ok := bc.stateDB.Checkout(string(h.HeadHash()))
 	if ok {
-		if err := h.UpdatePending(bc.stateDB); err != nil {
+		rules := h.Head.Rules()
+		if err := h.UpdatePending(bc.stateDB, rules); err != nil {
 			ilog.Error("failed to update pending, err:", err)
 			return err
 		}
-		if err := h.UpdateInfo(bc.stateDB); err != nil {
+		if err := h.UpdateInfo(bc.stateDB, rules); err != nil {
 			ilog.Error("failed to update witness info, err:", err)
 			return err
 		}

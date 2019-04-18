@@ -33,7 +33,7 @@ type Host struct {
 	DNS
 	Authority
 	GasManager
-	Rules *version.Rules
+	*version.Rules
 
 	logger  *ilog.Logger
 	ctx     *Context
@@ -44,14 +44,14 @@ type Host struct {
 }
 
 // NewHost get a new host
-func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.Logger) *Host {
+func NewHost(ctx *Context, db *database.Visitor, rules *version.Rules, monitor Monitor, logger *ilog.Logger) *Host {
 	h := &Host{
 		ctx:     ctx,
 		db:      db,
 		monitor: monitor,
 		logger:  logger,
 	}
-	h.Rules = version.NewRules(h.BlockNumber())
+	h.Rules = rules
 	h.DBHandler = NewDBHandler(h)
 	h.Info = NewInfo(h)
 	h.Teller = NewTeller(h)

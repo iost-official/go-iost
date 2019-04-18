@@ -1,6 +1,11 @@
 package database
 
+import (
+	"github.com/iost-official/go-iost/core/version"
+)
+
 type database interface {
+	Rules() *version.Rules
 	Get(key string) (value string)
 	Put(key, value string)
 	Has(key string) bool
@@ -13,7 +18,12 @@ const (
 )
 
 type chainbaseAdapter struct {
-	cb IMultiValue
+	cb    IMultiValue
+	rules *version.Rules
+}
+
+func (c *chainbaseAdapter) Rules() *version.Rules {
+	return c.rules
 }
 
 func (c *chainbaseAdapter) Get(key string) (value string) {
@@ -50,6 +60,9 @@ func (c *chainbaseAdapter) Del(key string) {
 	}
 }
 
-func newChainbaseAdapter(cb IMultiValue) *chainbaseAdapter {
-	return &chainbaseAdapter{cb}
+func newChainbaseAdapter(cb IMultiValue, rules *version.Rules) *chainbaseAdapter {
+	return &chainbaseAdapter{
+		cb:    cb,
+		rules: rules,
+	}
 }

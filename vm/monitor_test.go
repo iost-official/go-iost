@@ -7,6 +7,7 @@ import (
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 )
@@ -16,7 +17,7 @@ func Init(t *testing.T) (*Monitor, *MockVM, *database.MockIMultiValue, *database
 	defer mc.Finish()
 	vm := NewMockVM(mc)
 	db := database.NewMockIMultiValue(mc)
-	vi := database.NewVisitor(100, db)
+	vi := database.NewVisitor(100, db, version.NewRules(0))
 	pm := NewMonitor()
 	pm.vms[""] = vm
 	return pm, vm, db, vi
@@ -29,7 +30,7 @@ func TestMonitor_Call(t *testing.T) {
 	ctx.Set("gas_ratio", int64(100))
 	ctx.Set("stack_height", 1)
 
-	h := host.NewHost(ctx, vi, monitor, nil)
+	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
 
 	flag := false
 
@@ -70,7 +71,7 @@ func TestMonitor_Context(t *testing.T) {
 	ctx.Set("gas_ratio", int64(100))
 	ctx.Set("stack_height", 1)
 
-	h := host.NewHost(ctx, vi, monitor, nil)
+	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
 
 	outerFlag := false
 	innerFlag := false
@@ -126,7 +127,7 @@ func TestMonitor_HostCall(t *testing.T) {
 	ctx.Set("stack_height", 1)
 	ctx.Set("stack0", "test")
 
-	h := host.NewHost(ctx, vi, monitor, nil)
+	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
 	outerFlag := false
 	innerFlag := false
 
@@ -186,7 +187,7 @@ func TestJSM(t *testing.T) {
 	ctx.Set("stack_height", 1)
 	ctx.Set("publisher", "abc")
 
-	h := host.NewHost(ctx, vi, monitor, nil)
+	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
 	h.SetDeadline(time.Now().Add(time.Second))
 
 	c := contract.Contract{
