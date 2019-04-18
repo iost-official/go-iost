@@ -8,6 +8,7 @@ import (
 	"github.com/iost-official/go-iost/consensus/cverifier"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/verifier"
 )
@@ -19,6 +20,7 @@ var (
 	errWitness    = errors.New("wrong witness")
 	errTxDup      = errors.New("duplicate tx")
 	errDoubleTx   = errors.New("double tx in block")
+	errDelayTx    = errors.New("delaytx is not allowed")
 )
 
 // Block will describe the block of chainbase.
@@ -194,6 +196,7 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 	}
 	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	blkTxSet := make(map[string]bool, len(blk.Txs))
+	rules := version.NewRules(blk.Head.Number)
 	for i, t := range blk.Txs {
 		if blkTxSet[string(t.Hash())] {
 			return errDoubleTx
@@ -203,6 +206,12 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 		if i == 0 {
 			// base tx
 			continue
+		}
+		if rules.IsFork3_1_0 {
+			// reject delay tx
+			if t.Delay > 0 {
+				return errDelayTx
+			}
 		}
 		if c.txPool.ExistTxs(t.Hash(), parent) {
 			ilog.Infof("FoundChain: %v, %v", t, common.Base58Encode(t.Hash()))
