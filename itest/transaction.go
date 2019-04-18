@@ -6,7 +6,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 )
 
 // Constant of Transaction
@@ -17,7 +17,7 @@ var (
 	Delay       = int64(0 * time.Second) // No delay
 	Signers     = make([]string, 0)      // No mutiple signers
 	AmountLimit = []*contract.Amount{{Token: "*", Val: "unlimited"}}
-	ChainID     = uint32(1024)
+	ChainID     = uint32(1020)
 )
 
 // Transaction is the transaction object
