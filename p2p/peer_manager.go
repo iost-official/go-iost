@@ -70,8 +70,9 @@ type PeerManager struct {
 
 	neighborCap map[connDirection]int
 
-	subs   *sync.Map //  map[MessageType]map[string]chan IncomingMessage
-	quitCh chan struct{}
+	subs    *sync.Map //  map[MessageType]map[string]chan IncomingMessage
+	quitCh  chan struct{}
+	started atomic.Int32
 
 	host           host.Host
 	config         *common.P2PConfig
@@ -133,6 +134,10 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 
 // Start starts peer manager's job.
 func (pm *PeerManager) Start() {
+	if !pm.started.CAS(0, 1) {
+		return
+	}
+
 	pm.parseSeeds()
 	pm.LoadRoutingTable()
 
@@ -146,8 +151,17 @@ func (pm *PeerManager) Start() {
 
 // Stop stops peer manager's loop.
 func (pm *PeerManager) Stop() {
+	if !pm.started.CAS(1, 0) {
+		return
+	}
+
 	close(pm.quitCh)
 	pm.wg.Wait()
+	pm.CloseAllNeighbors()
+}
+
+func (pm *PeerManager) isStopped() bool {
+	return pm.started.Load() == 0
 }
 
 func (pm *PeerManager) setBPs(ids []string) {
@@ -210,6 +224,10 @@ func (pm *PeerManager) newStream(pid peer.ID) (libnet.Stream, error) {
 
 func (pm *PeerManager) connectBPs() {
 	for _, bpID := range pm.getBPs() {
+		if pm.isStopped() {
+			return
+		}
+
 		if pm.GetNeighbor(bpID) == nil && bpID != pm.host.ID() && len(pm.peerStore.Addrs(bpID)) > 0 {
 			stream, err := pm.newStream(bpID)
 			if err != nil {
@@ -384,6 +402,13 @@ func (pm *PeerManager) GetAllNeighbors() []*Peer {
 	return peers
 }
 
+// CloseAllNeighbors close all connections.
+func (pm *PeerManager) CloseAllNeighbors() {
+	for _, p := range pm.GetAllNeighbors() {
+		p.Stop()
+	}
+}
+
 // AllNeighborCount returns the total neighbor amount.
 func (pm *PeerManager) AllNeighborCount() int {
 	pm.neighborMutex.RLock()
@@ -502,6 +527,10 @@ func (pm *PeerManager) routingQuery(ids []string) {
 	perm := r.Perm(len(allPeerIDs))
 
 	for i, t := 0, 0; i < len(perm) && t < pm.neighborCap[outbound]-outboundNeighborCount; i++ {
+		if pm.isStopped() {
+			return
+		}
+
 		peerID := allPeerIDs[perm[i]]
 		if peerID == pm.host.ID() {
 			continue
