@@ -182,31 +182,20 @@ func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 			WitnessInfo: make([]string, 0, 0),
 		},
 	}
-	if blk == nil {
-		bcn.Block = &block.Block{
-			Head: &block.BlockHead{
-				Number: -1,
-			}}
-	}
 	bcn.setParent(parent)
 	return bcn
 }
 
 // NewVirtualBCN return a new virtual block cache node instance
-func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
+func NewVirtualBCN(parent *BlockCacheNode) *BlockCacheNode {
 	bcn := &BlockCacheNode{
-		Block: &block.Block{
-			Head: &block.BlockHead{},
-		},
+		Block:        nil,
 		parent:       nil,
 		Children:     make(map[*BlockCacheNode]bool),
 		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make([]string, 0, 0),
 		},
-	}
-	if blk != nil {
-		bcn.Head.Number = blk.Head.Number - 1
 	}
 	bcn.setParent(parent)
 	bcn.Type = Virtual
@@ -346,7 +335,6 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		stateDB:           stateDB.Fork(),
 		wal:               w,
 	}
-	bc.linkedRoot.Head.Number = -1
 
 	var lib *block.Block
 	if conf.Snapshot.Enable {
@@ -641,7 +629,7 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
-		parent = NewVirtualBCN(bc.singleRoot, blk)
+		parent = NewVirtualBCN(bc.singleRoot)
 		bc.hmset(blk.Head.ParentHash, parent)
 	}
 	if nok && newNode.Type == Virtual {
@@ -876,11 +864,16 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 
 // GetBlockByHash get a block by hash
 func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
-	bcn, err := bc.Find(hash)
-	if err != nil {
-		return nil, err
+	bcn, ok := bc.hmget(hash)
+	if !ok {
+		return nil, errors.New("block not found")
 	}
-	return bcn.Block, nil
+	// Block will be cleared when node deleted
+	blk := bcn.Block
+	if blk == nil {
+		return nil, errors.New("block not found")
+	}
+	return blk, nil
 }
 
 // LinkedRoot return the root node
