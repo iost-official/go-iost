@@ -186,22 +186,6 @@ func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	return bcn
 }
 
-// NewVirtualBCN return a new virtual block cache node instance
-func NewVirtualBCN(parent *BlockCacheNode) *BlockCacheNode {
-	bcn := &BlockCacheNode{
-		Block:        nil,
-		parent:       nil,
-		Children:     make(map[*BlockCacheNode]bool),
-		ValidWitness: make([]string, 0, 0),
-		WitnessList: WitnessList{
-			WitnessInfo: make([]string, 0, 0),
-		},
-	}
-	bcn.setParent(parent)
-	bcn.Type = Virtual
-	return bcn
-}
-
 func (bcn *BlockCacheNode) updateValidWitness() {
 	witness := bcn.Head.Witness
 	parent := bcn.GetParent()
@@ -325,8 +309,8 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		return nil, err
 	}
 	bc := BlockCacheImpl{
-		linkedRoot:        NewBCN(nil, nil),
-		singleRoot:        NewBCN(nil, nil),
+		linkedRoot:        nil,
+		singleRoot:        nil,
 		linkedRootWitness: make([]string, 0),
 		hash2node:         new(sync.Map),
 		number2node:       new(sync.Map),
@@ -350,6 +334,7 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 	ilog.Info("Got LIB: ", lib.Head.Number)
 	bc.linkedRoot = NewBCN(nil, lib)
 	bc.linkedRoot.Type = Linked
+	bc.singleRoot = NewBCN(nil, nil)
 	bc.singleRoot.Type = Virtual
 	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
@@ -629,7 +614,8 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
-		parent = NewVirtualBCN(bc.singleRoot)
+		parent = NewBCN(bc.singleRoot, nil)
+		parent.Type = Virtual
 		bc.hmset(blk.Head.ParentHash, parent)
 	}
 	if nok && newNode.Type == Virtual {
