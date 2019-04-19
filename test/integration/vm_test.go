@@ -46,7 +46,7 @@ func Test_callWithAuth(t *testing.T) {
 
 		Convey("test of callWithAuth", func() {
 			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
-			r, err := s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
+			r, err = s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
