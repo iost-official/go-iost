@@ -172,7 +172,7 @@ func (s *Sync) doBlockSync() {
 		if err == nil && block != nil {
 			continue
 		}
-		if block == nil {
+		if err == nil && block == nil {
 			ilog.Errorf("Block %v should not be nil.", blockHash.Hash)
 		}
 
