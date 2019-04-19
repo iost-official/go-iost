@@ -689,9 +689,14 @@ func (bc *BlockCacheImpl) delSingle() {
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for bcn := range bc.singleRoot.Children {
-		if bcn.Head.Number <= height {
-			bc.del(bcn)
+	for vbcn := range bc.singleRoot.Children {
+		for bcn := range vbcn.Children {
+			if bcn.Head.Number <= height {
+				bc.del(bcn)
+			}
+		}
+		if len(vbcn.Children) == 0 {
+			bc.delNode(vbcn)
 		}
 	}
 }
