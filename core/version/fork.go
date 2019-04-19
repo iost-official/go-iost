@@ -37,7 +37,7 @@ func InitChainConf(conf *common.Config) {
 	case TestNetChainID:
 		chainConf = testNetChainConf
 	default:
-		return
+		chainConf = defaultChainConf
 	}
 }
 

@@ -12,8 +12,11 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/event"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
+	"github.com/iost-official/go-iost/vm/database"
+	"github.com/stretchr/testify/assert"
 )
 
 func Test_callWithAuth(t *testing.T) {
@@ -633,4 +636,78 @@ func Test_Arguments(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 	})
+}
+
+func Test_MapDel(t *testing.T) {
+	ilog.Stop()
+	s := NewSimulator()
+	defer s.Clear()
+
+	acc := prepareAuth(t, s)
+	s.SetAccount(acc.ToAccount())
+	s.SetGas(acc.ID, 4000000)
+	s.SetRAM(acc.ID, 10000)
+
+	c, err := s.Compile("", "test_data/mapdel", "test_data/mapdel.js")
+	assert.Nil(t, err)
+	cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
+	s.Visitor.Commit()
+	assert.Nil(t, err)
+
+	r, err := s.Call(cname, "keys", `[]`, acc.ID, acc.KeyPair)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
+	assert.Len(t, r.Returns, 1)
+	assert.Equal(t, `["[\"s\",\"abcd\",\"abc\",\"ab\"]"]`, r.Returns[0])
+
+	r, err = s.Call(cname, "del", `[]`, acc.ID, acc.KeyPair)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
+	assert.Len(t, r.Returns, 1)
+	assert.Equal(t, `["[\"s\",\"abcd\",\"abc\"]"]`, r.Returns[0])
+}
+
+func Test_MapDel2(t *testing.T) {
+	ilog.Stop()
+	s := NewSimulator()
+	defer s.Clear()
+
+	acc := prepareAuth(t, s)
+	s.SetAccount(acc.ToAccount())
+	s.SetGas(acc.ID, 4000000)
+	s.SetRAM(acc.ID, 10000)
+
+	c, err := s.Compile("", "test_data/mapdel", "test_data/mapdel.js")
+	assert.Nil(t, err)
+	cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
+	s.Visitor.Commit()
+	assert.Nil(t, err)
+
+	conf := &common.Config{
+		P2P: &common.P2PConfig{
+			ChainID: 1024,
+		},
+	}
+	version.InitChainConf(conf)
+	rules := version.NewRules(0)
+	assert.False(t, rules.IsFork3_1_0)
+	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
+
+	r, err := s.Call(cname, "keys", `[]`, acc.ID, acc.KeyPair)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
+	assert.Len(t, r.Returns, 1)
+	assert.Equal(t, `["[\"scd\",\"abc\",\"ab\",\"ab\"]"]`, r.Returns[0])
+
+	conf.P2P.ChainID = 1000
+	version.InitChainConf(conf)
+	rules = version.NewRules(0)
+	assert.True(t, rules.IsFork3_1_0)
+	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
+
+	r, err = s.Call(cname, "del", `[]`, acc.ID, acc.KeyPair)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
+	assert.Len(t, r.Returns, 1)
+	assert.Equal(t, `["[\"abc\"]"]`, r.Returns[0])
 }
