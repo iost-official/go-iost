@@ -711,3 +711,32 @@ func Test_MapDel2(t *testing.T) {
 	assert.Len(t, r.Returns, 1)
 	assert.Equal(t, `["[\"abc\"]"]`, r.Returns[0])
 }
+
+func Test_SelfAuth(t *testing.T) {
+	ilog.Stop()
+	s := NewSimulator()
+	defer s.Clear()
+
+	acc := prepareAuth(t, s)
+	s.SetAccount(acc.ToAccount())
+	s.SetGas(acc.ID, 4000000)
+	s.SetRAM(acc.ID, 10000)
+
+	c, err := s.Compile("", "test_data/auth", "test_data/auth.js")
+	assert.Nil(t, err)
+	cname, _, err := s.DeployContract(c, acc.ID, acc.KeyPair)
+	s.Visitor.Commit()
+	assert.Nil(t, err)
+
+	r, err := s.Call(cname, "inner", `[]`, acc.ID, acc.KeyPair)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
+	assert.Len(t, r.Returns, 1)
+	assert.Equal(t, `["false"]`, r.Returns[0])
+
+	r, err = s.Call(cname, "outer", `[]`, acc.ID, acc.KeyPair)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
+	assert.Len(t, r.Returns, 1)
+	assert.Equal(t, `["[\"true\"]"]`, r.Returns[0])
+}

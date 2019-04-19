@@ -20,8 +20,14 @@ func (h *Authority) requireContractAuth(id, p string) (bool, contract.Cost) {
 	}
 	cost := CommonOpCost(1)
 	authContractList := h.h.ctx.Value("auth_contract_list").(map[string]int)
-	if _, ok := authContractList[id]; ok || h.h.ctx.Value("contract_name").(string) == id {
-		return true, cost
+	if h.h.Rules.IsFork3_1_0 {
+		if _, ok := authContractList[id]; ok {
+			return true, cost
+		}
+	} else {
+		if _, ok := authContractList[id]; ok || h.h.ctx.Value("contract_name").(string) == id {
+			return true, cost
+		}
 	}
 	return false, cost
 }
