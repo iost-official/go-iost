@@ -12,7 +12,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"google.golang.org/grpc"
 )
 
@@ -208,6 +208,27 @@ func (s *IOSTDevSDK) GetAccountInfo(id string) (*rpcpb.Account, error) {
 	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	req := &rpcpb.GetAccountRequest{Name: id, ByLongestChain: s.useLongestChain}
 	value, err := client.GetAccount(context.Background(), req)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
+// GetTokenBalance return token balance
+func (s *IOSTDevSDK) GetTokenBalance(account string, token string) (*rpcpb.GetTokenBalanceResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	req := &rpcpb.GetTokenBalanceRequest{
+		Account:        account,
+		Token:          token,
+		ByLongestChain: s.useLongestChain,
+	}
+	value, err := client.GetTokenBalance(context.Background(), req)
 	if err != nil {
 		return nil, err
 	}
