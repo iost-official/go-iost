@@ -97,6 +97,8 @@ func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block
 	if bcn.Type == Virtual && parent != nil && block != nil {
 		bcn.Block = block
 		bcn.setParent(parent)
+	} else {
+		ilog.Warnf("Unexcept update. type: %v, parent: %+v, block: %+v", bcn.Type, parent, block)
 	}
 }
 
@@ -520,10 +522,12 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
 func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	if bcn == nil {
+		ilog.Warnf("Block cache node should not be nil")
 		return
 	}
 	parent := bcn.GetParent()
 	if parent.Type != Linked {
+		ilog.Warnf("Parent of block %v should be linked", common.Base58Encode(bcn.Block.HeadHash()))
 		return
 	}
 	bcn.Type = Linked
@@ -768,7 +772,7 @@ func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
 	}
 	data, err := proto.Marshal(bcMessage)
 	if err != nil {
-		return
+		return err
 	}
 	ent := wal.Entry{
 		Data: data,
