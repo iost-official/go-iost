@@ -309,6 +309,46 @@ func TestNewTxPImplB(t *testing.T) {
 
 		})
 
+		Convey("doChainChange", func() {
+
+			txCnt := 10
+			blockCnt := 3
+			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
+			blockList[0].Head.ParentHash = b[0].HeadHash()
+			txPool.blockCache.Head().Head.Number = 0
+			for i := 0; i < blockCnt; i++ {
+				//ilog.Info(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
+				bcn := BlockCache.Add(blockList[i])
+				So(bcn, ShouldNotBeNil)
+
+				err = txPool.AddLinkedNode(bcn)
+				So(err, ShouldBeNil)
+			}
+			forkBlock := genSingleBlock(accountList, witnessList, blockList[1].HeadHash(), 6)
+			//ilog.Debug(("Sing hash:", forkBlock.HeadHash(), " Sing parentHash:", forkBlock.Head.ParentHash)
+			bcn := BlockCache.Add(forkBlock)
+			So(bcn, ShouldNotBeNil)
+
+			for i := 0; i < 6-3; i++ {
+				err := txPool.AddTx(forkBlock.Txs[i], "rpc")
+				So(err, ShouldBeNil)
+			}
+
+			So(txPool.testPendingTxsNum(), ShouldEqual, 3)
+			// fork chain
+			err = txPool.AddLinkedNode(bcn)
+			So(err, ShouldBeNil)
+			// need delay
+			for i := 0; i < 20; i++ {
+				time.Sleep(20 * time.Millisecond)
+				if txPool.testBlockListNum() == 10 {
+					break
+				}
+			}
+
+			So(txPool.testPendingTxsNum(), ShouldEqual, 10)
+		})
+
 		Convey("rbtree", func() {
 			t1 := genTx(newAccount, tx.MaxExpiration)
 			t2 := genTx(newAccount, tx.MaxExpiration)
