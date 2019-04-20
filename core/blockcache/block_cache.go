@@ -45,7 +45,6 @@ type BCNType int
 const (
 	Linked BCNType = iota
 	Single
-	Virtual
 )
 
 var (
@@ -85,9 +84,8 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 }
 
 func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
-	if bcn.Type == Virtual && parent != nil && block != nil {
+	if parent != nil && block != nil {
 		bcn.Block = block
-		bcn.Type = Single
 		bcn.SetParent(parent)
 		parent.addChild(bcn)
 	} else {
@@ -614,7 +612,6 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
 		parent = NewBCN(nil, nil)
-		parent.Type = Virtual
 		bc.singleRoot[string(blk.Head.ParentHash)] = parent
 	}
 	newNode, ok = bc.singleRoot[string(blk.HeadHash())]
@@ -828,7 +825,7 @@ func (bc *BlockCacheImpl) cutWALFiles(h *BlockCacheNode) error {
 // Find is find the block
 func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
-	if !ok || bcn.Type == Virtual {
+	if !ok {
 		return nil, errors.New("block not found")
 	}
 	return bcn, nil
