@@ -84,19 +84,14 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	}
 }
 
-func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
-	if parent != nil {
-		bcn.SetParent(parent)
-		bcn.Type = Single
-
-		parent.addChild(bcn)
-	}
-}
-
 func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
 	if bcn.Type == Virtual && parent != nil && block != nil {
 		bcn.Block = block
-		bcn.setParent(parent)
+		bcn.Type = Single
+		bcn.SetParent(parent)
+		parent.addChild(bcn)
+	} else {
+		ilog.Warnf("Unexcept update. type: %v, parent: %+v, block: %+v", bcn.Type, parent, block)
 	}
 }
 
@@ -175,41 +170,18 @@ func decodeBCN(b []byte) (block block.Block, wt WitnessList, serialNum int64, er
 func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	bcn := &BlockCacheNode{
 		Block:        blk,
-		parent:       nil,
+		Type:         Single,
+		parent:       parent,
 		Children:     make(map[*BlockCacheNode]bool),
 		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make([]string, 0, 0),
 		},
 	}
-	if blk == nil {
-		bcn.Block = &block.Block{
-			Head: &block.BlockHead{
-				Number: -1,
-			}}
+	// TODO: Move this outside.
+	if parent != nil {
+		parent.addChild(bcn)
 	}
-	bcn.setParent(parent)
-	return bcn
-}
-
-// NewVirtualBCN return a new virtual block cache node instance
-func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
-	bcn := &BlockCacheNode{
-		Block: &block.Block{
-			Head: &block.BlockHead{},
-		},
-		parent:       nil,
-		Children:     make(map[*BlockCacheNode]bool),
-		ValidWitness: make([]string, 0, 0),
-		WitnessList: WitnessList{
-			WitnessInfo: make([]string, 0, 0),
-		},
-	}
-	if blk != nil {
-		bcn.Head.Number = blk.Head.Number - 1
-	}
-	bcn.setParent(parent)
-	bcn.Type = Virtual
 	return bcn
 }
 
@@ -336,8 +308,8 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		return nil, err
 	}
 	bc := BlockCacheImpl{
-		linkedRoot:        NewBCN(nil, nil),
-		singleRoot:        NewBCN(nil, nil),
+		linkedRoot:        nil,
+		singleRoot:        nil,
 		linkedRootWitness: make([]string, 0),
 		hash2node:         new(sync.Map),
 		number2node:       new(sync.Map),
@@ -346,7 +318,6 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		stateDB:           stateDB.Fork(),
 		wal:               w,
 	}
-	bc.linkedRoot.Head.Number = -1
 
 	var lib *block.Block
 	if conf.Snapshot.Enable {
@@ -362,6 +333,7 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 	ilog.Info("Got LIB: ", lib.Head.Number)
 	bc.linkedRoot = NewBCN(nil, lib)
 	bc.linkedRoot.Type = Linked
+	bc.singleRoot = NewBCN(nil, nil)
 	bc.singleRoot.Type = Virtual
 	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
@@ -547,10 +519,12 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
 func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	if bcn == nil {
+		ilog.Warnf("Block cache node should not be nil")
 		return
 	}
 	parent := bcn.GetParent()
 	if parent.Type != Linked {
+		ilog.Warnf("Parent of block %v should be linked", common.Base58Encode(bcn.Block.HeadHash()))
 		return
 	}
 	bcn.Type = Linked
@@ -641,7 +615,8 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
-		parent = NewVirtualBCN(bc.singleRoot, blk)
+		parent = NewBCN(bc.singleRoot, nil)
+		parent.Type = Virtual
 		bc.hmset(blk.Head.ParentHash, parent)
 	}
 	if nok && newNode.Type == Virtual {
@@ -701,9 +676,17 @@ func (bc *BlockCacheImpl) delSingle() {
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for bcn := range bc.singleRoot.Children {
-		if bcn.Head.Number <= height {
-			bc.del(bcn)
+	for vbcn := range bc.singleRoot.Children {
+		for bcn := range vbcn.Children {
+			if bcn.Head.Number <= height {
+				bc.del(bcn)
+			}
+		}
+		if len(vbcn.Children) == 0 {
+			delete(bc.singleRoot.Children, vbcn)
+			vbcn.SetParent(nil)
+			// TODO: Fix the bug of memory leak.
+			//bc.hmdel(vbcn.HeadHash())
 		}
 	}
 }
@@ -789,7 +772,7 @@ func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
 	}
 	data, err := proto.Marshal(bcMessage)
 	if err != nil {
-		return
+		return err
 	}
 	ent := wal.Entry{
 		Data: data,
@@ -876,11 +859,16 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 
 // GetBlockByHash get a block by hash
 func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
-	bcn, err := bc.Find(hash)
-	if err != nil {
-		return nil, err
+	bcn, ok := bc.hmget(hash)
+	if !ok {
+		return nil, errors.New("block not found")
 	}
-	return bcn.Block, nil
+	// Block will be cleared when node deleted
+	blk := bcn.Block
+	if blk == nil {
+		return nil, errors.New("block not found")
+	}
+	return blk, nil
 }
 
 // LinkedRoot return the root node

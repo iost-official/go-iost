@@ -314,6 +314,7 @@ func TestNewTxPImplB(t *testing.T) {
 			txCnt := 10
 			blockCnt := 3
 			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
+			blockList[0].Head.ParentHash = b[0].HeadHash()
 			txPool.blockCache.Head().Head.Number = 0
 			for i := 0; i < blockCnt; i++ {
 				//ilog.Info(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)

@@ -172,7 +172,7 @@ func (s *Sync) doBlockSync() {
 		if err == nil && block != nil {
 			continue
 		}
-		if block == nil {
+		if err == nil && block == nil {
 			ilog.Errorf("Block %v should not be nil.", blockHash.Hash)
 		}
 
@@ -208,7 +208,7 @@ func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 		return
 	}
 
-	_, err := s.cBase.BlockCache().Find(blockHash.Hash)
+	_, err := s.cBase.BlockCache().GetBlockByHash(blockHash.Hash)
 	if err == nil {
 		ilog.Debugf("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
 		return
