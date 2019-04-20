@@ -247,7 +247,8 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 	for p := range payer {
-		if strings.HasSuffix(p, ".iost") {
+		// do not check auth if payer is current contract
+		if p == c.ID {
 			continue
 		}
 		ok, _ := h.RequireAuth(p, "active")
