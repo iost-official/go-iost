@@ -65,14 +65,15 @@ func New(cBase *chainbase.ChainBase, p p2p.Service) *Sync {
 
 // Close will close the synchronizer of blockchain.
 func (s *Sync) Close() {
+	close(s.quitCh)
+	s.done.Wait()
+
 	s.handler.Close()
 	s.rangeController.Close()
 	s.heightSync.Close()
 	s.blockhashSync.Close()
 	s.blockSync.Close()
 
-	close(s.quitCh)
-	s.done.Wait()
 	ilog.Infof("Stopped sync.")
 }
 
