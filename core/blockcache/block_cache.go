@@ -237,7 +237,7 @@ type BlockCache interface {
 type BlockCacheImpl struct { //nolint:golint
 	linkRW            sync.RWMutex
 	linkedRoot        *BlockCacheNode
-	singleRoot        *BlockCacheNode
+	singleRoot        map[string]*BlockCacheNode
 	linkedRootWitness []string
 	headRW            sync.RWMutex
 	head              *BlockCacheNode
@@ -309,7 +309,7 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 	}
 	bc := BlockCacheImpl{
 		linkedRoot:        nil,
-		singleRoot:        nil,
+		singleRoot:        make(map[string]*BlockCacheNode),
 		linkedRootWitness: make([]string, 0),
 		hash2node:         new(sync.Map),
 		number2node:       new(sync.Map),
@@ -333,8 +333,6 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 	ilog.Info("Got LIB: ", lib.Head.Number)
 	bc.linkedRoot = NewBCN(nil, lib)
 	bc.linkedRoot.Type = Linked
-	bc.singleRoot = NewBCN(nil, nil)
-	bc.singleRoot.Type = Virtual
 	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
 
@@ -610,23 +608,23 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 		return nil
 	}
 	newNode, nok := bc.hmget(blk.HeadHash())
-	if nok && newNode.Type != Virtual {
+	if nok {
 		return newNode
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
-		parent = NewBCN(bc.singleRoot, nil)
+		parent = NewBCN(nil, nil)
 		parent.Type = Virtual
-		bc.hmset(blk.Head.ParentHash, parent)
+		bc.singleRoot[string(blk.Head.ParentHash)] = parent
 	}
-	if nok && newNode.Type == Virtual {
-		delete(bc.singleRoot.Children, newNode)
+	newNode, ok = bc.singleRoot[string(blk.HeadHash())]
+	if ok {
+		delete(bc.singleRoot, string(blk.HeadHash()))
 		newNode.updateVirtualBCN(parent, blk)
 	} else {
 		newNode = NewBCN(parent, blk)
-		bc.hmset(blk.HeadHash(), newNode)
 	}
-	//newNode.WitnessInfo = wi
+	bc.hmset(blk.HeadHash(), newNode)
 	return newNode
 }
 
@@ -676,17 +674,19 @@ func (bc *BlockCacheImpl) delSingle() {
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for vbcn := range bc.singleRoot.Children {
+
+	for _, vbcn := range bc.singleRoot {
 		for bcn := range vbcn.Children {
 			if bcn.Head.Number <= height {
 				bc.del(bcn)
 			}
 		}
+
+	}
+
+	for hash, vbcn := range bc.singleRoot {
 		if len(vbcn.Children) == 0 {
-			delete(bc.singleRoot.Children, vbcn)
-			vbcn.SetParent(nil)
-			// TODO: Fix the bug of memory leak.
-			//bc.hmdel(vbcn.HeadHash())
+			delete(bc.singleRoot, hash)
 		}
 	}
 }
@@ -919,9 +919,14 @@ func (bc *BlockCacheImpl) Draw() string {
 
 	linkedTree := treeprint.New()
 	bc.LinkedRoot().drawChildren(linkedTree)
-	singleTree := treeprint.New()
-	bc.singleRoot.drawChildren(singleTree)
-	return mapInfo + "\n" + linkedTree.String() + "\n" + singleTree.String()
+
+	result := mapInfo + "\n" + linkedTree.String() + "\n"
+	for _, vbcn := range bc.singleRoot {
+		singleTree := treeprint.New()
+		vbcn.drawChildren(singleTree)
+		result = result + singleTree.String() + "\n"
+	}
+	return result
 }
 
 func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
