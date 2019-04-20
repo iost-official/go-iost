@@ -456,8 +456,9 @@ func (bc *BlockCacheImpl) updateLib(node *BlockCacheNode, confirmLimit int) {
 	for len(node.ValidWitness) >= confirmLimit &&
 		common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
 		blockList[bc.LinkedRoot().Head.Number+1] != nil {
-		// bc.flush() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
-		bc.flush(blockList[bc.LinkedRoot().Head.Number+1])
+		// bc.updateLinkedRoot() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
+		bc.updateLinkedRoot(blockList[bc.LinkedRoot().Head.Number+1])
+		bc.flush()
 	}
 }
 
@@ -676,7 +677,7 @@ func (bc *BlockCacheImpl) delSingle() {
 	}
 }
 
-func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
+func (bc *BlockCacheImpl) updateLinkedRoot(bcn *BlockCacheNode) {
 	parent := bcn.GetParent()
 	if parent != bc.LinkedRoot() {
 		ilog.Errorf("block isn't blockcache root's child")
@@ -696,26 +697,31 @@ func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
 	bc.SetLinkedRoot(bcn)
 	bc.delSingle()
 	bc.updateLongest()
+}
 
-	//confirm bcn to db
+func (bc *BlockCacheImpl) flush() {
+	//confirm linked root to db
+	bcn := bc.LinkedRoot()
+
 	err := bc.blockChain.Push(bcn.Block)
 	if err != nil {
-		ilog.Errorf("Database error, BlockChain Push err: %v %v", bcn.HeadHash(), err)
+		ilog.Errorf("Push blockchain error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
 
 	err = bc.writeUpdateLinkedRootWitnessWAL()
 	if err != nil {
-		ilog.Errorf("write wal error: %v %v", bcn.HeadHash(), err)
+		ilog.Errorf("Write linked root witness wal error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
 
-	ilog.Debug("confirm: ", bcn.Head.Number)
 	err = bc.stateDB.Flush(string(bcn.HeadHash()))
-
 	if err != nil {
-		ilog.Errorf("flush mvcc error: %v %v", bcn.HeadHash(), err)
+		ilog.Errorf("Flush state db error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
 
-	bc.cutWALFiles(bcn)
+	err = bc.cutWALFiles(bcn)
+	if err != nil {
+		ilog.Errorf("Cut wal files error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
+	}
 }
 
 func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {

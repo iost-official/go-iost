@@ -173,7 +173,8 @@ func TestBlockCache(t *testing.T) {
 			blk, _ = bc.GetBlockByNumber(4)
 			So(blk, ShouldEqual, nil)
 
-			bc.flush(b4node)
+			bc.updateLinkedRoot(b4node)
+			bc.flush()
 			//bc.Draw()
 
 		})
