@@ -84,19 +84,12 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	}
 }
 
-func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
-	if parent != nil {
-		bcn.SetParent(parent)
-		bcn.Type = Single
-
-		parent.addChild(bcn)
-	}
-}
-
 func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
 	if bcn.Type == Virtual && parent != nil && block != nil {
 		bcn.Block = block
-		bcn.setParent(parent)
+		bcn.Type = Single
+		bcn.SetParent(parent)
+		parent.addChild(bcn)
 	} else {
 		ilog.Warnf("Unexcept update. type: %v, parent: %+v, block: %+v", bcn.Type, parent, block)
 	}
@@ -177,14 +170,18 @@ func decodeBCN(b []byte) (block block.Block, wt WitnessList, serialNum int64, er
 func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	bcn := &BlockCacheNode{
 		Block:        blk,
-		parent:       nil,
+		Type:         Single,
+		parent:       parent,
 		Children:     make(map[*BlockCacheNode]bool),
 		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make([]string, 0, 0),
 		},
 	}
-	bcn.setParent(parent)
+	// TODO: Move this outside.
+	if parent != nil {
+		parent.addChild(bcn)
+	}
 	return bcn
 }
 
@@ -686,7 +683,10 @@ func (bc *BlockCacheImpl) delSingle() {
 			}
 		}
 		if len(vbcn.Children) == 0 {
-			bc.delNode(vbcn)
+			delete(bc.singleRoot.Children, vbcn)
+			vbcn.SetParent(nil)
+			// TODO: Fix the bug of memory leak.
+			//bc.hmdel(vbcn.HeadHash())
 		}
 	}
 }
