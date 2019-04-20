@@ -14,16 +14,10 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/metrics"
 	"github.com/xlab/treeprint"
 )
 
 //go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/core/blockcache BlockCache
-
-var (
-	metricsTxTotal = metrics.NewGauge("iost_tx_total", nil)
-	metricsDBSize  = metrics.NewGauge("iost_db_size", []string{"Name"})
-)
 
 // CacheStatus ...
 type CacheStatus int
@@ -317,13 +311,7 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		wal:               w,
 	}
 
-	var lib *block.Block
-	if conf.Snapshot.Enable {
-		//lib, err = snapshot.Load(bc.stateDB)
-	} else {
-		lib, err = bc.blockChain.Top()
-	}
-
+	lib, err := bc.blockChain.Top()
 	if err != nil {
 		ilog.Errorf("lib not found. err:%v", err)
 	}
@@ -699,10 +687,6 @@ func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
 		}
 		bc.del(child)
 	}
-	if bcn.Block == nil {
-		ilog.Errorf("When flush, block cache node don't have block: %+v", bcn)
-		return
-	}
 
 	bc.updateLinkedRootWitness(parent, bcn)
 	bcn.removeValidWitness(bcn)
@@ -729,30 +713,6 @@ func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
 
 	if err != nil {
 		ilog.Errorf("flush mvcc error: %v %v", bcn.HeadHash(), err)
-	}
-
-	metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
-
-	if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
-		ilog.Warnf("Get BlockChainDB size failed: %v", err)
-	} else {
-		metricsDBSize.Set(
-			float64(blockchainDBSize),
-			map[string]string{
-				"Name": "BlockChainDB",
-			},
-		)
-	}
-
-	if stateDBSize, err := bc.stateDB.Size(); err != nil {
-		ilog.Warnf("Get StateDB size failed: %v", err)
-	} else {
-		metricsDBSize.Set(
-			float64(stateDBSize),
-			map[string]string{
-				"Name": "StateDB",
-			},
-		)
 	}
 
 	bc.cutWALFiles(bcn)

@@ -2,12 +2,14 @@ package chainbase
 
 import (
 	"fmt"
+	"sync"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/ilog"
 )
 
 // ChainBase will maintain blockchain data for memory and hard disk.
@@ -17,6 +19,9 @@ type ChainBase struct {
 	bCache  blockcache.BlockCache
 	stateDB db.MVCCDB
 	txPool  txpool.TxPool
+
+	quitCh chan struct{}
+	done   *sync.WaitGroup
 }
 
 // New will return a ChainBase.
@@ -35,6 +40,9 @@ func New(conf *common.Config) (*ChainBase, error) {
 		config:  conf,
 		bChain:  bChain,
 		stateDB: stateDB,
+
+		quitCh: make(chan struct{}),
+		done:   new(sync.WaitGroup),
 	}
 
 	if err := c.checkGenesis(conf); err != nil {
@@ -60,14 +68,22 @@ func New(conf *common.Config) (*ChainBase, error) {
 		return nil, fmt.Errorf("recover chainbase failed: %v", err)
 	}
 
+	c.done.Add(1)
+	go c.metricsController()
+
 	return c, nil
 }
 
 // Close will close the chainbase.
 func (c *ChainBase) Close() {
+	close(c.quitCh)
+	c.done.Wait()
+
 	c.txPool.Close()
 	c.stateDB.Close()
 	c.bChain.Close()
+
+	ilog.Infof("Closed chainbase.")
 }
 
 // =============== Temporarily compatible ===============
