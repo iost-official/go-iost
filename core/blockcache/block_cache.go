@@ -220,7 +220,6 @@ type BlockCache interface {
 	LinkedRoot() *BlockCacheNode
 	Head() *BlockCacheNode
 	Draw() string
-	CleanDir() error
 	Recover(p ConAlgo) (err error)
 	AddNodeToWAL(bcn *BlockCacheNode)
 }
@@ -241,14 +240,6 @@ type BlockCacheImpl struct { //nolint:golint
 	blockChain        block.Chain
 	stateDB           db.MVCCDB
 	wal               *wal.WAL
-}
-
-// CleanDir used in test to clean dir
-func (bc *BlockCacheImpl) CleanDir() error {
-	if bc.wal != nil {
-		return bc.wal.CleanDir()
-	}
-	return nil
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -683,10 +674,9 @@ func (bc *BlockCacheImpl) updateLinkedRoot(bcn *BlockCacheNode) {
 		ilog.Errorf("block isn't blockcache root's child")
 	}
 	for child := range parent.Children {
-		if child == bcn {
-			continue
+		if child != bcn {
+			bc.del(child)
 		}
-		bc.del(child)
 	}
 
 	bc.updateLinkedRootWitness(parent, bcn)
