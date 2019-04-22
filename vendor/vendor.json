@@ -681,10 +681,10 @@
 			"revisionTime": "2018-06-26T23:28:06Z"
 		},
 		{
-			"checksumSHA1": "63zHaUm1WHnfw2mDCZb2TMEAg+U=",
+			"checksumSHA1": "0YRM+G1smhxh7uHPVvoFyu8Pw1g=",
 			"path": "github.com/libp2p/go-mplex",
-			"revision": "1386e7e2261644453d5aecc59c364fcb25ce7a1e",
-			"revisionTime": "2018-10-10T10:30:24Z"
+			"revision": "952618254776b3e01f1240d272069d29b0e89660",
+			"revisionTime": "2019-04-11T20:11:16Z"
 		},
 		{
 			"checksumSHA1": "VV9JfIQSjYWmdSX0fjx4zUqDh4U=",
