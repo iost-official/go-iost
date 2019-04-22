@@ -130,7 +130,14 @@ func (f *Fixed) Add(other *Fixed) *Fixed {
 		f.Err = err
 		return nil
 	}
-	return &Fixed{Value: fpnNew.Value + otherNew.Value, Decimal: fpnNew.Decimal}
+	resultValue := fpnNew.Value + otherNew.Value
+	if fpnNew.Value > 0 && otherNew.Value > 0 && resultValue < 0 {
+		return nil
+	}
+	if fpnNew.Value < 0 && otherNew.Value < 0 && resultValue > 0 {
+		return nil
+	}
+	return &Fixed{Value: resultValue, Decimal: fpnNew.Decimal}
 }
 
 // Sub ...
