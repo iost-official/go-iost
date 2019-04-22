@@ -1,3 +1,9 @@
+## v3.0.10
+
+Mon Apr 22 14:47:14 CST 2019
+
+- Improve virtual machine stability.
+
 ## v3.0.9
 
 Fri Apr 12 14:18:46 CST 2019

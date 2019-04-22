@@ -32,14 +32,14 @@ matrix:
     services:
     - docker
     before_install:
-    - docker pull iostio/iost-dev:3.0.9
+    - docker pull iostio/iost-dev:3.0.10
     - git lfs install
     before_script:
     - git lfs pull
     script:
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.0.9 make build
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.0.9 make lint
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.0.9 make test
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.0.10 make build
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.0.10 make lint
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.0.10 make test
     after_success:
     - bash <(curl -s https://codecov.io/bash)
   - os: linux
