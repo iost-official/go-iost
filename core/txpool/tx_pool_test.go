@@ -19,7 +19,6 @@ import (
 	db_mock "github.com/iost-official/go-iost/db/mocks"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	p2p_mock "github.com/iost-official/go-iost/p2p/mocks"
 	"github.com/iost-official/go-iost/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
@@ -56,11 +55,6 @@ func TestNewTxPImpl(t *testing.T) {
 			},
 		}
 		b0.CalculateHeadHash()
-		p2pMock := p2p_mock.NewMockService(ctl)
-
-		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
-		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
 		var accountList []*account.KeyPair
 		var witnessList []string
@@ -130,18 +124,17 @@ func TestNewTxPImpl(t *testing.T) {
 		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(base, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(base, BlockCache)
 		So(err, ShouldBeNil)
 
-		txPool.Start()
 		Convey("AddTx", func() {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			err := txPool.AddTx(t)
+			err := txPool.AddTx(t, "rpc")
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			err = txPool.AddTx(t)
+			err = txPool.AddTx(t, "rpc")
 			So(err, ShouldEqual, ErrDupPendingTx)
 		})
 		Convey("txTimeOut", func() {
@@ -166,7 +159,7 @@ func TestNewTxPImpl(t *testing.T) {
 			t := genTx(accountList[0], int64(30*time.Millisecond))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
-			err := txPool.AddTx(t)
+			err := txPool.AddTx(t, "rpc")
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			time.Sleep(50 * time.Millisecond)
@@ -177,11 +170,11 @@ func TestNewTxPImpl(t *testing.T) {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			err := txPool.AddTx(t)
+			err := txPool.AddTx(t, "rpc")
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			r1 := txPool.ExistTxs(t.Hash(), nil)
-			So(r1, ShouldEqual, FoundPending)
+			So(r1, ShouldEqual, false)
 		})
 		Convey("ExistTxs FoundChain", func() {
 
@@ -207,12 +200,12 @@ func TestNewTxPImpl(t *testing.T) {
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 			for i := 0; i < txCnt; i++ {
 				r1 := txPool.ExistTxs(b[0].Txs[i].Hash(), bcn.Block)
-				So(r1, ShouldEqual, FoundChain)
+				So(r1, ShouldEqual, true)
 			}
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			r1 := txPool.ExistTxs(t.Hash(), bcn.Block)
-			So(r1, ShouldEqual, NotFound)
+			So(r1, ShouldEqual, false)
 		})
 		stopTest(base, statedb)
 	})
@@ -231,11 +224,6 @@ func TestNewTxPImplB(t *testing.T) {
 			},
 		}
 		b0.CalculateHeadHash()
-		p2pMock := p2p_mock.NewMockService(ctl)
-
-		p2pCh := make(chan p2p.IncomingMessage, 100)
-		p2pMock.EXPECT().Broadcast(Any(), Any(), Any()).AnyTimes()
-		p2pMock.EXPECT().Register(Any(), Any()).Return(p2pCh)
 
 		var accountList []*account.KeyPair
 		var witnessList []string
@@ -305,15 +293,14 @@ func TestNewTxPImplB(t *testing.T) {
 		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
-		txPool, err := NewTxPoolImpl(base, BlockCache, p2pMock)
+		txPool, err := NewTxPoolImpl(base, BlockCache)
 		So(err, ShouldBeNil)
 
-		txPool.Start()
 		Convey("delPending", func() {
 
 			t := genTx(accountList[0], tx.MaxExpiration)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
-			err := txPool.AddTx(t)
+			err := txPool.AddTx(t, "rpc")
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
 			e := txPool.DelTx(t.Hash())
@@ -327,6 +314,7 @@ func TestNewTxPImplB(t *testing.T) {
 			txCnt := 10
 			blockCnt := 3
 			blockList := genBlocks(accountList, witnessList, blockCnt, txCnt, true)
+			blockList[0].Head.ParentHash = b[0].HeadHash()
 			txPool.blockCache.Head().Head.Number = 0
 			for i := 0; i < blockCnt; i++ {
 				//ilog.Info(("hash:", blockList[i].HeadHash(), " parentHash:", blockList[i].Head.ParentHash)
@@ -342,7 +330,7 @@ func TestNewTxPImplB(t *testing.T) {
 			So(bcn, ShouldNotBeNil)
 
 			for i := 0; i < 6-3; i++ {
-				err := txPool.AddTx(forkBlock.Txs[i])
+				err := txPool.AddTx(forkBlock.Txs[i], "rpc")
 				So(err, ShouldBeNil)
 			}
 
@@ -405,15 +393,15 @@ func TestNewTxPImplB(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			println("before add tx")
-			err = txPool.AddTx(t4)
+			err = txPool.AddTx(t4, "rpc")
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t2)
+			err = txPool.AddTx(t2, "rpc")
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t5)
+			err = txPool.AddTx(t5, "rpc")
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t1)
+			err = txPool.AddTx(t1, "rpc")
 			So(err, ShouldBeNil)
-			err = txPool.AddTx(t3)
+			err = txPool.AddTx(t3, "rpc")
 			So(err, ShouldBeNil)
 
 			pt, _ := txPool.PendingTx()
@@ -599,12 +587,6 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 		witnessList = append(witnessList, newAccount.ReadablePubkey())
 	}
 
-	config := &common.P2PConfig{
-		ListenAddr: "0.0.0.0:8088",
-	}
-
-	node, _ := p2p.NewNetService(config)
-
 	conf := &common.Config{}
 
 	bChain, _ := block.NewBlockChain(conf.DB.LdbPath + dbPath3)
@@ -620,9 +602,8 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 	blockcache.CleanBlockCacheWAL()
 	BlockCache, _ := blockcache.NewBlockCache(conf, bChain, stateDB)
 
-	txPool, _ := NewTxPoolImpl(bChain, BlockCache, node)
+	txPool, _ := NewTxPoolImpl(bChain, BlockCache)
 
-	txPool.Start()
 	b.ResetTimer()
 
 	return BlockCache, accountList, witnessList, txPool, bChain, stateDB

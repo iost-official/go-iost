@@ -10,16 +10,14 @@ import (
 
 // TxPool defines all the API of txpool package.
 type TxPool interface {
-	Start() error
-	Stop()
-	AddTx(tx *tx.Tx) error
+	Close()
+	AddTx(tx *tx.Tx, from string) error
 	DelTx(hash []byte) error
-	AddDefertx(hash []byte) error
 	GetFromPending(hash []byte) (*tx.Tx, error)
 	PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode)
 
 	// TODO: The following interfaces need to be moved from txpool to chainbase.
 	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
-	ExistTxs(hash []byte, chainBlock *block.Block) FRet
+	ExistTxs(hash []byte, chainBlock *block.Block) bool
 	GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error)
 }

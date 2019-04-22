@@ -9,29 +9,26 @@ import (
 )
 
 func (c *ChainBase) checkGenesis(conf *common.Config) error {
-	blockChain := c.BlockChain()
-	stateDB := c.StateDB()
-	if !conf.Snapshot.Enable && blockChain.Length() == int64(0) { //blockchaindb is empty
+	if c.bChain.Length() == int64(0) { //blockchaindb is empty
 		// TODO: remove the module of starting iserver from yaml.
-
 		ilog.Infof("Genesis is not exist.")
-		hash := stateDB.CurrentTag()
+		hash := c.stateDB.CurrentTag()
 		if hash != "" {
 			return fmt.Errorf("blockchaindb is empty, but statedb is not")
 		}
 
-		blk, err := genesis.GenGenesisByFile(stateDB, conf.Genesis)
+		blk, err := genesis.GenGenesisByFile(c.stateDB, conf.Genesis)
 		if err != nil {
-			return fmt.Errorf("new GenGenesis failed, stop the program. err: %v", err)
+			return fmt.Errorf("new GenGenesis failed: %v", err)
 		}
-		err = blockChain.Push(blk)
+		err = c.bChain.Push(blk)
 		if err != nil {
-			return fmt.Errorf("push block in blockChain failed, stop the program. err: %v", err)
+			return fmt.Errorf("push block to blockChain failed: %v", err)
 		}
 
-		err = stateDB.Flush(string(blk.HeadHash()))
+		err = c.stateDB.Flush(string(blk.HeadHash()))
 		if err != nil {
-			return fmt.Errorf("flush block into stateDB failed, stop the program. err: %v", err)
+			return fmt.Errorf("flush stateDB failed: %v", err)
 		}
 		ilog.Infof("Created Genesis.")
 
@@ -43,35 +40,27 @@ func (c *ChainBase) checkGenesis(conf *common.Config) error {
 
 func (c *ChainBase) recoverDB(conf *common.Config) error {
 	blockChain := c.BlockChain()
-	stateDB := c.StateDB()
 
-	if conf.Snapshot.Enable {
-		/*
-			blk, err := snapshot.Load(stateDB)
-			if err != nil {
-				return fmt.Errorf("load block from snapshot failed. err: %v", err)
-			}
-			blockChain.SetLength(blk.Head.Number + 1)
-		*/
-	} else {
-		length := int64(0)
-		hash := stateDB.CurrentTag()
-		ilog.Infoln("current Tag:", common.Base58Encode([]byte(hash)))
-		//var parent *block.Block
-		if hash != "" {
-			blk, err := blockChain.GetBlockByHash([]byte(hash))
-			if err != nil {
-				return fmt.Errorf("statedb doesn't coincides with blockchaindb. err: %v", err)
-			}
-			length = blk.Head.Number + 1
+	length := int64(0)
+	hash := c.stateDB.CurrentTag()
+	ilog.Infoln("current Tag:", common.Base58Encode([]byte(hash)))
+	if hash != "" {
+		blk, err := c.bChain.GetBlockByHash([]byte(hash))
+		if err != nil {
+			return fmt.Errorf(
+				"The block %v of the stateDB is not found in blockchainDB, err: %v",
+				common.Base58Encode([]byte(hash)),
+				err,
+			)
 		}
-		blockChain.SetLength(length)
+		length = blk.Head.Number + 1
 	}
+	blockChain.SetLength(length)
 	return nil
 }
 
-// Recover will recover chainbase data from WAL.
-func (c *ChainBase) Recover() error {
+// recoverBlockCache will recover chainbase data from WAL.
+func (c *ChainBase) recoverBlockCache() error {
 	err := c.bCache.Recover(c)
 	if err != nil {
 		return fmt.Errorf("recover blockCache failed: %v", err)

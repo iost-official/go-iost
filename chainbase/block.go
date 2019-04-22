@@ -16,6 +16,72 @@ var (
 	errOutOfLimit = errors.New("block out of limit in one slot")
 )
 
+// Block will describe the block of chainbase.
+type Block struct {
+	*block.Block
+	*blockcache.WitnessList
+	Irreversible bool
+}
+
+// HeadBlock will return the head block of chainbase.
+func (c *ChainBase) HeadBlock() *Block {
+	head := c.bCache.Head()
+	block := &Block{
+		Block:        head.Block,
+		WitnessList:  &head.WitnessList,
+		Irreversible: false,
+	}
+	return block
+}
+
+// LIBlock will return the last irreversible block of chainbase.
+func (c *ChainBase) LIBlock() *Block {
+	lib := c.bCache.LinkedRoot()
+	block := &Block{
+		Block:        lib.Block,
+		WitnessList:  &lib.WitnessList,
+		Irreversible: true,
+	}
+	return block
+}
+
+// GetBlockByHash will return the block by hash.
+// If block is not exist, it will return nil and false.
+func (c *ChainBase) GetBlockByHash(hash []byte) (*Block, bool) {
+	block, err := c.bCache.GetBlockByHash(hash)
+	if err != nil {
+		block, err := c.bChain.GetBlockByHash(hash)
+		if err != nil {
+			ilog.Warnf("Get block by hash %v failed: %v", common.Base58Encode(hash), err)
+			return nil, false
+		}
+		return &Block{
+			Block:        block,
+			Irreversible: true,
+		}, true
+	}
+	return &Block{
+		Block:        block,
+		Irreversible: false,
+	}, true
+}
+
+// GetBlockHashByNum will return the block hash by number.
+// If block hash is not exist, it will return nil and false.
+func (c *ChainBase) GetBlockHashByNum(num int64) ([]byte, bool) {
+	var hash []byte
+	if blk, err := c.bCache.GetBlockByNumber(num); err != nil {
+		hash, err = c.bChain.GetHashByNumber(num)
+		if err != nil {
+			ilog.Debugf("Get hash by num %v failed: %v", num, err)
+			return nil, false
+		}
+	} else {
+		hash = blk.HeadHash()
+	}
+	return hash, true
+}
+
 func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, gen bool) {
 	action := "Recover"
 	if !replay {
@@ -53,16 +119,21 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 		return err
 	}
 
-	parent, err := c.bCache.Find(blk.Head.ParentHash)
 	c.bCache.Add(blk)
-	if err == nil && parent.Type == blockcache.Linked {
-		err := c.addExistingBlock(blk, parent, replay, gen)
-		if err != nil {
-			ilog.Warnf("Verify block execute failed: %v", err)
-		}
+	parent, err := c.bCache.Find(blk.Head.ParentHash)
+	if err != nil {
+		ilog.Warnf("Find parent of block %v failed: %v", common.Base58Encode(blk.HeadHash()), err)
 		return err
 	}
-	return errSingle
+	if parent.Type != blockcache.Linked {
+		return errSingle
+	}
+	if err := c.addExistingBlock(blk, parent, replay, gen); err != nil {
+		ilog.Warnf("Verify block execute failed: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool, gen bool) error {

@@ -14,16 +14,10 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/metrics"
 	"github.com/xlab/treeprint"
 )
 
 //go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/core/blockcache BlockCache
-
-var (
-	metricsTxTotal = metrics.NewGauge("iost_tx_total", nil)
-	metricsDBSize  = metrics.NewGauge("iost_db_size", []string{"Name"})
-)
 
 // CacheStatus ...
 type CacheStatus int
@@ -45,7 +39,6 @@ type BCNType int
 const (
 	Linked BCNType = iota
 	Single
-	Virtual
 )
 
 var (
@@ -84,19 +77,13 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	}
 }
 
-func (bcn *BlockCacheNode) setParent(parent *BlockCacheNode) {
-	if parent != nil {
-		bcn.SetParent(parent)
-		bcn.Type = Single
-
-		parent.addChild(bcn)
-	}
-}
-
 func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
-	if bcn.Type == Virtual && parent != nil && block != nil {
+	if parent != nil && block != nil {
 		bcn.Block = block
-		bcn.setParent(parent)
+		bcn.SetParent(parent)
+		parent.addChild(bcn)
+	} else {
+		ilog.Warnf("Unexcept update. type: %v, parent: %+v, block: %+v", bcn.Type, parent, block)
 	}
 }
 
@@ -175,41 +162,18 @@ func decodeBCN(b []byte) (block block.Block, wt WitnessList, serialNum int64, er
 func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 	bcn := &BlockCacheNode{
 		Block:        blk,
-		parent:       nil,
+		Type:         Single,
+		parent:       parent,
 		Children:     make(map[*BlockCacheNode]bool),
 		ValidWitness: make([]string, 0, 0),
 		WitnessList: WitnessList{
 			WitnessInfo: make([]string, 0, 0),
 		},
 	}
-	if blk == nil {
-		bcn.Block = &block.Block{
-			Head: &block.BlockHead{
-				Number: -1,
-			}}
+	// TODO: Move this outside.
+	if parent != nil {
+		parent.addChild(bcn)
 	}
-	bcn.setParent(parent)
-	return bcn
-}
-
-// NewVirtualBCN return a new virtual block cache node instance
-func NewVirtualBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
-	bcn := &BlockCacheNode{
-		Block: &block.Block{
-			Head: &block.BlockHead{},
-		},
-		parent:       nil,
-		Children:     make(map[*BlockCacheNode]bool),
-		ValidWitness: make([]string, 0, 0),
-		WitnessList: WitnessList{
-			WitnessInfo: make([]string, 0, 0),
-		},
-	}
-	if blk != nil {
-		bcn.Head.Number = blk.Head.Number - 1
-	}
-	bcn.setParent(parent)
-	bcn.Type = Virtual
 	return bcn
 }
 
@@ -256,7 +220,6 @@ type BlockCache interface {
 	LinkedRoot() *BlockCacheNode
 	Head() *BlockCacheNode
 	Draw() string
-	CleanDir() error
 	Recover(p ConAlgo) (err error)
 	AddNodeToWAL(bcn *BlockCacheNode)
 }
@@ -265,7 +228,7 @@ type BlockCache interface {
 type BlockCacheImpl struct { //nolint:golint
 	linkRW            sync.RWMutex
 	linkedRoot        *BlockCacheNode
-	singleRoot        *BlockCacheNode
+	singleRoot        map[string]*BlockCacheNode
 	linkedRootWitness []string
 	headRW            sync.RWMutex
 	head              *BlockCacheNode
@@ -277,14 +240,6 @@ type BlockCacheImpl struct { //nolint:golint
 	blockChain        block.Chain
 	stateDB           db.MVCCDB
 	wal               *wal.WAL
-}
-
-// CleanDir used in test to clean dir
-func (bc *BlockCacheImpl) CleanDir() error {
-	if bc.wal != nil {
-		return bc.wal.CleanDir()
-	}
-	return nil
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -336,8 +291,8 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		return nil, err
 	}
 	bc := BlockCacheImpl{
-		linkedRoot:        NewBCN(nil, nil),
-		singleRoot:        NewBCN(nil, nil),
+		linkedRoot:        nil,
+		singleRoot:        make(map[string]*BlockCacheNode),
 		linkedRootWitness: make([]string, 0),
 		hash2node:         new(sync.Map),
 		number2node:       new(sync.Map),
@@ -346,15 +301,8 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		stateDB:           stateDB.Fork(),
 		wal:               w,
 	}
-	bc.linkedRoot.Head.Number = -1
 
-	var lib *block.Block
-	if conf.Snapshot.Enable {
-		//lib, err = snapshot.Load(bc.stateDB)
-	} else {
-		lib, err = bc.blockChain.Top()
-	}
-
+	lib, err := bc.blockChain.Top()
 	if err != nil {
 		ilog.Errorf("lib not found. err:%v", err)
 	}
@@ -362,7 +310,6 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 	ilog.Info("Got LIB: ", lib.Head.Number)
 	bc.linkedRoot = NewBCN(nil, lib)
 	bc.linkedRoot.Type = Linked
-	bc.singleRoot.Type = Virtual
 	bc.hmset(bc.linkedRoot.HeadHash(), bc.linkedRoot)
 	bc.leaf[bc.linkedRoot] = bc.linkedRoot.Head.Number
 
@@ -500,8 +447,9 @@ func (bc *BlockCacheImpl) updateLib(node *BlockCacheNode, confirmLimit int) {
 	for len(node.ValidWitness) >= confirmLimit &&
 		common.StringSliceEqual(node.Active(), bc.LinkedRoot().Pending()) &&
 		blockList[bc.LinkedRoot().Head.Number+1] != nil {
-		// bc.flush() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
-		bc.flush(blockList[bc.LinkedRoot().Head.Number+1])
+		// bc.updateLinkedRoot() will change node.ValidWitness, bc.LinkedRoot() and bc.linkedRootWitness
+		bc.updateLinkedRoot(blockList[bc.LinkedRoot().Head.Number+1])
+		bc.flush()
 	}
 }
 
@@ -547,10 +495,12 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
 func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
 	if bcn == nil {
+		ilog.Warnf("Block cache node should not be nil")
 		return
 	}
 	parent := bcn.GetParent()
 	if parent.Type != Linked {
+		ilog.Warnf("Parent of block %v should be linked", common.Base58Encode(bcn.Block.HeadHash()))
 		return
 	}
 	bcn.Type = Linked
@@ -636,22 +586,22 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 		return nil
 	}
 	newNode, nok := bc.hmget(blk.HeadHash())
-	if nok && newNode.Type != Virtual {
+	if nok {
 		return newNode
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
-		parent = NewVirtualBCN(bc.singleRoot, blk)
-		bc.hmset(blk.Head.ParentHash, parent)
+		parent = NewBCN(nil, nil)
+		bc.singleRoot[string(blk.Head.ParentHash)] = parent
 	}
-	if nok && newNode.Type == Virtual {
-		delete(bc.singleRoot.Children, newNode)
+	newNode, ok = bc.singleRoot[string(blk.HeadHash())]
+	if ok {
+		delete(bc.singleRoot, string(blk.HeadHash()))
 		newNode.updateVirtualBCN(parent, blk)
 	} else {
 		newNode = NewBCN(parent, blk)
-		bc.hmset(blk.HeadHash(), newNode)
 	}
-	//newNode.WitnessInfo = wi
+	bc.hmset(blk.HeadHash(), newNode)
 	return newNode
 }
 
@@ -701,27 +651,32 @@ func (bc *BlockCacheImpl) delSingle() {
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
-	for bcn := range bc.singleRoot.Children {
-		if bcn.Head.Number <= height {
-			bc.del(bcn)
+
+	for _, vbcn := range bc.singleRoot {
+		for bcn := range vbcn.Children {
+			if bcn.Head.Number <= height {
+				bc.del(bcn)
+			}
+		}
+
+	}
+
+	for hash, vbcn := range bc.singleRoot {
+		if len(vbcn.Children) == 0 {
+			delete(bc.singleRoot, hash)
 		}
 	}
 }
 
-func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
+func (bc *BlockCacheImpl) updateLinkedRoot(bcn *BlockCacheNode) {
 	parent := bcn.GetParent()
 	if parent != bc.LinkedRoot() {
 		ilog.Errorf("block isn't blockcache root's child")
 	}
 	for child := range parent.Children {
-		if child == bcn {
-			continue
+		if child != bcn {
+			bc.del(child)
 		}
-		bc.del(child)
-	}
-	if bcn.Block == nil {
-		ilog.Errorf("When flush, block cache node don't have block: %+v", bcn)
-		return
 	}
 
 	bc.updateLinkedRootWitness(parent, bcn)
@@ -732,50 +687,31 @@ func (bc *BlockCacheImpl) flush(bcn *BlockCacheNode) {
 	bc.SetLinkedRoot(bcn)
 	bc.delSingle()
 	bc.updateLongest()
+}
 
-	//confirm bcn to db
+func (bc *BlockCacheImpl) flush() {
+	//confirm linked root to db
+	bcn := bc.LinkedRoot()
+
 	err := bc.blockChain.Push(bcn.Block)
 	if err != nil {
-		ilog.Errorf("Database error, BlockChain Push err: %v %v", bcn.HeadHash(), err)
+		ilog.Errorf("Push blockchain error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
 
 	err = bc.writeUpdateLinkedRootWitnessWAL()
 	if err != nil {
-		ilog.Errorf("write wal error: %v %v", bcn.HeadHash(), err)
+		ilog.Errorf("Write linked root witness wal error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
 
-	ilog.Debug("confirm: ", bcn.Head.Number)
 	err = bc.stateDB.Flush(string(bcn.HeadHash()))
-
 	if err != nil {
-		ilog.Errorf("flush mvcc error: %v %v", bcn.HeadHash(), err)
+		ilog.Errorf("Flush state db error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
 
-	metricsTxTotal.Set(float64(bc.blockChain.TxTotal()), nil)
-
-	if blockchainDBSize, err := bc.blockChain.Size(); err != nil {
-		ilog.Warnf("Get BlockChainDB size failed: %v", err)
-	} else {
-		metricsDBSize.Set(
-			float64(blockchainDBSize),
-			map[string]string{
-				"Name": "BlockChainDB",
-			},
-		)
+	err = bc.cutWALFiles(bcn)
+	if err != nil {
+		ilog.Errorf("Cut wal files error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
-
-	if stateDBSize, err := bc.stateDB.Size(); err != nil {
-		ilog.Warnf("Get StateDB size failed: %v", err)
-	} else {
-		metricsDBSize.Set(
-			float64(stateDBSize),
-			map[string]string{
-				"Name": "StateDB",
-			},
-		)
-	}
-
-	bc.cutWALFiles(bcn)
 }
 
 func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
@@ -789,7 +725,7 @@ func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
 	}
 	data, err := proto.Marshal(bcMessage)
 	if err != nil {
-		return
+		return err
 	}
 	ent := wal.Entry{
 		Data: data,
@@ -845,7 +781,7 @@ func (bc *BlockCacheImpl) cutWALFiles(h *BlockCacheNode) error {
 // Find is find the block
 func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
 	bcn, ok := bc.hmget(hash)
-	if !ok || bcn.Type == Virtual {
+	if !ok {
 		return nil, errors.New("block not found")
 	}
 	return bcn, nil
@@ -876,11 +812,16 @@ func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 
 // GetBlockByHash get a block by hash
 func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
-	bcn, err := bc.Find(hash)
-	if err != nil {
-		return nil, err
+	bcn, ok := bc.hmget(hash)
+	if !ok {
+		return nil, errors.New("block not found")
 	}
-	return bcn.Block, nil
+	// Block will be cleared when node deleted
+	blk := bcn.Block
+	if blk == nil {
+		return nil, errors.New("block not found")
+	}
+	return blk, nil
 }
 
 // LinkedRoot return the root node
@@ -931,9 +872,14 @@ func (bc *BlockCacheImpl) Draw() string {
 
 	linkedTree := treeprint.New()
 	bc.LinkedRoot().drawChildren(linkedTree)
-	singleTree := treeprint.New()
-	bc.singleRoot.drawChildren(singleTree)
-	return mapInfo + "\n" + linkedTree.String() + "\n" + singleTree.String()
+
+	result := mapInfo + "\n" + linkedTree.String() + "\n"
+	for _, vbcn := range bc.singleRoot {
+		singleTree := treeprint.New()
+		vbcn.drawChildren(singleTree)
+		result = result + singleTree.String() + "\n"
+	}
+	return result
 }
 
 func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {

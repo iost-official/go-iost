@@ -11,89 +11,41 @@ import (
 	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/p2p"
 )
-
-var errDelaytxNotFound = errors.New("delay tx not found")
 
 // TxPImpl defines all the API of txpool package.
 type TxPImpl struct {
-	bChain      block.Chain
-	blockCache  blockcache.BlockCache
-	p2pService  p2p.Service
-	forkChain   *forkChain
-	blockList   *sync.Map // map[string]*blockTx
-	pendingTx   *SortedTxMap
-	mu          sync.RWMutex
-	chP2PTx     chan p2p.IncomingMessage
-	deferServer *DeferServer
-	quitCh      chan struct{}
+	bChain     block.Chain
+	blockCache blockcache.BlockCache
+	forkChain  *forkChain
+	blockList  *sync.Map // map[string]*blockTx
+	pendingTx  *SortedTxMap
+	mu         sync.RWMutex
+	quitCh     chan struct{}
 }
 
 // NewTxPoolImpl returns a default TxPImpl instance.
-func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache, p2pService p2p.Service) (*TxPImpl, error) {
+func NewTxPoolImpl(bChain block.Chain, blockCache blockcache.BlockCache) (*TxPImpl, error) {
 	p := &TxPImpl{
 		bChain:     bChain,
 		blockCache: blockCache,
-		p2pService: p2pService,
 		forkChain:  new(forkChain),
 		blockList:  new(sync.Map),
 		pendingTx:  NewSortedTxMap(),
-		chP2PTx:    p2pService.Register("txpool message", p2p.PublishTx),
 		quitCh:     make(chan struct{}),
 	}
 	p.forkChain.SetNewHead(blockCache.Head())
-	deferServer, err := NewDeferServer(p, bChain)
-	if err != nil {
-		return nil, err
-	}
-	p.deferServer = deferServer
 	p.initBlockTx()
+	go p.loop()
 	return p, nil
 }
 
-// Start starts the jobs.
-func (pool *TxPImpl) Start() error {
-	go pool.deferServer.Start()
-	go pool.loop()
-	return nil
-}
-
-// Stop stops all the jobs.
-func (pool *TxPImpl) Stop() {
-	pool.deferServer.Stop()
+// Close will close the tx pool.
+func (pool *TxPImpl) Close() {
 	close(pool.quitCh)
 }
 
-// AddDefertx adds defer transaction.
-func (pool *TxPImpl) AddDefertx(txHash []byte) error {
-	if pool.pendingTx.Size() > maxCacheTxs {
-		return ErrCacheFull
-	}
-	referredTx, err := pool.bChain.GetTx(txHash)
-	if err != nil {
-		referredTx, _, err = pool.GetFromChain(txHash)
-		if err != nil {
-			return errDelaytxNotFound
-		}
-	}
-	deferTx := referredTx.DeferTx()
-	err = pool.verifyDuplicate(deferTx)
-	if err != nil {
-		return err
-	}
-	err = deferTx.VerifySelf()
-	if err != nil {
-		return err
-	}
-	pool.pendingTx.Add(deferTx)
-	return nil
-}
-
 func (pool *TxPImpl) loop() {
-	for i := 0; i < 2; i++ {
-		go pool.verifyWorkers()
-	}
 	clearTx := time.NewTicker(clearInterval)
 	defer clearTx.Stop()
 	for {
@@ -115,37 +67,10 @@ func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
 	return pool.pendingTx, pool.forkChain.NewHead
 }
 
-func (pool *TxPImpl) verifyWorkers() {
-	for v := range pool.chP2PTx {
-		var t tx.Tx
-		err := t.Decode(v.Data())
-		if err != nil {
-			ilog.Errorf("decode tx error. err=%v", err)
-			continue
-		}
-		pool.mu.Lock()
-		ret := pool.verifyDuplicate(&t)
-		if ret != nil {
-			pool.mu.Unlock()
-			continue
-		}
-		ret = pool.verifyTx(&t)
-		if ret != nil {
-			pool.mu.Unlock()
-			continue
-		}
-		pool.pendingTx.Add(&t)
-		pool.mu.Unlock()
-		metricsReceivedTxCount.Add(1, map[string]string{"from": "p2p"})
-		pool.p2pService.Broadcast(v.Data(), p2p.PublishTx, p2p.NormalMessage)
-	}
-}
-
 // AddLinkedNode add the findBlock
 func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error {
 	pool.mu.Lock()
 	defer pool.mu.Unlock()
-	pool.deferServer.ProcessDelaytx(linkedNode.Block)
 	err := pool.addBlock(linkedNode.Block)
 	if err != nil {
 		return fmt.Errorf("failed to add findBlock: %v", err)
@@ -171,7 +96,7 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error 
 }
 
 // AddTx add the transaction
-func (pool *TxPImpl) AddTx(t *tx.Tx) error {
+func (pool *TxPImpl) AddTx(t *tx.Tx, from string) error {
 	pool.mu.Lock()
 	err := pool.verifyDuplicate(t)
 	if err != nil {
@@ -192,8 +117,7 @@ func (pool *TxPImpl) AddTx(t *tx.Tx) error {
 		pool.pendingTx.Size(),
 	)
 
-	pool.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
-	metricsReceivedTxCount.Add(1, map[string]string{"from": "rpc"})
+	metricsReceivedTxCount.Add(1, map[string]string{"from": from})
 	return nil
 }
 
@@ -204,17 +128,9 @@ func (pool *TxPImpl) DelTx(hash []byte) error {
 }
 
 // ExistTxs determine if the transaction exists
-func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) FRet {
-	var r FRet
-	switch {
-	case pool.existTxInPending(hash):
-		r = FoundPending
-	case pool.existTxInChain(hash, chainBlock):
-		r = FoundChain
-	default:
-		r = NotFound
-	}
-	return r
+func (pool *TxPImpl) ExistTxs(hash []byte, chainBlock *block.Block) bool {
+	t, _ := pool.getTxAndReceiptInChain(hash, chainBlock)
+	return t != nil
 }
 
 func (pool *TxPImpl) initBlockTx() {
@@ -274,6 +190,7 @@ func (pool *TxPImpl) findBlock(hash []byte) (*blockTx, bool) {
 
 func (pool *TxPImpl) getTxAndReceiptInChain(txHash []byte, block *block.Block) (*tx.Tx, *tx.TxReceipt) {
 	if block == nil {
+		ilog.Errorf("When get tx %v in chain, the block is nil!", common.Base58Encode(txHash))
 		return nil, nil
 	}
 	blkHash := block.HeadHash()
@@ -296,11 +213,6 @@ func (pool *TxPImpl) getTxAndReceiptInChain(txHash []byte, block *block.Block) (
 	}
 }
 
-func (pool *TxPImpl) existTxInChain(txHash []byte, block *block.Block) bool {
-	t, _ := pool.getTxAndReceiptInChain(txHash, block)
-	return t != nil
-}
-
 func (pool *TxPImpl) getTxAndReceiptInBlock(txHash []byte, blockHash []byte) (*tx.Tx, *tx.TxReceipt) {
 	b, ok := pool.blockList.Load(string(blockHash))
 	if !ok {
@@ -320,17 +232,13 @@ func (pool *TxPImpl) clearBlock() {
 }
 
 func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
-	if pool.existTxInPending(t.Hash()) {
+	if pool.pendingTx.Get(t.Hash()) != nil {
 		return ErrDupPendingTx
 	}
-	if pool.existTxInChain(t.Hash(), pool.forkChain.GetNewHead().Block) {
+	if t, _ := pool.getTxAndReceiptInChain(t.Hash(), pool.forkChain.GetNewHead().Block); t != nil {
 		return ErrDupChainTx
 	}
 	return nil
-}
-
-func (pool *TxPImpl) existTxInPending(hash []byte) bool {
-	return pool.pendingTx.Get(hash) != nil
 }
 
 func (pool *TxPImpl) clearTimeoutTx() {

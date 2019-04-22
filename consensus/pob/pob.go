@@ -9,8 +9,8 @@ import (
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro"
+	"github.com/iost-official/go-iost/consensus/txmanager"
 	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/core/txpool"
 	"github.com/iost-official/go-iost/crypto"
@@ -38,13 +38,12 @@ var (
 //PoB is a struct that handles the consensus logic.
 type PoB struct {
 	account    *account.KeyPair
-	blockChain block.Chain
-	blockCache blockcache.BlockCache
-	txPool     txpool.TxPool
+	cBase      *chainbase.ChainBase
 	p2pService p2p.Service
+	txPool     txpool.TxPool
 	produceDB  db.MVCCDB
 	sync       *synchro.Sync
-	cBase      *chainbase.ChainBase
+	txManager  *txmanager.TxManager
 
 	exitSignal chan struct{}
 	wg         *sync.WaitGroup
@@ -52,7 +51,7 @@ type PoB struct {
 }
 
 // New init a new PoB.
-func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, p2pService p2p.Service) *PoB {
+func New(conf *common.Config, cBase *chainbase.ChainBase, p2pService p2p.Service) *PoB {
 	// TODO: Move the code to account struct.
 	accSecKey := conf.ACC.SecKey
 	accAlgo := conf.ACC.Algorithm
@@ -63,13 +62,12 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 
 	p := PoB{
 		account:    account,
-		blockChain: cBase.BlockChain(),
-		blockCache: cBase.BlockCache(),
-		txPool:     txPool,
+		cBase:      cBase,
 		p2pService: p2pService,
+		txPool:     cBase.TxPool(),
 		produceDB:  cBase.StateDB().Fork(),
 		sync:       nil,
-		cBase:      cBase,
+		txManager:  nil,
 
 		exitSignal: make(chan struct{}),
 		wg:         new(sync.WaitGroup),
@@ -81,7 +79,8 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, txPool txpool.TxPool, 
 
 // Start make the PoB run.
 func (p *PoB) Start() error {
-	p.sync = synchro.New(p.p2pService, p.blockCache, p.blockChain)
+	p.sync = synchro.New(p.cBase, p.p2pService)
+	p.txManager = txmanager.New(p.p2pService, p.txPool)
 
 	p.wg.Add(3)
 	go p.verifyLoop()
@@ -95,6 +94,7 @@ func (p *PoB) Stop() {
 	close(p.exitSignal)
 	p.wg.Wait()
 
+	p.txManager.Close()
 	p.sync.Close()
 }
 
@@ -138,7 +138,7 @@ func (p *PoB) doGenerateBlock(slot int64) {
 	}
 
 	// IsMyGenerateBlockTime
-	witnessList := p.blockCache.Head().Active()
+	witnessList := p.cBase.HeadBlock().Active()
 	if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
 		return
 	}
@@ -242,8 +242,8 @@ func (p *PoB) tickerLoop() {
 	for {
 		select {
 		case <-time.After(2 * time.Second):
-			libNumberGauge.Set(float64(p.blockCache.LinkedRoot().Head.Number), nil)
-			headNumberGauge.Set(float64(p.blockCache.Head().Head.Number), nil)
+			libNumberGauge.Set(float64(p.cBase.LIBlock().Head.Number), nil)
+			headNumberGauge.Set(float64(p.cBase.HeadBlock().Head.Number), nil)
 
 			if p.sync.IsCatchingUp() {
 				common.SetMode(common.ModeSync)
@@ -251,7 +251,7 @@ func (p *PoB) tickerLoop() {
 				common.SetMode(common.ModeNormal)
 			}
 
-			head := p.blockCache.Head()
+			head := p.cBase.HeadBlock()
 			if common.IsWitness(p.account.ReadablePubkey(), head.Active()) {
 				p.p2pService.ConnectBPs(head.NetID())
 			} else {

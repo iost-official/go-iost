@@ -6,10 +6,9 @@ import (
 
 	"github.com/Jeffail/tunny"
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -29,8 +28,8 @@ type requestHandler struct {
 	done   *sync.WaitGroup
 }
 
-func newRequestHandler(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandler {
-	worker := newRequestHandlerWorker(p, bCache, bChain)
+func newRequestHandler(cBase *chainbase.ChainBase, p p2p.Service) *requestHandler {
+	worker := newRequestHandlerWorker(cBase, p)
 	rHandler := &requestHandler{
 		pool: tunny.NewFunc(workerPoolSize, worker.process),
 
@@ -73,48 +72,26 @@ func (r *requestHandler) controller() {
 }
 
 type requestHandlerWorker struct {
-	p      p2p.Service
-	bCache blockcache.BlockCache
-	bChain block.Chain
+	cBase *chainbase.ChainBase
+	p     p2p.Service
 }
 
-func newRequestHandlerWorker(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *requestHandlerWorker {
+func newRequestHandlerWorker(cBase *chainbase.ChainBase, p p2p.Service) *requestHandlerWorker {
 	r := &requestHandlerWorker{
-		p:      p,
-		bCache: bCache,
-		bChain: bChain,
+		cBase: cBase,
+		p:     p,
 	}
 
 	return r
 }
 
-func (r *requestHandlerWorker) getBlockByHash(hash []byte) *block.Block {
-	block, err := r.bCache.GetBlockByHash(hash)
-	if err != nil {
-		block, err := r.bChain.GetBlockByHash(hash)
-		if err != nil {
-			ilog.Warnf("Get block by hash %v failed: %v", common.Base58Encode(hash), err)
-			return nil
-		}
-		return block
-	}
-	return block
-}
-
 func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) *msgpb.BlockHashResponse {
 	blockInfos := make([]*msgpb.BlockInfo, 0)
 	for num := start; num <= end; num++ {
-		// This code is ugly and then optimize the bCache and bChain.
-		var hash []byte
-		if blk, err := r.bCache.GetBlockByNumber(num); err != nil {
-			hash, err = r.bChain.GetHashByNumber(num)
-			if err != nil {
-				ilog.Debugf("Get hash by num %v failed: %v", num, err)
-				// TODO: Maybe should break.
-				continue
-			}
-		} else {
-			hash = blk.HeadHash()
+		hash, ok := r.cBase.GetBlockHashByNum(num)
+		if !ok {
+			// TODO: Maybe should break.
+			continue
 		}
 		blockInfo := &msgpb.BlockInfo{
 			Number: num,
@@ -148,7 +125,7 @@ func (r *requestHandlerWorker) handleBlockHashRequest(request *p2p.IncomingMessa
 		return
 	}
 
-	head := r.bCache.Head().Head.Number
+	head := r.cBase.HeadBlock().Head.Number
 	// Because this request is broadcast, so there is this situation.
 	// It will be changed later.
 	if start > head {
@@ -175,8 +152,8 @@ func (r *requestHandlerWorker) handleBlockRequest(request *p2p.IncomingMessage, 
 		return
 	}
 
-	block := r.getBlockByHash(blockInfo.Hash)
-	if block == nil {
+	block, ok := r.cBase.GetBlockByHash(blockInfo.Hash)
+	if !ok {
 		ilog.Warnf("Handle block request failed, from=%v, hash=%v.", request.From().Pretty(), common.Base58Encode(blockInfo.Hash))
 		return
 	}

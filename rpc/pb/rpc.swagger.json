@@ -1696,12 +1696,12 @@
         "total_supply": {
           "type": "string",
           "format": "int64",
-          "title": "the amount of total supply"
+          "title": "the amount of total supply, the result is total_supply_float multiplied by deciaml"
         },
         "current_supply": {
           "type": "string",
           "format": "int64",
-          "title": "the amount of current supply"
+          "title": "the amount of current supply, the result is current_supply_float multiplied by deciaml"
         },
         "decimal": {
           "type": "integer",
@@ -1717,6 +1717,16 @@
           "type": "boolean",
           "format": "boolean",
           "title": "whether the token can only be transfered by issuer"
+        },
+        "total_supply_float": {
+          "type": "number",
+          "format": "double",
+          "title": "the amount of total supply"
+        },
+        "current_supply_float": {
+          "type": "number",
+          "format": "double",
+          "title": "the amount of current supply"
         }
       },
       "description": "The message defines the token information."

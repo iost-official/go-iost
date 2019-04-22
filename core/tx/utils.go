@@ -22,7 +22,7 @@ func checkAmount(amount string, token string) error {
 	if err != nil {
 		return fmt.Errorf("invalid amount: %v, %v", err, amount)
 	}
-	if math.Abs(f1.ToFloat()-f2) > 1e-7 {
+	if math.Abs(f1.ToFloat()-f2) > 1e-4 {
 		return fmt.Errorf("invalid amount: %v, %v", err, amount)
 	}
 	if token == "iost" && f1.Decimal > 8 {

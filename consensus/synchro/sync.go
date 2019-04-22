@@ -6,10 +6,10 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
 )
@@ -21,9 +21,8 @@ const (
 // Sync is the synchronizer of blockchain.
 // It includes requestHandler, heightSync, blockhashSync, blockSync.
 type Sync struct {
+	cBase   *chainbase.ChainBase
 	p       p2p.Service
-	bCache  blockcache.BlockCache
-	bChain  block.Chain
 	blockCh chan *block.Block
 
 	handler         *requestHandler
@@ -37,15 +36,14 @@ type Sync struct {
 }
 
 // New will return a new synchronizer of blockchain.
-func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync {
+func New(cBase *chainbase.ChainBase, p p2p.Service) *Sync {
 	sync := &Sync{
+		cBase:   cBase,
 		p:       p,
-		bCache:  bCache,
-		bChain:  bChain,
 		blockCh: make(chan *block.Block, 1024),
 
-		handler:         newRequestHandler(p, bCache, bChain),
-		rangeController: newRangeController(bCache),
+		handler:         newRequestHandler(cBase, p),
+		rangeController: newRangeController(cBase),
 		heightSync:      newHeightSync(p),
 		blockhashSync:   newBlockHashSync(p),
 		blockSync:       newBlockSync(p),
@@ -67,14 +65,15 @@ func New(p p2p.Service, bCache blockcache.BlockCache, bChain block.Chain) *Sync 
 
 // Close will close the synchronizer of blockchain.
 func (s *Sync) Close() {
+	close(s.quitCh)
+	s.done.Wait()
+
 	s.handler.Close()
 	s.rangeController.Close()
 	s.heightSync.Close()
 	s.blockhashSync.Close()
 	s.blockSync.Close()
 
-	close(s.quitCh)
-	s.done.Wait()
 	ilog.Infof("Stopped sync.")
 }
 
@@ -86,7 +85,7 @@ func (s *Sync) ValidBlock() <-chan *block.Block {
 
 // IsCatchingUp will return whether it is catching up with other nodes.
 func (s *Sync) IsCatchingUp() bool {
-	return s.bCache.Head().Head.Number+120 < s.heightSync.NeighborHeight()
+	return s.cBase.HeadBlock().Head.Number+120 < s.heightSync.NeighborHeight()
 }
 
 // BroadcastBlockInfo will broadcast new block information to neighbor nodes.
@@ -116,7 +115,7 @@ func (s *Sync) BroadcastBlock(block *block.Block) {
 
 func (s *Sync) doHeightSync() {
 	syncHeight := &msgpb.SyncHeight{
-		Height: s.bCache.Head().Head.Number,
+		Height: s.cBase.HeadBlock().Head.Number,
 		Time:   time.Now().Unix(),
 	}
 	msg, err := proto.Marshal(syncHeight)
@@ -170,8 +169,12 @@ func (s *Sync) doBlockSync() {
 	start, end := s.rangeController.SyncRange()
 	ilog.Infof("Syncing block in [%v %v]...", start, end)
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
-		if block, err := s.bCache.GetBlockByHash(blockHash.Hash); err == nil && block != nil {
+		block, err := s.cBase.BlockCache().GetBlockByHash(blockHash.Hash)
+		if err == nil && block != nil {
 			continue
+		}
+		if err == nil && block == nil {
+			ilog.Errorf("Block %v should not be nil.", blockHash.Hash)
 		}
 
 		rand.Seed(time.Now().UnixNano())
@@ -199,14 +202,14 @@ func (s *Sync) doNewBlockSync(blockHash *BlockHash) {
 	}
 
 	// May not need to judge number.
-	lib := s.bCache.LinkedRoot().Head.Number
-	head := s.bCache.Head().Head.Number
+	lib := s.cBase.LIBlock().Head.Number
+	head := s.cBase.HeadBlock().Head.Number
 	if (blockHash.Number <= lib) || (blockHash.Number > head+1000) {
 		ilog.Debugf("New block hash exceed range %v to %v.", lib, head+1000)
 		return
 	}
 
-	_, err := s.bCache.Find(blockHash.Hash)
+	_, err := s.cBase.BlockCache().GetBlockByHash(blockHash.Hash)
 	if err == nil {
 		ilog.Debugf("New block hash %v already exists.", common.Base58Encode(blockHash.Hash))
 		return
@@ -229,7 +232,7 @@ func (s *Sync) handleNewBlockHashController() {
 }
 
 func (s *Sync) doBlockFilter(block *block.Block) {
-	head := s.bCache.Head().Head.Number
+	head := s.cBase.HeadBlock().Head.Number
 	if block.Head.Number > head+maxSyncRange {
 		ilog.Debugf("Block number %v is %v higher than head number %v", block.Head.Number, maxSyncRange, head)
 		return

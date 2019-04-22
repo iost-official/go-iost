@@ -540,10 +540,11 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 	if err != nil {
 		return nil, err
 	}
-	err = as.txpool.AddTx(t)
+	err = as.txpool.AddTx(t, "rpc")
 	if err != nil {
 		return nil, err
 	}
+	as.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
 	return ret, nil
 }
 
@@ -774,6 +775,9 @@ func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoR
 		return nil, token404
 	}
 	ret.Decimal = int32(value.(int64))
+
+	ret.TotalSupplyFloat = float64(ret.TotalSupply) / math.Pow10(int(ret.Decimal))
+	ret.CurrentSupplyFloat = float64(ret.CurrentSupply) / math.Pow10(int(ret.Decimal))
 
 	value, _ = h.GlobalMapGet("token.iost", "TI"+symbol, "canTransfer")
 	if value == nil {
