@@ -3,7 +3,6 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/bitly/go-simplejson"
 	"io/ioutil"
 	"math"
 	"os"
@@ -12,13 +11,15 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mitchellh/go-homedir"
+	simplejson "github.com/bitly/go-simplejson"
+
+	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/sdk"
 )
 
@@ -217,7 +218,7 @@ func loadAccountByName(name string, ensureDecrypt bool) (*AccountInfo, error) {
 			return loadAccountFromKeyPair(fileName)
 		}
 	}
-	return nil, fmt.Errorf("account not exist")
+	return nil, fmt.Errorf("account is not imported. use 'iwallet account import %s <private-key>' to import it", name)
 }
 
 // LoadKeyPair ...

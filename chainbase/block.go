@@ -119,16 +119,21 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 		return err
 	}
 
-	parent, err := c.bCache.Find(blk.Head.ParentHash)
 	c.bCache.Add(blk)
-	if err == nil && parent.Type == blockcache.Linked {
-		err := c.addExistingBlock(blk, parent, replay, gen)
-		if err != nil {
-			ilog.Warnf("Verify block execute failed: %v", err)
-		}
+	parent, err := c.bCache.Find(blk.Head.ParentHash)
+	if err != nil {
+		ilog.Warnf("Find parent of block %v failed: %v", common.Base58Encode(blk.HeadHash()), err)
 		return err
 	}
-	return errSingle
+	if parent.Type != blockcache.Linked {
+		return errSingle
+	}
+	if err := c.addExistingBlock(blk, parent, replay, gen); err != nil {
+		ilog.Warnf("Verify block execute failed: %v", err)
+		return err
+	}
+
+	return nil
 }
 
 func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool, gen bool) error {

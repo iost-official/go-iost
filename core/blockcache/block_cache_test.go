@@ -29,6 +29,14 @@ func genBlock(fa *block.Block, wit string, num uint64) *block.Block {
 	ret.CalculateHeadHash()
 	return ret
 }
+
+func CleanDir(bc *BlockCacheImpl) error {
+	if bc.wal != nil {
+		return bc.wal.CleanDir()
+	}
+	return nil
+}
+
 func TestBlockCache(t *testing.T) {
 	ctl := NewController(t)
 	b0 := &block.Block{
@@ -99,7 +107,7 @@ func TestBlockCache(t *testing.T) {
 		Convey("Add:", func() {
 			CleanBlockCacheWAL()
 			bc, _ := NewBlockCache(config, base, statedb)
-			defer bc.CleanDir()
+			defer CleanDir(bc)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 			_ = bc.Add(b1)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
@@ -110,7 +118,7 @@ func TestBlockCache(t *testing.T) {
 		Convey("Flush", func() {
 			CleanBlockCacheWAL()
 			bc, _ := NewBlockCache(config, base, statedb)
-			defer bc.CleanDir()
+			defer CleanDir(bc)
 			bc.Add(b1)
 			//bc.Draw()
 			bc.Add(b2)
@@ -139,7 +147,7 @@ func TestBlockCache(t *testing.T) {
 		Convey("GetBlockbyNumber", func() {
 			CleanBlockCacheWAL()
 			bc, _ := NewBlockCache(config, base, statedb)
-			defer bc.CleanDir()
+			defer CleanDir(bc)
 			b1node := bc.Add(b1)
 			bc.Link(b1node, false)
 			//bc.Draw()
@@ -173,7 +181,8 @@ func TestBlockCache(t *testing.T) {
 			blk, _ = bc.GetBlockByNumber(4)
 			So(blk, ShouldEqual, nil)
 
-			bc.flush(b4node)
+			bc.updateLinkedRoot(b4node)
+			bc.flush()
 			//bc.Draw()
 
 		})
@@ -181,7 +190,7 @@ func TestBlockCache(t *testing.T) {
 		Convey("UpdateInfo", func() {
 			CleanBlockCacheWAL()
 			bc, err := NewBlockCache(config, base, statedb)
-			defer bc.CleanDir()
+			defer CleanDir(bc)
 			So(err, ShouldBeNil)
 			netId := []string{"accaaaaNetId", "accbbbbbNetId"}
 			b := common.StringSliceEqual(netId, bc.linkedRoot.NetID())
@@ -256,7 +265,7 @@ func TestVote(t *testing.T) {
 	Convey("test update", t, func() {
 		bc, err := NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
-		defer bc.CleanDir()
+		defer CleanDir(bc)
 		//fmt.Printf("Leaf:%+v\n",bc.Leaf)
 		node1 := NewBCN(bc.linkedRoot, b1)
 		node2 := NewBCN(node1, b2)
@@ -271,7 +280,7 @@ func TestVote(t *testing.T) {
 	})
 	Convey("test info", t, func() {
 		bc, _ := NewBlockCache(config, base, statedb)
-		defer bc.CleanDir()
+		defer CleanDir(bc)
 		for _, v := range bc.linkedRoot.NetID() {
 			So("33", ShouldEqual, v)
 		}
