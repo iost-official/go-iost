@@ -36,6 +36,13 @@ class transfer {
         //let ret = blockchain.callWithAuth("token.iost", "transfer", '["iost", "' + blockchain.contractName() + '","' + to + '","' + amount + '", ""]');
         blockchain.withdraw(to, amount, "");
     }
+    withdrawWithoutAuth(to, amount) {
+        blockchain.call("token.iost", "transfer", '["iost", "' + blockchain.contractName() + '","' + to + '","' + amount + '", ""]');
+    }
+    withdrawWithoutAuthAfterWithAuth(to, amount) {
+        blockchain.withdraw(to, amount, "");
+        blockchain.call("token.iost", "transfer", '["iost", "' + blockchain.contractName() + '","' + to + '","' + amount + '", ""]');
+    }
 }
 
 module.exports = transfer;
