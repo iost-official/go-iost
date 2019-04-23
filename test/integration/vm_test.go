@@ -33,6 +33,14 @@ func Test_callWithAuth(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
+		Convey("test of callWithoutAuth", func() {
+			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
+			r, err := s.Call(cname, "withdrawWithoutAuth", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "transaction has no permission")
+			s.Visitor.Commit()
+		})
+
 		Convey("test of callWithAuth", func() {
 			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
 			r, err := s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
@@ -42,6 +50,14 @@ func Test_callWithAuth(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			balance := common.Fixed{Value: s.Visitor.TokenBalance("iost", cname), Decimal: s.Visitor.Decimal("iost")}
 			So(balance.ToString(), ShouldEqual, "990")
+		})
+
+		Convey("test of callWithoutAuth after callWithAuth", func() {
+			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
+			r, err = s.Call(cname, "withdrawWithoutAuthAfterWithAuth", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+			So(err, ShouldBeNil)
+			So(r.Status.Message, ShouldContainSubstring, "transaction has no permission")
 		})
 	})
 }

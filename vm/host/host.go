@@ -97,8 +97,12 @@ func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, co
 	// handle withAuth
 	if len(withAuth) > 0 && withAuth[0] {
 		authList := h.ctx.Value("auth_contract_list").(map[string]int)
-		authList[h.ctx.Value("contract_name").(string)] = 1
-		h.ctx.Set("auth_contract_list", authList)
+		newAuthList := make(map[string]int, len(authList))
+		for k, v := range authList {
+			newAuthList[k] = v
+		}
+		newAuthList[h.ctx.Value("contract_name").(string)] = 1
+		h.ctx.Set("auth_contract_list", newAuthList)
 	}
 
 	h.ctx.Set("stack_height", height+1)

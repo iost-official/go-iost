@@ -591,8 +591,11 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	}
 	parent, ok := bc.hmget(blk.Head.ParentHash)
 	if !ok {
-		parent = NewBCN(nil, nil)
-		bc.singleRoot[string(blk.Head.ParentHash)] = parent
+		parent, ok = bc.singleRoot[string(blk.Head.ParentHash)]
+		if !ok {
+			parent = NewBCN(nil, nil)
+			bc.singleRoot[string(blk.Head.ParentHash)] = parent
+		}
 	}
 	newNode, ok = bc.singleRoot[string(blk.HeadHash())]
 	if ok {
@@ -647,22 +650,21 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) delSingle() {
+	// TODO: process with other goroutine
 	height := bc.LinkedRoot().Head.Number
 	if height%DelSingleBlockTime != 0 {
 		return
 	}
 
-	for _, vbcn := range bc.singleRoot {
+	for hash, vbcn := range bc.singleRoot {
+		ok := false
 		for bcn := range vbcn.Children {
 			if bcn.Head.Number <= height {
 				bc.del(bcn)
+				ok = true
 			}
 		}
-
-	}
-
-	for hash, vbcn := range bc.singleRoot {
-		if len(vbcn.Children) == 0 {
+		if ok && (len(vbcn.Children) == 0) {
 			delete(bc.singleRoot, hash)
 		}
 	}
