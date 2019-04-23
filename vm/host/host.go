@@ -101,7 +101,7 @@ func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, co
 	if len(withAuth) > 0 && withAuth[0] {
 		authList := h.ctx.Value("auth_contract_list").(map[string]int)
 
-		if h.Rules.IsFork3_1_0 {
+		if h.Rules.IsFork3_0_10 {
 			newAuthList := make(map[string]int, len(authList))
 			for k, v := range authList {
 				newAuthList[k] = v
