@@ -79,6 +79,22 @@
         "token": "iost",
         "val": "100"
       }]
+    },
+    {
+      "name": "withdrawWithoutAuth",
+      "args": ["string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "100"
+      }]
+    },
+    {
+      "name": "withdrawWithoutAuthAfterWithAuth",
+      "args": ["string", "string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "100"
+      }]
     }
   ]
 }
