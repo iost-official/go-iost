@@ -524,32 +524,6 @@ class VoteContract {
         storage.put("switchOff", off ? "1" : "0");
     }
 
-    voteFor(payer, voter, producer, amount) {
-        this._requireAuth(payer, ACTIVE_PERMISSION);
-        if (this._checkSwitchOff()) {
-            throw new Error("can't vote for now");
-        }
-
-        if (!storage.mapHas("producerTable", producer)) {
-            throw new Error("producer not exists");
-        }
-
-        amount = this._fixAmount(amount);
-
-        const voteId = this._getVoteId();
-        blockchain.callWithAuth("vote.iost", "voteFor", [
-            voteId,
-            payer,
-            voter,
-            producer,
-            amount.toFixed(),
-        ]);
-
-        this._updateVoterMask(voter, producer, amount, payer);
-        this._updateCandidateVars(producer, amount, voteId, payer);
-        blockchain.receipt(JSON.stringify([payer, voter, producer, amount]));
-    }
-
     vote(voter, producer, amount) {
         this._requireAuth(voter, ACTIVE_PERMISSION);
         if (this._checkSwitchOff()) {
@@ -759,14 +733,14 @@ class VoteContract {
         return witnessWatched;
     }
 
-    _getWitnessPunished() {
-        const witnessPunished = this._get("witnessPunished") || {};
-        for (const witness in witnessPunished) {
-            if (witnessPunished[witness] < block.number) {
-                delete(witnessPunished[witness]);
+    _getWitnessPenality() {
+        const witnessPenality = this._get("witnessPenality") || {};
+        for (const witness in witnessPenality) {
+            if (witnessPenality[witness] < block.number) {
+                delete(witnessPenality[witness]);
             }
         }
-        return witnessPunished;
+        return witnessPenality;
     }
 
     _updateWitnessWatched(witnessWatched, account, produced) {
@@ -783,12 +757,12 @@ class VoteContract {
         witnessWatched[account].count++;
     }
 
-    _updateWitnessPunished(witnessPunished, witnessWatched, account) {
+    _updateWitnessPenality(witnessPenality, witnessWatched, account) {
         if (witnessWatched[account] && witnessWatched[account].count >= 3) {
-            witnessPunished[account] = block.number + 144 * VOTE_STAT_INTERVAL;
+            witnessPenality[account] = block.number + 144 * VOTE_STAT_INTERVAL;
             delete(witnessWatched[account]);
         }
-        return witnessPunished[account] || 0;
+        return witnessPenality[account] || 0;
     }
 
     // calculate the vote result, modify pendingProducerList
@@ -804,7 +778,7 @@ class VoteContract {
         const preList = [];    // list of producers whose vote > threshold
         const witnessProduced = JSON.parse(storage.globalGet("base.iost", "witness_produced") || '{}');
         const witnessWatched = this._getWitnessWatched();
-        const witnessPunished = this._getWitnessPunished();
+        const witnessPenality = this._getWitnessPenality();
         const pendingProducerList = this._get("pendingProducerList");
         const currentProducerList = this._get("currentProducerList");
         const producerMap = this._get("producerMap") || {};
@@ -827,7 +801,7 @@ class VoteContract {
             if (!pro || !pro.isProducer || (pro.status !== STATUS_APPROVED && pro.status !== STATUS_UNAPPLY)) {
                 continue;
             }
-            const forbidUntil = witnessPunished[id] || 0;
+            const forbidUntil = witnessPenality[id] || 0;
             const isNormal = pro.online && forbidUntil < bn;
             const incScore = new BigNumber(isNormal ? res.votes : "0");
             const score = incScore.plus(scores[id] || "0");
@@ -860,7 +834,7 @@ class VoteContract {
             const pro = producerMap[account];
             const score = new BigNumber(scores[account] || "0");
             this._updateWitnessWatched(witnessWatched, account, witnessProduced[key]);
-            const forbidUntil = this._updateWitnessPunished(witnessPunished, witnessWatched, account);
+            const forbidUntil = this._updateWitnessPenality(witnessPenality, witnessWatched, account);
 
             const pinfo = {
                 key: pro.pubkey,
@@ -905,7 +879,7 @@ class VoteContract {
         this._put("currentProducerList", currentList);
         this._put("pendingProducerList", pendingList);
         this._put("witnessWatched", witnessWatched);
-        this._put("witnessPunished", witnessPunished);
+        this._put("witnessPenality", witnessPenality);
 
         // decrease scores in producer list
         const scoreAvg = scoreTotal.div((scoreCount || producerNumber) * 10);
