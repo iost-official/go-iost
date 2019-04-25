@@ -378,7 +378,7 @@ class VoteCommonContract {
         this._requireOwner(voteId);
     }
 
-    voteFor(voteId, payer, account, option, amount) {
+    _voteFor(voteId, payer, account, option, amount) {
         this._checkVote(voteId);
         this._checkDel(voteId);
         this._checkVoteAuth(account, payer);
@@ -423,7 +423,7 @@ class VoteCommonContract {
     }
 
     vote(voteId, account, option, amount) {
-        this.voteFor(voteId, account, account, option, amount);
+        this._voteFor(voteId, account, account, option, amount);
     }
 
     unvote(voteId, account, option, amount) {
