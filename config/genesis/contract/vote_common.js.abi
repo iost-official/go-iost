@@ -1,6 +1,6 @@
 {
     "lang": "javascript",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "abi": [
         {
             "name": "can_update",
@@ -53,20 +53,6 @@
                 "string",
                 "string"
             ]
-        },
-        {
-            "name": "voteFor",
-            "args": [
-                "string",
-                "string",
-                "string",
-                "string",
-                "string"
-            ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
         },
         {
             "name": "vote",

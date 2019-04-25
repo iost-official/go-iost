@@ -455,8 +455,9 @@ func Test_Unregister2(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 		}
 		// So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-voteInfo", fmt.Sprintf(`%d`, 1))), ShouldEqual, "")
+		s.Visitor.SetTokenBalance("iost", acc1.ID, 2e18)
 		for idx, acc := range testAccounts {
-			r, err := s.Call("vote_producer.iost", "voteFor", fmt.Sprintf(`["%v", "%v", "%v", "%v"]`, acc0.ID, acc1.ID, acc.ID, (idx+2)*1e7), acc0.ID, acc0.KeyPair)
+			r, err := s.Call("vote_producer.iost", "vote", fmt.Sprintf(`["%v", "%v", "%v"]`, acc1.ID, acc.ID, (idx+2)*1e7), acc1.ID, acc1.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			So(database.MustUnmarshal(s.Visitor.MGet("vote.iost-v_1", acc.ID)), ShouldEqual, fmt.Sprintf(`{"votes":"%d","deleted":0,"clearTime":-1}`, (idx+2)*1e7))
