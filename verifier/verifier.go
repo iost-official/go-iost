@@ -373,7 +373,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 	}
 	var to time.Duration
 	if r.Status.Code == tx.ErrorTimeout {
-		to = timeout / 2
+		to = 0
 	} else {
 		to = timeout * 2
 	}
