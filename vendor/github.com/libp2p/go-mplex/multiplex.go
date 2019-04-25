@@ -429,7 +429,13 @@ func (mp *Multiplex) readNextHeader() (uint64, uint64, error) {
 	return ch, rem, nil
 }
 
-func (mp *Multiplex) readNext() ([]byte, error) {
+func (mp *Multiplex) readNext() (ret []byte, err error) {
+	defer func() {
+		if e := recover(); e != nil {
+			ret = nil
+			err = fmt.Errorf("%v", e)
+		}
+	}()
 	// get length
 	l, err := binary.ReadUvarint(mp.buf)
 	if err != nil {
