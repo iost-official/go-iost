@@ -362,6 +362,30 @@ func TestGas_Increase(t *testing.T) {
 	})
 }
 
+func TestGas_Overflow(t *testing.T) {
+	Convey("check gas should not be negative", t, func() {
+		s := verifier.NewSimulator()
+		defer s.Clear()
+		createAccountsWithResource(s)
+		createToken(t, s, acc0)
+		r, err := s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", acc0.ID, "100000"), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		s.SetContract(native.GasABI())
+		r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc0.ID, acc0.ID, "20000.00000000"}), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(s.Visitor.PGasAtTime(acc0.ID, s.Head.Time).Value, ShouldBeGreaterThan, 0)
+		s.Head.Time += 3 * 24 * 3600 * 1e9
+		r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc0.ID, acc0.ID, "1.00000010"}), acc0.ID, acc0.KeyPair)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
+		So(s.Visitor.PGasAtTime(acc0.ID, s.Head.Time).Value, ShouldBeGreaterThan, 0)
+		s.Head.Time += 3 * 24 * 3600 * 1e9
+		So(s.Visitor.PGasAtTime(acc0.ID, s.Head.Time).Value, ShouldBeGreaterThan, 0)
+	})
+}
+
 func TestGas_TGas(t *testing.T) {
 	t.Skip()
 	s := verifier.NewSimulator()
