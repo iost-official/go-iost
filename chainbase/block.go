@@ -122,7 +122,6 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 	c.bCache.Add(blk)
 	parent, err := c.bCache.Find(blk.Head.ParentHash)
 	if err != nil {
-		ilog.Warnf("Find parent of block %v failed: %v", common.Base58Encode(blk.HeadHash()), err)
 		return err
 	}
 	if parent.Type != blockcache.Linked {
