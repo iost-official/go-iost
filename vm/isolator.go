@@ -9,15 +9,19 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/account"
-
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/metrics"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
 	"github.com/iost-official/go-iost/vm/native"
+)
+
+var (
+	executionKillCounter = metrics.NewCounter("iost_vm_execution_kill", nil)
 )
 
 // Isolator new entrance instead of Engine
@@ -245,6 +249,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		if status.Code != tx.Success {
 			if status.Code == tx.ErrorTimeout && i.limit >= common.MaxTxTimeLimit {
 				ilog.Warnf("isolator run action %v failed, status=%+v, will rollback", action, status)
+				executionKillCounter.Add(1, nil)
 			}
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()

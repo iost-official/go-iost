@@ -91,6 +91,7 @@ func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) *msg
 		hash, ok := r.cBase.GetBlockHashByNum(num)
 		if !ok {
 			// TODO: Maybe should break.
+			ilog.Debugf("Get block by num %v failed.", num)
 			continue
 		}
 		blockInfo := &msgpb.BlockInfo{
