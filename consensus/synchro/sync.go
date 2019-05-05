@@ -171,10 +171,11 @@ func (s *Sync) doBlockSync() {
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
 		block, err := s.cBase.BlockCache().GetBlockByHash(blockHash.Hash)
 		if err == nil && block != nil {
+			ilog.Debugf("Block %v is existed, don't sync.", common.Base58Encode(blockHash.Hash))
 			continue
 		}
 		if err == nil && block == nil {
-			ilog.Errorf("Block %v should not be nil.", blockHash.Hash)
+			ilog.Errorf("Block %v should not be nil.", common.Base58Encode(blockHash.Hash))
 		}
 
 		rand.Seed(time.Now().UnixNano())

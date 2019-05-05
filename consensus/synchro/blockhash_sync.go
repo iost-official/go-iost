@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
+	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
@@ -104,6 +105,8 @@ func (b *blockHashSync) NeighborBlockHashs(start, end int64) <-chan *BlockHash {
 			for _, blockHash := range hashs {
 				if len(blockHash.PeerID) >= BlockHashLeastNeighborNumber {
 					ch <- blockHash
+				} else {
+					ilog.Debugf("Peer number of block %v is less than %v.", common.Base58Encode(blockHash.Hash), BlockHashLeastNeighborNumber)
 				}
 			}
 		}
