@@ -204,7 +204,6 @@ type BlockCache interface {
 	Link(*BlockCacheNode, bool)
 	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
-	Find([]byte) (*BlockCacheNode, error)
 	GetBlockByNumber(int64) (*block.Block, error)
 	GetBlockByHash([]byte) (*block.Block, error)
 	LinkedRoot() *BlockCacheNode
@@ -769,15 +768,6 @@ func (bc *BlockCacheImpl) writeAddNodeWAL(h *BlockCacheNode) (uint64, error) {
 func (bc *BlockCacheImpl) cutWALFiles(h *BlockCacheNode) error {
 	bc.wal.RemoveFilesBefore(h.walIndex)
 	return nil
-}
-
-// Find is find the block
-func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
-	bcn, ok := bc.hmget(hash)
-	if !ok {
-		return nil, errors.New("block not found")
-	}
-	return bcn, nil
 }
 
 // GetBlockByNumber get a block by number

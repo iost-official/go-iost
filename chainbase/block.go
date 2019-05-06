@@ -130,7 +130,7 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 	if parent.Type != blockcache.Linked {
 		return errSingle
 	}
-	if err := c.addExistingBlock(blk, parent, replay, gen); err != nil {
+	if err := c.addExistingBlock(node, parent, replay, gen); err != nil {
 		ilog.Warnf("Verify block execute failed: %v", err)
 		return err
 	}
@@ -138,8 +138,8 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 	return nil
 }
 
-func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.BlockCacheNode, replay bool, gen bool) error {
-	node, _ := c.bCache.Find(blk.HeadHash())
+func (c *ChainBase) addExistingBlock(node, parentNode *blockcache.BlockCacheNode, replay bool, gen bool) error {
+	blk := node.Block
 
 	if parentNode.Block.Head.Witness != blk.Head.Witness ||
 		common.SlotOfUnixNano(parentNode.Block.Head.Time) != common.SlotOfUnixNano(blk.Head.Time) {
@@ -174,7 +174,7 @@ func (c *ChainBase) addExistingBlock(blk *block.Block, parentNode *blockcache.Bl
 	c.printStatistics(node.SerialNum, node.Block, replay, gen)
 
 	for child := range node.Children {
-		c.addExistingBlock(child.Block, node, replay, gen)
+		c.addExistingBlock(child, node, replay, gen)
 	}
 	return nil
 }
