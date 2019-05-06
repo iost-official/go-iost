@@ -22,7 +22,7 @@ var (
 
 	testNetChainConf = &ChainConfig{
 		Block3_0_10: 10599000,
-		Block3_1_0:  11000000,
+		Block3_1_0:  12800000,
 	}
 
 	defaultChainConf = &ChainConfig{
