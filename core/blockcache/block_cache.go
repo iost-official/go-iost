@@ -614,6 +614,8 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	if parent != nil {
 		delete(parent.Children, bcn)
 		bcn.SetParent(nil)
+	} else {
+		ilog.Errorf("Parent of block %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
 	}
 
 	bc.hmdel(bcn.HeadHash())
@@ -628,6 +630,7 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn == nil {
+		ilog.Errorf("Block cache node %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
 		return
 	}
 	for ch := range bcn.Children {
