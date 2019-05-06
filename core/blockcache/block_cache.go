@@ -809,12 +809,7 @@ func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
 	if !ok {
 		return nil, errors.New("block not found")
 	}
-	// Block will be cleared when node deleted
-	blk := bcn.Block
-	if blk == nil {
-		return nil, errors.New("block not found")
-	}
-	return blk, nil
+	return bcn.Block, nil
 }
 
 // LinkedRoot return the root node
