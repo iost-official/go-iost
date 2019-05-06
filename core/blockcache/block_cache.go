@@ -77,16 +77,6 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	}
 }
 
-func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
-	if parent != nil && block != nil {
-		bcn.Block = block
-		bcn.SetParent(parent)
-		parent.addChild(bcn)
-	} else {
-		ilog.Warnf("Unexcept update. type: %v, parent: %+v, block: %+v", bcn.Type, parent, block)
-	}
-}
-
 func encodeUpdateLinkedRootWitness(bc *BlockCacheImpl) (b []byte, err error) {
 	uwRaw := &UpdateLinkedRootWitnessRaw{
 		BlockHashBytes:    bc.LinkedRoot().HeadHash(),
@@ -583,9 +573,6 @@ func (bc *BlockCacheImpl) updateLongest() {
 
 // Add is add a block
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
-	if bc.LinkedRoot().Head.Number >= blk.Head.Number {
-		return nil
-	}
 	newNode, nok := bc.hmget(blk.HeadHash())
 	if nok {
 		return newNode
@@ -601,7 +588,10 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	newNode, ok = bc.singleRoot[string(blk.HeadHash())]
 	if ok {
 		delete(bc.singleRoot, string(blk.HeadHash()))
-		newNode.updateVirtualBCN(parent, blk)
+		// updateVirtualBCN
+		newNode.Block = blk
+		newNode.SetParent(parent)
+		parent.addChild(newNode)
 	} else {
 		newNode = NewBCN(parent, blk)
 	}

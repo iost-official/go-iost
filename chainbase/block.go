@@ -125,11 +125,8 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 		return err
 	}
 
-	c.bCache.Add(blk)
-	parent, err := c.bCache.Find(blk.Head.ParentHash)
-	if err != nil {
-		return err
-	}
+	node := c.bCache.Add(blk)
+	parent := node.GetParent()
 	if parent.Type != blockcache.Linked {
 		return errSingle
 	}

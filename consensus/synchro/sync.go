@@ -234,8 +234,13 @@ func (s *Sync) handleNewBlockHashController() {
 
 func (s *Sync) doBlockFilter(block *block.Block) {
 	head := s.cBase.HeadBlock().Head.Number
+	lib := s.cBase.LIBlock().Head.Number
 	if block.Head.Number > head+maxSyncRange {
 		ilog.Debugf("Block number %v is %v higher than head number %v", block.Head.Number, maxSyncRange, head)
+		return
+	}
+	if block.Head.Number <= lib {
+		ilog.Debugf("Block number %v is lower than or equal to lib number %v", block.Head.Number, lib)
 		return
 	}
 
