@@ -56,7 +56,7 @@ func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 
 	i.blockBaseCtx = host.NewContext(nil)
 	i.blockBaseCtx = loadBlkInfo(i.blockBaseCtx, bh)
-	i.h = host.NewHost(i.blockBaseCtx, db, staticMonitor, logger)
+	i.h = host.NewHost(i.blockBaseCtx, db, bh.Rules(), staticMonitor, logger)
 	i.h.ReadSettings()
 	return nil
 }
@@ -177,6 +177,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	}
 	i.h.Context().GSet("gas_limit", vmGasLimit)
 	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
+	i.h.Context().GSet("amount_total", make(map[string]*common.Fixed))
 
 	i.tr = tx.NewTxReceipt(i.t.Hash())
 

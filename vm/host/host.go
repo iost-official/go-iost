@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
 )
@@ -32,6 +33,7 @@ type Host struct {
 	DNS
 	Authority
 	GasManager
+	*version.Rules
 
 	logger  *ilog.Logger
 	ctx     *Context
@@ -42,13 +44,14 @@ type Host struct {
 }
 
 // NewHost get a new host
-func NewHost(ctx *Context, db *database.Visitor, monitor Monitor, logger *ilog.Logger) *Host {
+func NewHost(ctx *Context, db *database.Visitor, rules *version.Rules, monitor Monitor, logger *ilog.Logger) *Host {
 	h := &Host{
 		ctx:     ctx,
 		db:      db,
 		monitor: monitor,
 		logger:  logger,
 	}
+	h.Rules = rules
 	h.DBHandler = NewDBHandler(h)
 	h.Info = NewInfo(h)
 	h.Teller = NewTeller(h)
@@ -97,12 +100,18 @@ func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, co
 	// handle withAuth
 	if len(withAuth) > 0 && withAuth[0] {
 		authList := h.ctx.Value("auth_contract_list").(map[string]int)
-		newAuthList := make(map[string]int, len(authList))
-		for k, v := range authList {
-			newAuthList[k] = v
+
+		if h.Rules.IsFork3_0_10 {
+			newAuthList := make(map[string]int, len(authList))
+			for k, v := range authList {
+				newAuthList[k] = v
+			}
+			newAuthList[h.ctx.Value("contract_name").(string)] = 1
+			h.ctx.Set("auth_contract_list", newAuthList)
+		} else {
+			authList[h.ctx.Value("contract_name").(string)] = 1
+			h.ctx.Set("auth_contract_list", authList)
 		}
-		newAuthList[h.ctx.Value("contract_name").(string)] = 1
-		h.ctx.Set("auth_contract_list", newAuthList)
 	}
 
 	h.ctx.Set("stack_height", height+1)
@@ -165,7 +174,14 @@ func (h *Host) CheckSigners(t *tx.Tx) error {
 
 // CheckAmountLimit check amountLimit of tx valid
 func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
+	tokenMap := make(map[string]bool)
 	for _, limit := range amountLimit {
+		if h.Rules.IsFork3_1_0 {
+			if tokenMap[limit.Token] {
+				return fmt.Errorf("duplicated token in amountLimit: %s", limit.Token)
+			}
+			tokenMap[limit.Token] = true
+		}
 		decimal := h.DB().Decimal(limit.Token)
 		if limit.Token == "*" {
 			decimal = 0

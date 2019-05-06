@@ -252,13 +252,13 @@ func TestAmountLimit(t *testing.T) {
 			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
 			So(balance0.ToString(), ShouldEqual, "1000")
 
-			r, err = s.Call("Contracttransfer", "transferFreeze", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc0.ID, "1000"), acc0.ID, acc0.KeyPair)
+			r, err = s.Call("Contracttransfer", "transferFreeze", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc0.ID, "100"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 			balance0 = common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
-			So(balance0.ToString(), ShouldEqual, "0")
+			So(balance0.ToString(), ShouldEqual, "900")
 		})
 
 		Convey("test amount limit transferFreeze", func() {
@@ -448,6 +448,69 @@ func TestTxAmountLimit(t *testing.T) {
 			_, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 			So(err.Error(), ShouldContainSubstring, "token not exists in amountLimit")
+		})
+
+		Convey("test invalid amount limit 2", func() {
+			trx := tx.NewTx([]*tx.Action{{
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "10"),
+			}}, nil, 10000000, 100, 10000000, 0, 0)
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
+
+			_, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+			So(err.Error(), ShouldContainSubstring, "duplicated token in amountLimit: iost")
+		})
+
+		Convey("test multi action amount limit", func() {
+			trx := tx.NewTx([]*tx.Action{{
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "30"),
+			}, {
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "30"),
+			}, {
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "40"),
+			}}, nil, 10000000, 100, 10000000, 0, 0)
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
+			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.Success)
+			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+			So(balance0.ToString(), ShouldEqual, "900")
+			So(balance2.ToString(), ShouldEqual, "100")
+		})
+
+		Convey("test multi action out of amount limit", func() {
+			trx := tx.NewTx([]*tx.Action{{
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "40"),
+			}, {
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "40"),
+			}, {
+				Contract:   "token.iost",
+				ActionName: "transfer",
+				Data:       fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, acc0.ID, acc1.ID, "40"),
+			}}, nil, 10000000, 100, 10000000, 0, 0)
+			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "iost", Val: "100"})
+			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
+			s.Visitor.Commit()
+
+			So(err, ShouldBeNil)
+			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
+			So(r.Status.Message, ShouldContainSubstring, "exceed amountLimit in tx")
 		})
 	})
 }

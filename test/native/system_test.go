@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/vm"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -17,7 +18,7 @@ var testDataPath = "./test_data/"
 
 func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
-	vi := database.NewVisitor(100, db)
+	vi := database.NewVisitor(100, db, version.NewRules(0))
 
 	ctx := host.NewContext(nil)
 	ctx.Set("gas_ratio", int64(100))
@@ -32,7 +33,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 	ctx.Set("publisher", "pub")
 
 	pm := vm.NewMonitor()
-	h := host.NewHost(ctx, vi, pm, nil)
+	h := host.NewHost(ctx, vi, version.NewRules(0), pm, nil)
 	h.Context().Set("stack_height", 1)
 	h.Context().Set("stack0", "direct_call")
 

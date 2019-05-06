@@ -16,6 +16,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm/database"
@@ -39,7 +40,7 @@ var monitor = vm.NewMonitor()
 func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVCCDB) {
 	var tmpDB db.MVCCDB
 	tmpDB, err := db.NewMVCCDB("mvcc")
-	visitor := database.NewVisitor(100, tmpDB)
+	visitor := database.NewVisitor(100, tmpDB, version.NewRules(0))
 	if err != nil {
 		panic(err)
 	}
@@ -47,7 +48,7 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	context.Set("gas_ratio", int64(100))
 	context.GSet("gas_limit", int64(100000))
 
-	h := host.NewHost(context, visitor, monitor, nil)
+	h := host.NewHost(context, visitor, version.NewRules(0), monitor, nil)
 
 	acc0Bytes, err := json.Marshal(acc0.ToAccount())
 	if err != nil {

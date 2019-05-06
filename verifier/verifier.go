@@ -49,7 +49,7 @@ type Info struct {
 // Exec exec single tx and flush changes to db
 func (v *Verifier) Exec(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
 	var isolator vm.Isolator
-	vi := database.NewVisitor(100, db)
+	vi := database.NewVisitor(100, db, bh.Rules())
 	var l ilog.Logger
 	l.Stop()
 	err := isolator.Prepare(bh, vi, &l)
@@ -72,7 +72,7 @@ func (v *Verifier) Exec(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, 
 // Try exec tx and only return receipt
 func (v *Verifier) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, limit time.Duration) (*tx.TxReceipt, error) {
 	var isolator vm.Isolator
-	vi := database.NewVisitor(100, db)
+	vi := database.NewVisitor(100, db, bh.Rules())
 	var l ilog.Logger
 	l.Stop()
 	err := isolator.Prepare(bh, vi, &l)
@@ -122,7 +122,7 @@ func (v *Verifier) Gen(blk, parent *block.Block, witnessList *blockcache.Witness
 }
 
 func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isolator, t *tx.Tx, c *Config) (tr *tx.TxReceipt, err error) {
-	vi := database.NewVisitor(100, db)
+	vi := database.NewVisitor(100, db, blk.Head.Rules())
 	isolator.Prepare(blk.Head, vi, getLogger(global.GetGlobalConf() != nil && global.GetGlobalConf().Log.EnableContractLog))
 	isolator.TriggerBlockBaseMode()
 	err = isolator.PrepareTx(t, c.Timeout)
@@ -299,7 +299,7 @@ func (v *Verifier) Verify(blk, parent *block.Block, witnessList *blockcache.Witn
 	switch info.Mode {
 	case 0:
 		isolator := vm.Isolator{}
-		vi, _ := database.NewBatchVisitor(database.NewBatchVisitorRoot(100, db))
+		vi, _ := database.NewBatchVisitor(database.NewBatchVisitorRoot(100, db, blk.Head.Rules()))
 		isolator.Prepare(blk.Head, vi, getLogger(false))
 		return baseVerify(isolator, c, blk.Txs[1:], blk.Receipts[1:], blk)
 		/*  case 1: */

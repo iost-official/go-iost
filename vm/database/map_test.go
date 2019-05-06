@@ -11,6 +11,7 @@ import (
 
 	"runtime/pprof"
 
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/db"
 )
 
@@ -65,7 +66,7 @@ func TestMap(t *testing.T) {
 	}
 	defer pprof.StopCPUProfile()
 
-	vi := NewVisitor(100, d)
+	vi := NewVisitor(100, d, version.NewRules(0))
 
 	watchTimeout(t, func() {
 		vi.MapHandler.MPut("a", "b", "c")

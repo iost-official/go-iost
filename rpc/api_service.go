@@ -26,7 +26,7 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
@@ -411,7 +411,7 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 	if err != nil {
 		return nil, err
 	}
-	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, bcn.Head.Rules(), nil, nil)
 	var value interface{}
 	switch {
 	case req.GetField() == "":
@@ -442,7 +442,7 @@ func (as *APIService) GetBatchContractStorage(ctx context.Context, req *rpcpb.Ge
 	if err != nil {
 		return nil, err
 	}
-	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, bcn.Head.Rules(), nil, nil)
 	var datas []string
 
 	keyFields := req.GetKeyFields()
@@ -484,7 +484,7 @@ func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.G
 	if err != nil {
 		return nil, err
 	}
-	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, bcn.Head.Rules(), nil, nil)
 
 	value, _ := h.GlobalMapKeys(req.GetId(), req.GetKey())
 
@@ -530,7 +530,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 		ret.PreTxReceipt = toPbTxReceipt(tr)
 	}
 	headBlock := as.bc.Head()
-	dbVisitor, err := as.getStateDBVisitorByHash(headBlock.HeadHash())
+	dbVisitor, err := as.getStateDBVisitorByBlock(headBlock)
 	if err != nil {
 		ilog.Errorf("[internal error] SendTransaction error: %v", err)
 		return nil, err
@@ -609,11 +609,11 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 	ret := &rpcpb.VoterBonus{
 		Detail: make(map[string]float64),
 	}
-	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
-	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, bcn.Head.Rules(), nil, nil)
 
 	voter := req.GetName()
 	value, _ := h.GlobalMapGet("vote.iost", "u_1", voter)
@@ -673,11 +673,11 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 // GetCandidateBonus returns the bonus a candidate can claim.
 func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.CandidateBonus, error) {
 	ret := &rpcpb.CandidateBonus{}
-	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
-	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, bcn.Head.Rules(), nil, nil)
 
 	candidate := req.GetName()
 	candCoef := float64(0)
@@ -737,11 +737,11 @@ func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccou
 // GetTokenInfo returns the information of a given token.
 func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoRequest) (*rpcpb.TokenInfo, error) {
 	var token404 = errors.New("token not found")
-	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
 	}
-	h := host.NewHost(host.NewContext(nil), dbVisitor, nil, nil)
+	h := host.NewHost(host.NewContext(nil), dbVisitor, bcn.Head.Rules(), nil, nil)
 
 	symbol := req.GetSymbol()
 	ret := &rpcpb.TokenInfo{Symbol: symbol}
@@ -794,18 +794,18 @@ func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoR
 	return ret, nil
 }
 
-func (as *APIService) getStateDBVisitorByHash(hash []byte) (db *database.Visitor, err error) {
+func (as *APIService) getStateDBVisitorByBlock(bcn *blockcache.BlockCacheNode) (db *database.Visitor, err error) {
 	stateDB := as.stateDB.Fork()
-	ok := stateDB.Checkout(string(hash))
+	ok := stateDB.Checkout(string(bcn.HeadHash()))
 	if !ok {
 		b2s := func(x *blockcache.BlockCacheNode) string {
 			return fmt.Sprintf("b58 hash %v time %v height %v witness %v", common.Base58Encode(x.HeadHash()), x.Head.Time,
 				x.Head.Number, x.Head.Witness)
 		}
-		err = fmt.Errorf("db checkout failed. b58 hash %v, head block %v, li block %v", common.Base58Encode(hash),
+		err = fmt.Errorf("db checkout failed. b58 hash %v, head block %v, li block %v", common.Base58Encode(bcn.HeadHash()),
 			b2s(as.bc.Head()), b2s(as.bc.LinkedRoot()))
 	}
-	db = database.NewVisitor(0, stateDB)
+	db = database.NewVisitor(0, stateDB, bcn.Head.Rules())
 	return
 }
 
@@ -820,8 +820,7 @@ func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, *
 		} else {
 			b = as.bc.LinkedRoot()
 		}
-		hash := b.HeadHash()
-		db, err = as.getStateDBVisitorByHash(hash)
+		db, err = as.getStateDBVisitorByBlock(b)
 		if err != nil {
 			ilog.Errorf("getStateDBVisitor err: %v", err)
 			continue

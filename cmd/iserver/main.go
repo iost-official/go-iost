@@ -1,17 +1,3 @@
-// Copyright © 2018 NAME HERE <EMAIL ADDRESS>
-//
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-
 package main
 
 import (
@@ -23,6 +9,7 @@ import (
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/global"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/iserver"
 	"github.com/iost-official/go-iost/metrics"
@@ -80,6 +67,7 @@ func main() {
 	conf := common.NewConfig(*configFile)
 
 	global.SetGlobalConf(conf)
+	version.InitChainConf(conf)
 
 	initLogger(conf.Log)
 

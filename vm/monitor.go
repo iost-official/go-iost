@@ -1,16 +1,14 @@
 package vm
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"strings"
-
-	"github.com/bitly/go-simplejson"
-
 	"time"
 
-	"encoding/json"
-	"math"
+	"github.com/bitly/go-simplejson"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
@@ -64,15 +62,11 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 }
 
 func checkLimit(amountLimit map[string]*common.Fixed, token string, amount *common.Fixed) bool {
-	if amount.Value > 0 {
+	if amount.IsPositive() {
 		if limit, ok := amountLimit[token]; ok {
-			return amount.Value <= limit.Value
+			return !limit.LessThan(amount)
 		} else if limit, ok := amountLimit["*"]; ok {
-			val := amount.Value / int64(math.Pow10(amount.Decimal))
-			if amount.Value%int64(math.Pow10(amount.Decimal)) > 0 {
-				val++
-			}
-			return val <= limit.Value
+			return !limit.LessThan(amount)
 		}
 		return false
 	}
@@ -186,8 +180,14 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				token = args[0].(string)
 				from := args[1].(string)
 				to := args[2].(string)
-				if from != to && !h.IsContract(from) {
-					amount, _ = common.NewFixed(args[3].(string), h.DB().Decimal(token))
+				if h.Rules.IsFork3_1_0 {
+					if !h.IsContract(from) {
+						amount, _ = common.NewFixed(args[3].(string), h.DB().Decimal(token))
+					}
+				} else {
+					if from != to && !h.IsContract(from) {
+						amount, _ = common.NewFixed(args[3].(string), h.DB().Decimal(token))
+					}
 				}
 			} else if receipt.FuncName == "token.iost/destroy" {
 				_ = json.Unmarshal([]byte(receipt.Content), &args)
@@ -205,18 +205,37 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				}
 			}
 		}
+		amountTotal := make(map[string]*common.Fixed)
+		if h.Context().GValue("amount_total") != nil {
+			amountTotal = h.Context().GValue("amount_total").(map[string]*common.Fixed)
+		}
 		for token, amount := range needLimit {
+			if a, ok := amountTotal[token]; ok {
+				amountTotal[token] = a.Add(amount)
+			} else {
+				amountTotal[token] = amount
+			}
 			if !checkLimit(amountLimit, token, amount) {
 				return nil, cost,
 					fmt.Errorf("token %s exceed amountLimit in abi. need %v",
 						token, amount.ToString())
 			}
-			if !checkLimit(txAmountLimit, token, amount) {
-				return nil, cost,
-					fmt.Errorf("token %s exceed amountLimit in tx. need %v",
-						token, amount.ToString())
+			if h.Rules.IsFork3_1_0 {
+				if !checkLimit(txAmountLimit, token, amountTotal[token]) {
+					return nil, cost,
+						fmt.Errorf("token %s exceed amountLimit in tx. need %v",
+							token, amount.ToString())
+				}
+
+			} else {
+				if !checkLimit(txAmountLimit, token, amount) {
+					return nil, cost,
+						fmt.Errorf("token %s exceed amountLimit in tx. need %v",
+							token, amount.ToString())
+				}
 			}
 		}
+		h.Context().GSet("amount_total", amountTotal)
 	}
 	// check ram auth
 	cacheCost := h.CacheCost()
@@ -228,7 +247,8 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		}
 	}
 	for p := range payer {
-		if strings.HasSuffix(p, ".iost") {
+		// do not check auth if payer is current contract
+		if p == c.ID {
 			continue
 		}
 		ok, _ := h.RequireAuth(p, "active")

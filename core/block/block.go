@@ -10,6 +10,7 @@ import (
 	blockpb "github.com/iost-official/go-iost/core/block/pb"
 	"github.com/iost-official/go-iost/core/merkletree"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/crypto"
 )
 
@@ -95,6 +96,11 @@ func (b *BlockHead) Decode(bhByte []byte) error {
 
 func (b *BlockHead) hash() []byte {
 	return common.Sha3(b.ToBytes())
+}
+
+// Rules create new rules for this block
+func (b *BlockHead) Rules() *version.Rules {
+	return version.NewRules(b.Number)
 }
 
 // Block is the implementation of block

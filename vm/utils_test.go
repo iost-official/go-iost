@@ -10,6 +10,7 @@ import (
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
@@ -50,7 +51,7 @@ func ininit(t *testing.T) (*database.Visitor, db.MVCCDB) {
 		t.Fatal(err)
 	}
 	//mvccdb := replaceDB(t)
-	vi := database.NewVisitor(0, mvccdb)
+	vi := database.NewVisitor(0, mvccdb, version.NewRules(0))
 	vi.SetTokenBalance("iost", testKps[0].ReadablePubkey(), 1000000)
 	vi.SetContract(systemContract)
 	vi.Commit()
@@ -96,7 +97,8 @@ func TestCheckPublisher(t *testing.T) {
 
 	authList := make(map[string]int)
 	authList[kp.ReadablePubkey()] = 2
-	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock), nil, ilog.DefaultLogger())
+	rules := version.NewRules(0)
+	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock, rules), rules, nil, ilog.DefaultLogger())
 	h.Context().Set("auth_list", authList)
 	err = h.CheckPublisher(t2)
 	if err != nil {
@@ -147,7 +149,8 @@ func TestCheckSigners(t *testing.T) {
 
 	authList := make(map[string]int)
 	authList[kp.ReadablePubkey()] = 1
-	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock), nil, ilog.DefaultLogger())
+	rules := version.NewRules(0)
+	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock, rules), rules, nil, ilog.DefaultLogger())
 	h.Context().Set("auth_list", authList)
 	err = h.CheckSigners(tr)
 	if err == nil {

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/database"
@@ -190,7 +191,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", name)
 
-	host := host.NewHost(ctx, vi, nil, ilog.DefaultLogger())
+	host := host.NewHost(ctx, vi, version.NewRules(0), nil, ilog.DefaultLogger())
 	expTime := time.Now().Add(time.Second * 10)
 	host.SetDeadline(expTime)
 
@@ -214,7 +215,7 @@ func getOpDetail() {
 	if err != nil {
 		log.Fatalf("New MVCC DB failed: %v", err)
 	}
-	vi := database.NewVisitor(100, mvccdb)
+	vi := database.NewVisitor(100, mvccdb, version.NewRules(0))
 
 	for _, opType := range []string{"empty", "base", "lib", "storage"} {
 		for _, op := range OpList[opType] {
@@ -296,7 +297,7 @@ func getOverview() {
 	if err != nil {
 		log.Fatalf("New MVCC DB failed: %v", err)
 	}
-	vi := database.NewVisitor(100, mvccdb)
+	vi := database.NewVisitor(100, mvccdb, version.NewRules(0))
 
 	OpInfos := make([]*OpInfo, 0)
 
@@ -417,7 +418,7 @@ func getOverviewTable() {
 	if err != nil {
 		log.Fatalf("New MVCC DB failed: %v", err)
 	}
-	vi := database.NewVisitor(100, mvccdb)
+	vi := database.NewVisitor(100, mvccdb, version.NewRules(0))
 
 	ttotal := float64(0)
 	ctotal := float64(0)
