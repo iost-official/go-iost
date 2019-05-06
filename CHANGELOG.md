@@ -1,3 +1,18 @@
+## v3.1.0
+
+Mon May  6 11:46:27 CST 2019
+
+- Reorganized code module.
+- Add hard fork framework and a hard-fork upgrade:
+  - AmountLimit in a transaction cannot contain the same token
+  - Optimize the logic of RequireAuth function
+  - Fix mapDel bug
+- Improve synchronization performance.
+- Fix blockcache memory leak and data race.
+- Add more detailed logs.
+- Fix bug for Fixed library.
+- Optimized transaction verification processing.
+
 ## v3.0.10
 
 Mon Apr 22 14:47:14 CST 2019
