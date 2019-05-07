@@ -201,7 +201,7 @@ func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
 	AddGenesis(*block.Block)
-	Link(*BlockCacheNode, bool)
+	Link(*BlockCacheNode)
 	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	GetBlockByNumber(int64) (*block.Block, error)
@@ -482,24 +482,12 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
-func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
-	if bcn == nil {
-		ilog.Warnf("Block cache node should not be nil")
-		return
-	}
-	parent := bcn.GetParent()
-	if parent.Type != Linked {
-		ilog.Warnf("Parent of block %v should be linked", common.Base58Encode(bcn.Block.HeadHash()))
-		return
-	}
+func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	bcn.Type = Linked
-	delete(bc.leaf, parent)
+	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
 	bcn.updateValidWitness()
 	bc.updateWitnessList(bcn)
-	if !replay {
-		bc.AddNodeToWAL(bcn)
-	}
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}

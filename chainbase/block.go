@@ -155,7 +155,7 @@ func (c *ChainBase) addExistingBlock(node *blockcache.BlockCacheNode, replay boo
 	ok := c.stateDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		c.stateDB.Checkout(string(blk.Head.ParentHash))
-		err := c.verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList, replay)
+		err := c.verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList)
 		if err != nil {
 			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
 			c.bCache.Del(node)
@@ -163,7 +163,10 @@ func (c *ChainBase) addExistingBlock(node *blockcache.BlockCacheNode, replay boo
 		}
 		c.stateDB.Commit(string(blk.HeadHash()))
 	}
-	c.bCache.Link(node, replay)
+	c.bCache.Link(node)
+	if !replay {
+		c.bCache.AddNodeToWAL(node)
+	}
 	c.bCache.UpdateLib(node)
 	// After UpdateLib, the block head active witness list will be right
 	// So AddLinkedNode need execute after UpdateLib
@@ -180,13 +183,13 @@ func (c *ChainBase) addExistingBlock(node *blockcache.BlockCacheNode, replay boo
 	return nil
 }
 
-func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcache.WitnessList, replay bool) error {
+func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcache.WitnessList) error {
 	err := cverifier.VerifyBlockHead(blk, parent)
 	if err != nil {
 		return err
 	}
 
-	if replay == false && common.WitnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
+	if common.WitnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
 		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(witnessList.Active()), witnessList.Active())
 		return errWitness
