@@ -77,16 +77,6 @@ func (bcn *BlockCacheNode) addChild(child *BlockCacheNode) {
 	}
 }
 
-func (bcn *BlockCacheNode) updateVirtualBCN(parent *BlockCacheNode, block *block.Block) {
-	if parent != nil && block != nil {
-		bcn.Block = block
-		bcn.SetParent(parent)
-		parent.addChild(bcn)
-	} else {
-		ilog.Warnf("Unexcept update. type: %v, parent: %+v, block: %+v", bcn.Type, parent, block)
-	}
-}
-
 func encodeUpdateLinkedRootWitness(bc *BlockCacheImpl) (b []byte, err error) {
 	uwRaw := &UpdateLinkedRootWitnessRaw{
 		BlockHashBytes:    bc.LinkedRoot().HeadHash(),
@@ -214,7 +204,6 @@ type BlockCache interface {
 	Link(*BlockCacheNode, bool)
 	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
-	Find([]byte) (*BlockCacheNode, error)
 	GetBlockByNumber(int64) (*block.Block, error)
 	GetBlockByHash([]byte) (*block.Block, error)
 	LinkedRoot() *BlockCacheNode
@@ -583,9 +572,6 @@ func (bc *BlockCacheImpl) updateLongest() {
 
 // Add is add a block
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
-	if bc.LinkedRoot().Head.Number >= blk.Head.Number {
-		return nil
-	}
 	newNode, nok := bc.hmget(blk.HeadHash())
 	if nok {
 		return newNode
@@ -601,7 +587,10 @@ func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	newNode, ok = bc.singleRoot[string(blk.HeadHash())]
 	if ok {
 		delete(bc.singleRoot, string(blk.HeadHash()))
-		newNode.updateVirtualBCN(parent, blk)
+		// updateVirtualBCN
+		newNode.Block = blk
+		newNode.SetParent(parent)
+		parent.addChild(newNode)
 	} else {
 		newNode = NewBCN(parent, blk)
 	}
@@ -625,6 +614,8 @@ func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
 	if parent != nil {
 		delete(parent.Children, bcn)
 		bcn.SetParent(nil)
+	} else {
+		ilog.Errorf("Parent of block %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
 	}
 
 	bc.hmdel(bcn.HeadHash())
@@ -639,6 +630,7 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 
 func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	if bcn == nil {
+		ilog.Errorf("Block cache node %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
 		return
 	}
 	for ch := range bcn.Children {
@@ -781,15 +773,6 @@ func (bc *BlockCacheImpl) cutWALFiles(h *BlockCacheNode) error {
 	return nil
 }
 
-// Find is find the block
-func (bc *BlockCacheImpl) Find(hash []byte) (*BlockCacheNode, error) {
-	bcn, ok := bc.hmget(hash)
-	if !ok {
-		return nil, errors.New("block not found")
-	}
-	return bcn, nil
-}
-
 // GetBlockByNumber get a block by number
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.Head()
@@ -819,12 +802,7 @@ func (bc *BlockCacheImpl) GetBlockByHash(hash []byte) (*block.Block, error) {
 	if !ok {
 		return nil, errors.New("block not found")
 	}
-	// Block will be cleared when node deleted
-	blk := bcn.Block
-	if blk == nil {
-		return nil, errors.New("block not found")
-	}
-	return blk, nil
+	return bcn.Block, nil
 }
 
 // LinkedRoot return the root node

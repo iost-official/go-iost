@@ -169,13 +169,10 @@ func (s *Sync) doBlockSync() {
 	start, end := s.rangeController.SyncRange()
 	ilog.Infof("Syncing block in [%v %v]...", start, end)
 	for blockHash := range s.blockhashSync.NeighborBlockHashs(start, end) {
-		block, err := s.cBase.BlockCache().GetBlockByHash(blockHash.Hash)
-		if err == nil && block != nil {
+		_, err := s.cBase.BlockCache().GetBlockByHash(blockHash.Hash)
+		if err == nil {
 			ilog.Debugf("Block %v is existed, don't sync.", common.Base58Encode(blockHash.Hash))
 			continue
-		}
-		if err == nil && block == nil {
-			ilog.Errorf("Block %v should not be nil.", common.Base58Encode(blockHash.Hash))
 		}
 
 		rand.Seed(time.Now().UnixNano())
@@ -234,8 +231,13 @@ func (s *Sync) handleNewBlockHashController() {
 
 func (s *Sync) doBlockFilter(block *block.Block) {
 	head := s.cBase.HeadBlock().Head.Number
+	lib := s.cBase.LIBlock().Head.Number
 	if block.Head.Number > head+maxSyncRange {
 		ilog.Debugf("Block number %v is %v higher than head number %v", block.Head.Number, maxSyncRange, head)
+		return
+	}
+	if block.Head.Number <= lib {
+		ilog.Debugf("Block number %v is lower than or equal to lib number %v", block.Head.Number, lib)
 		return
 	}
 
