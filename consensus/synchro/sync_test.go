@@ -333,7 +333,6 @@ func (p *peer) NewSync(ctrl *gomock.Controller) {
 	bCache := mock.NewMockBlockCache(ctrl)
 	bCache.EXPECT().Head().DoAndReturn(p.bcacheHead).AnyTimes()
 	bCache.EXPECT().LinkedRoot().DoAndReturn(p.bcacheLinkedRoot).AnyTimes()
-	bCache.EXPECT().Find(gomock.Any()).DoAndReturn(p.bcacheFind).AnyTimes()
 	bCache.EXPECT().GetBlockByHash(gomock.Any()).DoAndReturn(p.bcacheGetBlockByHash).AnyTimes()
 	bCache.EXPECT().GetBlockByNumber(gomock.Any()).DoAndReturn(p.bcacheGetBlockByNumber).AnyTimes()
 
