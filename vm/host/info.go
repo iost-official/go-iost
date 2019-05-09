@@ -55,6 +55,10 @@ func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) 
 	ctxInfo["abi_name"] = h.h.ctx.Value("abi_name")
 	ctxInfo["publisher"] = h.h.ctx.Value("publisher")
 
+	if h.h.IsFork3_2_0 {
+		ctxInfo["caller"] = h.h.ctx.Value("caller")
+	}
+
 	cij, err := json.Marshal(ctxInfo)
 	if err != nil {
 		panic(err)
