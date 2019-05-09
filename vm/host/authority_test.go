@@ -14,6 +14,7 @@ func TestRequireAuth_ByKey(t *testing.T) {
 	ctx.Set("commit", "abc")
 	ctx.Set("contract_name", "contractName")
 	ctx.Set("auth_list", map[string]int{"keya": 1})
+	ctx.Set("signer_list", map[string]bool{"a@pa": true})
 
 	db, host := myinit(t, ctx)
 
@@ -46,7 +47,7 @@ func TestRequireAuth_ByKey(t *testing.T) {
 		return database.MustMarshal(string(j)), nil
 	})
 
-	ans, cost := host.RequireAuth("a", "pa")
+	ans, cost := host.RequireSignerAuth("a", "pa")
 	if !ans {
 		t.Fatal(ans)
 	}
@@ -60,6 +61,7 @@ func TestAuthority_ByUser(t *testing.T) {
 	ctx.Set("commit", "abc")
 	ctx.Set("contract_name", "contractName")
 	ctx.Set("auth_list", map[string]int{"keyb": 1})
+	ctx.Set("signer_list", map[string]bool{"b@active": true})
 
 	db, host := myinit(t, ctx)
 
@@ -126,6 +128,7 @@ func TestAuthority_Active(t *testing.T) {
 	ctx.Set("commit", "abc")
 	ctx.Set("contract_name", "contractName")
 	ctx.Set("auth_list", map[string]int{"keya": 1})
+	ctx.Set("signer_list", map[string]bool{"a@active": true})
 
 	db, host := myinit(t, ctx)
 
@@ -197,6 +200,7 @@ func TestAuthority_Owner(t *testing.T) {
 	ctx.Set("commit", "abc")
 	ctx.Set("contract_name", "contractName")
 	ctx.Set("auth_list", map[string]int{"keya": 1})
+	ctx.Set("signer_list", map[string]bool{"a@owner": true})
 
 	db, host := myinit(t, ctx)
 
