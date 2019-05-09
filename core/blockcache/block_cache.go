@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	"os"
-	"strconv"
 	"sync"
 
 	"github.com/golang/protobuf/proto"
@@ -14,7 +12,6 @@ import (
 	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/db/wal"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/xlab/treeprint"
 )
 
 //go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/core/blockcache BlockCache
@@ -41,8 +38,9 @@ const (
 	Single
 )
 
+// The directory of block cache wal.
 var (
-	blockCacheWALDir = "./BlockCacheWAL"
+	BlockCacheWALDir = "./BlockCacheWAL"
 )
 
 // BlockCacheNode is the implementation of BlockCacheNode
@@ -201,7 +199,7 @@ func (bcn *BlockCacheNode) removeValidWitness(root *BlockCacheNode) {
 type BlockCache interface {
 	Add(*block.Block) *BlockCacheNode
 	AddGenesis(*block.Block)
-	Link(*BlockCacheNode, bool)
+	Link(*BlockCacheNode)
 	UpdateLib(*BlockCacheNode)
 	Del(*BlockCacheNode)
 	GetBlockByNumber(int64) (*block.Block, error)
@@ -275,7 +273,7 @@ func (bc *BlockCacheImpl) nmdel(num int64) {
 
 // NewBlockCache return a new BlockCache instance
 func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (*BlockCacheImpl, error) {
-	w, err := wal.Create(conf.DB.LdbPath+blockCacheWALDir, []byte("block_cache_wal"))
+	w, err := wal.Create(conf.DB.LdbPath+BlockCacheWALDir, []byte("block_cache_wal"))
 	if err != nil {
 		return nil, err
 	}
@@ -482,24 +480,12 @@ func (bc *BlockCacheImpl) updateActive(node *BlockCacheNode) {
 }
 
 // Link call this when you run the block verify after Add() to ensure add single bcn to linkedRoot
-func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode, replay bool) {
-	if bcn == nil {
-		ilog.Warnf("Block cache node should not be nil")
-		return
-	}
-	parent := bcn.GetParent()
-	if parent.Type != Linked {
-		ilog.Warnf("Parent of block %v should be linked", common.Base58Encode(bcn.Block.HeadHash()))
-		return
-	}
+func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	bcn.Type = Linked
-	delete(bc.leaf, parent)
+	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
 	bcn.updateValidWitness()
 	bc.updateWitnessList(bcn)
-	if !replay {
-		bc.AddNodeToWAL(bcn)
-	}
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
@@ -703,7 +689,7 @@ func (bc *BlockCacheImpl) flush() {
 		ilog.Errorf("Flush state db error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
 
-	err = bc.cutWALFiles(bcn)
+	err = bc.wal.RemoveFilesBefore(bcn.walIndex)
 	if err != nil {
 		ilog.Errorf("Cut wal files error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
 	}
@@ -768,11 +754,6 @@ func (bc *BlockCacheImpl) writeAddNodeWAL(h *BlockCacheNode) (uint64, error) {
 	return bc.wal.SaveSingle(ent)
 }
 
-func (bc *BlockCacheImpl) cutWALFiles(h *BlockCacheNode) error {
-	bc.wal.RemoveFilesBefore(h.walIndex)
-	return nil
-}
-
 // GetBlockByNumber get a block by number
 func (bc *BlockCacheImpl) GetBlockByNumber(num int64) (*block.Block, error) {
 	it := bc.Head()
@@ -831,50 +812,4 @@ func (bc *BlockCacheImpl) SetHead(n *BlockCacheNode) {
 	bc.headRW.Lock()
 	bc.head = n
 	bc.headRW.Unlock()
-}
-
-// Draw returns the linkedroot's and singleroot's tree graph.
-func (bc *BlockCacheImpl) Draw() string {
-	nmLen := 0
-	bc.number2node.Range(func(k, v interface{}) bool {
-		nmLen++
-		return true
-	})
-
-	hmLen := 0
-	bc.hash2node.Range(func(k, v interface{}) bool {
-		hmLen++
-		return true
-	})
-
-	leafLen := len(bc.leaf)
-
-	mapInfo := fmt.Sprintf("nmLen: %v, hmLen: %v, leafLen: %v", nmLen, hmLen, leafLen)
-
-	linkedTree := treeprint.New()
-	bc.LinkedRoot().drawChildren(linkedTree)
-
-	result := mapInfo + "\n" + linkedTree.String() + "\n"
-	for _, vbcn := range bc.singleRoot {
-		singleTree := treeprint.New()
-		vbcn.drawChildren(singleTree)
-		result = result + singleTree.String() + "\n"
-	}
-	return result
-}
-
-func (bcn *BlockCacheNode) drawChildren(root treeprint.Tree) {
-	for c := range bcn.Children {
-		pattern := strconv.Itoa(int(c.Head.Number))
-		if c.Head.Witness != "" {
-			pattern += "(" + c.Head.Witness[4:6] + ")"
-		}
-		root.AddNode(pattern)
-		c.drawChildren(root.FindLastNode())
-	}
-}
-
-// CleanBlockCacheWAL used in test to clean dir
-func CleanBlockCacheWAL() error {
-	return os.RemoveAll(blockCacheWALDir)
 }

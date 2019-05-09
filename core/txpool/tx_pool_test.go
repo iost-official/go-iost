@@ -120,7 +120,7 @@ func TestNewTxPImpl(t *testing.T) {
 		defer os.RemoveAll("DB/")
 
 		So(err, ShouldBeNil)
-		blockcache.CleanBlockCacheWAL()
+		os.RemoveAll(blockcache.BlockCacheWALDir)
 		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
@@ -289,7 +289,7 @@ func TestNewTxPImplB(t *testing.T) {
 		defer os.RemoveAll("DB/")
 
 		So(err, ShouldBeNil)
-		blockcache.CleanBlockCacheWAL()
+		os.RemoveAll(blockcache.BlockCacheWALDir)
 		BlockCache, err := blockcache.NewBlockCache(config, base, statedb)
 		So(err, ShouldBeNil)
 
@@ -599,7 +599,7 @@ func envInit(b *testing.B) (blockcache.BlockCache, []*account.KeyPair, []string,
 	//base.EXPECT().Top().AnyTimes().Return(blockList[0], nil)
 	//base.EXPECT().Push(gomock.Any()).AnyTimes().Return(nil)
 
-	blockcache.CleanBlockCacheWAL()
+	os.RemoveAll(blockcache.BlockCacheWALDir)
 	BlockCache, _ := blockcache.NewBlockCache(conf, bChain, stateDB)
 
 	txPool, _ := NewTxPoolImpl(bChain, BlockCache)

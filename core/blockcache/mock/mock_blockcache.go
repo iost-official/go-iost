@@ -6,7 +6,6 @@ package mock
 
 import (
 	gomock "github.com/golang/mock/gomock"
-	common "github.com/iost-official/go-iost/common"
 	block "github.com/iost-official/go-iost/core/block"
 	blockcache "github.com/iost-official/go-iost/core/blockcache"
 	reflect "reflect"
@@ -67,18 +66,6 @@ func (mr *MockBlockCacheMockRecorder) AddNodeToWAL(arg0 interface{}) *gomock.Cal
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddNodeToWAL", reflect.TypeOf((*MockBlockCache)(nil).AddNodeToWAL), arg0)
 }
 
-// CleanDir mocks base method
-func (m *MockBlockCache) CleanDir() error {
-	ret := m.ctrl.Call(m, "CleanDir")
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// CleanDir indicates an expected call of CleanDir
-func (mr *MockBlockCacheMockRecorder) CleanDir() *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CleanDir", reflect.TypeOf((*MockBlockCache)(nil).CleanDir))
-}
-
 // Del mocks base method
 func (m *MockBlockCache) Del(arg0 *blockcache.BlockCacheNode) {
 	m.ctrl.Call(m, "Del", arg0)
@@ -99,19 +86,6 @@ func (m *MockBlockCache) Draw() string {
 // Draw indicates an expected call of Draw
 func (mr *MockBlockCacheMockRecorder) Draw() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Draw", reflect.TypeOf((*MockBlockCache)(nil).Draw))
-}
-
-// Find mocks base method
-func (m *MockBlockCache) Find(arg0 []byte) (*blockcache.BlockCacheNode, error) {
-	ret := m.ctrl.Call(m, "Find", arg0)
-	ret0, _ := ret[0].(*blockcache.BlockCacheNode)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// Find indicates an expected call of Find
-func (mr *MockBlockCacheMockRecorder) Find(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Find", reflect.TypeOf((*MockBlockCache)(nil).Find), arg0)
 }
 
 // GetBlockByHash mocks base method
@@ -153,13 +127,13 @@ func (mr *MockBlockCacheMockRecorder) Head() *gomock.Call {
 }
 
 // Link mocks base method
-func (m *MockBlockCache) Link(arg0 *blockcache.BlockCacheNode, arg1 bool) {
-	m.ctrl.Call(m, "Link", arg0, arg1)
+func (m *MockBlockCache) Link(arg0 *blockcache.BlockCacheNode) {
+	m.ctrl.Call(m, "Link", arg0)
 }
 
 // Link indicates an expected call of Link
-func (mr *MockBlockCacheMockRecorder) Link(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Link", reflect.TypeOf((*MockBlockCache)(nil).Link), arg0, arg1)
+func (mr *MockBlockCacheMockRecorder) Link(arg0 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Link", reflect.TypeOf((*MockBlockCache)(nil).Link), arg0)
 }
 
 // LinkedRoot mocks base method
@@ -172,18 +146,6 @@ func (m *MockBlockCache) LinkedRoot() *blockcache.BlockCacheNode {
 // LinkedRoot indicates an expected call of LinkedRoot
 func (mr *MockBlockCacheMockRecorder) LinkedRoot() *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "LinkedRoot", reflect.TypeOf((*MockBlockCache)(nil).LinkedRoot))
-}
-
-// NewWAL mocks base method
-func (m *MockBlockCache) NewWAL(arg0 *common.Config) error {
-	ret := m.ctrl.Call(m, "NewWAL", arg0)
-	ret0, _ := ret[0].(error)
-	return ret0
-}
-
-// NewWAL indicates an expected call of NewWAL
-func (mr *MockBlockCacheMockRecorder) NewWAL(arg0 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NewWAL", reflect.TypeOf((*MockBlockCache)(nil).NewWAL), arg0)
 }
 
 // Recover mocks base method

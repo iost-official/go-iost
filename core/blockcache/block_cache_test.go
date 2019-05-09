@@ -2,6 +2,7 @@ package blockcache
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 
 	. "github.com/golang/mock/gomock"
@@ -105,7 +106,7 @@ func TestBlockCache(t *testing.T) {
 	}
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {
-			CleanBlockCacheWAL()
+			os.RemoveAll(BlockCacheWALDir)
 			bc, _ := NewBlockCache(config, base, statedb)
 			defer CleanDir(bc)
 			//fmt.Printf("Leaf:%+v\n",bc.Leaf)
@@ -116,7 +117,7 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("Flush", func() {
-			CleanBlockCacheWAL()
+			os.RemoveAll(BlockCacheWALDir)
 			bc, _ := NewBlockCache(config, base, statedb)
 			defer CleanDir(bc)
 			bc.Add(b1)
@@ -145,29 +146,29 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("GetBlockbyNumber", func() {
-			CleanBlockCacheWAL()
+			os.RemoveAll(BlockCacheWALDir)
 			bc, _ := NewBlockCache(config, base, statedb)
 			defer CleanDir(bc)
 			b1node := bc.Add(b1)
-			bc.Link(b1node, false)
+			bc.Link(b1node)
 			//bc.Draw()
 			b2node := bc.Add(b2)
-			bc.Link(b2node, false)
+			bc.Link(b2node)
 			// bc.Draw()
 			b2anode := bc.Add(b2a)
-			bc.Link(b2anode, false)
+			bc.Link(b2anode)
 			// bc.Draw()
 			b3node := bc.Add(b3)
-			bc.Link(b3node, false)
+			bc.Link(b3node)
 			// bc.Draw()
 			b4node := bc.Add(b4)
-			bc.Link(b4node, false)
+			bc.Link(b4node)
 			// bc.Draw()
 			b3anode := bc.Add(b3a)
-			bc.Link(b3anode, false)
+			bc.Link(b3anode)
 			// bc.Draw()
 			b5node := bc.Add(b5)
-			bc.Link(b5node, false)
+			bc.Link(b5node)
 			// bc.Draw()
 			So(bc.head, ShouldEqual, b5node)
 			blk, _ := bc.GetBlockByNumber(7)
@@ -188,7 +189,7 @@ func TestBlockCache(t *testing.T) {
 		})
 
 		Convey("UpdateInfo", func() {
-			CleanBlockCacheWAL()
+			os.RemoveAll(BlockCacheWALDir)
 			bc, err := NewBlockCache(config, base, statedb)
 			defer CleanDir(bc)
 			So(err, ShouldBeNil)
@@ -270,11 +271,11 @@ func TestVote(t *testing.T) {
 		node1 := NewBCN(bc.linkedRoot, b1)
 		node2 := NewBCN(node1, b2)
 		node3 := NewBCN(node2, b3)
-		bc.Link(node1, false)
+		bc.Link(node1)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(node2, false)
+		bc.Link(node2)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
-		bc.Link(node3, false)
+		bc.Link(node3)
 		So(StringSliceEqual([]string{"a1", "a2", "a3", "a4", "a5"}, bc.head.Pending()), ShouldBeTrue)
 
 	})
