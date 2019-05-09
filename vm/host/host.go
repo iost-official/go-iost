@@ -2,7 +2,6 @@ package host
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
 	"time"
 
@@ -26,6 +25,7 @@ type Monitor interface {
 // Host host struct, used as isolate of vm
 type Host struct {
 	DBHandler
+	Stack
 	Info
 	Teller
 	APIDelegate
@@ -53,6 +53,7 @@ func NewHost(ctx *Context, db *database.Visitor, rules *version.Rules, monitor M
 	}
 	h.Rules = rules
 	h.DBHandler = NewDBHandler(h)
+	h.Stack = NewStack(h)
 	h.Info = NewInfo(h)
 	h.Teller = NewTeller(h)
 	h.APIDelegate = NewAPI(h)
@@ -75,56 +76,34 @@ func (h *Host) SetContext(ctx *Context) {
 
 }
 
-// Call  call a new contract in this context
-func (h *Host) Call(cont, api, jarg string, withAuth ...bool) ([]interface{}, contract.Cost, error) {
-
-	// save stack
-	record := cont + "-" + api
-
-	height := h.ctx.Value("stack_height").(int)
-
-	for i := 0; i < height; i++ {
-		key := "stack" + strconv.Itoa(i)
-		if h.ctx.Value(key).(string) == record {
-			return nil, contract.Cost{}, ErrReenter
-		}
-	}
-
-	key := "stack" + strconv.Itoa(height)
-
-	h.PushCtx()
+func (h *Host) call(cont, api, jarg string, withAuth bool) ([]interface{}, contract.Cost, error) {
+	reenter, cost := h.PushStack(cont, api, withAuth)
 	defer func() {
-		h.PopCtx()
+		h.PopStack()
 	}()
 
-	// handle withAuth
-	if len(withAuth) > 0 && withAuth[0] {
-		authList := h.ctx.Value("auth_contract_list").(map[string]int)
-
-		if h.Rules.IsFork3_0_10 {
-			newAuthList := make(map[string]int, len(authList))
-			for k, v := range authList {
-				newAuthList[k] = v
-			}
-			newAuthList[h.ctx.Value("contract_name").(string)] = 1
-			h.ctx.Set("auth_contract_list", newAuthList)
-		} else {
-			authList[h.ctx.Value("contract_name").(string)] = 1
-			h.ctx.Set("auth_contract_list", authList)
-		}
+	if reenter {
+		return nil, cost, ErrReenter
 	}
 
-	h.ctx.Set("stack_height", height+1)
-	h.ctx.Set(key, record)
-	rtn, cost, err := h.monitor.Call(h, cont, api, jarg)
-	cost.AddAssign(CommonOpCost(height))
+	if h.StackHeight() > 5 {
+		return nil, cost, fmt.Errorf("stack height exceed. actual %v", h.StackHeight())
+	}
+
+	rtn, cost0, err := h.monitor.Call(h, cont, api, jarg)
+	cost.AddAssign(cost0)
 
 	return rtn, cost, err
 }
 
-// CallWithAuth  call a new contract with permission of current contract
+// Call call a new contract in this context
+func (h *Host) Call(contract, api, jarg string) ([]interface{}, contract.Cost, error) {
+	return h.call(contract, api, jarg, false)
+}
+
+// CallWithAuth call a new contract with permission of current contract
 func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract.Cost, error) {
-	return h.Call(contract, api, jarg, true)
+	return h.call(contract, api, jarg, true)
 }
 
 func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
@@ -163,7 +142,7 @@ func (h *Host) CheckSigners(t *tx.Tx) error {
 		if len(ss) != 2 {
 			return fmt.Errorf("illegal signer: %v", item)
 		}
-		b, c := h.RequireAuth(ss[0], ss[1])
+		b, c := h.RequireSignerAuth(ss[0], ss[1])
 		if !b {
 			return fmt.Errorf("unauthorized signer: %v", item)
 		}
@@ -176,7 +155,7 @@ func (h *Host) CheckSigners(t *tx.Tx) error {
 func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
 	tokenMap := make(map[string]bool)
 	for _, limit := range amountLimit {
-		if h.Rules.IsFork3_1_0 {
+		if h.IsFork3_1_0 {
 			if tokenMap[limit.Token] {
 				return fmt.Errorf("duplicated token in amountLimit: %s", limit.Token)
 			}
@@ -240,6 +219,12 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	h.db.SetContract(c)
 	_, cost0, err = h.Call(c.ID, "init", "[]")
 	cost.AddAssign(cost0)
+
+	if h.IsFork3_2_0 {
+		// remove init
+		c.Info.Abi = c.Info.Abi[:len(c.Info.Abi)-1]
+		h.db.SetContract(c)
+	}
 
 	return cost, err
 }
