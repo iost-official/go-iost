@@ -20,6 +20,7 @@ const (
 	Token721BalanceMapPrefix     = "T721B"
 	Token721IssuerMapField       = "T721issuer"
 	Token721MetadataMapPrefix    = "T721M"
+	Token721ApproveTokenPrefix   = "T721A"
 	Token721MetadataKeySeparator = "#"
 )
 
