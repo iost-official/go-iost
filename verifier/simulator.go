@@ -161,13 +161,18 @@ func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {
 }
 
 // Call abi with basic settings
-func (s *Simulator) Call(contractName, abi, args string, publisher string, auth *account.KeyPair) (*tx.TxReceipt, error) {
-
+func (s *Simulator) Call(contractName, abi, args string, publisher string, auth *account.KeyPair, otherArgs ...interface{}) (*tx.TxReceipt, error) {
+	var signers []string
+	if len(otherArgs) >= 1 {
+		if s, ok := otherArgs[0].([]string); ok {
+			signers = s
+		}
+	}
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
+	}}, signers, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
 
 	trx.Time = s.Head.Time
 	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})

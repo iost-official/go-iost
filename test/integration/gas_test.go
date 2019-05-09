@@ -77,6 +77,9 @@ func gasTestInit() (*native.Impl, *host.Host, *contract.Contract, string, db.MVC
 	h.Context().Set("auth_contract_list", authList)
 	authList[acc0.KeyPair.ReadablePubkey()] = 2
 	h.Context().Set("auth_list", authList)
+	signerList := make(map[string]bool)
+	signerList[acc0.ID+"@active"] = true
+	h.Context().Set("signer_list", signerList)
 
 	code := &contract.Contract{
 		ID:   native.GasContractName,
@@ -133,6 +136,8 @@ func TestGas_PledgeAuth(t *testing.T) {
 		pledgeAmount := toIOSTFixed(200)
 		authList := make(map[string]int)
 		h.Context().Set("auth_list", authList)
+		signerList := make(map[string]bool)
+		h.Context().Set("signer_list", signerList)
 		_, _, err := e.LoadAndCall(h, code, "pledge", testAcc, testAcc, pledgeAmount.ToString())
 		So(err, ShouldNotBeNil)
 	})
@@ -329,6 +334,9 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			authList[acc1.KeyPair.ReadablePubkey()] = 2
 			h.Context().Set("auth_list", authList)
 			h.Context().Set("publisher", otherAcc)
+			signerList := make(map[string]bool)
+			signerList[otherAcc+"@active"] = true
+			h.Context().Set("signer_list", signerList)
 			h.DB().SetTokenBalanceFixed("iost", otherAcc, "20")
 			_, _, err = e.LoadAndCall(h, code, "pledge", otherAcc, otherAcc, "20")
 			So(err, ShouldBeNil)

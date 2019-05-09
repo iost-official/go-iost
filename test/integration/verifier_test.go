@@ -8,11 +8,13 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/ilog"
 	. "github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
 	. "github.com/smartystreets/goconvey/convey"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestTransfer(t *testing.T) {
@@ -40,7 +42,7 @@ func TestTransfer(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			So(s.Visitor.TokenBalance("iost", acc0.ID), ShouldEqual, int64(99999990000))
 			So(s.Visitor.TokenBalance("iost", acc1.ID), ShouldEqual, int64(10000))
-			So(r.GasUsage, ShouldEqual, 800800)
+			So(r.GasUsage, ShouldEqual, 762900)
 		})
 
 		Convey("test of token memo", func() {
@@ -656,6 +658,7 @@ func TestAuthority(t *testing.T) {
 		s.Visitor.SetContract(native.TokenABI())
 
 		acc := prepareAuth(t, s)
+		signers := []string{"myidid" + "@owner"}
 		s.SetGas(acc.ID, 1e8)
 		s.SetRAM(acc.ID, 1000)
 		s.SetRAM("myidid", 1000)
@@ -671,7 +674,7 @@ func TestAuthority(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldStartWith, `{"id":"myidid",`)
 
-		r, err = s.Call("auth.iost", "addPermission", array2json([]interface{}{"myidid", "perm1", 1}), acc.ID, acc.KeyPair)
+		r, err = s.Call("auth.iost", "addPermission", array2json([]interface{}{"myidid", "perm1", 1}), acc.ID, acc.KeyPair, signers)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(database.Unmarshal(s.Visitor.MGet("auth.iost-auth", "myidid")), ShouldContainSubstring, `"perm1":{"name":"perm1","groups":[],"items":[],"threshold":1}`)
@@ -685,61 +688,70 @@ func TestAuthority(t *testing.T) {
 
 func TestGasLimit2(t *testing.T) {
 	ilog.Stop()
-	Convey("test of gas limit 2", t, func() {
-		s := NewSimulator()
-		defer s.Clear()
-		createAccountsWithResource(s)
+	s := NewSimulator()
+	defer s.Clear()
 
-		createToken(t, s, acc0)
+	conf := &common.Config{
+		P2P: &common.P2PConfig{
+			ChainID: 1024,
+		},
+	}
+	version.InitChainConf(conf)
+	rules := version.NewRules(0)
+	assert.False(t, rules.IsFork3_2_0)
+	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
-		ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
-		So(err, ShouldBeNil)
-		So(ca, ShouldNotBeNil)
-		s.SetContract(ca)
+	createAccountsWithResource(s)
+	createToken(t, s, acc0)
 
-		Convey("test of amount limit", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-			s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
-			s.SetGas(acc0.ID, 2000000)
-			s.SetRAM(acc0.ID, 10000)
+	ca, err := s.Compile("Contracttransfer", "./test_data/transfer", "./test_data/transfer.js")
+	assert.Nil(t, err)
+	assert.NotNil(t, ca)
+	s.SetContract(ca)
 
-			acts := make([]*tx.Action, 0)
-			for i := 0; i < 2; i++ {
-				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
-			}
-			trx := tx.NewTx(acts, nil, 10000000, 100, s.Head.Time, 0, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
+	s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
+	s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+	s.SetGas(acc0.ID, 2000000)
+	s.SetRAM(acc0.ID, 10000)
 
-			r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
-			s.Visitor.Commit()
+	acts := make([]*tx.Action, 0)
+	for i := 0; i < 2; i++ {
+		acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
+	}
+	trx := tx.NewTx(acts, nil, 10000000, 100, s.Head.Time, 0, 0)
+	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
-			So(err, ShouldBeNil)
-			So(r.Status.Message, ShouldEqual, "")
-			So(r.GasUsage, ShouldEqual, int64(7516900))
-			balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
-			balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
-			So(balance0.ToString(), ShouldEqual, "980")
-			So(balance2.ToString(), ShouldEqual, "20")
+	r, err := s.CallTx(trx, acc0.ID, acc0.KeyPair)
+	s.Visitor.Commit()
 
-			// out of gas
-			s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-			s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
-			s.SetGas(acc0.ID, 2000000)
-			s.SetRAM(acc0.ID, 10000)
-			acts = []*tx.Action{}
-			for i := 0; i < 4; i++ {
-				acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
-			}
-			trx = tx.NewTx(acts, nil, 2000000, 100, s.Head.Time, 0, 0)
-			trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
+	assert.Nil(t, err)
+	assert.Equal(t, "", r.Status.Message)
+	assert.Equal(t, int64(7516900), r.GasUsage)
+	balance0 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc0.ID), Decimal: s.Visitor.Decimal("iost")}
+	balance2 := common.Fixed{Value: s.Visitor.TokenBalance("iost", acc1.ID), Decimal: s.Visitor.Decimal("iost")}
+	assert.Equal(t, "980", balance0.ToString())
+	assert.Equal(t, "20", balance2.ToString())
 
-			r, err = s.CallTx(trx, acc0.ID, acc0.KeyPair)
-			s.Visitor.Commit()
+	// out of gas
+	s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
+	s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+	s.SetGas(acc0.ID, 2000000)
+	s.SetRAM(acc0.ID, 10000)
+	acts = []*tx.Action{}
+	for i := 0; i < 4; i++ {
+		acts = append(acts, tx.NewAction("Contracttransfer", "transfer", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc1.ID, "10")))
+	}
+	trx = tx.NewTx(acts, nil, 2000000, 100, s.Head.Time, 0, 0)
+	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
 
-			So(err, ShouldBeNil)
-			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
-			So(r.Status.Message, ShouldEqual, "out of gas")
-			So(r.GasUsage, ShouldEqual, int64(2000000))
-		})
-	})
+	r, err = s.CallTx(trx, acc0.ID, acc0.KeyPair)
+	s.Visitor.Commit()
+
+	assert.Nil(t, err)
+	assert.Equal(t, tx.ErrorRuntime, r.Status.Code)
+	assert.Equal(t, "out of gas", r.Status.Message)
+	assert.Equal(t, int64(2000000), r.GasUsage)
+
+	conf.P2P.ChainID = 0
+	version.InitChainConf(conf)
 }
