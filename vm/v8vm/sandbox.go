@@ -3,6 +3,7 @@ package v8
 /*
 #include <stdlib.h>
 #include "v8/vm.h"
+char* goRules(SandboxPtr, CStr *);
 char* goBlockInfo(SandboxPtr, CStr *, size_t *);
 char* goTxInfo(SandboxPtr, CStr *, size_t *);
 char* goContextInfo(SandboxPtr, CStr *, size_t *);
@@ -110,6 +111,7 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 	// init require
 	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
 	C.InitGoBlockchain(
+		(C.rulesFunc)(C.goRules),
 		(C.blockInfoFunc)(C.goBlockInfo),
 		(C.txInfoFunc)(C.goTxInfo),
 		(C.contextInfoFunc)(C.goContextInfo),

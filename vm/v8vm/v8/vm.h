@@ -59,6 +59,7 @@ typedef char *(*requireFunc)(SandboxPtr, const CStr);
 void InitGoRequire(requireFunc);
 
 // blockchain
+typedef char* (*rulesFunc)(SandboxPtr, CStr *);
 typedef char* (*blockInfoFunc)(SandboxPtr, CStr *, size_t *);
 typedef char* (*txInfoFunc)(SandboxPtr, CStr *, size_t *);
 typedef char* (*contextInfoFunc)(SandboxPtr, CStr *, size_t *);
@@ -68,7 +69,7 @@ typedef char* (*requireAuthFunc)(SandboxPtr, const CStr, const CStr, bool *, siz
 typedef char* (*receiptFunc)(SandboxPtr, const CStr, size_t *);
 typedef char* (*eventFunc)(SandboxPtr, const CStr, size_t *);
 
-void InitGoBlockchain(blockInfoFunc, txInfoFunc, contextInfoFunc, callFunc, callWithAuthFunc, requireAuthFunc, receiptFunc, eventFunc);
+void InitGoBlockchain(rulesFunc, blockInfoFunc, txInfoFunc, contextInfoFunc, callFunc, callWithAuthFunc, requireAuthFunc, receiptFunc, eventFunc);
 
 // storage
 typedef char* (*putFunc)(SandboxPtr, const CStr, const CStr, const CStr, size_t *);

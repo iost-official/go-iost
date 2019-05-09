@@ -33,6 +33,22 @@ func (cstr C.CStr) GoString() string {
 	return C.GoStringN(cstr.data, cstr.size)
 }
 
+//export goRules
+func goRules(cSbx C.SandboxPtr, rules *C.CStr) *C.char {
+	sbx, ok := GetSandbox(cSbx)
+	if !ok {
+		return C.CString(ErrGetSandbox.Error())
+	}
+
+	res, err := json.Marshal(sbx.host.Rules)
+	if err != nil {
+		return C.CString(err.Error())
+	}
+	rules.SetString(string(res))
+
+	return nil
+}
+
 //export goBlockInfo
 func goBlockInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
 	sbx, ok := GetSandbox(cSbx)

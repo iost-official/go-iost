@@ -8,6 +8,7 @@
 
 #include "vm.js.h"
 #include "environment.js.h"
+#include "prepend.js.h"
 #include <assert.h>
 #include <cstring>
 #include <fstream>
@@ -22,29 +23,7 @@
 
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
 char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
-
-const char *preloadBlockCode = R"(
-// load Block
-const blockInfo = JSON.parse(blockchain.blockInfo());
-const block = {
-   number: blockInfo.number,
-   parentHash: blockInfo.parent_hash,
-   witness: blockInfo.witness,
-   time: blockInfo.time
-};
-
-
-// load tx
-const txInfo = JSON.parse(blockchain.txInfo());
-const tx = {
-   time: txInfo.time,
-   hash: txInfo.hash,
-   expiration: txInfo.expiration,
-   gasLimit: txInfo.gas_limit,
-   gasRatio: txInfo.gas_ratio,
-   authList: txInfo.auth_list,
-   publisher: txInfo.publisher
-};)";
+char *prependJsLib = reinterpret_cast<char *>(__libjs_prepend_js);
 
 const int sandboxMemLimit = 100000000; // 100mb
 const int resultMaxLength = 65536; // 65536 char >= 65536 byte
@@ -309,7 +288,7 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
     tryCatch.SetVerbose(false);
 
     // preload block info.
-    Local<String> source = String::NewFromUtf8(isolate, preloadBlockCode, NewStringType::kNormal).ToLocalChecked();
+    Local<String> source = String::NewFromUtf8(isolate, prependJsLib, NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, "_preload_block.js", NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
 
