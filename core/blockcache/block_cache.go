@@ -618,13 +618,13 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	for ch := range bcn.Children {
 		bc.del(ch)
 	}
-	bc.delNode(bcn)
 	parent := bcn.GetParent()
 	if parent != nil {
 		delete(parent.Children, bcn)
 	} else {
 		ilog.Errorf("Parent of block %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
 	}
+	bc.delNode(bcn)
 }
 
 func (bc *BlockCacheImpl) delSingle() {
