@@ -596,20 +596,16 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 }
 
 func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
-	parent := bcn.GetParent()
-	if parent != nil {
-		delete(parent.Children, bcn)
-		bcn.SetParent(nil)
-	} else {
-		ilog.Errorf("Parent of block %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
-	}
-
+	bcn.SetParent(nil)
 	bc.hmdel(bcn.HeadHash())
 	delete(bc.leaf, bcn)
 }
 
 // Del is delete a block
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
+	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
+		bc.leaf[bcn.GetParent()] = bcn.GetParent().Head.Number
+	}
 	bc.del(bcn)
 	bc.updateLongest()
 }
@@ -622,8 +618,11 @@ func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
 	for ch := range bcn.Children {
 		bc.del(ch)
 	}
-	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
-		bc.leaf[bcn.GetParent()] = bcn.GetParent().Head.Number
+	parent := bcn.GetParent()
+	if parent != nil {
+		delete(parent.Children, bcn)
+	} else {
+		ilog.Errorf("Parent of block %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
 	}
 	bc.delNode(bcn)
 }

@@ -131,7 +131,7 @@ func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
 		return errSingle
 	}
 	if err := c.addExistingBlock(node, replay, gen); err != nil {
-		ilog.Warnf("Verify block execute failed: %v", err)
+		ilog.Warnf("verify block execute failed, blockNum: %v, blockHash: %v, err: %v", node.Head.Number, common.Base58Encode(node.HeadHash()), err)
 		return err
 	}
 
@@ -157,7 +157,7 @@ func (c *ChainBase) addExistingBlock(node *blockcache.BlockCacheNode, replay boo
 		c.stateDB.Checkout(string(blk.Head.ParentHash))
 		err := c.verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList)
 		if err != nil {
-			ilog.Errorf("verify block failed, blockNum:%v, blockHash:%v. err=%v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), err)
+			// TODO: Decouple add and link of blockcache, then remove the Del().
 			c.bCache.Del(node)
 			return err
 		}
