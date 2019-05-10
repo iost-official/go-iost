@@ -595,12 +595,6 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 	bc.leaf[bc.LinkedRoot()] = bc.LinkedRoot().Head.Number
 }
 
-func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
-	bcn.SetParent(nil)
-	bc.hmdel(bcn.HeadHash())
-	delete(bc.leaf, bcn)
-}
-
 // Del is delete a block
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
@@ -611,20 +605,13 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
-	if bcn == nil {
-		ilog.Errorf("Block cache node %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
-		return
-	}
 	for ch := range bcn.Children {
 		bc.del(ch)
 	}
-	parent := bcn.GetParent()
-	if parent != nil {
-		delete(parent.Children, bcn)
-	} else {
-		ilog.Errorf("Parent of block %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
-	}
-	bc.delNode(bcn)
+	delete(bcn.GetParent().Children, bcn)
+	bcn.SetParent(nil)
+	bc.hmdel(bcn.HeadHash())
+	delete(bc.leaf, bcn)
 }
 
 func (bc *BlockCacheImpl) delSingle() {
@@ -661,8 +648,10 @@ func (bc *BlockCacheImpl) updateLinkedRoot(bcn *BlockCacheNode) {
 
 	bc.updateLinkedRootWitness(parent, bcn)
 	bcn.removeValidWitness(bcn)
+
 	bc.nmdel(parent.Head.Number)
-	bc.delNode(parent)
+	bc.hmdel(parent.HeadHash())
+
 	bcn.SetParent(nil)
 	bc.SetLinkedRoot(bcn)
 	bc.delSingle()
