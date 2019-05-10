@@ -544,18 +544,6 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 	return nil
 }
 
-func (bc *BlockCacheImpl) updateLongest() {
-	_, ok := bc.hmget(bc.Head().HeadHash())
-	if ok {
-		return
-	}
-	for bcn := range bc.leaf {
-		if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
-			bc.SetHead(bcn)
-		}
-	}
-}
-
 // Add is add a block
 func (bc *BlockCacheImpl) Add(blk *block.Block) *BlockCacheNode {
 	newNode, nok := bc.hmget(blk.HeadHash())
@@ -597,11 +585,7 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 
 // Del is delete a block
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
-	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
-		bc.leaf[bcn.GetParent()] = bcn.GetParent().Head.Number
-	}
 	bc.del(bcn)
-	bc.updateLongest()
 }
 
 func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
@@ -655,7 +639,17 @@ func (bc *BlockCacheImpl) updateLinkedRoot(bcn *BlockCacheNode) {
 	bcn.SetParent(nil)
 	bc.SetLinkedRoot(bcn)
 	bc.delSingle()
-	bc.updateLongest()
+
+	// Update Longest
+	_, ok := bc.hmget(bc.Head().HeadHash())
+	if ok {
+		return
+	}
+	for bcn := range bc.leaf {
+		if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
+			bc.SetHead(bcn)
+		}
+	}
 }
 
 func (bc *BlockCacheImpl) flush() {
