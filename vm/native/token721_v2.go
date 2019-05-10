@@ -23,6 +23,7 @@ func init() {
 
 	// modified methods for V2
 	token721ABIsV2.Register(transferToken721ABIV2)
+	token721ABIsV2.Register(transferWithMemoToken721ABIV2)
 	token721ABIsV2.Register(approveToken721ABIV2)
 }
 
@@ -133,6 +134,18 @@ var (
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 			return []interface{}{}, cost, nil
+		},
+	}
+
+	transferWithMemoToken721ABIV2 = &abi{
+		name: "transferWithMemo",
+		args: []string{"string", "string", "string", "string", "string"},
+		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+			memo := args[4].(string)
+			if len(memo) > 512 {
+				return nil, cost, host.ErrMemoTooLarge
+			}
+			return transferToken721ABIV2.do(h, args...)
 		},
 	}
 

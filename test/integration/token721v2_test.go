@@ -12,7 +12,7 @@ import (
 )
 
 func Test_Token721v2Approval(t *testing.T) {
-	ilog.Start()
+	ilog.Stop()
 	s := NewSimulator()
 	defer s.Clear()
 
@@ -77,4 +77,9 @@ func Test_Token721v2Approval(t *testing.T) {
 	r, err = s.Call(cname2, "transferWithAuth", fmt.Sprintf(`["%s","%s","%d"]`, cname, cname2, 0), acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
+
+	r, err = s.Call("token721.iost", "transferWithMemo", fmt.Sprintf(`["iost","%s","%s","%d","somememo"]`, acc0.ID, cname, 1), acc0.ID, acc0.KeyPair)
+	assert.Nil(t, err)
+	assert.Equal(t, "", r.Status.Message)
+	assert.Contains(t, r.Receipts[0].Content, "somememo")
 }
