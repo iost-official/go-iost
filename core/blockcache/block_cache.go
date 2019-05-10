@@ -485,7 +485,15 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
 	bcn.updateValidWitness()
-	bc.updateWitnessList(bcn)
+
+	// Update WitnessList of bcn
+	bcn.CopyWitness(bcn.GetParent())
+	if bcn.Head.Number%common.VoteInterval == 0 {
+		if err := bc.updatePending(bcn); err != nil {
+			// TODO: Should handle err
+		}
+	}
+
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
@@ -514,16 +522,6 @@ func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
 	if witness != "" {
 		bc.linkedRootWitness = append(bc.linkedRootWitness, witness)
 	}
-}
-
-func (bc *BlockCacheImpl) updateWitnessList(h *BlockCacheNode) error {
-	h.CopyWitness(h.GetParent())
-	if h.Head.Number%common.VoteInterval == 0 {
-		if err := bc.updatePending(h); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
