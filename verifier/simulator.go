@@ -102,6 +102,36 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 	s.Visitor.SetContract(c)
 }
 
+// DeploySystemContract via system.iost/initSetCode
+func (s *Simulator) DeploySystemContract(c *contract.Contract, publisher string, kp *account.KeyPair) (*tx.TxReceipt, error) {
+	sc := c.B64Encode()
+
+	jargs, err := json.Marshal([]string{c.ID, sc})
+	if err != nil {
+		panic(err)
+	}
+
+	trx := tx.NewTx([]*tx.Action{{
+		Contract:   "system.iost",
+		ActionName: "initSetCode",
+		Data:       string(jargs),
+	}}, nil, 400000000, 100, s.Head.Time+10000000, 0, 0)
+
+	trx.Time = s.Head.Time
+
+	bn := s.Head.Number
+	s.Head.Number = 0
+	r, err := s.CallTx(trx, publisher, kp)
+	s.Head.Number = bn
+	if err != nil {
+		return r, err
+	}
+	if r.Status.Code != 0 {
+		return r, errors.New(r.Status.Message)
+	}
+	return r, nil
+}
+
 // DeployContract via system.iost/setCode
 func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, *tx.TxReceipt, error) {
 	sc, err := json.Marshal(c)

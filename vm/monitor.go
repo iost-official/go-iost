@@ -96,6 +96,13 @@ func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
+	if h.IsFork3_2_0 {
+		// TODO: reorganize monitor to remove this code
+		callerName := h.Caller().Name
+		if api == "init" && callerName != "system.iost" && callerName != "" {
+			return nil, host.CommonErrorCost(1), errors.New("prepare contract: cannot call 'init' manually")
+		}
+	}
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 	if err != nil {
 		return nil, host.Costs["GetCost"], fmt.Errorf("prepare contract: %v", err)

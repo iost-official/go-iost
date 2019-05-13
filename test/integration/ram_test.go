@@ -1,9 +1,10 @@
 package integration
 
 import (
+	"testing"
+
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/native"
-	"testing"
 
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
@@ -21,18 +22,21 @@ func ramSetup(t *testing.T) (*Simulator, *TestAccount) {
 	ilog.Stop()
 
 	createAccountsWithResource(s)
-	err := setNonNativeContract(s, ramContractName, "ram.js", ContractPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-
 	acc := prepareAuth(t, s)
 	createToken(t, s, acc)
 	s.SetGas(acc.ID, 10000000)
 
+	r, err := setNonNativeContract(s, ramContractName, "ram.js", ContractPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if r.Status.Code != tx.StatusCode(tx.Success) {
+		panic("set contract failed " + r.String())
+	}
+
 	s.Head.Number = 0
 	admin := acc1
-	r, err := s.Call(ramContractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin.KeyPair)
+	r, err = s.Call(ramContractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin.KeyPair)
 	if err != nil {
 		panic(err)
 	}
