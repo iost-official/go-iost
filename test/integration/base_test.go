@@ -13,8 +13,7 @@ import (
 
 func prepareBase(t *testing.T, s *Simulator, acc *TestAccount) {
 	// deploy base.iost
-	setNonNativeContract(s, "base.iost", "base.js", ContractPath)
-	r, err := s.Call("base.iost", "init", `[]`, acc.ID, acc.KeyPair)
+	r, err := setNonNativeContract(s, "base.iost", "base.js", ContractPath)
 	So(err, ShouldBeNil)
 	So(r.Status.Code, ShouldEqual, tx.Success)
 	s.Visitor.Commit()
@@ -38,8 +37,7 @@ func Test_Base(t *testing.T) {
 		}
 
 		// deploy bonus.iost
-		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		r, err := s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+		r, err := setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 

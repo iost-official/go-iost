@@ -406,7 +406,9 @@ func TestGas_TGas(t *testing.T) {
 	}
 	s.SetContract(ca)
 	// deploy issue.iost
-	setNonNativeContract(s, "issue.iost", "issue.js", ContractPath)
+	r, err := setNonNativeContract(s, "issue.iost", "issue.js", ContractPath)
+	So(err, ShouldBeNil)
+	So(r.Status.Message, ShouldEqual, "")
 	s.SetContract(native.GasABI())
 	acc := prepareAuth(t, s)
 	err = createToken(t, s, acc)

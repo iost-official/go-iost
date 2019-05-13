@@ -52,12 +52,14 @@ func (s *Stack) PushStack(cont, api string, withAuth bool) (reenter bool, cost c
 	s.h.ctx.Set(key, record)
 	s.h.ctx.Set("stack_height", height+1)
 
+	callerName := ""
 	if s.h.ctx.Value("contract_name") != nil {
-		s.h.Context().Set("caller", Caller{
-			Name:      s.h.ctx.Value("contract_name").(string),
-			IsAccount: false,
-		})
+		callerName = s.h.ctx.Value("contract_name").(string)
 	}
+	s.h.Context().Set("caller", Caller{
+		Name:      callerName,
+		IsAccount: false,
+	})
 
 	// handle withAuth
 	if withAuth {

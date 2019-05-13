@@ -25,8 +25,9 @@ func Test_VoteBonus(t *testing.T) {
 	initProducer(t, s)
 
 	// deploy bonus.iost
-	setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-	s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+	r, err := setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	s.Head.Number = 1
 	for _, acc := range testAccounts[6:] {
@@ -69,7 +70,7 @@ func Test_VoteBonus(t *testing.T) {
 	assert.Equal(t, `{"user_1":["20000000",1,"0"],"user_2":["40000000",1,"0"],"user_3":["60000000",1,"0"],"user_4":["80000000",1,"0"],"user_5":["100000000",1,"0"],"user_6":["120000000",1,"0"],"user_7":["140000000",1,"0"],"user_8":["160000000",1,"0"],"user_9":["180000000",1,"0"]}`, database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)))
 	assert.Equal(t, `{"user_0":["20000000",1,"0"],"user_1":["20000000",1,"0"],"user_2":["20000000",1,"0"],"user_3":["20000000",1,"0"],"user_4":["20000000",1,"0"],"user_5":["20000000",1,"0"],"user_6":["20000000",1,"0"],"user_7":["20000000",1,"0"],"user_8":["20000000",1,"0"],"user_9":["20000000",1,"0"]}`, database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc2.ID)))
 	s.Head.Time += 5073358980
-	r, err := s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
+	r, err = s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Empty(t, r.Status.Message)
 	assert.Equal(t, int64(103333333410), s.Visitor.TokenBalance("iost", "vote_producer.iost"))
@@ -176,8 +177,9 @@ func Test_PartnerBonus(t *testing.T) {
 	initProducer(t, s)
 
 	// deploy bonus.iost
-	setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-	s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+	r, err := setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	s.Head.Number = 1
 	for _, acc := range testAccounts[6:] {
@@ -210,7 +212,7 @@ func Test_PartnerBonus(t *testing.T) {
 	assert.Equal(t, `{"user_1":["20000000",1,"0"],"user_2":["40000000",1,"0"],"user_3":["60000000",1,"0"],"user_4":["80000000",1,"0"],"user_5":["100000000",1,"0"],"user_6":["120000000",1,"0"],"user_7":["140000000",1,"0"],"user_8":["160000000",1,"0"],"user_9":["180000000",1,"0"]}`, database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)))
 	assert.Equal(t, `{"user_0":["20000000",1,"0"],"user_1":["20000000",1,"0"],"user_2":["20000000",1,"0"],"user_3":["20000000",1,"0"],"user_4":["20000000",1,"0"],"user_5":["20000000",1,"0"],"user_6":["20000000",1,"0"],"user_7":["20000000",1,"0"],"user_8":["20000000",1,"0"],"user_9":["20000000",1,"0"]}`, database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc2.ID)))
 	s.Head.Time += 5073358980
-	r, err := s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
+	r, err = s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Empty(t, r.Status.Message)
 	assert.Equal(t, int64(103333333410), s.Visitor.TokenBalance("iost", "vote_producer.iost"))
@@ -261,8 +263,9 @@ func TestCriticalVoteCase(t *testing.T) {
 	initProducer(t, s)
 
 	// deploy bonus.iost
-	setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-	s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+	r, err := setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 	s.Head.Number = 1
 
 	for _, acc := range testAccounts[6:] {
@@ -284,7 +287,7 @@ func TestCriticalVoteCase(t *testing.T) {
 	}
 	assert.Equal(t, `{"user_0":["2000000",1,"0"],"user_1":["4000000",1,"0"],"user_2":["6000000",1,"0"],"user_3":["8000000",1,"0"],"user_4":["10000000",1,"0"],"user_5":["12000000",1,"0"],"user_6":["14000000",1,"0"],"user_7":["16000000",1,"0"],"user_8":["18000000",1,"0"],"user_9":["20000000",1,"0"]}`, database.MustUnmarshal(s.Visitor.MGet("vote.iost-u_1", acc0.ID)))
 	s.Head.Time += 5073358980
-	r, err := s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
+	r, err = s.Call("issue.iost", "issueIOST", `[]`, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Empty(t, r.Status.Message)
 	assert.Equal(t, int64(103333333410), s.Visitor.TokenBalance("iost", "vote_producer.iost"))

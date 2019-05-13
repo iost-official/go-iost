@@ -262,5 +262,5 @@ func Test_SetCode(t *testing.T) {
 
 	r, err = s.Call(cname, "init", `[]`, acc.ID, acc.KeyPair)
 	assert.Nil(t, err)
-	assert.Contains(t, r.Status.Message, "prepare contract: abi init not found")
+	assert.Contains(t, r.Status.Message, "cannot call 'init' manually")
 }

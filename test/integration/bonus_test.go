@@ -22,8 +22,9 @@ func Test_IssueBonus(t *testing.T) {
 		prepareFakeBase(t, s)
 
 		// deploy issue.iost
-		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+		r, err := setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 
 		Convey("test issueContribute", func() {
 			s.Head.Witness = acc1.KeyPair.ReadablePubkey()
@@ -53,8 +54,9 @@ func Test_ExchangeIOST(t *testing.T) {
 		prepareFakeBase(t, s)
 
 		// deploy bonus.iost
-		setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+		r, err := setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
+		So(err, ShouldBeNil)
+		So(r.Status.Message, ShouldEqual, "")
 
 		Convey("test exchangeIOST", func() {
 			createToken(t, s, acc0)
@@ -106,9 +108,7 @@ func Test_UpdateBonus(t *testing.T) {
 		So(r.Status.Message, ShouldEqual, "")
 
 		// deploy issue.iost
-		err = setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
-		So(err, ShouldBeNil)
-		r, err = s.Call("bonus.iost", "init", `[]`, acc0.ID, acc0.KeyPair)
+		r, err = setNonNativeContract(s, "bonus.iost", "bonus.js", ContractPath)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 
