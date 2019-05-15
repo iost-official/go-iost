@@ -24,6 +24,12 @@ class Test {
         let r6 = blockchain.requireAuth("u2", "owner");
         return [r0,r1,r2,r3,r4,r5,r6];
     }
+
+    txInfo() {
+        let amountLimit = tx.amountLimit;
+        let actions = tx.actions;
+        return JSON.stringify(amountLimit) + "-" + JSON.stringify(actions);
+    }
 }
 
 module.exports = Test;

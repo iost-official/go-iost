@@ -67,6 +67,50 @@ func Test_Caller(t *testing.T) {
 	assert.Contains(t, r.Returns, fmt.Sprintf(`["{\"name\":\"%s\",\"is_account\":false}"]`, cname))
 }
 
+func Test_TxInfo(t *testing.T) {
+	ilog.Stop()
+	s := NewSimulator()
+	defer s.Clear()
+
+	s.SetContract(native.TokenABI())
+	acc := prepareAuth(t, s)
+	s.SetGas(acc.ID, 1e10)
+	s.SetRAM(acc.ID, 1e5)
+	prepareToken(t, s, acc)
+
+	conf := &common.Config{
+		P2P: &common.P2PConfig{
+			ChainID: 1024,
+		},
+	}
+	version.InitChainConf(conf)
+	rules := version.NewRules(0)
+	assert.False(t, rules.IsFork3_2_0)
+	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
+
+	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
+	assert.Nil(t, err)
+	assert.NotNil(t, ca)
+
+	cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
+	assert.Nil(t, err)
+	assert.Equal(t, "", r.Status.Message)
+
+	r, err = s.Call(cname, "txInfo", `[]`, acc0.ID, acc0.KeyPair)
+	assert.Nil(t, err)
+	assert.Contains(t, r.Returns[0], `"undefined-undefined"`)
+
+	conf.P2P.ChainID = 0
+	version.InitChainConf(conf)
+	rules = version.NewRules(0)
+	assert.True(t, rules.IsFork3_2_0)
+	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
+
+	r, err = s.Call(cname, "txInfo", `[]`, acc0.ID, acc0.KeyPair)
+	assert.Nil(t, err)
+	assert.Contains(t, r.Returns[0], fmt.Sprintf(`"[{\"token\":\"*\",\"val\":\"unlimited\"}]-[{\"contract\":\"%s\",\"actionName\":\"txInfo\",\"data\":\"[]\"}]"`, cname))
+}
+
 func Test_Transfer(t *testing.T) {
 	ilog.Stop()
 	s := NewSimulator()

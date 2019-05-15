@@ -349,6 +349,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
 	h.Context().Set("publisher", publisherID)
 	h.Context().Set("amount_limit", t.AmountLimit)
+	h.Context().Set("actions", t.Actions)
 
 	authList := make(map[string]int)
 	for _, v := range t.Signs {
