@@ -8,9 +8,9 @@ import (
 
 // Action implement
 type Action struct {
-	Contract   string // contract name
-	ActionName string // method name of contract
-	Data       string // parameters of method, with json format
+	Contract   string `json:"contract"`   // contract name
+	ActionName string `json:"actionName"` // method name of contract
+	Data       string `json:"data"`       // parameters of method, with json format
 }
 
 // NewAction constructor of Action

@@ -1,16 +1,3 @@
-(function(){
-    let bc = new IOSTBlockchain;
-    let rules = bc.rules();
-
-    if (rules.is_fork3_2_0) {
-        blockchain.caller = function() {
-            return JSON.parse(blockchain.contextInfo()).caller;
-        }
-    }
-
-    IOSTBlockchain = null;
-})();
-
 // load Block
 const blockInfo = JSON.parse(blockchain.blockInfo());
 const block = {
@@ -31,3 +18,18 @@ const tx = {
    authList: txInfo.auth_list,
    publisher: txInfo.publisher
 };
+
+(function(){
+    let bc = new IOSTBlockchain;
+    let rules = bc.rules();
+
+    if (rules.is_fork3_2_0) {
+        blockchain.caller = function() {
+            return JSON.parse(blockchain.contextInfo()).caller;
+        }
+        tx.amountLimit = txInfo.amount_limit;
+        tx.actions = txInfo.actions;
+    }
+
+    IOSTBlockchain = null;
+})();

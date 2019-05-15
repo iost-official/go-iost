@@ -21,6 +21,10 @@
     {
       "name": "requireAuth",
       "args": []
+    },
+    {
+      "name": "txInfo",
+      "args": []
     }
   ]
 }

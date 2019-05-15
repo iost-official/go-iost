@@ -78,6 +78,10 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 	txInfo["gas_ratio"] = h.h.ctx.Value("gas_ratio")
 	txInfo["auth_list"] = h.h.ctx.Value("auth_list")
 	txInfo["publisher"] = h.h.ctx.Value("publisher")
+	if h.h.IsFork3_2_0 {
+		txInfo["amount_limit"] = h.h.ctx.Value("amount_limit")
+		txInfo["actions"] = h.h.ctx.Value("actions")
+	}
 
 	tij, err := json.Marshal(txInfo)
 	if err != nil {
