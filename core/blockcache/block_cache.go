@@ -485,7 +485,15 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	delete(bc.leaf, bcn.GetParent())
 	bc.leaf[bcn] = bcn.Head.Number
 	bcn.updateValidWitness()
-	bc.updateWitnessList(bcn)
+
+	// Update WitnessList of bcn
+	bcn.CopyWitness(bcn.GetParent())
+	if bcn.Head.Number%common.VoteInterval == 0 {
+		if err := bc.updatePending(bcn); err != nil {
+			// TODO: Should handle err
+		}
+	}
+
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
 	}
@@ -516,16 +524,6 @@ func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
 	}
 }
 
-func (bc *BlockCacheImpl) updateWitnessList(h *BlockCacheNode) error {
-	h.CopyWitness(h.GetParent())
-	if h.Head.Number%common.VoteInterval == 0 {
-		if err := bc.updatePending(h); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 	ok := bc.stateDB.Checkout(string(h.HeadHash()))
 	if ok {
@@ -542,18 +540,6 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 		return errors.New("failed to checkout state db")
 	}
 	return nil
-}
-
-func (bc *BlockCacheImpl) updateLongest() {
-	_, ok := bc.hmget(bc.Head().HeadHash())
-	if ok {
-		return
-	}
-	for bcn := range bc.leaf {
-		if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
-			bc.SetHead(bcn)
-		}
-	}
 }
 
 // Add is add a block
@@ -595,36 +581,19 @@ func (bc *BlockCacheImpl) AddGenesis(blk *block.Block) {
 	bc.leaf[bc.LinkedRoot()] = bc.LinkedRoot().Head.Number
 }
 
-func (bc *BlockCacheImpl) delNode(bcn *BlockCacheNode) {
-	bcn.SetParent(nil)
-	bc.hmdel(bcn.HeadHash())
-	delete(bc.leaf, bcn)
-}
-
 // Del is delete a block
 func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
-	if bcn.GetParent() != nil && len(bcn.GetParent().Children) == 1 && bcn.GetParent().Type == Linked {
-		bc.leaf[bcn.GetParent()] = bcn.GetParent().Head.Number
-	}
 	bc.del(bcn)
-	bc.updateLongest()
 }
 
 func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
-	if bcn == nil {
-		ilog.Errorf("Block cache node %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
-		return
-	}
 	for ch := range bcn.Children {
 		bc.del(ch)
 	}
-	parent := bcn.GetParent()
-	if parent != nil {
-		delete(parent.Children, bcn)
-	} else {
-		ilog.Errorf("Parent of block %v should not be nil.", common.Base58Encode(bcn.HeadHash()))
-	}
-	bc.delNode(bcn)
+	delete(bcn.GetParent().Children, bcn)
+	bcn.SetParent(nil)
+	bc.hmdel(bcn.HeadHash())
+	delete(bc.leaf, bcn)
 }
 
 func (bc *BlockCacheImpl) delSingle() {
@@ -661,12 +630,24 @@ func (bc *BlockCacheImpl) updateLinkedRoot(bcn *BlockCacheNode) {
 
 	bc.updateLinkedRootWitness(parent, bcn)
 	bcn.removeValidWitness(bcn)
+
 	bc.nmdel(parent.Head.Number)
-	bc.delNode(parent)
+	bc.hmdel(parent.HeadHash())
+
 	bcn.SetParent(nil)
 	bc.SetLinkedRoot(bcn)
 	bc.delSingle()
-	bc.updateLongest()
+
+	// Update Longest
+	_, ok := bc.hmget(bc.Head().HeadHash())
+	if ok {
+		return
+	}
+	for bcn := range bc.leaf {
+		if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
+			bc.SetHead(bcn)
+		}
+	}
 }
 
 func (bc *BlockCacheImpl) flush() {
