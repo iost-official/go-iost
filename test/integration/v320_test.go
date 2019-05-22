@@ -16,6 +16,7 @@ import (
 )
 
 func Test_Caller(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	s := NewSimulator()
 	defer s.Clear()
@@ -68,6 +69,7 @@ func Test_Caller(t *testing.T) {
 }
 
 func Test_TxInfo(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	s := NewSimulator()
 	defer s.Clear()
@@ -112,6 +114,7 @@ func Test_TxInfo(t *testing.T) {
 }
 
 func Test_Transfer(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	s := NewSimulator()
 	defer s.Clear()

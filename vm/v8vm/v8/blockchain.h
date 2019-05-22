@@ -16,7 +16,6 @@ private:
 public:
     IOSTBlockchain(SandboxPtr ptr): sbxPtr(ptr) {}
 
-    char* Rules(CStr *result);
     char* BlockInfo(CStr *result);
     char* TxInfo(CStr *result);
     char* ContextInfo(CStr *result);
