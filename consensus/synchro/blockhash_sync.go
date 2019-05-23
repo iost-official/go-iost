@@ -13,7 +13,7 @@ import (
 
 // Constant of blockhash sync
 const (
-	BlockHashLeastNeighborNumber = 2
+	BlockHashLeastNeighborNumber = 1
 	BlockHashExpiredSeconds      = 60
 )
 

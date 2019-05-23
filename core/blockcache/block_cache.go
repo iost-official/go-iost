@@ -491,6 +491,7 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 	if bcn.Head.Number%common.VoteInterval == 0 {
 		if err := bc.updatePending(bcn); err != nil {
 			// TODO: Should handle err
+			ilog.Errorf("Update block %v pending failed: %v", common.Base58Encode(bcn.HeadHash()), err)
 		}
 	}
 
