@@ -317,29 +317,35 @@ func Test_StackHeight(t *testing.T) {
 
 func Test_Validate(t *testing.T) {
 	ilog.Stop()
-	Convey("test validate", t, func() {
-		s := NewSimulator()
-		defer s.Clear()
-		acc := prepareAuth(t, s)
-		s.SetAccount(acc.ToAccount())
-		s.SetGas(acc.ID, 10000000)
-		s.SetRAM(acc.ID, 300)
+	s := NewSimulator()
+	defer s.Clear()
+	acc := prepareAuth(t, s)
+	s.SetAccount(acc.ToAccount())
+	s.SetGas(acc.ID, 10000000)
+	s.SetRAM(acc.ID, 300)
 
-		c, err := s.Compile("validate", "test_data/validate", "test_data/validate")
-		So(err, ShouldBeNil)
-		So(len(c.Encode()), ShouldEqual, 133)
-		_, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
-		s.Visitor.Commit()
-		So(err.Error(), ShouldContainSubstring, "abi not defined in source code: c")
-		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: abi not defined in source code: c")
+	c, err := s.Compile("validate", "test_data/validate", "test_data/validate")
+	assert.Nil(t, err)
+	assert.Equal(t, len(c.Encode()), 133)
 
-		c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
-		So(err, ShouldBeNil)
-		_, r, err = s.DeployContract(c, acc.ID, acc.KeyPair)
-		s.Visitor.Commit()
-		So(err.Error(), ShouldContainSubstring, "Error: args should be one of ")
-		So(r.Status.Message, ShouldContainSubstring, "validate code error: , result: Error: args should be one of ")
-	})
+	_, r, err := s.DeployContract(c, acc.ID, acc.KeyPair)
+	s.Visitor.Commit()
+	assert.Contains(t, err.Error(), "abi not defined in source code: c")
+	assert.Contains(t, r.Status.Message, "validate code error: , result: Error: abi not defined in source code: c")
+
+	c, err = s.Compile("validate1", "test_data/validate1", "test_data/validate1")
+	assert.Nil(t, err)
+	_, r, err = s.DeployContract(c, acc.ID, acc.KeyPair)
+	s.Visitor.Commit()
+	assert.Contains(t, err.Error(), "Error: args should be one of ")
+	assert.Contains(t, r.Status.Message, "validate code error: , result: Error: args should be one of ")
+
+	c, err = s.Compile("validate2", "test_data/validate2", "test_data/validate2")
+	assert.Nil(t, err)
+	_, r, err = s.DeployContract(c, acc.ID, acc.KeyPair)
+	s.Visitor.Commit()
+	assert.Contains(t, err.Error(), "Error: abi shouldn't contain internal function: init")
+	assert.Contains(t, r.Status.Message, "validate code error: , result: Error: abi shouldn't contain internal function: init")
 }
 
 func Test_SpecialChar(t *testing.T) {
@@ -710,6 +716,9 @@ func Test_MapDel2(t *testing.T) {
 	assert.Empty(t, r.Status.Message)
 	assert.Len(t, r.Returns, 1)
 	assert.Equal(t, `["[\"abc\"]"]`, r.Returns[0])
+
+	conf.P2P.ChainID = 0
+	version.InitChainConf(conf)
 }
 
 func Test_SelfAuth(t *testing.T) {

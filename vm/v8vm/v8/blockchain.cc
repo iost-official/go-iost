@@ -1,6 +1,7 @@
 #include "blockchain.h"
 #include <iostream>
 
+static rulesFunc CRules = nullptr;
 static blockInfoFunc CBlkInfo = nullptr;
 static txInfoFunc CTxInfo = nullptr;
 static contextInfoFunc CCtxInfo = nullptr;
@@ -10,9 +11,11 @@ static requireAuthFunc CRequireAuth = nullptr;
 static receiptFunc CReceipt = nullptr;
 static eventFunc CEvent = nullptr;
 
-void InitGoBlockchain(blockInfoFunc blkInfo, txInfoFunc txInfo, contextInfoFunc contextInfo,
+void InitGoBlockchain(rulesFunc rules, blockInfoFunc blkInfo,
+        txInfoFunc txInfo, contextInfoFunc contextInfo,
 		callFunc call, callWithAuthFunc callWA,
         requireAuthFunc requireAuth, receiptFunc receipt, eventFunc event) {
+    CRules = rules;
     CBlkInfo = blkInfo;
     CTxInfo = txInfo;
     CCtxInfo = contextInfo;
@@ -21,6 +24,11 @@ void InitGoBlockchain(blockInfoFunc blkInfo, txInfoFunc txInfo, contextInfoFunc 
     CRequireAuth = requireAuth;
 	CReceipt = receipt;
 	CEvent = event;
+}
+
+char* IOSTBlockchain::Rules(CStr *result) {
+    char* ret = CRules(sbxPtr, result);
+    return ret;
 }
 
 char* IOSTBlockchain::BlockInfo(CStr *result) {
@@ -116,6 +124,34 @@ void NewIOSTBlockchain(const FunctionCallbackInfo<Value> &args) {
     self->SetInternalField(0, External::New(isolate, bc));
 
     args.GetReturnValue().Set(self);
+}
+
+void IOSTBlockchain_rules(const FunctionCallbackInfo<Value> &args) {
+    Isolate *isolate = args.GetIsolate();
+    Local<Object> self = args.Holder();
+
+    CStr resultStr = {nullptr, 0};
+
+    Local<External> extVal = Local<External>::Cast(self->GetInternalField(0));
+    if (!extVal->IsExternal()) {
+        std::cout << "IOSTBlockchain_rules val error" << std::endl;
+        return;
+    }
+
+    IOSTBlockchain *bc = static_cast<IOSTBlockchain *>(extVal->Value());
+
+    char *ret = bc->Rules(&resultStr);
+    if (ret != nullptr) {
+        Local<Value> err = Exception::Error(
+            String::NewFromUtf8(isolate, ret)
+        );
+        isolate->ThrowException(err);
+        free(ret);
+        return;
+    }
+    Local<Value> obj = JSON::Parse(isolate, String::NewFromUtf8(isolate, resultStr.data, String::kNormalString, resultStr.size)).ToLocalChecked();
+    args.GetReturnValue().Set(obj);
+    if (resultStr.data != nullptr) free(resultStr.data);
 }
 
 void IOSTBlockchain_blockInfo(const FunctionCallbackInfo<Value> &args) {
@@ -466,6 +502,10 @@ void InitBlockchain(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
 
     Local<ObjectTemplate> blockchainTpl = blockchainClass->InstanceTemplate();
     blockchainTpl->SetInternalFieldCount(1);
+    blockchainTpl->Set(
+        String::NewFromUtf8(isolate, "rules"),
+        FunctionTemplate::New(isolate, IOSTBlockchain_rules)
+    );
     blockchainTpl->Set(
         String::NewFromUtf8(isolate, "blockInfo"),
         FunctionTemplate::New(isolate, IOSTBlockchain_blockInfo)

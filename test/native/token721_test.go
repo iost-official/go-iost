@@ -35,6 +35,7 @@ func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl
 	ctx.Set("contract_name", conName)
 	ctx.Set("tx_hash", []byte("iamhash"))
 	ctx.Set("auth_list", make(map[string]int))
+	ctx.Set("signer_list", make(map[string]bool))
 	ctx.Set("time", int64(0))
 	ctx.Set("abi_name", "abi")
 	ctx.GSet("receipts", []*tx.Receipt{})
@@ -62,6 +63,7 @@ func TestToken721_Create(t *testing.T) {
 	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token create", t, func() {
 		Reset(func() {
@@ -75,6 +77,8 @@ func TestToken721_Create(t *testing.T) {
 		Convey("token not exists", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "issue", "iost", "user0", "{}")
 			So(err.Error(), ShouldEqual, "token not exists")
 			_, _, err = e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "0")
@@ -87,6 +91,8 @@ func TestToken721_Create(t *testing.T) {
 		Convey("create token", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err, ShouldBeNil)
 		})
@@ -94,6 +100,8 @@ func TestToken721_Create(t *testing.T) {
 		Convey("create duplicate token", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err, ShouldBeNil)
 
@@ -111,6 +119,7 @@ func TestToken721_Issue(t *testing.T) {
 	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token issue", t, func() {
 
@@ -124,6 +133,8 @@ func TestToken721_Issue(t *testing.T) {
 		Convey("correct issue", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err, ShouldBeNil)
 			_, cost, err := e.LoadAndCall(host, code, "issue", "iost", "issuer0", "{}")
@@ -141,6 +152,8 @@ func TestToken721_Issue(t *testing.T) {
 
 			delete(authList, issuer0)
 			host.Context().Set("auth_list", authList)
+			delete(signerList, issuer0+"@active")
+			host.Context().Set("signer_list", signerList)
 			_, _, err = e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err.Error(), ShouldEqual, "transaction has no permission")
 		})
@@ -148,6 +161,8 @@ func TestToken721_Issue(t *testing.T) {
 		Convey("issue too much", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(1))
 			So(err, ShouldBeNil)
 			_, _, err = e.LoadAndCall(host, code, "issue", "iost", "issuer0", "{}")
@@ -171,6 +186,7 @@ func TestToken721_Transfer(t *testing.T) {
 	host.Context().Set("contract_name", "token721.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token transfer", t, func() {
 		Reset(func() {
@@ -183,6 +199,8 @@ func TestToken721_Transfer(t *testing.T) {
 		Convey("correct transfer", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err, ShouldBeNil)
 
@@ -215,10 +233,14 @@ func TestToken721_Transfer(t *testing.T) {
 		Convey("transfer token without auth", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err, ShouldBeNil)
 			delete(authList, issuer0)
 			host.Context().Set("auth_list", authList)
+			delete(signerList, issuer0+"@active")
+			host.Context().Set("signer_list", signerList)
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "3")
 			So(true, ShouldEqual, err.Error() == "transaction has no permission")
 			So(cost.ToGas(), ShouldBeGreaterThan, 0)
@@ -228,6 +250,9 @@ func TestToken721_Transfer(t *testing.T) {
 			authList[issuer0] = 1
 			authList["user0"] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			signerList["user0"+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err, ShouldBeNil)
 
@@ -257,12 +282,13 @@ func TestToken721_Transfer(t *testing.T) {
 	})
 }
 
-func TestToken721_Metadate(t *testing.T) {
+func TestToken721_Metadata(t *testing.T) {
 	issuer0 := "issuer0"
 	e, host, code := initVM(t, "token721.iost")
 	code.ID = "token721.iost"
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token transfer", t, func() {
 		Reset(func() {
@@ -272,9 +298,11 @@ func TestToken721_Metadate(t *testing.T) {
 			authList = host.Context().Value("auth_list").(map[string]int)
 		})
 
-		Convey("correct metadate", func() {
+		Convey("correct metadata", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100))
 			So(err, ShouldBeNil)
 

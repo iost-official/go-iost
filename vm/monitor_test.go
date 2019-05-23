@@ -31,6 +31,10 @@ func TestMonitor_Call(t *testing.T) {
 	ctx.Set("stack_height", 1)
 
 	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
+	h.Context().Set("caller", host.Caller{
+		Name:      "",
+		IsAccount: false,
+	})
 
 	flag := false
 
@@ -72,6 +76,10 @@ func TestMonitor_Context(t *testing.T) {
 	ctx.Set("stack_height", 1)
 
 	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
+	h.Context().Set("caller", host.Caller{
+		Name:      "",
+		IsAccount: false,
+	})
 
 	outerFlag := false
 	innerFlag := false
@@ -128,6 +136,10 @@ func TestMonitor_HostCall(t *testing.T) {
 	ctx.Set("stack0", "test")
 
 	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
+	h.Context().Set("caller", host.Caller{
+		Name:      "",
+		IsAccount: false,
+	})
 	outerFlag := false
 	innerFlag := false
 
@@ -189,6 +201,10 @@ func TestJSM(t *testing.T) {
 
 	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
 	h.SetDeadline(time.Now().Add(time.Second))
+	h.Context().Set("caller", host.Caller{
+		Name:      "",
+		IsAccount: false,
+	})
 
 	c := contract.Contract{
 		ID: "Contract",

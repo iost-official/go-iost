@@ -557,7 +557,7 @@
     WebAssembly = null;
 
     // Native
-    IOSTBlockchain = null;
+    // IOSTBlockchain = null;  // move to prepend.js
     IOSTInstruction = null;
     IOSTStorage = null;
     _IOSTCrypto = null;

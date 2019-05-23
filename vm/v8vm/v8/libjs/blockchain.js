@@ -16,7 +16,13 @@ let BlockChain = (function () {
         if (!(amount instanceof Float64)) {
             amount = new Float64(amount);
         }
-        const args = ["iost", from, to, amount.toString(), memo.toString()];
+        const rules = bc.rules();
+        let args;
+        if (rules.is_fork3_2_0) {
+            args = ["iost", from, to, amount.toFixed(), memo.toString()];
+        } else {
+            args = ["iost", from, to, amount.toString(), memo.toString()];
+        }
         return JSON.parse(bc.callWithAuth("token.iost", "transfer", JSON.stringify(args)));
     };
     return {

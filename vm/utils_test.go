@@ -100,6 +100,8 @@ func TestCheckPublisher(t *testing.T) {
 	rules := version.NewRules(0)
 	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock, rules), rules, nil, ilog.DefaultLogger())
 	h.Context().Set("auth_list", authList)
+	signerList := make(map[string]bool)
+	h.Context().Set("signer_list", signerList)
 	err = h.CheckPublisher(t2)
 	if err != nil {
 		t.Fatal(err)
@@ -152,6 +154,8 @@ func TestCheckSigners(t *testing.T) {
 	rules := version.NewRules(0)
 	h := host.NewHost(host.NewContext(nil), database.NewVisitor(0, mock, rules), rules, nil, ilog.DefaultLogger())
 	h.Context().Set("auth_list", authList)
+	signerList := make(map[string]bool)
+	h.Context().Set("signer_list", signerList)
 	err = h.CheckSigners(tr)
 	if err == nil {
 		t.Fatal(err)

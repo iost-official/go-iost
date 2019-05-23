@@ -4,10 +4,11 @@ import (
 	"sort"
 
 	"fmt"
+	"strconv"
+
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
-	"strconv"
 )
 
 var (
@@ -71,6 +72,7 @@ func getABISetByVersion(conID string, version string) (aset *abiSet, err error) 
 	abiMap["token.iost"]["1.0.3"] = tokenABIsV3
 	abiMap["token721.iost"] = make(map[string]*abiSet)
 	abiMap["token721.iost"]["1.0.0"] = token721ABIs
+	abiMap["token721.iost"]["1.1.0"] = token721ABIsV2
 
 	var amap map[string]*abiSet
 	var ok bool

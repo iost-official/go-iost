@@ -113,13 +113,10 @@ func (i *Isolator) checkAuth(t *tx.Tx) error {
 func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.Status, ret string, receipts []*tx.Receipt, err error) {
 	oLen := len(i.h.Context().GValue("receipts").([]*tx.Receipt))
 
-	i.h.PushCtx()
+	i.h.InitStack(i.t.Publisher)
 	defer func() {
-		i.h.PopCtx()
+		i.h.PopStack()
 	}()
-
-	i.h.Context().Set("stack0", "direct_call")
-	i.h.Context().Set("stack_height", 1) // record stack trace
 
 	var rtn []interface{}
 
@@ -252,6 +249,9 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 				ilog.Warnf("isolator run action %v failed, status=%+v, will rollback", action, status)
 				executionKillCounter.Add(1, nil)
 			}
+			if i.h.IsFork3_2_0 {
+				i.tr.Returns = nil
+			}
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
 			i.h.ClearRAMCosts()
@@ -282,8 +282,12 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 	paidGas, err := i.h.DoPay(i.h.Context().Value("witness").(string), i.t.GasRatio)
 	if err != nil {
 		ilog.Errorf("DoPay failed, rollback %v", err)
-		i.h.DB().Rollback()
 
+		if i.h.IsFork3_2_0 {
+			i.tr.Returns = nil
+			i.tr.Receipts = nil
+		}
+		i.h.DB().Rollback()
 		i.h.ClearRAMCosts()
 		i.tr.RAMUsage = make(map[string]int64)
 		i.tr.Status.Code = tx.ErrorBalanceNotEnough
@@ -345,6 +349,7 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 	h.Context().Set("tx_hash", common.Base58Encode(t.Hash()))
 	h.Context().Set("publisher", publisherID)
 	h.Context().Set("amount_limit", t.AmountLimit)
+	h.Context().Set("actions", t.Actions)
 
 	authList := make(map[string]int)
 	for _, v := range t.Signs {
@@ -354,16 +359,16 @@ func loadTxInfo(h *host.Host, t *tx.Tx, publisherID string) {
 		authList[account.EncodePubkey(v.Pubkey)] = 2
 	}
 
-	signers := make(map[string]int)
+	signers := make(map[string]bool)
 	for _, v := range t.Signers {
 		x := strings.Split(v, "@")
 		if len(x) != 2 {
 			ilog.Error("signer format error. " + v)
 			continue
 		}
-		signers[x[0]] = 1
+		signers[v] = true
 	}
-	signers[t.Publisher] = 2
+	signers[t.Publisher+"@active"] = true
 
 	h.Context().Set("auth_list", authList)
 	h.Context().Set("signer_list", signers)
