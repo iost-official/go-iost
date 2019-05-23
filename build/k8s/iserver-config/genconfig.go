@@ -133,7 +133,7 @@ func genconfig() {
 	P2P := &common.P2PConfig{
 		ListenAddr:   "0.0.0.0:30000",
 		SeedNodes:    seedNodes,
-		ChainID:      1024,
+		ChainID:      1020,
 		Version:      1,
 		DataPath:     "/data/p2p/",
 		InboundConn:  18,

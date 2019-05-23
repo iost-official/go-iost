@@ -178,7 +178,9 @@ func (c *ChainBase) addExistingBlock(node *blockcache.BlockCacheNode, replay boo
 	c.printStatistics(node.SerialNum, node.Block, replay, gen)
 
 	for child := range node.Children {
-		c.addExistingBlock(child, replay, gen)
+		if err := c.addExistingBlock(child, replay, gen); err != nil {
+			ilog.Warnf("verify block execute failed, blockNum: %v, blockHash: %v, err: %v", node.Head.Number, common.Base58Encode(node.HeadHash()), err)
+		}
 	}
 	return nil
 }
