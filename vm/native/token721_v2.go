@@ -65,11 +65,11 @@ var (
 				if !ok {
 					return nil, cost, host.ErrPermissionLost
 				}
-				cost0, err = h.MapDel(Token721ApproveTokenPrefix+tokenSym, tokenID)
-				cost.AddAssign(cost0)
-				if err != nil {
-					return nil, cost, fmt.Errorf("error can not remove approval. %v %v", tokenSym, caller.Name)
-				}
+			}
+			cost0, err = h.MapDel(Token721ApproveTokenPrefix+tokenSym, tokenID)
+			cost.AddAssign(cost0)
+			if err != nil {
+				return nil, cost, fmt.Errorf("error can not remove approval. %v %v", tokenSym, caller.Name)
 			}
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas
