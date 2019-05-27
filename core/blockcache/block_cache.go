@@ -236,6 +236,7 @@ func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
 	}
 	bcn, okn := rtnI.(*BlockCacheNode)
 	if !okn {
+		ilog.Errorf("BlockCache hmget, hash:%v, bcn:%v", common.Base58Encode(hash), rtnI)
 		bc.hash2node.Delete(string(hash))
 		return nil, false
 	}
@@ -243,10 +244,12 @@ func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
 }
 
 func (bc *BlockCacheImpl) hmset(hash []byte, bcn *BlockCacheNode) {
+	ilog.Infof("bc.hmset, num:%v, hash:%v", bcn.Head.Number, common.Base58Encode(hash))
 	bc.hash2node.Store(string(hash), bcn)
 }
 
 func (bc *BlockCacheImpl) hmdel(hash []byte) {
+	ilog.Infof("bc.hmdel, hash:%v", common.Base58Encode(hash))
 	bc.hash2node.Delete(string(hash))
 }
 
@@ -497,6 +500,9 @@ func (bc *BlockCacheImpl) Link(bcn *BlockCacheNode) {
 
 	if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 		bc.SetHead(bcn)
+		ilog.Infof("Link to head: num:%v, hash:%v", bcn.Head.Number, common.Base58Encode(bcn.HeadHash()))
+	} else {
+		ilog.Infof("Link to non-head branch: num:%v, hash:%v", bcn.Head.Number, common.Base58Encode(bcn.HeadHash()))
 	}
 }
 
@@ -588,6 +594,7 @@ func (bc *BlockCacheImpl) Del(bcn *BlockCacheNode) {
 }
 
 func (bc *BlockCacheImpl) del(bcn *BlockCacheNode) {
+	ilog.Infof("bc.del, num:%v, hash:%v", bcn.Head.Number, common.Base58Encode(bcn.HeadHash()))
 	for ch := range bcn.Children {
 		bc.del(ch)
 	}
@@ -647,6 +654,7 @@ func (bc *BlockCacheImpl) updateLinkedRoot(bcn *BlockCacheNode) {
 	for bcn := range bc.leaf {
 		if bcn.Head.Number > bc.Head().Head.Number || (bcn.Head.Number == bc.Head().Head.Number && bcn.Head.Time < bc.Head().Head.Time) {
 			bc.SetHead(bcn)
+			ilog.Infof("Update head in updateLinkedRoot: num:%v, hash:%v, linkedRootHash:%v", bcn.Head.Number, common.Base58Encode(bcn.HeadHash()), common.Base58Encode(bc.linkedRoot.HeadHash()))
 		}
 	}
 }

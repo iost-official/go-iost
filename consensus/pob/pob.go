@@ -110,6 +110,7 @@ func (p *PoB) doVerifyBlock(blk *block.Block) {
 	err := p.cBase.Add(blk, false, false)
 	p.mu.Unlock()
 	if err != nil {
+		ilog.Errorf("[pob] handle block from outside, err:%v, num:%v", err, blk.Head.Number)
 		return
 	}
 
