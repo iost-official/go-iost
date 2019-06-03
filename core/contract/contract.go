@@ -88,6 +88,9 @@ func (c *Contract) VerifySelf() error {
 	if len(c.Code) > codeSizeLimit {
 		return errors.New("code size invalid")
 	}
+	if c.Info == nil {
+		return errors.New("invalid code info")
+	}
 	return nil
 }
 

@@ -1,10 +1,10 @@
 package iwallet
 
 import (
+	"encoding/json"
 	"fmt"
-	"strings"
 
-	"github.com/iost-official/go-iost/sdk"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"github.com/spf13/cobra"
 )
 
@@ -23,12 +23,23 @@ var stateCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("cannot get node info: %v", err)
 		}
-		fmt.Print(strings.TrimRight(sdk.MarshalTextString(n), "}"))
 		c, err := iwalletSDK.GetChainInfo()
 		if err != nil {
 			return fmt.Errorf("cannot get chain info: %v", err)
 		}
-		fmt.Println(strings.Replace(sdk.MarshalTextString(c), "{\n", "", 1))
+
+		s := &struct {
+			*rpcpb.NodeInfoResponse
+			*rpcpb.ChainInfoResponse
+		}{n, c}
+
+		r, err := json.MarshalIndent(s, "", "    ")
+		if err != nil {
+			fmt.Println("json.Marshal error: " + err.Error())
+		} else {
+			fmt.Println(string(r))
+		}
+
 		return nil
 	},
 }

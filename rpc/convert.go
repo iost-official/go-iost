@@ -82,7 +82,7 @@ func toPbBlock(blk *block.Block, complete bool) *rpcpb.Block {
 		Number:              blk.Head.Number,
 		Witness:             blk.Head.Witness,
 		Time:                blk.Head.Time,
-		GasUsage:            float64(blk.CalculateGasUsage()) / 100,
+		GasUsage:            float64(blk.Head.GasUsage) / 100,
 		TxCount:             int64(len(blk.Txs)),
 	}
 	var info verifier.Info
