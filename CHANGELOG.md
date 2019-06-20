@@ -1,3 +1,13 @@
+## v3.1.1
+
+Wed Jun 12 11:18:28 CST 2019
+
+- Reorganized code of blockcache.
+- Add detail log for blockcache.
+- Fix the bug of synchronous fork in testnet.
+- Fix bugs in RPC concurrent requests.
+- Fix bug with publish contract crash.
+
 ## v3.1.0
 
 Mon May  6 11:46:27 CST 2019
