@@ -1,6 +1,6 @@
 GO = go
 
-VERSION = 3.1.1
+VERSION = 3.1.2
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -45,7 +45,7 @@ vmlib:
 	(cd vm/v8vm/v8/; make clean js_bin vm install deploy; cd ../../..)
 
 vmlib_linux:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
+	docker run --rm -v `pwd`:/go-iost $(DOCKER_DEVIMAGE) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
 
 test:
 ifeq ($(origin VERBOSE),undefined)
@@ -71,7 +71,7 @@ k8s_test: image push
 	kubectl exec -it itest -n $(CLUSTER) -- ./itest run -c /etc/itest/itest.json c_case
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
+	docker run --rm -v `pwd`:/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 push:
@@ -84,7 +84,7 @@ devpush:
 	docker push $(DOCKER_DEVIMAGE)
 
 release: devimage devpush
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
+	docker run --rm -v `pwd`:/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile -t $(DOCKER_RELEASE_IMAGE) .
 	docker push $(DOCKER_RELEASE_IMAGE)
 
