@@ -26,9 +26,4 @@ RUN curl -L https://git.io/vp6lP | sh
 
 WORKDIR /go-iost
 
-# Speedup Docker build
-COPY go.mod .
-COPY go.sum .
-RUN go mod download
-
 CMD ["make"]
