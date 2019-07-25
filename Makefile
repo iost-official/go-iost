@@ -32,13 +32,13 @@ all: build
 build: iserver iwallet itest
 
 iserver:
-	$(GO) build -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
+	$(GO) build -mod vendor -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
 
 iwallet:
-	$(GO) build -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
+	$(GO) build -mod vendor -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
 
 itest:
-	$(GO) build -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
+	$(GO) build -mod vendor -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
 
 lint:
 	@gometalinter --config=.gometalinter.json ./...
