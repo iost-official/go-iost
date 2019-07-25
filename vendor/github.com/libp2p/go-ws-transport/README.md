@@ -1,9 +1,9 @@
 # go-ws-transport
 
-[![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](http://ipn.io)
-[![](https://img.shields.io/badge/freenode-%23ipfs-blue.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23ipfs)
-[![](https://img.shields.io/badge/project-IPFS-blue.svg?style=flat-square)](http://ipfs.io/)
-[![standard-readme compliant](https://img.shields.io/badge/standard--readme-OK-green.svg?style=flat-square)](https://github.com/RichardLitt/standard-readme)
+[![](https://img.shields.io/badge/made%20by-Protocol%20Labs-blue.svg?style=flat-square)](https://protocol.ai)
+[![](https://img.shields.io/badge/project-libp2p-yellow.svg?style=flat-square)](https://libp2p.io/)
+[![](https://img.shields.io/badge/freenode-%23libp2p-yellow.svg?style=flat-square)](http://webchat.freenode.net/?channels=%23libp2p)
+[![Discourse posts](https://img.shields.io/discourse/https/discuss.libp2p.io/posts.svg)](https://discuss.libp2p.io)
 [![GoDoc](https://godoc.org/github.com/libp2p/go-ws-transport?status.svg)](https://godoc.org/github.com/libp2p/go-ws-transport)
 [![Coverage Status](https://coveralls.io/repos/github/libp2p/go-ws-transport/badge.svg?branch=master)](https://coveralls.io/github/libp2p/go-ws-transport?branch=master)
 [![Build Status](https://travis-ci.org/libp2p/go-ws-transport.svg?branch=master)](https://travis-ci.org/libp2p/go-ws-transport)
@@ -13,9 +13,13 @@
 ## Install
 
 ```sh
-> gx install --global
-> gx-go rewrite
+> go get github.com/libp2p/go-ws-transport
 ```
+
+This repo is [gomod](https://github.com/golang/go/wiki/Modules)-compatible, and users of
+go 1.11 and later with modules enabled will automatically pull the latest tagged release
+by referencing this package. Upgrades to future releases can be managed using `go get`,
+or by editing your `go.mod` file as [described by the gomod documentation](https://github.com/golang/go/wiki/Modules#how-to-upgrade-and-downgrade-dependencies).
 
 ## Usage
 
@@ -33,3 +37,7 @@ This repository falls under the IPFS [Code of Conduct](https://github.com/ipfs/c
 ## License
 
 MIT
+
+---
+
+The last gx published version of this module was: 2.0.27: QmaSWc4ox6SZQF6DHZvDuM9sP1syNajkKuPXmKR1t5BAz5

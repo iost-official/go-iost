@@ -2,7 +2,6 @@
   "columns": [
     "Name",
     "CI/Travis",
-    "CI/Jenkins",
     "Coverage",
     "Description"
   ],
@@ -39,7 +38,7 @@
     "Stream Muxers",
     ["libp2p/go-stream-muxer", "go-stream-muxer", "interfaces"],
     ["whyrusleeping/go-smux-yamux", "go-smux-yamux", "YAMUX stream multiplexer"],
-    ["whyrusleeping/go-smux-mplex", "go-smux-mplex", "MPLEX stream multiplexer"],
+    ["whyrusleeping/go-smux-multiplex", "go-smux-multiplex", "MPLEX stream multiplexer"],
 
     "NAT Traversal",
     ["libp2p/go-libp2p-nat", "go-libp2p-nat"],
@@ -63,7 +62,10 @@
     ["libp2p/go-libp2p-raft", "go-libp2p-raft", "consensus implementation over raft"],
 
     "Pubsub",
-    ["libp2p/go-floodsub", "go-floodsub", "basic implementation of pubsub driven by flooding"],
+    ["libp2p/go-libp2p-pubsub", "go-libp2p-pubsub", "multiple pubsub over libp2p implementations"],
+
+    "RPC",
+    ["libp2p/go-libp2p-gorpc", "go-libp2p-gorpc", "a simple RPC library for libp2p"],
 
     "Metrics",
     ["libp2p/go-libp2p-metrics", "go-libp2p-metrics", "libp2p metrics interfaces/collectors"],
@@ -73,7 +75,7 @@
     ["libp2p/go-libp2p-crypto", "go-libp2p-crypto", "libp2p key types"],
     ["libp2p/go-libp2p-protocol", "go-libp2p-protocol", "libp2p protocol datatype"],
     ["libp2p/go-libp2p-kbucket", "go-libp2p-kbucket", "Kademlia routing table helper types"],
-    
+
     "Utilities/miscellaneous",
     ["libp2p/go-libp2p-loggables", "go-libp2p-loggables", "logging helpers"],
     ["libp2p/go-maddr-filter", "go-maddr-filter", "multiaddr filtering helpers"],
@@ -81,12 +83,12 @@
     ["libp2p/go-msgio", "go-msgio", "length prefixed data channel"],
     ["libp2p/go-addr-util", "go-addr-util", "address utilities for libp2p swarm"],
     ["libp2p/go-buffer-pool", "go-buffer-pool", "a variable size buffer pool for go"],
-    ["libp2p/go-libp2p-loggables", "go-libp2p-loggables", "logging helpers"],
     ["libp2p/go-libp2p-routing-helpers", "go-libp2p-routing-helpers", "routing helpers"],
-    ["libp2p/go-maddr-filter", "go-maddr-filter", "a library to perform filtering of multiaddrs."],
     ["libp2p/go-reuseport", "go-reuseport", "enables reuse of addresses"],
     ["libp2p/go-sockaddr", "go-sockaddr", "utils for sockaddr conversions"],
     ["libp2p/go-flow-metrics", "go-flow-metrics", "metrics library"],
+    ["libp2p/go-libp2p-gostream", "go-libp2p-gostream", "Go 'net' wrappers for libp2p"],
+    ["libp2p/go-libp2p-http", "go-libp2p-http", "HTTP on top of libp2p streams"],
 
     "Testing and examples",
     ["libp2p/go-testutil", "go-testutil", "a collection of testing utilities for ipfs and libp2p"],

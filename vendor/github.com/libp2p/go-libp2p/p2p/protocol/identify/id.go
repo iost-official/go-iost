@@ -2,20 +2,24 @@ package identify
 
 import (
 	"context"
-	"strings"
 	"sync"
+	"time"
+
+	"github.com/libp2p/go-eventbus"
+	ic "github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/event"
+	"github.com/libp2p/go-libp2p-core/helpers"
+	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/peerstore"
+	"github.com/libp2p/go-libp2p-core/protocol"
 
 	pb "github.com/libp2p/go-libp2p/p2p/protocol/identify/pb"
 
-	semver "github.com/coreos/go-semver/semver"
 	ggio "github.com/gogo/protobuf/io"
 	logging "github.com/ipfs/go-log"
-	ic "github.com/libp2p/go-libp2p-crypto"
-	host "github.com/libp2p/go-libp2p-host"
-	lgbl "github.com/libp2p/go-libp2p-loggables"
-	inet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
+
 	ma "github.com/multiformats/go-multiaddr"
 	msmux "github.com/multiformats/go-multistream"
 )
@@ -31,6 +35,9 @@ const LibP2PVersion = "ipfs/0.1.0"
 
 var ClientVersion = "go-libp2p/3.3.4"
 
+// transientTTL is a short ttl for invalidated previously connected addrs
+const transientTTL = 10 * time.Second
+
 // IDService is a structure that implements ProtocolIdentify.
 // It is a trivial service that gives the other peer some
 // useful information about the local peer. A sort of hello.
@@ -42,28 +49,76 @@ var ClientVersion = "go-libp2p/3.3.4"
 type IDService struct {
 	Host host.Host
 
+	ctx context.Context
+
 	// connections undergoing identification
 	// for wait purposes
-	currid map[inet.Conn]chan struct{}
+	currid map[network.Conn]chan struct{}
 	currmu sync.RWMutex
 
 	addrMu sync.Mutex
 
 	// our own observed addresses.
 	// TODO: instead of expiring, remove these when we disconnect
-	observedAddrs ObservedAddrSet
+	observedAddrs *ObservedAddrSet
+
+	subscription event.Subscription
+	emitters     struct {
+		evtPeerProtocolsUpdated event.Emitter
+	}
 }
 
 // NewIDService constructs a new *IDService and activates it by
 // attaching its stream handler to the given host.Host.
-func NewIDService(h host.Host) *IDService {
+func NewIDService(ctx context.Context, h host.Host) *IDService {
 	s := &IDService{
-		Host:   h,
-		currid: make(map[inet.Conn]chan struct{}),
+		Host:          h,
+		ctx:           ctx,
+		currid:        make(map[network.Conn]chan struct{}),
+		observedAddrs: NewObservedAddrSet(ctx),
 	}
+
+	// handle local protocol handler updates, and push deltas to peers.
+	var err error
+	s.subscription, err = h.EventBus().Subscribe(&event.EvtLocalProtocolsUpdated{}, eventbus.BufSize(128))
+	if err != nil {
+		log.Warningf("identify service not subscribed to local protocol handlers updates; err: %s", err)
+	} else {
+		go s.handleEvents()
+	}
+
+	s.emitters.evtPeerProtocolsUpdated, err = h.EventBus().Emitter(&event.EvtPeerProtocolsUpdated{})
+	if err != nil {
+		log.Warningf("identify service not emitting peer protocol updates; err: %s", err)
+	}
+
 	h.SetStreamHandler(ID, s.requestHandler)
+	h.SetStreamHandler(IDPush, s.pushHandler)
+	h.SetStreamHandler(IDDelta, s.deltaHandler)
 	h.Network().Notify((*netNotifiee)(s))
 	return s
+}
+
+func (ids *IDService) handleEvents() {
+	sub := ids.subscription
+	defer func() {
+		_ = sub.Close()
+		// drain the channel.
+		for range sub.Out() {
+		}
+	}()
+
+	for {
+		select {
+		case evt, more := <-sub.Out():
+			if !more {
+				return
+			}
+			ids.fireProtocolDelta(evt.(event.EvtLocalProtocolsUpdated))
+		case <-ids.ctx.Done():
+			return
+		}
+	}
 }
 
 // OwnObservedAddrs returns the addresses peers have reported we've dialed from
@@ -71,7 +126,11 @@ func (ids *IDService) OwnObservedAddrs() []ma.Multiaddr {
 	return ids.observedAddrs.Addrs()
 }
 
-func (ids *IDService) IdentifyConn(c inet.Conn) {
+func (ids *IDService) ObservedAddrsFor(local ma.Multiaddr) []ma.Multiaddr {
+	return ids.observedAddrs.AddrsFor(local)
+}
+
+func (ids *IDService) IdentifyConn(c network.Conn) {
 	ids.currmu.Lock()
 	if wait, found := ids.currid[c]; found {
 		ids.currmu.Unlock()
@@ -110,8 +169,8 @@ func (ids *IDService) IdentifyConn(c inet.Conn) {
 	ids.responseHandler(s)
 }
 
-func (ids *IDService) requestHandler(s inet.Stream) {
-	defer inet.FullClose(s)
+func (ids *IDService) requestHandler(s network.Stream) {
+	defer helpers.FullClose(s)
 	c := s.Conn()
 
 	w := ggio.NewDelimitedWriter(s)
@@ -119,11 +178,10 @@ func (ids *IDService) requestHandler(s inet.Stream) {
 	ids.populateMessage(&mes, s.Conn())
 	w.WriteMsg(&mes)
 
-	log.Debugf("%s sent message to %s %s", ID,
-		c.RemotePeer(), c.RemoteMultiaddr())
+	log.Debugf("%s sent message to %s %s", ID, c.RemotePeer(), c.RemoteMultiaddr())
 }
 
-func (ids *IDService) responseHandler(s inet.Stream) {
+func (ids *IDService) responseHandler(s network.Stream) {
 	c := s.Conn()
 
 	r := ggio.NewDelimitedReader(s, 2048)
@@ -133,15 +191,79 @@ func (ids *IDService) responseHandler(s inet.Stream) {
 		s.Reset()
 		return
 	}
-	ids.consumeMessage(&mes, c)
-	log.Debugf("%s received message from %s %s", ID,
-		c.RemotePeer(), c.RemoteMultiaddr())
 
-	go inet.FullClose(s)
+	defer func() { go helpers.FullClose(s) }()
+
+	log.Debugf("%s received message from %s %s", s.Protocol(), c.RemotePeer(), c.RemoteMultiaddr())
+	ids.consumeMessage(&mes, c)
 }
 
-func (ids *IDService) populateMessage(mes *pb.Identify, c inet.Conn) {
+func (ids *IDService) broadcast(proto protocol.ID, payloadWriter func(s network.Stream)) {
+	var wg sync.WaitGroup
 
+	ctx, cancel := context.WithTimeout(ids.ctx, 30*time.Second)
+	ctx = network.WithNoDial(ctx, string(proto))
+
+	pstore := ids.Host.Peerstore()
+	for _, p := range ids.Host.Network().Peers() {
+		wg.Add(1)
+
+		go func(p peer.ID, conns []network.Conn) {
+			defer wg.Done()
+
+			// if we're in the process of identifying the connection, let's wait.
+			// we don't use ids.IdentifyWait() to avoid unnecessary channel creation.
+		Loop:
+			for _, c := range conns {
+				ids.currmu.RLock()
+				if wait, ok := ids.currid[c]; ok {
+					ids.currmu.RUnlock()
+					select {
+					case <-wait:
+						break Loop
+					case <-ctx.Done():
+						return
+					}
+				}
+				ids.currmu.RUnlock()
+			}
+
+			// avoid the unnecessary stream if the peer does not support the protocol.
+			if sup, err := pstore.SupportsProtocols(p, string(proto)); err != nil && len(sup) == 0 {
+				// the peer does not support the required protocol.
+				return
+			}
+			// if the peerstore query errors, we go ahead anyway.
+
+			s, err := ids.Host.NewStream(ctx, p, proto)
+			if err != nil {
+				log.Debugf("error opening push stream to %s: %s", p, err.Error())
+				return
+			}
+
+			rch := make(chan struct{}, 1)
+			go func() {
+				payloadWriter(s)
+				rch <- struct{}{}
+			}()
+
+			select {
+			case <-rch:
+			case <-ctx.Done():
+				// this is taking too long, abort!
+				s.Reset()
+			}
+		}(p, ids.Host.Network().ConnsToPeer(p))
+	}
+
+	// this supervisory goroutine is necessary to cancel the context
+	go func() {
+		wg.Wait()
+		cancel()
+	}()
+}
+
+func (ids *IDService) populateMessage(mes *pb.Identify, c network.Conn) {
 	// set protocols this node is currently handling
 	protos := ids.Host.Mux().Protocols()
 	mes.Protocols = make([]string, len(protos))
@@ -163,9 +285,18 @@ func (ids *IDService) populateMessage(mes *pb.Identify, c inet.Conn) {
 
 	// set our public key
 	ownKey := ids.Host.Peerstore().PubKey(ids.Host.ID())
+
+	// check if we even have a public key.
 	if ownKey == nil {
-		log.Errorf("did not have own public key in Peerstore")
+		// public key is nil. We are either using insecure transport or something erratic happened.
+		// check if we're even operating in "secure mode"
+		if ids.Host.Peerstore().PrivKey(ids.Host.ID()) != nil {
+			// private key is present. But NO public key. Something bad happened.
+			log.Errorf("did not have own public key in Peerstore")
+		}
+		// if neither of the key is present it is safe to assume that we are using an insecure transport.
 	} else {
+		// public key is present. Safe to proceed.
 		if kb, err := ownKey.Bytes(); err != nil {
 			log.Errorf("failed to convert key to bytes")
 		} else {
@@ -180,7 +311,7 @@ func (ids *IDService) populateMessage(mes *pb.Identify, c inet.Conn) {
 	mes.AgentVersion = &av
 }
 
-func (ids *IDService) consumeMessage(mes *pb.Identify, c inet.Conn) {
+func (ids *IDService) consumeMessage(mes *pb.Identify, c network.Conn) {
 	p := c.RemotePeer()
 
 	// mes.Protocols
@@ -202,20 +333,26 @@ func (ids *IDService) consumeMessage(mes *pb.Identify, c inet.Conn) {
 		lmaddrs = append(lmaddrs, maddr)
 	}
 
-	// if the address reported by the connection roughly matches their annoucned
-	// listener addresses, its likely to be an external NAT address
-	if HasConsistentTransport(c.RemoteMultiaddr(), lmaddrs) {
-		lmaddrs = append(lmaddrs, c.RemoteMultiaddr())
-	}
+	// NOTE: Do not add `c.RemoteMultiaddr()` to the peerstore if the remote
+	// peer doesn't tell us to do so. Otherwise, we'll advertise it.
+	//
+	// This can cause an "addr-splosion" issue where the network will slowly
+	// gossip and collect observed but unadvertised addresses. Given a NAT
+	// that picks random source ports, this can cause DHT nodes to collect
+	// many undialable addresses for other peers.
 
 	// Extend the TTLs on the known (probably) good addresses.
 	// Taking the lock ensures that we don't concurrently process a disconnect.
 	ids.addrMu.Lock()
 	switch ids.Host.Network().Connectedness(p) {
-	case inet.Connected:
-		ids.Host.Peerstore().AddAddrs(p, lmaddrs, pstore.ConnectedAddrTTL)
+	case network.Connected:
+		// invalidate previous addrs -- we use a transient ttl instead of 0 to ensure there
+		// is no period of having no good addrs whatsoever
+		ids.Host.Peerstore().UpdateAddrs(p, peerstore.ConnectedAddrTTL, transientTTL)
+		ids.Host.Peerstore().AddAddrs(p, lmaddrs, peerstore.ConnectedAddrTTL)
 	default:
-		ids.Host.Peerstore().AddAddrs(p, lmaddrs, pstore.RecentlyConnectedAddrTTL)
+		ids.Host.Peerstore().UpdateAddrs(p, peerstore.ConnectedAddrTTL, transientTTL)
+		ids.Host.Peerstore().AddAddrs(p, lmaddrs, peerstore.RecentlyConnectedAddrTTL)
 	}
 	ids.addrMu.Unlock()
 
@@ -225,15 +362,6 @@ func (ids *IDService) consumeMessage(mes *pb.Identify, c inet.Conn) {
 	pv := mes.GetProtocolVersion()
 	av := mes.GetAgentVersion()
 
-	// version check. if we shouldn't talk, bail.
-	// TODO: at this point, we've already exchanged information.
-	// move this into a first handshake before the connection can open streams.
-	if !protocolVersionsAreCompatible(pv, LibP2PVersion) {
-		logProtocolMismatchDisconnect(c, pv, av)
-		c.Close()
-		return
-	}
-
 	ids.Host.Peerstore().Put(p, "ProtocolVersion", pv)
 	ids.Host.Peerstore().Put(p, "AgentVersion", av)
 
@@ -241,7 +369,7 @@ func (ids *IDService) consumeMessage(mes *pb.Identify, c inet.Conn) {
 	ids.consumeReceivedPubKey(c, mes.PublicKey)
 }
 
-func (ids *IDService) consumeReceivedPubKey(c inet.Conn, kb []byte) {
+func (ids *IDService) consumeReceivedPubKey(c network.Conn, kb []byte) {
 	lp := c.LocalPeer()
 	rp := c.RemotePeer()
 
@@ -349,7 +477,7 @@ func HasConsistentTransport(a ma.Multiaddr, green []ma.Multiaddr) bool {
 // This happens async so the connection can start to be used
 // even if handshake3 knowledge is not necesary.
 // Users **MUST** call IdentifyWait _after_ IdentifyConn
-func (ids *IDService) IdentifyWait(c inet.Conn) <-chan struct{} {
+func (ids *IDService) IdentifyWait(c network.Conn) <-chan struct{} {
 	ids.currmu.Lock()
 	ch, found := ids.currid[c]
 	ids.currmu.Unlock()
@@ -364,7 +492,7 @@ func (ids *IDService) IdentifyWait(c inet.Conn) <-chan struct{} {
 	return ch
 }
 
-func (ids *IDService) consumeObservedAddress(observed []byte, c inet.Conn) {
+func (ids *IDService) consumeObservedAddress(observed []byte, c network.Conn) {
 	if observed == nil {
 		return
 	}
@@ -386,8 +514,13 @@ func (ids *IDService) consumeObservedAddress(observed []byte, c inet.Conn) {
 	}
 
 	log.Debugf("identify identifying observed multiaddr: %s %s", c.LocalMultiaddr(), ifaceaddrs)
-	if !addrInAddrs(c.LocalMultiaddr(), ifaceaddrs) {
+	if !addrInAddrs(c.LocalMultiaddr(), ifaceaddrs) && !addrInAddrs(c.LocalMultiaddr(), ids.Host.Network().ListenAddresses()) {
 		// not in our list
+		return
+	}
+
+	if !HasConsistentTransport(maddr, ids.Host.Addrs()) {
+		log.Debugf("ignoring observed multiaddr that doesn't match the transports of any addresses we're announcing", c.RemoteMultiaddr())
 		return
 	}
 
@@ -406,31 +539,6 @@ func addrInAddrs(a ma.Multiaddr, as []ma.Multiaddr) bool {
 	return false
 }
 
-// protocolVersionsAreCompatible checks that the two implementations
-// can talk to each other. It will use semver, but for now while
-// we're in tight development, we will return false for minor version
-// changes too.
-func protocolVersionsAreCompatible(v1, v2 string) bool {
-	if strings.HasPrefix(v1, "ipfs/") {
-		v1 = v1[5:]
-	}
-	if strings.HasPrefix(v2, "ipfs/") {
-		v2 = v2[5:]
-	}
-
-	v1s, err := semver.NewVersion(v1)
-	if err != nil {
-		return false
-	}
-
-	v2s, err := semver.NewVersion(v2)
-	if err != nil {
-		return false
-	}
-
-	return v1s.Major == v2s.Major && v1s.Minor == v2s.Minor
-}
-
 // netNotifiee defines methods to be used with the IpfsDHT
 type netNotifiee IDService
 
@@ -438,35 +546,25 @@ func (nn *netNotifiee) IDService() *IDService {
 	return (*IDService)(nn)
 }
 
-func (nn *netNotifiee) Connected(n inet.Network, v inet.Conn) {
+func (nn *netNotifiee) Connected(n network.Network, v network.Conn) {
 	// TODO: deprecate the setConnHandler hook, and kick off
 	// identification here.
 }
 
-func (nn *netNotifiee) Disconnected(n inet.Network, v inet.Conn) {
+func (nn *netNotifiee) Disconnected(n network.Network, v network.Conn) {
 	// undo the setting of addresses to peer.ConnectedAddrTTL we did
 	ids := nn.IDService()
 	ids.addrMu.Lock()
 	defer ids.addrMu.Unlock()
 
-	if ids.Host.Network().Connectedness(v.RemotePeer()) != inet.Connected {
+	if ids.Host.Network().Connectedness(v.RemotePeer()) != network.Connected {
 		// Last disconnect.
 		ps := ids.Host.Peerstore()
-		ps.UpdateAddrs(v.RemotePeer(), pstore.ConnectedAddrTTL, pstore.RecentlyConnectedAddrTTL)
+		ps.UpdateAddrs(v.RemotePeer(), peerstore.ConnectedAddrTTL, peerstore.RecentlyConnectedAddrTTL)
 	}
 }
 
-func (nn *netNotifiee) OpenedStream(n inet.Network, v inet.Stream) {}
-func (nn *netNotifiee) ClosedStream(n inet.Network, v inet.Stream) {}
-func (nn *netNotifiee) Listen(n inet.Network, a ma.Multiaddr)      {}
-func (nn *netNotifiee) ListenClose(n inet.Network, a ma.Multiaddr) {}
-
-func logProtocolMismatchDisconnect(c inet.Conn, protocol, agent string) {
-	lm := make(lgbl.DeferredMap)
-	lm["remotePeer"] = func() interface{} { return c.RemotePeer().Pretty() }
-	lm["remoteAddr"] = func() interface{} { return c.RemoteMultiaddr().String() }
-	lm["protocolVersion"] = protocol
-	lm["agentVersion"] = agent
-	log.Event(context.TODO(), "IdentifyProtocolMismatch", lm)
-	log.Debugf("IdentifyProtocolMismatch %s %s %s (disconnected)", c.RemotePeer(), protocol, agent)
-}
+func (nn *netNotifiee) OpenedStream(n network.Network, v network.Stream) {}
+func (nn *netNotifiee) ClosedStream(n network.Network, v network.Stream) {}
+func (nn *netNotifiee) Listen(n network.Network, a ma.Multiaddr)         {}
+func (nn *netNotifiee) ListenClose(n network.Network, a ma.Multiaddr)    {}

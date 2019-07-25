@@ -5,14 +5,14 @@ package libp2p
 import (
 	"crypto/rand"
 
-	crypto "github.com/libp2p/go-libp2p-crypto"
+	crypto "github.com/libp2p/go-libp2p-core/crypto"
+	mplex "github.com/libp2p/go-libp2p-mplex"
 	pstoremem "github.com/libp2p/go-libp2p-peerstore/pstoremem"
 	secio "github.com/libp2p/go-libp2p-secio"
+	yamux "github.com/libp2p/go-libp2p-yamux"
 	tcp "github.com/libp2p/go-tcp-transport"
 	ws "github.com/libp2p/go-ws-transport"
 	multiaddr "github.com/multiformats/go-multiaddr"
-	mplex "github.com/whyrusleeping/go-smux-multiplex"
-	yamux "github.com/whyrusleeping/go-smux-yamux"
 )
 
 // DefaultSecurity is the default security option.
@@ -70,6 +70,11 @@ var DefaultListenAddrs = func(cfg *Config) error {
 	))
 }
 
+// DefaultEnableRelay enables relay dialing and listening by default
+var DefaultEnableRelay = func(cfg *Config) error {
+	return cfg.Apply(EnableRelay())
+}
+
 // Complete list of default options and when to fallback on them.
 //
 // Please *DON'T* specify default options any other way. Putting this all here
@@ -101,6 +106,10 @@ var defaults = []struct {
 	{
 		fallback: func(cfg *Config) bool { return cfg.Peerstore == nil },
 		opt:      DefaultPeerstore,
+	},
+	{
+		fallback: func(cfg *Config) bool { return !cfg.RelayCustom },
+		opt:      DefaultEnableRelay,
 	},
 }
 

@@ -5,17 +5,17 @@ import (
 	"fmt"
 	"math/rand"
 
-	peer "github.com/libp2p/go-libp2p-peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
-	tpt "github.com/libp2p/go-libp2p-transport"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/transport"
 	ma "github.com/multiformats/go-multiaddr"
 )
 
-func (d *RelayTransport) Dial(ctx context.Context, a ma.Multiaddr, p peer.ID) (tpt.Conn, error) {
+func (d *RelayTransport) Dial(ctx context.Context, a ma.Multiaddr, p peer.ID) (transport.CapableConn, error) {
 	c, err := d.Relay().Dial(ctx, a, p)
 	if err != nil {
 		return nil, err
 	}
+	c.tagHop()
 	return d.upgrader.UpgradeOutbound(ctx, d, c, p)
 }
 
@@ -36,7 +36,7 @@ func (r *Relay) Dial(ctx context.Context, a ma.Multiaddr, p peer.ID) (*Conn, err
 		}
 	}
 
-	dinfo := &pstore.PeerInfo{ID: p, Addrs: []ma.Multiaddr{}}
+	dinfo := &peer.AddrInfo{ID: p, Addrs: []ma.Multiaddr{}}
 	if len(destaddr.Bytes()) > 0 {
 		dinfo.Addrs = append(dinfo.Addrs, destaddr)
 	}
@@ -46,8 +46,8 @@ func (r *Relay) Dial(ctx context.Context, a ma.Multiaddr, p peer.ID) (*Conn, err
 		return r.tryDialRelays(ctx, *dinfo)
 	}
 
-	var rinfo *pstore.PeerInfo
-	rinfo, err := pstore.InfoFromP2pAddr(relayaddr)
+	var rinfo *peer.AddrInfo
+	rinfo, err := peer.AddrInfoFromP2pAddr(relayaddr)
 	if err != nil {
 		return nil, fmt.Errorf("error parsing multiaddr '%s': %s", relayaddr.String(), err)
 	}
@@ -55,7 +55,7 @@ func (r *Relay) Dial(ctx context.Context, a ma.Multiaddr, p peer.ID) (*Conn, err
 	return r.DialPeer(ctx, *rinfo, *dinfo)
 }
 
-func (r *Relay) tryDialRelays(ctx context.Context, dinfo pstore.PeerInfo) (*Conn, error) {
+func (r *Relay) tryDialRelays(ctx context.Context, dinfo peer.AddrInfo) (*Conn, error) {
 	var relays []peer.ID
 	r.mx.Lock()
 	for p := range r.relays {
@@ -75,7 +75,7 @@ func (r *Relay) tryDialRelays(ctx context.Context, dinfo pstore.PeerInfo) (*Conn
 		}
 
 		rctx, cancel := context.WithTimeout(ctx, HopConnectTimeout)
-		c, err := r.DialPeer(rctx, pstore.PeerInfo{ID: relay}, dinfo)
+		c, err := r.DialPeer(rctx, peer.AddrInfo{ID: relay}, dinfo)
 		cancel()
 
 		if err == nil {

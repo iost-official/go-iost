@@ -38,10 +38,7 @@ type Tree interface {
 	Bytes() []byte
 
 	SetValue(value Value)
-
-	N() []*node
-
-	SetRoot(r *node)
+	SetMetaValue(meta MetaValue)
 }
 
 type node struct {
@@ -49,14 +46,6 @@ type node struct {
 	Meta  MetaValue
 	Value Value
 	Nodes []*node
-}
-
-func (n *node) SetRoot(r *node) {
-	n.Root = r
-}
-
-func (n *node) N() []*node {
-	return n.Nodes
 }
 
 func (n *node) FindLastNode() Tree {
@@ -139,7 +128,11 @@ func (n *node) Bytes() []byte {
 	level := 0
 	var levelsEnded []int
 	if n.Root == nil {
-		buf.WriteString(fmt.Sprintf("%v", n.Value))
+		if n.Meta != nil {
+			buf.WriteString(fmt.Sprintf("[%v]  %v", n.Meta, n.Value))
+		} else {
+			buf.WriteString(fmt.Sprintf("%v",n.Value))
+		}
 		buf.WriteByte('\n')
 	} else {
 		edge := EdgeTypeMid
@@ -159,8 +152,12 @@ func (n *node) String() string {
 	return string(n.Bytes())
 }
 
-func (n *node) SetValue(value Value) {
+func (n *node) SetValue(value Value){
 	n.Value = value
+}
+
+func (n *node) SetMetaValue(meta MetaValue){
+	n.Meta = meta
 }
 
 func printNodes(wr io.Writer,
@@ -208,9 +205,9 @@ func isEnded(levelsEnded []int, level int) bool {
 type EdgeType string
 
 var (
-	EdgeTypeLink EdgeType = "│"
-	EdgeTypeMid  EdgeType = "├──"
-	EdgeTypeEnd  EdgeType = "└──"
+	EdgeTypeLink  EdgeType = "│"
+	EdgeTypeMid   EdgeType = "├──"
+	EdgeTypeEnd   EdgeType = "└──"
 )
 
 func New() Tree {

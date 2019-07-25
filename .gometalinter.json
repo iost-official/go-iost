@@ -1,11 +1,12 @@
 {
     "Vendor": true,
-    "Enable": ["vet", "gocyclo", "golint", "ineffassign", "misspell", "deadcode", "unconvert", "gofmt"],
+    "Enable": ["vet", "gocyclo", "golint", "ineffassign", "misspell", "deadcode", "gofmt"],
     "Exclude": [
         ".+.pb.go",
         ".+.pb.gw.go",
         ".+_test.go",
-        "vendor"
+        "vendor",
+	"/pkg/mod/"
     ],
     "Deadline": "120s",
     "Cyclo": 15

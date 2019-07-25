@@ -4,10 +4,10 @@ import (
 	"errors"
 	"sync"
 
-	ic "github.com/libp2p/go-libp2p-crypto"
-	peer "github.com/libp2p/go-libp2p-peer"
+	ic "github.com/libp2p/go-libp2p-core/crypto"
+	peer "github.com/libp2p/go-libp2p-core/peer"
 
-	pstore "github.com/libp2p/go-libp2p-peerstore"
+	pstore "github.com/libp2p/go-libp2p-core/peerstore"
 )
 
 type memoryKeyBook struct {
@@ -49,7 +49,7 @@ func (mkb *memoryKeyBook) PubKey(p peer.ID) ic.PubKey {
 		return pk
 	}
 	pk, err := p.ExtractPublicKey()
-	if err == nil && pk != nil {
+	if err == nil {
 		mkb.Lock()
 		mkb.pks[p] = pk
 		mkb.Unlock()

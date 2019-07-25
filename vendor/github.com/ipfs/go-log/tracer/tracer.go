@@ -182,7 +182,12 @@ ReferencesLoop:
 		case opentracing.ChildOfRef,
 			opentracing.FollowsFromRef:
 
-			refCtx := ref.ReferencedContext.(SpanContext)
+			refCtx, ok := ref.ReferencedContext.(SpanContext)
+			if !ok {
+				// Could be a noopSpanContext
+				// Ignore that parent.
+				continue
+			}
 			sp.raw.Context.TraceID = refCtx.TraceID
 			sp.raw.Context.SpanID = randomID()
 			sp.raw.Context.Sampled = refCtx.Sampled
