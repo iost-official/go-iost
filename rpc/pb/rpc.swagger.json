@@ -310,6 +310,40 @@
         ]
       }
     },
+    "/getContractVote/{id}/{by_longest_chain}": {
+      "get": {
+        "summary": "get contract vote",
+        "operationId": "GetContractVote",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbContractVote"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "id",
+            "description": "contract id",
+            "in": "path",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "name": "by_longest_chain",
+            "description": "get data by longest chain's head block or last irreversible block",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getGasRatio": {
       "get": {
         "summary": "get gas ratio infomation",
@@ -1269,6 +1303,19 @@
         }
       },
       "description": "The message defines the contract struct."
+    },
+    "rpcpbContractVote": {
+      "type": "object",
+      "properties": {
+        "vote_infos": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbVoteInfo"
+          },
+          "title": "vote information"
+        }
+      },
+      "title": "The message defines the contract vote info"
     },
     "rpcpbEvent": {
       "type": "object",
