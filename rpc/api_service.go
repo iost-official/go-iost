@@ -370,6 +370,10 @@ func (as *APIService) GetToken721Owner(ctx context.Context, req *rpcpb.GetToken7
 
 // GetContract returns contract information corresponding to the given contract ID.
 func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
+	err := checkIDValid(req.GetId())
+	if err != nil {
+		return nil, err
+	}
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
@@ -379,6 +383,29 @@ func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractReq
 		return nil, errors.New("contract not found")
 	}
 	return toPbContract(contract), nil
+}
+
+// GetContractVote returns contract vote information to the given contract ID.
+func (as *APIService) GetContractVote(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.ContractVote, error) {
+	err := checkIDValid(req.GetId())
+	if err != nil {
+		return nil, err
+	}
+	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
+	if err != nil {
+		return nil, err
+	}
+
+	ret := &rpcpb.ContractVote{}
+	voteInfo := dbVisitor.GetAccountVoteInfo(req.GetId())
+	for _, v := range voteInfo {
+		ret.VoteInfos = append(ret.VoteInfos, &rpcpb.VoteInfo{
+			Option:       v.Option,
+			Votes:        v.Votes.ToFloat(),
+			ClearedVotes: v.ClearedVotes.ToFloat(),
+		})
+	}
+	return ret, nil
 }
 
 // GetGasRatio returns gas ratio information in head block
