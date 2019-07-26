@@ -121,12 +121,15 @@ func (as *APIService) GetChainInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb
 
 // GetTxByHash returns the transaction corresponding to the given hash.
 func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest) (*rpcpb.TransactionResponse, error) {
+	err := checkHashValid(req.GetHash())
+	if err != nil {
+		return nil, err
+	}
 	txHashBytes := common.Base58Decode(req.GetHash())
 	status := rpcpb.TransactionResponse_IRREVERSIBLE
 	var (
 		t         *tx.Tx
 		txReceipt *tx.TxReceipt
-		err       error
 	)
 	blockNumber := int64(-1)
 
@@ -161,6 +164,10 @@ func (as *APIService) GetTxByHash(ctx context.Context, req *rpcpb.TxHashRequest)
 
 // GetTxReceiptByTxHash returns transaction receipts corresponding to the given tx hash.
 func (as *APIService) GetTxReceiptByTxHash(ctx context.Context, req *rpcpb.TxHashRequest) (*rpcpb.TxReceipt, error) {
+	err := checkHashValid(req.GetHash())
+	if err != nil {
+		return nil, err
+	}
 	txHashBytes := common.Base58Decode(req.GetHash())
 	receipt, err := as.blockchain.GetReceiptByTxHash(txHashBytes)
 	if err != nil {
@@ -171,10 +178,13 @@ func (as *APIService) GetTxReceiptByTxHash(ctx context.Context, req *rpcpb.TxHas
 
 // GetBlockByHash returns block corresponding to the given hash.
 func (as *APIService) GetBlockByHash(ctx context.Context, req *rpcpb.GetBlockByHashRequest) (*rpcpb.BlockResponse, error) {
+	err := checkHashValid(req.GetHash())
+	if err != nil {
+		return nil, err
+	}
 	hashBytes := common.Base58Decode(req.GetHash())
 	var (
 		blk *block.Block
-		err error
 	)
 	status := rpcpb.BlockResponse_IRREVERSIBLE
 	blk, err = as.blockchain.GetBlockByHash(hashBytes)
@@ -215,6 +225,11 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
+	err := checkIDValid(req.GetName())
+	if err != nil {
+		return nil, err
+	}
+
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
@@ -283,6 +298,11 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 // GetTokenBalance returns contract information corresponding to the given contract ID.
 func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetTokenBalanceResponse, error) {
+	err := checkIDValid(req.GetAccount())
+	if err != nil {
+		return nil, err
+	}
+
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
@@ -303,6 +323,11 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 
 // GetToken721Balance returns balance of account of an specific token721 token.
 func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
+	err := checkIDValid(req.GetAccount())
+	if err != nil {
+		return nil, err
+	}
+
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
@@ -381,6 +406,11 @@ func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) 
 
 // GetProducerVoteInfo returns producers's vote info
 func (as *APIService) GetProducerVoteInfo(ctx context.Context, req *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
+
+	err := checkIDValid(req.Account)
+	if err != nil {
+		return nil, err
+	}
 	dbVisitor, _, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
 		return nil, err
@@ -606,6 +636,10 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 
 // GetVoterBonus returns the bonus a voter can claim.
 func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.VoterBonus, error) {
+	err := checkIDValid(req.GetName())
+	if err != nil {
+		return nil, err
+	}
 	ret := &rpcpb.VoterBonus{
 		Detail: make(map[string]float64),
 	}
@@ -672,6 +706,10 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 
 // GetCandidateBonus returns the bonus a candidate can claim.
 func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.CandidateBonus, error) {
+	err := checkIDValid(req.GetName())
+	if err != nil {
+		return nil, err
+	}
 	ret := &rpcpb.CandidateBonus{}
 	dbVisitor, bcn, err := as.getStateDBVisitor(req.ByLongestChain)
 	if err != nil {
