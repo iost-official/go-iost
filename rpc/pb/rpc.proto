@@ -107,6 +107,13 @@ service ApiService {
         };
     }
 
+    // get contract vote
+    rpc GetContractVote (GetContractRequest) returns (ContractVote) {
+        option (google.api.http) = {
+            get: "/getContractVote/{id}/{by_longest_chain}"
+        };
+    }
+
     // get contract storage
     rpc GetContractStorage (GetContractStorageRequest) returns (GetContractStorageResponse) {
         option (google.api.http) = {
@@ -660,6 +667,12 @@ message Contract {
 
     // contract abis
     repeated ABI abis = 5;
+}
+
+// The message defines the contract vote info
+message ContractVote{
+    // vote information
+    repeated VoteInfo vote_infos = 1;
 }
 
 // The message defines get contract request.
