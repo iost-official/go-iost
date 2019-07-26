@@ -385,7 +385,7 @@ func (as *APIService) GetContract(ctx context.Context, req *rpcpb.GetContractReq
 	return toPbContract(contract), nil
 }
 
-// GetContractVote returns contract vote information to the given contract ID.
+// GetContractVote returns contract vote information by contract ID.
 func (as *APIService) GetContractVote(ctx context.Context, req *rpcpb.GetContractRequest) (*rpcpb.ContractVote, error) {
 	err := checkIDValid(req.GetId())
 	if err != nil {
