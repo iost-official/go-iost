@@ -1,6 +1,8 @@
 package account
 
 import (
+	"fmt"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 )
@@ -51,4 +53,18 @@ func EncodePubkey(pubkey []byte) string {
 // DecodePubkey ...
 func DecodePubkey(readablePubKey string) []byte {
 	return common.Base58Decode(readablePubKey)
+}
+
+// CheckAccNameValid ...
+func CheckAccNameValid(name string) error {
+	if len(name) < 5 || len(name) > 11 {
+		return fmt.Errorf("name invalid. name length should be between 5,11 - %v ", len(name))
+	}
+
+	for _, v := range name {
+		if !((v >= 'a' && v <= 'z') || (v >= '0' && v <= '9' || v == '_')) {
+			return fmt.Errorf("name invalid. name contains invalid character - %v", v)
+		}
+	}
+	return nil
 }
