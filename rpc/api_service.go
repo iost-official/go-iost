@@ -14,7 +14,6 @@ import (
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/vm"
 
-	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/consensus/cverifier"
@@ -226,7 +225,7 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
-	err := account.CheckAccNameValid(req.GetName())
+	err := checkIDValid(req.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -299,7 +298,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 
 // GetTokenBalance returns contract information corresponding to the given contract ID.
 func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetTokenBalanceResponse, error) {
-	err := account.CheckAccNameValid(req.GetAccount())
+	err := checkIDValid(req.GetAccount())
 	if err != nil {
 		return nil, err
 	}
@@ -324,7 +323,7 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 
 // GetToken721Balance returns balance of account of an specific token721 token.
 func (as *APIService) GetToken721Balance(ctx context.Context, req *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
-	err := account.CheckAccNameValid(req.GetAccount())
+	err := checkIDValid(req.GetAccount())
 	if err != nil {
 		return nil, err
 	}
@@ -408,7 +407,7 @@ func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) 
 // GetProducerVoteInfo returns producers's vote info
 func (as *APIService) GetProducerVoteInfo(ctx context.Context, req *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
 
-	err := account.CheckAccNameValid(req.Account)
+	err := checkIDValid(req.Account)
 	if err != nil {
 		return nil, err
 	}
@@ -637,7 +636,7 @@ func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiServic
 
 // GetVoterBonus returns the bonus a voter can claim.
 func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.VoterBonus, error) {
-	err := account.CheckAccNameValid(req.GetName())
+	err := checkIDValid(req.GetName())
 	if err != nil {
 		return nil, err
 	}
@@ -707,7 +706,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 
 // GetCandidateBonus returns the bonus a candidate can claim.
 func (as *APIService) GetCandidateBonus(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.CandidateBonus, error) {
-	err := account.CheckAccNameValid(req.GetName())
+	err := checkIDValid(req.GetName())
 	if err != nil {
 		return nil, err
 	}
