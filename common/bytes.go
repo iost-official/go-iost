@@ -36,9 +36,3 @@ func Float64ToBytes(f float64) []byte {
 	binary.BigEndian.PutUint64(b, bits)
 	return b
 }
-
-// BytesToFloat64 converts byte slice to float64.
-func BytesToFloat64(b []byte) float64 {
-	bits := binary.BigEndian.Uint64(b)
-	return math.Float64frombits(bits)
-}
