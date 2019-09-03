@@ -2,7 +2,6 @@ package common
 
 import (
 	"encoding/binary"
-	"math"
 )
 
 // Int64ToBytes converts int64 to byte slice.
@@ -27,12 +26,4 @@ func Int32ToBytes(n int32) []byte {
 // BytesToInt32 converts byte slice to int32.
 func BytesToInt32(b []byte) int32 {
 	return int32(binary.BigEndian.Uint32(b))
-}
-
-// Float64ToBytes converts float64 to byte slice.
-func Float64ToBytes(f float64) []byte {
-	bits := math.Float64bits(f)
-	b := make([]byte, 8)
-	binary.BigEndian.PutUint64(b, bits)
-	return b
 }
