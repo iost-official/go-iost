@@ -87,9 +87,7 @@ func (s *IOSTDevSDK) SetTxInfo(gasLimit float64, gasRatio float64, expiration in
 	s.gasRatio = gasRatio
 	s.expiration = expiration
 	s.delaySecond = delaySecond
-	if amountLimit != nil && len(amountLimit) != 0 {
-		s.amountLimit = amountLimit
-	}
+	s.amountLimit = amountLimit
 }
 
 // SetCheckResult ...
@@ -165,6 +163,22 @@ func (s *IOSTDevSDK) GetContractStorage(r *rpcpb.GetContractStorageRequest) (*rp
 	return value, nil
 }
 
+// GetBatchContractStorage ...
+func (s *IOSTDevSDK) GetBatchContractStorage(r *rpcpb.GetBatchContractStorageRequest) (*rpcpb.GetBatchContractStorageResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	value, err := client.GetBatchContractStorage(context.Background(), r)
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+}
+
 // GetNodeInfo ...
 func (s *IOSTDevSDK) GetNodeInfo() (*rpcpb.NodeInfoResponse, error) {
 	if s.rpcConn == nil {
@@ -195,6 +209,23 @@ func (s *IOSTDevSDK) GetChainInfo() (*rpcpb.ChainInfoResponse, error) {
 		return nil, err
 	}
 	return value, nil
+}
+
+// GetRAMInfo ...
+func (s *IOSTDevSDK) GetRAMInfo() (*rpcpb.RAMInfoResponse, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	value, err := client.GetRAMInfo(context.Background(), &rpcpb.EmptyRequest{})
+	if err != nil {
+		return nil, err
+	}
+	return value, nil
+
 }
 
 // GetAccountInfo return account info
@@ -283,6 +314,22 @@ func (s *IOSTDevSDK) GetTxReceiptByTxHash(txHashStr string) (*rpcpb.TxReceipt, e
 	return client.GetTxReceiptByTxHash(context.Background(), &rpcpb.TxHashRequest{Hash: txHashStr})
 }
 
+// GetTokenInfo ...
+func (s *IOSTDevSDK) GetTokenInfo(token string) (*rpcpb.TokenInfo, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	return client.GetTokenInfo(context.Background(), &rpcpb.GetTokenInfoRequest{
+		Symbol:         token,
+		ByLongestChain: s.useLongestChain,
+	})
+
+}
+
 // SendTransaction send raw transaction to server
 func (s *IOSTDevSDK) SendTransaction(signedTx *rpcpb.TransactionRequest) (string, error) {
 	if s.rpcConn == nil {
@@ -303,9 +350,6 @@ func (s *IOSTDevSDK) SendTransaction(signedTx *rpcpb.TransactionRequest) (string
 
 // CreateTxFromActions ...
 func (s *IOSTDevSDK) CreateTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
-	if len(s.amountLimit) == 0 {
-		return nil, fmt.Errorf("empty amount limit")
-	}
 
 	txTime := time.Now().UnixNano()
 	expiration := txTime + s.expiration*1e9
