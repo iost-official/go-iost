@@ -18,8 +18,8 @@ p2p:
   chainid: 1020
   version: 1
   datapath: /var/lib/iserver/p2p/
-  inboundConn: 15
-  outboundConn: 15
+  inboundConn: 20
+  outboundConn: 10
   blackPID:
   blackIP:
   adminPort: 30005
@@ -42,9 +42,9 @@ log:
   asyncwrite: true
   enablecontractlog: true
 metrics:
-  pushaddr: 
-  username: 
-  password: 
+  pushaddr:
+  username:
+  password:
   enable: false
   id: iost-testnet:visitor00
 debug:
