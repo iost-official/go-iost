@@ -13,6 +13,7 @@ type ChainConfig struct {
 	Block3_0_10 int64
 	Block3_1_0  int64
 	Block3_2_0  int64
+	Block3_2_1  int64
 }
 
 var (
@@ -26,12 +27,14 @@ var (
 		Block3_0_10: 10599000,
 		Block3_1_0:  12800000,
 		Block3_2_0:  15800000,
+		Block3_2_1:  30400000,
 	}
 
 	defaultChainConf = &ChainConfig{
 		Block3_0_10: 0,
 		Block3_1_0:  0,
 		Block3_2_0:  0,
+		Block3_2_1:  0,
 	}
 )
 
