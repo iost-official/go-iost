@@ -34,7 +34,7 @@ func Test_Caller(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_2_0)
+	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -56,7 +56,7 @@ func Test_Caller(t *testing.T) {
 	conf.P2P.ChainID = 0
 	version.InitChainConf(conf)
 	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_2_0)
+	assert.True(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	r, err = s.Call(cname, "caller", `[]`, acc0.ID, acc0.KeyPair)
@@ -87,7 +87,7 @@ func Test_TxInfo(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_2_0)
+	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -105,7 +105,7 @@ func Test_TxInfo(t *testing.T) {
 	conf.P2P.ChainID = 0
 	version.InitChainConf(conf)
 	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_2_0)
+	assert.True(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	r, err = s.Call(cname, "txInfo", `[]`, acc0.ID, acc0.KeyPair)
@@ -129,7 +129,7 @@ func Test_Transfer(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_2_0)
+	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -147,7 +147,7 @@ func Test_Transfer(t *testing.T) {
 	conf.P2P.ChainID = 0
 	version.InitChainConf(conf)
 	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_2_0)
+	assert.True(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	r, err = s.Call(cname, "transfer", fmt.Sprintf(`["%s"]`, acc1.ID), acc0.ID, acc0.KeyPair)
@@ -209,7 +209,7 @@ func Test_SignerAuth(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_2_0)
+	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -228,7 +228,7 @@ func Test_SignerAuth(t *testing.T) {
 	conf.P2P.ChainID = 0
 	version.InitChainConf(conf)
 	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_2_0)
+	assert.True(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	signers = []string{}
@@ -276,7 +276,7 @@ func Test_SetCode(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_2_0)
+	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -296,7 +296,7 @@ func Test_SetCode(t *testing.T) {
 	conf.P2P.ChainID = 0
 	version.InitChainConf(conf)
 	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_2_0)
+	assert.True(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err = s.Compile("", "./test_data/v320", "./test_data/v320.js")

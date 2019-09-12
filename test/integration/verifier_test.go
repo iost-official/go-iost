@@ -698,7 +698,7 @@ func TestGasLimit2(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_2_0)
+	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	createAccountsWithResource(s)

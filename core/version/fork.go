@@ -12,29 +12,26 @@ const (
 type ChainConfig struct {
 	Block3_0_10 int64
 	Block3_1_0  int64
-	Block3_2_0  int64
-	Block3_2_1  int64
+	Block3_3_0  int64
 }
 
 var (
 	mainNetChainConf = &ChainConfig{
 		Block3_0_10: 12000000,
 		Block3_1_0:  15800000,
-		Block3_2_0:  18000000,
+		Block3_3_0:  18000000,
 	}
 
 	testNetChainConf = &ChainConfig{
 		Block3_0_10: 10599000,
 		Block3_1_0:  12800000,
-		Block3_2_0:  15800000,
-		Block3_2_1:  30400000,
+		Block3_3_0:  30440000,
 	}
 
 	defaultChainConf = &ChainConfig{
 		Block3_0_10: 0,
 		Block3_1_0:  0,
-		Block3_2_0:  0,
-		Block3_2_1:  0,
+		Block3_3_0:  0,
 	}
 )
 
@@ -52,9 +49,9 @@ func InitChainConf(conf *common.Config) {
 	}
 }
 
-// IsFork3_2_0 ...
-func IsFork3_2_0(num int64) bool {
-	return isForked(chainConf.Block3_2_0, num)
+// IsFork3_3_0 ...
+func IsFork3_3_0(num int64) bool {
+	return isForked(chainConf.Block3_3_0, num)
 }
 
 // IsFork3_1_0 ...
@@ -75,7 +72,7 @@ func isForked(v, num int64) bool {
 type Rules struct {
 	IsFork3_0_10 bool `json:"is_fork3_0_10"`
 	IsFork3_1_0  bool `json:"is_fork3_1_0"`
-	IsFork3_2_0  bool `json:"is_fork3_2_0"`
+	IsFork3_3_0  bool `json:"is_fork3_3_0"`
 }
 
 // NewRules create Rules for each block
@@ -83,6 +80,6 @@ func NewRules(num int64) *Rules {
 	return &Rules{
 		IsFork3_0_10: IsFork3_0_10(num),
 		IsFork3_1_0:  IsFork3_1_0(num),
-		IsFork3_2_0:  IsFork3_2_0(num),
+		IsFork3_3_0:  IsFork3_3_0(num),
 	}
 }

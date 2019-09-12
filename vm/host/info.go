@@ -55,7 +55,7 @@ func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) 
 	ctxInfo["abi_name"] = h.h.ctx.Value("abi_name")
 	ctxInfo["publisher"] = h.h.ctx.Value("publisher")
 
-	if h.h.IsFork3_2_0 {
+	if h.h.IsFork3_3_0 {
 		ctxInfo["caller"] = h.h.ctx.Value("caller")
 	}
 
@@ -78,7 +78,7 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 	txInfo["gas_ratio"] = h.h.ctx.Value("gas_ratio")
 	txInfo["auth_list"] = h.h.ctx.Value("auth_list")
 	txInfo["publisher"] = h.h.ctx.Value("publisher")
-	if h.h.IsFork3_2_0 {
+	if h.h.IsFork3_3_0 {
 		txInfo["amount_limit"] = h.h.ctx.Value("amount_limit")
 		txInfo["actions"] = h.h.ctx.Value("actions")
 	}

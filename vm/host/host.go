@@ -220,7 +220,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	_, cost0, err = h.Call(c.ID, "init", "[]")
 	cost.AddAssign(cost0)
 
-	if h.IsFork3_2_0 {
+	if h.IsFork3_3_0 {
 		// remove init
 		c.Info.Abi = c.Info.Abi[:len(c.Info.Abi)-1]
 		h.db.SetContract(c)

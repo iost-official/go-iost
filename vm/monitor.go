@@ -96,7 +96,7 @@ func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
-	if h.IsFork3_2_0 {
+	if h.IsFork3_3_0 {
 		// TODO: reorganize monitor to remove this code
 		callerName := h.Caller().Name
 		if api == "init" && callerName != "system.iost" && callerName != "" {

@@ -52,7 +52,7 @@ func (h *Authority) requireAuth(id, p string, authType int) (bool, contract.Cost
 
 // RequireAuth check auth
 func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
-	if h.h.IsFork3_2_0 {
+	if h.h.IsFork3_3_0 {
 		return h.requireAuth(id, p, authNormal)
 	} else {
 		return h.requireAuth(id, p, authSigner)
