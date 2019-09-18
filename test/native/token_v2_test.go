@@ -31,6 +31,7 @@ func InitVMV2(t *testing.T, conName string, optional ...interface{}) (*native.Im
 	ctx.Set("contract_name", conName)
 	ctx.Set("tx_hash", []byte("iamhash"))
 	ctx.Set("auth_list", make(map[string]int))
+	ctx.Set("signer_list", make(map[string]bool))
 	ctx.Set("time", int64(0))
 	ctx.Set("abi_name", "abi")
 	ctx.GSet("receipts", []*tx.Receipt{})
@@ -58,6 +59,7 @@ func TestTokenV2_Create(t *testing.T) {
 	host.Context().Set("contract_name", "token.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token create", t, func() {
 		Reset(func() {
@@ -71,6 +73,8 @@ func TestTokenV2_Create(t *testing.T) {
 		Convey("token not exists", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "issue", "iost", "user0", "100")
 			So(err.Error(), ShouldEqual, "token not exists")
 
@@ -95,6 +99,8 @@ func TestTokenV2_Create(t *testing.T) {
 		Convey("create token", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 		})
@@ -102,6 +108,8 @@ func TestTokenV2_Create(t *testing.T) {
 		Convey("create duplicate token", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
@@ -112,6 +120,8 @@ func TestTokenV2_Create(t *testing.T) {
 		Convey("create invalid token symbol", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iostaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "issuer0", int64(100), []byte("{}"))
 			So(err.Error(), ShouldContainSubstring, "token symbol invalid.")
 
@@ -122,6 +132,8 @@ func TestTokenV2_Create(t *testing.T) {
 		Convey("create token config", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte(`{"canTransfer": false, "decimal": 1, "defaultRate": "1.1"}`))
 			So(err, ShouldBeNil)
 
@@ -162,6 +174,7 @@ func TestTokenV2_Issue(t *testing.T) {
 	host.Context().Set("contract_name", "token.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token issue", t, func() {
 
@@ -174,6 +187,8 @@ func TestTokenV2_Issue(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 		})
@@ -181,6 +196,8 @@ func TestTokenV2_Issue(t *testing.T) {
 		Convey("issue prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 		})
@@ -206,6 +223,8 @@ func TestTokenV2_Issue(t *testing.T) {
 		Convey("issue token without auth", func() {
 			delete(authList, issuer0)
 			host.Context().Set("auth_list", authList)
+			delete(signerList, issuer0+"@active")
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "issue", "iost", "user0", "1.1")
 			So(true, ShouldEqual, err.Error() == "transaction has no permission")
 		})
@@ -264,6 +283,7 @@ func TestTokenV2_Transfer(t *testing.T) {
 	host.Context().Set("contract_name", "token.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token transfer", t, func() {
 
@@ -276,6 +296,8 @@ func TestTokenV2_Transfer(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
@@ -286,6 +308,8 @@ func TestTokenV2_Transfer(t *testing.T) {
 		Convey("transfer prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
@@ -307,6 +331,7 @@ func TestTokenV2_Transfer(t *testing.T) {
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "77.7")
 
 			authList["user0"] = 1
+			signerList["user0"+"@active"] = true
 			_, cost, err = e.LoadAndCall(host, code, "transfer", "iost", "user0", "user1", "22.3", "")
 			So(err, ShouldBeNil)
 
@@ -320,6 +345,7 @@ func TestTokenV2_Transfer(t *testing.T) {
 
 			// transfer to self
 			authList["user1"] = 1
+			signerList["user1"+"@active"] = true
 			_, cost, err = e.LoadAndCall(host, code, "transfer", "iost", "user1", "user1", "22.3", "")
 			So(err, ShouldBeNil)
 
@@ -331,6 +357,8 @@ func TestTokenV2_Transfer(t *testing.T) {
 		Convey("transfer token without auth", func() {
 			delete(authList, issuer0)
 			host.Context().Set("auth_list", authList)
+			delete(signerList, issuer0+"@active")
+			host.Context().Set("signer_list", signerList)
 			_, cost, err := e.LoadAndCall(host, code, "transfer", "iost", "issuer0", "user0", "1.1", "")
 			So(true, ShouldEqual, err.Error() == "transaction has no permission")
 			So(cost.ToGas(), ShouldBeGreaterThan, 0)
@@ -390,6 +418,7 @@ func TestTokenV2_Destroy(t *testing.T) {
 	host.Context().Set("contract_name", "token.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 
 	Convey("Test of Token destroy", t, func() {
 
@@ -402,6 +431,8 @@ func TestTokenV2_Destroy(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
@@ -412,6 +443,8 @@ func TestTokenV2_Destroy(t *testing.T) {
 		Convey("destroy prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
@@ -469,6 +502,8 @@ func TestTokenV2_Destroy(t *testing.T) {
 		Convey("destroy token without auth", func() {
 			delete(authList, issuer0)
 			host.Context().Set("auth_list", authList)
+			delete(signerList, issuer0+"@active")
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "destroy", "iost", "issuer0", "1.1")
 			So(true, ShouldEqual, err.Error() == "transaction has no permission")
 		})
@@ -523,6 +558,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 	host.Context().Set("contract_name", "token.iost")
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	authList := host.Context().Value("auth_list").(map[string]int)
+	signerList := host.Context().Value("signer_list").(map[string]bool)
 	now := int64(time.Now().Unix()) * 1e9
 
 	Convey("Test of Token transferFreeze", t, func() {
@@ -536,6 +572,8 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
@@ -546,6 +584,8 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 		Convey("transferFreeze prepare", func() {
 			authList[issuer0] = 1
 			host.Context().Set("auth_list", authList)
+			signerList[issuer0+"@active"] = true
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "create", "iost", "issuer0", int64(100), []byte("{}"))
 			So(err, ShouldBeNil)
 
@@ -584,6 +624,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 
 			// transferFreeze to self
 			authList["user0"] = 1
+			signerList["user0"+"@active"] = true
 			_, cost, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user0", "10", now+10, "")
 			So(err, ShouldBeNil)
 			So(cost.ToGas(), ShouldBeGreaterThan, 0)
@@ -622,6 +663,8 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 		Convey("transferFreeze token without auth", func() {
 			delete(authList, issuer0)
 			host.Context().Set("auth_list", authList)
+			delete(signerList, issuer0+"@active")
+			host.Context().Set("signer_list", signerList)
 			_, _, err := e.LoadAndCall(host, code, "transferFreeze", "iost", "issuer0", "user0", "1.1", now, "")
 			So(true, ShouldEqual, err.Error() == "transaction has no permission")
 		})
@@ -642,6 +685,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 
 			authList["user0"] = 1
+			signerList["user0"+"@active"] = true
 			host.Context().Set("auth_list", authList)
 			_, _, err = e.LoadAndCall(host, code, "transferFreeze", "iost", "user0", "user1", "10", now+100, "")
 			So(true, ShouldEqual, strings.HasPrefix(err.Error(), "balance not enough"))

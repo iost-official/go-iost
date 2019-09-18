@@ -102,6 +102,36 @@ func (s *Simulator) SetContract(c *contract.Contract) {
 	s.Visitor.SetContract(c)
 }
 
+// DeploySystemContract via system.iost/initSetCode
+func (s *Simulator) DeploySystemContract(c *contract.Contract, publisher string, kp *account.KeyPair) (*tx.TxReceipt, error) {
+	sc := c.B64Encode()
+
+	jargs, err := json.Marshal([]string{c.ID, sc})
+	if err != nil {
+		panic(err)
+	}
+
+	trx := tx.NewTx([]*tx.Action{{
+		Contract:   "system.iost",
+		ActionName: "initSetCode",
+		Data:       string(jargs),
+	}}, nil, 400000000, 100, s.Head.Time+10000000, 0, 0)
+
+	trx.Time = s.Head.Time
+
+	bn := s.Head.Number
+	s.Head.Number = 0
+	r, err := s.CallTx(trx, publisher, kp)
+	s.Head.Number = bn
+	if err != nil {
+		return r, err
+	}
+	if r.Status.Code != 0 {
+		return r, errors.New(r.Status.Message)
+	}
+	return r, nil
+}
+
 // DeployContract via system.iost/setCode
 func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *account.KeyPair) (string, *tx.TxReceipt, error) {
 	sc, err := json.Marshal(c)
@@ -161,13 +191,18 @@ func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {
 }
 
 // Call abi with basic settings
-func (s *Simulator) Call(contractName, abi, args string, publisher string, auth *account.KeyPair) (*tx.TxReceipt, error) {
-
+func (s *Simulator) Call(contractName, abi, args string, publisher string, auth *account.KeyPair, otherArgs ...interface{}) (*tx.TxReceipt, error) {
+	var signers []string
+	if len(otherArgs) >= 1 {
+		if s, ok := otherArgs[0].([]string); ok {
+			signers = s
+		}
+	}
 	trx := tx.NewTx([]*tx.Action{{
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, nil, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
+	}}, signers, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
 
 	trx.Time = s.Head.Time
 	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})

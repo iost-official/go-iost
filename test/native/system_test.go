@@ -30,6 +30,7 @@ func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*
 	ctx.Set("contract_name", conName)
 	ctx.Set("tx_hash", []byte("iamhash"))
 	ctx.Set("auth_list", make(map[string]int))
+	ctx.Set("signer_list", make(map[string]bool))
 	ctx.Set("publisher", "pub")
 
 	pm := vm.NewMonitor()

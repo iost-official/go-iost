@@ -17,8 +17,10 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 	s.Head.Number = 0
 
 	// deploy issue.iost
-	setNonNativeContract(s, "issue.iost", "issue.js", ContractPath)
-	s.Call("issue.iost", "init", `[]`, acc.ID, acc.KeyPair)
+	r, err := setNonNativeContract(s, "issue.iost", "issue.js", ContractPath)
+	if err != nil || r.Status.Code != tx.Success {
+		return r, err
+	}
 
 	witness := common.Witness{
 		ID:      acc0.ID,
@@ -36,7 +38,7 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 		[]interface{}{witness},
 	}
 	b, _ := json.Marshal(params)
-	r, err := s.Call("issue.iost", "initGenesis", string(b), acc.ID, acc.KeyPair)
+	r, err = s.Call("issue.iost", "initGenesis", string(b), acc.ID, acc.KeyPair)
 	s.Visitor.Commit()
 	return r, err
 }
