@@ -1,3 +1,12 @@
+## v3.2.0
+Mon Jul 29 15:59:39 CST 2019
+
+- Optimize the snapshot function, new nodes can quickly complete data synchronization.
+- Reorganized code of common.
+- RPC increases the number of query contract votes.
+- Reorganized code of RPC.
+- Fix bug with high CPU usage.
+
 ## v3.1.1
 
 Wed Jun 12 11:18:28 CST 2019
