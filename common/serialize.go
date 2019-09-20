@@ -41,11 +41,6 @@ func (se *SimpleEncoder) WriteInt32(i int32) {
 	se.buf.Write(Int32ToBytes(i))
 }
 
-// WriteFloat64 writes a float64 to buffer.
-func (se *SimpleEncoder) WriteFloat64(f float64) {
-	se.buf.Write(Float64ToBytes(f))
-}
-
 // WriteBytesSlice writes a bytes slice to buffer.
 func (se *SimpleEncoder) WriteBytesSlice(p [][]byte) {
 	se.WriteInt32(int32(len(p)))

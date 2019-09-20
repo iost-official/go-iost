@@ -3,6 +3,10 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path/filepath"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -11,9 +15,6 @@ import (
 	"github.com/iost-official/go-iost/crypto"
 	. "github.com/iost-official/go-iost/verifier"
 	"github.com/iost-official/go-iost/vm/native"
-	"io/ioutil"
-	"os"
-	"path/filepath"
 )
 
 // TestAccount used for writing test cases
@@ -117,28 +118,27 @@ func createToken(t fataler, s *Simulator, acc *TestAccount) error {
 	return nil
 }
 
-func setNonNativeContract(s *Simulator, name string, filename string, ContractPath string) error {
+func setNonNativeContract(s *Simulator, name string, filename string, ContractPath string) (*tx.TxReceipt, error) {
 	jsPath := filepath.Join(ContractPath, filename)
 	abiPath := filepath.Join(ContractPath, filename+".abi")
 	fd, err := ioutil.ReadFile(jsPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rawCode := string(fd)
 	fd, err = ioutil.ReadFile(abiPath)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	rawAbi := string(fd)
 	c := contract.Compiler{}
 	code, err := c.Parse(name, rawCode, rawAbi)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	code.Info.Abi = append(code.Info.Abi, &contract.ABI{Name: "init", Args: []string{}})
 
-	s.SetContract(code)
-	return nil
+	s.SetRAM("admin", 1e6)
+	return s.DeploySystemContract(code, acc0.ID, acc0.KeyPair)
 }
 
 func prepareAuth(t fataler, s *Simulator) *TestAccount {

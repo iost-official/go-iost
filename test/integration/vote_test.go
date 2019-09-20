@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/iost-official/go-iost/ilog"
+	"github.com/stretchr/testify/assert"
 
 	"github.com/iost-official/go-iost/core/tx"
 	. "github.com/iost-official/go-iost/verifier"
@@ -27,22 +28,19 @@ func prepareToken(t *testing.T, s *Simulator, pubAcc *TestAccount) {
 func prepareVote(t *testing.T, s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 	// deploy vote.iost
 	s.Head.Number = 0
-	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
-	r, err := s.Call("vote.iost", "init", `[]`, acc.ID, acc.KeyPair)
-	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
-	}
+	r, err := setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	r, err = s.Call("vote.iost", "initAdmin", fmt.Sprintf(`["%v"]`, acc.ID), acc.ID, acc.KeyPair)
-	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
-	}
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	// deploy voteresult
-	err = setNonNativeContract(s, "Contractvoteresult", "voteresult.js", "./test_data/")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r, err = setNonNativeContract(s, "Contractvoteresult", "voteresult.js", "./test_data/")
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
+
 	s.Visitor.MPut("system.iost-contract_owner", "Contractvoteresult", `s`+acc.ID)
 	s.SetGas(acc.ID, 1e12)
 	s.SetRAM(acc.ID, 1e12)

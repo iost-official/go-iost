@@ -44,8 +44,8 @@ const (
 )
 
 const (
-	defaultOutboundConn = 15
-	defaultInboundConn  = 15
+	defaultOutboundConn = 10
+	defaultInboundConn  = 20
 
 	bucketSize        = 1000
 	peerResponseCount = 20

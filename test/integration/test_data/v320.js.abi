@@ -1,0 +1,30 @@
+{
+  "lang": "javascript",
+  "version": "1.0.0",
+  "abi": [
+    {
+      "name": "caller",
+      "args": []
+    },
+    {
+      "name": "caller2",
+      "args": []
+    },
+    {
+      "name": "transfer",
+      "args": ["string"],
+      "amountLimit": [{
+        "token": "iost",
+        "val": "1"
+      }]
+    },
+    {
+      "name": "requireAuth",
+      "args": []
+    },
+    {
+      "name": "txInfo",
+      "args": []
+    }
+  ]
+}

@@ -27,55 +27,42 @@ func initProducer(t *testing.T, s *Simulator) {
 
 func prepareFakeBase(t *testing.T, s *Simulator) {
 	// deploy fake base.iost
-	err := setNonNativeContract(s, "base.iost", "base.js", "./test_data/")
-	if err != nil {
-		t.Fatal(err)
-	}
+	r, err := setNonNativeContract(s, "base.iost", "base.js", "./test_data/")
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 	lst := []string{}
 	for _, acc := range testAccounts {
 		lst = append(lst, acc.KeyPair.ReadablePubkey())
 	}
 	jsonStr, err := json.Marshal(lst)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 	_, err = s.Call("base.iost", "initWitness", fmt.Sprintf(`[%v]`, string(jsonStr)), acc0.ID, acc0.KeyPair)
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.Nil(t, err)
 }
 
 func prepareNewProducerVote(t *testing.T, s *Simulator, acc1 *TestAccount) {
 	s.Head.Number = 0
 	// deploy vote.iost
-	setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
-	r, err := s.Call("vote.iost", "init", `[]`, acc1.ID, acc1.KeyPair)
-	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
-	}
+	r, err := setNonNativeContract(s, "vote.iost", "vote_common.js", ContractPath)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	r, err = s.Call("vote.iost", "initAdmin", fmt.Sprintf(`["%s"]`, acc1.ID), acc1.ID, acc1.KeyPair)
-	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
-	}
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	// deploy vote_producer.iost
-	setNonNativeContract(s, "vote_producer.iost", "vote_producer.js", ContractPath)
+	r, err = setNonNativeContract(s, "vote_producer.iost", "vote_producer.js", ContractPath)
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	r, err = s.Call("token.iost", "issue", fmt.Sprintf(`["%v", "%v", "%v"]`, "iost", "vote_producer.iost", "1000"), acc1.ID, acc1.KeyPair)
-	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
-	}
-
-	r, err = s.Call("vote_producer.iost", "init", `[]`, acc1.ID, acc1.KeyPair)
-	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
-	}
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	r, err = s.Call("vote_producer.iost", "initAdmin", fmt.Sprintf(`["%s"]`, acc1.ID), acc1.ID, acc1.KeyPair)
-	if err != nil || r.Status.Code != tx.Success {
-		t.Fatal(err, r)
-	}
+	assert.Nil(t, err)
+	assert.Empty(t, r.Status.Message)
 
 	s.Visitor.Commit()
 }
