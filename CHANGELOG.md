@@ -1,3 +1,12 @@
+## v3.3.0
+Fri Sep 20 15:21:41 CST 2019
+
+- Optimize code of common.
+- Enrich go-sdk APIs.
+- Adjust p2p default config.
+- In addition to the active permission, other permissions must be declared in the signals field.
+- The returns field is cleared when the transaction fails to execute; the returns and receipts fields are cleared when the ram fails.
+
 ## v3.2.0
 Mon Jul 29 15:59:39 CST 2019
 
