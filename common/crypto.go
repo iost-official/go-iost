@@ -8,6 +8,7 @@ import (
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/iost-official/go-iost/ilog"
+	"golang.org/x/crypto/ripemd160"
 	"golang.org/x/crypto/sha3"
 )
 
@@ -20,6 +21,13 @@ func Sha3(raw []byte) []byte {
 	}()
 	data := sha3.Sum256(raw)
 	return data[:]
+}
+
+// Ripemd160 ...
+func Ripemd160(raw []byte) []byte {
+	h := ripemd160.New()
+	h.Write(raw)
+	return h.Sum(nil)
 }
 
 // Base58Encode ...

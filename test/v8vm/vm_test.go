@@ -784,6 +784,45 @@ func TestEngine_Crypto(t *testing.T) {
 	}
 }
 
+
+func TestEngine_Crypto2(t *testing.T) {
+	host, code := MyInit(t, "crypto2")
+	// test sha3Hex
+	testStr := "hello world"
+	rs, _, err := vmPool.LoadAndCall(host, code, "sha3Hex", common.ToHex([]byte(testStr)))
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	if rs[0] != common.ToHex(common.Sha3([]byte(testStr))) {
+		t.Fatalf("LoadAndCall sha3Hex invalid result")
+	}
+	rs, _, err = vmPool.LoadAndCall(host, code, "sha3Hex", testStr)
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	if rs[0] != "" {
+		t.Fatalf("LoadAndCall sha3Hex invalid result")
+	}
+
+	// test ripemd160Hex
+	input := "823b54d3aabaf8e3122800ca5238afb2ccef071ce83b8d5654a597a5dd06347e"
+	rs, _, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	expected := "3dbb2167cbfc2186343356125fff4163e6ebcce7"
+	if rs[0] != expected {
+		t.Fatalf("LoadAndCall ripemd160Hex invalid result")
+	}
+	rs, _, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", testStr)
+	if err != nil {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+	if rs[0] != "" {
+		t.Fatalf("LoadAndCall ripemd160Hex invalid result")
+	}
+}
+
 func TestEngine_ArrayOfFrom(t *testing.T) {
 	host, code := MyInit(t, "arrayfunc")
 	_, _, err := vmPool.LoadAndCall(host, code, "from")
