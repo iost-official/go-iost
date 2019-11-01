@@ -53,7 +53,7 @@ func NewVM(poolType vmPoolType, jsPath string) *VM {
 		vmType:  poolType,
 		jsPath:  jsPath,
 	}
-	e.sandbox = NewSandbox(e, 0)
+	e.sandbox = NewSandbox(e, 1)
 
 	return e
 }
