@@ -4,7 +4,7 @@
 #include "sandbox.h"
 
 // This Class Provide Console.Log Function so JS code can use Go log.
-void InitCrypto(Isolate *isolate, Local<ObjectTemplate> globalTpl);
+void InitCrypto(Isolate *isolate, Local<ObjectTemplate> globalTpl, int64_t);
 void NewCrypto(const FunctionCallbackInfo<Value> &info);
 
 class IOSTCrypto {

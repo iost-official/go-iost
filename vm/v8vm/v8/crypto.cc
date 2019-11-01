@@ -190,30 +190,44 @@ void IOSTCrypto_verify(const FunctionCallbackInfo<Value> &args) {
     args.GetReturnValue().Set(ret);
 }
 
-void InitCrypto(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
+void InitCrypto(Isolate *isolate, Local<ObjectTemplate> globalTpl, int64_t flags) {
     Local<FunctionTemplate> cryptoClass =
         FunctionTemplate::New(isolate, NewCrypto);
     Local<String> cryptoClassName = String::NewFromUtf8(isolate, "_IOSTCrypto");
     cryptoClass->SetClassName(cryptoClassName);
 
     Local<ObjectTemplate> cryptoTpl = cryptoClass->InstanceTemplate();
-    cryptoTpl->SetInternalFieldCount(4);
-    cryptoTpl->Set(
-        String::NewFromUtf8(isolate, "sha3"),
-        FunctionTemplate::New(isolate, IOSTCrypto_sha3)
-    );
-    cryptoTpl->Set(
-        String::NewFromUtf8(isolate, "sha3Hex"),
-        FunctionTemplate::New(isolate, IOSTCrypto_sha3Hex)
-    );
-    cryptoTpl->Set(
-        String::NewFromUtf8(isolate, "ripemd160Hex"),
-        FunctionTemplate::New(isolate, IOSTCrypto_ripemd160Hex)
-    );
-    cryptoTpl->Set(
-        String::NewFromUtf8(isolate, "verify"),
-        FunctionTemplate::New(isolate, IOSTCrypto_verify)
-    );
+
+    const uint64_t cryptoHashFlag(1);
+    if (cryptoHashFlag & flags) {
+        cryptoTpl->SetInternalFieldCount(4);
+        cryptoTpl->Set(
+            String::NewFromUtf8(isolate, "sha3"),
+            FunctionTemplate::New(isolate, IOSTCrypto_sha3)
+        );
+        cryptoTpl->Set(
+            String::NewFromUtf8(isolate, "sha3Hex"),
+            FunctionTemplate::New(isolate, IOSTCrypto_sha3Hex)
+        );
+        cryptoTpl->Set(
+            String::NewFromUtf8(isolate, "ripemd160Hex"),
+            FunctionTemplate::New(isolate, IOSTCrypto_ripemd160Hex)
+        );
+        cryptoTpl->Set(
+            String::NewFromUtf8(isolate, "verify"),
+            FunctionTemplate::New(isolate, IOSTCrypto_verify)
+        );
+    } else {
+        cryptoTpl->SetInternalFieldCount(2);
+        cryptoTpl->Set(
+            String::NewFromUtf8(isolate, "sha3"),
+            FunctionTemplate::New(isolate, IOSTCrypto_sha3)
+        );
+        cryptoTpl->Set(
+            String::NewFromUtf8(isolate, "verify"),
+            FunctionTemplate::New(isolate, IOSTCrypto_verify)
+        );
+    }
 
     globalTpl->Set(cryptoClassName, cryptoClass);
 }

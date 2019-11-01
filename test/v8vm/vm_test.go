@@ -1,13 +1,11 @@
 package v8vm
 
 import (
+	"encoding/json"
 	"io/ioutil"
 	"strings"
 	"testing"
-
 	"time"
-
-	"encoding/json"
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/common"
@@ -787,16 +785,26 @@ func TestEngine_Crypto(t *testing.T) {
 
 func TestEngine_Crypto2(t *testing.T) {
 	host, code := MyInit(t, "crypto2")
+	helloWorld := "hello world"
+	input := "823b54d3aabaf8e3122800ca5238afb2ccef071ce83b8d5654a597a5dd06347e"
+
+	// invalid function before fork
+	host.IsFork3_3_1 = false
+	rs, _, err := vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
+	if err == nil || !strings.Contains(err.Error(), "IOSTCrypto.ripemd160Hex is not a function") {
+		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+
+	host.IsFork3_3_1 = true
 	// test sha3Hex
-	testStr := "hello world"
-	rs, _, err := vmPool.LoadAndCall(host, code, "sha3Hex", common.ToHex([]byte(testStr)))
+	rs, _, err = vmPool.LoadAndCall(host, code, "sha3Hex", common.ToHex([]byte(helloWorld)))
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
-	if rs[0] != common.ToHex(common.Sha3([]byte(testStr))) {
+	if rs[0] != common.ToHex(common.Sha3([]byte(helloWorld))) {
 		t.Fatalf("LoadAndCall sha3Hex invalid result")
 	}
-	rs, _, err = vmPool.LoadAndCall(host, code, "sha3Hex", testStr)
+	rs, _, err = vmPool.LoadAndCall(host, code, "sha3Hex", helloWorld)
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
@@ -805,7 +813,6 @@ func TestEngine_Crypto2(t *testing.T) {
 	}
 
 	// test ripemd160Hex
-	input := "823b54d3aabaf8e3122800ca5238afb2ccef071ce83b8d5654a597a5dd06347e"
 	rs, _, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
@@ -814,7 +821,7 @@ func TestEngine_Crypto2(t *testing.T) {
 	if rs[0] != expected {
 		t.Fatalf("LoadAndCall ripemd160Hex invalid result")
 	}
-	rs, _, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", testStr)
+	rs, _, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", helloWorld)
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}

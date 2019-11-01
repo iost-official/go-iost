@@ -63,6 +63,7 @@ var (
 // code to run in a single instance of IVM.
 type Sandbox struct {
 	id      int
+	flags   int64
 	isolate C.IsolateWrapperPtr
 	context C.SandboxPtr
 	host    *host.Host
@@ -82,15 +83,17 @@ func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
 }
 
 // NewSandbox generate new sandbox for VM and insert into sandbox map
-func NewSandbox(e *VM) *Sandbox {
+func NewSandbox(e *VM, flags int64) *Sandbox {
 	cPath := C.CString(e.jsPath)
 	defer C.free(unsafe.Pointer(cPath))
-	cSbx := C.newSandbox(e.isolate)
+
+	cSbx := C.newSandbox(e.isolate, C.int64_t(flags))
 	C.setJSPath(cSbx, cPath)
 
 	s := &Sandbox{
 		isolate: e.isolate,
 		context: cSbx,
+		flags:   flags,
 	}
 	s.Init(e.vmType)
 	sbxMap.Store(cSbx, s)
@@ -147,6 +150,11 @@ func (sbx *Sandbox) Init(vmType vmPoolType) {
 		(C.verifyFunc)(C.goVerify),
 	)
 	C.loadVM(sbx.context, C.int(vmType))
+}
+
+// GetFlags ...
+func (sbx *Sandbox) GetFlags() int64 {
+	return sbx.flags
 }
 
 // SetGasLimit set gas limit in context

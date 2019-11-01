@@ -53,7 +53,7 @@ func NewVM(poolType vmPoolType, jsPath string) *VM {
 		vmType:  poolType,
 		jsPath:  jsPath,
 	}
-	e.sandbox = NewSandbox(e)
+	e.sandbox = NewSandbox(e, 0)
 
 	return e
 }
@@ -99,6 +99,16 @@ func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
 	e.releaseChannel = releaseChannel
 }
 
+// EnsureFlags make sandbox flag is same with input
+func (e *VM) EnsureFlags(flags int64) {
+	if e.sandbox.GetFlags() != flags {
+		if e.sandbox != nil {
+			e.sandbox.Release()
+		}
+		e.sandbox = NewSandbox(e, flags)
+	}
+}
+
 func (e *VM) recycle(poolType vmPoolType) {
 	// first release sandbox
 	if e.sandbox != nil {
@@ -122,7 +132,7 @@ func (e *VM) recycle(poolType vmPoolType) {
 	}
 
 	// then regen new sandbox
-	e.sandbox = NewSandbox(e)
+	e.sandbox = NewSandbox(e, e.sandbox.GetFlags())
 	if e.releaseChannel != nil {
 		e.releaseChannel <- e
 	}

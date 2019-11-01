@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "error.h"
 
 #ifdef __cplusplus
@@ -41,7 +42,7 @@ extern void releaseIsolate(IsolateWrapperPtr ptr);
 // free memory
 extern void lowMemoryNotification(IsolateWrapperPtr ptr);
 
-extern SandboxPtr newSandbox(IsolateWrapperPtr ptr);
+extern SandboxPtr newSandbox(IsolateWrapperPtr ptr, int64_t);
 extern void loadVM(SandboxPtr ptr, int vmType);
 extern void releaseSandbox(SandboxPtr ptr);
 
