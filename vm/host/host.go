@@ -364,3 +364,11 @@ func (h *Host) ReadSettings() {
 	}
 
 }
+
+// GetVMFlags return target vm bitwise flags
+func (h *Host) GetVMFlags() int64 {
+	if h.IsFork3_3_1 {
+		return 1
+	}
+	return 0
+}

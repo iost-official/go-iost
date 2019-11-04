@@ -105,7 +105,7 @@ void nativeRun(const FunctionCallbackInfo<Value> &info) {
     return;
 }
 
-Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
+Local<ObjectTemplate> createGlobalTpl(Isolate *isolate, int64_t flags) {
     Local<ObjectTemplate> global = ObjectTemplate::New(isolate);
     global->SetInternalFieldCount(1);
 
@@ -114,7 +114,7 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate) {
     InitStorage(isolate, global);
     InitBlockchain(isolate, global);
     InitInstruction(isolate, global);
-    InitCrypto(isolate, global);
+    InitCrypto(isolate, global, flags);
 
     global->Set(
               String::NewFromUtf8(isolate, "_native_log", NewStringType::kNormal)
@@ -133,7 +133,7 @@ const char* ToCString(const v8::String::Utf8Value& value) {
   return *value ? *value : "<string conversion failed>";
 }
 
-SandboxPtr newSandbox(IsolateWrapperPtr ptr) {
+SandboxPtr newSandbox(IsolateWrapperPtr ptr, int64_t flags) {
     IsolateWrapper *isolateWrapper = static_cast<IsolateWrapper*>(ptr);
     Isolate *isolate = static_cast<Isolate*>(isolateWrapper->isolate);
     ArrayBufferAllocator* allocator= static_cast<ArrayBufferAllocator*>(isolateWrapper->allocator);
@@ -142,7 +142,7 @@ SandboxPtr newSandbox(IsolateWrapperPtr ptr) {
     Isolate::Scope isolate_scope(isolate);
     HandleScope handle_scope(isolate);
 
-    Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate);
+    Local<ObjectTemplate> globalTpl = createGlobalTpl(isolate, flags);
     Local<Context> context = Context::New(isolate, NULL, globalTpl);
     context->AllowCodeGenerationFromStrings(false);
 

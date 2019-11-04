@@ -39,9 +39,10 @@ func (vmp *VMPool) getCompileVM() *VM {
 	return vm
 }
 
-func (vmp *VMPool) getRunVM() *VM {
+func (vmp *VMPool) getRunVM(flags int64) *VM {
 	vm := <-vmp.runPoolBuff
 	vm.refCount++
+	vm.EnsureFlags(flags)
 	return vm
 }
 
@@ -86,7 +87,7 @@ func (vmp *VMPool) Compile(contract *contract.Contract) (string, error) {
 
 // LoadAndCall load compiled Javascript code and run code with specified api and args
 func (vmp *VMPool) LoadAndCall(host *host.Host, contract *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-	vm := vmp.getRunVM()
+	vm := vmp.getRunVM(host.GetVMFlags())
 	defer func() {
 		go vm.recycle(RunVMPool)
 	}()

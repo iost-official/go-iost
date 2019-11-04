@@ -5,6 +5,7 @@ package v8
 */
 import "C"
 import (
+	"encoding/hex"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/crypto"
 )
@@ -17,6 +18,32 @@ func goSha3(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
 	val := common.Base58Encode(common.Sha3([]byte(msgStr)))
 
 	*gasUsed = C.size_t(len(msgStr) + cryptGasBase)
+
+	return newCStr(val)
+}
+
+//export goSha3Hex
+func goSha3Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
+	msgBytes, err := hex.DecodeString(msg.GoString())
+	if err != nil {
+		return newCStr("")
+	}
+	val := hex.EncodeToString(common.Sha3(msgBytes))
+
+	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
+
+	return newCStr(val)
+}
+
+//export goRipemd160Hex
+func goRipemd160Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
+	msgBytes, err := hex.DecodeString(msg.GoString())
+	if err != nil {
+		return newCStr("")
+	}
+	val := hex.EncodeToString(common.Ripemd160(msgBytes))
+
+	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 
 	return newCStr(val)
 }
