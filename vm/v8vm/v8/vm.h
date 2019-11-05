@@ -3,6 +3,7 @@
 
 #include <stddef.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include "error.h"
 
 #ifdef __cplusplus
@@ -41,7 +42,7 @@ extern void releaseIsolate(IsolateWrapperPtr ptr);
 // free memory
 extern void lowMemoryNotification(IsolateWrapperPtr ptr);
 
-extern SandboxPtr newSandbox(IsolateWrapperPtr ptr);
+extern SandboxPtr newSandbox(IsolateWrapperPtr ptr, int64_t);
 extern void loadVM(SandboxPtr ptr, int vmType);
 extern void releaseSandbox(SandboxPtr ptr);
 
@@ -94,9 +95,11 @@ void InitGoStorage(putFunc, hasFunc, getFunc, delFunc,
 
 // crypto
 typedef CStr (*sha3Func)(SandboxPtr, const CStr, size_t *);
+typedef CStr (*sha3HexFunc)(SandboxPtr, const CStr, size_t *);
+typedef CStr (*ripemd160HexFunc)(SandboxPtr, const CStr, size_t *);
 typedef int (*verifyFunc)(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
 
-void InitGoCrypto(sha3Func, verifyFunc);
+void InitGoCrypto(sha3Func, sha3HexFunc, ripemd160HexFunc, verifyFunc);
 
 extern int compile(SandboxPtr, const CStr code, CStr *compiledCode, CStr *errMsg);
 extern int validate(SandboxPtr ptr, const CStr code, const CStr abi, CStr *result, CStr *errMsg);

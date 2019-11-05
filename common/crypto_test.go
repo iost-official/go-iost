@@ -13,6 +13,12 @@ func TestSha3(t *testing.T) {
 	assert.Equal(t, expected, Sha3(input), "SHA3-256")
 }
 
+func TestRipemd160(t *testing.T) {
+	input := ParseHex("823b54d3aabaf8e3122800ca5238afb2ccef071ce83b8d5654a597a5dd06347e")
+	expected := ParseHex("3dbb2167cbfc2186343356125fff4163e6ebcce7")
+	assert.Equal(t, expected, Ripemd160(input), "Ripemd160")
+}
+
 func TestBase58Encode(t *testing.T) {
 	input := []byte{0x01, 0xB9, 0x7B}
 	expected := "abc"
