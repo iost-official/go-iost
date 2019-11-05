@@ -157,8 +157,19 @@ SandboxPtr newSandbox(IsolateWrapperPtr ptr, int64_t flags) {
     sbx->gasUsed = 0;
     sbx->gasLimit = 0;
     sbx->memLimit = sandboxMemLimit;
+    sbx->blockchain = new IOSTBlockchain(sbx);
+    sbx->crypto = new IOSTCrypto(sbx);
+    sbx->instruction = new IOSTContractInstruction(sbx);
+    sbx->storage = new IOSTContractStorage(sbx);
 
     return static_cast<SandboxPtr>(sbx);
+}
+
+void resetSandbox(Sandbox *sbx) {
+    IOSTContractInstruction *instruction = static_cast<IOSTContractInstruction*>(sbx->instruction);
+    instruction->Reset();
+
+    sbx->gasUsed = 0;
 }
 
 void releaseSandbox(SandboxPtr ptr) {
@@ -171,6 +182,16 @@ void releaseSandbox(SandboxPtr ptr) {
     sbx->context.Reset();
 
     free((char *)sbx->jsPath);
+
+    IOSTBlockchain *blockchain = static_cast<IOSTBlockchain*>(sbx->blockchain);
+    IOSTCrypto *crypto = static_cast<IOSTCrypto*>(sbx->crypto);
+    IOSTContractInstruction *instruction = static_cast<IOSTContractInstruction*>(sbx->instruction);
+    IOSTContractStorage *storage = static_cast<IOSTContractStorage*>(sbx->storage);
+    delete blockchain;
+    delete crypto;
+    delete instruction;
+    delete storage;
+
     delete sbx;
     return;
 }
@@ -320,8 +341,8 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
         return;
     }
 
-    // reset gas count
-    sbx->gasUsed = 0;
+    // reset sandbox
+    resetSandbox(sbx);
 
     source = String::NewFromUtf8(isolate, code.data, NewStringType::kNormal, code.size).ToLocalChecked();
     fileName = String::NewFromUtf8(isolate, "_default_name.js", NewStringType::kNormal).ToLocalChecked();

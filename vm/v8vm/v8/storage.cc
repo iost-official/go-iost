@@ -182,9 +182,9 @@ void NewIOSTContractStorage(const FunctionCallbackInfo<Value> &args) {
         std::cout << "NewIOSTContractStorage val error" << std::endl;
         return;
     }
-    SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
+    Sandbox* sbx = static_cast<Sandbox*>(Local<External>::Cast(val)->Value());
 
-    IOSTContractStorage *ics = new IOSTContractStorage(sbx);
+    IOSTContractStorage *ics = static_cast<IOSTContractStorage*>(sbx->storage);
 
     Local<Object> self = args.Holder();
     self->SetInternalField(0, External::New(isolate, ics));

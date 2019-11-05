@@ -108,9 +108,9 @@ void NewIOSTBlockchain(const FunctionCallbackInfo<Value> &args) {
            std::cout << "NewIOSTBlockchain val error" << std::endl;
         return;
     }
-    SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
+    Sandbox *sbx = static_cast<Sandbox*>(Local<External>::Cast(val)->Value());
 
-    IOSTBlockchain *bc = new IOSTBlockchain(sbx);
+    IOSTBlockchain *bc = static_cast<IOSTBlockchain*>(sbx->blockchain);
 
     Local<Object> self = args.Holder();
     self->SetInternalField(0, External::New(isolate, bc));
