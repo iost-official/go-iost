@@ -1,0 +1,19 @@
+run:
+  tests: false
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+linters:
+  enable:
+    - vet
+    - gocyclo
+    - golint
+    - ineffassign
+    - misspell
+    - deadcode
+    - unconvert
+    - gofmt
+  disable:
+    - errcheck
