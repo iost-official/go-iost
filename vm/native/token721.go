@@ -3,7 +3,6 @@ package native
 import (
 	"encoding/json"
 	"errors"
-	"math"
 	"strconv"
 
 	"fmt"
@@ -97,11 +96,6 @@ var (
 			cost.AddAssign(cost0)
 			if ok {
 				return nil, cost, host.ErrTokenExists
-			}
-
-			// check valid
-			if totalSupply > math.MaxInt64 {
-				return nil, cost, errors.New("invalid total supply")
 			}
 
 			publisher := h.Context().Value("publisher").(string)

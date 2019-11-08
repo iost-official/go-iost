@@ -201,7 +201,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 		log.Fatalf("LoadAndCall %v.%v %v failed: %v", contract, api, num, err)
 	}
 
-	return time.Now().Sub(now).Seconds(), baseCPUCost + cost.CPU
+	return time.Since(now).Seconds(), baseCPUCost + cost.CPU
 }
 
 func init() {

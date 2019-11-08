@@ -33,19 +33,19 @@ func Marshal(in interface{}, extras ...string) (string, error) {
 	if len(extras) > 0 {
 		extra = extras[0]
 	}
-	switch in.(type) {
+	switch in := in.(type) {
 	case int64:
-		return IntPrefix + int64ToRaw(in.(int64)) + ApplicationSeparator + extra, nil
+		return IntPrefix + int64ToRaw(in) + ApplicationSeparator + extra, nil
 	case string:
-		return StringPrefix + in.(string) + ApplicationSeparator + extra, nil
+		return StringPrefix + in + ApplicationSeparator + extra, nil
 	case nil:
 		return NilPrefix, nil
 	case bool:
-		return BoolPrefix + boolToString(in.(bool)) + ApplicationSeparator + extra, nil
+		return BoolPrefix + boolToString(in) + ApplicationSeparator + extra, nil
 	case SerializedJSON:
-		return JSONPrefix + string(in.(SerializedJSON)) + ApplicationSeparator + extra, nil
+		return JSONPrefix + string(in) + ApplicationSeparator + extra, nil
 	case *common.Fixed:
-		return FixPointPrefix + in.(*common.Fixed).Marshal() + ApplicationSeparator + extra, nil
+		return FixPointPrefix + in.Marshal() + ApplicationSeparator + extra, nil
 	}
 	return "", errTypeNotSupport
 }

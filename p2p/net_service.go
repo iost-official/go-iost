@@ -119,7 +119,6 @@ func (ns *NetService) Stop() {
 	ns.host.Close()
 	ns.adminServer.Stop()
 	ns.PeerManager.Stop()
-	return
 }
 
 // startHost starts a libp2p host.

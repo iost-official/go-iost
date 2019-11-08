@@ -62,7 +62,7 @@ var (
 // Sandbox is an execution environment that allows separate, unrelated, JavaScript
 // code to run in a single instance of IVM.
 type Sandbox struct {
-	id      int
+	id      int // nolint
 	flags   int64
 	isolate C.IsolateWrapperPtr
 	context C.SandboxPtr
@@ -281,8 +281,7 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 		return "", int64(gasUsed), ErrResultTooLong
 	}
 
-	var result string
-	result = rs.Value.GoString()
+	result := rs.Value.GoString()
 
 	var err error
 	if rs.Err.data != nil {

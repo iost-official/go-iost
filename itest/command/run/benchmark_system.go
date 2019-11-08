@@ -181,7 +181,6 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 						contractMap[contractID] = from.ID
 					}
 				}
-				break
 			case tIndex <= 1:
 				abiName = updateCode
 				contractID := contractList[rand.Intn(len(contractList))]
@@ -204,7 +203,6 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			case tIndex <= 2:
 				abiName = cancelDelaytx
 				if len(delayTxList) == 0 {
@@ -235,7 +233,6 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 						trxs = append(trxs, trx)
 					}
 				}
-				break
 			case tIndex <= 3:
 				abiName = receipt
 				from := accounts[rand.Intn(len(accounts))]
@@ -256,7 +253,6 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			case tIndex <= 4:
 				abiName = requireAuth
 				from := accounts[rand.Intn(len(accounts))]
@@ -277,7 +273,6 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			}
 		}
 		contractMutex.Unlock()
@@ -305,8 +300,8 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 		slotTotal += len(trxs)
 		if counter == 10 {
 			total += slotTotal
-			currentTps := float64(slotTotal) / time.Now().Sub(slotStartTime).Seconds()
-			averageTps := float64(total) / time.Now().Sub(startTime).Seconds()
+			currentTps := float64(slotTotal) / time.Since(slotStartTime).Seconds()
+			averageTps := float64(total) / time.Since(startTime).Seconds()
 			ilog.Warnf("Current tps %v, Average tps %v, Total tx %v, contractNum %v, delaytxNum %v", currentTps, averageTps, total, len(contractList), len(delayTxList))
 			counter = 0
 			slotTotal = 0

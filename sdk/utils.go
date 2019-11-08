@@ -28,10 +28,10 @@ func writeFile(output string, data []byte) error {
 
 func loadKey(src string) ([]byte, error) {
 	fi, err := os.Open(src)
-	defer fi.Close()
 	if err != nil {
 		return nil, err
 	}
+	defer fi.Close()
 	fileinfo, err := fi.Stat()
 	if err != nil {
 		return nil, err
@@ -130,10 +130,7 @@ func GetSignAlgoByEnum(enum rpcpb.Signature_Algorithm) crypto.Algorithm {
 // CheckPubKey check whether a string is a valid public key. Since it is not easy to check it fully, only check length here
 func CheckPubKey(k string) bool {
 	bytes := common.Base58Decode(k)
-	if len(bytes) != 32 {
-		return false
-	}
-	return true
+	return len(bytes) == 32
 }
 
 // VerifySigForTx ...

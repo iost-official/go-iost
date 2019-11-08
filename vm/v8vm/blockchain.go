@@ -26,7 +26,6 @@ func newCStr(str string) C.CStr {
 func (cstr *C.CStr) SetString(str string) {
 	cstr.data = C.CString(str)
 	cstr.size = C.int(len(str))
-	return
 }
 
 func (cstr C.CStr) GoString() string {

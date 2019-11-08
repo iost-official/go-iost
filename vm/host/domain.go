@@ -62,10 +62,7 @@ func (d *DNS) URL(cid string) string {
 
 // IsDomain determine if s is a domain
 func (d *DNS) IsDomain(s string) bool {
-	if strings.HasPrefix(s, "Contract") {
-		return false
-	}
-	return true
+	return !strings.HasPrefix(s, "Contract")
 }
 
 // WriteLink add url and url owner to contract

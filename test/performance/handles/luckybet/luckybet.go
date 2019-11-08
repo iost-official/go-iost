@@ -1,4 +1,4 @@
-package luckyBet
+package luckybet
 
 import (
 	"context"

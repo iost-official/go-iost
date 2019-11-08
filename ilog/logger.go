@@ -336,10 +336,7 @@ func (logger *Logger) genMsg(level Level, log string) {
 	buf.WriteString(log)
 	buf.WriteString("\n")
 
-	select {
-	case logger.msg <- &message{buf.String(), level}:
-		// default:
-	}
+	logger.msg <- &message{buf.String(), level}
 
 	if logger.syncWrite {
 		logger.Flush()

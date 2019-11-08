@@ -1,0 +1,20 @@
+run:
+  timeout: 2m
+  tests: false
+
+linters-settings:
+  gocyclo:
+    min-complexity: 15
+
+linters:
+  enable:
+    - vet
+    - gocyclo
+    - golint
+    - ineffassign
+    - misspell
+    - deadcode
+    - unconvert
+    - gofmt
+  disable:
+    - errcheck

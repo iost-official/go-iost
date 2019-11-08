@@ -124,6 +124,6 @@ func (ht *hourlyTicker) startTimer() {
 	}()
 }
 
-func (ht *hourlyTicker) stop() {
+func (ht *hourlyTicker) stop() { // nolint:unused
 	close(ht.quitCh)
 }
