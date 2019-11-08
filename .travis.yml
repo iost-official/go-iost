@@ -15,8 +15,7 @@ matrix:
     - brew update
     - brew install git-lfs
     - git lfs install
-    - brew tap alecthomas/homebrew-tap
-    - brew install gometalinter
+    - brew install golangci/tap/golangci-lint
     before_script:
     - git lfs pull
     script:
