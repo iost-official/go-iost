@@ -153,9 +153,9 @@ func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		Type:         Single,
 		parent:       parent,
 		Children:     make(map[*BlockCacheNode]bool),
-		ValidWitness: make([]string, 0, 0),
+		ValidWitness: make([]string, 0),
 		WitnessList: WitnessList{
-			WitnessInfo: make([]string, 0, 0),
+			WitnessInfo: make([]string, 0),
 		},
 	}
 	// TODO: Move this outside.

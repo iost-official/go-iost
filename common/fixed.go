@@ -207,11 +207,8 @@ func (f *Fixed) LessThan(other *Fixed) bool {
 		return false
 	}
 	if f.IsZero() {
-		if other.IsPositive() {
-			return true
-		}
 		// other must be negative, since they cannot be both zero, or else UnifyDecimal will not return error
-		return false
+		return other.IsPositive()
 	}
 	// f is positive now
 	if other.IsNegative() || other.IsZero() {
@@ -266,7 +263,7 @@ func parsePositiveFixed(amount string, decimal int) (*Fixed, error) {
 				}
 			}
 		} else if amount[i] == '.' {
-			if decimalStart == true {
+			if decimalStart {
 				return nil, errDoubleDot
 			}
 			decimalStart = true
@@ -291,12 +288,12 @@ func (f *Fixed) ToStringWithDecimal() string {
 		return "-" + str
 	}
 	val := f.Value
-	str := make([]byte, 0, 0)
+	str := make([]byte, 0)
 	for val > 0 || len(str) <= f.Decimal {
 		str = append(str, byte('0'+val%10))
 		val /= 10
 	}
-	rtn := make([]byte, 0, 0)
+	rtn := make([]byte, 0)
 	for i := len(str) - 1; i >= 0; i-- {
 		if i+1 == f.Decimal {
 			rtn = append(rtn, '.')

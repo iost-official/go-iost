@@ -112,7 +112,7 @@ type AccountInfo struct {
 
 // NewAccountInfo ...
 func NewAccountInfo() *AccountInfo {
-	return &AccountInfo{Name: "", Keypairs: make(map[string]*KeyPairInfo, 0)}
+	return &AccountInfo{Name: "", Keypairs: make(map[string]*KeyPairInfo)}
 }
 
 func (a *AccountInfo) isEncrypted() bool {

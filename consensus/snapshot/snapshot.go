@@ -49,8 +49,7 @@ func Load(db db.MVCCDB) (*block.Block, error) {
 
 // ToSnapshot the function for saving db to snapshot.
 func ToSnapshot(conf *common.Config) error {
-	var src string
-	src = filepath.Join(conf.DB.LdbPath, "StateDB")
+	src := filepath.Join(conf.DB.LdbPath, "StateDB")
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("Unable to tar files - %v", err.Error())
 	}
@@ -150,8 +149,7 @@ func FromSnapshot(conf *common.Config) error {
 
 // ToFile the function for saving db to File.
 func ToFile(conf *common.Config) error {
-	var src string
-	src = filepath.Join(conf.DB.LdbPath, "StateDB")
+	src := filepath.Join(conf.DB.LdbPath, "StateDB")
 
 	if _, err := os.Stat(src); err != nil {
 		return fmt.Errorf("Unable to tar files - %v", err.Error())

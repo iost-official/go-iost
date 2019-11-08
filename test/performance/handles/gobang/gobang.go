@@ -102,10 +102,7 @@ func (t *gobangHandle) wait(i int, h string, id string) bool {
 		}
 		m := f.(map[string]interface{})
 		if m["hash"] == h {
-			if m["winner"] != nil {
-				return true
-			}
-			return false
+			return m["winner"] != nil
 		}
 		time.Sleep(3000 * time.Millisecond)
 	}
@@ -149,7 +146,7 @@ func (t *gobangHandle) Run(i int) (interface{}, error) {
 		for {
 			x = rand.Intn(15)
 			y = rand.Intn(15)
-			if board[strconv.Itoa(x)+","+strconv.Itoa(y)] == false {
+			if !board[strconv.Itoa(x)+","+strconv.Itoa(y)] {
 				board[strconv.Itoa(x)+","+strconv.Itoa(y)] = true
 				break
 			}

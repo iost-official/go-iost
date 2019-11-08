@@ -267,7 +267,7 @@ func (bc *BlockChain) GetBlockByNumber(number int64) (*Block, error) {
 
 func (bc *BlockChain) getBlockTxsMap(hash []byte) (map[string]*tx.Tx, error) {
 	iter := bc.blockChainDB.NewIteratorByPrefix(append(bTxPrefix, hash...))
-	txsMap := make(map[string]*tx.Tx, 0)
+	txsMap := make(map[string]*tx.Tx)
 	for iter.Next() {
 		var tt tx.Tx
 		err := tt.Decode(iter.Value())
@@ -287,7 +287,7 @@ func (bc *BlockChain) getBlockTxsMap(hash []byte) (map[string]*tx.Tx, error) {
 
 func (bc *BlockChain) getBlockReceiptMap(hash []byte) (map[string]*tx.TxReceipt, error) {
 	iter := bc.blockChainDB.NewIteratorByPrefix(append(bReceiptPrefix, hash...))
-	receiptMap := make(map[string]*tx.TxReceipt, 0)
+	receiptMap := make(map[string]*tx.TxReceipt)
 	for iter.Next() {
 		var tr tx.TxReceipt
 		err := tr.Decode(iter.Value())

@@ -23,8 +23,8 @@ ENV GOPATH /gopath
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 
-# Install Gometalinter
-RUN curl -L https://git.io/vp6lP | sh
+# Install golangci-lint
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.21.0
 
 WORKDIR $GOPATH/src/github.com/iost-official/go-iost
 

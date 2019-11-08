@@ -105,7 +105,7 @@ func auth(vi *database.Visitor, id, permission string, authMap, reenter map[stri
 	}
 	reenter[id+"@"+permission] = 1
 
-	if authType == authNormal && signerMap[id+"@"+permission] == true {
+	if authType == authNormal && signerMap[id+"@"+permission] {
 		return true, CommonOpCost(1)
 	}
 
