@@ -111,7 +111,7 @@ func (m *p2pMessage) content() []byte {
 	return []byte(*m)
 }
 
-func (m *p2pMessage) chainID() uint32 {
+func (m *p2pMessage) chainID() uint32 { // nolint:unused
 	return binary.BigEndian.Uint32(m.content()[chainIDBegin:chainIDEnd])
 }
 
@@ -119,7 +119,7 @@ func (m *p2pMessage) messageType() MessageType {
 	return MessageType(binary.BigEndian.Uint16(m.content()[messageTypeBegin:messageTypeEnd]))
 }
 
-func (m *p2pMessage) version() uint16 {
+func (m *p2pMessage) version() uint16 { // nolint:unused
 	return binary.BigEndian.Uint16(m.content()[versionBegin:versionEnd])
 }
 

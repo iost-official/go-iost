@@ -278,7 +278,7 @@ var ( // nolint: deadcode
 			return []interface{}{}, cost, nil
 		},
 	}
-	transferTGas = &abi{
+	transferTGas = &abi{ // nolint
 		name: "transfer",
 		args: []string{"string", "string", "string"},
 		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {

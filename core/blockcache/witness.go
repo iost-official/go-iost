@@ -57,7 +57,7 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB, rules *version.Rules) error {
 // UpdateInfo update pending witness list
 func (wl *WitnessList) UpdateInfo(mv db.MVCCDB, rules *version.Rules) error {
 
-	wl.WitnessInfo = make([]string, 0, 0)
+	wl.WitnessInfo = make([]string, 0)
 	vi := database.NewVisitor(0, mv, rules)
 	for _, v := range wl.PendingWitnessList {
 		iAcc := database.MustUnmarshal(vi.MGet("vote_producer.iost-producerKeyToId", v))

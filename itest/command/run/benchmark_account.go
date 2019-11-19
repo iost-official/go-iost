@@ -74,7 +74,6 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 				return nil, err
 			}
 			trxs = append(trxs, trx2)
-			break
 		case tIndex < 7:
 			// addPermission and dropPermission
 			from := accounts[rand.Intn(len(accounts))]
@@ -91,7 +90,6 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 				return nil, err
 			}
 			trxs = append(trxs, trx2)
-			break
 		case tIndex < 9:
 			// assignPermission and revokePermission
 			from := accounts[rand.Intn(len(accounts))]
@@ -109,7 +107,6 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 				return nil, err
 			}
 			trxs = append(trxs, trx2)
-			break
 		case tIndex < 11:
 			// addGroup and dropGroup
 			from := accounts[rand.Intn(len(accounts))]
@@ -126,7 +123,6 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 				return nil, err
 			}
 			trxs = append(trxs, trx2)
-			break
 		case tIndex < 13:
 			// assignGroup and revokeGroup
 			from := accounts[rand.Intn(len(accounts))]
@@ -146,7 +142,6 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 				return nil, err
 			}
 			trxs = append(trxs, trx2)
-			break
 		case tIndex < 15:
 			// assignPermissionToGroup and revokePermissionInGroup
 			from := accounts[rand.Intn(len(accounts))]
@@ -166,7 +161,6 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 				return nil, err
 			}
 			trxs = append(trxs, trx2)
-			break
 		}
 	}
 	return trxs, nil
@@ -265,8 +259,8 @@ var BenchmarkAccountAction = func(c *cli.Context) error {
 		slotTotal += len(trxs)
 		if counter == 10 {
 			total += slotTotal
-			currentTps := float64(slotTotal) / time.Now().Sub(slotStartTime).Seconds()
-			averageTps := float64(total) / time.Now().Sub(startTime).Seconds()
+			currentTps := float64(slotTotal) / time.Since(slotStartTime).Seconds()
+			averageTps := float64(total) / time.Since(startTime).Seconds()
 			ilog.Warnf("Current tps %v, Average tps %v, Total tx %v", currentTps, averageTps, total)
 			counter = 0
 			slotTotal = 0

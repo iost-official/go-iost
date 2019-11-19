@@ -286,8 +286,6 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 		pm.kickNormalNeighbors(direction)
 	}
 	pm.AddNeighbor(NewPeer(s, pm, direction))
-	return
-
 }
 
 func (pm *PeerManager) dumpRoutingTableLoop() {

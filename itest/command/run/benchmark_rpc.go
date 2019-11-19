@@ -190,7 +190,7 @@ var BenchmarkRPCAction = func(c *cli.Context) error {
 	lastTime := time.Now()
 	for {
 		time.Sleep(time.Second)
-		currentTps := float64(rpcCount-lastCount) / time.Now().Sub(lastTime).Seconds()
+		currentTps := float64(rpcCount-lastCount) / time.Since(lastTime).Seconds()
 		ilog.Infof("Current tps %v", currentTps)
 		lastCount = rpcCount
 		lastTime = time.Now()

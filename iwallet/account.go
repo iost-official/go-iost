@@ -195,7 +195,7 @@ var importCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
-		acc := AccountInfo{Name: name, Keypairs: make(map[string]*KeyPairInfo, 0)}
+		acc := AccountInfo{Name: name, Keypairs: make(map[string]*KeyPairInfo)}
 		keys := strings.Split(args[1], ",")
 		if len(keys) == 1 {
 			key := keys[0]

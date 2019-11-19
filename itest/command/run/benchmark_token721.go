@@ -216,7 +216,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			case tIndex <= 1000 || len(tokenMap[tokenList[0]].balance) < 10:
 				abiName = issueToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
@@ -245,7 +244,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			case tIndex <= 2000:
 				abiName = transferToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
@@ -282,7 +280,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 						delete(tokenMap[tokenSym].balance, from.ID)
 					}
 				}
-				break
 			case tIndex <= 2100:
 				abiName = balanceOfToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
@@ -307,7 +304,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			case tIndex <= 2200:
 				abiName = ownerOfToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
@@ -333,7 +329,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			case tIndex <= 2300:
 				abiName = tokenOfOwnerToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
@@ -364,7 +359,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			case tIndex <= 2400:
 				abiName = tokenMetadataToken721
 				tokenSym := tokenList[rand.Intn(len(tokenList))]
@@ -390,7 +384,6 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 				} else {
 					trxs = append(trxs, trx)
 				}
-				break
 			}
 		}
 		tokenMutex.Unlock()
@@ -418,8 +411,8 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 		slotTotal += len(trxs)
 		if counter == 10 {
 			total += slotTotal
-			currentTps := float64(slotTotal) / time.Now().Sub(slotStartTime).Seconds()
-			averageTps := float64(total) / time.Now().Sub(startTime).Seconds()
+			currentTps := float64(slotTotal) / time.Since(slotStartTime).Seconds()
+			averageTps := float64(total) / time.Since(startTime).Seconds()
 			ilog.Warnf("Current tps %v, Average tps %v, Total tx %v, token num %v", currentTps, averageTps, total, len(tokenList))
 			counter = 0
 			slotTotal = 0

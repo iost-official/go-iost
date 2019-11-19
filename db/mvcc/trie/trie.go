@@ -118,7 +118,7 @@ func NewFreeList() *FreeList {
 	return f
 }
 
-func (f *FreeList) newNode() *Node {
+func (f *FreeList) newNode() *Node { // nolint
 	f.mu.Lock()
 	defer f.mu.Unlock()
 
@@ -138,7 +138,7 @@ func (f *FreeList) newNode() *Node {
 	return node
 }
 
-func (f *FreeList) freeNode(n *Node) {
+func (f *FreeList) freeNode(n *Node) { // nolint
 	f.mu.Lock()
 	defer f.mu.Unlock()
 

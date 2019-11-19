@@ -263,7 +263,7 @@ func (m *Monitor) Compile(con *contract.Contract) (string, error) {
 	case "native":
 		return "", nil
 	case "javascript":
-		jsvm, _ := m.vms["javascript"]
+		jsvm := m.vms["javascript"]
 		return jsvm.Compile(con)
 	}
 	return "", errors.New("vm unsupported")
@@ -275,7 +275,7 @@ func (m *Monitor) Validate(con *contract.Contract) error {
 	case "native":
 		return nil
 	case "javascript":
-		jsvm, _ := m.vms["javascript"]
+		jsvm := m.vms["javascript"]
 		return jsvm.Validate(con)
 	}
 	return errors.New("vm unsupported")

@@ -133,10 +133,7 @@ func (r *TxReceipt) ToPb() *txpb.TxReceipt {
 	}
 
 	tr.RamUsage = r.RAMUsage
-
-	for _, rt := range r.Returns {
-		tr.Returns = append(tr.Returns, rt)
-	}
+	tr.Returns = append(tr.Returns, r.Returns...)
 	for _, re := range r.Receipts {
 		tr.Receipts = append(tr.Receipts, re.ToPb())
 	}
@@ -159,9 +156,7 @@ func (r *TxReceipt) FromPb(tr *txpb.TxReceipt) *TxReceipt {
 	r.RAMUsage = tr.RamUsage
 	s := &Status{}
 	r.Status = s.FromPb(tr.Status)
-	for _, rt := range tr.Returns {
-		r.Returns = append(r.Returns, rt)
-	}
+	r.Returns = append(r.Returns, tr.Returns...)
 	for _, re := range tr.Receipts {
 		rc := &Receipt{}
 		r.Receipts = append(r.Receipts, rc.FromPb(re))

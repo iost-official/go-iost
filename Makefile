@@ -1,6 +1,6 @@
 GO = go
 
-VERSION = 3.3.0
+VERSION = 3.3.1
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -39,7 +39,7 @@ itest:
 	$(GO) build -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
 
 lint:
-	@gometalinter --config=.gometalinter.json ./...
+	@golangci-lint run
 
 vmlib:
 	(cd vm/v8vm/v8/; make clean js_bin vm install deploy; cd ../../..)

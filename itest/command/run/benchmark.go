@@ -147,8 +147,8 @@ var BenchmarkAction = func(c *cli.Context) error {
 		slotTotal += num
 		if counter == 10 {
 			total += slotTotal
-			currentTps := float64(slotTotal) / time.Now().Sub(slotStartTime).Seconds()
-			averageTps := float64(total) / time.Now().Sub(startTime).Seconds()
+			currentTps := float64(slotTotal) / time.Since(slotStartTime).Seconds()
+			averageTps := float64(total) / time.Since(startTime).Seconds()
 			ilog.Warnf("Current tps %v, Average tps %v, Total tx %v", currentTps, averageTps, total)
 			counter = 0
 			slotTotal = 0

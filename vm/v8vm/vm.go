@@ -31,8 +31,8 @@ type VM struct {
 	vmType               vmPoolType
 	jsPath               string
 	refCount             int
-	limitsOfInstructions int64
-	limitsOfMemorySize   int64
+	limitsOfInstructions int64 // nolint
+	limitsOfMemorySize   int64 // nolint
 }
 
 // NewVM return new vm with isolate and sandbox
@@ -65,10 +65,6 @@ func NewVMWithChannel(vmType vmPoolType, jsPath string, releaseChannel chan *VM)
 	return e
 }
 
-func (e *VM) init() error {
-	return nil
-}
-
 func (e *VM) validate(c *contract.Contract) error {
 	return e.sandbox.Validate(c)
 }
@@ -89,14 +85,6 @@ func (e *VM) execute(code string) (rtn []interface{}, cost contract.Cost, err er
 	rs, gasUsed, err := e.sandbox.Execute(code)
 	gasCost := contract.NewCost(0, 0, gasUsed)
 	return []interface{}{rs}, gasCost, err
-}
-
-func (e *VM) setJSPath(path string) {
-	e.sandbox.SetJSPath(path, e.vmType)
-}
-
-func (e *VM) setReleaseChannel(releaseChannel chan *VM) {
-	e.releaseChannel = releaseChannel
 }
 
 // EnsureFlags make sandbox flag is same with input

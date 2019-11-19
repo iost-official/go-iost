@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"syscall"
 	"testing"
+	"time"
 
 	"github.com/golang/mock/gomock"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
@@ -366,7 +367,8 @@ func (s *Server) startGateway() error {
 // Stop stops the rpc server.
 func (s *Server) Stop() {
 	ilog.Info("stop mock rpc server")
-	s.gatewayServer.Shutdown(nil)
+	ctx, _ := context.WithTimeout(context.Background(), time.Second) // nolint
+	s.gatewayServer.Shutdown(ctx)
 	s.grpcServer.GracefulStop()
 }
 

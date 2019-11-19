@@ -214,7 +214,7 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 		blk, head.Block, &head.WitnessList, p.produceDB, pTx,
 		&verifier.Config{
 			Mode:        0,
-			Timeout:     limitTime - time.Now().Sub(st),
+			Timeout:     limitTime - time.Since(st),
 			TxTimeLimit: common.MaxTxTimeLimit,
 		},
 	)
