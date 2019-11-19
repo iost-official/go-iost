@@ -55,9 +55,9 @@ void NewCrypto(const FunctionCallbackInfo<Value> &args) {
         std::cout << "NewCrypto val error" << std::endl;
         return;
     }
-    SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
+    Sandbox *sbx = static_cast<Sandbox*>(Local<External>::Cast(val)->Value());
 
-    IOSTCrypto *ic = new IOSTCrypto(sbx);
+    IOSTCrypto *ic = static_cast<IOSTCrypto*>(sbx->crypto);
 
     Local<Object> self = args.Holder();
     self->SetInternalField(0, External::New(isolate, ic));

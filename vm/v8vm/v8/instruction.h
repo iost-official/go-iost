@@ -24,6 +24,11 @@ public:
         count = 0;
     }
 
+    void Reset() {
+        isolate = sbxPtr->isolate;
+        count = 0;
+    }
+
     size_t Incr(size_t num) {
         if (sbxPtr->gasUsed > SIZE_MAX - num) {
             Local<Value> err = Exception::Error(

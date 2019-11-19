@@ -13,9 +13,9 @@ void NewIOSTContractInstruction(const FunctionCallbackInfo<Value> &args) {
            std::cout << "NewIOSTContractInstruction val error" << std::endl;
         return;
     }
-    SandboxPtr sbx = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
+    Sandbox *sbx = static_cast<Sandbox*>(Local<External>::Cast(val)->Value());
 
-    IOSTContractInstruction *ici = new IOSTContractInstruction(sbx);
+    IOSTContractInstruction *ici = static_cast<IOSTContractInstruction*>(sbx->instruction);
 
     Local<Object> self = args.Holder();
     self->SetInternalField(0, External::New(isolate, ici));

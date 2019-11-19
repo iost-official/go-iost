@@ -38,6 +38,10 @@ typedef struct {
   size_t gasLimit;
   size_t memLimit;
   std::unique_ptr<ThreadPool> threadPool;
+  void* blockchain;
+  void* crypto;
+  void* instruction;
+  void* storage;
 } Sandbox;
 
 extern ValueTuple Execution(SandboxPtr ptr, const CStr code, long long int expireTime);
