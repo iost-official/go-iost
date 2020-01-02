@@ -350,6 +350,7 @@ func Test_Register(t *testing.T) {
 }
 
 func Test_SwitchOff(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	Convey("test switch off", t, func() {
 		s := NewSimulator()
