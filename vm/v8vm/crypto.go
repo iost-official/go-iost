@@ -25,26 +25,22 @@ func goSha3(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
 //export goSha3Hex
 func goSha3Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
 	msgBytes, err := hex.DecodeString(msg.GoString())
+	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 	if err != nil {
 		return newCStr("")
 	}
 	val := hex.EncodeToString(common.Sha3(msgBytes))
-
-	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
-
 	return newCStr(val)
 }
 
 //export goRipemd160Hex
 func goRipemd160Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
 	msgBytes, err := hex.DecodeString(msg.GoString())
+	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 	if err != nil {
 		return newCStr("")
 	}
 	val := hex.EncodeToString(common.Ripemd160(msgBytes))
-
-	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
-
 	return newCStr(val)
 }
 
