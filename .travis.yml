@@ -9,7 +9,7 @@ matrix:
   include:
   - os: osx
     osx_image: xcode10
-    go: "1.11"
+    go: "1.13"
     env: JOB=osx_test
     before_install:
     - brew update
@@ -26,7 +26,7 @@ matrix:
     - bash <(curl -s https://codecov.io/bash)
   - os: linux
     dist: trusty
-    go: "1.11"
+    go: "1.13"
     env: JOB=linux_test
     services:
     - docker
@@ -43,7 +43,7 @@ matrix:
     - bash <(curl -s https://codecov.io/bash)
   - os: linux
     dist: trusty
-    go: "1.11"
+    go: "1.13"
     env: JOB=e2e_test
     services:
     - docker
@@ -56,7 +56,7 @@ matrix:
     - make e2e_test
   - os: linux
     dist: trusty
-    go: "1.11"
+    go: "1.13"
     if: type = cron
     env: JOB=k8s_test
     services:
