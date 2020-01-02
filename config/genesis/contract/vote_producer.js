@@ -521,7 +521,7 @@ class VoteContract {
     }
 
     switchOff(off) {
-        storage.put("switchOff", off ? "1" : "0");
+        //storage.put("switchOff", off ? "1" : "0");
     }
 
     vote(voter, producer, amount) {
