@@ -1,3 +1,10 @@
+##v3.3.1
+Fri Dec 13 11:51:32 CST 2019
+
+- Add ripemd160 hash function to chain api, empowering oncoming atomic swap with BTC and ETH.
+- Optimize memory management.
+
+
 ## v3.3.0
 Fri Sep 20 15:21:41 CST 2019
 
