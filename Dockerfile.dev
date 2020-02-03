@@ -1,6 +1,6 @@
 FROM ubuntu:16.04
 
-ENV GOVERSION 1.11
+ENV GOVERSION 1.13
 
 # Install Base Tools
 RUN apt update && \

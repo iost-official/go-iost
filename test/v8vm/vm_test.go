@@ -784,49 +784,68 @@ func TestEngine_Crypto(t *testing.T) {
 
 
 func TestEngine_Crypto2(t *testing.T) {
-	host, code := MyInit(t, "crypto2")
+	host, code := MyInit(t, "crypto2", int64(1e8))
 	helloWorld := "hello world"
 	input := "823b54d3aabaf8e3122800ca5238afb2ccef071ce83b8d5654a597a5dd06347e"
 
 	// invalid function before fork
 	host.IsFork3_3_1 = false
-	rs, _, err := vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
+	rs, c, err := vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
 	if err == nil || !strings.Contains(err.Error(), "IOSTCrypto.ripemd160Hex is not a function") {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 
+	if c.ToGas() != 180 {
+		t.Fatalf("invalid gas %v", c.ToGas())
+	}
+
 	host.IsFork3_3_1 = true
 	// test sha3Hex
-	rs, _, err = vmPool.LoadAndCall(host, code, "sha3Hex", common.ToHex([]byte(helloWorld)))
+	rs, c, err = vmPool.LoadAndCall(host, code, "sha3Hex", common.ToHex([]byte(helloWorld)))
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+
+	if c.ToGas() != 291 {
+		t.Fatalf("invalid gas %v", c.ToGas())
 	}
 	if rs[0] != common.ToHex(common.Sha3([]byte(helloWorld))) {
 		t.Fatalf("LoadAndCall sha3Hex invalid result")
 	}
-	rs, _, err = vmPool.LoadAndCall(host, code, "sha3Hex", helloWorld)
+	rs, c, err = vmPool.LoadAndCall(host, code, "sha3Hex", helloWorld)
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+
+	if c.ToGas() != 280 {
+		t.Fatalf("invalid gas %v", c.ToGas())
 	}
 	if rs[0] != "" {
 		t.Fatalf("LoadAndCall sha3Hex invalid result")
 	}
 
 	// test ripemd160Hex
-	rs, _, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
+	rs, c, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
+	}
+
+	if c.ToGas() != 312 {
+		t.Fatalf("invalid gas %v", c.ToGas())
 	}
 	expected := "3dbb2167cbfc2186343356125fff4163e6ebcce7"
 	if rs[0] != expected {
 		t.Fatalf("LoadAndCall ripemd160Hex invalid result")
 	}
-	rs, _, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", helloWorld)
+	rs, c, err = vmPool.LoadAndCall(host, code, "ripemd160Hex", helloWorld)
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 	if rs[0] != "" {
 		t.Fatalf("LoadAndCall ripemd160Hex invalid result")
+	}
+	if c.ToGas() != 280 {
+		t.Fatalf("invalid gas %v", c.ToGas())
 	}
 }
 
