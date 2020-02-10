@@ -65,7 +65,7 @@ matrix:
     - docker pull iostio/iost-dev:3.3.1
     - git lfs install
     - pyenv global 3.6 && pip install awscli
-    - go get -u -v github.com/kubernetes-sigs/aws-iam-authenticator/cmd/aws-iam-authenticator
+    - go get -u -v sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator
     - sudo apt-get update && sudo apt-get install -y apt-transport-https
     - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
     - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
