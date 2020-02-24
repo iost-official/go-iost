@@ -1,6 +1,8 @@
 package loggabletracer
 
 import (
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -27,11 +29,14 @@ func NewLoggableRecorder() *LoggableSpanRecorder {
 
 // Loggable Representation of a span, treated as an event log
 type LoggableSpan struct {
-	Operation string         `json:"Operation"`
-	Start     time.Time      `json:"Start"`
-	Duration  time.Duration  `json:"Duration"`
-	Tags      opentrace.Tags `json:"Tags"`
-	Logs      []SpanLog      `json:"Logs"`
+	TraceID      uint64         `json:"TraceID"`
+	SpanID       uint64         `json:"SpanID"`
+	ParentSpanID uint64         `json:"ParentSpanID"`
+	Operation    string         `json:"Operation"`
+	Start        time.Time      `json:"Start"`
+	Duration     time.Duration  `json:"Duration"`
+	Tags         opentrace.Tags `json:"Tags"`
+	Logs         []SpanLog      `json:"Logs"`
 }
 
 type SpanLog struct {
@@ -62,19 +67,37 @@ func (r *LoggableSpanRecorder) RecordSpan(span RawSpan) {
 		}
 	}
 
-	spanlog := &LoggableSpan{
-		Operation: span.Operation,
-		Start:     span.Start,
-		Duration:  span.Duration,
-		Tags:      span.Tags,
-		Logs:      sl,
+	tags := make(map[string]interface{}, len(span.Tags))
+	for k, v := range span.Tags {
+		switch vt := v.(type) {
+		case bool, string, int, int8, int16, int32, int64, uint, uint8, uint16, uint64:
+			tags[k] = v
+		case []byte:
+			base64.StdEncoding.EncodeToString(vt)
+		default:
+			tags[k] = fmt.Sprint(v)
+		}
 	}
 
-	out, err := json.Marshal(spanlog)
+	spanlog := &LoggableSpan{
+		TraceID:      span.Context.TraceID,
+		SpanID:       span.Context.SpanID,
+		ParentSpanID: span.ParentSpanID,
+		Operation:    span.Operation,
+		Start:        span.Start,
+		Duration:     span.Duration,
+		Tags:         tags,
+		Logs:         sl,
+	}
+
+	var buf bytes.Buffer
+	encoder := json.NewEncoder(&buf)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(spanlog)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "ERROR FORMATTING SPAN ENTRY: %s\n", err)
 		return
 	}
 
-	writer.WriterGroup.Write(append(out, '\n'))
+	writer.WriterGroup.Write(buf.Bytes())
 }
