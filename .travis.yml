@@ -8,7 +8,7 @@ matrix:
   fast_finish: true
   include:
   - os: osx
-    osx_image: xcode10
+    osx_image: xcode11.2
     go: "1.13"
     env: JOB=osx_test
     before_install:
@@ -62,10 +62,13 @@ matrix:
     services:
     - docker
     before_install:
+    - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
+    - git clone https://github.com/kubernetes/client-go $GOPATH/src/k8s.io/client-go
+    - git clone --branch v0.4.0 https://github.com/googleapis/gnostic $GOPATH/src/k8s.io/client-go/vendor/github.com/googleapis/gnostic
+    - go get sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator@v0.5.0
     - docker pull iostio/iost-dev:3.3.2
     - git lfs install
     - pyenv global 3.6 && pip install awscli
-    - go get -u -v sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator
     - sudo apt-get clean && sudo apt-get update && sudo apt-get install -y dpkg 
     - sudo apt-get install -y apt-transport-https
     - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
@@ -75,7 +78,6 @@ matrix:
     - git lfs pull
     script:
     - pyenv global 3.6
-    - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
     - aws eks update-kubeconfig --region us-west-2 --name devnet
     - make k8s_test
 notifications:
