@@ -1,6 +1,8 @@
 GO = go
+GO_BUILD = go build -mod vendor
+GO_TEST = go test -mod vendor -race -coverprofile=coverage.txt -covermode=atomic
 
-VERSION = 3.3.1
+VERSION = 3.3.2
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -30,13 +32,13 @@ all: build
 build: iserver iwallet itest
 
 iserver:
-	$(GO) build -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
+	$(GO_BUILD) -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
 
 iwallet:
-	$(GO) build -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
+	$(GO_BUILD) -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
 
 itest:
-	$(GO) build -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
+	$(GO_BUILD) -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
 
 lint:
 	@golangci-lint run
@@ -49,9 +51,9 @@ vmlib_linux:
 
 test:
 ifeq ($(origin VERBOSE),undefined)
-	go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+	$(GO_TEST) ./...
 else
-	go test -v -race -coverprofile=coverage.txt -covermode=atomic ./...
+	$(GO_TEST) -v ./...
 endif
 
 e2e_test: image
