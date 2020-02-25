@@ -3,21 +3,37 @@ package basichost
 import (
 	"context"
 	"io"
+	"net"
+	"sync"
 	"time"
 
+	"github.com/libp2p/go-libp2p/p2p/protocol/identify"
+	"github.com/libp2p/go-libp2p/p2p/protocol/ping"
+
+	"github.com/libp2p/go-libp2p-core/connmgr"
+	"github.com/libp2p/go-libp2p-core/event"
+	"github.com/libp2p/go-libp2p-core/host"
+	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/peerstore"
+	"github.com/libp2p/go-libp2p-core/protocol"
+
+	"github.com/libp2p/go-eventbus"
+	inat "github.com/libp2p/go-libp2p-nat"
+
 	logging "github.com/ipfs/go-log"
-	goprocess "github.com/jbenet/goprocess"
+	"github.com/jbenet/goprocess"
 	goprocessctx "github.com/jbenet/goprocess/context"
-	ifconnmgr "github.com/libp2p/go-libp2p-interface-connmgr"
-	inet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
-	pstore "github.com/libp2p/go-libp2p-peerstore"
-	protocol "github.com/libp2p/go-libp2p-protocol"
-	identify "github.com/libp2p/go-libp2p/p2p/protocol/identify"
+
 	ma "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
+	manet "github.com/multiformats/go-multiaddr-net"
 	msmux "github.com/multiformats/go-multistream"
 )
+
+// The maximum number of address resolution steps we'll perform for a single
+// peer (for all addresses).
+const maxAddressResolution = 32
 
 var log = logging.Logger("basichost")
 
@@ -53,23 +69,33 @@ const NATPortMap Option = iota
 //  * uses an identity service to send + receive node information
 //  * uses a nat service to establish NAT port mappings
 type BasicHost struct {
-	network    inet.Network
+	network    network.Network
 	mux        *msmux.MultistreamMuxer
 	ids        *identify.IDService
+	pings      *ping.PingService
 	natmgr     NATManager
-	addrs      AddrsFactory
 	maResolver *madns.Resolver
-	cmgr       ifconnmgr.ConnManager
+	cmgr       connmgr.ConnManager
+	eventbus   event.Bus
+
+	AddrsFactory AddrsFactory
 
 	negtimeout time.Duration
 
 	proc goprocess.Process
+
+	mx        sync.Mutex
+	lastAddrs []ma.Multiaddr
+	emitters  struct {
+		evtLocalProtocolsUpdated event.Emitter
+	}
 }
+
+var _ host.Host = (*BasicHost)(nil)
 
 // HostOpts holds options that can be passed to NewHost in order to
 // customize construction of the *BasicHost.
 type HostOpts struct {
-
 	// MultistreamMuxer is essential for the *BasicHost and will use a sensible default value if omitted.
 	MultistreamMuxer *msmux.MultistreamMuxer
 
@@ -77,10 +103,6 @@ type HostOpts struct {
 	// If 0 or omitted, it will use DefaultNegotiationTimeout.
 	// If below 0, timeouts on streams will be deactivated.
 	NegotiationTimeout time.Duration
-
-	// IdentifyService holds an implementation of the /ipfs/id/ protocol.
-	// If omitted, a new *identify.IDService will be used.
-	IdentifyService *identify.IDService
 
 	// AddrsFactory holds a function which can be used to override or filter the result of Addrs.
 	// If omitted, there's no override or filtering, and the results of Addrs and AllAddrs are the same.
@@ -92,26 +114,42 @@ type HostOpts struct {
 
 	// NATManager takes care of setting NAT port mappings, and discovering external addresses.
 	// If omitted, this will simply be disabled.
-	NATManager func(inet.Network) NATManager
+	NATManager func(network.Network) NATManager
 
 	// ConnManager is a libp2p connection manager
-	ConnManager ifconnmgr.ConnManager
+	ConnManager connmgr.ConnManager
+
+	// EnablePing indicates whether to instantiate the ping service
+	EnablePing bool
+
+	// UserAgent sets the user-agent for the host. Defaults to ClientVersion.
+	UserAgent string
 }
 
 // NewHost constructs a new *BasicHost and activates it by attaching its stream and connection handlers to the given inet.Network.
-func NewHost(ctx context.Context, net inet.Network, opts *HostOpts) (*BasicHost, error) {
+func NewHost(ctx context.Context, net network.Network, opts *HostOpts) (*BasicHost, error) {
 	h := &BasicHost{
-		network:    net,
-		mux:        msmux.NewMultistreamMuxer(),
-		negtimeout: DefaultNegotiationTimeout,
-		addrs:      DefaultAddrsFactory,
-		maResolver: madns.DefaultResolver,
+		network:      net,
+		mux:          msmux.NewMultistreamMuxer(),
+		negtimeout:   DefaultNegotiationTimeout,
+		AddrsFactory: DefaultAddrsFactory,
+		maResolver:   madns.DefaultResolver,
+		eventbus:     eventbus.NewBus(),
+	}
+
+	var err error
+	if h.emitters.evtLocalProtocolsUpdated, err = h.eventbus.Emitter(&event.EvtLocalProtocolsUpdated{}); err != nil {
+		return nil, err
 	}
 
 	h.proc = goprocessctx.WithContextAndTeardown(ctx, func() error {
 		if h.natmgr != nil {
 			h.natmgr.Close()
 		}
+		if h.cmgr != nil {
+			h.cmgr.Close()
+		}
+		_ = h.emitters.evtLocalProtocolsUpdated.Close()
 		return h.Network().Close()
 	})
 
@@ -119,19 +157,19 @@ func NewHost(ctx context.Context, net inet.Network, opts *HostOpts) (*BasicHost,
 		h.mux = opts.MultistreamMuxer
 	}
 
-	if opts.IdentifyService != nil {
-		h.ids = opts.IdentifyService
-	} else {
-		// we can't set this as a default above because it depends on the *BasicHost.
-		h.ids = identify.NewIDService(h)
-	}
+	// we can't set this as a default above because it depends on the *BasicHost.
+	h.ids = identify.NewIDService(
+		goprocessctx.WithProcessClosing(ctx, h.proc),
+		h,
+		identify.UserAgent(opts.UserAgent),
+	)
 
 	if uint64(opts.NegotiationTimeout) != 0 {
 		h.negtimeout = opts.NegotiationTimeout
 	}
 
 	if opts.AddrsFactory != nil {
-		h.addrs = opts.AddrsFactory
+		h.AddrsFactory = opts.AddrsFactory
 	}
 
 	if opts.NATManager != nil {
@@ -143,14 +181,19 @@ func NewHost(ctx context.Context, net inet.Network, opts *HostOpts) (*BasicHost,
 	}
 
 	if opts.ConnManager == nil {
-		h.cmgr = &ifconnmgr.NullConnMgr{}
+		h.cmgr = &connmgr.NullConnMgr{}
 	} else {
 		h.cmgr = opts.ConnManager
 		net.Notify(h.cmgr.Notifee())
 	}
 
+	if opts.EnablePing {
+		h.pings = ping.NewPingService(h)
+	}
+
 	net.SetConnHandler(h.newConnHandler)
 	net.SetStreamHandler(h.newStreamHandler)
+
 	return h, nil
 }
 
@@ -158,11 +201,11 @@ func NewHost(ctx context.Context, net inet.Network, opts *HostOpts) (*BasicHost,
 // The following options can be passed:
 // * NATPortMap
 // * AddrsFactory
-// * ifconnmgr.ConnManager
+// * connmgr.ConnManager
 // * madns.Resolver
 //
 // This function is deprecated in favor of NewHost and HostOpts.
-func New(net inet.Network, opts ...interface{}) *BasicHost {
+func New(net network.Network, opts ...interface{}) *BasicHost {
 	hostopts := &HostOpts{}
 
 	for _, o := range opts {
@@ -173,8 +216,8 @@ func New(net inet.Network, opts ...interface{}) *BasicHost {
 				hostopts.NATManager = NewNATManager
 			}
 		case AddrsFactory:
-			hostopts.AddrsFactory = AddrsFactory(o)
-		case ifconnmgr.ConnManager:
+			hostopts.AddrsFactory = o
+		case connmgr.ConnManager:
 			hostopts.ConnManager = o
 		case *madns.Resolver:
 			hostopts.MultiaddrResolver = o
@@ -191,29 +234,34 @@ func New(net inet.Network, opts ...interface{}) *BasicHost {
 	return h
 }
 
+// Start starts background tasks in the host
+func (h *BasicHost) Start() {
+	h.proc.Go(h.background)
+}
+
 // newConnHandler is the remote-opened conn handler for inet.Network
-func (h *BasicHost) newConnHandler(c inet.Conn) {
+func (h *BasicHost) newConnHandler(c network.Conn) {
 	// Clear protocols on connecting to new peer to avoid issues caused
 	// by misremembering protocols between reconnects
 	h.Peerstore().SetProtocols(c.RemotePeer())
 	h.ids.IdentifyConn(c)
 }
 
-// newStreamHandler is the remote-opened stream handler for inet.Network
+// newStreamHandler is the remote-opened stream handler for network.Network
 // TODO: this feels a bit wonky
-func (h *BasicHost) newStreamHandler(s inet.Stream) {
+func (h *BasicHost) newStreamHandler(s network.Stream) {
 	before := time.Now()
 
 	if h.negtimeout > 0 {
 		if err := s.SetDeadline(time.Now().Add(h.negtimeout)); err != nil {
-			log.Error("setting stream deadline: ", err)
+			log.Debug("setting stream deadline: ", err)
 			s.Reset()
 			return
 		}
 	}
 
 	lzc, protoID, handle, err := h.Mux().NegotiateLazy(s)
-	took := time.Now().Sub(before)
+	took := time.Since(before)
 	if err != nil {
 		if err == io.EOF {
 			logf := log.Debugf
@@ -235,7 +283,7 @@ func (h *BasicHost) newStreamHandler(s inet.Stream) {
 
 	if h.negtimeout > 0 {
 		if err := s.SetDeadline(time.Time{}); err != nil {
-			log.Error("resetting stream deadline: ", err)
+			log.Debugf("resetting stream deadline: ", err)
 			s.Reset()
 			return
 		}
@@ -247,23 +295,85 @@ func (h *BasicHost) newStreamHandler(s inet.Stream) {
 	go handle(protoID, s)
 }
 
+// PushIdentify pushes an identify update through the identify push protocol
+// Warning: this interface is unstable and may disappear in the future.
+func (h *BasicHost) PushIdentify() {
+	push := false
+
+	h.mx.Lock()
+	addrs := h.Addrs()
+	if !sameAddrs(addrs, h.lastAddrs) {
+		push = true
+		h.lastAddrs = addrs
+	}
+	h.mx.Unlock()
+
+	if push {
+		h.ids.Push()
+	}
+}
+
+func (h *BasicHost) background(p goprocess.Process) {
+	// periodically schedules an IdentifyPush to update our peers for changes
+	// in our address set (if needed)
+	ticker := time.NewTicker(1 * time.Minute)
+	defer ticker.Stop()
+
+	// initialize lastAddrs
+	h.mx.Lock()
+	if h.lastAddrs == nil {
+		h.lastAddrs = h.Addrs()
+	}
+	h.mx.Unlock()
+
+	for {
+		select {
+		case <-ticker.C:
+			h.PushIdentify()
+
+		case <-p.Closing():
+			return
+		}
+	}
+}
+
+func sameAddrs(a, b []ma.Multiaddr) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	bmap := make(map[string]struct{}, len(b))
+	for _, addr := range b {
+		bmap[string(addr.Bytes())] = struct{}{}
+	}
+
+	for _, addr := range a {
+		_, ok := bmap[string(addr.Bytes())]
+		if !ok {
+			return false
+		}
+	}
+
+	return true
+}
+
 // ID returns the (local) peer.ID associated with this Host
 func (h *BasicHost) ID() peer.ID {
 	return h.Network().LocalPeer()
 }
 
 // Peerstore returns the Host's repository of Peer Addresses and Keys.
-func (h *BasicHost) Peerstore() pstore.Peerstore {
+func (h *BasicHost) Peerstore() peerstore.Peerstore {
 	return h.Network().Peerstore()
 }
 
 // Network returns the Network interface of the Host
-func (h *BasicHost) Network() inet.Network {
+func (h *BasicHost) Network() network.Network {
 	return h.network
 }
 
 // Mux returns the Mux multiplexing incoming streams to protocol handlers
-func (h *BasicHost) Mux() *msmux.MultistreamMuxer {
+func (h *BasicHost) Mux() protocol.Switch {
 	return h.mux
 }
 
@@ -272,40 +382,53 @@ func (h *BasicHost) IDService() *identify.IDService {
 	return h.ids
 }
 
+func (h *BasicHost) EventBus() event.Bus {
+	return h.eventbus
+}
+
 // SetStreamHandler sets the protocol handler on the Host's Mux.
 // This is equivalent to:
 //   host.Mux().SetHandler(proto, handler)
 // (Threadsafe)
-func (h *BasicHost) SetStreamHandler(pid protocol.ID, handler inet.StreamHandler) {
+func (h *BasicHost) SetStreamHandler(pid protocol.ID, handler network.StreamHandler) {
 	h.Mux().AddHandler(string(pid), func(p string, rwc io.ReadWriteCloser) error {
-		is := rwc.(inet.Stream)
+		is := rwc.(network.Stream)
 		is.SetProtocol(protocol.ID(p))
 		handler(is)
 		return nil
+	})
+	h.emitters.evtLocalProtocolsUpdated.Emit(event.EvtLocalProtocolsUpdated{
+		Added: []protocol.ID{pid},
 	})
 }
 
 // SetStreamHandlerMatch sets the protocol handler on the Host's Mux
 // using a matching function to do protocol comparisons
-func (h *BasicHost) SetStreamHandlerMatch(pid protocol.ID, m func(string) bool, handler inet.StreamHandler) {
+func (h *BasicHost) SetStreamHandlerMatch(pid protocol.ID, m func(string) bool, handler network.StreamHandler) {
 	h.Mux().AddHandlerWithFunc(string(pid), m, func(p string, rwc io.ReadWriteCloser) error {
-		is := rwc.(inet.Stream)
+		is := rwc.(network.Stream)
 		is.SetProtocol(protocol.ID(p))
 		handler(is)
 		return nil
+	})
+	h.emitters.evtLocalProtocolsUpdated.Emit(event.EvtLocalProtocolsUpdated{
+		Added: []protocol.ID{pid},
 	})
 }
 
 // RemoveStreamHandler returns ..
 func (h *BasicHost) RemoveStreamHandler(pid protocol.ID) {
 	h.Mux().RemoveHandler(string(pid))
+	h.emitters.evtLocalProtocolsUpdated.Emit(event.EvtLocalProtocolsUpdated{
+		Removed: []protocol.ID{pid},
+	})
 }
 
 // NewStream opens a new stream to given peer p, and writes a p2p/protocol
 // header with given protocol.ID. If there is no connection to p, attempts
 // to create one. If ProtocolID is "", writes no header.
 // (Threadsafe)
-func (h *BasicHost) NewStream(ctx context.Context, p peer.ID, pids ...protocol.ID) (inet.Stream, error) {
+func (h *BasicHost) NewStream(ctx context.Context, p peer.ID, pids ...protocol.ID) (network.Stream, error) {
 	pref, err := h.preferredProtocol(p, pids)
 	if err != nil {
 		return nil, err
@@ -359,7 +482,7 @@ func (h *BasicHost) preferredProtocol(p peer.ID, pids []protocol.ID) (protocol.I
 	return out, nil
 }
 
-func (h *BasicHost) newStream(ctx context.Context, p peer.ID, pid protocol.ID) (inet.Stream, error) {
+func (h *BasicHost) newStream(ctx context.Context, p peer.ID, pid protocol.ID) (network.Stream, error) {
 	s, err := h.Network().NewStream(ctx, p)
 	if err != nil {
 		return nil, err
@@ -379,11 +502,11 @@ func (h *BasicHost) newStream(ctx context.Context, p peer.ID, pid protocol.ID) (
 // h.Network.Dial, and block until a connection is open, or an error is returned.
 // Connect will absorb the addresses in pi into its internal peerstore.
 // It will also resolve any /dns4, /dns6, and /dnsaddr addresses.
-func (h *BasicHost) Connect(ctx context.Context, pi pstore.PeerInfo) error {
+func (h *BasicHost) Connect(ctx context.Context, pi peer.AddrInfo) error {
 	// absorb addresses into peerstore
-	h.Peerstore().AddAddrs(pi.ID, pi.Addrs, pstore.TempAddrTTL)
+	h.Peerstore().AddAddrs(pi.ID, pi.Addrs, peerstore.TempAddrTTL)
 
-	if h.Network().Connectedness(pi.ID) == inet.Connected {
+	if h.Network().Connectedness(pi.ID) == network.Connected {
 		return nil
 	}
 
@@ -391,40 +514,71 @@ func (h *BasicHost) Connect(ctx context.Context, pi pstore.PeerInfo) error {
 	if err != nil {
 		return err
 	}
-	h.Peerstore().AddAddrs(pi.ID, resolved, pstore.TempAddrTTL)
+	h.Peerstore().AddAddrs(pi.ID, resolved, peerstore.TempAddrTTL)
 
 	return h.dialPeer(ctx, pi.ID)
 }
 
-func (h *BasicHost) resolveAddrs(ctx context.Context, pi pstore.PeerInfo) ([]ma.Multiaddr, error) {
-	proto := ma.ProtocolWithCode(ma.P_IPFS).Name
+func (h *BasicHost) resolveAddrs(ctx context.Context, pi peer.AddrInfo) ([]ma.Multiaddr, error) {
+	proto := ma.ProtocolWithCode(ma.P_P2P).Name
 	p2paddr, err := ma.NewMultiaddr("/" + proto + "/" + pi.ID.Pretty())
 	if err != nil {
 		return nil, err
 	}
 
-	var addrs []ma.Multiaddr
-	for _, addr := range pi.Addrs {
-		addrs = append(addrs, addr)
+	resolveSteps := 0
+
+	// Recursively resolve all addrs.
+	//
+	// While the toResolve list is non-empty:
+	// * Pop an address off.
+	// * If the address is fully resolved, add it to the resolved list.
+	// * Otherwise, resolve it and add the results to the "to resolve" list.
+	toResolve := append(([]ma.Multiaddr)(nil), pi.Addrs...)
+	resolved := make([]ma.Multiaddr, 0, len(pi.Addrs))
+	for len(toResolve) > 0 {
+		// pop the last addr off.
+		addr := toResolve[len(toResolve)-1]
+		toResolve = toResolve[:len(toResolve)-1]
+
+		// if it's resolved, add it to the resolved list.
 		if !madns.Matches(addr) {
+			resolved = append(resolved, addr)
 			continue
 		}
 
+		resolveSteps++
+
+		// We've resolved too many addresses. We can keep all the fully
+		// resolved addresses but we'll need to skip the rest.
+		if resolveSteps >= maxAddressResolution {
+			log.Warningf(
+				"peer %s asked us to resolve too many addresses: %s/%s",
+				pi.ID,
+				resolveSteps,
+				maxAddressResolution,
+			)
+			continue
+		}
+
+		// otherwise, resolve it
 		reqaddr := addr.Encapsulate(p2paddr)
 		resaddrs, err := h.maResolver.Resolve(ctx, reqaddr)
 		if err != nil {
 			log.Infof("error resolving %s: %s", reqaddr, err)
 		}
+
+		// add the results to the toResolve list.
 		for _, res := range resaddrs {
-			pi, err := pstore.InfoFromP2pAddr(res)
+			pi, err := peer.AddrInfoFromP2pAddr(res)
 			if err != nil {
 				log.Infof("error parsing %s: %s", res, err)
 			}
-			addrs = append(addrs, pi.Addrs...)
+			toResolve = append(toResolve, pi.Addrs...)
 		}
 	}
 
-	return addrs, nil
+	return resolved, nil
 }
 
 // dialPeer opens a connection to peer, and makes sure to identify
@@ -458,28 +612,26 @@ func (h *BasicHost) dialPeer(ctx context.Context, p peer.ID) error {
 	return nil
 }
 
-func (h *BasicHost) ConnManager() ifconnmgr.ConnManager {
+func (h *BasicHost) ConnManager() connmgr.ConnManager {
 	return h.cmgr
 }
 
 // Addrs returns listening addresses that are safe to announce to the network.
 // The output is the same as AllAddrs, but processed by AddrsFactory.
 func (h *BasicHost) Addrs() []ma.Multiaddr {
-	return h.addrs(h.AllAddrs())
+	return h.AddrsFactory(h.AllAddrs())
 }
 
 // mergeAddrs merges input address lists, leave only unique addresses
-func mergeAddrs(addrLists ...[]ma.Multiaddr) (uniqueAddrs []ma.Multiaddr) {
+func dedupAddrs(addrs []ma.Multiaddr) (uniqueAddrs []ma.Multiaddr) {
 	exists := make(map[string]bool)
-	for _, addrList := range addrLists {
-		for _, addr := range addrList {
-			k := string(addr.Bytes())
-			if exists[k] {
-				continue
-			}
-			exists[k] = true
-			uniqueAddrs = append(uniqueAddrs, addr)
+	for _, addr := range addrs {
+		k := string(addr.Bytes())
+		if exists[k] {
+			continue
 		}
+		exists[k] = true
+		uniqueAddrs = append(uniqueAddrs, addr)
 	}
 	return uniqueAddrs
 }
@@ -491,28 +643,160 @@ func (h *BasicHost) AllAddrs() []ma.Multiaddr {
 	if err != nil {
 		log.Debug("error retrieving network interface addrs")
 	}
-	var observedAddrs []ma.Multiaddr
-	if h.ids != nil {
-		// peer observed addresses
-		observedAddrs = h.ids.OwnObservedAddrs()
-	}
-	var natAddrs []ma.Multiaddr
+	var natMappings []inat.Mapping
+
 	// natmgr is nil if we do not use nat option;
 	// h.natmgr.NAT() is nil if not ready, or no nat is available.
 	if h.natmgr != nil && h.natmgr.NAT() != nil {
-		natAddrs = h.natmgr.NAT().ExternalAddrs()
+		natMappings = h.natmgr.NAT().Mappings()
 	}
 
-	return mergeAddrs(listenAddrs, observedAddrs, natAddrs)
+	finalAddrs := listenAddrs
+	if len(natMappings) > 0 {
+
+		// We have successfully mapped ports on our NAT. Use those
+		// instead of observed addresses (mostly).
+
+		// First, generate a mapping table.
+		// protocol -> internal port -> external addr
+		ports := make(map[string]map[int]net.Addr)
+		for _, m := range natMappings {
+			addr, err := m.ExternalAddr()
+			if err != nil {
+				// mapping not ready yet.
+				continue
+			}
+			protoPorts, ok := ports[m.Protocol()]
+			if !ok {
+				protoPorts = make(map[int]net.Addr)
+				ports[m.Protocol()] = protoPorts
+			}
+			protoPorts[m.InternalPort()] = addr
+		}
+
+		// Next, apply this mapping to our addresses.
+		for _, listen := range listenAddrs {
+			found := false
+			transport, rest := ma.SplitFunc(listen, func(c ma.Component) bool {
+				if found {
+					return true
+				}
+				switch c.Protocol().Code {
+				case ma.P_TCP, ma.P_UDP:
+					found = true
+				}
+				return false
+			})
+			if !manet.IsThinWaist(transport) {
+				continue
+			}
+
+			naddr, err := manet.ToNetAddr(transport)
+			if err != nil {
+				log.Error("error parsing net multiaddr %q: %s", transport, err)
+				continue
+			}
+
+			var (
+				ip       net.IP
+				iport    int
+				protocol string
+			)
+			switch naddr := naddr.(type) {
+			case *net.TCPAddr:
+				ip = naddr.IP
+				iport = naddr.Port
+				protocol = "tcp"
+			case *net.UDPAddr:
+				ip = naddr.IP
+				iport = naddr.Port
+				protocol = "udp"
+			default:
+				continue
+			}
+
+			if !ip.IsGlobalUnicast() {
+				// We only map global unicast ports.
+				continue
+			}
+
+			mappedAddr, ok := ports[protocol][iport]
+			if !ok {
+				// Not mapped.
+				continue
+			}
+
+			mappedMaddr, err := manet.FromNetAddr(mappedAddr)
+			if err != nil {
+				log.Errorf("mapped addr can't be turned into a multiaddr %q: %s", mappedAddr, err)
+				continue
+			}
+
+			extMaddr := mappedMaddr
+			if rest != nil {
+				extMaddr = ma.Join(extMaddr, rest)
+			}
+
+			// Add in the mapped addr.
+			finalAddrs = append(finalAddrs, extMaddr)
+
+			// Did the router give us a routable public addr?
+			if manet.IsPublicAddr(mappedMaddr) {
+				//well done
+				continue
+			}
+
+			// No.
+			// in case router give us a wrong address.
+			// also add observed addresses
+
+			// Now, check if we have any observed addresses that
+			// differ from the one reported by the router. Routers
+			// don't always give the most accurate information.
+			observed := h.ids.ObservedAddrsFor(listen)
+
+			if len(observed) == 0 {
+				continue
+			}
+
+			// Drop the IP from the external maddr
+			_, extMaddrNoIP := ma.SplitFirst(mappedMaddr)
+
+			for _, obsMaddr := range observed {
+				// Extract a public observed addr.
+				ip, _ := ma.SplitFirst(obsMaddr)
+				if ip == nil || !manet.IsPublicAddr(ip) {
+					continue
+				}
+
+				finalAddrs = append(finalAddrs, ma.Join(ip, extMaddrNoIP))
+			}
+		}
+	} else {
+		var observedAddrs []ma.Multiaddr
+		if h.ids != nil {
+			observedAddrs = h.ids.OwnObservedAddrs()
+		}
+		finalAddrs = append(finalAddrs, observedAddrs...)
+	}
+
+	return dedupAddrs(finalAddrs)
 }
 
 // Close shuts down the Host's services (network, etc).
 func (h *BasicHost) Close() error {
+	// You're thinking of adding some teardown logic here, right? Well
+	// don't! Add any process teardown logic to the teardown function in the
+	// constructor.
+	//
+	// This:
+	// 1. May be called multiple times.
+	// 2. May _never_ be called if the host is stopped by the context.
 	return h.proc.Close()
 }
 
 type streamWrapper struct {
-	inet.Stream
+	network.Stream
 	rw io.ReadWriter
 }
 

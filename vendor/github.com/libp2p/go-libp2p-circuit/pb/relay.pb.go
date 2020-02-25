@@ -3,13 +3,14 @@
 
 package relay_pb
 
-import proto "github.com/gogo/protobuf/proto"
-import fmt "fmt"
-import math "math"
-
-import github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
-
-import io "io"
+import (
+	fmt "fmt"
+	github_com_gogo_protobuf_proto "github.com/gogo/protobuf/proto"
+	proto "github.com/gogo/protobuf/proto"
+	io "io"
+	math "math"
+	math_bits "math/bits"
+)
 
 // Reference imports to suppress errors if they are not otherwise used.
 var _ = proto.Marshal
@@ -20,7 +21,7 @@ var _ = math.Inf
 // is compatible with the proto package it is being compiled against.
 // A compilation error at this line likely means your copy of the
 // proto package needs to be updated.
-const _ = proto.GoGoProtoPackageIsVersion2 // please upgrade the proto package
+const _ = proto.GoGoProtoPackageIsVersion3 // please upgrade the proto package
 
 type CircuitRelay_Status int32
 
@@ -61,6 +62,7 @@ var CircuitRelay_Status_name = map[int32]string{
 	390: "STOP_RELAY_REFUSED",
 	400: "MALFORMED_MESSAGE",
 }
+
 var CircuitRelay_Status_value = map[string]int32{
 	"SUCCESS":                    100,
 	"HOP_SRC_ADDR_TOO_LONG":      220,
@@ -85,9 +87,11 @@ func (x CircuitRelay_Status) Enum() *CircuitRelay_Status {
 	*p = x
 	return p
 }
+
 func (x CircuitRelay_Status) String() string {
 	return proto.EnumName(CircuitRelay_Status_name, int32(x))
 }
+
 func (x *CircuitRelay_Status) UnmarshalJSON(data []byte) error {
 	value, err := proto.UnmarshalJSONEnum(CircuitRelay_Status_value, data, "CircuitRelay_Status")
 	if err != nil {
@@ -96,8 +100,9 @@ func (x *CircuitRelay_Status) UnmarshalJSON(data []byte) error {
 	*x = CircuitRelay_Status(value)
 	return nil
 }
+
 func (CircuitRelay_Status) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_relay_cd6009b961688bf5, []int{0, 0}
+	return fileDescriptor_9f69a7d5a802d584, []int{0, 0}
 }
 
 type CircuitRelay_Type int32
@@ -115,6 +120,7 @@ var CircuitRelay_Type_name = map[int32]string{
 	3: "STATUS",
 	4: "CAN_HOP",
 }
+
 var CircuitRelay_Type_value = map[string]int32{
 	"HOP":     1,
 	"STOP":    2,
@@ -127,9 +133,11 @@ func (x CircuitRelay_Type) Enum() *CircuitRelay_Type {
 	*p = x
 	return p
 }
+
 func (x CircuitRelay_Type) String() string {
 	return proto.EnumName(CircuitRelay_Type_name, int32(x))
 }
+
 func (x *CircuitRelay_Type) UnmarshalJSON(data []byte) error {
 	value, err := proto.UnmarshalJSONEnum(CircuitRelay_Type_value, data, "CircuitRelay_Type")
 	if err != nil {
@@ -138,8 +146,9 @@ func (x *CircuitRelay_Type) UnmarshalJSON(data []byte) error {
 	*x = CircuitRelay_Type(value)
 	return nil
 }
+
 func (CircuitRelay_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_relay_cd6009b961688bf5, []int{0, 1}
+	return fileDescriptor_9f69a7d5a802d584, []int{0, 1}
 }
 
 type CircuitRelay struct {
@@ -156,7 +165,7 @@ func (m *CircuitRelay) Reset()         { *m = CircuitRelay{} }
 func (m *CircuitRelay) String() string { return proto.CompactTextString(m) }
 func (*CircuitRelay) ProtoMessage()    {}
 func (*CircuitRelay) Descriptor() ([]byte, []int) {
-	return fileDescriptor_relay_cd6009b961688bf5, []int{0}
+	return fileDescriptor_9f69a7d5a802d584, []int{0}
 }
 func (m *CircuitRelay) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -166,15 +175,15 @@ func (m *CircuitRelay) XXX_Marshal(b []byte, deterministic bool) ([]byte, error)
 		return xxx_messageInfo_CircuitRelay.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *CircuitRelay) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CircuitRelay.Merge(dst, src)
+func (m *CircuitRelay) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CircuitRelay.Merge(m, src)
 }
 func (m *CircuitRelay) XXX_Size() int {
 	return m.Size()
@@ -225,7 +234,7 @@ func (m *CircuitRelay_Peer) Reset()         { *m = CircuitRelay_Peer{} }
 func (m *CircuitRelay_Peer) String() string { return proto.CompactTextString(m) }
 func (*CircuitRelay_Peer) ProtoMessage()    {}
 func (*CircuitRelay_Peer) Descriptor() ([]byte, []int) {
-	return fileDescriptor_relay_cd6009b961688bf5, []int{0, 0}
+	return fileDescriptor_9f69a7d5a802d584, []int{0, 0}
 }
 func (m *CircuitRelay_Peer) XXX_Unmarshal(b []byte) error {
 	return m.Unmarshal(b)
@@ -235,15 +244,15 @@ func (m *CircuitRelay_Peer) XXX_Marshal(b []byte, deterministic bool) ([]byte, e
 		return xxx_messageInfo_CircuitRelay_Peer.Marshal(b, m, deterministic)
 	} else {
 		b = b[:cap(b)]
-		n, err := m.MarshalTo(b)
+		n, err := m.MarshalToSizedBuffer(b)
 		if err != nil {
 			return nil, err
 		}
 		return b[:n], nil
 	}
 }
-func (dst *CircuitRelay_Peer) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_CircuitRelay_Peer.Merge(dst, src)
+func (m *CircuitRelay_Peer) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CircuitRelay_Peer.Merge(m, src)
 }
 func (m *CircuitRelay_Peer) XXX_Size() int {
 	return m.Size()
@@ -269,544 +278,15 @@ func (m *CircuitRelay_Peer) GetAddrs() [][]byte {
 }
 
 func init() {
-	proto.RegisterType((*CircuitRelay)(nil), "relay.pb.CircuitRelay")
-	proto.RegisterType((*CircuitRelay_Peer)(nil), "relay.pb.CircuitRelay.Peer")
 	proto.RegisterEnum("relay.pb.CircuitRelay_Status", CircuitRelay_Status_name, CircuitRelay_Status_value)
 	proto.RegisterEnum("relay.pb.CircuitRelay_Type", CircuitRelay_Type_name, CircuitRelay_Type_value)
-}
-func (m *CircuitRelay) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
+	proto.RegisterType((*CircuitRelay)(nil), "relay.pb.CircuitRelay")
+	proto.RegisterType((*CircuitRelay_Peer)(nil), "relay.pb.CircuitRelay.Peer")
 }
 
-func (m *CircuitRelay) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Type != nil {
-		dAtA[i] = 0x8
-		i++
-		i = encodeVarintRelay(dAtA, i, uint64(*m.Type))
-	}
-	if m.SrcPeer != nil {
-		dAtA[i] = 0x12
-		i++
-		i = encodeVarintRelay(dAtA, i, uint64(m.SrcPeer.Size()))
-		n1, err := m.SrcPeer.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n1
-	}
-	if m.DstPeer != nil {
-		dAtA[i] = 0x1a
-		i++
-		i = encodeVarintRelay(dAtA, i, uint64(m.DstPeer.Size()))
-		n2, err := m.DstPeer.MarshalTo(dAtA[i:])
-		if err != nil {
-			return 0, err
-		}
-		i += n2
-	}
-	if m.Code != nil {
-		dAtA[i] = 0x20
-		i++
-		i = encodeVarintRelay(dAtA, i, uint64(*m.Code))
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
+func init() { proto.RegisterFile("relay.proto", fileDescriptor_9f69a7d5a802d584) }
 
-func (m *CircuitRelay_Peer) Marshal() (dAtA []byte, err error) {
-	size := m.Size()
-	dAtA = make([]byte, size)
-	n, err := m.MarshalTo(dAtA)
-	if err != nil {
-		return nil, err
-	}
-	return dAtA[:n], nil
-}
-
-func (m *CircuitRelay_Peer) MarshalTo(dAtA []byte) (int, error) {
-	var i int
-	_ = i
-	var l int
-	_ = l
-	if m.Id == nil {
-		return 0, github_com_gogo_protobuf_proto.NewRequiredNotSetError("id")
-	} else {
-		dAtA[i] = 0xa
-		i++
-		i = encodeVarintRelay(dAtA, i, uint64(len(m.Id)))
-		i += copy(dAtA[i:], m.Id)
-	}
-	if len(m.Addrs) > 0 {
-		for _, b := range m.Addrs {
-			dAtA[i] = 0x12
-			i++
-			i = encodeVarintRelay(dAtA, i, uint64(len(b)))
-			i += copy(dAtA[i:], b)
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		i += copy(dAtA[i:], m.XXX_unrecognized)
-	}
-	return i, nil
-}
-
-func encodeVarintRelay(dAtA []byte, offset int, v uint64) int {
-	for v >= 1<<7 {
-		dAtA[offset] = uint8(v&0x7f | 0x80)
-		v >>= 7
-		offset++
-	}
-	dAtA[offset] = uint8(v)
-	return offset + 1
-}
-func (m *CircuitRelay) Size() (n int) {
-	var l int
-	_ = l
-	if m.Type != nil {
-		n += 1 + sovRelay(uint64(*m.Type))
-	}
-	if m.SrcPeer != nil {
-		l = m.SrcPeer.Size()
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	if m.DstPeer != nil {
-		l = m.DstPeer.Size()
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	if m.Code != nil {
-		n += 1 + sovRelay(uint64(*m.Code))
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func (m *CircuitRelay_Peer) Size() (n int) {
-	var l int
-	_ = l
-	if m.Id != nil {
-		l = len(m.Id)
-		n += 1 + l + sovRelay(uint64(l))
-	}
-	if len(m.Addrs) > 0 {
-		for _, b := range m.Addrs {
-			l = len(b)
-			n += 1 + l + sovRelay(uint64(l))
-		}
-	}
-	if m.XXX_unrecognized != nil {
-		n += len(m.XXX_unrecognized)
-	}
-	return n
-}
-
-func sovRelay(x uint64) (n int) {
-	for {
-		n++
-		x >>= 7
-		if x == 0 {
-			break
-		}
-	}
-	return n
-}
-func sozRelay(x uint64) (n int) {
-	return sovRelay(uint64((x << 1) ^ uint64((int64(x) >> 63))))
-}
-func (m *CircuitRelay) Unmarshal(dAtA []byte) error {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRelay
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: CircuitRelay: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: CircuitRelay: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
-			}
-			var v CircuitRelay_Type
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= (CircuitRelay_Type(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Type = &v
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field SrcPeer", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.SrcPeer == nil {
-				m.SrcPeer = &CircuitRelay_Peer{}
-			}
-			if err := m.SrcPeer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 3:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field DstPeer", wireType)
-			}
-			var msglen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				msglen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if msglen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + msglen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			if m.DstPeer == nil {
-				m.DstPeer = &CircuitRelay_Peer{}
-			}
-			if err := m.DstPeer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
-				return err
-			}
-			iNdEx = postIndex
-		case 4:
-			if wireType != 0 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
-			}
-			var v CircuitRelay_Status
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				v |= (CircuitRelay_Status(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			m.Code = &v
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRelay(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func (m *CircuitRelay_Peer) Unmarshal(dAtA []byte) error {
-	var hasFields [1]uint64
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		preIndex := iNdEx
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return ErrIntOverflowRelay
-			}
-			if iNdEx >= l {
-				return io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		fieldNum := int32(wire >> 3)
-		wireType := int(wire & 0x7)
-		if wireType == 4 {
-			return fmt.Errorf("proto: Peer: wiretype end group for non-group")
-		}
-		if fieldNum <= 0 {
-			return fmt.Errorf("proto: Peer: illegal tag %d (wire type %d)", fieldNum, wire)
-		}
-		switch fieldNum {
-		case 1:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Id = append(m.Id[:0], dAtA[iNdEx:postIndex]...)
-			if m.Id == nil {
-				m.Id = []byte{}
-			}
-			iNdEx = postIndex
-			hasFields[0] |= uint64(0x00000001)
-		case 2:
-			if wireType != 2 {
-				return fmt.Errorf("proto: wrong wireType = %d for field Addrs", wireType)
-			}
-			var byteLen int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				byteLen |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			if byteLen < 0 {
-				return ErrInvalidLengthRelay
-			}
-			postIndex := iNdEx + byteLen
-			if postIndex > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.Addrs = append(m.Addrs, make([]byte, postIndex-iNdEx))
-			copy(m.Addrs[len(m.Addrs)-1], dAtA[iNdEx:postIndex])
-			iNdEx = postIndex
-		default:
-			iNdEx = preIndex
-			skippy, err := skipRelay(dAtA[iNdEx:])
-			if err != nil {
-				return err
-			}
-			if skippy < 0 {
-				return ErrInvalidLengthRelay
-			}
-			if (iNdEx + skippy) > l {
-				return io.ErrUnexpectedEOF
-			}
-			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
-			iNdEx += skippy
-		}
-	}
-	if hasFields[0]&uint64(0x00000001) == 0 {
-		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("id")
-	}
-
-	if iNdEx > l {
-		return io.ErrUnexpectedEOF
-	}
-	return nil
-}
-func skipRelay(dAtA []byte) (n int, err error) {
-	l := len(dAtA)
-	iNdEx := 0
-	for iNdEx < l {
-		var wire uint64
-		for shift := uint(0); ; shift += 7 {
-			if shift >= 64 {
-				return 0, ErrIntOverflowRelay
-			}
-			if iNdEx >= l {
-				return 0, io.ErrUnexpectedEOF
-			}
-			b := dAtA[iNdEx]
-			iNdEx++
-			wire |= (uint64(b) & 0x7F) << shift
-			if b < 0x80 {
-				break
-			}
-		}
-		wireType := int(wire & 0x7)
-		switch wireType {
-		case 0:
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				iNdEx++
-				if dAtA[iNdEx-1] < 0x80 {
-					break
-				}
-			}
-			return iNdEx, nil
-		case 1:
-			iNdEx += 8
-			return iNdEx, nil
-		case 2:
-			var length int
-			for shift := uint(0); ; shift += 7 {
-				if shift >= 64 {
-					return 0, ErrIntOverflowRelay
-				}
-				if iNdEx >= l {
-					return 0, io.ErrUnexpectedEOF
-				}
-				b := dAtA[iNdEx]
-				iNdEx++
-				length |= (int(b) & 0x7F) << shift
-				if b < 0x80 {
-					break
-				}
-			}
-			iNdEx += length
-			if length < 0 {
-				return 0, ErrInvalidLengthRelay
-			}
-			return iNdEx, nil
-		case 3:
-			for {
-				var innerWire uint64
-				var start int = iNdEx
-				for shift := uint(0); ; shift += 7 {
-					if shift >= 64 {
-						return 0, ErrIntOverflowRelay
-					}
-					if iNdEx >= l {
-						return 0, io.ErrUnexpectedEOF
-					}
-					b := dAtA[iNdEx]
-					iNdEx++
-					innerWire |= (uint64(b) & 0x7F) << shift
-					if b < 0x80 {
-						break
-					}
-				}
-				innerWireType := int(innerWire & 0x7)
-				if innerWireType == 4 {
-					break
-				}
-				next, err := skipRelay(dAtA[start:])
-				if err != nil {
-					return 0, err
-				}
-				iNdEx = start + next
-			}
-			return iNdEx, nil
-		case 4:
-			return iNdEx, nil
-		case 5:
-			iNdEx += 4
-			return iNdEx, nil
-		default:
-			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
-		}
-	}
-	panic("unreachable")
-}
-
-var (
-	ErrInvalidLengthRelay = fmt.Errorf("proto: negative length found during unmarshaling")
-	ErrIntOverflowRelay   = fmt.Errorf("proto: integer overflow")
-)
-
-func init() { proto.RegisterFile("relay.proto", fileDescriptor_relay_cd6009b961688bf5) }
-
-var fileDescriptor_relay_cd6009b961688bf5 = []byte{
+var fileDescriptor_9f69a7d5a802d584 = []byte{
 	// 473 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x92, 0x4f, 0x6f, 0xd3, 0x3e,
 	0x18, 0xc7, 0x65, 0x27, 0xbf, 0x76, 0x7a, 0x5a, 0x4d, 0xfe, 0x59, 0x63, 0x64, 0x9d, 0x56, 0xaa,
@@ -839,3 +319,550 @@ var fileDescriptor_relay_cd6009b961688bf5 = []byte{
 	0xe6, 0xa7, 0x75, 0x1b, 0x7d, 0x5e, 0xb7, 0xd1, 0x8f, 0x75, 0x1b, 0xfd, 0x0e, 0x00, 0x00, 0xff,
 	0xff, 0x6b, 0x22, 0x33, 0xbb, 0x2f, 0x03, 0x00, 0x00,
 }
+
+func (m *CircuitRelay) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CircuitRelay) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CircuitRelay) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if m.Code != nil {
+		i = encodeVarintRelay(dAtA, i, uint64(*m.Code))
+		i--
+		dAtA[i] = 0x20
+	}
+	if m.DstPeer != nil {
+		{
+			size, err := m.DstPeer.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRelay(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x1a
+	}
+	if m.SrcPeer != nil {
+		{
+			size, err := m.SrcPeer.MarshalToSizedBuffer(dAtA[:i])
+			if err != nil {
+				return 0, err
+			}
+			i -= size
+			i = encodeVarintRelay(dAtA, i, uint64(size))
+		}
+		i--
+		dAtA[i] = 0x12
+	}
+	if m.Type != nil {
+		i = encodeVarintRelay(dAtA, i, uint64(*m.Type))
+		i--
+		dAtA[i] = 0x8
+	}
+	return len(dAtA) - i, nil
+}
+
+func (m *CircuitRelay_Peer) Marshal() (dAtA []byte, err error) {
+	size := m.Size()
+	dAtA = make([]byte, size)
+	n, err := m.MarshalToSizedBuffer(dAtA[:size])
+	if err != nil {
+		return nil, err
+	}
+	return dAtA[:n], nil
+}
+
+func (m *CircuitRelay_Peer) MarshalTo(dAtA []byte) (int, error) {
+	size := m.Size()
+	return m.MarshalToSizedBuffer(dAtA[:size])
+}
+
+func (m *CircuitRelay_Peer) MarshalToSizedBuffer(dAtA []byte) (int, error) {
+	i := len(dAtA)
+	_ = i
+	var l int
+	_ = l
+	if m.XXX_unrecognized != nil {
+		i -= len(m.XXX_unrecognized)
+		copy(dAtA[i:], m.XXX_unrecognized)
+	}
+	if len(m.Addrs) > 0 {
+		for iNdEx := len(m.Addrs) - 1; iNdEx >= 0; iNdEx-- {
+			i -= len(m.Addrs[iNdEx])
+			copy(dAtA[i:], m.Addrs[iNdEx])
+			i = encodeVarintRelay(dAtA, i, uint64(len(m.Addrs[iNdEx])))
+			i--
+			dAtA[i] = 0x12
+		}
+	}
+	if m.Id == nil {
+		return 0, github_com_gogo_protobuf_proto.NewRequiredNotSetError("id")
+	} else {
+		i -= len(m.Id)
+		copy(dAtA[i:], m.Id)
+		i = encodeVarintRelay(dAtA, i, uint64(len(m.Id)))
+		i--
+		dAtA[i] = 0xa
+	}
+	return len(dAtA) - i, nil
+}
+
+func encodeVarintRelay(dAtA []byte, offset int, v uint64) int {
+	offset -= sovRelay(v)
+	base := offset
+	for v >= 1<<7 {
+		dAtA[offset] = uint8(v&0x7f | 0x80)
+		v >>= 7
+		offset++
+	}
+	dAtA[offset] = uint8(v)
+	return base
+}
+func (m *CircuitRelay) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Type != nil {
+		n += 1 + sovRelay(uint64(*m.Type))
+	}
+	if m.SrcPeer != nil {
+		l = m.SrcPeer.Size()
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if m.DstPeer != nil {
+		l = m.DstPeer.Size()
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if m.Code != nil {
+		n += 1 + sovRelay(uint64(*m.Code))
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func (m *CircuitRelay_Peer) Size() (n int) {
+	if m == nil {
+		return 0
+	}
+	var l int
+	_ = l
+	if m.Id != nil {
+		l = len(m.Id)
+		n += 1 + l + sovRelay(uint64(l))
+	}
+	if len(m.Addrs) > 0 {
+		for _, b := range m.Addrs {
+			l = len(b)
+			n += 1 + l + sovRelay(uint64(l))
+		}
+	}
+	if m.XXX_unrecognized != nil {
+		n += len(m.XXX_unrecognized)
+	}
+	return n
+}
+
+func sovRelay(x uint64) (n int) {
+	return (math_bits.Len64(x|1) + 6) / 7
+}
+func sozRelay(x uint64) (n int) {
+	return sovRelay(uint64((x << 1) ^ uint64((int64(x) >> 63))))
+}
+func (m *CircuitRelay) Unmarshal(dAtA []byte) error {
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRelay
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: CircuitRelay: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: CircuitRelay: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Type", wireType)
+			}
+			var v CircuitRelay_Type
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= CircuitRelay_Type(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Type = &v
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field SrcPeer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.SrcPeer == nil {
+				m.SrcPeer = &CircuitRelay_Peer{}
+			}
+			if err := m.SrcPeer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 3:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field DstPeer", wireType)
+			}
+			var msglen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				msglen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if msglen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + msglen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			if m.DstPeer == nil {
+				m.DstPeer = &CircuitRelay_Peer{}
+			}
+			if err := m.DstPeer.Unmarshal(dAtA[iNdEx:postIndex]); err != nil {
+				return err
+			}
+			iNdEx = postIndex
+		case 4:
+			if wireType != 0 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Code", wireType)
+			}
+			var v CircuitRelay_Status
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				v |= CircuitRelay_Status(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			m.Code = &v
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRelay(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func (m *CircuitRelay_Peer) Unmarshal(dAtA []byte) error {
+	var hasFields [1]uint64
+	l := len(dAtA)
+	iNdEx := 0
+	for iNdEx < l {
+		preIndex := iNdEx
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return ErrIntOverflowRelay
+			}
+			if iNdEx >= l {
+				return io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= uint64(b&0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		fieldNum := int32(wire >> 3)
+		wireType := int(wire & 0x7)
+		if wireType == 4 {
+			return fmt.Errorf("proto: Peer: wiretype end group for non-group")
+		}
+		if fieldNum <= 0 {
+			return fmt.Errorf("proto: Peer: illegal tag %d (wire type %d)", fieldNum, wire)
+		}
+		switch fieldNum {
+		case 1:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Id", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Id = append(m.Id[:0], dAtA[iNdEx:postIndex]...)
+			if m.Id == nil {
+				m.Id = []byte{}
+			}
+			iNdEx = postIndex
+			hasFields[0] |= uint64(0x00000001)
+		case 2:
+			if wireType != 2 {
+				return fmt.Errorf("proto: wrong wireType = %d for field Addrs", wireType)
+			}
+			var byteLen int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				byteLen |= int(b&0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if byteLen < 0 {
+				return ErrInvalidLengthRelay
+			}
+			postIndex := iNdEx + byteLen
+			if postIndex < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if postIndex > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.Addrs = append(m.Addrs, make([]byte, postIndex-iNdEx))
+			copy(m.Addrs[len(m.Addrs)-1], dAtA[iNdEx:postIndex])
+			iNdEx = postIndex
+		default:
+			iNdEx = preIndex
+			skippy, err := skipRelay(dAtA[iNdEx:])
+			if err != nil {
+				return err
+			}
+			if skippy < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) < 0 {
+				return ErrInvalidLengthRelay
+			}
+			if (iNdEx + skippy) > l {
+				return io.ErrUnexpectedEOF
+			}
+			m.XXX_unrecognized = append(m.XXX_unrecognized, dAtA[iNdEx:iNdEx+skippy]...)
+			iNdEx += skippy
+		}
+	}
+	if hasFields[0]&uint64(0x00000001) == 0 {
+		return github_com_gogo_protobuf_proto.NewRequiredNotSetError("id")
+	}
+
+	if iNdEx > l {
+		return io.ErrUnexpectedEOF
+	}
+	return nil
+}
+func skipRelay(dAtA []byte) (n int, err error) {
+	l := len(dAtA)
+	iNdEx := 0
+	depth := 0
+	for iNdEx < l {
+		var wire uint64
+		for shift := uint(0); ; shift += 7 {
+			if shift >= 64 {
+				return 0, ErrIntOverflowRelay
+			}
+			if iNdEx >= l {
+				return 0, io.ErrUnexpectedEOF
+			}
+			b := dAtA[iNdEx]
+			iNdEx++
+			wire |= (uint64(b) & 0x7F) << shift
+			if b < 0x80 {
+				break
+			}
+		}
+		wireType := int(wire & 0x7)
+		switch wireType {
+		case 0:
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				iNdEx++
+				if dAtA[iNdEx-1] < 0x80 {
+					break
+				}
+			}
+		case 1:
+			iNdEx += 8
+		case 2:
+			var length int
+			for shift := uint(0); ; shift += 7 {
+				if shift >= 64 {
+					return 0, ErrIntOverflowRelay
+				}
+				if iNdEx >= l {
+					return 0, io.ErrUnexpectedEOF
+				}
+				b := dAtA[iNdEx]
+				iNdEx++
+				length |= (int(b) & 0x7F) << shift
+				if b < 0x80 {
+					break
+				}
+			}
+			if length < 0 {
+				return 0, ErrInvalidLengthRelay
+			}
+			iNdEx += length
+			if iNdEx < 0 {
+				return 0, ErrInvalidLengthRelay
+			}
+		case 3:
+			depth++
+		case 4:
+			if depth == 0 {
+				return 0, ErrUnexpectedEndOfGroupRelay
+			}
+			depth--
+		case 5:
+			iNdEx += 4
+		default:
+			return 0, fmt.Errorf("proto: illegal wireType %d", wireType)
+		}
+		if depth == 0 {
+			return iNdEx, nil
+		}
+	}
+	return 0, io.ErrUnexpectedEOF
+}
+
+var (
+	ErrInvalidLengthRelay        = fmt.Errorf("proto: negative length found during unmarshaling")
+	ErrIntOverflowRelay          = fmt.Errorf("proto: integer overflow")
+	ErrUnexpectedEndOfGroupRelay = fmt.Errorf("proto: unexpected end of group")
+)

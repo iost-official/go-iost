@@ -1,10 +1,12 @@
+//go:generate go run ./generate
+
 package kbucket
 
 import (
 	"container/list"
 	"sync"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-core/peer"
 )
 
 // Bucket holds a list of peers.
@@ -41,14 +43,16 @@ func (b *Bucket) Has(id peer.ID) bool {
 	return false
 }
 
-func (b *Bucket) Remove(id peer.ID) {
+func (b *Bucket) Remove(id peer.ID) bool {
 	b.lk.Lock()
 	defer b.lk.Unlock()
 	for e := b.list.Front(); e != nil; e = e.Next() {
 		if e.Value.(peer.ID) == id {
 			b.list.Remove(e)
+			return true
 		}
 	}
+	return false
 }
 
 func (b *Bucket) MoveToFront(id peer.ID) {
@@ -94,7 +98,7 @@ func (b *Bucket) Split(cpl int, target ID) *Bucket {
 	e := b.list.Front()
 	for e != nil {
 		peerID := ConvertPeerID(e.Value.(peer.ID))
-		peerCPL := commonPrefixLen(peerID, target)
+		peerCPL := CommonPrefixLen(peerID, target)
 		if peerCPL > cpl {
 			cur := e
 			out.PushBack(e.Value)

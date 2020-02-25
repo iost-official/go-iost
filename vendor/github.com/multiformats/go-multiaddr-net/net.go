@@ -167,7 +167,7 @@ func (d *Dialer) DialContext(ctx context.Context, remote ma.Multiaddr) (Conn, er
 	// ok, Dial!
 	var nconn net.Conn
 	switch rnet {
-	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6":
+	case "tcp", "tcp4", "tcp6", "udp", "udp4", "udp6", "unix":
 		nconn, err = d.Dialer.DialContext(ctx, rnet, rnaddr)
 		if err != nil {
 			return nil, err
@@ -178,7 +178,9 @@ func (d *Dialer) DialContext(ctx context.Context, remote ma.Multiaddr) (Conn, er
 
 	// get local address (pre-specified or assigned within net.Conn)
 	local := d.LocalAddr
-	if local == nil {
+	// This block helps us avoid parsing addresses in transports (such as unix
+	// sockets) that don't have local addresses when dialing out.
+	if local == nil && nconn.LocalAddr().String() != "" {
 		local, err = FromNetAddr(nconn.LocalAddr())
 		if err != nil {
 			return nil, err
@@ -243,9 +245,14 @@ func (l *maListener) Accept() (Conn, error) {
 		return nil, err
 	}
 
-	raddr, err := FromNetAddr(nconn.RemoteAddr())
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert connn.RemoteAddr: %s", err)
+	var raddr ma.Multiaddr
+	// This block protects us in transports (i.e. unix sockets) that don't have
+	// remote addresses for inbound connections.
+	if nconn.RemoteAddr().String() != "" {
+		raddr, err = FromNetAddr(nconn.RemoteAddr())
+		if err != nil {
+			return nil, fmt.Errorf("failed to convert conn.RemoteAddr: %s", err)
+		}
 	}
 
 	return wrap(nconn, l.laddr, raddr), nil
@@ -303,14 +310,12 @@ func WrapNetListener(nl net.Listener) (Listener, error) {
 // A PacketConn is a generic packet oriented network connection which uses an
 // underlying net.PacketConn, wrapped with the locally bound Multiaddr.
 type PacketConn interface {
-	Connection() net.PacketConn
+	net.PacketConn
 
-	Multiaddr() ma.Multiaddr
+	LocalMultiaddr() ma.Multiaddr
 
-	ReadFrom(b []byte) (int, ma.Multiaddr, error)
-	WriteTo(b []byte, maddr ma.Multiaddr) (int, error)
-
-	Close() error
+	ReadFromMultiaddr(b []byte) (int, ma.Multiaddr, error)
+	WriteToMultiaddr(b []byte, maddr ma.Multiaddr) (int, error)
 }
 
 // maPacketConn implements PacketConn
@@ -319,28 +324,25 @@ type maPacketConn struct {
 	laddr ma.Multiaddr
 }
 
-// Connection returns the embedded net.PacketConn.
-func (l *maPacketConn) Connection() net.PacketConn {
-	return l.PacketConn
-}
+var _ PacketConn = (*maPacketConn)(nil)
 
-// Multiaddr returns the bound local Multiaddr.
-func (l *maPacketConn) Multiaddr() ma.Multiaddr {
+// LocalMultiaddr returns the bound local Multiaddr.
+func (l *maPacketConn) LocalMultiaddr() ma.Multiaddr {
 	return l.laddr
 }
 
-func (l *maPacketConn) ReadFrom(b []byte) (int, ma.Multiaddr, error) {
-	n, addr, err := l.PacketConn.ReadFrom(b)
+func (l *maPacketConn) ReadFromMultiaddr(b []byte) (int, ma.Multiaddr, error) {
+	n, addr, err := l.ReadFrom(b)
 	maddr, _ := FromNetAddr(addr)
 	return n, maddr, err
 }
 
-func (l *maPacketConn) WriteTo(b []byte, maddr ma.Multiaddr) (int, error) {
+func (l *maPacketConn) WriteToMultiaddr(b []byte, maddr ma.Multiaddr) (int, error) {
 	addr, err := ToNetAddr(maddr)
 	if err != nil {
 		return 0, err
 	}
-	return l.PacketConn.WriteTo(b, addr)
+	return l.WriteTo(b, addr)
 }
 
 // ListenPacket announces on the local network address laddr.
