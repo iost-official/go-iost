@@ -10,7 +10,6 @@ require (
 	github.com/btcsuite/btcutil v1.0.1
 	github.com/emirpasic/gods v1.12.0
 	github.com/ethereum/go-ethereum v1.9.11
-	github.com/fd/go-nat v1.0.0 // indirect
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/mock v1.4.0
@@ -18,31 +17,19 @@ require (
 	github.com/golang/snappy v0.0.1
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 	github.com/grpc-ecosystem/grpc-gateway v1.13.0
-	github.com/gxed/GoEndian v0.0.0-20160916112711-0f5c6873267e // indirect
-	github.com/gxed/eventfd v0.0.0-20160916113412-80a92cca79a8 // indirect
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/ipfs/go-log v1.0.2 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
-	github.com/libp2p/go-conn-security v0.1.0 // indirect
 	github.com/libp2p/go-libp2p v0.5.2
 	github.com/libp2p/go-libp2p-core v0.3.1 // indirect
 	github.com/libp2p/go-libp2p-crypto v0.1.0
 	github.com/libp2p/go-libp2p-host v0.1.0
-	github.com/libp2p/go-libp2p-interface-connmgr v0.1.0 // indirect
-	github.com/libp2p/go-libp2p-interface-pnet v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-kbucket v0.2.3
-	github.com/libp2p/go-libp2p-metrics v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-net v0.1.0
 	github.com/libp2p/go-libp2p-peer v0.2.0
 	github.com/libp2p/go-libp2p-peerstore v0.1.4
-	github.com/libp2p/go-libp2p-protocol v0.1.0 // indirect
-	github.com/libp2p/go-libp2p-transport v0.1.0 // indirect
-	github.com/libp2p/go-sockaddr v0.0.1 // indirect
 	github.com/libp2p/go-stream-muxer v0.1.0 // indirect
-	github.com/libp2p/go-testutil v0.1.0 // indirect
 	github.com/libp2p/go-yamux v1.2.4 // indirect
-	github.com/mattn/go-colorable v0.1.4 // indirect
-	github.com/mattn/go-isatty v0.0.12 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.2.0
 	github.com/multiformats/go-multiaddr-dns v0.2.0
@@ -55,7 +42,6 @@ require (
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v2.20.1+incompatible
-	github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4 // indirect
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/afero v1.2.2 // indirect
@@ -68,11 +54,7 @@ require (
 	github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 	github.com/urfave/cli v1.22.2
 	github.com/wcharczuk/go-chart v2.0.2-0.20181012164330-3cb33d48d32d+incompatible
-	github.com/whyrusleeping/go-notifier v0.0.0-20170827234753-097c5d47330f // indirect
 	github.com/whyrusleeping/go-smux-multiplex v3.0.16+incompatible
-	github.com/whyrusleeping/go-smux-multistream v2.0.2+incompatible // indirect
-	github.com/whyrusleeping/go-smux-yamux v2.0.9+incompatible // indirect
-	github.com/whyrusleeping/yamux v1.2.0 // indirect
 	github.com/willf/bitset v1.1.10 // indirect
 	github.com/willf/bloom v2.0.3+incompatible
 	github.com/xlab/treeprint v1.0.0
