@@ -91,7 +91,6 @@ require (
 	github.com/spf13/viper v1.0.3-0.20180507071007-15738813a09d
 	github.com/stretchr/testify v1.3.0
 	github.com/syndtr/goleveldb v0.0.0-20180521045021-5d6fca44a948
-	github.com/uber-go/atomic v1.3.3-0.20180806045314-ca680462431f
 	github.com/urfave/cli v1.20.1-0.20181029213200-b67dcf995b6a
 	github.com/wcharczuk/go-chart v2.0.2-0.20181012164330-3cb33d48d32d+incompatible
 	github.com/whyrusleeping/go-notifier v0.0.0-20170827234753-097c5d47330f // indirect
@@ -104,7 +103,7 @@ require (
 	github.com/willf/bitset v1.1.4-0.20180426185212-8ce1146b8621 // indirect
 	github.com/willf/bloom v2.0.3+incompatible
 	github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6
-	go.uber.org/atomic v1.5.1 // indirect
+	go.uber.org/atomic v1.5.1
 	golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443
 	golang.org/x/image v0.0.0-20181116024801-cd38e8056d9b // indirect
 	golang.org/x/net v0.0.0-20190620200207-3b0461eec859

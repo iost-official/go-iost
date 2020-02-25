@@ -295,8 +295,6 @@ github.com/syndtr/goleveldb/leveldb/opt
 github.com/syndtr/goleveldb/leveldb/storage
 github.com/syndtr/goleveldb/leveldb/table
 github.com/syndtr/goleveldb/leveldb/util
-# github.com/uber-go/atomic v1.3.3-0.20180806045314-ca680462431f
-github.com/uber-go/atomic
 # github.com/urfave/cli v1.20.1-0.20181029213200-b67dcf995b6a
 github.com/urfave/cli
 # github.com/wcharczuk/go-chart v2.0.2-0.20181012164330-3cb33d48d32d+incompatible
@@ -328,6 +326,8 @@ github.com/willf/bitset
 github.com/willf/bloom
 # github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6
 github.com/xlab/treeprint
+# go.uber.org/atomic v1.5.1
+go.uber.org/atomic
 # golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443
 golang.org/x/crypto/blake2s
 golang.org/x/crypto/blowfish
@@ -343,6 +343,9 @@ golang.org/x/image/draw
 golang.org/x/image/font
 golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
+# golang.org/x/lint v0.0.0-20190930215403-16217165b5de
+golang.org/x/lint
+golang.org/x/lint/golint
 # golang.org/x/net v0.0.0-20190620200207-3b0461eec859
 golang.org/x/net/context
 golang.org/x/net/html
@@ -382,6 +385,10 @@ golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
 # golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
 golang.org/x/time/rate
+# golang.org/x/tools v0.0.0-20191029041327-9cc4af7d6b2c
+golang.org/x/tools/go/ast/astutil
+golang.org/x/tools/go/gcexportdata
+golang.org/x/tools/go/internal/gcimporter
 # google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19
 google.golang.org/genproto/googleapis/api/annotations
 google.golang.org/genproto/googleapis/rpc/status

@@ -12,7 +12,7 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
-	"github.com/uber-go/atomic"
+	"go.uber.org/atomic"
 )
 
 var (

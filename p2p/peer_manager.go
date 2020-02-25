@@ -23,7 +23,7 @@ import (
 	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
-	"github.com/uber-go/atomic"
+	"go.uber.org/atomic"
 )
 
 var (
