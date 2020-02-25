@@ -25,7 +25,7 @@ matrix:
     after_success:
     - bash <(curl -s https://codecov.io/bash)
   - os: linux
-    dist: bionic
+    dist: xenial
     go: "1.13"
     env: JOB=linux_test
     services:
@@ -42,7 +42,7 @@ matrix:
     after_success:
     - bash <(curl -s https://codecov.io/bash)
   - os: linux
-    dist: bionic
+    dist: xenial
     go: "1.13"
     env: JOB=e2e_test
     services:
@@ -55,7 +55,7 @@ matrix:
     script:
     - make e2e_test
   - os: linux
-    dist: bionic
+    dist: xenial
     go: "1.13"
     if: type = cron
     env: JOB=k8s_test
@@ -68,16 +68,16 @@ matrix:
     - go get sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator@v0.5.0
     - docker pull iostio/iost-dev:3.3.2
     - git lfs install
-    - pyenv global 3.6 && pip install awscli
+    - pyenv global 3.6.7 && pip install awscli
     - sudo apt-get clean && sudo apt-get update && sudo apt-get install -y dpkg 
     - sudo apt-get install -y apt-transport-https
     - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-    - echo "deb https://apt.kubernetes.io/ kubernetes-bionic main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
+    - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
     - sudo apt-get update && sudo apt-get install -y kubectl
     before_script:
     - git lfs pull
     script:
-    - pyenv global 3.6
+    - pyenv global 3.6.7
     - aws eks update-kubeconfig --region us-west-2 --name devnet
     - make k8s_test
 notifications:
