@@ -103,6 +103,53 @@ func (bc *BlockChain) TxTotal() int64 {
 	return bc.txTotal
 }
 
+func (bc *BlockChain) CopyLastNBlockTo(newLocation string, numberToKeep int64) error {
+	if bc.Length() == 0 {
+		return errors.New("no block in blockChaindb")
+	}
+	if numberToKeep < 0 {
+		return fmt.Errorf("invalid numberToKeep: %d", numberToKeep)
+	}
+	newChain, err := NewBlockChain(newLocation)
+	if err != nil {
+		return fmt.Errorf("fail to init blockchaindb, %v", err)
+	}
+	lastBlockNumber := bc.Length() - 1
+	blockNumber := lastBlockNumber - numberToKeep + 1
+	fmt.Printf("copy block in range [%d, %d)\n", blockNumber, lastBlockNumber+1)
+	for blockNumber <= lastBlockNumber {
+		blk, err := bc.GetBlockByNumber(blockNumber)
+		if err != nil {
+			return err
+		}
+		err = newChain.Push(blk)
+		if err != nil {
+			return err
+		}
+		//fmt.Printf("copy block done %v, %v\n", blk.Head.Number, common.Base58Encode(blk.hash))
+		blockNumber++
+	}
+	keys := [][]byte{blockLength, blockTxTotal}
+	copyKeyFunc := func(key []byte) error {
+		value, err := bc.blockChainDB.Get(key)
+		if err != nil || len(value) == 0 {
+			return fmt.Errorf("fail to get value of key, %s", string(key))
+		}
+		err = newChain.(*BlockChain).blockChainDB.Put(key, value)
+		if err != nil {
+			return fmt.Errorf("fail to write to new chain, %v", err)
+		}
+		return nil
+	}
+	for _, key := range keys {
+		err = copyKeyFunc(key)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // Push save the block to database
 func (bc *BlockChain) Push(block *Block) error {
 	err := bc.blockChainDB.BeginBatch()
