@@ -1,78 +1,73 @@
-# github.com/Jeffail/tunny v0.0.0-20181108205650-4921fff29480
+# github.com/Jeffail/tunny v0.0.0-20190930221602-f13eb662a36a
 github.com/Jeffail/tunny
 # github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
 github.com/StackExchange/wmi
-# github.com/beorn7/perks v0.0.0-20180321164747-3a771d992973
+# github.com/beorn7/perks v1.0.1
 github.com/beorn7/perks/quantile
 # github.com/bitly/go-simplejson v0.5.1-0.20171023175154-0c965951289c
 github.com/bitly/go-simplejson
-# github.com/btcsuite/btcd v0.0.0-20190523000118-16327141da8c
+# github.com/btcsuite/btcd v0.20.1-beta
 github.com/btcsuite/btcd/btcec
-# github.com/btcsuite/btcutil v0.0.0-20190425235716-9e5f4b9a998d
+# github.com/btcsuite/btcutil v1.0.1
 github.com/btcsuite/btcutil/base58
+# github.com/cespare/xxhash/v2 v2.1.1
+github.com/cespare/xxhash/v2
 # github.com/coreos/go-semver v0.3.0
 github.com/coreos/go-semver/semver
+# github.com/cpuguy83/go-md2man/v2 v2.0.0
+github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/emirpasic/gods v1.9.1-0.20180618112450-bba54c718c4e
+# github.com/emirpasic/gods v1.12.0
 github.com/emirpasic/gods/containers
 github.com/emirpasic/gods/trees
 github.com/emirpasic/gods/trees/redblacktree
 github.com/emirpasic/gods/utils
-# github.com/ethereum/go-ethereum v1.8.9-0.20180523125542-55b579e02ce6
-github.com/ethereum/go-ethereum/common/math
+# github.com/ethereum/go-ethereum v1.9.11
 github.com/ethereum/go-ethereum/crypto/secp256k1
-# github.com/fd/go-nat v1.0.0
-github.com/fd/go-nat
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
 # github.com/go-ole/go-ole v1.2.4
 github.com/go-ole/go-ole
 github.com/go-ole/go-ole/oleutil
-# github.com/gogo/protobuf v1.2.1
+# github.com/gogo/protobuf v1.3.1
 github.com/gogo/protobuf/io
 github.com/gogo/protobuf/proto
 # github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0
 github.com/golang/freetype/raster
 github.com/golang/freetype/truetype
-# github.com/golang/mock v1.1.2-0.20180503014854-22bbf0ddf081
+# github.com/golang/mock v1.4.0
 github.com/golang/mock/gomock
-# github.com/golang/protobuf v1.2.1-0.20181128192352-1d3f30b51784
+# github.com/golang/protobuf v1.3.3
+github.com/golang/protobuf/descriptor
 github.com/golang/protobuf/jsonpb
 github.com/golang/protobuf/proto
 github.com/golang/protobuf/protoc-gen-go/descriptor
-github.com/golang/protobuf/protoc-gen-go/generator
-github.com/golang/protobuf/protoc-gen-go/generator/internal/remap
-github.com/golang/protobuf/protoc-gen-go/plugin
 github.com/golang/protobuf/ptypes
 github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/struct
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/golang/snappy v0.0.0-20180518054509-2e65f85255db
+# github.com/golang/snappy v0.0.1
 github.com/golang/snappy
-# github.com/google/uuid v1.1.0
+# github.com/google/uuid v1.1.1
 github.com/google/uuid
-# github.com/gopherjs/gopherjs v0.0.0-20180820052304-89baedc74dd7
+# github.com/gopherjs/gopherjs v0.0.0-20181017120253-0766667cb4d1
 github.com/gopherjs/gopherjs/js
-# github.com/gorilla/websocket v1.2.1-0.20180420171612-21ab95fa12b9
+# github.com/gorilla/websocket v1.4.1
 github.com/gorilla/websocket
-# github.com/grpc-ecosystem/go-grpc-middleware v1.0.1-0.20181112102510-3304cc886352
+# github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
 github.com/grpc-ecosystem/go-grpc-middleware
 github.com/grpc-ecosystem/go-grpc-middleware/recovery
-# github.com/grpc-ecosystem/grpc-gateway v1.6.3
+# github.com/grpc-ecosystem/grpc-gateway v1.13.0
+github.com/grpc-ecosystem/grpc-gateway/internal
 github.com/grpc-ecosystem/grpc-gateway/runtime
-github.com/grpc-ecosystem/grpc-gateway/runtime/internal
 github.com/grpc-ecosystem/grpc-gateway/utilities
-# github.com/gxed/GoEndian v0.0.0-20160916112711-0f5c6873267e
-github.com/gxed/GoEndian
-# github.com/gxed/eventfd v0.0.0-20160916113412-80a92cca79a8
-github.com/gxed/eventfd
-# github.com/hashicorp/golang-lru v0.5.0
+# github.com/hashicorp/golang-lru v0.5.4
 github.com/hashicorp/golang-lru
 github.com/hashicorp/golang-lru/simplelru
-# github.com/hashicorp/hcl v0.0.0-20180404174102-ef8a98b0bbce
+# github.com/hashicorp/hcl v1.0.0
 github.com/hashicorp/hcl
 github.com/hashicorp/hcl/hcl/ast
 github.com/hashicorp/hcl/hcl/parser
@@ -83,7 +78,7 @@ github.com/hashicorp/hcl/hcl/token
 github.com/hashicorp/hcl/json/parser
 github.com/hashicorp/hcl/json/scanner
 github.com/hashicorp/hcl/json/token
-# github.com/huin/goupnp v0.0.0-20180415215157-1395d1447324
+# github.com/huin/goupnp v1.0.0
 github.com/huin/goupnp
 github.com/huin/goupnp/dcps/internetgateway1
 github.com/huin/goupnp/dcps/internetgateway2
@@ -93,16 +88,20 @@ github.com/huin/goupnp/soap
 github.com/huin/goupnp/ssdp
 # github.com/inconshreveable/mousetrap v1.0.0
 github.com/inconshreveable/mousetrap
-# github.com/ipfs/go-ipfs-util v0.0.0-20180102215604-9ed527918c2f
+# github.com/ipfs/go-cid v0.0.5
+github.com/ipfs/go-cid
+# github.com/ipfs/go-ipfs-util v0.0.1
 github.com/ipfs/go-ipfs-util
-# github.com/ipfs/go-log v0.0.1
+# github.com/ipfs/go-log v1.0.2
 github.com/ipfs/go-log
 github.com/ipfs/go-log/tracer
 github.com/ipfs/go-log/tracer/wire
 github.com/ipfs/go-log/writer
+# github.com/ipfs/go-log/v2 v2.0.2
+github.com/ipfs/go-log/v2
 # github.com/jackpal/gateway v1.0.5
 github.com/jackpal/gateway
-# github.com/jackpal/go-nat-pmp v1.0.2-0.20170405195558-28a68d0c24ad
+# github.com/jackpal/go-nat-pmp v1.0.2
 github.com/jackpal/go-nat-pmp
 # github.com/jbenet/go-temp-err-catcher v0.0.0-20150120210811-aac704a3f4f2
 github.com/jbenet/go-temp-err-catcher
@@ -110,141 +109,175 @@ github.com/jbenet/go-temp-err-catcher
 github.com/jbenet/goprocess
 github.com/jbenet/goprocess/context
 github.com/jbenet/goprocess/periodic
-github.com/jbenet/goprocess/ratelimit
 # github.com/jtolds/gls v4.20.0+incompatible
 github.com/jtolds/gls
-# github.com/libp2p/go-addr-util v0.0.0-20180924121045-2dc53609d9aa
+# github.com/koron/go-ssdp v0.0.0-20191105050749-2e1c40ed0b5d
+github.com/koron/go-ssdp
+# github.com/libp2p/go-addr-util v0.0.1
 github.com/libp2p/go-addr-util
-# github.com/libp2p/go-buffer-pool v0.0.1
+# github.com/libp2p/go-buffer-pool v0.0.2
 github.com/libp2p/go-buffer-pool
-# github.com/libp2p/go-conn-security v0.0.0-20181010103009-d9a2f52687b6
-github.com/libp2p/go-conn-security
-github.com/libp2p/go-conn-security/insecure
-# github.com/libp2p/go-conn-security-multistream v0.0.0-20181010104257-42e375808ebb
+# github.com/libp2p/go-conn-security-multistream v0.1.0
 github.com/libp2p/go-conn-security-multistream
-# github.com/libp2p/go-flow-metrics v0.0.1
+# github.com/libp2p/go-eventbus v0.1.0
+github.com/libp2p/go-eventbus
+# github.com/libp2p/go-flow-metrics v0.0.3
 github.com/libp2p/go-flow-metrics
-# github.com/libp2p/go-libp2p v0.0.0-20181010104403-9750574e2eb7
+# github.com/libp2p/go-libp2p v0.5.2
 github.com/libp2p/go-libp2p
 github.com/libp2p/go-libp2p/config
 github.com/libp2p/go-libp2p/p2p/host/basic
+github.com/libp2p/go-libp2p/p2p/host/relay
+github.com/libp2p/go-libp2p/p2p/host/routed
 github.com/libp2p/go-libp2p/p2p/protocol/identify
 github.com/libp2p/go-libp2p/p2p/protocol/identify/pb
-# github.com/libp2p/go-libp2p-circuit v0.0.0-20181010104332-543688aca031
+github.com/libp2p/go-libp2p/p2p/protocol/ping
+# github.com/libp2p/go-libp2p-autonat v0.1.1
+github.com/libp2p/go-libp2p-autonat
+github.com/libp2p/go-libp2p-autonat/pb
+# github.com/libp2p/go-libp2p-circuit v0.1.4
 github.com/libp2p/go-libp2p-circuit
 github.com/libp2p/go-libp2p-circuit/pb
-# github.com/libp2p/go-libp2p-crypto v0.0.0-20180928202803-7240b40a3ddc
+# github.com/libp2p/go-libp2p-core v0.3.1
+github.com/libp2p/go-libp2p-core/connmgr
+github.com/libp2p/go-libp2p-core/crypto
+github.com/libp2p/go-libp2p-core/crypto/pb
+github.com/libp2p/go-libp2p-core/discovery
+github.com/libp2p/go-libp2p-core/event
+github.com/libp2p/go-libp2p-core/helpers
+github.com/libp2p/go-libp2p-core/host
+github.com/libp2p/go-libp2p-core/metrics
+github.com/libp2p/go-libp2p-core/mux
+github.com/libp2p/go-libp2p-core/network
+github.com/libp2p/go-libp2p-core/peer
+github.com/libp2p/go-libp2p-core/peerstore
+github.com/libp2p/go-libp2p-core/pnet
+github.com/libp2p/go-libp2p-core/protocol
+github.com/libp2p/go-libp2p-core/routing
+github.com/libp2p/go-libp2p-core/sec
+github.com/libp2p/go-libp2p-core/sec/insecure
+github.com/libp2p/go-libp2p-core/sec/insecure/pb
+github.com/libp2p/go-libp2p-core/transport
+# github.com/libp2p/go-libp2p-crypto v0.1.0
 github.com/libp2p/go-libp2p-crypto
-github.com/libp2p/go-libp2p-crypto/pb
-# github.com/libp2p/go-libp2p-host v0.0.0-20181010103054-c178cbca4e13
+# github.com/libp2p/go-libp2p-discovery v0.2.0
+github.com/libp2p/go-libp2p-discovery
+# github.com/libp2p/go-libp2p-host v0.1.0
 github.com/libp2p/go-libp2p-host
-# github.com/libp2p/go-libp2p-interface-connmgr v0.0.0-20181010103050-482a51b59dc9
-github.com/libp2p/go-libp2p-interface-connmgr
-# github.com/libp2p/go-libp2p-interface-pnet v0.0.0-20180919000501-d240acf619f6
-github.com/libp2p/go-libp2p-interface-pnet
-# github.com/libp2p/go-libp2p-kbucket v0.0.0-20181010104410-928ddd77fcfa
+# github.com/libp2p/go-libp2p-kbucket v0.2.3
 github.com/libp2p/go-libp2p-kbucket
 github.com/libp2p/go-libp2p-kbucket/keyspace
-# github.com/libp2p/go-libp2p-loggables v0.0.0-20180924121049-fc4c4dc5d90b
+# github.com/libp2p/go-libp2p-loggables v0.1.0
 github.com/libp2p/go-libp2p-loggables
-# github.com/libp2p/go-libp2p-metrics v0.0.0-20180924121031-a10ff6e75dae
-github.com/libp2p/go-libp2p-metrics
-# github.com/libp2p/go-libp2p-nat v0.0.0-20180924121107-fcc8db1a9963
+# github.com/libp2p/go-libp2p-mplex v0.2.1
+github.com/libp2p/go-libp2p-mplex
+# github.com/libp2p/go-libp2p-nat v0.0.5
 github.com/libp2p/go-libp2p-nat
-# github.com/libp2p/go-libp2p-net v0.0.0-20181010103001-313c9d5e2ce6
+# github.com/libp2p/go-libp2p-net v0.1.0
 github.com/libp2p/go-libp2p-net
-# github.com/libp2p/go-libp2p-peer v0.0.0-20180924105729-993d742bc29d
+# github.com/libp2p/go-libp2p-peer v0.2.0
 github.com/libp2p/go-libp2p-peer
-# github.com/libp2p/go-libp2p-peerstore v0.0.0-20181011165556-b87bbd4e218a
+# github.com/libp2p/go-libp2p-peerstore v0.1.4
 github.com/libp2p/go-libp2p-peerstore
 github.com/libp2p/go-libp2p-peerstore/addr
 github.com/libp2p/go-libp2p-peerstore/pstoremem
-# github.com/libp2p/go-libp2p-protocol v0.0.0-20171212212132-b29f3d97e3a2
-github.com/libp2p/go-libp2p-protocol
-# github.com/libp2p/go-libp2p-secio v0.0.0-20181010103016-be39cabff59e
+# github.com/libp2p/go-libp2p-secio v0.2.1
 github.com/libp2p/go-libp2p-secio
 github.com/libp2p/go-libp2p-secio/pb
-# github.com/libp2p/go-libp2p-swarm v0.0.0-20181010104318-aebf02bb94e1
+# github.com/libp2p/go-libp2p-swarm v0.2.2
 github.com/libp2p/go-libp2p-swarm
-# github.com/libp2p/go-libp2p-transport v0.0.0-20181010103020-419f57b92e2d
-github.com/libp2p/go-libp2p-transport
-# github.com/libp2p/go-libp2p-transport-upgrader v0.0.0-20181010103038-939dfe8cfd16
+# github.com/libp2p/go-libp2p-transport-upgrader v0.1.1
 github.com/libp2p/go-libp2p-transport-upgrader
-# github.com/libp2p/go-maddr-filter v0.0.0-20180626232806-57fd7e2ed649
+# github.com/libp2p/go-libp2p-yamux v0.2.1
+github.com/libp2p/go-libp2p-yamux
+# github.com/libp2p/go-maddr-filter v0.0.5
 github.com/libp2p/go-maddr-filter
-# github.com/libp2p/go-mplex v0.0.2-0.20190411201116-952618254776
+# github.com/libp2p/go-mplex v0.1.0
 github.com/libp2p/go-mplex
 # github.com/libp2p/go-msgio v0.0.4
 github.com/libp2p/go-msgio
-# github.com/libp2p/go-reuseport v0.0.0-20180924121034-dd0c37d7767b
+# github.com/libp2p/go-nat v0.0.4
+github.com/libp2p/go-nat
+# github.com/libp2p/go-openssl v0.0.4
+github.com/libp2p/go-openssl
+github.com/libp2p/go-openssl/utils
+# github.com/libp2p/go-reuseport v0.0.1
 github.com/libp2p/go-reuseport
-github.com/libp2p/go-reuseport/poll
-github.com/libp2p/go-reuseport/singlepoll
-# github.com/libp2p/go-reuseport-transport v0.0.0-20180924121035-5cdb097c8035
+# github.com/libp2p/go-reuseport-transport v0.0.2
 github.com/libp2p/go-reuseport-transport
-# github.com/libp2p/go-sockaddr v0.0.0-20180904171932-a7494d4eefeb
-github.com/libp2p/go-sockaddr/net
-# github.com/libp2p/go-stream-muxer v0.0.1
+# github.com/libp2p/go-stream-muxer v0.1.0
 github.com/libp2p/go-stream-muxer
-# github.com/libp2p/go-tcp-transport v0.0.0-20181010103047-31233dd1174f
+# github.com/libp2p/go-stream-muxer-multistream v0.2.0
+github.com/libp2p/go-stream-muxer-multistream
+# github.com/libp2p/go-tcp-transport v0.1.1
 github.com/libp2p/go-tcp-transport
-# github.com/libp2p/go-ws-transport v0.0.0-20181010104339-b2cd8129d103
+# github.com/libp2p/go-ws-transport v0.2.0
 github.com/libp2p/go-ws-transport
-# github.com/magiconair/properties v1.8.0
+# github.com/libp2p/go-yamux v1.2.4
+github.com/libp2p/go-yamux
+# github.com/magiconair/properties v1.8.1
 github.com/magiconair/properties
-# github.com/mattn/go-colorable v0.1.1
-github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.5
-github.com/mattn/go-isatty
 # github.com/matttproud/golang_protobuf_extensions v1.0.1
 github.com/matttproud/golang_protobuf_extensions/pbutil
 # github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
 github.com/minio/blake2b-simd
-# github.com/minio/sha256-simd v0.1.0
+# github.com/minio/sha256-simd v0.1.1
 github.com/minio/sha256-simd
-# github.com/mitchellh/go-homedir v0.0.0-20180523094522-3864e76763d9
+# github.com/mitchellh/go-homedir v1.1.0
 github.com/mitchellh/go-homedir
-# github.com/mitchellh/mapstructure v0.0.0-20180511142126-bb74f1db0675
+# github.com/mitchellh/mapstructure v1.1.2
 github.com/mitchellh/mapstructure
-# github.com/mr-tron/base58 v1.1.2
+# github.com/mr-tron/base58 v1.1.3
 github.com/mr-tron/base58/base58
-# github.com/multiformats/go-multiaddr v0.0.4
+# github.com/multiformats/go-base32 v0.0.3
+github.com/multiformats/go-base32
+# github.com/multiformats/go-multiaddr v0.2.0
 github.com/multiformats/go-multiaddr
-# github.com/multiformats/go-multiaddr-dns v0.0.0-20180623005149-78f39e8892d4
+# github.com/multiformats/go-multiaddr-dns v0.2.0
 github.com/multiformats/go-multiaddr-dns
-# github.com/multiformats/go-multiaddr-net v0.0.0-20181001003829-1cb9a0e8a6de
+# github.com/multiformats/go-multiaddr-fmt v0.1.0
+github.com/multiformats/go-multiaddr-fmt
+# github.com/multiformats/go-multiaddr-net v0.1.2
 github.com/multiformats/go-multiaddr-net
-# github.com/multiformats/go-multihash v0.0.5
+# github.com/multiformats/go-multibase v0.0.1
+github.com/multiformats/go-multibase
+# github.com/multiformats/go-multihash v0.0.13
 github.com/multiformats/go-multihash
-# github.com/multiformats/go-multistream v0.1.0
+# github.com/multiformats/go-multistream v0.1.1
 github.com/multiformats/go-multistream
-# github.com/opentracing/opentracing-go v1.0.3-0.20180412180840-6c572c00d183
+# github.com/multiformats/go-varint v0.0.5
+github.com/multiformats/go-varint
+# github.com/opentracing/opentracing-go v1.1.0
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/ext
 github.com/opentracing/opentracing-go/log
 # github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 github.com/patrickmn/go-cache
-# github.com/pelletier/go-toml v1.1.1-0.20180323185243-66540cf1fcd2
+# github.com/pelletier/go-toml v1.6.0
 github.com/pelletier/go-toml
+# github.com/pkg/errors v0.9.1
+github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/prometheus/client_golang v0.9.0-pre1.0.20180824101016-4eb539fa85a2
+# github.com/prometheus/client_golang v1.4.1
 github.com/prometheus/client_golang/prometheus
+github.com/prometheus/client_golang/prometheus/internal
 github.com/prometheus/client_golang/prometheus/push
-# github.com/prometheus/client_model v0.0.0-20171117100541-99fa1f4be8e5
+# github.com/prometheus/client_model v0.2.0
 github.com/prometheus/client_model/go
-# github.com/prometheus/common v0.0.0-20180518154759-7600349dcfe1
+# github.com/prometheus/common v0.9.1
 github.com/prometheus/common/expfmt
 github.com/prometheus/common/internal/bitbucket.org/ww/goautoneg
 github.com/prometheus/common/model
-# github.com/prometheus/procfs v0.0.0-20180601124529-94663424ae5a
+# github.com/prometheus/procfs v0.0.10
 github.com/prometheus/procfs
+github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-github.com/prometheus/procfs/nfs
-github.com/prometheus/procfs/xfs
-# github.com/rs/cors v1.6.1-0.20181011182759-a3460e445dd3
+# github.com/rs/cors v1.7.0
 github.com/rs/cors
-# github.com/shirou/gopsutil v2.18.13-0.20190215161415-9294781cc962+incompatible
+# github.com/russross/blackfriday/v2 v2.0.1
+github.com/russross/blackfriday/v2
+# github.com/shirou/gopsutil v2.20.1+incompatible
 github.com/shirou/gopsutil/cpu
 github.com/shirou/gopsutil/disk
 github.com/shirou/gopsutil/host
@@ -252,37 +285,41 @@ github.com/shirou/gopsutil/internal/common
 github.com/shirou/gopsutil/mem
 github.com/shirou/gopsutil/net
 github.com/shirou/gopsutil/process
-# github.com/shirou/w32 v0.0.0-20160930032740-bb4de0191aa4
-github.com/shirou/w32
+# github.com/shurcooL/sanitized_anchor_name v1.0.0
+github.com/shurcooL/sanitized_anchor_name
 # github.com/smartystreets/assertions v1.0.1
 github.com/smartystreets/assertions
 github.com/smartystreets/assertions/internal/go-diff/diffmatchpatch
 github.com/smartystreets/assertions/internal/go-render/render
 github.com/smartystreets/assertions/internal/oglematchers
-# github.com/smartystreets/goconvey v1.6.4-0.20180222194500-ef6db91d284a
+# github.com/smartystreets/goconvey v1.6.4
 github.com/smartystreets/goconvey/convey
 github.com/smartystreets/goconvey/convey/gotest
 github.com/smartystreets/goconvey/convey/reporting
+# github.com/spacemonkeygo/spacelog v0.0.0-20180420211403-2296661a0572
+github.com/spacemonkeygo/spacelog
 # github.com/spaolacci/murmur3 v1.1.0
 github.com/spaolacci/murmur3
-# github.com/spf13/afero v1.1.0
+# github.com/spf13/afero v1.2.2
 github.com/spf13/afero
 github.com/spf13/afero/mem
-# github.com/spf13/cast v1.2.0
+# github.com/spf13/cast v1.3.1
 github.com/spf13/cast
-# github.com/spf13/cobra v0.0.3
+# github.com/spf13/cobra v0.0.6
 github.com/spf13/cobra
-# github.com/spf13/jwalterweatherman v0.0.0-20180109140146-7c0cea34c8ec
+# github.com/spf13/jwalterweatherman v1.1.0
 github.com/spf13/jwalterweatherman
-# github.com/spf13/pflag v1.0.1
+# github.com/spf13/pflag v1.0.5
 github.com/spf13/pflag
-# github.com/spf13/viper v1.0.3-0.20180507071007-15738813a09d
+# github.com/spf13/viper v1.6.2
 github.com/spf13/viper
-# github.com/stretchr/testify v1.3.0
+# github.com/stretchr/testify v1.4.0
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
-# github.com/syndtr/goleveldb v0.0.0-20180521045021-5d6fca44a948
+# github.com/subosito/gotenv v1.2.0
+github.com/subosito/gotenv
+# github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
 github.com/syndtr/goleveldb/leveldb
 github.com/syndtr/goleveldb/leveldb/cache
 github.com/syndtr/goleveldb/leveldb/comparer
@@ -295,9 +332,7 @@ github.com/syndtr/goleveldb/leveldb/opt
 github.com/syndtr/goleveldb/leveldb/storage
 github.com/syndtr/goleveldb/leveldb/table
 github.com/syndtr/goleveldb/leveldb/util
-# github.com/uber-go/atomic v1.3.3-0.20180806045314-ca680462431f
-github.com/uber-go/atomic
-# github.com/urfave/cli v1.20.1-0.20181029213200-b67dcf995b6a
+# github.com/urfave/cli v1.22.2
 github.com/urfave/cli
 # github.com/wcharczuk/go-chart v2.0.2-0.20181012164330-3cb33d48d32d+incompatible
 github.com/wcharczuk/go-chart
@@ -306,31 +341,40 @@ github.com/wcharczuk/go-chart/matrix
 github.com/wcharczuk/go-chart/roboto
 github.com/wcharczuk/go-chart/seq
 github.com/wcharczuk/go-chart/util
-# github.com/whyrusleeping/go-logging v0.0.0-20170515211332-0457bb6b88fc
-github.com/whyrusleeping/go-logging
-# github.com/whyrusleeping/go-notifier v0.0.0-20170827234753-097c5d47330f
-github.com/whyrusleeping/go-notifier
 # github.com/whyrusleeping/go-smux-multiplex v3.0.16+incompatible
 github.com/whyrusleeping/go-smux-multiplex
-# github.com/whyrusleeping/go-smux-multistream v2.0.2+incompatible
-github.com/whyrusleeping/go-smux-multistream
-# github.com/whyrusleeping/go-smux-yamux v2.0.5+incompatible
-github.com/whyrusleeping/go-smux-yamux
-# github.com/whyrusleeping/mafmt v1.2.8-0.20180627004827-1dc32401ee9f
+# github.com/whyrusleeping/mafmt v1.2.8
 github.com/whyrusleeping/mafmt
 # github.com/whyrusleeping/multiaddr-filter v0.0.0-20160516205228-e903e4adabd7
 github.com/whyrusleeping/multiaddr-filter
-# github.com/whyrusleeping/yamux v1.1.2
-github.com/whyrusleeping/yamux
-# github.com/willf/bitset v1.1.4-0.20180426185212-8ce1146b8621
+# github.com/willf/bitset v1.1.10
 github.com/willf/bitset
 # github.com/willf/bloom v2.0.3+incompatible
 github.com/willf/bloom
-# github.com/xlab/treeprint v0.0.0-20180616005107-d6fb6747feb6
+# github.com/xlab/treeprint v1.0.0
 github.com/xlab/treeprint
-# golang.org/x/crypto v0.0.0-20190618222545-ea8f1a30c443
+# go.opencensus.io v0.22.3
+go.opencensus.io/internal/tagencoding
+go.opencensus.io/metric/metricdata
+go.opencensus.io/metric/metricproducer
+go.opencensus.io/resource
+go.opencensus.io/stats
+go.opencensus.io/stats/internal
+go.opencensus.io/stats/view
+go.opencensus.io/tag
+# go.uber.org/atomic v1.6.0
+go.uber.org/atomic
+# go.uber.org/multierr v1.5.0
+go.uber.org/multierr
+# go.uber.org/zap v1.14.0
+go.uber.org/zap
+go.uber.org/zap/buffer
+go.uber.org/zap/internal/bufferpool
+go.uber.org/zap/internal/color
+go.uber.org/zap/internal/exit
+go.uber.org/zap/zapcore
+# golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
 golang.org/x/crypto/blake2s
-golang.org/x/crypto/blowfish
 golang.org/x/crypto/ed25519
 golang.org/x/crypto/ed25519/internal/edwards25519
 golang.org/x/crypto/pbkdf2
@@ -338,12 +382,16 @@ golang.org/x/crypto/ripemd160
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/sha3
 golang.org/x/crypto/ssh/terminal
-# golang.org/x/image v0.0.0-20181116024801-cd38e8056d9b
+# golang.org/x/image v0.0.0-20200119044424-58c23975cae1
 golang.org/x/image/draw
 golang.org/x/image/font
 golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
-# golang.org/x/net v0.0.0-20190620200207-3b0461eec859
+# golang.org/x/lint v0.0.0-20200130185559-910be7a94367
+golang.org/x/lint
+golang.org/x/lint/golint
+# golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
+golang.org/x/net/bpf
 golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
@@ -352,14 +400,17 @@ golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
+golang.org/x/net/internal/iana
+golang.org/x/net/internal/socket
 golang.org/x/net/internal/timeseries
+golang.org/x/net/ipv4
 golang.org/x/net/netutil
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20191120155948-bd437916bb0e
+# golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae
 golang.org/x/sys/cpu
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.1-0.20180511172408-5c1cf69b5978
+# golang.org/x/text v0.3.2
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -380,14 +431,21 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
+# golang.org/x/time v0.0.0-20191024005414-555d28b269f0
 golang.org/x/time/rate
-# google.golang.org/genproto v0.0.0-20190307195333-5fe7a883aa19
+# golang.org/x/tools v0.0.0-20200225022059-a0ec867d517c
+golang.org/x/tools/go/ast/astutil
+golang.org/x/tools/go/gcexportdata
+golang.org/x/tools/go/internal/gcimporter
+# google.golang.org/genproto v0.0.0-20200224152610-e50cd9704f63
 google.golang.org/genproto/googleapis/api/annotations
+google.golang.org/genproto/googleapis/api/httpbody
 google.golang.org/genproto/googleapis/rpc/status
 google.golang.org/genproto/protobuf/field_mask
-# google.golang.org/grpc v1.19.0
+# google.golang.org/grpc v1.27.1
 google.golang.org/grpc
+google.golang.org/grpc/attributes
+google.golang.org/grpc/backoff
 google.golang.org/grpc/balancer
 google.golang.org/grpc/balancer/base
 google.golang.org/grpc/balancer/roundrobin
@@ -401,11 +459,15 @@ google.golang.org/grpc/encoding/proto
 google.golang.org/grpc/grpclog
 google.golang.org/grpc/internal
 google.golang.org/grpc/internal/backoff
+google.golang.org/grpc/internal/balancerload
 google.golang.org/grpc/internal/binarylog
+google.golang.org/grpc/internal/buffer
 google.golang.org/grpc/internal/channelz
 google.golang.org/grpc/internal/envconfig
 google.golang.org/grpc/internal/grpcrand
 google.golang.org/grpc/internal/grpcsync
+google.golang.org/grpc/internal/resolver/dns
+google.golang.org/grpc/internal/resolver/passthrough
 google.golang.org/grpc/internal/syscall
 google.golang.org/grpc/internal/transport
 google.golang.org/grpc/keepalive
@@ -413,10 +475,11 @@ google.golang.org/grpc/metadata
 google.golang.org/grpc/naming
 google.golang.org/grpc/peer
 google.golang.org/grpc/resolver
-google.golang.org/grpc/resolver/dns
-google.golang.org/grpc/resolver/passthrough
+google.golang.org/grpc/serviceconfig
 google.golang.org/grpc/stats
 google.golang.org/grpc/status
 google.golang.org/grpc/tap
-# gopkg.in/yaml.v2 v2.2.4
+# gopkg.in/ini.v1 v1.52.0
+gopkg.in/ini.v1
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2

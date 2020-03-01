@@ -34,6 +34,30 @@ var ErrTwoInitiators = errors.New("two initiators")
 // In this case, we close the connection to be safe.
 var ErrInvalidState = errors.New("received an unexpected message from the peer")
 
+var errTimeout = timeout{}
+var errStreamClosed = errors.New("stream closed")
+
+var (
+	NewStreamTimeout   = time.Minute
+	ResetStreamTimeout = 2 * time.Minute
+
+	WriteCoalesceDelay = 100 * time.Microsecond
+)
+
+type timeout struct{}
+
+func (_ timeout) Error() string {
+	return "i/o deadline exceeded"
+}
+
+func (_ timeout) Temporary() bool {
+	return true
+}
+
+func (_ timeout) Timeout() bool {
+	return true
+}
+
 // +1 for initiator
 const (
 	newStreamTag = 0
@@ -54,7 +78,9 @@ type Multiplex struct {
 	shutdownErr  error
 	shutdownLock sync.Mutex
 
-	wrTkn chan struct{}
+	writeCh         chan []byte
+	writeTimer      *time.Timer
+	writeTimerFired bool
 
 	nstreams chan *Stream
 
@@ -65,30 +91,32 @@ type Multiplex struct {
 // NewMultiplex creates a new multiplexer session.
 func NewMultiplex(con net.Conn, initiator bool) *Multiplex {
 	mp := &Multiplex{
-		con:       con,
-		initiator: initiator,
-		buf:       bufio.NewReader(con),
-		channels:  make(map[streamID]*Stream),
-		closed:    make(chan struct{}),
-		shutdown:  make(chan struct{}),
-		wrTkn:     make(chan struct{}, 1),
-		nstreams:  make(chan *Stream, 16),
+		con:        con,
+		initiator:  initiator,
+		buf:        bufio.NewReader(con),
+		channels:   make(map[streamID]*Stream),
+		closed:     make(chan struct{}),
+		shutdown:   make(chan struct{}),
+		writeCh:    make(chan []byte, 16),
+		writeTimer: time.NewTimer(0),
+		nstreams:   make(chan *Stream, 16),
 	}
 
 	go mp.handleIncoming()
-
-	mp.wrTkn <- struct{}{}
+	go mp.handleOutgoing()
 
 	return mp
 }
 
 func (mp *Multiplex) newStream(id streamID, name string) (s *Stream) {
 	s = &Stream{
-		id:     id,
-		name:   name,
-		dataIn: make(chan []byte, 8),
-		reset:  make(chan struct{}),
-		mp:     mp,
+		id:        id,
+		name:      name,
+		dataIn:    make(chan []byte, 8),
+		reset:     make(chan struct{}),
+		rDeadline: makePipeDeadline(),
+		wDeadline: makePipeDeadline(),
+		mp:        mp,
 	}
 
 	s.closedLocal, s.doCloseLocal = context.WithCancel(context.Background())
@@ -139,41 +167,116 @@ func (mp *Multiplex) IsClosed() bool {
 	}
 }
 
-func (mp *Multiplex) sendMsg(ctx context.Context, header uint64, data []byte) error {
-	select {
-	case tkn := <-mp.wrTkn:
-		defer func() { mp.wrTkn <- tkn }()
-	case <-ctx.Done():
-		return ctx.Err()
-	}
-
-	dl, hasDl := ctx.Deadline()
-	if hasDl {
-		if err := mp.con.SetWriteDeadline(dl); err != nil {
-			return err
-		}
-	}
+func (mp *Multiplex) sendMsg(done <-chan struct{}, header uint64, data []byte) error {
 	buf := pool.Get(len(data) + 20)
-	defer pool.Put(buf)
 
 	n := 0
 	n += binary.PutUvarint(buf[n:], header)
 	n += binary.PutUvarint(buf[n:], uint64(len(data)))
 	n += copy(buf[n:], data)
 
-	written, err := mp.con.Write(buf[:n])
-	if err != nil && written > 0 {
-		// Bail. We've written partial message and can't do anything
-		// about this.
-		mp.con.Close()
+	select {
+	case mp.writeCh <- buf[:n]:
+		return nil
+	case <-mp.shutdown:
+		return ErrShutdown
+	case <-done:
+		return errTimeout
+	}
+}
+
+func (mp *Multiplex) handleOutgoing() {
+	for {
+		select {
+		case <-mp.shutdown:
+			return
+
+		case data := <-mp.writeCh:
+			// FIXME: https://github.com/libp2p/go-libp2p/issues/644
+			// write coalescing disabled until this can be fixed.
+			//err := mp.writeMsg(data)
+			err := mp.doWriteMsg(data)
+			pool.Put(data)
+			if err != nil {
+				// the connection is closed by this time
+				log.Warningf("error writing data: %s", err.Error())
+				return
+			}
+		}
+	}
+}
+
+func (mp *Multiplex) writeMsg(data []byte) error {
+	if len(data) >= 512 {
+		err := mp.doWriteMsg(data)
+		pool.Put(data)
 		return err
 	}
 
-	if hasDl {
-		// only return this error if we don't *already* have an error from the write.
-		if err2 := mp.con.SetWriteDeadline(time.Time{}); err == nil && err2 != nil {
-			return err2
+	buf := pool.Get(4096)
+	defer pool.Put(buf)
+
+	n := copy(buf, data)
+	pool.Put(data)
+
+	if !mp.writeTimerFired {
+		if !mp.writeTimer.Stop() {
+			<-mp.writeTimer.C
 		}
+	}
+	mp.writeTimer.Reset(WriteCoalesceDelay)
+	mp.writeTimerFired = false
+
+	for {
+		select {
+		case data = <-mp.writeCh:
+			wr := copy(buf[n:], data)
+			if wr < len(data) {
+				// we filled the buffer, send it
+				err := mp.doWriteMsg(buf)
+				if err != nil {
+					pool.Put(data)
+					return err
+				}
+
+				if len(data)-wr >= 512 {
+					// the remaining data is not a small write, send it
+					err := mp.doWriteMsg(data[wr:])
+					pool.Put(data)
+					return err
+				}
+
+				n = copy(buf, data[wr:])
+
+				// we've written some, reset the timer to coalesce the rest
+				if !mp.writeTimer.Stop() {
+					<-mp.writeTimer.C
+				}
+				mp.writeTimer.Reset(WriteCoalesceDelay)
+			} else {
+				n += wr
+			}
+
+			pool.Put(data)
+
+		case <-mp.writeTimer.C:
+			mp.writeTimerFired = true
+			return mp.doWriteMsg(buf[:n])
+
+		case <-mp.shutdown:
+			return ErrShutdown
+		}
+	}
+}
+
+func (mp *Multiplex) doWriteMsg(data []byte) error {
+	if mp.isShutdown() {
+		return ErrShutdown
+	}
+
+	_, err := mp.con.Write(data)
+	if err != nil {
+		mp.closeNoWait()
 	}
 
 	return err
@@ -214,7 +317,10 @@ func (mp *Multiplex) NewNamedStream(name string) (*Stream, error) {
 	mp.channels[s.id] = s
 	mp.chLock.Unlock()
 
-	err := mp.sendMsg(context.Background(), header, []byte(name))
+	ctx, cancel := context.WithTimeout(context.Background(), NewStreamTimeout)
+	defer cancel()
+
+	err := mp.sendMsg(ctx.Done(), header, []byte(name))
 	if err != nil {
 		return nil, err
 	}
@@ -316,22 +422,20 @@ func (mp *Multiplex) handleIncoming() {
 			}
 			msch.clLock.Lock()
 
-			// Honestly, this check should never be true... It means we've leaked.
-			// However, this is an error on *our* side so we shouldn't just bail.
 			isClosed := msch.isClosed()
-			if isClosed && msch.closedRemote {
-				msch.clLock.Unlock()
-				log.Errorf("leaked a completely closed stream")
-				continue
-			}
 
 			if !msch.closedRemote {
 				close(msch.reset)
+				msch.closedRemote = true
 			}
-			msch.closedRemote = true
-			msch.doCloseLocal()
+
+			if !isClosed {
+				msch.doCloseLocal()
+			}
 
 			msch.clLock.Unlock()
+
+			msch.cancelDeadlines()
 
 			mp.chLock.Lock()
 			delete(mp.channels, ch)
@@ -358,6 +462,7 @@ func (mp *Multiplex) handleIncoming() {
 			msch.clLock.Unlock()
 
 			if cleanup {
+				msch.cancelDeadlines()
 				mp.chLock.Lock()
 				delete(mp.channels, ch)
 				mp.chLock.Unlock()
@@ -370,7 +475,7 @@ func (mp *Multiplex) handleIncoming() {
 				// This is a perfectly valid case when we reset
 				// and forget about the stream.
 				log.Debugf("message for non-existant stream, dropping data: %d", ch)
-				go mp.sendMsg(context.Background(), ch.header(resetTag), nil)
+				// go mp.sendResetMsg(ch.header(resetTag), false)
 				continue
 			}
 
@@ -381,8 +486,8 @@ func (mp *Multiplex) handleIncoming() {
 				// closed stream, return b
 				pool.Put(b)
 
-				log.Errorf("Received data from remote after stream was closed by them. (len = %d)", len(b))
-				go mp.sendMsg(context.Background(), msch.id.header(resetTag), nil)
+				log.Warningf("Received data from remote after stream was closed by them. (len = %d)", len(b))
+				// go mp.sendResetMsg(msch.id.header(resetTag), false)
 				continue
 			}
 
@@ -411,6 +516,30 @@ func (mp *Multiplex) handleIncoming() {
 			if ok {
 				msch.Reset()
 			}
+		}
+	}
+}
+
+func (mp *Multiplex) isShutdown() bool {
+	select {
+	case <-mp.shutdown:
+		return true
+	default:
+		return false
+	}
+}
+
+func (mp *Multiplex) sendResetMsg(header uint64, hard bool) {
+	ctx, cancel := context.WithTimeout(context.Background(), ResetStreamTimeout)
+	defer cancel()
+
+	err := mp.sendMsg(ctx.Done(), header, nil)
+	if err != nil && !mp.isShutdown() {
+		if hard {
+			log.Warningf("error sending reset message: %s; killing connection", err.Error())
+			mp.Close()
+		} else {
+			log.Debugf("error sending reset message: %s", err.Error())
 		}
 	}
 }
@@ -451,4 +580,12 @@ func (mp *Multiplex) readNext() ([]byte, error) {
 	}
 
 	return buf[:n], nil
+}
+
+func isFatalNetworkError(err error) bool {
+	nerr, ok := err.(net.Error)
+	if ok {
+		return !(nerr.Timeout() || nerr.Temporary())
+	}
+	return false
 }

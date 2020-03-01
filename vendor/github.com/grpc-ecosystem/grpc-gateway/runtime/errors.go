@@ -5,11 +5,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/golang/protobuf/proto"
-	"github.com/golang/protobuf/ptypes/any"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
 	"google.golang.org/grpc/status"
+	"github.com/grpc-ecosystem/grpc-gateway/internal"
 )
 
 // HTTPStatusFromCode converts a gRPC error code into the corresponding HTTP response status.
@@ -37,7 +36,8 @@ func HTTPStatusFromCode(code codes.Code) int {
 	case codes.ResourceExhausted:
 		return http.StatusTooManyRequests
 	case codes.FailedPrecondition:
-		return http.StatusPreconditionFailed
+		// Note, this deliberately doesn't translate to the similarly named '412 Precondition Failed' HTTP response status.
+		return http.StatusBadRequest
 	case codes.Aborted:
 		return http.StatusConflict
 	case codes.OutOfRange:
@@ -64,21 +64,6 @@ var (
 	OtherErrorHandler = DefaultOtherErrorHandler
 )
 
-type errorBody struct {
-	Error   string     `protobuf:"bytes,1,name=error" json:"error"`
-	// This is to make the error more compatible with users that expect errors to be Status objects:
-	// https://github.com/grpc/grpc/blob/master/src/proto/grpc/status/status.proto
-	// It should be the exact same message as the Error field.
-	Message string     `protobuf:"bytes,1,name=message" json:"message"`
-	Code    int32      `protobuf:"varint,2,name=code" json:"code"`
-	Details []*any.Any `protobuf:"bytes,3,rep,name=details" json:"details,omitempty"`
-}
-
-// Make this also conform to proto.Message for builtin JSONPb Marshaler
-func (e *errorBody) Reset()         { *e = errorBody{} }
-func (e *errorBody) String() string { return proto.CompactTextString(e) }
-func (*errorBody) ProtoMessage()    {}
-
 // DefaultHTTPError is the default implementation of HTTPError.
 // If "err" is an error from gRPC system, the function replies with the status code mapped by HTTPStatusFromCode.
 // If otherwise, it replies with http.StatusInternalServerError.
@@ -88,15 +73,24 @@ func (*errorBody) ProtoMessage()    {}
 func DefaultHTTPError(ctx context.Context, mux *ServeMux, marshaler Marshaler, w http.ResponseWriter, _ *http.Request, err error) {
 	const fallback = `{"error": "failed to marshal error message"}`
 
-	w.Header().Del("Trailer")
-	w.Header().Set("Content-Type", marshaler.ContentType())
-
 	s, ok := status.FromError(err)
 	if !ok {
 		s = status.New(codes.Unknown, err.Error())
 	}
 
-	body := &errorBody{
+	w.Header().Del("Trailer")
+
+	contentType := marshaler.ContentType()
+	// Check marshaler on run time in order to keep backwards compatability
+	// An interface param needs to be added to the ContentType() function on
+	// the Marshal interface to be able to remove this check
+	if httpBodyMarshaler, ok := marshaler.(*HTTPBodyMarshaler); ok {
+		pb := s.Proto()
+		contentType = httpBodyMarshaler.ContentTypeFromMessage(pb)
+	}
+	w.Header().Set("Content-Type", contentType)
+
+	body := &internal.Error{
 		Error:   s.Message(),
 		Message: s.Message(),
 		Code:    int32(s.Code()),
