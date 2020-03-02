@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	crypto "github.com/libp2p/go-libp2p-crypto"
-	peer "github.com/libp2p/go-libp2p-peer"
+	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
@@ -39,7 +39,7 @@ func parseMultiaddr(s string) (peer.ID, multiaddr.Multiaddr, error) {
 	if err != nil {
 		return "", nil, err
 	}
-	peerID, err := peer.IDB58Decode(strs[1])
+	peerID, err := peer.Decode(strs[1])
 	if err != nil {
 		return "", nil, err
 	}

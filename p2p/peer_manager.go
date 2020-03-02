@@ -16,11 +16,11 @@ import (
 	"github.com/iost-official/go-iost/ilog"
 	p2pb "github.com/iost-official/go-iost/p2p/pb"
 
-	host "github.com/libp2p/go-libp2p-host"
+	"github.com/libp2p/go-libp2p-core/host"
+	libnet "github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p-core/peerstore"
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
-	libnet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
-	peerstore "github.com/libp2p/go-libp2p-peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
 	"go.uber.org/atomic"
@@ -170,7 +170,7 @@ func (pm *PeerManager) setBPs(ids []string) {
 		if len(id) == 0 {
 			continue
 		}
-		peerID, err := peer.IDB58Decode(id)
+		peerID, err := peer.Decode(id)
 		if err != nil {
 			ilog.Warnf("decode peerID failed. err=%v, id=%v", err, id)
 			continue
@@ -646,7 +646,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 
 	pidSet := make(map[peer.ID]struct{})
 	for _, queryID := range queryIDs {
-		pid, err := peer.IDB58Decode(queryID)
+		pid, err := peer.Decode(queryID)
 		if err != nil {
 			ilog.Warnf("decode peerID failed. err=%v, id=%v", err, queryID)
 			continue
@@ -725,7 +725,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage, from peer.ID)
 	ilog.Debugf("Receiving peer infos: %v, from=%v", resp, from.Pretty())
 	for _, peerInfo := range resp.Peers {
 		if len(peerInfo.Addrs) > 0 {
-			pid, err := peer.IDB58Decode(peerInfo.Id)
+			pid, err := peer.Decode(peerInfo.Id)
 			if err != nil {
 				ilog.Warnf("Decoding peerID failed. err=%v, id=%v", err, peerInfo.Id)
 				continue
@@ -860,7 +860,7 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 
 // PutPeerToBlack puts the peer's PID and IP to black list and close the connection.
 func (pm *PeerManager) PutPeerToBlack(id string) {
-	pid, err := peer.IDB58Decode(id)
+	pid, err := peer.Decode(id)
 	if err != nil {
 		ilog.Warnf("decode peerID failed. err=%v, id=%v", err, id)
 		return

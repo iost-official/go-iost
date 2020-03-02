@@ -21,7 +21,7 @@ require (
 	github.com/ipfs/go-log v1.0.2 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/libp2p/go-libp2p v0.5.2
-	github.com/libp2p/go-libp2p-core v0.3.1 // indirect
+	github.com/libp2p/go-libp2p-core v0.3.1
 	github.com/libp2p/go-libp2p-crypto v0.1.0
 	github.com/libp2p/go-libp2p-host v0.1.0
 	github.com/libp2p/go-libp2p-kbucket v0.2.3

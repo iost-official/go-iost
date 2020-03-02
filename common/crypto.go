@@ -8,7 +8,7 @@ import (
 
 	"github.com/btcsuite/btcutil/base58"
 	"github.com/iost-official/go-iost/ilog"
-	"golang.org/x/crypto/ripemd160"
+	"golang.org/x/crypto/ripemd160" // nolint:staticcheck
 	"golang.org/x/crypto/sha3"
 )
 

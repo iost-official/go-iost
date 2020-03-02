@@ -18,4 +18,3 @@ linters:
     - gofmt
   disable:
     - errcheck
-    - staticcheck

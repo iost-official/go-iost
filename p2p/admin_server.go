@@ -9,7 +9,7 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 
-	peer "github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-core/peer"
 )
 
 type adminServer struct {
@@ -74,7 +74,7 @@ func (as *adminServer) ClosePeer(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pid := params["pid"][0]
-	peerID, err := peer.IDB58Decode(pid)
+	peerID, err := peer.Decode(pid)
 	if err != nil {
 		rw.Write([]byte("invalid peer id"))
 		return
@@ -91,7 +91,7 @@ func (as *adminServer) PutPIDBlack(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	pid := params["pid"][0]
-	peerID, err := peer.IDB58Decode(pid)
+	peerID, err := peer.Decode(pid)
 	if err != nil {
 		rw.Write([]byte("invalid peer id"))
 		return
