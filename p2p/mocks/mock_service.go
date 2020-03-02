@@ -7,7 +7,7 @@ package p2p_mock
 import (
 	gomock "github.com/golang/mock/gomock"
 	p2p "github.com/iost-official/go-iost/p2p"
-	go_libp2p_peer "github.com/libp2p/go-libp2p-peer"
+	peer "github.com/libp2p/go-libp2p-core/peer"
 	reflect "reflect"
 )
 
@@ -121,7 +121,7 @@ func (mr *MockServiceMockRecorder) Register(arg0 interface{}, arg1 ...interface{
 }
 
 // SendToPeer mocks base method
-func (m *MockService) SendToPeer(arg0 go_libp2p_peer.ID, arg1 []byte, arg2 p2p.MessageType, arg3 p2p.MessagePriority) {
+func (m *MockService) SendToPeer(arg0 peer.ID, arg1 []byte, arg2 p2p.MessageType, arg3 p2p.MessagePriority) {
 	m.ctrl.Call(m, "SendToPeer", arg0, arg1, arg2, arg3)
 }
 
