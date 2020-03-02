@@ -1,4 +1,11 @@
-##v3.3.1
+## v3.3.2
+Mon Mar  2 12:23:18 CST 2020
+
+- Switch dependency management to go module.
+- Upgrade dependencies.
+- Add a tool to prune blockchain storage to save disk usage.
+
+## v3.3.1
 Fri Dec 13 11:51:32 CST 2019
 
 - Add ripemd160 hash function to chain api, empowering oncoming atomic swap with BTC and ETH.
