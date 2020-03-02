@@ -158,12 +158,8 @@ github.com/libp2p/go-libp2p-core/sec
 github.com/libp2p/go-libp2p-core/sec/insecure
 github.com/libp2p/go-libp2p-core/sec/insecure/pb
 github.com/libp2p/go-libp2p-core/transport
-# github.com/libp2p/go-libp2p-crypto v0.1.0
-github.com/libp2p/go-libp2p-crypto
 # github.com/libp2p/go-libp2p-discovery v0.2.0
 github.com/libp2p/go-libp2p-discovery
-# github.com/libp2p/go-libp2p-host v0.1.0
-github.com/libp2p/go-libp2p-host
 # github.com/libp2p/go-libp2p-kbucket v0.2.3
 github.com/libp2p/go-libp2p-kbucket
 github.com/libp2p/go-libp2p-kbucket/keyspace
@@ -173,10 +169,6 @@ github.com/libp2p/go-libp2p-loggables
 github.com/libp2p/go-libp2p-mplex
 # github.com/libp2p/go-libp2p-nat v0.0.5
 github.com/libp2p/go-libp2p-nat
-# github.com/libp2p/go-libp2p-net v0.1.0
-github.com/libp2p/go-libp2p-net
-# github.com/libp2p/go-libp2p-peer v0.2.0
-github.com/libp2p/go-libp2p-peer
 # github.com/libp2p/go-libp2p-peerstore v0.1.4
 github.com/libp2p/go-libp2p-peerstore
 github.com/libp2p/go-libp2p-peerstore/addr

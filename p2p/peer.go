@@ -10,8 +10,8 @@ import (
 
 	"github.com/iost-official/go-iost/ilog"
 
-	libnet "github.com/libp2p/go-libp2p-net"
-	peer "github.com/libp2p/go-libp2p-peer"
+	libnet "github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p-core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"github.com/willf/bloom"
 	"go.uber.org/atomic"
