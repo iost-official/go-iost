@@ -1,8 +1,15 @@
-##v3.3.1
+## v3.3.2
+Mon Mar  2 12:23:18 CST 2020
+
+- Switch dependency management to go module.
+- Upgrade dependencies.
+- Add a tool to prune blockchain storage to save disk usage.
+
+## v3.3.1
 Fri Dec 13 11:51:32 CST 2019
 
-- Add ripemd160 hash function to chain api, empowering oncoming atomic swap with BTC and ETH.
-- Optimize memory management.
+- Add ripemd160 hash function to chain api, make atomic swap with BTC and ETH possible.
+- Fix some CGO memleak of VM.
 
 
 ## v3.3.0
@@ -11,14 +18,14 @@ Fri Sep 20 15:21:41 CST 2019
 - Optimize code of common.
 - Enrich go-sdk APIs.
 - Adjust p2p default config.
-- In addition to the active permission, other permissions must be declared in the signals field.
-- The returns field is cleared when the transaction fails to execute; the returns and receipts fields are cleared when the ram fails.
+- In addition to the `active` permission, other permissions must be declared in the `signer` field.
+- The `returns` field is cleared when the transaction fails to execute; the `returns` and `receipts` fields are cleared when the ram fails.
 
 ## v3.2.0
 Mon Jul 29 15:59:39 CST 2019
 
 - Optimize the snapshot function, new nodes can quickly complete data synchronization.
-- Reorganized code of common.
+- Reorganized code of `common` package.
 - RPC increases the number of query contract votes.
 - Reorganized code of RPC.
 - Fix bug with high CPU usage.
