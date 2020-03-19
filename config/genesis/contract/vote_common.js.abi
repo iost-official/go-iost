@@ -4,13 +4,17 @@
     "abi": [
         {
             "name": "can_update",
-            "args": ["string"]
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
         },
         {
             "name": "initAdmin",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "newVote",
@@ -19,17 +23,20 @@
                 "string",
                 "json"
             ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "unlimited"
+                }
+            ]
         },
         {
             "name": "setCanVote",
             "args": [
                 "string",
                 "bool"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "addOption",
@@ -37,7 +44,8 @@
                 "string",
                 "string",
                 "bool"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "removeOption",
@@ -45,14 +53,16 @@
                 "string",
                 "string",
                 "bool"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "getOption",
             "args": [
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "vote",
@@ -62,10 +72,12 @@
                 "string",
                 "string"
             ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "unlimited"
+                }
+            ]
         },
         {
             "name": "unvote",
@@ -74,26 +86,30 @@
                 "string",
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "getVote",
             "args": [
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "getResult",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "delVote",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         }
     ]
 }
