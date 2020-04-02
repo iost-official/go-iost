@@ -249,6 +249,17 @@ class VoteCommonContract {
         this._mapPut("voteInfo", voteId, info, blockchain.publisher());
     }
 
+    setFreezeTime(voteId, freezeTime) {
+        const admin = storage.get("adminID");
+        if (!blockchain.requireAuth(admin, adminPermission)) {
+            this._requireOwner(voteId);
+        }
+
+        const info = this._mapGet("voteInfo", voteId);
+        info.freezeTime = freezeTime;
+        this._mapPut("voteInfo", voteId, info, blockchain.publisher());
+    }
+
     addOption(voteId, option, clearVote) {
         const owner = this._requireOwner(voteId);
         this._checkDel(voteId);

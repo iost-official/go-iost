@@ -101,12 +101,14 @@ var createCmd = &cobra.Command{
 		if err := sendTx(tx); err != nil {
 			return err
 		}
-		info, err := iwalletSDK.GetAccountInfo(newName)
-		if err != nil {
-			return fmt.Errorf("failed to get account info: %v", err)
+		if checkResult {
+			info, err := iwalletSDK.GetAccountInfo(newName)
+			if err != nil {
+				return fmt.Errorf("failed to get account info: %v", err)
+			}
+			fmt.Println("Account info of <", newName, ">:")
+			fmt.Println(sdk.MarshalTextString(info))
 		}
-		fmt.Println("Account info of <", newName, ">:")
-		fmt.Println(sdk.MarshalTextString(info))
 
 		fmt.Println("The IOST account ID is:", newName)
 		fmt.Println("Owner permission key:", okey)

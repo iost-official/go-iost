@@ -155,8 +155,14 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 		return errors.New("reject defertx")
 	}
 	// Add one second delay for tx created time check
-	if !t.IsCreatedBefore(time.Now().UnixNano()+maxTxTimeGap) || t.IsExpired(time.Now().UnixNano()) {
-		return fmt.Errorf("TimeError")
+	currentTime := time.Now().UnixNano()
+	if !t.IsCreatedBefore(currentTime + maxTxTimeGap) {
+		return fmt.Errorf("TimeError: tx.time is too large(tx.time: %v, now: %v). Please sync time",
+			t.Time, currentTime)
+	}
+	if t.IsExpired(time.Now().UnixNano()) {
+		return fmt.Errorf("TimeError: tx.time is expired(tx.time: %v, now: %v). Please sync time",
+			t.Time, currentTime)
 	}
 	if err := t.VerifySelf(); err != nil {
 		return fmt.Errorf("VerifyError %v", err)

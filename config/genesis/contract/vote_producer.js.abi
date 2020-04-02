@@ -1,10 +1,13 @@
 {
     "lang": "javascript",
-    "version": "1.1.0",
+    "version": "1.0.7",
     "abi": [
         {
             "name": "can_update",
-            "args": ["string"]
+            "args": [
+                "string"
+            ],
+            "amountLimit": []
         },
         {
             "name": "initProducer",
@@ -12,16 +15,19 @@
                 "string",
                 "string"
             ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "unlimited"
+                }
+            ]
         },
         {
             "name": "initAdmin",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "applyRegister",
@@ -32,43 +38,50 @@
                 "string",
                 "string",
                 "bool"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "switchOff",
             "args": [
                 "bool"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "applyUnregister",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "approveRegister",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "approveUnregister",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "forceUnregister",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "unregister",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "updateProducer",
@@ -78,25 +91,29 @@
                 "string",
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "getProducer",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "logInProducer",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "logOutProducer",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "vote",
@@ -105,10 +122,12 @@
                 "string",
                 "string"
             ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "unlimited"
+                }
+            ]
         },
         {
             "name": "unvote",
@@ -116,13 +135,15 @@
                 "string",
                 "string",
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "getVote",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "topupCandidateBonus",
@@ -130,10 +151,12 @@
                 "string",
                 "string"
             ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "unlimited"
+                }
+            ]
         },
         {
             "name": "topupVoterBonus",
@@ -142,38 +165,45 @@
                 "string",
                 "string"
             ],
-            "amountLimit": [{
-                "token": "iost",
-                "val": "unlimited"
-            }]
+            "amountLimit": [
+                {
+                    "token": "iost",
+                    "val": "unlimited"
+                }
+            ]
         },
         {
             "name": "stat",
-            "args": []
+            "args": [],
+            "amountLimit": []
         },
         {
             "name": "getCandidateBonus",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "candidateWithdraw",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "getVoterBonus",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         },
         {
             "name": "voterWithdraw",
             "args": [
                 "string"
-            ]
+            ],
+            "amountLimit": []
         }
     ]
 }
