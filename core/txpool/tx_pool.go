@@ -156,7 +156,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	}
 	// Add one second delay for tx created time check
 	currentTime := time.Now().UnixNano()
-	if !t.IsCreatedBefore(currentTime+maxTxTimeGap) {
+	if !t.IsCreatedBefore(currentTime + maxTxTimeGap) {
 		return fmt.Errorf("TimeError: tx.time is too large(tx.time: %v, now: %v). Please sync time",
 			t.Time, currentTime)
 	}
