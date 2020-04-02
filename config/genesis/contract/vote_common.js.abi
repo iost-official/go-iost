@@ -1,6 +1,6 @@
 {
     "lang": "javascript",
-    "version": "1.0.2",
+    "version": "1.0.3",
     "abi": [
         {
             "name": "can_update",
@@ -35,6 +35,14 @@
             "args": [
                 "string",
                 "bool"
+            ],
+            "amountLimit": []
+        },
+        {
+            "name": "setFreezeTime",
+            "args": [
+                "string",
+                "number"
             ],
             "amountLimit": []
         },
