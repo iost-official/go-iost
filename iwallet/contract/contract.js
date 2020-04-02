@@ -37,7 +37,7 @@ function genAbi(def, lastPos, comments) {
         "name": def.key.name,
         "args": new Array(def.value.params.length).fill("string"),
         "amountLimit": [],
-        "description": ""
+        //"description": ""
     };
     for (let i = comments.length - 1; i >= 0; i--) {
         let comment = comments[i];

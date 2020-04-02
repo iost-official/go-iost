@@ -254,3 +254,5 @@ vm/test_data/lucky_bet.js.after
 /config/logs/
 /config/priv.key
 /block_cache_wal/
+
+node_modules
