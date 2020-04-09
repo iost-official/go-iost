@@ -10,13 +10,12 @@ import (
 
 // const prefixs
 const (
-	IntPrefix       = "i"
-	StringPrefix    = "s"
-	NilPrefix       = "n"
-	BoolPrefix      = "b"
-	JSONPrefix      = "j"
-	MapHolderPrefix = "@"
-	FixPointPrefix  = "f"
+	IntPrefix      = "i"
+	StringPrefix   = "s"
+	NilPrefix      = "n"
+	BoolPrefix     = "b"
+	JSONPrefix     = "j"
+	FixPointPrefix = "f"
 )
 
 var (
@@ -35,17 +34,17 @@ func Marshal(in interface{}, extras ...string) (string, error) {
 	}
 	switch in := in.(type) {
 	case int64:
-		return IntPrefix + int64ToRaw(in) + ApplicationSeparator + extra, nil
+		return IntPrefix + int64ToRaw(in) + RAMOwnerSeparator + extra, nil
 	case string:
-		return StringPrefix + in + ApplicationSeparator + extra, nil
+		return StringPrefix + in + RAMOwnerSeparator + extra, nil
 	case nil:
 		return NilPrefix, nil
 	case bool:
-		return BoolPrefix + boolToString(in) + ApplicationSeparator + extra, nil
+		return BoolPrefix + boolToString(in) + RAMOwnerSeparator + extra, nil
 	case SerializedJSON:
-		return JSONPrefix + string(in) + ApplicationSeparator + extra, nil
+		return JSONPrefix + string(in) + RAMOwnerSeparator + extra, nil
 	case *common.Fixed:
-		return FixPointPrefix + in.Marshal() + ApplicationSeparator + extra, nil
+		return FixPointPrefix + in.Marshal() + RAMOwnerSeparator + extra, nil
 	}
 	return "", errTypeNotSupport
 }
@@ -75,7 +74,8 @@ func unmarshalInner(o string) interface{} {
 		return o[1] == 't'
 	case JSONPrefix:
 		return SerializedJSON(o[1:])
-	case MapHolderPrefix:
+	case MapKeysSeparator:
+		// seems useless...
 		return strings.Split(o, "@")[1:]
 	case FixPointPrefix:
 		ret, err := common.UnmarshalFixed(o[1:])
@@ -89,7 +89,7 @@ func unmarshalInner(o string) interface{} {
 
 // Unmarshal unmarshal value string to go types
 func Unmarshal(o string) interface{} {
-	idx := strings.LastIndex(o, ApplicationSeparator)
+	idx := strings.LastIndex(o, RAMOwnerSeparator)
 	if idx == -1 {
 		return unmarshalInner(o)
 	}
@@ -98,7 +98,7 @@ func Unmarshal(o string) interface{} {
 
 // UnmarshalWithExtra unmarshal value string to go types
 func UnmarshalWithExtra(o string) (interface{}, string) {
-	idx := strings.LastIndex(o, ApplicationSeparator)
+	idx := strings.LastIndex(o, RAMOwnerSeparator)
 	if idx == -1 {
 		return unmarshalInner(o), ""
 	}

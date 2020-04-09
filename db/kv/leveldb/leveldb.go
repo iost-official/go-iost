@@ -61,13 +61,27 @@ func (d *DB) Delete(key []byte) error {
 
 // Keys returns the list of key prefixed with prefix
 func (d *DB) Keys(prefix []byte) ([][]byte, error) {
-	iter := d.db.NewIterator(util.BytesPrefix(prefix), nil)
-	keys := make([][]byte, 0)
+	queryRange := util.BytesPrefix(prefix)
+	return d.keysByRange(queryRange, 0)
+}
 
+// Keys returns the list of key prefixed with prefix
+func (d *DB) KeysByRange(from []byte, to []byte, limit int) ([][]byte, error) {
+	// [from, to)
+	queryRange := &util.Range{Start: from, Limit: to}
+	return d.keysByRange(queryRange, limit)
+}
+
+func (d *DB) keysByRange(queryRange *util.Range, limit int) ([][]byte, error) {
+	iter := d.db.NewIterator(queryRange, nil)
+	keys := make([][]byte, 0)
 	for iter.Next() {
 		key := make([]byte, len(iter.Key()))
 		copy(key, iter.Key())
 		keys = append(keys, key)
+		if limit > 0 && len(keys) >= limit {
+			break
+		}
 	}
 	iter.Release()
 	err := iter.Error()

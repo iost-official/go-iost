@@ -2,6 +2,8 @@ package db
 
 import (
 	"fmt"
+	"sort"
+	"strings"
 	"sync"
 
 	"github.com/iost-official/go-iost/db/kv"
@@ -26,7 +28,7 @@ type MVCCDB interface {
 	Put(table string, key string, value string) error
 	Del(table string, key string) error
 	Has(table string, key string) (bool, error)
-	Keys(table string, prefix string) ([]string, error)
+	KeysByRange(table string, from string, to string, limit int) ([]string, error)
 	Checkout(t string) bool
 	Commit(t string)
 	CurrentTag() string
@@ -262,26 +264,54 @@ func (m *CacheMVCCDB) Has(table string, key string) (bool, error) {
 }
 
 // Keys returns the list of key prefixed with prefix in the table
-func (m *CacheMVCCDB) Keys(table string, prefix string) ([]string, error) {
-	//if !m.isValidTable(table) {
-	//	return nil, ErrTableNotValid
-	//}
-	//p := []byte(table + string(SEPARATOR) + prefix)
-	//m.stagerw.RLock()
-	//vlist := m.stage.Keys(p)
-	//m.stagerw.RUnlock()
-	//keys, err := m.storage.Keys(p)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//// TODO use iterator instead of keys
-	//for key := range keys {
-	//
-	//}
-	//	if !ok {
-	//		return nil, error.New("can't assert Item type")
-	//	}
-	return nil, nil
+func (m *CacheMVCCDB) KeysByRange(table string, from string, to string, limit int) ([]string, error) {
+	if !m.isValidTable(table) {
+		return nil, ErrTableNotValid
+	}
+
+	var deletedKeys []string
+	var cachedKeys []string
+	for _, v := range m.stage.All([]byte("")) {
+		item, ok := v.(*Item)
+		if !ok {
+			continue
+		}
+		if !(from <= item.key && item.key < to) {
+			continue
+		}
+		if item.deleted {
+			deletedKeys = append(deletedKeys, item.key)
+		} else {
+			cachedKeys = append(cachedKeys, item.key)
+		}
+	}
+
+	fromBytes := []byte(table + string(SEPARATOR) + from)
+	toBytes := []byte(table + string(SEPARATOR) + to)
+	keys, err := m.storage.KeysByRange(fromBytes, toBytes, limit)
+	if err != nil {
+		return nil, err
+	}
+	results := make([]string, 0, len(keys)+len(cachedKeys))
+	for _, item := range keys {
+		keyWithoutPrefix := strings.TrimPrefix(string(item), table+string(SEPARATOR))
+		deleted := false
+		for _, s := range deletedKeys {
+			if s == keyWithoutPrefix {
+				deleted = true
+				break
+			}
+		}
+		if !deleted {
+			results = append(results, keyWithoutPrefix)
+		}
+	}
+	results = append(results, cachedKeys...)
+	sort.Strings(results)
+	if len(results) > limit {
+		results = results[:limit]
+	}
+	return results, nil
 }
 
 // Checkout will checkout the specify tag of mvccdb
