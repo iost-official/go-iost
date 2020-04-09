@@ -333,6 +333,19 @@ func (mr *MockApiServiceServerMockRecorder) GetVoterBonus(arg0, arg1 interface{}
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoterBonus", reflect.TypeOf((*MockApiServiceServer)(nil).GetVoterBonus), arg0, arg1)
 }
 
+// ListContractStorage mocks base method
+func (m *MockApiServiceServer) ListContractStorage(arg0 context.Context, arg1 *pb.ListContractStorageRequest) (*pb.ListContractStorageResponse, error) {
+	ret := m.ctrl.Call(m, "ListContractStorage", arg0, arg1)
+	ret0, _ := ret[0].(*pb.ListContractStorageResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// ListContractStorage indicates an expected call of ListContractStorage
+func (mr *MockApiServiceServerMockRecorder) ListContractStorage(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListContractStorage", reflect.TypeOf((*MockApiServiceServer)(nil).ListContractStorage), arg0, arg1)
+}
+
 // SendTransaction mocks base method
 func (m *MockApiServiceServer) SendTransaction(arg0 context.Context, arg1 *pb.TransactionRequest) (*pb.SendTransactionResponse, error) {
 	ret := m.ctrl.Call(m, "SendTransaction", arg0, arg1)

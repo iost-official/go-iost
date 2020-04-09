@@ -130,6 +130,13 @@ service ApiService {
         };
     }
 
+    rpc ListContractStorage (ListContractStorageRequest) returns (ListContractStorageResponse) {
+        option (google.api.http) = {
+            post: "/listContractStorage"
+            body: "*"
+        };
+    }
+
     // get contract fields storage
     rpc GetContractStorageFields (GetContractStorageFieldsRequest) returns (GetContractStorageFieldsResponse) {
         option (google.api.http) = {
@@ -747,6 +754,43 @@ message GetContractStorageFieldsRequest {
 message GetContractStorageFieldsResponse {
     // the fields.
     repeated string fields = 1;
+    // block hash
+    string block_hash = 2;
+    // block number
+    int64 block_number = 3;
+}
+
+message ListContractStorageRequest {
+    // contract id
+    string id = 1;
+
+    // Optional. keys will be in [from, to) and prefixed with `prefix`
+    string from = 2;
+    string to = 3;
+    string prefix = 4;
+
+    enum StorageType {
+        // written by storage.put(..., ...)
+        KV = 0;
+        // written by storage.mapPut(..., ..., ...)
+        MAP = 1;
+    }
+    StorageType storageType = 5;
+    // max count to return. up to 100
+    int64 limit = 6;
+    // get data by longest chain's head block or last irreversible block
+    bool by_longest_chain = 7;
+}
+
+
+message ListContractStorageResponse {
+    message Data {
+        // the key in StateDB
+        string key = 1;
+        // the value from StateDB
+        string value = 2;
+    }
+    repeated Data datas = 1;
     // block hash
     string block_hash = 2;
     // block number

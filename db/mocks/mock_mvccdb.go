@@ -141,17 +141,17 @@ func (mr *MockMVCCDBMockRecorder) Has(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Has", reflect.TypeOf((*MockMVCCDB)(nil).Has), arg0, arg1)
 }
 
-// Keys mocks base method
-func (m *MockMVCCDB) Keys(arg0, arg1 string) ([]string, error) {
-	ret := m.ctrl.Call(m, "Keys", arg0, arg1)
+// KeysByRange mocks base method
+func (m *MockMVCCDB) KeysByRange(arg0, arg1, arg2 string, arg3 int) ([]string, error) {
+	ret := m.ctrl.Call(m, "KeysByRange", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].([]string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// Keys indicates an expected call of Keys
-func (mr *MockMVCCDBMockRecorder) Keys(arg0, arg1 interface{}) *gomock.Call {
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Keys", reflect.TypeOf((*MockMVCCDB)(nil).Keys), arg0, arg1)
+// KeysByRange indicates an expected call of KeysByRange
+func (mr *MockMVCCDBMockRecorder) KeysByRange(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "KeysByRange", reflect.TypeOf((*MockMVCCDB)(nil).KeysByRange), arg0, arg1, arg2, arg3)
 }
 
 // Put mocks base method

@@ -5,10 +5,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"github.com/syndtr/goleveldb/leveldb/util"
 	"math"
 	"reflect"
 	"sort"
 	"strconv"
+	"strings"
 	"time"
 
 	simplejson "github.com/bitly/go-simplejson"
@@ -476,15 +478,9 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 	default:
 		value, _ = h.GlobalMapGet(req.GetId(), req.GetKey(), req.GetField())
 	}
-	var data string
-	if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
-		data = value.(string)
-	} else {
-		bytes, err := json.Marshal(value)
-		if err != nil {
-			return nil, fmt.Errorf("cannot unmarshal %v", value)
-		}
-		data = string(bytes)
+	data, err := formatInternalValue(value)
+	if err != nil {
+		return nil, err
 	}
 	return &rpcpb.GetContractStorageResponse{
 		Data:        data,
@@ -516,14 +512,9 @@ func (as *APIService) GetBatchContractStorage(ctx context.Context, req *rpcpb.Ge
 		default:
 			value, _ = h.GlobalMapGet(req.GetId(), keyField.Key, keyField.Field)
 		}
-		if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
-			data = value.(string)
-		} else {
-			bytes, err := json.Marshal(value)
-			if err != nil {
-				return nil, fmt.Errorf("cannot unmarshal %v", value)
-			}
-			data = string(bytes)
+		data, err := formatInternalValue(value)
+		if err != nil {
+			return nil, err
 		}
 		datas = append(datas, data)
 	}
@@ -550,6 +541,74 @@ func (as *APIService) GetContractStorageFields(ctx context.Context, req *rpcpb.G
 		BlockHash:   common.Base58Encode(bcn.HeadHash()),
 		BlockNumber: bcn.Head.Number,
 	}, nil
+}
+
+// nolint: gocyclo
+func (as *APIService) ListContractStorage(ctx context.Context, req *rpcpb.ListContractStorageRequest) (*rpcpb.ListContractStorageResponse, error) {
+	if req.Id == "" {
+		return nil, fmt.Errorf("invalid contract id")
+	}
+	if req.Limit > 100 {
+		return nil, fmt.Errorf("invalid limit in request. Max: 500")
+	}
+	limit := req.Limit
+	if limit == 0 {
+		limit = 100
+	}
+	var bcn *blockcache.BlockCacheNode
+	if req.ByLongestChain {
+		bcn = as.bc.Head()
+	} else {
+		bcn = as.bc.LinkedRoot()
+	}
+	mvcc, err := as.getStateDBByBlock(bcn)
+	if err != nil {
+		return nil, err
+	}
+	var prefix string
+	if req.StorageType == rpcpb.ListContractStorageRequest_KV {
+		prefix = database.BasicPrefix + req.Id + database.Separator
+	} else {
+		prefix = database.MapPrefix + req.Id + database.Separator
+	}
+	queryRange := util.BytesPrefix([]byte(prefix + req.Prefix))
+	if req.From != "" && (prefix+req.From) > string(queryRange.Start) {
+		queryRange.Start = []byte(prefix + req.From)
+	}
+	if req.To != "" && (prefix+req.To) < string(queryRange.Limit) {
+		queryRange.Limit = []byte(prefix + req.To)
+	}
+	keys, err := mvcc.KeysByRange(database.StateTable, string(queryRange.Start),
+		string(queryRange.Limit), int(limit))
+	if err != nil {
+		return nil, err
+	}
+	results := &rpcpb.ListContractStorageResponse{
+		BlockHash:   common.Base58Encode(bcn.HeadHash()),
+		BlockNumber: bcn.Head.Number,
+	}
+	for _, k := range keys {
+		value, err := mvcc.Get(database.StateTable, k)
+		if err != nil {
+			return nil, err
+		}
+		var res interface{}
+		if (req.StorageType == rpcpb.ListContractStorageRequest_MAP) && strings.HasPrefix(value, database.MapKeysSeparator) {
+			// map keys
+			res = strings.Split(value, database.MapKeysSeparator)[1:]
+		} else {
+			res = database.Unmarshal(value)
+		}
+		value, err = formatInternalValue(res)
+		if err != nil {
+			return nil, err
+		}
+		results.Datas = append(results.Datas, &rpcpb.ListContractStorageResponse_Data{
+			Key:   strings.TrimPrefix(k, prefix),
+			Value: value,
+		})
+	}
+	return results, nil
 }
 
 func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
@@ -601,7 +660,14 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 	if err != nil {
 		return nil, err
 	}
-	as.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
+	if t.Time < time.Now().UnixNano() {
+		as.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
+	} else {
+		waitTime := time.Until(time.Unix(0, t.Time))
+		time.AfterFunc(waitTime, func() {
+			as.p2pService.Broadcast(t.Encode(), p2p.PublishTx, p2p.NormalMessage)
+		})
+	}
 	return ret, nil
 }
 
@@ -859,9 +925,9 @@ func (as *APIService) GetTokenInfo(ctx context.Context, req *rpcpb.GetTokenInfoR
 	return ret, nil
 }
 
-func (as *APIService) getStateDBVisitorByBlock(bcn *blockcache.BlockCacheNode) (db *database.Visitor, err error) {
-	stateDB := as.stateDB.Fork()
-	ok := stateDB.Checkout(string(bcn.HeadHash()))
+func (as *APIService) getStateDBByBlock(bcn *blockcache.BlockCacheNode) (db db.MVCCDB, err error) {
+	db = as.stateDB.Fork()
+	ok := db.Checkout(string(bcn.HeadHash()))
 	if !ok {
 		b2s := func(x *blockcache.BlockCacheNode) string {
 			return fmt.Sprintf("b58 hash %v time %v height %v witness %v", common.Base58Encode(x.HeadHash()), x.Head.Time,
@@ -870,7 +936,12 @@ func (as *APIService) getStateDBVisitorByBlock(bcn *blockcache.BlockCacheNode) (
 		err = fmt.Errorf("db checkout failed. b58 hash %v, head block %v, li block %v", common.Base58Encode(bcn.HeadHash()),
 			b2s(as.bc.Head()), b2s(as.bc.LinkedRoot()))
 	}
-	db = database.NewVisitor(0, stateDB, bcn.Head.Rules())
+	return
+}
+
+func (as *APIService) getStateDBVisitorByBlock(bcn *blockcache.BlockCacheNode) (dbVisitor *database.Visitor, err error) {
+	stateDB, err := as.getStateDBByBlock(bcn)
+	dbVisitor = database.NewVisitor(0, stateDB, bcn.Head.Rules())
 	return
 }
 
@@ -915,4 +986,18 @@ func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemFixed, longe
 		}
 	}
 	return unfrozen, stillFrozen
+}
+
+func formatInternalValue(value interface{}) (data string, err error) {
+	if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
+		data = value.(string)
+	} else {
+		var bytes []byte
+		bytes, err = json.Marshal(value)
+		if err != nil {
+			return "", fmt.Errorf("cannot unmarshal %v", value)
+		}
+		data = string(bytes)
+	}
+	return
 }

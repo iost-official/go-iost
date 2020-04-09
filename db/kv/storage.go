@@ -20,6 +20,7 @@ type StorageBackend interface {
 	Has(key []byte) (bool, error)
 	Delete(key []byte) error
 	Keys(prefix []byte) ([][]byte, error)
+	KeysByRange(from []byte, to []byte, limit int) ([][]byte, error)
 	BeginBatch() error
 	CommitBatch() error
 	Size() (int64, error)

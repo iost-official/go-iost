@@ -9,13 +9,13 @@ It translates gRPC into RESTful JSON APIs.
 package rpcpb
 
 import (
+	"context"
 	"io"
 	"net/http"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/grpc-ecosystem/grpc-gateway/utilities"
-	"golang.org/x/net/context"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/grpclog"
@@ -572,6 +572,23 @@ func request_ApiService_GetBatchContractStorage_0(ctx context.Context, marshaler
 	}
 
 	msg, err := client.GetBatchContractStorage(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
+	return msg, metadata, err
+
+}
+
+func request_ApiService_ListContractStorage_0(ctx context.Context, marshaler runtime.Marshaler, client ApiServiceClient, req *http.Request, pathParams map[string]string) (proto.Message, runtime.ServerMetadata, error) {
+	var protoReq ListContractStorageRequest
+	var metadata runtime.ServerMetadata
+
+	newReader, berr := utilities.IOReaderFactory(req.Body)
+	if berr != nil {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", berr)
+	}
+	if err := marshaler.NewDecoder(newReader()).Decode(&protoReq); err != nil && err != io.EOF {
+		return nil, metadata, status.Errorf(codes.InvalidArgument, "%v", err)
+	}
+
+	msg, err := client.ListContractStorage(ctx, &protoReq, grpc.Header(&metadata.HeaderMD), grpc.Trailer(&metadata.TrailerMD))
 	return msg, metadata, err
 
 }
@@ -1164,6 +1181,26 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 
 	})
 
+	mux.Handle("POST", pattern_ApiService_ListContractStorage_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
+		ctx, cancel := context.WithCancel(req.Context())
+		defer cancel()
+		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
+		rctx, err := runtime.AnnotateContext(ctx, mux, req)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+		resp, md, err := request_ApiService_ListContractStorage_0(rctx, inboundMarshaler, client, req, pathParams)
+		ctx = runtime.NewServerMetadataContext(ctx, md)
+		if err != nil {
+			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
+			return
+		}
+
+		forward_ApiService_ListContractStorage_0(ctx, mux, outboundMarshaler, w, req, resp, mux.GetForwardResponseOptions()...)
+
+	})
+
 	mux.Handle("POST", pattern_ApiService_GetContractStorageFields_0, func(w http.ResponseWriter, req *http.Request, pathParams map[string]string) {
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
@@ -1308,55 +1345,57 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 }
 
 var (
-	pattern_ApiService_GetNodeInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getNodeInfo"}, ""))
+	pattern_ApiService_GetNodeInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getNodeInfo"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetChainInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getChainInfo"}, ""))
+	pattern_ApiService_GetChainInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getChainInfo"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetRAMInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getRAMInfo"}, ""))
+	pattern_ApiService_GetRAMInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getRAMInfo"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetTxByHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"getTxByHash", "hash"}, ""))
+	pattern_ApiService_GetTxByHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"getTxByHash", "hash"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetTxReceiptByTxHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"getTxReceiptByTxHash", "hash"}, ""))
+	pattern_ApiService_GetTxReceiptByTxHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1}, []string{"getTxReceiptByTxHash", "hash"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetBlockByHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getBlockByHash", "hash", "complete"}, ""))
+	pattern_ApiService_GetBlockByHash_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getBlockByHash", "hash", "complete"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetBlockByNumber_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getBlockByNumber", "number", "complete"}, ""))
+	pattern_ApiService_GetBlockByNumber_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getBlockByNumber", "number", "complete"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetAccount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getAccount", "name", "by_longest_chain"}, ""))
+	pattern_ApiService_GetAccount_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getAccount", "name", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetTokenBalance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getTokenBalance", "account", "token", "by_longest_chain"}, ""))
+	pattern_ApiService_GetTokenBalance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getTokenBalance", "account", "token", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetToken721Balance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getToken721Balance", "account", "token", "by_longest_chain"}, ""))
+	pattern_ApiService_GetToken721Balance_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getToken721Balance", "account", "token", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetToken721Metadata_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getToken721Metadata", "token", "token_id", "by_longest_chain"}, ""))
+	pattern_ApiService_GetToken721Metadata_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getToken721Metadata", "token", "token_id", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetToken721Owner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getToken721Owner", "token", "token_id", "by_longest_chain"}, ""))
+	pattern_ApiService_GetToken721Owner_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2, 1, 0, 4, 1, 5, 3}, []string{"getToken721Owner", "token", "token_id", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetGasRatio_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getGasRatio"}, ""))
+	pattern_ApiService_GetGasRatio_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getGasRatio"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetProducerVoteInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getProducerVoteInfo", "account", "by_longest_chain"}, ""))
+	pattern_ApiService_GetProducerVoteInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getProducerVoteInfo", "account", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetContract_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getContract", "id", "by_longest_chain"}, ""))
+	pattern_ApiService_GetContract_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getContract", "id", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetContractVote_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getContractVote", "id", "by_longest_chain"}, ""))
+	pattern_ApiService_GetContractVote_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getContractVote", "id", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorage"}, ""))
+	pattern_ApiService_GetContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorage"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetBatchContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getBatchContractStorage"}, ""))
+	pattern_ApiService_GetBatchContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getBatchContractStorage"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetContractStorageFields_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorageFields"}, ""))
+	pattern_ApiService_ListContractStorage_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"listContractStorage"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_SendTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"sendTx"}, ""))
+	pattern_ApiService_GetContractStorageFields_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"getContractStorageFields"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_ExecTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"execTx"}, ""))
+	pattern_ApiService_SendTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"sendTx"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_Subscribe_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"subscribe"}, ""))
+	pattern_ApiService_ExecTransaction_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"execTx"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetVoterBonus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getVoterBonus", "name", "by_longest_chain"}, ""))
+	pattern_ApiService_Subscribe_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0}, []string{"subscribe"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetCandidateBonus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getCandidateBonus", "name", "by_longest_chain"}, ""))
+	pattern_ApiService_GetVoterBonus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getVoterBonus", "name", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 
-	pattern_ApiService_GetTokenInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getTokenInfo", "symbol", "by_longest_chain"}, ""))
+	pattern_ApiService_GetCandidateBonus_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getCandidateBonus", "name", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
+
+	pattern_ApiService_GetTokenInfo_0 = runtime.MustPattern(runtime.NewPattern(1, []int{2, 0, 1, 0, 4, 1, 5, 1, 1, 0, 4, 1, 5, 2}, []string{"getTokenInfo", "symbol", "by_longest_chain"}, "", runtime.AssumeColonVerbOpt(true)))
 )
 
 var (
@@ -1395,6 +1434,8 @@ var (
 	forward_ApiService_GetContractStorage_0 = runtime.ForwardResponseMessage
 
 	forward_ApiService_GetBatchContractStorage_0 = runtime.ForwardResponseMessage
+
+	forward_ApiService_ListContractStorage_0 = runtime.ForwardResponseMessage
 
 	forward_ApiService_GetContractStorageFields_0 = runtime.ForwardResponseMessage
 
