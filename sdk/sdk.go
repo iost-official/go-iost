@@ -346,6 +346,22 @@ func (s *IOSTDevSDK) SendTransaction(signedTx *rpcpb.TransactionRequest) (string
 	return resp.Hash, nil
 }
 
+// ExecTransaction send raw transaction to server
+func (s *IOSTDevSDK) ExecTransaction(signedTx *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
+	if s.rpcConn == nil {
+		if err := s.Connect(); err != nil {
+			return nil, err
+		}
+		defer s.CloseConn()
+	}
+	client := rpcpb.NewApiServiceClient(s.rpcConn)
+	resp, err := client.ExecTransaction(context.Background(), signedTx)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
 ////////////////////////////////////// transaction related /////////////////////////////////
 
 // CreateTxFromActions ...
@@ -435,6 +451,20 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 		}
 	}
 	return fmt.Errorf("exceeded max retry times")
+}
+
+func (s *IOSTDevSDK) TryTx(tx *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
+	signedTx, err := s.SignTx(tx, s.signAlgo)
+	if err != nil {
+		return nil, fmt.Errorf("sign tx error %v", err)
+	}
+	err = VerifySignature(signedTx)
+	if err != nil {
+		return nil, err
+	}
+	s.log("Trying transaction:")
+	s.log(MarshalTextString(signedTx))
+	return s.ExecTransaction(signedTx)
 }
 
 // SendTx send transaction and check result if sdk.checkResult is set
