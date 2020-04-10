@@ -128,14 +128,22 @@ func checkTxTime(tx *rpcpb.TransactionRequest) error {
 	return nil
 }
 
-func sendTxGetHash(tx *rpcpb.TransactionRequest) (string, error) {
-	if err := InitAccount(); err != nil {
-		return "", err
+func prepareTx(tx *rpcpb.TransactionRequest) error {
+	if err := LoadAndSetAccountForSDK(iwalletSDK); err != nil {
+		return err
 	}
 	if err := handleMultiSig(tx, signatureFiles, signKeyFiles, asPublisherSign); err != nil {
-		return "", err
+		return err
 	}
 	if err := checkTxTime(tx); err != nil {
+		return err
+	}
+	return nil
+}
+
+func sendTxGetHash(tx *rpcpb.TransactionRequest) (string, error) {
+	err := prepareTx(tx)
+	if err != nil {
 		return "", err
 	}
 	if !iwalletSDK.Connected() {
@@ -234,12 +242,7 @@ func LoadKeyPair(name string) (*account.KeyPair, error) {
 	return sdk.LoadKeyPair(privKeyFile, signAlgo)
 }
 
-// InitAccount load account from file
-func InitAccount() error {
-	return LoadAndSetAccountForSDK(iwalletSDK)
-}
-
-// LoadAndSetAccountForSDK ...
+// LoadAndSetAccountForSDK load account from file
 func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
 	a, err := loadAccountByName(accountName, true)
 	if err != nil {
@@ -303,6 +306,10 @@ func SaveAccount(name string, kp *account.KeyPair) error {
 }
 
 func argsFormatter(data string) (string, error) {
+	if !strings.ContainsAny(data, "[]{}'\",") {
+		// we treat xxx as '["xxx"]'
+		return "[\"" + data + "\"]", nil
+	}
 	js, err := simplejson.NewJson([]byte(data))
 	if err != nil {
 		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)

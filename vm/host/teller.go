@@ -137,21 +137,6 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (paidGas *common.Fixed, e
 				return nil, fmt.Errorf("pay gas cost failed: %v %v %v", err, payer, gas)
 			}
 
-			var enableReferrerReward = false
-			if enableReferrerReward {
-				// reward 15% gas to account referrer
-				if !t.h.IsContract(payer) {
-					acc, _ := ReadAuth(t.h.DB(), payer)
-					if acc == nil {
-						ilog.Fatalf("invalid account %v", payer)
-					}
-					if acc.Referrer != "" && t.IsProducer(acc.Referrer) {
-						reward := gas.TimesF(0.1)
-						t.h.ChangeTGas(acc.Referrer, reward, true)
-					}
-				}
-			}
-
 		}
 
 		if payer == t.h.Context().Value("publisher").(string) {

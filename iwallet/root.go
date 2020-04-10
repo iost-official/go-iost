@@ -3,6 +3,7 @@ package iwallet
 import (
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/mitchellh/go-homedir"
@@ -26,6 +27,10 @@ var rootCmd = &cobra.Command{
 		startTime = time.Now()
 		iwalletSDK = sdk.NewIOSTDevSDK()
 		iwalletSDK.SetChainID(chainID)
+		if !strings.Contains(server, ":") {
+			// use default port
+			server += ":30002"
+		}
 		iwalletSDK.SetServer(server)
 		iwalletSDK.SetVerbose(verbose)
 		iwalletSDK.SetSignAlgo(signAlgo)
@@ -72,6 +77,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&checkResult, "check_result", "", true, "check publish/call status after sending to chain")
+	rootCmd.PersistentFlags().BoolVarP(&tryTx, "try_tx", "", false, "Executes a new call immediately without creating a transaction on the block chain")
 	rootCmd.PersistentFlags().Float32VarP(&checkResultDelay, "check_result_delay", "", 3, "rpc checking will occur at [checkResultDelay] seconds after sending to chain.")
 	rootCmd.PersistentFlags().Int32VarP(&checkResultMaxRetry, "check_result_max_retry", "", 30, "max times to call grpc to check tx status")
 	rootCmd.PersistentFlags().StringVarP(&signAlgo, "sign_algo", "", "ed25519", "sign algorithm")
@@ -145,6 +151,7 @@ var (
 	signatureFiles  []string
 	asPublisherSign bool
 
+	tryTx               bool
 	checkResult         bool
 	checkResultDelay    float32
 	checkResultMaxRetry int32
