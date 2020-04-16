@@ -109,5 +109,5 @@ debug: build
 
 clear_debug_file:
 	rm -rf storage
-	rm -f p2p/priv.kye
+	rm -f p2p/priv.key
 	rm -f p2p/routing.table

@@ -7,6 +7,7 @@ import (
 	"math"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 func checkAmount(amount string, token string) error {
@@ -77,6 +78,15 @@ func checkBadAction(action *Action) error { // nolint:gocyclo
 		}
 		if f.ShrinkDecimal().Decimal > 2 {
 			return fmt.Errorf("decimal should not exceed 2: %v", data)
+		}
+	}
+	if action.Contract == "system.iost" && (action.ActionName == "setCode" || action.ActionName == "updateCode") {
+		// TODO: this is an adhoc fix, it should be fixed in js/v8 later
+		invalidKeyWords := []string{"Intl"}
+		for _, item := range invalidKeyWords {
+			if strings.Contains(action.Data, item) {
+				return fmt.Errorf("invalid word in contract: %v", item)
+			}
 		}
 	}
 	return nil
