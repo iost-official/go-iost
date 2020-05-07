@@ -70,13 +70,6 @@
             "amountLimit": []
         },
         {
-            "name": "forceUnregister",
-            "args": [
-                "string"
-            ],
-            "amountLimit": []
-        },
-        {
             "name": "unregister",
             "args": [
                 "string"
