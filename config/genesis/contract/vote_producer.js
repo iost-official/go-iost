@@ -244,21 +244,6 @@ class VoteContract {
         blockchain.receipt(JSON.stringify([account]));
     }
 
-    // force approve remove account from producer list
-    forceUnregister(account) {
-        const admin = storage.get("adminID");
-        this._requireAuth(admin, ADMIN_PERMISSION);
-        if (!storage.mapHas("producerTable", account)) {
-            throw new Error("producer not exists");
-        }
-        const pro = this._mapGet("producerTable", account);
-        // will clear votes and score of the producer on stat
-        pro.status = STATUS_UNAPPLY_APPROVED;
-        this._mapPut("producerTable", account, pro);
-        this._removeFromProducerMap(account, pro);
-        blockchain.receipt(JSON.stringify([account]));
-    }
-
     unregister(account) {
         this._requireAuthList(this._getAccountList(account), VOTE_PERMISSION);
         const pro = this._mapGet("producerTable", account);
