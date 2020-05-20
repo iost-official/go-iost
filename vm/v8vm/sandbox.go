@@ -42,6 +42,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 	"unsafe"
 
 	"strings"
@@ -267,6 +268,13 @@ rs;
 
 // Execute prepared code, return results, gasUsed
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
+	now := time.Now()
+	if !sbx.host.Deadline().After(now) {
+		// the deadline is already passed
+		// we just even need not run the code
+		// the "execution killed" string will be matched and converted to a timeout err outside
+		return "", 0, errors.New("execution killed")
+	}
 	cCode := newCStr(preparedCode)
 	defer C.free(unsafe.Pointer(cCode.data))
 	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
