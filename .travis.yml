@@ -9,7 +9,7 @@ matrix:
   include:
   - os: osx
     osx_image: xcode11.2
-    go: "1.14"
+    go: "1.13"
     env: JOB=osx_test
     before_install:
     - brew update
