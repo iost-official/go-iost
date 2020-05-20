@@ -2,7 +2,7 @@ GO = go
 GO_BUILD = go build -mod vendor
 GO_TEST = go test -mod vendor -race -coverprofile=coverage.txt -covermode=atomic
 
-VERSION = 3.3.3
+VERSION = 3.3.4
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -109,5 +109,5 @@ debug: build
 
 clear_debug_file:
 	rm -rf storage
-	rm -f p2p/priv.kye
+	rm -f p2p/priv.key
 	rm -f p2p/routing.table
