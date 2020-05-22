@@ -519,6 +519,9 @@
 
     // Numbers and dates
     Date = null;
+    if (typeof Intl !== 'undefined') {
+        Intl = null;
+    }
 
     // Text processing
     RegExp = null;

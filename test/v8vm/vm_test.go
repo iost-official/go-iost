@@ -900,6 +900,11 @@ func TestV8Safe(t *testing.T) {
 	if err == nil {
 		t.Fatalf("LoadAndCall V8Safe CVE_2018_6056 should return error")
 	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "Test_Intl")
+	if err == nil {
+		t.Fatalf("LoadAndCall V8Safe Test_Intl should return error")
+	}
 }
 
 func TestEngine_JSON(t *testing.T) {

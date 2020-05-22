@@ -52,16 +52,21 @@ type PoB struct {
 
 // New init a new PoB.
 func New(conf *common.Config, cBase *chainbase.ChainBase, p2pService p2p.Service) *PoB {
-	// TODO: Move the code to account struct.
 	accSecKey := conf.ACC.SecKey
 	accAlgo := conf.ACC.Algorithm
-	account, err := account.NewKeyPair(common.Base58Decode(accSecKey), crypto.NewAlgorithm(accAlgo))
+
+	producerKeypair, err := account.NewKeyPair(common.Base58Decode(accSecKey), crypto.NewAlgorithm(accAlgo))
 	if err != nil {
 		ilog.Fatalf("NewKeyPair failed, stop the program! err:%v", err)
 	}
+	if accSecKey == "" {
+		ilog.Warn("ProducerInfo: empty seckey in iserver.yml, this node will not produce any blocks")
+	} else {
+		ilog.Warn("ProducerInfo: this node will produce blocks for ", producerKeypair.ReadablePubkey())
+	}
 
 	p := PoB{
-		account:    account,
+		account:    producerKeypair,
 		cBase:      cBase,
 		p2pService: p2pService,
 		txPool:     cBase.TxPool(),
