@@ -1,3 +1,9 @@
+## v3.3.4
+Thu May 28 14:34:58 CST 2020
+- Upgrade Go to 1.14
+- Mining nodes have better logs for troubleshooting
+- Security fixes
+
 ## v3.3.3 
 Fri Apr 10 08:36:50 UTC 2020
 
