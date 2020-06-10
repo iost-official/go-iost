@@ -1,3 +1,7 @@
+## v3.3.5
+Wed Jun 10 13:28:27 CST 2020
+- Hotfix for a bug where some corner case tx cannot be confirmed
+
 ## v3.3.4
 Thu May 28 14:34:58 CST 2020
 - Upgrade Go to 1.14
