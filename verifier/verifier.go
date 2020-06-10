@@ -379,7 +379,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 			to = timeout / 2
 		}
 	} else {
-		to = timeout * 2
+		to = timeout * 50
 	}
 	err := isolator.PrepareTx(t, to)
 	if err != nil {
