@@ -5,16 +5,59 @@ run:
 linters-settings:
   gocyclo:
     min-complexity: 15
+  gocritic:
+    disabled-checks:
+      - ifElseChain
+      - singleCaseSwitch
 
 linters:
   enable:
-    - vet
+    - govet
     - gocyclo
     - golint
+    - gosimple
     - ineffassign
     - misspell
     - deadcode
+    - staticcheck
+    - structcheck
+    - typecheck
     - unconvert
     - gofmt
+    - unused
+    - varcheck
+    - asciicheck
+    - bodyclose
+    - depguard
+    - dogsled
+    - gocritic
+    - goimports
+    - gomodguard
+    - goprintffuncname
+    - interfacer
+    - rowserrcheck
+    - scopelint
+    - testpackage
+    - whitespace
   disable:
     - errcheck
+    - unparam
+    - nolintlint
+    - gomnd
+    - goerr113
+    - stylecheck
+    - wsl
+    - nakedret
+    - nestif
+    - prealloc
+    - dupl
+    - funlen
+    - maligned
+    - lll
+    - gosec
+    - gochecknoglobals
+    - godox
+    - godot
+    - gochecknoinits
+    - gocognit
+    - goconst

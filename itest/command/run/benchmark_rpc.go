@@ -3,9 +3,10 @@ package run
 import (
 	"context"
 	"fmt"
-	"github.com/iost-official/go-iost/rpc/pb"
 	"math/rand"
 	"time"
+
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"

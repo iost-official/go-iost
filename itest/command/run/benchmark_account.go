@@ -1,19 +1,21 @@
 package run
 
 import (
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/crypto"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
+	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/crypto"
+
 	"fmt"
+	"math/rand"
+
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
-	"math/rand"
 )
 
 // BenchmarkAccountCommand is the subcommand for benchmark.
@@ -54,7 +56,7 @@ func generateAccountTxs(it *itest.ITest, accounts []*itest.Account, tps int) ([]
 	for num := 0; num < tps; num++ {
 		//tIndex := rand.Intn(15) // signUp 1/3, each other 1/15
 		tIndex := 5 + rand.Intn(10)
-		switch true {
+		switch {
 		case tIndex < 5:
 			// signUp
 			from := accounts[rand.Intn(len(accounts))]

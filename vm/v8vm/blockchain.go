@@ -129,13 +129,13 @@ func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args C.CStr, result *C.CSt
 }
 
 //export goRequireAuth
-func goRequireAuth(cSbx C.SandboxPtr, ID, permission C.CStr, ok *C.bool, gasUsed *C.size_t) *C.char {
+func goRequireAuth(cSbx C.SandboxPtr, id, permission C.CStr, ok *C.bool, gasUsed *C.size_t) *C.char {
 	sbx, sbOk := GetSandbox(cSbx)
 	if !sbOk {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	pubKeyStr := ID.GoString()
+	pubKeyStr := id.GoString()
 	permissionStr := permission.GoString()
 
 	callOk, RequireAuthCost := sbx.host.RequireAuth(pubKeyStr, permissionStr)

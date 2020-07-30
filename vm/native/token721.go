@@ -55,7 +55,6 @@ func getToken721Balance(h *host.Host, tokenSym string, from string) (balance int
 func setToken721Balance(h *host.Host, tokenSym string, from string, balance int64, ramPayer string) (cost contract.Cost) {
 	cost, _ = h.MapPut(Token721BalanceMapPrefix+from, tokenSym, balance, ramPayer)
 	return cost
-
 }
 
 var (

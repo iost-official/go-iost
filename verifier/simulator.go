@@ -164,7 +164,6 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 
 // Compile files
 func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {
-
 	bs, err := ioutil.ReadFile(src + ".js")
 	if err != nil {
 		return nil, err
@@ -228,7 +227,6 @@ func (s *Simulator) CallTx(trx *tx.Tx, publisher string, auth *account.KeyPair) 
 	}
 
 	return s.RunTx(stx)
-
 }
 
 // RunTx run tx with signed tx

@@ -2,6 +2,7 @@ package run
 
 import (
 	"fmt"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"

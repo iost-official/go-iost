@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	"github.com/iost-official/go-iost/core/version"
-	"github.com/iost-official/go-iost/db"
 	"github.com/iost-official/go-iost/vm/database"
 )
 
@@ -36,8 +35,7 @@ func (wl *WitnessList) NetID() []string {
 }
 
 // UpdatePending update pending witness list
-func (wl *WitnessList) UpdatePending(mv db.MVCCDB, rules *version.Rules) error {
-
+func (wl *WitnessList) UpdatePending(mv database.IMultiValue, rules *version.Rules) error {
 	vi := database.NewVisitor(0, mv, rules)
 
 	jwl := database.MustUnmarshal(vi.Get("vote_producer.iost-" + "pendingProducerList"))
@@ -55,8 +53,7 @@ func (wl *WitnessList) UpdatePending(mv db.MVCCDB, rules *version.Rules) error {
 }
 
 // UpdateInfo update pending witness list
-func (wl *WitnessList) UpdateInfo(mv db.MVCCDB, rules *version.Rules) error {
-
+func (wl *WitnessList) UpdateInfo(mv database.IMultiValue, rules *version.Rules) error {
 	wl.WitnessInfo = make([]string, 0)
 	vi := database.NewVisitor(0, mv, rules)
 	for _, v := range wl.PendingWitnessList {

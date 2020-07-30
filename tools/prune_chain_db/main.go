@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/core/block"
 	"os"
+
+	"github.com/iost-official/go-iost/core/block"
 )
 
 func main() {

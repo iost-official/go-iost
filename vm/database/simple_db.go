@@ -1,8 +1,9 @@
 package database
 
 import (
-	"github.com/iost-official/go-iost/account"
 	"os"
+
+	"github.com/iost-official/go-iost/account"
 
 	"io/ioutil"
 
@@ -105,7 +106,6 @@ func (d *SimpleDB) Keys(table string, prefix string) ([]string, error) {
 
 // Save save db data to json file
 func (d *SimpleDB) Save(path string) error {
-
 	d.json.Del("c-system.iost")
 
 	f, err := os.Create(path)
@@ -136,7 +136,6 @@ func (d *SimpleDB) Load(path string) error {
 
 // LoadBlockhead load block info as block.BlockHead from json file
 func LoadBlockhead(path string) (*block.BlockHead, error) {
-
 	json, err := readJSON(path)
 	if err != nil {
 		return nil, err
@@ -159,12 +158,10 @@ func LoadBlockhead(path string) (*block.BlockHead, error) {
 		return nil, err
 	}
 	return bh, nil
-
 }
 
 // LoadTxInfo load tx info as tx.Tx from json file
 func LoadTxInfo(path string) (*tx.Tx, error) {
-
 	json, err := readJSON(path)
 	if err != nil {
 		return nil, err
@@ -231,10 +228,8 @@ func (d *SimpleDB) AddSystem(path string) {
 
 // Commit do nothing
 func (d *SimpleDB) Commit() {
-
 }
 
 // Rollback do nothing
 func (d *SimpleDB) Rollback() {
-
 }

@@ -3,12 +3,13 @@ package luckybet
 import (
 	"context"
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
 	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/test/performance/call"
 
@@ -18,7 +19,7 @@ import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 )
 
 func init() {

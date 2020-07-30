@@ -2,10 +2,10 @@ package iwallet
 
 import (
 	"fmt"
+
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/sdk"
 	"github.com/spf13/cobra"
-
-	"github.com/iost-official/go-iost/rpc/pb"
 )
 
 // callCmd represents the call command that call a contract with given actions.

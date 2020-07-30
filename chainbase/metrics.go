@@ -48,5 +48,4 @@ func (c *ChainBase) metricsController() {
 			return
 		}
 	}
-
 }

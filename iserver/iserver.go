@@ -30,7 +30,6 @@ type IServer struct {
 
 // New returns a iserver application
 func New(conf *common.Config) *IServer {
-
 	tx.ChainID = conf.P2P.ChainID
 
 	cBase, err := chainbase.New(conf)

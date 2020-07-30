@@ -245,5 +245,4 @@ func (b *Block) VerifySelf() error {
 		return fmt.Errorf("Tx len %v unmatch receipt len %v", len(b.Txs), len(b.Receipts))
 	}
 	return nil
-
 }

@@ -146,7 +146,6 @@ func (pm *PeerManager) Start() {
 	go pm.syncRoutingTableLoop()
 	go pm.metricsStatLoop()
 	go pm.findBPLoop()
-
 }
 
 // Stop stops peer manager's loop.
@@ -331,7 +330,6 @@ func (pm *PeerManager) metricsStatLoop() {
 			routingCountGauge.Set(float64(pm.routingTable.Size()), nil)
 		}
 	}
-
 }
 
 // storePeerInfo stores peer information in peerStore and routingTable. It doesn't need lock since the
@@ -354,7 +352,6 @@ func (pm *PeerManager) deletePeerInfo(peerID peer.ID) {
 
 // AddNeighbor starts a peer and adds it to the neighbor list.
 func (pm *PeerManager) AddNeighbor(p *Peer) {
-
 	pm.neighborMutex.Lock()
 	defer pm.neighborMutex.Unlock()
 
@@ -368,7 +365,6 @@ func (pm *PeerManager) AddNeighbor(p *Peer) {
 
 // RemoveNeighbor stops a peer and removes it from the neighbor list.
 func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
-
 	pm.neighborMutex.Lock()
 	defer pm.neighborMutex.Unlock()
 
@@ -578,7 +574,6 @@ func (pm *PeerManager) parseSeeds() {
 			pm.storePeerInfo(peerID, []multiaddr.Multiaddr{addr})
 		}
 	}
-
 }
 
 func (pm *PeerManager) dnsResolve(peerID peer.ID, addr multiaddr.Multiaddr) error {

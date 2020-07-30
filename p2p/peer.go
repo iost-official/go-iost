@@ -110,7 +110,6 @@ func (p *Peer) Stop() {
 }
 
 func (p *Peer) write(m *p2pMessage) error {
-
 	// 5 kB/s
 	deadline := time.Now().Add(time.Duration(len(m.content())/1024/5+3) * time.Second)
 	if err := p.stream.SetWriteDeadline(deadline); err != nil {

@@ -5,10 +5,11 @@ import (
 
 	"fmt"
 
+	"strings"
+
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/host"
-	"strings"
 )
 
 // DomainABIs list of domain abi

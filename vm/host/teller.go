@@ -136,7 +136,6 @@ func (t *Teller) DoPay(witness string, gasRatio int64) (paidGas *common.Fixed, e
 			if err != nil {
 				return nil, fmt.Errorf("pay gas cost failed: %v %v %v", err, payer, gas)
 			}
-
 		}
 
 		if payer == t.h.Context().Value("publisher").(string) {

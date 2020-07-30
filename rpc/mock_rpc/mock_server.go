@@ -13,7 +13,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"google.golang.org/grpc"
 )
 
@@ -99,7 +99,7 @@ func newMockAPI() rpcpb.ApiServiceServer {
 		},
 	}, nil)
 
-	api.EXPECT().GetBlockByHash(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.BlockResponse{
+	expectedBlock := &rpcpb.BlockResponse{
 		Status: rpcpb.BlockResponse_PENDING,
 		Block: &rpcpb.Block{
 			Hash:                "hhh",
@@ -151,61 +151,9 @@ func newMockAPI() rpcpb.ApiServiceServer {
 				},
 			},
 		},
-	}, nil)
-
-	api.EXPECT().GetBlockByNumber(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.BlockResponse{
-		Status: rpcpb.BlockResponse_PENDING,
-		Block: &rpcpb.Block{
-			Hash:                "hhh",
-			Version:             1,
-			ParentHash:          "pppp",
-			TxMerkleHash:        "ttt",
-			TxReceiptMerkleHash: "mmm",
-			Number:              3,
-			Witness:             "bp3",
-			Time:                2342342,
-			GasUsage:            500.2,
-			TxCount:             1,
-			Info: &rpcpb.Block_Info{
-				Mode:       0,
-				Thread:     1,
-				BatchIndex: []int32{},
-			},
-			Transactions: []*rpcpb.Transaction{
-				{
-					Hash:       "xxxxx",
-					Time:       999,
-					Expiration: 20,
-					GasRatio:   1.01,
-					GasLimit:   5.05,
-					Delay:      0,
-					Actions: []*rpcpb.Action{
-						{Contract: "c1", ActionName: "a1", Data: "d1"},
-						{Contract: "c2", ActionName: "a2", Data: "d2"},
-					},
-					Signers:    []string{"s1", "s2"},
-					Publisher:  "publisher",
-					ReferredTx: "ccc",
-					AmountLimit: []*rpcpb.AmountLimit{
-						{Token: "iost", Value: "12.2"},
-						{Token: "10st", Value: "21.1"},
-					},
-					TxReceipt: &rpcpb.TxReceipt{
-						TxHash:     "xxx",
-						GasUsage:   222.1,
-						RamUsage:   map[string]int64{"aaa": 222},
-						StatusCode: rpcpb.TxReceipt_SUCCESS,
-						Message:    "success",
-						Returns:    []string{"aa", "cc"},
-						Receipts: []*rpcpb.TxReceipt_Receipt{
-							{FuncName: "transfer", Content: "aaaa"},
-							{FuncName: "Transfer", Content: "bbbb"},
-						},
-					},
-				},
-			},
-		},
-	}, nil)
+	}
+	api.EXPECT().GetBlockByHash(gomock.Any(), gomock.Any()).AnyTimes().Return(expectedBlock, nil)
+	api.EXPECT().GetBlockByNumber(gomock.Any(), gomock.Any()).AnyTimes().Return(expectedBlock, nil)
 
 	api.EXPECT().GetAccount(gomock.Any(), gomock.Any()).AnyTimes().Return(&rpcpb.Account{
 		Name:    "admin",

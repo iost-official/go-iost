@@ -96,7 +96,6 @@ func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, ge
 		} else {
 			action = "Receive"
 		}
-
 	}
 	ptx, _ := c.txPool.PendingTx()
 	ilog.Infof("%v block - @%v id:%v..., t:%v, num:%v, confirmed:%v, txs:%v, pendingtxs:%v, et:%dms",

@@ -536,6 +536,12 @@
     Uint32Array = null;
     Float32Array = null;
     Float64Array = null;
+    if (typeof BigInt64Array !== 'undefined') {
+      BigInt64Array = null;
+    }
+    if (typeof BigUint64Array !== 'undefined') {
+      BigUint64Array = null;
+    }
 
     // Keyed collections
     Map = null;

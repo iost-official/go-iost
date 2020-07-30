@@ -3,7 +3,7 @@ package itest
 import (
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 )
 
 // Receipt is the transaction receipt object

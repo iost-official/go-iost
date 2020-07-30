@@ -199,7 +199,6 @@ func (m *batcherImpl) Verify(bh *block.BlockHead, db database.IMultiValue, check
 			if errs[i2] == nil {
 				mappers[i2] = mapper.Map()
 			}
-
 		}()
 	}
 	m.wait.Wait()

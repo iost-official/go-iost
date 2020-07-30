@@ -7,11 +7,12 @@ import (
 	"math"
 	"sort"
 
+	"strings"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/vm/database"
 	"github.com/iost-official/go-iost/vm/host"
-	"strings"
 )
 
 var tokenABIs *abiSet
