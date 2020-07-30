@@ -4,10 +4,11 @@ import (
 	"sort"
 
 	"fmt"
+	"strconv"
+
 	"github.com/iost-official/go-iost/core/contract"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/vm/host"
-	"strconv"
 )
 
 var (

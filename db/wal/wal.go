@@ -288,7 +288,6 @@ func (w *WAL) HasDecoder() bool {
 		return true
 	}
 	return false
-
 }
 
 func recoverFromDir(dirpath string, metadata []byte) (*WAL, error) {
@@ -299,7 +298,6 @@ func recoverFromDir(dirpath string, metadata []byte) (*WAL, error) {
 	}
 
 	return w, err
-
 }
 
 // Open opens the WAL at the given snap.

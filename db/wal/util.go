@@ -4,12 +4,13 @@ import (
 	"encoding/binary"
 	"errors"
 	"fmt"
-	"github.com/iost-official/go-iost/ilog"
 	"io"
 	"os"
 	"path/filepath"
 	"sort"
 	"strings"
+
+	"github.com/iost-official/go-iost/ilog"
 )
 
 var errBadWALName = errors.New("bad wal name")

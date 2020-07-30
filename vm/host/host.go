@@ -62,7 +62,6 @@ func NewHost(ctx *Context, db *database.Visitor, rules *version.Rules, monitor M
 	h.Authority = Authority{h: h}
 	h.GasManager = NewGasManager(h)
 	return h
-
 }
 
 // Context get context in host
@@ -73,7 +72,6 @@ func (h *Host) Context() *Context {
 // SetContext set a new context to host
 func (h *Host) SetContext(ctx *Context) {
 	h.ctx = ctx
-
 }
 
 func (h *Host) call(cont, api, jarg string, withAuth bool) ([]interface{}, contract.Cost, error) {
@@ -290,7 +288,6 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 //
 // The given argument txHash is from user's input. So we should Base58Decode it first.
 func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
-
 	hashString := string(common.Base58Decode(txHash))
 	cost := Costs["GetCost"]
 	publisher, deferTxHash := h.db.GetDelaytx(hashString)
@@ -362,7 +359,6 @@ func (h *Host) ReadSettings() {
 	for k, v := range s.Costs {
 		Costs[k] = v
 	}
-
 }
 
 // GetVMFlags return target vm bitwise flags

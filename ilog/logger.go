@@ -172,7 +172,6 @@ func (logger *Logger) write(msg *message) {
 		}(writer)
 	}
 	wg.Wait()
-
 }
 
 func (logger *Logger) flushWriters() {

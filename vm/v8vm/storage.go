@@ -15,8 +15,8 @@ import (
 	"github.com/iost-official/go-iost/core/contract"
 )
 
-// ErrInvalidDbValType error
-var ErrInvalidDbValType = errors.New("invalid db value type")
+// ErrInvalidDBValType error
+var ErrInvalidDBValType = errors.New("invalid db value type")
 
 //export goPut
 func goPut(cSbx C.SandboxPtr, key, val, ramPayer C.CStr, gasUsed *C.size_t) *C.char {
@@ -387,6 +387,6 @@ func dbValToString(val interface{}) (string, error) {
 	case database.SerializedJSON:
 		return string(v), nil
 	default:
-		return "", ErrInvalidDbValType
+		return "", ErrInvalidDBValType
 	}
 }

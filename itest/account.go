@@ -8,12 +8,13 @@ import (
 	"strconv"
 	"sync"
 
+	"strings"
+
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/crypto"
 	"github.com/iost-official/go-iost/ilog"
-	"strings"
 )
 
 // Account is account of user

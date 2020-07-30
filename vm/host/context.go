@@ -14,7 +14,6 @@ type Context struct { // thread unsafe
 
 // NewContext new context based on base
 func NewContext(base *Context) *Context {
-
 	if base != nil {
 		return &Context{
 			base:  base,
@@ -27,7 +26,6 @@ func NewContext(base *Context) *Context {
 		value:  make(map[string]interface{}),
 		gValue: make(map[string]interface{}),
 	}
-
 }
 
 func (c *Context) String() string {
@@ -60,7 +58,6 @@ func (c *Context) Value(key string) (value interface{}) {
 			value = nil
 			break
 		}
-
 	}
 	//ilog.Debugf("get %s -> %v", key, value)
 	return

@@ -1,7 +1,7 @@
 package mvcc
 
 import (
-	"github.com/iost-official/go-iost/db/mvcc/map"
+	mvccmap "github.com/iost-official/go-iost/db/mvcc/map"
 	"github.com/iost-official/go-iost/db/mvcc/trie"
 )
 

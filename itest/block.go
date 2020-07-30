@@ -1,7 +1,7 @@
 package itest
 
 import (
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 )
 
 // Block is the block object

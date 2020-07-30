@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"errors"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
 )

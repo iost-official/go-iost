@@ -6,7 +6,7 @@ import (
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto/pb"
+	sigpb "github.com/iost-official/go-iost/crypto/pb"
 )
 
 // Signature is the signature of some message

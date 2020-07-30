@@ -3,6 +3,7 @@ package merkletree
 import (
 	"encoding/hex"
 	"errors"
+
 	"github.com/iost-official/go-iost/common"
 
 	"math"
@@ -22,7 +23,7 @@ func (m *MerkleTree) Build(data [][]byte) {
 	start := n - 1
 	end := n + int32(len(data)) - 2
 	for {
-		for i := start; i <= end; i = i + 2 {
+		for i := start; i <= end; i += 2 {
 			p := (i - 1) / 2
 			if m.HashList[i+1] == nil {
 				m.HashList[p] = common.Sha3(append(m.HashList[i], m.HashList[i]...))

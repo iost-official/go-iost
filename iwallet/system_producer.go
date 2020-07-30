@@ -6,7 +6,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/sdk"
 )
 

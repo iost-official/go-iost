@@ -225,7 +225,6 @@ func (s *IOSTDevSDK) GetRAMInfo() (*rpcpb.RAMInfoResponse, error) {
 		return nil, err
 	}
 	return value, nil
-
 }
 
 // GetAccountInfo return account info
@@ -327,7 +326,6 @@ func (s *IOSTDevSDK) GetTokenInfo(token string) (*rpcpb.TokenInfo, error) {
 		Symbol:         token,
 		ByLongestChain: s.useLongestChain,
 	})
-
 }
 
 // SendTransaction send raw transaction to server
@@ -366,7 +364,6 @@ func (s *IOSTDevSDK) ExecTransaction(signedTx *rpcpb.TransactionRequest) (*rpcpb
 
 // CreateTxFromActions ...
 func (s *IOSTDevSDK) CreateTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
-
 	txTime := time.Now().UnixNano()
 	expiration := txTime + s.expiration*1e9
 

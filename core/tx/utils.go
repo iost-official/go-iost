@@ -2,11 +2,12 @@ package tx
 
 import (
 	"fmt"
-	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/common"
 	"math"
 	"regexp"
 	"strconv"
+
+	"github.com/bitly/go-simplejson"
+	"github.com/iost-official/go-iost/common"
 )
 
 func checkAmount(amount string, token string) error {

@@ -198,7 +198,7 @@ func (m *CacheMVCCDB) Get(table string, key string) (string, error) {
 		if err != nil {
 			return "", fmt.Errorf("failed to get from storage: %v", err)
 		}
-		return string(v[:]), nil
+		return string(v), nil
 	}
 	i, ok := v.(*Item)
 	if !ok {

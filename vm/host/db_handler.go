@@ -23,7 +23,7 @@ func NewDBHandler(h *Host) DBHandler {
 
 // IsValidKey return error if the key is invalid as state db key or field
 func IsValidKey(key string) error {
-	if len(key) <= 0 || len(key) > 64 {
+	if len(key) == 0 || len(key) > 64 {
 		return fmt.Errorf("key or field length invalid. expected [1, 64], actual %v", len(key))
 	}
 	for _, c := range key {

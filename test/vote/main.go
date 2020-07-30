@@ -3,15 +3,16 @@ package main
 import (
 	"flag"
 	"fmt"
-	"github.com/iost-official/go-iost/sdk"
 	"log"
 	"math/rand"
 	"os"
 	"strings"
 	"time"
 
+	"github.com/iost-official/go-iost/sdk"
+
 	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 
 	"github.com/iost-official/go-iost/iwallet"
 )

@@ -5,13 +5,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/syndtr/goleveldb/leveldb/util"
 	"math"
 	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/syndtr/goleveldb/leveldb/util"
 
 	simplejson "github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/vm"
@@ -435,7 +436,6 @@ func (as *APIService) GetGasRatio(ctx context.Context, req *rpcpb.EmptyRequest) 
 
 // GetProducerVoteInfo returns producers's vote info
 func (as *APIService) GetProducerVoteInfo(ctx context.Context, req *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
-
 	err := checkIDValid(req.Account)
 	if err != nil {
 		return nil, err
@@ -686,7 +686,6 @@ func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.Transactio
 
 // Subscribe used for event.
 func (as *APIService) Subscribe(req *rpcpb.SubscribeRequest, res rpcpb.ApiService_SubscribeServer) error {
-
 	topics := make([]event.Topic, 0)
 	for _, t := range req.Topics {
 		topics = append(topics, event.Topic(t))
@@ -785,7 +784,6 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 				ilog.Errorf("Parsing str %v to float64 failed. err=%v", vm, err)
 				return nil, err
 			}
-
 		}
 		earning := voterCoef*votes - voterMask
 		earning = math.Trunc(earning*1e8) / 1e8

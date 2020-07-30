@@ -1,11 +1,12 @@
 package run
 
 import (
+	"strconv"
+	"time"
+
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/itest"
 	"github.com/urfave/cli"
-	"strconv"
-	"time"
 )
 
 // AccountRoundCommand is the command of account test round

@@ -79,7 +79,7 @@ func main() {
 	host, code := MyInit("simple")
 	//vmPool.LoadAndCall(host, code, "show")
 	var cpuprofile = flag.String("cpuprofile", "", "write cpu profile to file")
-	var times = *flag.Int("times", 0, "write cpu profile to file")
+	var times = *flag.Int("times", 0, "write cpu profile to file") // nolint
 	flag.Parse()
 	// 如果命令行设置了 cpuprofile
 	if *cpuprofile != "" {
@@ -112,5 +112,4 @@ func main() {
 	tps := float64(times) / time.Since(a).Seconds()
 	fmt.Println("time used: ", time.Since(a))
 	fmt.Println("tps: ", tps)
-
 }

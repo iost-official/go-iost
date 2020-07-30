@@ -2,6 +2,7 @@ package vm
 
 import (
 	"fmt"
+
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/vm/database"

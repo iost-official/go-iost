@@ -191,7 +191,7 @@ func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 		cResult C.CStr
 		cErrMsg C.CStr
 	)
-	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg)
+	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg) // nolint
 
 	result := cResult.GoString()
 	C.free(unsafe.Pointer(cResult.data))
@@ -215,7 +215,7 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 		cCompiledCode C.CStr
 		cErrMsg       C.CStr
 	)
-	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg)
+	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg) // nolint
 	if ret == 1 {
 		errMsg := cErrMsg.GoString()
 		C.free(unsafe.Pointer(cErrMsg.data))

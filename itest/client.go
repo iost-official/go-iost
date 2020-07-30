@@ -12,7 +12,7 @@ import (
 
 	"github.com/iost-official/go-iost/core/tx"
 	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"google.golang.org/grpc"
 )
 

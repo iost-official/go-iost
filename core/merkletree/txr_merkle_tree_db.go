@@ -27,10 +27,10 @@ func Uint64ToBytes(n uint64) []byte {
 }
 
 // Init is init the database
-func Init(LevelDBPath string) error {
+func Init(levelDBPath string) error {
 	var err error
 	once.Do(func() {
-		levelDB, tempErr := kv.NewStorage(LevelDBPath+"TXRMerkleTreeDB", kv.LevelDBStorage)
+		levelDB, tempErr := kv.NewStorage(levelDBPath+"TXRMerkleTreeDB", kv.LevelDBStorage)
 		if tempErr != nil {
 			err = errors.New("fail to init TXRMerkleTreeDB")
 		}

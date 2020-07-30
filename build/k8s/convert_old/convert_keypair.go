@@ -3,9 +3,10 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/iost-official/go-iost/common"
 	"os"
 	"strings"
+
+	"github.com/iost-official/go-iost/common"
 )
 
 func main() {

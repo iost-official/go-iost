@@ -243,6 +243,7 @@ func NewFixed(amount string, decimal int) (*Fixed, error) {
 	return parsePositiveFixed(amount, decimal)
 }
 
+// nolint: gocritic
 func parsePositiveFixed(amount string, decimal int) (*Fixed, error) {
 	fpn := &Fixed{Value: 0, Decimal: 0}
 	decimalStart := false

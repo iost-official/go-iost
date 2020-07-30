@@ -223,7 +223,7 @@ func getOpDetail() {
 			x := make([]float64, 0)
 			yt := make([]float64, 0)
 			yc := make([]float64, 0)
-			for i := 0; ; i = i + 10000 {
+			for i := 0; ; i += 10000 {
 				tcost, ccost := runOp(
 					vi,
 					fmt.Sprintf("%v_op.js", opType),
@@ -304,7 +304,7 @@ func getOverview() {
 	for _, opType := range []string{"base", "lib", "storage"} {
 		for _, op := range OpList[opType] {
 			fmt.Printf("Start %v:%v...\n", opType, op)
-			for i := 0; ; i = i + 10000 {
+			for i := 0; ; i += 10000 {
 				tcost, ccost := runOp(
 					vi,
 					fmt.Sprintf("%v_op.js", opType),
@@ -438,8 +438,8 @@ func getOverviewTable() {
 			fmt.Sprintf("do%v", "StartUp"),
 			0,
 		)
-		ttotal = ttotal + tcost
-		ctotal = ctotal + float64(ccost)
+		ttotal += tcost
+		ctotal += float64(ccost)
 		if ttotal > 0.2 {
 			name := fmt.Sprintf("%v:%v", "empty", "StartUp")
 			gas := ctotal / float64(i)
@@ -457,7 +457,7 @@ func getOverviewTable() {
 
 	for _, opType := range []string{"base", "lib", "storage"} {
 		for _, op := range OpList[opType] {
-			for i := 0; ; i = i + 10000 {
+			for i := 0; ; i += 10000 {
 				tcost, ccost := runOp(
 					vi,
 					fmt.Sprintf("%v_op.js", opType),

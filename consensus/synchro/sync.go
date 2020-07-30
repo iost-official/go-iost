@@ -8,7 +8,7 @@ import (
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/chainbase"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/synchro/pb"
+	msgpb "github.com/iost-official/go-iost/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/core/block"
 	"github.com/iost-official/go-iost/ilog"
 	"github.com/iost-official/go-iost/p2p"

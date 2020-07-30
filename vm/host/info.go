@@ -19,7 +19,6 @@ func NewInfo(h *Host) Info {
 
 // BlockInfo get block info, in json
 func (h *Info) BlockInfo() (info database.SerializedJSON, cost contract.Cost) {
-
 	blkInfo := make(map[string]interface{})
 
 	blkInfo["parent_hash"] = h.h.ctx.Value("parent_hash")
@@ -69,7 +68,6 @@ func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) 
 
 // TxInfo get tx info
 func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
-
 	txInfo := make(map[string]interface{})
 	txInfo["time"] = h.h.ctx.Value("tx_time")
 	txInfo["hash"] = h.h.ctx.Value("tx_hash")
