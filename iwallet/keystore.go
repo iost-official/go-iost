@@ -15,7 +15,6 @@ import (
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/sdk"
 	"golang.org/x/crypto/scrypt"
 	"golang.org/x/crypto/ssh/terminal"
 )
@@ -149,7 +148,8 @@ func (a *AccountInfo) decrypt() error {
 	return fmt.Errorf("load key failed")
 }
 
-func (a *AccountInfo) save(encrypt bool) error {
+// Save ...
+func (a *AccountInfo) Save(encrypt bool) error {
 	dir, err := getAccountDir()
 	if err != nil {
 		return err
@@ -188,29 +188,6 @@ func (a *AccountInfo) save(encrypt bool) error {
 	return err
 }
 
-func loadAccountFromKeyPair(fileName string) (*AccountInfo, error) {
-	a := NewAccountInfo()
-	for _, algo := range ValidSignAlgos {
-		suf := "_" + algo
-		if strings.HasSuffix(fileName, suf) {
-			accName, err := getAccountNameFromKeyPath(fileName, suf)
-			if err != nil {
-				return nil, err
-			}
-			a.Name = accName
-			kp, err := sdk.LoadKeyPair(fileName, algo)
-			if err != nil {
-				return nil, err
-			}
-			keyPair := &KeyPairInfo{RawKey: common.Base58Encode(kp.Seckey), PubKey: common.Base58Encode(kp.Pubkey), KeyType: algo}
-			a.Keypairs["active"] = keyPair
-			a.Keypairs["owner"] = keyPair
-			return a, nil
-		}
-	}
-	return nil, fmt.Errorf("invalid key file name %v", fileName)
-}
-
 func loadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo, error) {
 	a := NewAccountInfo()
 	data, err := ioutil.ReadFile(fileName)
@@ -236,7 +213,7 @@ func loadAccountFromFile(fileName string, ensureDecrypt bool) (*AccountInfo, err
 	if strings.HasSuffix(fileName, ".json") {
 		return loadAccountFromKeyStore(fileName, ensureDecrypt)
 	}
-	return loadAccountFromKeyPair(fileName)
+	return nil, fmt.Errorf("invalid file name %s, should be xxx.json", fileName)
 }
 
 func readPassword(prompt string) (pw []byte, err error) {
