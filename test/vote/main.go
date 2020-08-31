@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iost-official/go-iost/common"
+
 	"github.com/iost-official/go-iost/sdk"
 
 	"github.com/iost-official/go-iost/account"
@@ -62,12 +64,6 @@ func initSDKs() {
 	for _, a := range accs {
 		iostSDK := sdk.NewIOSTDevSDK()
 		iostSDK.SetChainID(1024)
-		iostSDK.SetSignAlgo("ed25519")
-		kp, err := iwallet.LoadKeyPair(a)
-		if err != nil {
-			panic(err)
-		}
-		iostSDK.SetAccount(a, kp)
 		iostSDK.SetServer(server)
 		iostSDK.SetTxInfo(2000000, 1, 300, 0, nil)
 		iostSDK.SetCheckResult(true, 3, 10)
@@ -78,11 +74,10 @@ func initSDKs() {
 
 func prepareAccounts() {
 	iostSDK := iostSDKs["admin"]
-	kp, err := iwallet.LoadKeyPair("admin")
+	err := iwallet.LoadAndSetAccountForSDK(iostSDK, "admin")
 	if err != nil {
 		panic(err)
 	}
-	iostSDK.SetAccount("admin", kp)
 	if pledgeGAS > 0 {
 		err = iostSDK.PledgeForGasAndRAM(pledgeGAS, 0)
 		if err != nil {
@@ -90,6 +85,9 @@ func prepareAccounts() {
 		}
 	}
 	for _, acc := range accounts {
+		if iwallet.LoadAndSetAccountForSDK(iostSDKs[acc], acc) == nil {
+			continue
+		}
 		newKp, err := account.NewKeyPair(nil, sdk.GetSignAlgoByName(signAlgo))
 		if err != nil {
 			log.Fatalf("create key pair failed %v", err)
@@ -102,9 +100,14 @@ func prepareAccounts() {
 		if err != nil {
 			log.Fatalf("create new account error %v", err)
 		}
-		err = iwallet.SaveAccount(acc, newKp)
+		accInfo := iwallet.NewAccountInfo()
+		accInfo.Name = acc
+		kp := &iwallet.KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
+		accInfo.Keypairs["active"] = kp
+		accInfo.Keypairs["owner"] = kp
+		err = accInfo.Save(false)
 		if err != nil {
-			log.Fatalf("saveAccount failed %v", err)
+			log.Fatalf("failed to save account: %v", err)
 		}
 		iostSDKs[acc].SetAccount(acc, newKp)
 	}

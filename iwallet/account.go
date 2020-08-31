@@ -120,7 +120,7 @@ var createCmd = &cobra.Command{
 			kp := &KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
 			accInfo.Keypairs["active"] = kp
 			accInfo.Keypairs["owner"] = kp
-			err = accInfo.save(encrypt)
+			err = accInfo.Save(encrypt)
 			if err != nil {
 				return fmt.Errorf("failed to save account: %v", err)
 			}
@@ -223,7 +223,7 @@ var importCmd = &cobra.Command{
 				acc.Keypairs[splits[0]] = kp
 			}
 		}
-		err := acc.save(encrypt)
+		err := acc.Save(encrypt)
 		if err != nil {
 			return fmt.Errorf("failed to save account: %v", err)
 		}

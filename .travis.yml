@@ -31,14 +31,14 @@ matrix:
     services:
     - docker
     before_install:
-    - docker pull iostio/iost-dev:3.3.5
+    - docker pull iostio/iost-dev:3.3.6
     - git lfs install
     before_script:
     - git lfs pull
     script:
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.3.5 make build
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.3.5 make lint
-    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.3.5 make test
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.3.6 make build
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.3.6 make lint
+    - docker run -it --rm -v $(pwd):/gopath/src/github.com/iost-official/go-iost iostio/iost-dev:3.3.6 make test
     after_success:
     - bash <(curl -s https://codecov.io/bash)
   - os: linux
@@ -48,7 +48,7 @@ matrix:
     services:
     - docker
     before_install:
-    - docker pull iostio/iost-dev:3.3.5
+    - docker pull iostio/iost-dev:3.3.6
     - git lfs install
     before_script:
     - git lfs pull
@@ -66,7 +66,7 @@ matrix:
     - git clone https://github.com/kubernetes/client-go $GOPATH/src/k8s.io/client-go
     - git clone --branch v0.4.0 https://github.com/googleapis/gnostic $GOPATH/src/k8s.io/client-go/vendor/github.com/googleapis/gnostic
     - go get sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator@v0.5.0
-    - docker pull iostio/iost-dev:3.3.5
+    - docker pull iostio/iost-dev:3.3.6
     - git lfs install
     - pyenv global 3.6.7 && pip install awscli
     - sudo apt-get clean && sudo apt-get update && sudo apt-get install -y dpkg 
