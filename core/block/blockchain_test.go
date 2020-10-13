@@ -57,8 +57,8 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.TxMerkleHash), ShouldEqual, string(tBlock.Head.TxMerkleHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
-		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
+		So(block.Head.Witness, ShouldEqual, tBlock.Head.Witness)
+		So(block.Head.Time, ShouldEqual, tBlock.Head.Time)
 
 		block, err = bc.Top()
 		So(err, ShouldBeNil)
@@ -68,8 +68,8 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.TxMerkleHash), ShouldEqual, string(tBlock.Head.TxMerkleHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
-		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
+		So(block.Head.Witness, ShouldEqual, tBlock.Head.Witness)
+		So(block.Head.Time, ShouldEqual, tBlock.Head.Time)
 
 		HeadHash := tBlock.HeadHash()
 		block, err = bc.GetBlockByHash(HeadHash)
@@ -80,8 +80,8 @@ func TestChainImpl(t *testing.T) {
 		So(string(block.Head.TxMerkleHash), ShouldEqual, string(tBlock.Head.TxMerkleHash))
 		So(string(block.Head.Info), ShouldEqual, string(tBlock.Head.Info))
 		So(block.Head.Number, ShouldEqual, tBlock.Head.Number)
-		So(string(block.Head.Witness), ShouldEqual, string(tBlock.Head.Witness))
-		So(string(block.Head.Time), ShouldEqual, string(tBlock.Head.Time))
+		So(block.Head.Witness, ShouldEqual, tBlock.Head.Witness)
+		So(block.Head.Time, ShouldEqual, tBlock.Head.Time)
 		os.RemoveAll("./BlockChainDB/")
 	})
 }

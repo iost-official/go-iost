@@ -59,13 +59,13 @@ func (c *Context) Value(key string) (value interface{}) {
 			break
 		}
 	}
-	//ilog.Debugf("get %s -> %v", key, value)
+	// ilog.Debugf("get %s -> %v", key, value)
 	return
 }
 
 // Set  set value of k
 func (c *Context) Set(key string, value interface{}) {
-	//ilog.Debugf("set %s -> %v", key, value)
+	// ilog.Debugf("set %s -> %v", key, value)
 	c.value[key] = value
 }
 
