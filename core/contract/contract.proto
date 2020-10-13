@@ -23,5 +23,6 @@ message Amount {
 message Contract {
     string ID = 1;
     Info info = 2;
-    string code =3 ;
+    string code = 3;
+    string origCode = 4;
 }
