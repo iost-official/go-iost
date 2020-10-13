@@ -1,3 +1,10 @@
+## v3.3.6
+Mon Aug 31 20:31:02 CST 2020
+- Fixed a memory issue
+- Remove deprecated keystore format
+- Enable more linters
+- Improve system abi 
+
 ## v3.3.5
 Wed Jun 10 13:28:27 CST 2020
 - Hotfix for a bug where some corner case tx cannot be confirmed

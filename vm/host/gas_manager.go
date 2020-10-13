@@ -33,7 +33,7 @@ func emptyGas() *common.Fixed {
 func (g *GasManager) getFixed(key string) (*common.Fixed, contract.Cost) {
 	result, cost := g.h.Get(key)
 	if result == nil {
-		//ilog.Errorf("GasManager failed %v", key)
+		// ilog.Errorf("GasManager failed %v", key)
 		return nil, cost
 	}
 	value, ok := result.(*common.Fixed)

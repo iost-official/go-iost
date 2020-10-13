@@ -197,6 +197,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	if err != nil {
 		return cost, err
 	}
+	c.OrigCode = c.Code
 	c.Code = code
 
 	initABI := contract.ABI{
@@ -206,7 +207,10 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 
 	c.Info.Abi = append(c.Info.Abi, &initABI)
 
+	origCode := c.OrigCode
+	c.OrigCode = ""
 	l := len(c.Encode())
+	c.OrigCode = origCode
 	cost.AddAssign(contract.Cost{Data: int64(l), DataList: []contract.DataItem{
 		{Payer: owner, Val: int64(l)},
 	}})
@@ -241,6 +245,8 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 		return Costs["GetCost"], ErrUpdateRefused
 	}
 
+	// Make gas cost consistent
+	oc.OrigCode = ""
 	oldL := len(oc.Encode())
 
 	rtn, cost, err := h.Call(c.ID, "can_update", `["`+string(id)+`"]`)
@@ -270,12 +276,14 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	if err != nil {
 		return cost, err
 	}
+	c.OrigCode = c.Code
 	c.Code = code
 
 	// set code  without invoking init
 	h.db.SetContract(c)
 
 	publisher := h.Context().Value("publisher").(string)
+	c.OrigCode = ""
 	l := len(c.Encode())
 	cost.AddAssign(contract.Cost{Data: int64(l - oldL), DataList: []contract.DataItem{
 		{Payer: publisher, Val: int64(l - oldL)},

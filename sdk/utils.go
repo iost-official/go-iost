@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
-	"strings"
 
 	"github.com/golang/protobuf/jsonpb"
 	"github.com/golang/protobuf/proto"
@@ -24,35 +23,6 @@ func writeFile(output string, data []byte) error {
 	_, err = f.Write(data)
 	defer f.Close()
 	return err
-}
-
-func loadKey(src string) ([]byte, error) {
-	fi, err := os.Open(src)
-	if err != nil {
-		return nil, err
-	}
-	defer fi.Close()
-	fileinfo, err := fi.Stat()
-	if err != nil {
-		return nil, err
-	}
-	if fileinfo.Mode() != 0400 {
-		return nil, fmt.Errorf("private key file should have read only permission. try:\n chmod 0400 %v", src)
-	}
-	fd, err := ioutil.ReadAll(fi)
-	if err != nil {
-		return nil, err
-	}
-	return common.Base58Decode(strings.TrimSpace(string(fd))), nil
-}
-
-// LoadKeyPair ...
-func LoadKeyPair(privKeyFile string, algo string) (*account.KeyPair, error) {
-	fsk, err := loadKey(privKeyFile)
-	if err != nil {
-		return nil, fmt.Errorf("read key file failed: %v", err)
-	}
-	return account.NewKeyPair(fsk, GetSignAlgoByName(algo))
 }
 
 // SaveProtoStructToJSONFile ...

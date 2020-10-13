@@ -37,6 +37,18 @@ func newAbiSet() *abiSet {
 	}
 }
 
+// Clone ...
+func (as *abiSet) Clone() (bs *abiSet) {
+	bs = newAbiSet()
+	for k, v := range as.abi {
+		bs.abi[k] = v
+	}
+	for k, v := range as.privateMap {
+		bs.privateMap[k] = v
+	}
+	return bs
+}
+
 // Register is register an abi to abiSet
 func (as *abiSet) Register(a *abi, isPrivate ...bool) {
 	as.abi[a.name] = a

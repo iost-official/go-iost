@@ -3,6 +3,7 @@ package database
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/ilog"
@@ -121,7 +122,7 @@ func (m *TokenHandler) SetTokenBalance(tokenName, acc string, amount int64) {
 func (m *TokenHandler) SetTokenBalanceFixed(tokenName, acc string, amountStr string) {
 	amountNumber, err := common.NewFixed(amountStr, m.Decimal(tokenName))
 	if err != nil {
-		panic(errors.New("construct Fixed number failed. str = " + amountStr + ", decimal = " + string(m.Decimal(tokenName))))
+		panic(errors.New("construct Fixed number failed. str = " + amountStr + ", decimal = " + fmt.Sprintf("%d", m.Decimal(tokenName))))
 	}
 	m.db.Put(m.balanceKey(tokenName, acc), MustMarshal(amountNumber.Value))
 }

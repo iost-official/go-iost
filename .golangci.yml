@@ -1,5 +1,5 @@
 run:
-  timeout: 2m
+  timeout: 3m
   tests: false
 
 linters-settings:
@@ -9,6 +9,7 @@ linters-settings:
     disabled-checks:
       - ifElseChain
       - singleCaseSwitch
+      - commentFormatting
 
 linters:
   enable:

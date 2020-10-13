@@ -4,10 +4,6 @@
     "title": "rpc/pb/rpc.proto",
     "version": "version not set"
   },
-  "schemes": [
-    "http",
-    "https"
-  ],
   "consumes": [
     "application/json"
   ],
@@ -711,6 +707,32 @@
         ]
       }
     },
+    "/listContractStorage": {
+      "post": {
+        "operationId": "ListContractStorage",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbListContractStorageResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbListContractStorageRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/sendTx": {
       "post": {
         "summary": "send transaction",
@@ -746,7 +768,7 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/definitions/rpcpbSubscribeResponse"
+              "$ref": "#/x-stream-definitions/rpcpbSubscribeResponse"
             }
           }
         },
@@ -980,6 +1002,28 @@
       },
       "description": "The message defines GetContractStorage request params."
     },
+    "ListContractStorageRequestStorageType": {
+      "type": "string",
+      "enum": [
+        "KV",
+        "MAP"
+      ],
+      "default": "KV",
+      "title": "- KV: written by storage.put(..., ...)\n - MAP: written by storage.mapPut(..., ..., ...)"
+    },
+    "ListContractStorageResponseData": {
+      "type": "object",
+      "properties": {
+        "key": {
+          "type": "string",
+          "title": "the key in StateDB"
+        },
+        "value": {
+          "type": "string",
+          "title": "the value from StateDB"
+        }
+      }
+    },
     "SignatureAlgorithm": {
       "type": "string",
       "enum": [
@@ -1028,6 +1072,18 @@
       ],
       "default": "SUCCESS",
       "description": "The enumeration defines transaction receipt status code.\n\n - SUCCESS: success\n - GAS_RUN_OUT: run out of gas\n - BALANCE_NOT_ENOUGH: balance not enough\n - WRONG_PARAMETER: wrong parameter\n - RUNTIME_ERROR: runtime error\n - TIMEOUT: run out of time\n - WRONG_TX_FORMAT: wrong transaction format\n - DUPLICATE_SET_CODE: more than one set code action in a transaction\n - UNKNOWN_ERROR: unknown error"
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
     },
     "rpcpbAccount": {
       "type": "object",
@@ -1293,6 +1349,10 @@
         "version": {
           "type": "string",
           "title": "contract version"
+        },
+        "orig_code": {
+          "type": "string",
+          "title": "original contract code"
         },
         "abis": {
           "type": "array",
@@ -1589,6 +1649,58 @@
         }
       },
       "description": "The message defines get token balance response."
+    },
+    "rpcpbListContractStorageRequest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "title": "contract id"
+        },
+        "from": {
+          "type": "string",
+          "title": "Optional. keys will be in [from, to) and prefixed with `prefix`"
+        },
+        "to": {
+          "type": "string"
+        },
+        "prefix": {
+          "type": "string"
+        },
+        "storageType": {
+          "$ref": "#/definitions/ListContractStorageRequestStorageType"
+        },
+        "limit": {
+          "type": "string",
+          "format": "int64",
+          "title": "max count to return. up to 100"
+        },
+        "by_longest_chain": {
+          "type": "boolean",
+          "format": "boolean",
+          "title": "get data by longest chain's head block or last irreversible block"
+        }
+      }
+    },
+    "rpcpbListContractStorageResponse": {
+      "type": "object",
+      "properties": {
+        "datas": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ListContractStorageResponseData"
+          }
+        },
+        "block_hash": {
+          "type": "string",
+          "title": "block hash"
+        },
+        "block_number": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
+        }
+      }
     },
     "rpcpbNetworkInfo": {
       "type": "object",
@@ -2038,6 +2150,45 @@
         }
       },
       "description": "The message defines the getVoterBonus response."
+    },
+    "runtimeStreamError": {
+      "type": "object",
+      "properties": {
+        "grpc_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "http_code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "http_status": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  },
+  "x-stream-definitions": {
+    "rpcpbSubscribeResponse": {
+      "type": "object",
+      "properties": {
+        "result": {
+          "$ref": "#/definitions/rpcpbSubscribeResponse"
+        },
+        "error": {
+          "$ref": "#/definitions/runtimeStreamError"
+        }
+      },
+      "title": "Stream result of rpcpbSubscribeResponse"
     }
   }
 }
