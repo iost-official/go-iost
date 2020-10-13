@@ -344,9 +344,14 @@ func (h *Host) SetDeadline(t time.Time) {
 	h.deadline = t
 }
 
+// IsGenesisMode ...
+func (h *Host) IsGenesisMode() bool {
+	return h.Context().Value("number") == int64(0)
+}
+
 // IsValidAccount check whether account exists
 func (h *Host) IsValidAccount(name string) bool {
-	if h.Context().Value("number") == int64(0) {
+	if h.IsGenesisMode() {
 		return true
 	}
 	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().MGet("auth.iost"+"-auth", name)) != nil

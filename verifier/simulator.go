@@ -238,7 +238,7 @@ func (s *Simulator) RunTx(stx *tx.Tx) (*tx.TxReceipt, error) {
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
-	err = isolator.PrepareTx(stx, time.Second)
+	err = isolator.PrepareTx(stx, 3*time.Second)
 
 	if err != nil {
 		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
