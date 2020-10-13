@@ -123,7 +123,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 		m.vms[c.Info.Lang] = vm
 	}
 	currentDeadline := h.Deadline()
-	h.SetDeadline(currentDeadline.Add(time.Duration(-100 * time.Microsecond)))
+	h.SetDeadline(currentDeadline.Add(-100 * time.Microsecond))
 
 	oldCacheCost := h.CacheCost()
 	h.ClearCacheCost()
