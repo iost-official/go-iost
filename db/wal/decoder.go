@@ -62,7 +62,7 @@ func (d *decoder) decodeRecord(log *Log) error {
 		return err
 	}
 
-	//Now we know how many bytes we used for this record.
+	// Now we know how many bytes we used for this record.
 	recBytes, padBytes := decodeFrameSize(l)
 
 	data := make([]byte, recBytes+padBytes)

@@ -106,7 +106,7 @@ func main() {
 		host.SetDeadline(expTime)
 		_, _, err := vmPool.LoadAndCall(host, code, "show")
 		if err != nil {
-			log.Fatal("error: ", err)
+			log.Fatal("error: ", err) // nolint
 		}
 	}
 	tps := float64(times) / time.Since(a).Seconds()

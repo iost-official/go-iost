@@ -71,7 +71,7 @@ func main() {
 
 	initLogger(conf.Log)
 
-	ilog.Infof("Config Information:\n%v", strings.Replace(conf.YamlString(), conf.ACC.SecKey, conf.ACC.SecKey[:3]+"******", -1))
+	ilog.Infof("Config Information:\n%v", strings.ReplaceAll(conf.YamlString(), conf.ACC.SecKey, conf.ACC.SecKey[:3]+"******"))
 
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)
