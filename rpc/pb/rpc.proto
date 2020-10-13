@@ -661,6 +661,8 @@ message Contract {
     string language = 3;
     // contract version
     string version = 4;
+    // original contract code
+    string orig_code = 6;
 
     // The message defines the ABI struct.
     message ABI {

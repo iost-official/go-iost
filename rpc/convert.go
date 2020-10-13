@@ -150,6 +150,7 @@ func toPbContract(c *contract.Contract) *rpcpb.Contract {
 	ret := &rpcpb.Contract{
 		Id:       c.ID,
 		Code:     c.Code,
+		OrigCode: c.OrigCode,
 		Language: c.Info.Lang,
 		Version:  c.Info.Version,
 	}
