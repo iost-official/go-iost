@@ -36,8 +36,8 @@ func checkArgsNumber(cmd *cobra.Command, args []string, argNames ...string) erro
 }
 
 func checkAccount(cmd *cobra.Command) error {
-	if accountName == "" {
-		return errorWithHelp(cmd, "please provide the account name with flag --account/-a")
+	if accountName == "" && keyFile == "" {
+		return errorWithHelp(cmd, "please provide the account info with flag --account/-a or --key_file/-k")
 	}
 	return nil
 }

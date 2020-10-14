@@ -1,0 +1,15 @@
+{
+  "name": "admin",
+  "keypairs": {
+    "active": {
+      "raw_key": "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1",
+      "key_type": "ed25519",
+      "public_key": "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto"
+    },
+    "owner": {
+      "raw_key": "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1",
+      "key_type": "ed25519",
+      "public_key": "Gcv8c2tH8qZrUYnKdEEdTtASsxivic2834MQW6mgxqto"
+    }
+  }
+}

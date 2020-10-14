@@ -177,8 +177,8 @@ func (a *AccountInfo) SaveTo(fileName string) error {
 
 // Save ...
 func (a *AccountInfo) Save(encrypt bool) error {
-	fileName := keyFile
-	if fileName == "" {
+	var fileName string
+	if keyFile == "" {
 		dir, err := getAccountDir()
 		if err != nil {
 			return err
@@ -189,7 +189,10 @@ func (a *AccountInfo) Save(encrypt bool) error {
 		}
 		fileName = dir + "/" + a.Name + ".json"
 	} else {
-		ilog.Warn("--key_file is set, so --account_dir will be ignored")
+		fileName = keyFile
+		if accountDir != "" {
+			ilog.Warn("--key_file is set, so --account_dir will be ignored")
+		}
 	}
 	if encrypt {
 		if err := a.Encrypt(); err != nil {
