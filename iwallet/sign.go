@@ -32,7 +32,7 @@ var signCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to load transaction file %v: %v", txFile, err)
 		}
-		accInfo, err := loadAccountFromFile(signKeyFile, true)
+		accInfo, err := LoadAccountFromKeyStore(signKeyFile, true)
 		if err != nil {
 			return fmt.Errorf("failed to load account from file %v: %v", signKeyFile, err)
 		}

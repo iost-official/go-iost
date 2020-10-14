@@ -159,7 +159,7 @@ var viewCmd = &cobra.Command{
 				return err
 			}
 			for _, f := range files {
-				ac, err := loadAccountFromFile(dir+"/"+f.Name(), false)
+				ac, err := LoadAccountFromKeyStore(dir+"/"+f.Name(), false)
 				if err != nil {
 					continue
 				}

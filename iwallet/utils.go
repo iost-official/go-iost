@@ -10,12 +10,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/ilog"
+
 	simplejson "github.com/bitly/go-simplejson"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
-	"github.com/iost-official/go-iost/crypto"
 	rpcpb "github.com/iost-official/go-iost/rpc/pb"
 	"github.com/iost-official/go-iost/sdk"
 )
@@ -126,7 +128,7 @@ func checkTxTime(tx *rpcpb.TransactionRequest) error {
 }
 
 func prepareTx(tx *rpcpb.TransactionRequest) error {
-	if err := LoadAndSetAccountForSDK(iwalletSDK, accountName); err != nil {
+	if err := LoadAndSetAccountForSDK(iwalletSDK); err != nil {
 		return err
 	}
 	if err := handleMultiSig(tx, signatureFiles, signKeyFiles, asPublisherSign); err != nil {
@@ -185,17 +187,6 @@ func saveOrSendAction(contract, method string, methodArgs ...interface{}) error 
 	return saveOrSendTx(tx)
 }
 
-func getAccountDir() (string, error) {
-	if accountDir != "" {
-		return path.Join(accountDir, ".iwallet"), nil
-	}
-	home, err := homedir.Dir()
-	if err != nil {
-		return "", err
-	}
-	return path.Join(home, ".iwallet"), nil
-}
-
 // GetSignAlgoByName ...
 func GetSignAlgoByName(name string) crypto.Algorithm {
 	switch name {
@@ -208,7 +199,38 @@ func GetSignAlgoByName(name string) crypto.Algorithm {
 	}
 }
 
+func loadAccount() (*AccountInfo, error) {
+	if keyFile != "" {
+		if accountDir != "" {
+			ilog.Warn("--key_file is set, so --account_dir will be ignored")
+		}
+		acc, err := LoadAccountFromKeyStore(keyFile, true)
+		if err != nil {
+			return nil, err
+		}
+		if accountName != "" && acc.Name != accountName {
+			return nil, fmt.Errorf("inconsistent account: %s from cmd args VS %s from key file", accountName, acc.Name)
+		}
+		return acc, nil
+	}
+	return loadAccountByName(accountName, true)
+}
+
+func getAccountDir() (string, error) {
+	if accountDir != "" {
+		return path.Join(accountDir, ".iwallet"), nil
+	}
+	home, err := homedir.Dir()
+	if err != nil {
+		return "", err
+	}
+	return path.Join(home, ".iwallet"), nil
+}
+
 func loadAccountByName(name string, ensureDecrypt bool) (*AccountInfo, error) {
+	if name == "" {
+		return nil, fmt.Errorf("account name should be provived by --account_name")
+	}
 	accountDir, err := getAccountDir()
 	if err != nil {
 		return nil, err
@@ -218,15 +240,11 @@ func loadAccountByName(name string, ensureDecrypt bool) (*AccountInfo, error) {
 	if err != nil {
 		return nil, fmt.Errorf("account is not imported at %s: %v. use 'iwallet account import %s <private-key>' to import it", fileName, err, name)
 	}
-	return loadAccountFromKeyStore(fileName, ensureDecrypt)
+	return LoadAccountFromKeyStore(fileName, ensureDecrypt)
 }
 
-// LoadAndSetAccountForSDK load account from file
-func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK, accountName string) error {
-	a, err := loadAccountByName(accountName, true)
-	if err != nil {
-		return err
-	}
+// SetAccountForSDK ...
+func SetAccountForSDK(s *sdk.IOSTDevSDK, a *AccountInfo, signPerm string) error {
 	kp, ok := a.Keypairs[signPerm]
 	if !ok {
 		return fmt.Errorf("invalid permission %v", signPerm)
@@ -235,9 +253,18 @@ func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK, accountName string) error {
 	if err != nil {
 		return err
 	}
-	s.SetAccount(accountName, keyPair)
+	s.SetAccount(a.Name, keyPair)
 	s.SetSignAlgo(kp.KeyType)
 	return nil
+}
+
+// LoadAndSetAccountForSDK load account from file
+func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
+	a, err := loadAccount()
+	if err != nil {
+		return err
+	}
+	return SetAccountForSDK(s, a, signPerm)
 }
 
 func argsFormatter(data string) (string, error) {
@@ -287,7 +314,7 @@ func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signK
 	}
 	if len(signKeyFiles) > 0 {
 		for _, f := range signKeyFiles {
-			accInfo, err := loadAccountFromFile(f, true)
+			accInfo, err := LoadAccountFromKeyStore(f, true)
 			if err != nil {
 				return fmt.Errorf("failed to load account from file %v: %v", f, err)
 			}

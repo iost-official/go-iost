@@ -72,9 +72,19 @@ func initSDKs() {
 	}
 }
 
+var accountsFileDir = "."
+
+func setupSDK(iostsdk *sdk.IOSTDevSDK, account string) error {
+	a, err := iwallet.LoadAccountFromKeyStore(accountsFileDir+"/"+account+".json", true)
+	if err != nil {
+		return err
+	}
+	return iwallet.SetAccountForSDK(iostsdk, a, "active")
+}
+
 func prepareAccounts() {
 	iostSDK := iostSDKs["admin"]
-	err := iwallet.LoadAndSetAccountForSDK(iostSDK, "admin")
+	err := setupSDK(iostSDK, "admin")
 	if err != nil {
 		panic(err)
 	}
@@ -85,7 +95,7 @@ func prepareAccounts() {
 		}
 	}
 	for _, acc := range accounts {
-		if iwallet.LoadAndSetAccountForSDK(iostSDKs[acc], acc) == nil {
+		if setupSDK(iostSDKs[acc], acc) == nil {
 			continue
 		}
 		newKp, err := account.NewKeyPair(nil, sdk.GetSignAlgoByName(signAlgo))
@@ -105,7 +115,7 @@ func prepareAccounts() {
 		kp := &iwallet.KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
 		accInfo.Keypairs["active"] = kp
 		accInfo.Keypairs["owner"] = kp
-		err = accInfo.Save(false)
+		err = accInfo.SaveTo(accountsFileDir + "/" + acc + ".json")
 		if err != nil {
 			log.Fatalf("failed to save account: %v", err)
 		}
