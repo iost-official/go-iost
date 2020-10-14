@@ -878,7 +878,7 @@ class VoteContract {
         const pendingList = newList.map(x => x.key);
         this._put("currentProducerList", currentList);
         this._put("pendingProducerList", pendingList);
-        //blockchain.receipt(JSON.stringify(pendingList));
+        blockchain.receipt(JSON.stringify(pendingList));
         this._put("witnessWatched", witnessWatched);
         this._put("witnessPenality", witnessPenality);
 

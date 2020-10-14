@@ -513,16 +513,19 @@ func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
 	if !common.StringSliceEqual(parent.Pending(), bcn.Pending()) {
 		bc.linkedRootWitness = make([]string, 0)
 	}
-	witness := bcn.Head.Witness
-	for _, w := range bc.linkedRootWitness {
-		if w == witness {
-			witness = ""
-			break
+	SetInsert(&bc.linkedRootWitness, bcn.Head.Witness)
+	/*
+		witness := bcn.Head.Witness
+		for _, w := range bc.linkedRootWitness {
+			if w == witness {
+				witness = ""
+				break
+			}
 		}
-	}
-	if witness != "" {
-		bc.linkedRootWitness = append(bc.linkedRootWitness, witness)
-	}
+		if witness != "" {
+			bc.linkedRootWitness = append(bc.linkedRootWitness, witness)
+		}
+	*/
 }
 
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {

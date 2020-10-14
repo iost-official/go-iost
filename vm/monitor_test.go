@@ -200,7 +200,7 @@ func TestJSM(t *testing.T) {
 	ctx.Set("publisher", "abc")
 
 	h := host.NewHost(ctx, vi, version.NewRules(0), monitor, nil)
-	h.SetDeadline(time.Now().Add(time.Second))
+	h.SetDeadline(time.Now().Add(2 * time.Second))
 	h.Context().Set("caller", host.Caller{
 		Name:      "",
 		IsAccount: false,
