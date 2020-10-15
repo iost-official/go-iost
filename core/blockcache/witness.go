@@ -34,22 +34,16 @@ func (wl *WitnessList) NetID() []string {
 	return wl.WitnessInfo
 }
 
-// UpdatePending update pending witness list
-func (wl *WitnessList) UpdatePending(mv database.IMultiValue, rules *version.Rules) error {
+// getPendingFromDB get pending witness list
+func (wl *WitnessList) getPendingFromDB(mv database.IMultiValue, rules *version.Rules) ([]string, error) {
+	result := make([]string, 0)
 	vi := database.NewVisitor(0, mv, rules)
-
 	jwl := database.MustUnmarshal(vi.Get("vote_producer.iost-" + "pendingProducerList"))
 	if jwl == nil {
-		return errors.New("failed to get pending list")
+		return result, errors.New("failed to get pending list")
 	}
-	str := make([]string, 0)
-	err := json.Unmarshal([]byte(jwl.(string)), &str)
-	if err != nil {
-		return err
-	}
-	wl.SetPending(str)
-
-	return nil
+	err := json.Unmarshal([]byte(jwl.(string)), &result)
+	return result, err
 }
 
 // UpdateInfo update pending witness list

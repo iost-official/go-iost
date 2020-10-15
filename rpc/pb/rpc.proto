@@ -2,7 +2,8 @@ syntax = "proto3";
 
 package rpcpb;
 
-import "google/api/annotations.proto";
+import "github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api/annotations.proto";
+import "github.com/iost-official/go-iost/core/block/pb/block.proto";
 
 service ApiService {
     // get the node information
@@ -51,6 +52,12 @@ service ApiService {
     rpc GetBlockByNumber (GetBlockByNumberRequest) returns (BlockResponse) {
         option (google.api.http) = {
             get: "/getBlockByNumber/{number}/{complete}"
+        };
+    }
+    // get raw block by number, including block signature etc
+    rpc GetRawBlockByNumber (GetBlockByNumberRequest) returns (RawBlockResponse) {
+        option (google.api.http) = {
+            get: "/getRawBlockByNumber/{number}/{complete}"
         };
     }
 
@@ -186,6 +193,8 @@ service ApiService {
             get: "/getTokenInfo/{symbol}/{by_longest_chain}"
         };
     }
+
+
 
 }
 
@@ -433,6 +442,8 @@ message Block {
 
     // extra information
     Info info = 11;
+    // original info bytes
+    string orig_info = 13;
     // block transactions
     repeated Transaction transactions = 12;
 }
@@ -450,7 +461,20 @@ message BlockResponse {
     Status status = 1;
     // block
     Block block = 2;
+}
 
+message RawBlockResponse {
+    // The enumeration defines block status.
+    enum Status {
+        // pending in block cache
+        PENDING = 0;
+        // irreversible
+        IRREVERSIBLE = 1;
+    }
+    // transaction status
+    Status status = 1;
+    // block
+    blockpb.Block block = 2;
 }
 
 // The message defines chain information response.

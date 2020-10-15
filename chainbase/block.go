@@ -224,6 +224,10 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 		}
 	}
 	v := verifier.Verifier{}
+	if c.config.SPV != nil && c.config.SPV.IsSPV {
+		// in SPV mode, only verify the block structure, not exec the txs
+		return nil
+	}
 	return v.Verify(blk, parent, witnessList, c.stateDB, &verifier.Config{
 		Mode:        0,
 		Timeout:     common.MaxBlockTimeLimit,

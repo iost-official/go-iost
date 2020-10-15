@@ -12,6 +12,8 @@ import (
 	"strings"
 	"time"
 
+	blockpb "github.com/iost-official/go-iost/core/block/pb"
+
 	"github.com/syndtr/goleveldb/leveldb/util"
 
 	simplejson "github.com/bitly/go-simplejson"
@@ -223,6 +225,34 @@ func (as *APIService) GetBlockByNumber(ctx context.Context, req *rpcpb.GetBlockB
 	return &rpcpb.BlockResponse{
 		Status: status,
 		Block:  toPbBlock(blk, req.GetComplete()),
+	}, nil
+}
+
+// GetBlockByNumber returns block corresponding to the given number.
+func (as *APIService) GetRawBlockByNumber(ctx context.Context, req *rpcpb.GetBlockByNumberRequest) (*rpcpb.RawBlockResponse, error) {
+	number := req.GetNumber()
+	var (
+		blk *block.Block
+		err error
+	)
+	status := rpcpb.RawBlockResponse_IRREVERSIBLE
+	blk, err = as.blockchain.GetBlockByNumber(number)
+	if err != nil {
+		status = rpcpb.RawBlockResponse_PENDING
+		blk, err = as.bc.GetBlockByNumber(number)
+		if err != nil {
+			return nil, err
+		}
+	}
+	var mode blockpb.BlockType
+	if req.Complete {
+		mode = blockpb.BlockType_NORMAL
+	} else {
+		mode = blockpb.BlockType_ONLYHASH
+	}
+	return &rpcpb.RawBlockResponse{
+		Status: status,
+		Block:  blk.ToPb(mode),
 	}, nil
 }
 

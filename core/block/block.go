@@ -142,36 +142,43 @@ func (b *Block) CalculateTxReceiptMerkleHash() []byte {
 	return m.RootHash()
 }
 
-// Encode is marshal
-func (b *Block) Encode() ([]byte, error) {
+// ToPb convert to protobuf
+func (b *Block) ToPb(t blockpb.BlockType) *blockpb.Block {
 	br := &blockpb.Block{
 		Head:      b.Head.ToPb(),
-		BlockType: blockpb.BlockType_NORMAL,
+		BlockType: t,
 	}
-	for _, t := range b.Txs {
-		br.Txs = append(br.Txs, t.ToPb())
+	if t != blockpb.BlockType_ONLYHASH {
+		for _, t := range b.Txs {
+			br.Txs = append(br.Txs, t.ToPb())
+		}
+		for _, r := range b.Receipts {
+			br.Receipts = append(br.Receipts, r.ToPb())
+		}
+	} else {
+		for _, t := range b.Txs {
+			br.TxHashes = append(br.TxHashes, t.Hash())
+		}
+		for _, r := range b.Receipts {
+			br.ReceiptHashes = append(br.ReceiptHashes, r.Hash())
+		}
 	}
-	for _, r := range b.Receipts {
-		br.Receipts = append(br.Receipts, r.ToPb())
-	}
-
 	if b.Sign != nil {
 		br.Sign = b.Sign.ToPb()
 	}
-	brByte, err := proto.Marshal(br)
+	return br
+}
+
+// Encode is marshal
+func (b *Block) Encode() ([]byte, error) {
+	brByte, err := proto.Marshal(b.ToPb(blockpb.BlockType_NORMAL))
 	if err != nil {
 		return nil, errors.New("fail to encode blockraw")
 	}
 	return brByte, nil
 }
 
-// Decode is unmarshal
-func (b *Block) Decode(blockByte []byte) error {
-	br := &blockpb.Block{}
-	err := proto.Unmarshal(blockByte, br)
-	if err != nil {
-		return errors.New("fail to decode blockraw")
-	}
+func (b *Block) FromPb(br *blockpb.Block) *Block {
 	h := &BlockHead{}
 	h.FromPb(br.Head)
 	b.Head = h
@@ -198,6 +205,17 @@ func (b *Block) Decode(blockByte []byte) error {
 	return nil
 }
 
+// Decode is unmarshal
+func (b *Block) Decode(blockByte []byte) error {
+	br := &blockpb.Block{}
+	err := proto.Unmarshal(blockByte, br)
+	if err != nil {
+		return errors.New("fail to decode blockraw")
+	}
+	b.FromPb(br)
+	return nil
+}
+
 // CalculateHeadHash calculate the hash of the head
 func (b *Block) CalculateHeadHash() {
 	b.hash = b.Head.hash()
@@ -215,18 +233,7 @@ func (b *Block) LenTx() int {
 
 // EncodeM is marshal
 func (b *Block) EncodeM() ([]byte, error) {
-	br := &blockpb.Block{
-		Head:      b.Head.ToPb(),
-		BlockType: blockpb.BlockType_ONLYHASH,
-	}
-	br.Sign = b.Sign.ToPb()
-	for _, t := range b.Txs {
-		br.TxHashes = append(br.TxHashes, t.Hash())
-	}
-	for _, r := range b.Receipts {
-		br.ReceiptHashes = append(br.ReceiptHashes, r.Hash())
-	}
-	brByte, err := proto.Marshal(br)
+	brByte, err := proto.Marshal(b.ToPb(blockpb.BlockType_ONLYHASH))
 	if err != nil {
 		return nil, errors.New("fail to encode blockraw")
 	}

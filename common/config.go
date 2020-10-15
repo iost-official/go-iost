@@ -132,6 +132,11 @@ type VersionConfig struct {
 	ProtocolVersion string
 }
 
+type SPVConfig struct {
+	IsSPV         bool
+	SyncFromBlock int64
+}
+
 // Config provide all configuration for the application
 type Config struct {
 	ACC      *ACCConfig
@@ -145,6 +150,7 @@ type Config struct {
 	Metrics  *MetricsConfig
 	Debug    *DebugConfig
 	Version  *VersionConfig
+	SPV      *SPVConfig
 }
 
 // LoadYamlAsViper load yaml file as viper object

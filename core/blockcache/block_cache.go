@@ -2,6 +2,7 @@ package blockcache
 
 import (
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -227,6 +228,7 @@ type BlockCacheImpl struct { //nolint:golint
 	blockChain        block.Chain
 	stateDB           db.MVCCDB
 	wal               *wal.WAL
+	spvConf           *common.SPVConfig
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -287,6 +289,11 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		blockChain:        bChain,
 		stateDB:           stateDB.Fork(),
 		wal:               w,
+	}
+	if conf.SPV != nil {
+		bc.spvConf = conf.SPV
+	} else {
+		bc.spvConf = &common.SPVConfig{}
 	}
 
 	lib, err := bc.blockChain.Top()
@@ -514,28 +521,58 @@ func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
 		bc.linkedRootWitness = make([]string, 0)
 	}
 	SetInsert(&bc.linkedRootWitness, bcn.Head.Witness)
-	/*
-		witness := bcn.Head.Witness
-		for _, w := range bc.linkedRootWitness {
-			if w == witness {
-				witness = ""
-				break
+}
+
+func (bc *BlockCacheImpl) getPendingFromBlock(h *BlockCacheNode) ([]string, error) {
+	result := make([]string, 0)
+	for _, r := range h.Receipts {
+		for _, rr := range r.Receipts {
+			if rr.FuncName == "vote_producer.iost/stat" {
+				err := json.Unmarshal([]byte(rr.Content), &result)
+				if err != nil {
+					ilog.Warn("invalid vote_producer.iost/stat receipt", rr.Content, err)
+					continue
+				}
+				return result, nil
 			}
 		}
-		if witness != "" {
-			bc.linkedRootWitness = append(bc.linkedRootWitness, witness)
-		}
-	*/
+	}
+	ilog.Warn("vote_producer.iost/stat receipt not found at block ", h.Head.Number, ",hash:", common.Base58Encode(h.HeadHash()))
+	return result, nil
 }
 
 func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
+	var pendingFromBlock []string
+	var err error
+	isVoteBlock := h.Head.Number != 0 && h.Head.Number%common.VoteInterval == 0
+	if isVoteBlock {
+		ilog.Debug("getPendingFromBlock ", h.Head.Number)
+		pendingFromBlock, err = bc.getPendingFromBlock(h)
+		if err != nil {
+			ilog.Warn(err)
+		}
+	}
+	if bc.spvConf.IsSPV {
+		if isVoteBlock {
+			h.SetPending(pendingFromBlock)
+		}
+		return nil
+	}
+
 	ok := bc.stateDB.Checkout(string(h.HeadHash()))
 	if ok {
 		rules := h.Head.Rules()
-		if err := h.UpdatePending(bc.stateDB, rules); err != nil {
+
+		pendingFromDB, err := h.getPendingFromDB(bc.stateDB, rules)
+		if err != nil {
 			ilog.Error("failed to update pending, err:", err)
 			return err
 		}
+		if isVoteBlock && !common.StringSliceEqual(pendingFromBlock, pendingFromDB) {
+			return fmt.Errorf("inconsistent pending producers %v vs %v at block %v", pendingFromBlock, pendingFromDB, h.Head.Number)
+		}
+		h.SetPending(pendingFromDB)
+
 		if err := h.UpdateInfo(bc.stateDB, rules); err != nil {
 			ilog.Error("failed to update witness info, err:", err)
 			return err

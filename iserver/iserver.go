@@ -45,6 +45,7 @@ func New(conf *common.Config) *IServer {
 	}
 
 	consensus := consensus.New(consensus.Pob, conf, cBase, p2pService)
+	ilog.Info("consensus init done")
 
 	rpcServer := rpc.New(cBase.TxPool(), cBase, conf, p2pService)
 
