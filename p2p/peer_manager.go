@@ -251,6 +251,8 @@ func (pm *PeerManager) ConnectBPs(ids []string) {
 // In other cases, reset the stream.
 func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 	remotePID := s.Conn().RemotePeer()
+
+	ilog.Debug("handle stream from ", remotePID)
 	pm.freshPeer(remotePID)
 
 	if pm.isStreamBlack(s) {
@@ -597,6 +599,7 @@ func (pm *PeerManager) Broadcast(data []byte, typ MessageType, mp MessagePriorit
 	for _, p := range pm.GetAllNeighbors() {
 		wg.Add(1)
 		go func(p *Peer) {
+			ilog.Debug("p2p Broadcast send to ", p.id, " ", p.Addr(), " type ", typ, " priority ", mp)
 			p.SendMessage(msg, mp, true)
 			wg.Done()
 		}(p)
@@ -783,6 +786,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage, from peer.ID)
 				maddrs = maddrs[:maxAddrCount]
 			}
 			if len(maddrs) > 0 {
+				ilog.Debug("storePeerInfo ", pid, " ", maddrs)
 				pm.storePeerInfo(pid, maddrs)
 			}
 		}
@@ -852,6 +856,8 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 		"outbound": pm.NeighborCount(outbound),
 		"inbound":  pm.NeighborCount(inbound),
 	}
+
+	ret["bp"] = pm.getBPs()
 
 	return ret
 }
