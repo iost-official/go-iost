@@ -13,7 +13,7 @@ var GitHash string
 // CodeVersion is the version string of code
 var CodeVersion string
 
-var globalConf *common.Config
+var globalConf = &common.Config{}
 
 // SetGlobalConf ...
 func SetGlobalConf(conf *common.Config) {

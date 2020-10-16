@@ -103,6 +103,7 @@ func TestBlockCache(t *testing.T) {
 		Snapshot: &common.SnapshotConfig{
 			Enable: false,
 		},
+		SPV: &common.SPVConfig{},
 	}
 	Convey("Test of Block Cache", t, func() {
 		Convey("Add:", func() {

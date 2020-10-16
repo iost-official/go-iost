@@ -48,6 +48,7 @@ type PoB struct {
 	exitSignal chan struct{}
 	wg         *sync.WaitGroup
 	mu         *sync.RWMutex
+	spvConf    *common.SPVConfig
 }
 
 // New init a new PoB.
@@ -77,6 +78,7 @@ func New(conf *common.Config, cBase *chainbase.ChainBase, p2pService p2p.Service
 		exitSignal: make(chan struct{}),
 		wg:         new(sync.WaitGroup),
 		mu:         new(sync.RWMutex),
+		spvConf:    conf.SPV,
 	}
 
 	return &p
@@ -145,6 +147,10 @@ func (p *PoB) doGenerateBlock(slot int64) {
 	// IsMyGenerateBlockTime
 	witnessList := p.cBase.HeadBlock().Active()
 	if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
+		return
+	}
+	if p.spvConf != nil && p.spvConf.IsSPV {
+		// don't producer blocks in spv mode
 		return
 	}
 

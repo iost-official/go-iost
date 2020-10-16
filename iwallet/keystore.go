@@ -11,7 +11,8 @@ import (
 	"io"
 	"io/ioutil"
 	"os"
-	"strings"
+
+	"github.com/iost-official/go-iost/ilog"
 
 	"github.com/iost-official/go-iost/account"
 	"github.com/iost-official/go-iost/common"
@@ -148,38 +149,24 @@ func (a *AccountInfo) decrypt() error {
 	return fmt.Errorf("load key failed")
 }
 
-// Save ...
-func (a *AccountInfo) Save(encrypt bool) error {
-	dir, err := getAccountDir()
+func (a *AccountInfo) Encrypt() error {
+	fmt.Println("encrypting seckey, need password")
+	password, err := readPasswordFromStdin(true)
 	if err != nil {
 		return err
 	}
-	err = os.MkdirAll(dir, 0700)
-	if err != nil {
-		return err
-	}
-	fileName := dir + "/" + a.Name + ".json"
-	if encrypt {
-		fmt.Println("encrypting seckey, need password")
-		password, err := readPasswordFromStdin(true)
+	for _, k := range a.Keypairs {
+		err = k.encrypt(password)
 		if err != nil {
 			return err
 		}
-		for _, k := range a.Keypairs {
-			err = k.encrypt(password)
-			if err != nil {
-				return err
-			}
-			k.RawKey = ""
-		}
-	} else {
-		for _, k := range a.Keypairs {
-			k.EncryptMethod = ""
-			k.Salt = ""
-			k.EncryptedKey = ""
-			k.Mac = ""
-		}
+		k.RawKey = ""
 	}
+	return nil
+}
+
+// SaveTo ...
+func (a *AccountInfo) SaveTo(fileName string) error {
 	data, err := json.MarshalIndent(a, "", "  ")
 	if err != nil {
 		return err
@@ -188,7 +175,35 @@ func (a *AccountInfo) Save(encrypt bool) error {
 	return err
 }
 
-func loadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo, error) {
+// Save ...
+func (a *AccountInfo) Save(encrypt bool) error {
+	var fileName string
+	if keyFile == "" {
+		dir, err := getAccountDir()
+		if err != nil {
+			return err
+		}
+		err = os.MkdirAll(dir, 0700)
+		if err != nil {
+			return err
+		}
+		fileName = dir + "/" + a.Name + ".json"
+	} else {
+		fileName = keyFile
+		if accountDir != "" {
+			ilog.Warn("--key_file is set, so --account_dir will be ignored")
+		}
+	}
+	if encrypt {
+		if err := a.Encrypt(); err != nil {
+			return err
+		}
+	}
+	return a.SaveTo(fileName)
+}
+
+// LoadAccountFromKeyStore ...
+func LoadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo, error) {
 	a := NewAccountInfo()
 	data, err := ioutil.ReadFile(fileName)
 	if err != nil {
@@ -196,7 +211,7 @@ func loadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo,
 	}
 	err = json.Unmarshal(data, a)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("key store should be a json file, %v", err)
 	}
 	if ensureDecrypt {
 		if a.isEncrypted() {
@@ -207,13 +222,6 @@ func loadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo,
 		}
 	}
 	return a, nil
-}
-
-func loadAccountFromFile(fileName string, ensureDecrypt bool) (*AccountInfo, error) {
-	if strings.HasSuffix(fileName, ".json") {
-		return loadAccountFromKeyStore(fileName, ensureDecrypt)
-	}
-	return nil, fmt.Errorf("invalid file name %s, should be xxx.json", fileName)
 }
 
 func readPassword(prompt string) (pw []byte, err error) {

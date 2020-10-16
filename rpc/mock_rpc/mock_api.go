@@ -229,6 +229,19 @@ func (mr *MockApiServiceServerMockRecorder) GetRAMInfo(arg0, arg1 interface{}) *
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRAMInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetRAMInfo), arg0, arg1)
 }
 
+// GetRawBlockByNumber mocks base method
+func (m *MockApiServiceServer) GetRawBlockByNumber(arg0 context.Context, arg1 *pb.GetBlockByNumberRequest) (*pb.RawBlockResponse, error) {
+	ret := m.ctrl.Call(m, "GetRawBlockByNumber", arg0, arg1)
+	ret0, _ := ret[0].(*pb.RawBlockResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetRawBlockByNumber indicates an expected call of GetRawBlockByNumber
+func (mr *MockApiServiceServerMockRecorder) GetRawBlockByNumber(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawBlockByNumber", reflect.TypeOf((*MockApiServiceServer)(nil).GetRawBlockByNumber), arg0, arg1)
+}
+
 // GetToken721Balance mocks base method
 func (m *MockApiServiceServer) GetToken721Balance(arg0 context.Context, arg1 *pb.GetTokenBalanceRequest) (*pb.GetToken721BalanceResponse, error) {
 	ret := m.ctrl.Call(m, "GetToken721Balance", arg0, arg1)

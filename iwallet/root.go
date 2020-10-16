@@ -74,6 +74,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&elapsedTime, "elapsed_time", "", false, "print elapsed time")
 	rootCmd.PersistentFlags().StringVarP(&accountName, "account", "a", "", "which account to use")
 	rootCmd.PersistentFlags().StringVarP(&accountDir, "account_dir", "", "", "$(account_dir)/.iwallet will be used to save accounts (default $HOME/.iwallet)")
+	rootCmd.PersistentFlags().StringVarP(&keyFile, "key_file", "k", "", "the json file that stores your account name and keypair")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&checkResult, "check_result", "", true, "check publish/call status after sending to chain")
@@ -133,6 +134,7 @@ var (
 	server      string
 	accountName string
 	accountDir  string
+	keyFile     string
 	signAlgo    string
 	signers     []string
 	signPerm    string

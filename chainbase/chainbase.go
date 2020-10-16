@@ -1,8 +1,12 @@
 package chainbase
 
 import (
+	"context"
 	"fmt"
 	"sync"
+
+	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	"google.golang.org/grpc"
 
 	"github.com/iost-official/go-iost/common"
 	"github.com/iost-official/go-iost/core/block"
@@ -22,6 +26,35 @@ type ChainBase struct {
 
 	quitCh chan struct{}
 	done   *sync.WaitGroup
+}
+
+// SPVFetchInitialBlockFromSeed get the most recent voting block older than the 'syncFrom' block
+// if 'syncFrom' is 0, fetch the most recent voting block
+func SPVFetchInitialBlockFromSeed(server string, syncFrom int64) (*block.Block, error) {
+	rpcConn, err := grpc.Dial(server, grpc.WithInsecure())
+	if err != nil {
+		return nil, err
+	}
+	client := rpcpb.NewApiServiceClient(rpcConn)
+	if syncFrom == 0 {
+		value, err := client.GetChainInfo(context.Background(), &rpcpb.EmptyRequest{})
+		if err != nil {
+			return nil, err
+		}
+		syncFrom = value.LibBlock
+	}
+	syncFrom = syncFrom / common.VoteInterval * common.VoteInterval
+	b, err := client.GetRawBlockByNumber(context.Background(), &rpcpb.GetBlockByNumberRequest{Number: syncFrom, Complete: true})
+	if err != nil {
+		return nil, err
+	}
+	blk := &block.Block{}
+	blk.FromPb(b.Block)
+	if err := blk.VerifySelf(); err != nil {
+		return nil, fmt.Errorf("invalid block: %v", err)
+	}
+	ilog.Info("fetched seed block ", syncFrom, ",hash:", common.Base58Encode(blk.HeadHash()))
+	return blk, nil
 }
 
 // New will return a ChainBase.
@@ -44,13 +77,31 @@ func New(conf *common.Config) (*ChainBase, error) {
 		quitCh: make(chan struct{}),
 		done:   new(sync.WaitGroup),
 	}
+	if conf.SPV != nil && conf.SPV.IsSPV {
+		if bChain.Length() == 0 {
+			syncFrom := conf.SPV.SyncFromBlock
+			blk, err := SPVFetchInitialBlockFromSeed(conf.SPV.SeedServer, syncFrom)
+			if err != nil {
+				return nil, err
+			}
+			// we trust this seed block in spv mode
+			err = bChain.Push(blk)
+			if err != nil {
+				return nil, err
+			}
+		} else { // nolint
+			// recover db?
+		}
+	} else {
+		if err := c.checkGenesis(conf); err != nil {
+			return nil, fmt.Errorf("check genesis failed: %v", err)
+		}
+		if err := c.recoverDB(conf); err != nil {
+			return nil, fmt.Errorf("recover database failed: %v", err)
+		}
+	}
 
-	if err := c.checkGenesis(conf); err != nil {
-		return nil, fmt.Errorf("check genesis failed: %v", err)
-	}
-	if err := c.recoverDB(conf); err != nil {
-		return nil, fmt.Errorf("recover database failed: %v", err)
-	}
+	ilog.Info("recover db done")
 
 	bCache, err := blockcache.NewBlockCache(conf, bChain, stateDB)
 	if err != nil {
@@ -67,6 +118,7 @@ func New(conf *common.Config) (*ChainBase, error) {
 	if err := c.recoverBlockCache(); err != nil {
 		return nil, fmt.Errorf("recover chainbase failed: %v", err)
 	}
+	ilog.Info("recover block cache done")
 
 	c.done.Add(1)
 	go c.metricsController()

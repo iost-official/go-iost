@@ -129,6 +129,7 @@ func (b *blockHashSync) RequestBlockHash(start, end int64) {
 		ilog.Errorf("Marshal sync block hash message failed: %v", err)
 		return
 	}
+	//ilog.Debugf("Broadcast RequestBlockHash %v to %v", blockHashQuery, b.p.GetAllNeighbors())
 	b.p.Broadcast(msg, p2p.SyncBlockHashRequest, p2p.UrgentMessage)
 }
 

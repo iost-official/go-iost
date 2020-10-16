@@ -83,8 +83,11 @@ func main() {
 	}
 
 	server := iserver.New(conf)
-	if err := server.Start(); err != nil {
+	err = server.Start()
+	if err != nil {
 		ilog.Fatalf("start iserver failed. err=%v", err)
+	} else {
+		ilog.Info("iserver started")
 	}
 
 	waitExit()

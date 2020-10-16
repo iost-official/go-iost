@@ -113,6 +113,7 @@ func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, ge
 
 // Add will add a block to block cache and verify it.
 func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
+	ilog.Debug("add block ", blk.Head.Number, " to chain base")
 	_, err := c.bCache.GetBlockByHash(blk.HeadHash())
 	if err == nil {
 		return errDuplicate
@@ -191,7 +192,7 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 	}
 
 	if common.WitnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
-		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
+		ilog.Errorf("verifyBlock wrong witness: blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(witnessList.Active()), witnessList.Active())
 		return errWitness
 	}
@@ -224,6 +225,10 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 		}
 	}
 	v := verifier.Verifier{}
+	if c.config.SPV != nil && c.config.SPV.IsSPV {
+		// in SPV mode, only verify the block structure, not exec the txs
+		return nil
+	}
 	return v.Verify(blk, parent, witnessList, c.stateDB, &verifier.Config{
 		Mode:        0,
 		Timeout:     common.MaxBlockTimeLimit,
