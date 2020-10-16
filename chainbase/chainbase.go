@@ -80,7 +80,7 @@ func New(conf *common.Config) (*ChainBase, error) {
 	if conf.SPV != nil && conf.SPV.IsSPV {
 		if bChain.Length() == 0 {
 			syncFrom := conf.SPV.SyncFromBlock
-			blk, err := SPVFetchInitialBlockFromSeed(conf.P2P.SeedNodes[1], syncFrom)
+			blk, err := SPVFetchInitialBlockFromSeed(conf.SPV.SeedServer, syncFrom)
 			if err != nil {
 				return nil, err
 			}

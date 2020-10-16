@@ -135,6 +135,7 @@ type VersionConfig struct {
 type SPVConfig struct {
 	IsSPV         bool
 	SyncFromBlock int64
+	SeedServer    string
 }
 
 // Config provide all configuration for the application
