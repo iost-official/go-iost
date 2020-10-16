@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"time"
 
@@ -47,6 +48,7 @@ func (as *adminServer) registerRoute(mux *http.ServeMux) {
 	mux.HandleFunc("/ping", Ping)
 	mux.HandleFunc("/stats", as.Stats)
 	mux.HandleFunc("/closepeer", as.ClosePeer)
+	mux.HandleFunc("/closerandpeer", as.CloseRandPeer)
 	mux.HandleFunc("/putipblack", as.PutIPBlack)
 	mux.HandleFunc("/putpidblack", as.PutPIDBlack)
 }
@@ -64,6 +66,13 @@ func (as *adminServer) Stats(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 	rw.Write(bytes)
+}
+
+// CloseRandPeer close a random peer connection.
+func (as *adminServer) CloseRandPeer(rw http.ResponseWriter, r *http.Request) {
+	peers := as.pm.GetAllNeighbors()
+	as.pm.RemoveNeighbor(peers[rand.Intn(len(peers))].id)
+	rw.Write([]byte("ok"))
 }
 
 // ClosePeer close the peer's connection.

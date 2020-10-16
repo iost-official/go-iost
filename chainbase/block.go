@@ -192,7 +192,7 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 	}
 
 	if common.WitnessOfNanoSec(blk.Head.Time, witnessList.Active()) != blk.Head.Witness {
-		ilog.Errorf("blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
+		ilog.Errorf("verifyBlock wrong witness: blk num: %v, time: %v, witness: %v, witness len: %v, witness list: %v",
 			blk.Head.Number, blk.Head.Time, blk.Head.Witness, len(witnessList.Active()), witnessList.Active())
 		return errWitness
 	}

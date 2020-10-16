@@ -569,7 +569,8 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 			return err
 		}
 		if isVoteBlock && !common.StringSliceEqual(pendingFromBlock, pendingFromDB) {
-			return fmt.Errorf("inconsistent pending producers %v vs %v at block %v", pendingFromBlock, pendingFromDB, h.Head.Number)
+			ilog.Warnf("inconsistent pending producers %v vs %v at block %v", pendingFromBlock, pendingFromDB, h.Head.Number)
+			//return fmt.Errorf("inconsistent pending producers %v vs %v at block %v", pendingFromBlock, pendingFromDB, h.Head.Number)
 		}
 		h.SetPending(pendingFromDB)
 
