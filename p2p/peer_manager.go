@@ -356,6 +356,7 @@ func (pm *PeerManager) AddNeighbor(p *Peer) {
 	defer pm.neighborMutex.Unlock()
 
 	if pm.neighbors[p.id] == nil {
+		ilog.Debug("adding p2p neighbors ", p.id)
 		p.Start()
 		// pm.storePeerInfo(p.id, []multiaddr.Multiaddr{p.addr})
 		pm.neighbors[p.id] = p
@@ -370,6 +371,7 @@ func (pm *PeerManager) RemoveNeighbor(peerID peer.ID) {
 
 	p := pm.neighbors[peerID]
 	if p != nil {
+		ilog.Debug("remove p2p peer ", peerID)
 		p.Stop()
 		delete(pm.neighbors, peerID)
 		pm.neighborCount[p.direction]--
@@ -429,6 +431,7 @@ func (pm *PeerManager) kickNormalNeighbors(direction connDirection) {
 			return
 		}
 		if direction == p.direction && !pm.isBP(p.id) {
+			ilog.Debug("kick p2p peer ", p.id)
 			p.Stop()
 			delete(pm.neighbors, p.id)
 			pm.neighborCount[direction]--
