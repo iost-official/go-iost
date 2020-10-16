@@ -79,3 +79,8 @@ func (wl *WitnessList) CopyWitness(n *BlockCacheNode) {
 	wl.SetActive(n.Active())
 	wl.SetPending(n.Pending())
 }
+
+type WitnessStatus struct {
+	PendingList []string `json:"pendingList"`
+	CurrentList []string `json:"currentList"`
+}

@@ -149,7 +149,7 @@ func (s *Sync) doBlockhashSync() {
 }
 
 func (s *Sync) syncBlockhashController() {
-	ilog.Debug("in syncBlockhashController")
+	//ilog.Debug("in syncBlockhashController")
 	for {
 		select {
 		case <-time.After(2 * time.Second):
@@ -158,7 +158,7 @@ func (s *Sync) syncBlockhashController() {
 			s.done.Done()
 			return
 		}
-		ilog.Debug("loop syncBlockhashController")
+		//ilog.Debug("loop syncBlockhashController")
 	}
 }
 
@@ -179,7 +179,7 @@ func (s *Sync) doBlockSync() {
 
 		rand.Seed(time.Now().UnixNano())
 		peerID := blockHash.PeerID[rand.Int()%len(blockHash.PeerID)]
-		ilog.Debug("sync block ", blockHash.Number, " from ", peerID)
+		//ilog.Debug("sync block ", blockHash.Number, " from ", peerID)
 		s.blockSync.RequestBlock(blockHash.Hash, peerID, p2p.SyncBlockRequest)
 	}
 }
