@@ -60,6 +60,13 @@ service ApiService {
             get: "/getRawBlockByNumber/{number}/{complete}"
         };
     }
+    // get batch of block header
+    rpc GetBlockHeaderByRange (GetBlockHeaderByRangeRequest) returns (BlockHeaderByRangeResponse) {
+        option (google.api.http) = {
+            post: "/getBlockHeaderByRange"
+            body: "*"
+        };
+    }
 
     // get account
     rpc GetAccount (GetAccountRequest) returns (Account) {
@@ -477,6 +484,10 @@ message RawBlockResponse {
     blockpb.Block block = 2;
 }
 
+message BlockHeaderByRangeResponse {
+    repeated blockpb.Block block_list = 1;
+}
+
 // The message defines chain information response.
 message ChainInfoResponse {
     // the name of network, such mainnet or testnet
@@ -525,6 +536,12 @@ message GetBlockByNumberRequest {
     int64 number = 1;
     // complete means whether including the full transactions and transaction receipts
     bool complete = 2;
+}
+
+// The request message containing range start and end
+message GetBlockHeaderByRangeRequest {
+    int64 start = 1;
+    int64 end = 2;
 }
 
 // The message defines the account's frozen balance.

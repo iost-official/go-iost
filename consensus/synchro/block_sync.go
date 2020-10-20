@@ -87,7 +87,7 @@ func (b *blockSync) RequestBlock(hash []byte, peerID p2p.PeerID, mtype p2p.Messa
 }
 
 func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
-	ilog.Debug("handleBlock p2p msg:", msg.Type())
+	// ilog.Debug("handleBlock p2p msg:", msg.Type())
 	if (msg.Type() != p2p.SyncBlockResponse) && (msg.Type() != p2p.NewBlock) {
 		ilog.Warnf("Expect the type %v and %v, but get a unexpected type %v", p2p.SyncBlockResponse, p2p.NewBlock, msg.Type())
 		return

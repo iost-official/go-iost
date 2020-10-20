@@ -256,6 +256,32 @@ func (as *APIService) GetRawBlockByNumber(ctx context.Context, req *rpcpb.GetBlo
 	}, nil
 }
 
+// GetBlockHeaderByRange returns block headers of a range
+func (as *APIService) GetBlockHeaderByRange(ctx context.Context, req *rpcpb.GetBlockHeaderByRangeRequest) (*rpcpb.BlockHeaderByRangeResponse, error) {
+	start := req.Start
+	end := req.End
+	var rangeLimit int64 = 110
+	if end <= start || end > start+rangeLimit {
+		return nil, fmt.Errorf("invalid range %v to %v", start, end)
+	}
+	res := &rpcpb.BlockHeaderByRangeResponse{
+		BlockList: make([]*blockpb.Block, 0, end-start),
+	}
+	for bn := start; bn < end; bn++ {
+		b, err := as.blockchain.GetBlockByNumber(bn)
+		if err != nil {
+			break
+		}
+		blk := b.ToPb(blockpb.BlockType_ONLYHASH)
+		blk.TxHashes = nil
+		blk.Receipts = nil
+		blk.ReceiptHashes = nil
+		blk.Txs = nil
+		res.BlockList = append(res.BlockList, blk)
+	}
+	return res, nil
+}
+
 // GetAccount returns account information corresponding to the given account name.
 func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
 	err := checkIDValid(req.GetName())

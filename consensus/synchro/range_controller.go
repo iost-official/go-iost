@@ -52,7 +52,7 @@ func (r *rangeController) SyncRange() (start int64, end int64) {
 	if r.start < 0 {
 		return 0, maxSyncRange - 1
 	}
-	ilog.Debug("sync range ", r.start, " to ", r.start+maxSyncRange-1)
+	// ilog.Debug("sync range ", r.start, " to ", r.start+maxSyncRange-1)
 	return r.start, r.start + maxSyncRange - 1
 }
 
