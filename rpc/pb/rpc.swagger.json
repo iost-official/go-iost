@@ -168,6 +168,33 @@
         ]
       }
     },
+    "/getBlockHeaderByRange": {
+      "post": {
+        "summary": "get batch of block header",
+        "operationId": "GetBlockHeaderByRange",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbBlockHeaderByRangeResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetBlockHeaderByRangeRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getCandidateBonus/{name}/{by_longest_chain}": {
       "get": {
         "operationId": "GetCandidateBonus",
@@ -420,6 +447,41 @@
             }
           }
         },
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
+    "/getRawBlockByNumber/{number}/{complete}": {
+      "get": {
+        "summary": "get raw block by number, including block signature etc",
+        "operationId": "GetRawBlockByNumber",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbRawBlockResponse"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "number",
+            "description": "block number",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "complete",
+            "description": "complete means whether including the full transactions and transaction receipts",
+            "in": "path",
+            "required": true,
+            "type": "boolean",
+            "format": "boolean"
+          }
+        ],
         "tags": [
           "ApiService"
         ]
@@ -931,54 +993,6 @@
       },
       "description": "The message defines account ram information."
     },
-    "BlockInfo": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "integer",
-          "format": "int32",
-          "title": "pack mode"
-        },
-        "thread": {
-          "type": "integer",
-          "format": "int32",
-          "title": "transaction execution thread number"
-        },
-        "batch_index": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": "transaction index of every batch execution"
-        }
-      },
-      "title": "The message defines block extra information"
-    },
-    "ContractABI": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "title": "abi name"
-        },
-        "args": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "abi arguments"
-        },
-        "amount_limit": {
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/rpcpbAmountLimit"
-          },
-          "title": "abi amount limt"
-        }
-      },
-      "description": "The message defines the ABI struct."
-    },
     "EventTopic": {
       "type": "string",
       "enum": [
@@ -1043,20 +1057,6 @@
         }
       }
     },
-    "TxReceiptReceipt": {
-      "type": "object",
-      "properties": {
-        "func_name": {
-          "type": "string",
-          "title": "function name"
-        },
-        "content": {
-          "type": "string",
-          "title": "content"
-        }
-      },
-      "description": "The message defines transaction execution receipt."
-    },
     "TxReceiptStatusCode": {
       "type": "string",
       "enum": [
@@ -1072,6 +1072,101 @@
       ],
       "default": "SUCCESS",
       "description": "The enumeration defines transaction receipt status code.\n\n - SUCCESS: success\n - GAS_RUN_OUT: run out of gas\n - BALANCE_NOT_ENOUGH: balance not enough\n - WRONG_PARAMETER: wrong parameter\n - RUNTIME_ERROR: runtime error\n - TIMEOUT: run out of time\n - WRONG_TX_FORMAT: wrong transaction format\n - DUPLICATE_SET_CODE: more than one set code action in a transaction\n - UNKNOWN_ERROR: unknown error"
+    },
+    "blockpbBlock": {
+      "type": "object",
+      "properties": {
+        "head": {
+          "$ref": "#/definitions/blockpbBlockHead"
+        },
+        "sign": {
+          "$ref": "#/definitions/sigpbSignature"
+        },
+        "txs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txpbTx"
+          }
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txpbTxReceipt"
+          }
+        },
+        "txHashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        },
+        "receiptHashes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "byte"
+          }
+        },
+        "blockType": {
+          "$ref": "#/definitions/blockpbBlockType"
+        }
+      }
+    },
+    "blockpbBlockHead": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "format": "int64"
+        },
+        "parentHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "txMerkleHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "txReceiptMerkleHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "info": {
+          "type": "string",
+          "format": "byte"
+        },
+        "number": {
+          "type": "string",
+          "format": "int64"
+        },
+        "witness": {
+          "type": "string"
+        },
+        "time": {
+          "type": "string",
+          "format": "int64"
+        }
+      }
+    },
+    "blockpbBlockType": {
+      "type": "string",
+      "enum": [
+        "NORMAL",
+        "ONLYHASH"
+      ],
+      "default": "NORMAL"
+    },
+    "contractAmount": {
+      "type": "object",
+      "properties": {
+        "token": {
+          "type": "string"
+        },
+        "val": {
+          "type": "string"
+        }
+      }
     },
     "protobufAny": {
       "type": "object",
@@ -1217,8 +1312,12 @@
           "title": "transaction count"
         },
         "info": {
-          "$ref": "#/definitions/BlockInfo",
+          "$ref": "#/definitions/rpcpbBlockInfo",
           "title": "extra information"
+        },
+        "orig_info": {
+          "type": "string",
+          "title": "original info bytes"
         },
         "transactions": {
           "type": "array",
@@ -1229,6 +1328,41 @@
         }
       },
       "description": "The message defines the block struct."
+    },
+    "rpcpbBlockHeaderByRangeResponse": {
+      "type": "object",
+      "properties": {
+        "block_list": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/blockpbBlock"
+          }
+        }
+      }
+    },
+    "rpcpbBlockInfo": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "pack mode"
+        },
+        "thread": {
+          "type": "integer",
+          "format": "int32",
+          "title": "transaction execution thread number"
+        },
+        "batch_index": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": "transaction index of every batch execution"
+        }
+      },
+      "title": "The message defines block extra information"
     },
     "rpcpbBlockResponse": {
       "type": "object",
@@ -1357,12 +1491,36 @@
         "abis": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ContractABI"
+            "$ref": "#/definitions/rpcpbContractABI"
           },
           "title": "contract abis"
         }
       },
       "description": "The message defines the contract struct."
+    },
+    "rpcpbContractABI": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "abi name"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "abi arguments"
+        },
+        "amount_limit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbAmountLimit"
+          },
+          "title": "abi amount limt"
+        }
+      },
+      "description": "The message defines the ABI struct."
     },
     "rpcpbContractVote": {
       "type": "object",
@@ -1470,6 +1628,20 @@
         }
       },
       "description": "The message defines get batch contract storage response."
+    },
+    "rpcpbGetBlockHeaderByRangeRequest": {
+      "type": "object",
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "int64"
+        },
+        "end": {
+          "type": "string",
+          "format": "int64"
+        }
+      },
+      "title": "The request message containing range start and end"
     },
     "rpcpbGetContractStorageFieldsRequest": {
       "type": "object",
@@ -1778,6 +1950,28 @@
         }
       },
       "description": "The message containing blockchain's ram information."
+    },
+    "rpcpbRawBlockResponse": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/rpcpbRawBlockResponseStatus",
+          "title": "transaction status"
+        },
+        "block": {
+          "$ref": "#/definitions/blockpbBlock",
+          "title": "block"
+        }
+      }
+    },
+    "rpcpbRawBlockResponseStatus": {
+      "type": "string",
+      "enum": [
+        "PENDING",
+        "IRREVERSIBLE"
+      ],
+      "default": "PENDING",
+      "description": "The enumeration defines block status.\n\n - PENDING: pending in block cache\n - IRREVERSIBLE: irreversible"
     },
     "rpcpbSendTransactionResponse": {
       "type": "object",
@@ -2105,12 +2299,26 @@
         "receipts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/TxReceiptReceipt"
+            "$ref": "#/definitions/rpcpbTxReceiptReceipt"
           },
           "title": "transaction receipts"
         }
       },
       "description": "The message defines the transaction receipt struct."
+    },
+    "rpcpbTxReceiptReceipt": {
+      "type": "object",
+      "properties": {
+        "func_name": {
+          "type": "string",
+          "title": "function name"
+        },
+        "content": {
+          "type": "string",
+          "title": "content"
+        }
+      },
+      "description": "The message defines transaction execution receipt."
     },
     "rpcpbVoteInfo": {
       "type": "object",
@@ -2172,6 +2380,165 @@
           "type": "array",
           "items": {
             "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
+    "sigpbSignature": {
+      "type": "object",
+      "properties": {
+        "algorithm": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "sig": {
+          "type": "string",
+          "format": "byte"
+        },
+        "pubKey": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "txpbAction": {
+      "type": "object",
+      "properties": {
+        "contract": {
+          "type": "string"
+        },
+        "actionName": {
+          "type": "string"
+        },
+        "data": {
+          "type": "string"
+        }
+      }
+    },
+    "txpbReceipt": {
+      "type": "object",
+      "properties": {
+        "funcName": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        }
+      }
+    },
+    "txpbStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "txpbTx": {
+      "type": "object",
+      "properties": {
+        "time": {
+          "type": "string",
+          "format": "int64"
+        },
+        "expiration": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gasLimit": {
+          "type": "string",
+          "format": "int64"
+        },
+        "gasRatio": {
+          "type": "string",
+          "format": "int64"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txpbAction"
+          }
+        },
+        "signers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "signs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/sigpbSignature"
+          }
+        },
+        "publisher": {
+          "type": "string"
+        },
+        "publishSigns": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/sigpbSignature"
+          }
+        },
+        "delay": {
+          "type": "string",
+          "format": "int64"
+        },
+        "chain_id": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "referredTx": {
+          "type": "string",
+          "format": "byte"
+        },
+        "amountLimit": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/contractAmount"
+          }
+        },
+        "reserved": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
+    },
+    "txpbTxReceipt": {
+      "type": "object",
+      "properties": {
+        "txHash": {
+          "type": "string",
+          "format": "byte"
+        },
+        "gasUsage": {
+          "type": "string",
+          "format": "int64"
+        },
+        "ramUsage": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "format": "int64"
+          }
+        },
+        "status": {
+          "$ref": "#/definitions/txpbStatus"
+        },
+        "returns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "receipts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/txpbReceipt"
           }
         }
       }

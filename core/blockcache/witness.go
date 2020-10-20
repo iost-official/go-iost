@@ -5,6 +5,10 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/ilog"
+
 	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/vm/database"
 )
@@ -83,4 +87,22 @@ func (wl *WitnessList) CopyWitness(n *BlockCacheNode) {
 type WitnessStatus struct {
 	PendingList []string `json:"pendingList"`
 	CurrentList []string `json:"currentList"`
+}
+
+func GetWitnessStatusFromBlock(b *block.Block) (*WitnessStatus, error) {
+	result := &WitnessStatus{}
+	for _, r := range b.Receipts {
+		for _, rr := range r.Receipts {
+			if rr.FuncName == "vote_producer.iost/stat" {
+				err := json.Unmarshal([]byte(rr.Content), result)
+				if err != nil {
+					ilog.Warn("invalid vote_producer.iost/stat receipt", rr.Content, err)
+					continue
+				}
+				return result, nil
+			}
+		}
+	}
+	ilog.Warn("vote_producer.iost/stat receipt not found at block ", b.Head.Number, ",hash:", common.Base58Encode(b.HeadHash()))
+	return result, nil
 }

@@ -2,7 +2,6 @@ package blockcache
 
 import (
 	"bytes"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"sync"
@@ -531,24 +530,6 @@ func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
 	SetInsert(&bc.linkedRootWitness, bcn.Head.Witness)
 }
 
-func (bc *BlockCacheImpl) getWitnessStatusFromBlock(h *BlockCacheNode) (*WitnessStatus, error) {
-	result := &WitnessStatus{}
-	for _, r := range h.Receipts {
-		for _, rr := range r.Receipts {
-			if rr.FuncName == "vote_producer.iost/stat" {
-				err := json.Unmarshal([]byte(rr.Content), result)
-				if err != nil {
-					ilog.Warn("invalid vote_producer.iost/stat receipt", rr.Content, err)
-					continue
-				}
-				return result, nil
-			}
-		}
-	}
-	ilog.Warn("vote_producer.iost/stat receipt not found at block ", h.Head.Number, ",hash:", common.Base58Encode(h.HeadHash()))
-	return result, nil
-}
-
 func (bc *BlockCacheImpl) setActiveFromBlockReceipt(h *BlockCacheNode) error {
 	isVoteBlock := h.Head.Number != 0 && h.Head.Number%common.VoteInterval == 0
 	if !isVoteBlock {
@@ -558,7 +539,7 @@ func (bc *BlockCacheImpl) setActiveFromBlockReceipt(h *BlockCacheNode) error {
 	var witnessStatusFromBlock *WitnessStatus
 	var err error
 	ilog.Debug("setActiveFromBlockReceipt ", h.Head.Number)
-	witnessStatusFromBlock, err = bc.getWitnessStatusFromBlock(h)
+	witnessStatusFromBlock, err = GetWitnessStatusFromBlock(h.Block)
 	if err != nil {
 		ilog.Warn(err)
 		return err
@@ -573,7 +554,7 @@ func (bc *BlockCacheImpl) updatePending(h *BlockCacheNode) error {
 	isVoteBlock := h.Head.Number != 0 && h.Head.Number%common.VoteInterval == 0
 	if isVoteBlock {
 		ilog.Debug("getPendingFromBlock ", h.Head.Number)
-		witnessStatusFromBlock, err = bc.getWitnessStatusFromBlock(h)
+		witnessStatusFromBlock, err = GetWitnessStatusFromBlock(h.Block)
 		if err != nil {
 			ilog.Warn(err)
 		}

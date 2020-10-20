@@ -113,7 +113,7 @@ func (c *ChainBase) printStatistics(num int64, blk *block.Block, replay bool, ge
 
 // Add will add a block to block cache and verify it.
 func (c *ChainBase) Add(blk *block.Block, replay bool, gen bool) error {
-	ilog.Debug("add block ", blk.Head.Number, " to chain base")
+	// ilog.Debug("add block ", blk.Head.Number, " to chain base")
 	_, err := c.bCache.GetBlockByHash(blk.HeadHash())
 	if err == nil {
 		return errDuplicate

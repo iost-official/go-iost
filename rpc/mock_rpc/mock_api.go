@@ -99,6 +99,19 @@ func (mr *MockApiServiceServerMockRecorder) GetBlockByNumber(arg0, arg1 interfac
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByNumber", reflect.TypeOf((*MockApiServiceServer)(nil).GetBlockByNumber), arg0, arg1)
 }
 
+// GetBlockHeaderByRange mocks base method
+func (m *MockApiServiceServer) GetBlockHeaderByRange(arg0 context.Context, arg1 *pb.GetBlockHeaderByRangeRequest) (*pb.BlockHeaderByRangeResponse, error) {
+	ret := m.ctrl.Call(m, "GetBlockHeaderByRange", arg0, arg1)
+	ret0, _ := ret[0].(*pb.BlockHeaderByRangeResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBlockHeaderByRange indicates an expected call of GetBlockHeaderByRange
+func (mr *MockApiServiceServerMockRecorder) GetBlockHeaderByRange(arg0, arg1 interface{}) *gomock.Call {
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockHeaderByRange", reflect.TypeOf((*MockApiServiceServer)(nil).GetBlockHeaderByRange), arg0, arg1)
+}
+
 // GetCandidateBonus mocks base method
 func (m *MockApiServiceServer) GetCandidateBonus(arg0 context.Context, arg1 *pb.GetAccountRequest) (*pb.CandidateBonus, error) {
 	ret := m.ctrl.Call(m, "GetCandidateBonus", arg0, arg1)
