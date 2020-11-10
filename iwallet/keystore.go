@@ -175,30 +175,39 @@ func (a *AccountInfo) SaveTo(fileName string) error {
 	return err
 }
 
-// Save ...
-func (a *AccountInfo) Save(encrypt bool) error {
+func (a *AccountInfo) getOutputKeyFileSaveLocation() (string, error) {
 	var fileName string
-	if keyFile == "" {
+	if outputKeyFile == "" {
 		dir, err := getAccountDir()
 		if err != nil {
-			return err
+			return "", err
 		}
 		err = os.MkdirAll(dir, 0700)
 		if err != nil {
-			return err
+			return "", err
 		}
 		fileName = dir + "/" + a.Name + ".json"
 	} else {
-		fileName = keyFile
+		fileName = outputKeyFile
 		if accountDir != "" {
 			ilog.Warn("--key_file is set, so --account_dir will be ignored")
 		}
+	}
+	return fileName, nil
+}
+
+// Save ...
+func (a *AccountInfo) Save(encrypt bool) error {
+	fileName, err := a.getOutputKeyFileSaveLocation()
+	if err != nil {
+		return err
 	}
 	if encrypt {
 		if err := a.Encrypt(); err != nil {
 			return err
 		}
 	}
+	fmt.Printf("keyfile of account %v saved to %v\n", a.Name, fileName)
 	return a.SaveTo(fileName)
 }
 

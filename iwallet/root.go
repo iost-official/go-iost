@@ -75,6 +75,7 @@ func init() {
 	rootCmd.PersistentFlags().StringVarP(&accountName, "account", "a", "", "which account to use")
 	rootCmd.PersistentFlags().StringVarP(&accountDir, "account_dir", "", "", "$(account_dir)/.iwallet will be used to save accounts (default $HOME/.iwallet)")
 	rootCmd.PersistentFlags().StringVarP(&keyFile, "key_file", "k", "", "the json file that stores your account name and keypair")
+	rootCmd.PersistentFlags().StringVarP(&outputKeyFile, "output_key_file", "", "", "the json file used to save your newly created account name and keypair, only used in 'iwallet account create/import' command")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "set server of this client")
 	rootCmd.PersistentFlags().BoolVarP(&useLongestChain, "use_longest", "", false, "get info on longest chain")
 	rootCmd.PersistentFlags().BoolVarP(&checkResult, "check_result", "", true, "check publish/call status after sending to chain")
@@ -131,13 +132,14 @@ func initConfig() {
 var iwalletSDK *sdk.IOSTDevSDK
 
 var (
-	server      string
-	accountName string
-	accountDir  string
-	keyFile     string
-	signAlgo    string
-	signers     []string
-	signPerm    string
+	server        string
+	accountName   string
+	accountDir    string
+	keyFile       string
+	outputKeyFile string
+	signAlgo      string
+	signers       []string
+	signPerm      string
 
 	gasLimit     float64
 	gasRatio     float64
