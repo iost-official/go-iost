@@ -214,6 +214,7 @@ L:
 		blk.Receipts = append(blk.Receipts, r)
 		blockGasLimit -= r.GasUsage
 	}
+	blk.Head.Info = []byte(`{}`) // for legacy reasons. remove it in later version
 	for _, t := range blk.Txs {
 		provider.Drop(t, nil)
 	}
