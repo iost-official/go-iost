@@ -51,7 +51,6 @@ func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) 
 	}
 
 	abi = c.ABI(api)
-
 	if abi == nil {
 		return nil, nil, nil, fmt.Errorf("abi %s not found", api)
 	}
