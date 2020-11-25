@@ -411,7 +411,9 @@ var (
 			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
-				return nil, cost, host.ErrPermissionLost
+				if !(h.Context().Value("publisher").(string) == "admin" && checkReserveToken(h, tokenSym)) {
+					return nil, cost, host.ErrPermissionLost
+				}
 			}
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas

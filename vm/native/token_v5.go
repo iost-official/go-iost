@@ -26,6 +26,7 @@ func init() {
 
 	tokenABIsV5.Register(createTokenABIV5)
 	tokenABIsV5.Register(transferTokenNamespace)
+	tokenABIsV5.Register(recycleTokenABI)
 }
 
 // nolint
