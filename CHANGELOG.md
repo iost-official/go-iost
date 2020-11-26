@@ -1,3 +1,10 @@
+## v3.4.0
+Wed Nov 25 18:06:58 CST 2020
+
+Breaking Change! Every node should upgrade before 2020.12.10.
+- reserve 'husd' token for Huobi (breaking change)
+- add original contract source code in `getContract` rpc. (only for new contracts)
+
 ## v3.3.6
 Mon Aug 31 20:31:02 CST 2020
 - Fixed a memory issue
