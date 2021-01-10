@@ -89,6 +89,9 @@ push:
 devimage:
 	docker build -f Dockerfile.dev -t $(DOCKER_DEVIMAGE) .
 
+docker_build:
+	$(DEV_DOCKER_RUN) make build
+
 docker_lint:
 	$(DEV_DOCKER_RUN) make lint
 
