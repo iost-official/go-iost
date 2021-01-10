@@ -103,8 +103,9 @@ dev_image_tag:
 
 docker_full_test: devimage dev_image_tag image docker_lint docker_test e2e_test
 
-devpush:
+devpush: dev_image_tag
 	docker push $(DOCKER_DEVIMAGE)
+	docker push iostio/iost-dev:latest
 
 release: devimage devpush release_image
 	docker push $(DOCKER_RELEASE_IMAGE)

@@ -1,6 +1,7 @@
 package iwallet
 
 import (
+	"encoding/json"
 	"fmt"
 	"sync"
 
@@ -174,10 +175,6 @@ var plistCmd = &cobra.Command{
 			return err
 		}
 		defer iwalletSDK.CloseConn()
-		chainInfo, err := iwalletSDK.GetChainInfo()
-		if err != nil {
-			return fmt.Errorf("cannot get chain info: %v", err)
-		}
 
 		var getWitnessName = func(pks []string) []string {
 			result := make([]string, len(pks))
@@ -198,8 +195,34 @@ var plistCmd = &cobra.Command{
 			wg.Wait()
 			return result
 		}
+		var getProducerListByKey = func(key string) ([]string, error) {
+			witnessListResult, err := iwalletSDK.GetContractStorage(&rpcpb.GetContractStorageRequest{
+				Id:             "vote_producer.iost",
+				Key:            key,
+				Field:          "",
+				ByLongestChain: useLongestChain,
+			})
+			if err != nil {
+				return nil, err
+			}
+			var witnessList []string
+			if err := json.Unmarshal([]byte(witnessListResult.Data), &witnessList); err != nil {
+				return nil, err
+			}
+			return witnessList, nil
+		}
+		currentWitnessList, err := getProducerListByKey("currentProducerList")
+		if err != nil {
+			return err
+		}
 
-		currentPlist, pendingPlist := getWitnessName(chainInfo.WitnessList), getWitnessName(chainInfo.PendingWitnessList)
+		pendingWitnessList, err := getProducerListByKey("pendingProducerList")
+		if err != nil {
+			return err
+		}
+
+		currentPlist := getWitnessName(currentWitnessList)
+		pendingPlist := getWitnessName(pendingWitnessList)
 		fmt.Println("Current producer list:", currentPlist)
 		fmt.Println("Pending producer list:", pendingPlist)
 		return nil
