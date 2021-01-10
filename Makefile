@@ -79,6 +79,10 @@ image:
 	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
+release_image:
+	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
+	docker build -f Dockerfile -t $(DOCKER_RELEASE_IMAGE) .
+
 push:
 	docker push $(DOCKER_IMAGE)
 
@@ -91,14 +95,15 @@ docker_lint:
 docker_test:
 	$(DEV_DOCKER_RUN) make test
 
-docker_full_test: devimage image docker_lint docker_test e2e_test
+dev_image_tag:
+	docker tag $(DOCKER_DEVIMAGE) iostio/iost-dev:latest
+
+docker_full_test: devimage dev_image_tag image docker_lint docker_test e2e_test
 
 devpush:
 	docker push $(DOCKER_DEVIMAGE)
 
-release: devimage devpush
-	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
-	docker build -f Dockerfile -t $(DOCKER_RELEASE_IMAGE) .
+release: devimage devpush release_image
 	docker push $(DOCKER_RELEASE_IMAGE)
 
 swagger:
