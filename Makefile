@@ -1,8 +1,9 @@
 GO = go
-GO_BUILD = go build -mod vendor
-GO_TEST := go test -mod vendor -race -coverprofile=coverage.txt -covermode=atomic
+GO_BUILD = $(GO) build -mod vendor
+GO_TEST := $(GO) test -mod vendor -race -coverprofile=coverage.txt -covermode=atomic
+GO_INSTALL := $(GO) install -mod vendor
 
-VERSION = 3.4.0
+VERSION = 3.4.1
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -10,6 +11,7 @@ DOCKER_RELEASE_IMAGE = iostio/iost-node:$(VERSION)
 DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)
 TARGET_DIR = target
 CLUSTER = devnet
+DEV_DOCKER_RUN = docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE)
 
 ifeq ($(shell uname),Darwin)
 	export CGO_LDFLAGS=-L$(shell pwd)/vm/v8vm/v8/libv8/_darwin_amd64
@@ -48,7 +50,7 @@ vmlib:
 	(cd vm/v8vm/v8/; make clean js_bin vm install deploy; cd ../../..)
 
 vmlib_linux:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
+	$(DEV_DOCKER_RUN) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
 
 test:
 ifeq ($(origin VERBOSE),undefined)
@@ -74,7 +76,7 @@ k8s_test: image push
 	kubectl exec -it itest -n $(CLUSTER) -- ./itest run -c /etc/itest/itest.json c_case
 
 image:
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
+	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
 
 push:
@@ -83,11 +85,19 @@ push:
 devimage:
 	docker build -f Dockerfile.dev -t $(DOCKER_DEVIMAGE) .
 
+docker_lint:
+	$(DEV_DOCKER_RUN) make lint
+
+docker_test:
+	$(DEV_DOCKER_RUN) make test
+
+docker_full_test: devimage image docker_lint docker_test e2e_test
+
 devpush:
 	docker push $(DOCKER_DEVIMAGE)
 
 release: devimage devpush
-	docker run --rm -v `pwd`:/gopath/src/github.com/iost-official/go-iost $(DOCKER_DEVIMAGE) make BUILD_TIME=$(BUILD_TIME)
+	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
 	docker build -f Dockerfile -t $(DOCKER_RELEASE_IMAGE) .
 	docker push $(DOCKER_RELEASE_IMAGE)
 
@@ -98,9 +108,9 @@ protobuf:
 	./script/gen_protobuf.sh
 
 install:
-	go install -ldflags "$(LD_FLAGS)" ./cmd/iserver/
-	go install ./cmd/iwallet/
-	go install ./cmd/itest/
+	$(GO_INSTALL) -ldflags "$(LD_FLAGS)" ./cmd/iserver/
+	$(GO_INSTALL) ./cmd/iwallet/
+	$(GO_INSTALL) ./cmd/itest/
 
 clean:
 	rm -rf ${TARGET_DIR}
