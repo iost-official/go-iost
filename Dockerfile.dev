@@ -20,7 +20,7 @@ ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
 ENV GO111MODULE on
 
 # Install golangci-lint
-RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.31.0
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.35.0
 
 WORKDIR $GOPATH/src/github.com/iost-official/go-iost
 
