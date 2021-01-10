@@ -1,6 +1,6 @@
 {
   "dependencies": {
-    "axios": "^0.19.2",
+    "axios": "^0.21.1",
     "escodegen": "^1.14.1",
     "esprima": "^4.0.1",
     "print-diff": "^1.0.0",
