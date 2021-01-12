@@ -15,5 +15,6 @@ cat iserver.yaml | sed 's/\$COMMIT'"/$COMMIT/g" | kubectl delete -f - -n $NAME -
 cat itest.yaml | sed 's/\$COMMIT'"/$COMMIT/g" | kubectl delete -f - -n $NAME --ignore-not-found
 kubectl delete pvc -l k8s-app=iserver -n $NAME
 kubectl delete configmap iserver-config -n $NAME --ignore-not-found
+kubectl delete configmap iserver-contract -n $NAME --ignore-not-found
 kubectl delete configmap itest-config -n $NAME --ignore-not-found
 
