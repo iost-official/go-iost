@@ -54,7 +54,7 @@ matrix:
   - os: linux
     dist: xenial
     go: "1.15"
-    if: type = cron
+    if: 1 = 0 AND type = cron
     env: JOB=k8s_test
     services:
     - docker
