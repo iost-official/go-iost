@@ -30,6 +30,7 @@ matrix:
     services:
     - docker
     before_install:
+    - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
     - docker pull iostio/iost-dev:latest
     - git lfs install
     before_script:
@@ -45,6 +46,7 @@ matrix:
     services:
     - docker
     before_install:
+    - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
     - docker pull iostio/iost-dev:latest
     - git lfs install
     before_script:
