@@ -11,6 +11,12 @@ linters-settings:
       - singleCaseSwitch
       - commentFormatting
 
+issues:
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "SA1019:" # use old protobuf
+
 linters:
   enable:
     - govet

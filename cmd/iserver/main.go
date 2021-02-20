@@ -61,7 +61,7 @@ func main() {
 	}
 
 	if *configFile == "" {
-		*configFile = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/iserver.yml"
+		*configFile = os.Getenv("GOIOST") + "//config/iserver.yml"
 	}
 
 	conf := common.NewConfig(*configFile)

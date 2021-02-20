@@ -72,7 +72,7 @@ func init() {
 	acc9 = testAccounts[9]
 }
 
-var ContractPath = os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/genesis/contract/"
+var ContractPath = os.Getenv("GOIOST") + "//config/genesis/contract/"
 
 type fataler interface {
 	Fatal(args ...interface{})

@@ -9,19 +9,17 @@ RUN apt update && \
 
 # Install Go
 RUN mkdir /goroot && \
-    mkdir /gopath && \
     curl https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
     tar xzf - -C /goroot --strip-components=1
 
 ENV CGO_ENABLED 1
-ENV GOPATH /gopath
 ENV GOROOT /goroot
-ENV PATH $GOROOT/bin:$GOPATH/bin:$PATH
+ENV PATH $GOROOT/bin:$HOME/bin:$PATH
 ENV GO111MODULE on
 
 # Install golangci-lint
-RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $(go env GOPATH)/bin v1.35.0
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $HOME/bin v1.35.0
 
-WORKDIR $GOPATH/src/github.com/iost-official/go-iost
+WORKDIR /go-iost
 
 CMD ["make"]

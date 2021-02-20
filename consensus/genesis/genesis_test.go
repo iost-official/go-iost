@@ -29,6 +29,7 @@ func TestGenGenesis(t *testing.T) {
 		os.RemoveAll("mvcc")
 	}()
 	k := account.EncodePubkey(crypto.Ed25519.GetPubkey(crypto.Ed25519.GenSeckey()))
+	fmt.Println("path", os.Getenv("GOIOST") + "//config/genesis/contract/")
 	blk, err := GenGenesis(d, &common.GenesisConfig{
 		WitnessInfo: []*common.Witness{
 			randWitness(1),
@@ -45,7 +46,7 @@ func TestGenGenesis(t *testing.T) {
 			IOSTDecimal:       8,
 		},
 		InitialTimestamp: "2006-01-02T15:04:05Z",
-		ContractPath:     os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/config/genesis/contract/",
+		ContractPath:     os.Getenv("GOIOST") + "//config/genesis/contract/",
 		AdminInfo:        randWitness(8),
 		FoundationInfo:   &common.Witness{ID: "f8", Owner: k, Active: k, Balance: 0},
 	})
