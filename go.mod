@@ -4,13 +4,11 @@ go 1.15
 
 require (
 	github.com/Jeffail/tunny v0.0.0-20190930221602-f13eb662a36a
-	github.com/OneOfOne/xxhash v1.2.5 // indirect
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/bitly/go-simplejson v0.5.1-0.20171023175154-0c965951289c
 	github.com/blend/go-sdk v2.0.0+incompatible // indirect
 	github.com/btcsuite/btcd v0.21.0-beta // indirect
 	github.com/btcsuite/btcutil v1.0.2
-	github.com/elastic/gosigar v0.8.1-0.20180330100440-37f05ff46ffa // indirect
 	github.com/emirpasic/gods v1.12.0
 	github.com/ethereum/go-ethereum v1.9.25
 	github.com/go-ole/go-ole v1.2.4 // indirect
@@ -37,7 +35,7 @@ require (
 	github.com/prometheus/client_golang v1.4.1
 	github.com/prometheus/procfs v0.0.10 // indirect
 	github.com/rs/cors v1.7.0
-	github.com/shirou/gopsutil v2.20.5+incompatible
+	github.com/shirou/gopsutil v3.21.1+incompatible
 	github.com/smartystreets/assertions v1.0.1 // indirect
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/afero v1.2.2 // indirect
@@ -69,6 +67,5 @@ require (
 	google.golang.org/grpc v1.27.1
 	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/ini.v1 v1.52.0 // indirect
-	gopkg.in/sourcemap.v1 v1.0.5 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )

@@ -308,7 +308,7 @@ github.com/prometheus/procfs/internal/util
 github.com/rs/cors
 # github.com/russross/blackfriday/v2 v2.0.1
 github.com/russross/blackfriday/v2
-# github.com/shirou/gopsutil v2.20.5+incompatible
+# github.com/shirou/gopsutil v3.21.1+incompatible
 ## explicit
 github.com/shirou/gopsutil/cpu
 github.com/shirou/gopsutil/disk
