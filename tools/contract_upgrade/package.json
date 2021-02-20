@@ -1,9 +1,0 @@
-{
-  "dependencies": {
-    "axios": "^0.21.1",
-    "escodegen": "^1.14.1",
-    "esprima": "^4.0.1",
-    "print-diff": "^1.0.0",
-    "require-from-string": "^2.0.2"
-  }
-}
