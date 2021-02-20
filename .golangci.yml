@@ -20,7 +20,6 @@ issues:
 linters:
   enable:
     - govet
-    - gocyclo
     - golint
     - gosimple
     - ineffassign
@@ -68,3 +67,4 @@ linters:
     - gochecknoinits
     - gocognit
     - goconst
+    - gocyclo

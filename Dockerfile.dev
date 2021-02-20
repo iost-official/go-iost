@@ -4,7 +4,7 @@ ENV GOVERSION 1.15
 
 # Install Base Tools
 RUN apt update && \
-        apt install -y git make vim curl wget g++ && \
+        apt install -y git make curl g++ && \
         rm -rf /var/lib/apt/lists
 
 # Install Go
@@ -14,11 +14,11 @@ RUN mkdir /goroot && \
 
 ENV CGO_ENABLED 1
 ENV GOROOT /goroot
-ENV PATH $GOROOT/bin:$HOME/bin:$PATH
+ENV PATH $GOROOT/bin:$PATH
 ENV GO111MODULE on
 
 # Install golangci-lint
-RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $HOME/bin v1.35.0
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b /usr/local/bin v1.37.0
 
 WORKDIR /go-iost
 

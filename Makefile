@@ -1,6 +1,6 @@
 GO = go
 GO_BUILD = $(GO) build -mod vendor
-GO_TEST := $(GO) test -mod vendor -race -coverprofile=coverage.txt -covermode=atomic
+GO_TEST := $(GO) test -mod vendor -race -timeout 600s
 GO_INSTALL := $(GO) install -mod vendor
 
 VERSION = 3.4.2
@@ -39,7 +39,7 @@ all: build
 
 build: iserver iwallet itest
 
-iserver:
+iserver: $(eval SHELL:=/bin/bash) 
 	$(GO_BUILD) -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
 	@if [[ "`uname`" == "Darwin"* ]]; then \
 		echo change libvm dylib path; \
@@ -58,10 +58,14 @@ lint:
 vmlib:
 	(cd vm/v8vm/v8/; make clean js_bin vm install; cd ../../..)
 
+vmlib_install:
+	(cd vm/v8vm/v8/; make deploy; cd ../../..)
+
 vmlib_linux:
 	$(DEV_DOCKER_RUN) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
 
 test:
+	go clean -testcache
 ifeq ($(origin VERBOSE),undefined)
 	$(GO_TEST) ./...
 else
@@ -129,7 +133,7 @@ debug: build
 	target/iserver -f config/iserver.yml
 
 clear_debug_file:
-	rm -rf storage
+	rm -rf storage logs ilog/logs1 ilog/logs2
 	rm -f p2p/priv.key
 	rm -f p2p/routing.table
 

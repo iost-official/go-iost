@@ -2,8 +2,6 @@ language: go
 branches:
   only:
   - master
-  - develop
-  - "/^sprint.*$/"
 matrix:
   fast_finish: true
   include:
@@ -14,15 +12,13 @@ matrix:
     before_install:
     - HOMEBREW_NO_AUTO_UPDATE=1 brew install git-lfs
     - git lfs install
-    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/bin v1.35.0
+    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/bin v1.37.0
     before_script:
     - git lfs pull
     script:
     - make build
     - PATH=$HOME/bin:$PATH make lint
     - make test
-    after_success:
-    - bash <(curl -s https://codecov.io/bash)
   - os: linux
     dist: xenial
     go: "1.15"
@@ -31,14 +27,11 @@ matrix:
     - docker
     before_install:
     - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-    - docker pull iostio/iost-dev:latest
     - git lfs install
     before_script:
     - git lfs pull
     script:
     - make docker_build docker_lint docker_test
-    after_success:
-    - bash <(curl -s https://codecov.io/bash)
   - os: linux
     dist: xenial
     go: "1.15"
@@ -47,7 +40,6 @@ matrix:
     - docker
     before_install:
     - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-    - docker pull iostio/iost-dev:latest
     - git lfs install
     before_script:
     - git lfs pull

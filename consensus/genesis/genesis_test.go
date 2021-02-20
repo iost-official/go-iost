@@ -29,7 +29,7 @@ func TestGenGenesis(t *testing.T) {
 		os.RemoveAll("mvcc")
 	}()
 	k := account.EncodePubkey(crypto.Ed25519.GetPubkey(crypto.Ed25519.GenSeckey()))
-	fmt.Println("path", os.Getenv("GOIOST") + "//config/genesis/contract/")
+	//fmt.Println("path", os.Getenv("GOIOST") + "//config/genesis/contract/")
 	blk, err := GenGenesis(d, &common.GenesisConfig{
 		WitnessInfo: []*common.Witness{
 			randWitness(1),
@@ -54,6 +54,6 @@ func TestGenGenesis(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	fmt.Println(blk)
+	fmt.Println(blk.Head)
 	return
 }
