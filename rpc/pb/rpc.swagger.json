@@ -19,7 +19,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbTxReceipt"
+              "$ref": "#/definitions/pbTxReceipt"
             }
           }
         },
@@ -29,7 +29,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbTransactionRequest"
+              "$ref": "#/definitions/pbTransactionRequest"
             }
           }
         ],
@@ -46,7 +46,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbAccount"
+              "$ref": "#/definitions/pbAccount"
             }
           }
         },
@@ -80,7 +80,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetBatchContractStorageResponse"
+              "$ref": "#/definitions/pbGetBatchContractStorageResponse"
             }
           }
         },
@@ -90,7 +90,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbGetBatchContractStorageRequest"
+              "$ref": "#/definitions/pbGetBatchContractStorageRequest"
             }
           }
         ],
@@ -107,7 +107,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbBlockResponse"
+              "$ref": "#/definitions/pbBlockResponse"
             }
           }
         },
@@ -141,7 +141,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbBlockResponse"
+              "$ref": "#/definitions/pbBlockResponse"
             }
           }
         },
@@ -176,7 +176,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbBlockHeaderByRangeResponse"
+              "$ref": "#/definitions/pbBlockHeaderByRangeResponse"
             }
           }
         },
@@ -186,7 +186,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbGetBlockHeaderByRangeRequest"
+              "$ref": "#/definitions/pbGetBlockHeaderByRangeRequest"
             }
           }
         ],
@@ -202,7 +202,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbCandidateBonus"
+              "$ref": "#/definitions/pbCandidateBonus"
             }
           }
         },
@@ -236,7 +236,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbChainInfoResponse"
+              "$ref": "#/definitions/pbChainInfoResponse"
             }
           }
         },
@@ -253,7 +253,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbContract"
+              "$ref": "#/definitions/pbContract"
             }
           }
         },
@@ -287,7 +287,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetContractStorageResponse"
+              "$ref": "#/definitions/pbGetContractStorageResponse"
             }
           }
         },
@@ -297,7 +297,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbGetContractStorageRequest"
+              "$ref": "#/definitions/pbGetContractStorageRequest"
             }
           }
         ],
@@ -314,7 +314,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetContractStorageFieldsResponse"
+              "$ref": "#/definitions/pbGetContractStorageFieldsResponse"
             }
           }
         },
@@ -324,7 +324,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbGetContractStorageFieldsRequest"
+              "$ref": "#/definitions/pbGetContractStorageFieldsRequest"
             }
           }
         ],
@@ -341,7 +341,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbContractVote"
+              "$ref": "#/definitions/pbContractVote"
             }
           }
         },
@@ -375,7 +375,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGasRatioResponse"
+              "$ref": "#/definitions/pbGasRatioResponse"
             }
           }
         },
@@ -392,7 +392,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbNodeInfoResponse"
+              "$ref": "#/definitions/pbNodeInfoResponse"
             }
           }
         },
@@ -409,7 +409,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetProducerVoteInfoResponse"
+              "$ref": "#/definitions/pbGetProducerVoteInfoResponse"
             }
           }
         },
@@ -443,7 +443,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbRAMInfoResponse"
+              "$ref": "#/definitions/pbRAMInfoResponse"
             }
           }
         },
@@ -460,7 +460,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbRawBlockResponse"
+              "$ref": "#/definitions/pbRawBlockResponse"
             }
           }
         },
@@ -495,7 +495,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetToken721BalanceResponse"
+              "$ref": "#/definitions/pbGetToken721BalanceResponse"
             }
           }
         },
@@ -536,7 +536,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetToken721MetadataResponse"
+              "$ref": "#/definitions/pbGetToken721MetadataResponse"
             }
           }
         },
@@ -577,7 +577,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetToken721OwnerResponse"
+              "$ref": "#/definitions/pbGetToken721OwnerResponse"
             }
           }
         },
@@ -618,7 +618,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbGetTokenBalanceResponse"
+              "$ref": "#/definitions/pbGetTokenBalanceResponse"
             }
           }
         },
@@ -658,7 +658,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbTokenInfo"
+              "$ref": "#/definitions/pbTokenInfo"
             }
           }
         },
@@ -692,7 +692,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbTransactionResponse"
+              "$ref": "#/definitions/pbTransactionResponse"
             }
           }
         },
@@ -718,7 +718,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbTxReceipt"
+              "$ref": "#/definitions/pbTxReceipt"
             }
           }
         },
@@ -743,7 +743,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbVoterBonus"
+              "$ref": "#/definitions/pbVoterBonus"
             }
           }
         },
@@ -776,7 +776,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbListContractStorageResponse"
+              "$ref": "#/definitions/pbListContractStorageResponse"
             }
           }
         },
@@ -786,7 +786,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbListContractStorageRequest"
+              "$ref": "#/definitions/pbListContractStorageRequest"
             }
           }
         ],
@@ -803,7 +803,7 @@
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbSendTransactionResponse"
+              "$ref": "#/definitions/pbSendTransactionResponse"
             }
           }
         },
@@ -813,7 +813,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbTransactionRequest"
+              "$ref": "#/definitions/pbTransactionRequest"
             }
           }
         ],
@@ -830,7 +830,7 @@
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/rpcpbSubscribeResponse"
+              "$ref": "#/x-stream-definitions/pbSubscribeResponse"
             }
           }
         },
@@ -840,7 +840,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbSubscribeRequest"
+              "$ref": "#/definitions/pbSubscribeRequest"
             }
           }
         ],
@@ -1168,19 +1168,7 @@
         }
       }
     },
-    "protobufAny": {
-      "type": "object",
-      "properties": {
-        "type_url": {
-          "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
-        }
-      }
-    },
-    "rpcpbAccount": {
+    "pbAccount": {
       "type": "object",
       "properties": {
         "name": {
@@ -1217,21 +1205,21 @@
         "frozen_balances": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbFrozenBalance"
+            "$ref": "#/definitions/pbFrozenBalance"
           },
           "title": "frozen balance information"
         },
         "vote_infos": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbVoteInfo"
+            "$ref": "#/definitions/pbVoteInfo"
           },
           "title": "vote information"
         }
       },
       "description": "The message defines account struct."
     },
-    "rpcpbAction": {
+    "pbAction": {
       "type": "object",
       "properties": {
         "contract": {
@@ -1249,7 +1237,7 @@
       },
       "description": "The message defines transaction action struct."
     },
-    "rpcpbAmountLimit": {
+    "pbAmountLimit": {
       "type": "object",
       "properties": {
         "token": {
@@ -1263,7 +1251,7 @@
       },
       "description": "The message defines transaction amount limit struct."
     },
-    "rpcpbBlock": {
+    "pbBlock": {
       "type": "object",
       "properties": {
         "hash": {
@@ -1312,7 +1300,7 @@
           "title": "transaction count"
         },
         "info": {
-          "$ref": "#/definitions/rpcpbBlockInfo",
+          "$ref": "#/definitions/pbBlockInfo",
           "title": "extra information"
         },
         "orig_info": {
@@ -1322,14 +1310,14 @@
         "transactions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbTransaction"
+            "$ref": "#/definitions/pbTransaction"
           },
           "title": "block transactions"
         }
       },
       "description": "The message defines the block struct."
     },
-    "rpcpbBlockHeaderByRangeResponse": {
+    "pbBlockHeaderByRangeResponse": {
       "type": "object",
       "properties": {
         "block_list": {
@@ -1340,7 +1328,7 @@
         }
       }
     },
-    "rpcpbBlockInfo": {
+    "pbBlockInfo": {
       "type": "object",
       "properties": {
         "mode": {
@@ -1364,20 +1352,20 @@
       },
       "title": "The message defines block extra information"
     },
-    "rpcpbBlockResponse": {
+    "pbBlockResponse": {
       "type": "object",
       "properties": {
         "status": {
-          "$ref": "#/definitions/rpcpbBlockResponseStatus",
+          "$ref": "#/definitions/pbBlockResponseStatus",
           "title": "transaction status"
         },
         "block": {
-          "$ref": "#/definitions/rpcpbBlock",
+          "$ref": "#/definitions/pbBlock",
           "title": "block"
         }
       }
     },
-    "rpcpbBlockResponseStatus": {
+    "pbBlockResponseStatus": {
       "type": "string",
       "enum": [
         "PENDING",
@@ -1386,7 +1374,7 @@
       "default": "PENDING",
       "description": "The enumeration defines block status.\n\n - PENDING: pending in block cache\n - IRREVERSIBLE: irreversible"
     },
-    "rpcpbCandidateBonus": {
+    "pbCandidateBonus": {
       "type": "object",
       "properties": {
         "bonus": {
@@ -1397,7 +1385,7 @@
       },
       "description": "The message defines the getCandidateBonus response."
     },
-    "rpcpbChainInfoResponse": {
+    "pbChainInfoResponse": {
       "type": "object",
       "properties": {
         "net_name": {
@@ -1465,7 +1453,7 @@
       },
       "description": "The message defines chain information response."
     },
-    "rpcpbContract": {
+    "pbContract": {
       "type": "object",
       "properties": {
         "id": {
@@ -1491,14 +1479,14 @@
         "abis": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbContractABI"
+            "$ref": "#/definitions/pbContractABI"
           },
           "title": "contract abis"
         }
       },
       "description": "The message defines the contract struct."
     },
-    "rpcpbContractABI": {
+    "pbContractABI": {
       "type": "object",
       "properties": {
         "name": {
@@ -1515,27 +1503,27 @@
         "amount_limit": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbAmountLimit"
+            "$ref": "#/definitions/pbAmountLimit"
           },
           "title": "abi amount limt"
         }
       },
       "description": "The message defines the ABI struct."
     },
-    "rpcpbContractVote": {
+    "pbContractVote": {
       "type": "object",
       "properties": {
         "vote_infos": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbVoteInfo"
+            "$ref": "#/definitions/pbVoteInfo"
           },
           "title": "vote information"
         }
       },
       "title": "The message defines the contract vote info"
     },
-    "rpcpbEvent": {
+    "pbEvent": {
       "type": "object",
       "properties": {
         "topic": {
@@ -1554,7 +1542,7 @@
       },
       "description": "The message defines event struct."
     },
-    "rpcpbFrozenBalance": {
+    "pbFrozenBalance": {
       "type": "object",
       "properties": {
         "amount": {
@@ -1570,7 +1558,7 @@
       },
       "description": "The message defines the account's frozen balance."
     },
-    "rpcpbGasRatioResponse": {
+    "pbGasRatioResponse": {
       "type": "object",
       "properties": {
         "lowest_gas_ratio": {
@@ -1585,7 +1573,7 @@
         }
       }
     },
-    "rpcpbGetBatchContractStorageRequest": {
+    "pbGetBatchContractStorageRequest": {
       "type": "object",
       "properties": {
         "id": {
@@ -1607,7 +1595,7 @@
       },
       "description": "The message defines get batch contract storage request."
     },
-    "rpcpbGetBatchContractStorageResponse": {
+    "pbGetBatchContractStorageResponse": {
       "type": "object",
       "properties": {
         "datas": {
@@ -1629,7 +1617,7 @@
       },
       "description": "The message defines get batch contract storage response."
     },
-    "rpcpbGetBlockHeaderByRangeRequest": {
+    "pbGetBlockHeaderByRangeRequest": {
       "type": "object",
       "properties": {
         "start": {
@@ -1643,7 +1631,7 @@
       },
       "title": "The request message containing range start and end"
     },
-    "rpcpbGetContractStorageFieldsRequest": {
+    "pbGetContractStorageFieldsRequest": {
       "type": "object",
       "properties": {
         "id": {
@@ -1662,7 +1650,7 @@
       },
       "description": "The message defines get contract storage request."
     },
-    "rpcpbGetContractStorageFieldsResponse": {
+    "pbGetContractStorageFieldsResponse": {
       "type": "object",
       "properties": {
         "fields": {
@@ -1684,7 +1672,7 @@
       },
       "description": "The message defines get contract storage response."
     },
-    "rpcpbGetContractStorageRequest": {
+    "pbGetContractStorageRequest": {
       "type": "object",
       "properties": {
         "id": {
@@ -1707,7 +1695,7 @@
       },
       "description": "The message defines get contract storage request."
     },
-    "rpcpbGetContractStorageResponse": {
+    "pbGetContractStorageResponse": {
       "type": "object",
       "properties": {
         "data": {
@@ -1726,7 +1714,7 @@
       },
       "description": "The message defines get contract storage response."
     },
-    "rpcpbGetProducerVoteInfoResponse": {
+    "pbGetProducerVoteInfoResponse": {
       "type": "object",
       "properties": {
         "pubkey": {
@@ -1766,7 +1754,7 @@
         }
       }
     },
-    "rpcpbGetToken721BalanceResponse": {
+    "pbGetToken721BalanceResponse": {
       "type": "object",
       "properties": {
         "balance": {
@@ -1784,7 +1772,7 @@
       },
       "description": "The message defines get token721 balance response."
     },
-    "rpcpbGetToken721MetadataResponse": {
+    "pbGetToken721MetadataResponse": {
       "type": "object",
       "properties": {
         "metadata": {
@@ -1794,7 +1782,7 @@
       },
       "description": "The message defines get token721 metadata response."
     },
-    "rpcpbGetToken721OwnerResponse": {
+    "pbGetToken721OwnerResponse": {
       "type": "object",
       "properties": {
         "owner": {
@@ -1804,7 +1792,7 @@
       },
       "description": "The message defines get token721 owner response."
     },
-    "rpcpbGetTokenBalanceResponse": {
+    "pbGetTokenBalanceResponse": {
       "type": "object",
       "properties": {
         "balance": {
@@ -1815,14 +1803,14 @@
         "frozen_balances": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbFrozenBalance"
+            "$ref": "#/definitions/pbFrozenBalance"
           },
           "title": "frozen balance information"
         }
       },
       "description": "The message defines get token balance response."
     },
-    "rpcpbListContractStorageRequest": {
+    "pbListContractStorageRequest": {
       "type": "object",
       "properties": {
         "id": {
@@ -1854,7 +1842,7 @@
         }
       }
     },
-    "rpcpbListContractStorageResponse": {
+    "pbListContractStorageResponse": {
       "type": "object",
       "properties": {
         "datas": {
@@ -1874,7 +1862,7 @@
         }
       }
     },
-    "rpcpbNetworkInfo": {
+    "pbNetworkInfo": {
       "type": "object",
       "properties": {
         "id": {
@@ -1889,7 +1877,7 @@
       },
       "description": "The message defines network connection information."
     },
-    "rpcpbNodeInfoResponse": {
+    "pbNodeInfoResponse": {
       "type": "object",
       "properties": {
         "build_time": {
@@ -1905,7 +1893,7 @@
           "title": "node mode"
         },
         "network": {
-          "$ref": "#/definitions/rpcpbNetworkInfo",
+          "$ref": "#/definitions/pbNetworkInfo",
           "title": "network connection information"
         },
         "code_version": {
@@ -1920,7 +1908,7 @@
       },
       "description": "The message containing the node's information."
     },
-    "rpcpbRAMInfoResponse": {
+    "pbRAMInfoResponse": {
       "type": "object",
       "properties": {
         "used_ram": {
@@ -1951,11 +1939,11 @@
       },
       "description": "The message containing blockchain's ram information."
     },
-    "rpcpbRawBlockResponse": {
+    "pbRawBlockResponse": {
       "type": "object",
       "properties": {
         "status": {
-          "$ref": "#/definitions/rpcpbRawBlockResponseStatus",
+          "$ref": "#/definitions/pbRawBlockResponseStatus",
           "title": "transaction status"
         },
         "block": {
@@ -1964,7 +1952,7 @@
         }
       }
     },
-    "rpcpbRawBlockResponseStatus": {
+    "pbRawBlockResponseStatus": {
       "type": "string",
       "enum": [
         "PENDING",
@@ -1973,7 +1961,7 @@
       "default": "PENDING",
       "description": "The enumeration defines block status.\n\n - PENDING: pending in block cache\n - IRREVERSIBLE: irreversible"
     },
-    "rpcpbSendTransactionResponse": {
+    "pbSendTransactionResponse": {
       "type": "object",
       "properties": {
         "hash": {
@@ -1981,13 +1969,13 @@
           "title": "the final transaction hash"
         },
         "pre_tx_receipt": {
-          "$ref": "#/definitions/rpcpbTxReceipt",
+          "$ref": "#/definitions/pbTxReceipt",
           "title": "the tx_receipt of execution in advance"
         }
       },
       "description": "The message defines send transaction response."
     },
-    "rpcpbSignature": {
+    "pbSignature": {
       "type": "object",
       "properties": {
         "algorithm": {
@@ -2007,7 +1995,7 @@
       },
       "description": "The message defines signature struct."
     },
-    "rpcpbSubscribeRequest": {
+    "pbSubscribeRequest": {
       "type": "object",
       "properties": {
         "topics": {
@@ -2022,16 +2010,16 @@
       },
       "description": "The message defines subscribe request."
     },
-    "rpcpbSubscribeResponse": {
+    "pbSubscribeResponse": {
       "type": "object",
       "properties": {
         "event": {
-          "$ref": "#/definitions/rpcpbEvent"
+          "$ref": "#/definitions/pbEvent"
         }
       },
       "description": "The message defines subscribe response."
     },
-    "rpcpbTokenInfo": {
+    "pbTokenInfo": {
       "type": "object",
       "properties": {
         "symbol": {
@@ -2084,7 +2072,7 @@
       },
       "description": "The message defines the token information."
     },
-    "rpcpbTransaction": {
+    "pbTransaction": {
       "type": "object",
       "properties": {
         "hash": {
@@ -2124,7 +2112,7 @@
         "actions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbAction"
+            "$ref": "#/definitions/pbAction"
           },
           "title": "action list"
         },
@@ -2146,18 +2134,18 @@
         "amount_limit": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbAmountLimit"
+            "$ref": "#/definitions/pbAmountLimit"
           },
           "title": "amount limit"
         },
         "tx_receipt": {
-          "$ref": "#/definitions/rpcpbTxReceipt",
+          "$ref": "#/definitions/pbTxReceipt",
           "title": "transaction receipt"
         }
       },
       "description": "The message defines transaction struct."
     },
-    "rpcpbTransactionRequest": {
+    "pbTransactionRequest": {
       "type": "object",
       "properties": {
         "time": {
@@ -2193,14 +2181,14 @@
         "actions": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbAction"
+            "$ref": "#/definitions/pbAction"
           },
           "title": "action list"
         },
         "amount_limit": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbAmountLimit"
+            "$ref": "#/definitions/pbAmountLimit"
           },
           "title": "amount limit"
         },
@@ -2214,7 +2202,7 @@
         "signatures": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbSignature"
+            "$ref": "#/definitions/pbSignature"
           },
           "title": "signatures of signers"
         },
@@ -2225,22 +2213,22 @@
         "publisher_sigs": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbSignature"
+            "$ref": "#/definitions/pbSignature"
           },
           "title": "signatures of publisher"
         }
       },
       "description": "The message defines the transaction request."
     },
-    "rpcpbTransactionResponse": {
+    "pbTransactionResponse": {
       "type": "object",
       "properties": {
         "status": {
-          "$ref": "#/definitions/rpcpbTransactionResponseStatus",
+          "$ref": "#/definitions/pbTransactionResponseStatus",
           "title": "transaction status"
         },
         "transaction": {
-          "$ref": "#/definitions/rpcpbTransaction",
+          "$ref": "#/definitions/pbTransaction",
           "title": "transaction"
         },
         "block_number": {
@@ -2251,7 +2239,7 @@
       },
       "description": "The message defines transaction response."
     },
-    "rpcpbTransactionResponseStatus": {
+    "pbTransactionResponseStatus": {
       "type": "string",
       "enum": [
         "PENDING",
@@ -2261,7 +2249,7 @@
       "default": "PENDING",
       "description": "The enumeration defines transaction status.\n\n - PENDING: pending in transaction pool\n - PACKED: packed in a block that has not been confirmed\n - IRREVERSIBLE: packed in a block that is irreversible"
     },
-    "rpcpbTxReceipt": {
+    "pbTxReceipt": {
       "type": "object",
       "properties": {
         "tx_hash": {
@@ -2299,14 +2287,14 @@
         "receipts": {
           "type": "array",
           "items": {
-            "$ref": "#/definitions/rpcpbTxReceiptReceipt"
+            "$ref": "#/definitions/pbTxReceiptReceipt"
           },
           "title": "transaction receipts"
         }
       },
       "description": "The message defines the transaction receipt struct."
     },
-    "rpcpbTxReceiptReceipt": {
+    "pbTxReceiptReceipt": {
       "type": "object",
       "properties": {
         "func_name": {
@@ -2320,7 +2308,7 @@
       },
       "description": "The message defines transaction execution receipt."
     },
-    "rpcpbVoteInfo": {
+    "pbVoteInfo": {
       "type": "object",
       "properties": {
         "option": {
@@ -2340,7 +2328,7 @@
       },
       "description": "The message defines the account's vote info."
     },
-    "rpcpbVoterBonus": {
+    "pbVoterBonus": {
       "type": "object",
       "properties": {
         "bonus": {
@@ -2358,6 +2346,18 @@
         }
       },
       "description": "The message defines the getVoterBonus response."
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "type_url": {
+          "type": "string"
+        },
+        "value": {
+          "type": "string",
+          "format": "byte"
+        }
+      }
     },
     "runtimeStreamError": {
       "type": "object",
@@ -2545,17 +2545,17 @@
     }
   },
   "x-stream-definitions": {
-    "rpcpbSubscribeResponse": {
+    "pbSubscribeResponse": {
       "type": "object",
       "properties": {
         "result": {
-          "$ref": "#/definitions/rpcpbSubscribeResponse"
+          "$ref": "#/definitions/pbSubscribeResponse"
         },
         "error": {
           "$ref": "#/definitions/runtimeStreamError"
         }
       },
-      "title": "Stream result of rpcpbSubscribeResponse"
+      "title": "Stream result of pbSubscribeResponse"
     }
   }
 }
