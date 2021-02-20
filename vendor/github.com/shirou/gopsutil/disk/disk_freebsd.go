@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/binary"
-	"path"
 	"strconv"
 
 	"golang.org/x/sys/unix"
@@ -14,10 +13,8 @@ import (
 	"github.com/shirou/gopsutil/internal/common"
 )
 
-func Partitions(all bool) ([]PartitionStat, error) {
-	return PartitionsWithContext(context.Background(), all)
-}
-
+// PartitionsWithContext returns disk partition.
+// 'all' argument is ignored, see: https://github.com/giampaolo/psutil/issues/906
 func PartitionsWithContext(ctx context.Context, all bool) ([]PartitionStat, error) {
 	var ret []PartitionStat
 
@@ -84,25 +81,16 @@ func PartitionsWithContext(ctx context.Context, all bool) ([]PartitionStat, erro
 		}
 
 		d := PartitionStat{
-			Device:     common.IntToString(stat.Mntfromname[:]),
-			Mountpoint: common.IntToString(stat.Mntonname[:]),
-			Fstype:     common.IntToString(stat.Fstypename[:]),
+			Device:     common.ByteToString(stat.Mntfromname[:]),
+			Mountpoint: common.ByteToString(stat.Mntonname[:]),
+			Fstype:     common.ByteToString(stat.Fstypename[:]),
 			Opts:       opts,
-		}
-		if all == false {
-			if !path.IsAbs(d.Device) || !common.PathExists(d.Device) {
-				continue
-			}
 		}
 
 		ret = append(ret, d)
 	}
 
 	return ret, nil
-}
-
-func IOCounters(names ...string) (map[string]IOCountersStat, error) {
-	return IOCountersWithContext(context.Background(), names...)
 }
 
 func IOCountersWithContext(ctx context.Context, names ...string) (map[string]IOCountersStat, error) {
@@ -170,5 +158,5 @@ func parseDevstat(buf []byte) (Devstat, error) {
 }
 
 func getFsType(stat unix.Statfs_t) string {
-	return common.IntToString(stat.Fstypename[:])
+	return common.ByteToString(stat.Fstypename[:])
 }

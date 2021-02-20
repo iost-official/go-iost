@@ -76,7 +76,7 @@ func (t *luckyBetHandler) writeCache() {
 func (t *luckyBetHandler) Prepare() error {
 	log.Println("lucky bet Prepare")
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
-	codePath := os.Getenv("GOPATH") + "/src/github.com/iost-official/go-iost/vm/test_data/lucky_bet.js"
+	codePath := os.Getenv("GOIOST") + "//vm/test_data/lucky_bet.js"
 	abiPath := codePath + ".abi"
 	client := call.GetClient(0)
 	iostSDK.SetServer(client.Addr())

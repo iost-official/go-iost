@@ -9,7 +9,7 @@ import (
 	"os"
 	"time"
 
-	"runtime/pprof"
+	//"runtime/pprof"
 
 	"github.com/iost-official/go-iost/core/version"
 	"github.com/iost-official/go-iost/db"
@@ -56,15 +56,15 @@ func TestMap(t *testing.T) {
 		os.RemoveAll("mvcc")
 	}()
 
-	f, err := os.Create("mput.prof")
-	if err != nil {
-		panic(err)
-	}
-	err = pprof.StartCPUProfile(f)
-	if err != nil {
-		panic(err)
-	}
-	defer pprof.StopCPUProfile()
+	//f, err := os.Create("mput.prof")
+	//if err != nil {
+	//	panic(err)
+	//}
+	///err = pprof.StartCPUProfile(f)
+	//if err != nil {
+	//	panic(err)
+	//}
+	//defer pprof.StopCPUProfile()
 
 	vi := NewVisitor(100, d, version.NewRules(0))
 

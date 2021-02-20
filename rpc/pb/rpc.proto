@@ -2,8 +2,9 @@ syntax = "proto3";
 
 package rpcpb;
 
-import "github.com/grpc-ecosystem/grpc-gateway/third_party/googleapis/google/api/annotations.proto";
-import "github.com/iost-official/go-iost/core/block/pb/block.proto";
+import "google/api/annotations.proto";
+import "core/block/pb/block.proto";
+option go_package = "github.com/iost-official/go-iost/rpc/rpcpb";
 
 service ApiService {
     // get the node information

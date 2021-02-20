@@ -2,8 +2,6 @@ language: go
 branches:
   only:
   - master
-  - develop
-  - "/^sprint.*$/"
 matrix:
   fast_finish: true
   include:
@@ -14,15 +12,13 @@ matrix:
     before_install:
     - HOMEBREW_NO_AUTO_UPDATE=1 brew install git-lfs
     - git lfs install
-    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.35.0
+    - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/bin v1.37.0
     before_script:
     - git lfs pull
     script:
     - make build
-    - make lint
+    - PATH=$HOME/bin:$PATH make lint
     - make test
-    after_success:
-    - bash <(curl -s https://codecov.io/bash)
   - os: linux
     dist: xenial
     go: "1.15"
@@ -31,14 +27,11 @@ matrix:
     - docker
     before_install:
     - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-    - docker pull iostio/iost-dev:latest
     - git lfs install
     before_script:
     - git lfs pull
     script:
     - make docker_build docker_lint docker_test
-    after_success:
-    - bash <(curl -s https://codecov.io/bash)
   - os: linux
     dist: xenial
     go: "1.15"
@@ -47,42 +40,8 @@ matrix:
     - docker
     before_install:
     - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-    - docker pull iostio/iost-dev:latest
     - git lfs install
     before_script:
     - git lfs pull
     script:
     - make e2e_test
-  - os: linux
-    dist: xenial
-    go: "1.15"
-    if: 1 = 0 AND type = cron
-    env: JOB=k8s_test
-    services:
-    - docker
-    before_install:
-    - echo $DOCKER_PASSWORD | docker login --username $DOCKER_USERNAME --password-stdin
-    - git clone https://github.com/kubernetes/client-go $GOPATH/src/k8s.io/client-go
-    - git clone --branch v0.4.0 https://github.com/googleapis/gnostic $GOPATH/src/k8s.io/client-go/vendor/github.com/googleapis/gnostic
-    - go get sigs.k8s.io/aws-iam-authenticator/cmd/aws-iam-authenticator@v0.5.0
-    - docker pull iostio/iost-dev:latest
-    - git lfs install
-    - pyenv global 3.6.7 && pip install awscli
-    - sudo apt-get clean && sudo apt-get update && sudo apt-get install -y dpkg 
-    - sudo apt-get install -y apt-transport-https
-    - curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add -
-    - echo "deb https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee -a /etc/apt/sources.list.d/kubernetes.list
-    - sudo apt-get update && sudo apt-get install -y kubectl
-    before_script:
-    - git lfs pull
-    script:
-    - pyenv global 3.6.7
-    - aws eks update-kubeconfig --region us-west-2 --name devnet
-    - make k8s_test
-notifications:
-  slack:
-    rooms:
-      - secure: "N1Z77CrXsokHH+L4ToF0uzUPL5/FmnyuMzjFWJrPkfP//mSOH+cy2xm8FPYl+LNxtEdHNzy8c+/ATxtBUXGPFjnAKZbnWAVhYlfaL8Pv7Fd/otzvFJoMPGAU1HqedF7PCv36vLgnOg3s1XVtuCmTvmq3IWGQlfeZ2V2QRz8eXiZ+ZibhyHolJq3UubGi/1TJcOKXb8rRqTDQ2Frn2cJP+h+FdqgIFeDi0Hbb7v8sULEs0NW3F5nqXTVG9QaTgTTypppwme2r2oCVvE8W4gpeHOqG0betPH4QNWRumiLQ+OCIoFoQVEIdNfFpF9wQccc7e0a1MAF4dBHrujit/8frcllO1AWl/cnVXt2ppgfKrHqVaLEUlKwaORIbizCRKpjbX4jyIXoWNAiJW9hET7sjWkEyhEfqDyey+QTZBh5laexAbuwsbdD293YSuDEZv3btYG9JJKBWIMINsyBgWFpwFD7e+KDAimujBxzE+YEFAGlTJyggS+ss0OzItMlC0QSJB2Z3jYz8k7K8mmrSIYAZUbVKVY9I/+gEVp1OFWe6+YwBLlGbjWEKX7r5i6089zmUjeUnLUKIiwQdV1O9sCyz+TgmnmmLQugcKLrNYpP788c+O5Ox+Ln/EG6I1OntKr45YcWOuS3mdmPVFRETnuHOxA/8mH9rxYnk3L1LLtchFxM="
-    on_success: change
-    on_failure: always
-    on_pull_requests: false
