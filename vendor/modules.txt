@@ -1,6 +1,8 @@
 # github.com/Jeffail/tunny v0.0.0-20190930221602-f13eb662a36a
 ## explicit
 github.com/Jeffail/tunny
+# github.com/OneOfOne/xxhash v1.2.5
+## explicit
 # github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
 ## explicit
 github.com/StackExchange/wmi
@@ -11,9 +13,10 @@ github.com/beorn7/perks/quantile
 github.com/bitly/go-simplejson
 # github.com/blend/go-sdk v2.0.0+incompatible
 ## explicit
-# github.com/btcsuite/btcd v0.20.1-beta
+# github.com/btcsuite/btcd v0.21.0-beta
+## explicit
 github.com/btcsuite/btcd/btcec
-# github.com/btcsuite/btcutil v1.0.1
+# github.com/btcsuite/btcutil v1.0.2
 ## explicit
 github.com/btcsuite/btcutil/base58
 # github.com/cespare/xxhash/v2 v2.1.1
@@ -24,16 +27,21 @@ github.com/coreos/go-semver/semver
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/elastic/gosigar v0.8.1-0.20180330100440-37f05ff46ffa
+## explicit
 # github.com/emirpasic/gods v1.12.0
 ## explicit
 github.com/emirpasic/gods/containers
 github.com/emirpasic/gods/trees
 github.com/emirpasic/gods/trees/redblacktree
 github.com/emirpasic/gods/utils
-# github.com/ethereum/go-ethereum v1.9.11
+# github.com/ethereum/go-ethereum v1.9.25
 ## explicit
 github.com/ethereum/go-ethereum/crypto/secp256k1
-# github.com/fsnotify/fsnotify v1.4.7
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/include
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/src
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/src/modules/recovery
+# github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
 # github.com/go-ole/go-ole v1.2.4
 ## explicit
@@ -49,7 +57,7 @@ github.com/golang/freetype/truetype
 # github.com/golang/mock v1.4.0
 ## explicit
 github.com/golang/mock/gomock
-# github.com/golang/protobuf v1.4.1
+# github.com/golang/protobuf v1.4.2
 ## explicit
 github.com/golang/protobuf/descriptor
 github.com/golang/protobuf/jsonpb
@@ -60,7 +68,7 @@ github.com/golang/protobuf/ptypes/any
 github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 github.com/golang/protobuf/ptypes/wrappers
-# github.com/golang/snappy v0.0.1
+# github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
 ## explicit
 github.com/golang/snappy
 # github.com/google/uuid v1.1.1
@@ -264,10 +272,6 @@ github.com/multiformats/go-multihash
 github.com/multiformats/go-multistream
 # github.com/multiformats/go-varint v0.0.5
 github.com/multiformats/go-varint
-# github.com/onsi/ginkgo v1.12.0
-## explicit
-# github.com/onsi/gomega v1.9.0
-## explicit
 # github.com/opentracing/opentracing-go v1.1.0
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/ext
@@ -304,7 +308,7 @@ github.com/prometheus/procfs/internal/util
 github.com/rs/cors
 # github.com/russross/blackfriday/v2 v2.0.1
 github.com/russross/blackfriday/v2
-# github.com/shirou/gopsutil v2.20.1+incompatible
+# github.com/shirou/gopsutil v2.20.5+incompatible
 ## explicit
 github.com/shirou/gopsutil/cpu
 github.com/shirou/gopsutil/disk
@@ -356,7 +360,7 @@ github.com/stretchr/testify/require
 github.com/stretchr/testify/suite
 # github.com/subosito/gotenv v1.2.0
 github.com/subosito/gotenv
-# github.com/syndtr/goleveldb v1.0.1-0.20190923125748-758128399b1d
+# github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 ## explicit
 github.com/syndtr/goleveldb/leveldb
 github.com/syndtr/goleveldb/leveldb/cache
@@ -421,7 +425,7 @@ go.uber.org/zap/internal/bufferpool
 go.uber.org/zap/internal/color
 go.uber.org/zap/internal/exit
 go.uber.org/zap/zapcore
-# golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
+# golang.org/x/crypto v0.0.0-20210220033148-5ea612d1eb83
 ## explicit
 golang.org/x/crypto/blake2s
 golang.org/x/crypto/pbkdf2
@@ -439,7 +443,7 @@ golang.org/x/image/math/fixed
 ## explicit
 golang.org/x/lint
 golang.org/x/lint/golint
-# golang.org/x/net v0.0.0-20200222125558-5a598a2470a0
+# golang.org/x/net v0.0.0-20200822124328-c89045814202
 ## explicit
 golang.org/x/net/bpf
 golang.org/x/net/html
@@ -455,12 +459,16 @@ golang.org/x/net/internal/timeseries
 golang.org/x/net/ipv4
 golang.org/x/net/netutil
 golang.org/x/net/trace
-# golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae
+# golang.org/x/sys v0.0.0-20210220050731-9a76102bfb43
 ## explicit
 golang.org/x/sys/cpu
+golang.org/x/sys/internal/unsafeheader
+golang.org/x/sys/plan9
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.2
+# golang.org/x/term v0.0.0-20201117132131-f5c789dd3221
+golang.org/x/term
+# golang.org/x/text v0.3.3
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -573,6 +581,8 @@ google.golang.org/protobuf/types/known/wrapperspb
 # gopkg.in/ini.v1 v1.52.0
 ## explicit
 gopkg.in/ini.v1
-# gopkg.in/yaml.v2 v2.2.8
+# gopkg.in/sourcemap.v1 v1.0.5
+## explicit
+# gopkg.in/yaml.v2 v2.3.0
 ## explicit
 gopkg.in/yaml.v2
