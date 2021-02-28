@@ -156,13 +156,13 @@ func TestNewTxPImpl(t *testing.T) {
 		})
 		Convey("delTimeOutTx", func() {
 
-			t := genTx(accountList[0], int64(30*time.Millisecond))
+			t := genTx(accountList[0], int64(100*time.Millisecond))
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 
 			err := txPool.AddTx(t, "rpc")
 			So(err, ShouldBeNil)
 			So(txPool.testPendingTxsNum(), ShouldEqual, 1)
-			time.Sleep(50 * time.Millisecond)
+			time.Sleep(200 * time.Millisecond)
 			txPool.clearTimeoutTx()
 			So(txPool.testPendingTxsNum(), ShouldEqual, 0)
 		})

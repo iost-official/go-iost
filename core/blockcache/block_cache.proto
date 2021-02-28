@@ -3,40 +3,38 @@ syntax = "proto3";
 package blockcache;
 option go_package = "github.com/iost-official/go-iost/core/blockcache";
 
-message bcMessage{
-    bytes data  = 1;
-    bcMessageType type = 2;
+message bcMessage {
+  bytes data = 1;
+  bcMessageType type = 2;
 }
 
 enum bcMessageType {
-    LinkType = 0;
-    UpdateActiveType = 1;
-    UpdateLinkedRootWitnessType = 2;
+  LinkType = 0;
+  UpdateActiveType = 1;
+  UpdateLinkedRootWitnessType = 2;
 }
 
-message BlockCacheRaw{
-    bytes blockBytes = 1;
-    WitnessList witnessList = 2;
-    int64 serialNum = 3;
+message BlockCacheRaw {
+  bytes blockBytes = 1;
+  WitnessList witnessList = 2;
+  int64 serialNum = 3;
 }
 
-message UpdateActiveRaw{
-    bytes blockHashBytes = 1;
-    WitnessList witnessList = 2;
+message UpdateActiveRaw {
+  bytes blockHashBytes = 1;
+  WitnessList witnessList = 2;
 }
 
-message UpdateLinkedRootWitnessRaw{
-    repeated string linkedRootWitness = 1;
-    bytes blockHashBytes = 2;
+message UpdateLinkedRootWitnessRaw {
+  repeated string linkedRootWitness = 1;
+  bytes blockHashBytes = 2;
 }
 
-message WitnessList{
-    repeated string activeWitnessList = 1;
-	repeated string pendingWitnessList = 2;
-	int64 pendingWitnessNumber = 3;
-	repeated string witnessInfo = 4;
+message WitnessList {
+  repeated string activeWitnessList = 1;
+  repeated string pendingWitnessList = 2;
+  int64 pendingWitnessNumber = 3;
+  repeated string witnessInfo = 4;
 }
 
-message WitnessInfo {
-    string NetID = 1;
-}
+message WitnessInfo { string NetID = 1; }

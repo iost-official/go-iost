@@ -96,11 +96,11 @@ func TestSave(t *testing.T) {
 		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
 	}
 
-	ents := make([]Entry, 0)
-	entry1 := Entry{
+	ents := make([]*Entry, 0)
+	entry1 := &Entry{
 		Data: []byte("Entry1"),
 	}
-	entry2 := Entry{
+	entry2 := &Entry{
 		Data: []byte("Entry2"),
 	}
 	ents = append(ents, entry1)
@@ -153,7 +153,7 @@ func TestSaveSingle(t *testing.T) {
 		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
 	}
 
-	entry1 := Entry{
+	entry1 := &Entry{
 		Data: []byte("Entry1"),
 	}
 	w.SaveSingle(entry1)
@@ -195,11 +195,11 @@ func TestSave10000(t *testing.T) {
 		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
 	}
 
-	ents := make([]Entry, 0)
-	entry1 := Entry{
+	ents := make([]*Entry, 0)
+	entry1 := &Entry{
 		Data: []byte("Entry1"),
 	}
-	entry2 := Entry{
+	entry2 := &Entry{
 		Data: []byte("Entry2"),
 	}
 	ents = append(ents, entry1)
@@ -253,11 +253,11 @@ func TestSaveWithCut(t *testing.T) {
 		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
 	}
 
-	ents := make([]Entry, 0)
-	entry1 := Entry{
+	ents := make([]*Entry, 0)
+	entry1 := &Entry{
 		Data: []byte("Entry1"),
 	}
-	entry2 := Entry{
+	entry2 := &Entry{
 		Data: []byte("Entry2"),
 	}
 	ents = append(ents, entry1)
@@ -312,11 +312,11 @@ func TestRemoveFiles(t *testing.T) {
 		t.Errorf("tmp file not end with .wal.tmp, has name: %s", g)
 	}
 
-	ents := make([]Entry, 0)
-	entry1 := Entry{
+	ents := make([]*Entry, 0)
+	entry1 := &Entry{
 		Data: []byte("Entry1"),
 	}
-	entry2 := Entry{
+	entry2 := &Entry{
 		Data: []byte("Entry2"),
 	}
 	ents = append(ents, entry1)

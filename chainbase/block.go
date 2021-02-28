@@ -34,7 +34,7 @@ func (c *ChainBase) HeadBlock() *Block {
 	head := c.bCache.Head()
 	block := &Block{
 		Block:        head.Block,
-		WitnessList:  &head.WitnessList,
+		WitnessList:  head.WitnessList,
 		Irreversible: false,
 	}
 	return block
@@ -45,7 +45,7 @@ func (c *ChainBase) LIBlock() *Block {
 	lib := c.bCache.LinkedRoot()
 	block := &Block{
 		Block:        lib.Block,
-		WitnessList:  &lib.WitnessList,
+		WitnessList:  lib.WitnessList,
 		Irreversible: true,
 	}
 	return block
@@ -155,7 +155,7 @@ func (c *ChainBase) addExistingBlock(node *blockcache.BlockCacheNode, replay boo
 	ok := c.stateDB.Checkout(string(blk.HeadHash()))
 	if !ok {
 		c.stateDB.Checkout(string(blk.Head.ParentHash))
-		err := c.verifyBlock(blk, parentNode.Block, &node.GetParent().WitnessList)
+		err := c.verifyBlock(blk, parentNode.Block, node.GetParent().WitnessList)
 		if err != nil {
 			// TODO: Decouple add and link of blockcache, then remove the Del().
 			c.bCache.Del(node)

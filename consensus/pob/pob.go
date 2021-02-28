@@ -222,7 +222,7 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	v := &verifier.Verifier{}
 	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
 	dropList, _, err := v.Gen(
-		blk, head.Block, &head.WitnessList, p.produceDB, pTx,
+		blk, head.Block, head.WitnessList, p.produceDB, pTx,
 		&verifier.Config{
 			Mode:        0,
 			Timeout:     limitTime - time.Since(st),
