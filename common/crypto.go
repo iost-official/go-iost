@@ -1,9 +1,9 @@
 package common
 
 import (
-	"encoding/hex"
-
+	"crypto/sha256"
 	"encoding/binary"
+	"encoding/hex"
 	"hash/crc32"
 
 	"github.com/btcsuite/btcutil/base58"
@@ -20,6 +20,17 @@ func Sha3(raw []byte) []byte {
 		}
 	}()
 	data := sha3.Sum256(raw)
+	return data[:]
+}
+
+// Sha256 ...
+func Sha256(raw []byte) []byte {
+	defer func() {
+		if e := recover(); e != nil {
+			ilog.Warnf("sha256 panic. err=%v", e)
+		}
+	}()
+	data := sha256.Sum256(raw)
 	return data[:]
 }
 
