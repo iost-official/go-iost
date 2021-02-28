@@ -7,7 +7,7 @@ require (
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/bitly/go-simplejson v0.5.1-0.20171023175154-0c965951289c
 	github.com/blend/go-sdk v2.0.0+incompatible // indirect
-	github.com/btcsuite/btcd v0.21.0-beta // indirect
+	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
 	github.com/emirpasic/gods v1.12.0
 	github.com/ethereum/go-ethereum v1.9.25
@@ -48,7 +48,7 @@ require (
 	github.com/stretchr/testify v1.4.0
 	github.com/syndtr/goleveldb v1.0.1-0.20200815110645-5c35d600f0ca
 	github.com/urfave/cli v1.22.2
-	github.com/wcharczuk/go-chart/v2 v2.1.0
+	github.com/wcharczuk/go-chart v2.0.2-0.20181012164330-3cb33d48d32d+incompatible
 	github.com/whyrusleeping/go-smux-multiplex v3.0.16+incompatible
 	github.com/willf/bitset v1.1.10 // indirect
 	github.com/willf/bloom v2.0.3+incompatible
