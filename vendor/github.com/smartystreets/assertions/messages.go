@@ -55,7 +55,7 @@ const (
 
 	shouldHaveBeenAValidInteger = "You must provide a valid integer (was %v)!"
 	shouldHaveBeenAValidLength  = "You must provide a valid positive integer (was %v)!"
-	shouldHaveHadLength         = "Expected collection to have length equal to [%v], but it's length was [%v] instead! contents: %+v"
+	shouldHaveHadLength         = "Expected collection to have length equal to [%v], but its length was [%v] instead! contents: %+v"
 
 	shouldHaveStartedWith    = "Expected      '%v'\nto start with '%v'\n(but it didn't)!"
 	shouldNotHaveStartedWith = "Expected          '%v'\nNOT to start with '%v'\n(but it did)!"
@@ -90,6 +90,8 @@ const (
 
 	shouldBeError                       = "Expected an error value (but was '%v' instead)!"
 	shouldBeErrorInvalidComparisonValue = "The final argument to this assertion must be a string or an error value (you provided: '%v')."
+
+	shouldWrapInvalidTypes = "The first and last arguments to this assertion must both be error values (you provided: '%v' and '%v')."
 
 	shouldUseTimes           = "You must provide time instances as arguments to this assertion."
 	shouldUseTimeSlice       = "You must provide a slice of time instances as the first argument to this assertion."
