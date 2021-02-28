@@ -1,6 +1,8 @@
 package iwallet
 
 import (
+	"fmt"
+
 	"github.com/spf13/cobra"
 )
 
@@ -23,6 +25,14 @@ var transferCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		// Set account since making actions needs accountName.
+		err := LoadAndSetAccountForSDK(iwalletSDK)
+		if err != nil {
+			return err
+		}
+		if accountName == "" {
+			return fmt.Errorf("invalid account name")
+		}
 		return saveOrSendAction("token.iost", "transfer", "iost", accountName, args[0], args[1], memo)
 	},
 }

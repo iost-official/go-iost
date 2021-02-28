@@ -1,5 +1,6 @@
 'use strict';
 
+const fs = require('fs');
 const esprima = require('esprima/dist/esprima.js');
 const escodegen = require('escodegen/escodegen.js');
 
