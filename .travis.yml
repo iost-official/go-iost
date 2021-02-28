@@ -2,12 +2,12 @@ language: go
 branches:
   only:
   - master
-matrix:
+jobs:
   fast_finish: true
   include:
   - os: osx
     osx_image: xcode12.2
-    go: "1.15"
+    go: "1.16"
     env: JOB=osx_test
     before_install:
     - HOMEBREW_NO_AUTO_UPDATE=1 brew install git-lfs
@@ -15,14 +15,29 @@ matrix:
     - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $HOME/bin v1.37.0
     before_script:
     - git lfs pull
+    - make vmlib_install
     script:
     - make build
     - PATH=$HOME/bin:$PATH make lint
     - make test
   - os: linux
-    dist: xenial
-    go: "1.15"
+    dist: bionic
+    go: "1.16"
     env: JOB=linux_test
+    before_install:
+    - git lfs install
+    - curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b $HOME/bin v1.37.0
+    before_script:
+    - git lfs pull
+    - make vmlib_install
+    script:
+    - make build
+    - PATH=$HOME/bin:$PATH make lint
+    - make test
+  - os: linux
+    dist: bionic
+    go: "1.16"
+    env: JOB=docker_test
     services:
     - docker
     before_install:
@@ -31,10 +46,12 @@ matrix:
     before_script:
     - git lfs pull
     script:
-    - make docker_build docker_lint docker_test
+    - make docker_build
+    - make docker_lint
+    - make docker_test
   - os: linux
-    dist: xenial
-    go: "1.15"
+    dist: bionic
+    go: "1.16"
     env: JOB=e2e_test
     services:
     - docker
