@@ -3,8 +3,8 @@ package call
 import (
 	"context"
 
-	"github.com/iost-official/go-iost/core/tx"
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 )
 
 // ToTxRequest ...

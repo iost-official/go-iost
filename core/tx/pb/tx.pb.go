@@ -8,8 +8,8 @@ package txpb
 
 import (
 	proto "github.com/golang/protobuf/proto"
-	contract "github.com/iost-official/go-iost/core/contract"
-	pb "github.com/iost-official/go-iost/crypto/pb"
+	contract "github.com/iost-official/go-iost/v3/core/contract"
+	pb "github.com/iost-official/go-iost/v3/crypto/pb"
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
 	reflect "reflect"

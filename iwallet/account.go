@@ -7,9 +7,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/sdk"
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/sdk"
 	"github.com/spf13/cobra"
 )
 

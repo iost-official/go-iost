@@ -12,9 +12,9 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/ilog"
-	p2pb "github.com/iost-official/go-iost/p2p/pb"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/ilog"
+	p2pb "github.com/iost-official/go-iost/v3/p2p/pb"
 
 	"github.com/libp2p/go-libp2p-core/host"
 	libnet "github.com/libp2p/go-libp2p-core/network"

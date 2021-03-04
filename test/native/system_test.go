@@ -6,12 +6,12 @@ import (
 
 	"time"
 
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/version"
-	"github.com/iost-official/go-iost/vm"
-	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/host"
-	"github.com/iost-official/go-iost/vm/native"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/core/version"
+	"github.com/iost-official/go-iost/v3/vm"
+	"github.com/iost-official/go-iost/v3/vm/database"
+	"github.com/iost-official/go-iost/v3/vm/host"
+	"github.com/iost-official/go-iost/v3/vm/native"
 )
 
 var testDataPath = "./test_data/"

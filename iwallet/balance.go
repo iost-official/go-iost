@@ -3,7 +3,7 @@ package iwallet
 import (
 	"fmt"
 
-	"github.com/iost-official/go-iost/sdk"
+	"github.com/iost-official/go-iost/v3/sdk"
 
 	"github.com/spf13/cobra"
 )

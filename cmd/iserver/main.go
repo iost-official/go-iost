@@ -7,12 +7,12 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/version"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/iserver"
-	"github.com/iost-official/go-iost/metrics"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/global"
+	"github.com/iost-official/go-iost/v3/core/version"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/iserver"
+	"github.com/iost-official/go-iost/v3/metrics"
 	flag "github.com/spf13/pflag"
 )
 

@@ -4,12 +4,12 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/vm/database"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
 // UnpledgeFreezeSeconds coins will be frozen for 3 days after being unpledged

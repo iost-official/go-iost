@@ -1,6 +1,6 @@
 package p2p
 
-import "github.com/iost-official/go-iost/metrics"
+import "github.com/iost-official/go-iost/v3/metrics"
 
 var (
 	neighborCountGauge = metrics.NewGauge("iost_p2p_neighbor_count", nil)

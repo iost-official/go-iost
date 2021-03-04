@@ -5,7 +5,7 @@ import (
 	"errors"
 	"time"
 
-	"github.com/iost-official/go-iost/core/block"
+	"github.com/iost-official/go-iost/v3/core/block"
 )
 
 var (

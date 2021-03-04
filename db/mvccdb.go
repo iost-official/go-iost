@@ -6,11 +6,11 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/iost-official/go-iost/db/kv"
-	"github.com/iost-official/go-iost/db/mvcc"
+	"github.com/iost-official/go-iost/v3/db/kv"
+	"github.com/iost-official/go-iost/v3/db/mvcc"
 )
 
-//go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/go-iost/db MVCCDB
+//go:generate mockgen -destination mocks/mock_mvccdb.go -package db_mock github.com/iost-official/go-iost/v3/db MVCCDB
 
 // constant of mvccdb
 const (

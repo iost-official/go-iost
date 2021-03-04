@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 var (

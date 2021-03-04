@@ -10,7 +10,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 
-	"github.com/iost-official/go-iost/sdk"
+	"github.com/iost-official/go-iost/v3/sdk"
 )
 
 var cfgFile string

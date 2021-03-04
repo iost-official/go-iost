@@ -6,10 +6,10 @@ import (
 	"math/rand"
 	"time"
 
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/itest"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/itest"
 	"github.com/urfave/cli"
 )
 

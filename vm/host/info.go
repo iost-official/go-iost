@@ -3,8 +3,8 @@ package host
 import (
 	"encoding/json"
 
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/vm/database"
 )
 
 // Info current info handler of this isolate

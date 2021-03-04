@@ -6,10 +6,10 @@ import (
 
 	"os"
 
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/core/txpool"
+	"github.com/iost-official/go-iost/v3/db"
 )
 
 type mockTxIter struct {

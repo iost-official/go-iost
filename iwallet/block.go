@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/iost-official/go-iost/sdk"
+	"github.com/iost-official/go-iost/v3/sdk"
 
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"github.com/spf13/cobra"
 )
 

@@ -1,7 +1,7 @@
 package call
 
 import (
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
 )
 

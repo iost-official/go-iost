@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/core/blockcache"
+	"github.com/iost-official/go-iost/v3/core/txpool"
+	"github.com/iost-official/go-iost/v3/db"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // ChainBase will maintain blockchain data for memory and hard disk.

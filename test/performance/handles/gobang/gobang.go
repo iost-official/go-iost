@@ -7,20 +7,20 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/iost-official/go-iost/sdk"
+	"github.com/iost-official/go-iost/v3/sdk"
 
-	"github.com/iost-official/go-iost/test/performance/call"
+	"github.com/iost-official/go-iost/v3/test/performance/call"
 
 	"encoding/json"
 
 	"math/rand"
 
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/ilog"
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/crypto"
+	"github.com/iost-official/go-iost/v3/ilog"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 )
 
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"

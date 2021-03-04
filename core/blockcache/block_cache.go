@@ -7,14 +7,14 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/db/wal"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/db"
+	"github.com/iost-official/go-iost/v3/db/wal"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
-//go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/core/blockcache BlockCache
+//go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/v3/core/blockcache BlockCache
 
 // CacheStatus ...
 type CacheStatus int

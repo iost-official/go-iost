@@ -6,12 +6,12 @@ import (
 	"testing"
 
 	. "github.com/golang/mock/gomock"
-	core_mock "github.com/iost-official/go-iost/core/mocks"
-	db_mock "github.com/iost-official/go-iost/db/mocks"
+	core_mock "github.com/iost-official/go-iost/v3/core/mocks"
+	db_mock "github.com/iost-official/go-iost/v3/db/mocks"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

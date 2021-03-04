@@ -6,7 +6,7 @@ import (
 	fmt "fmt"
 	"sync"
 
-	"github.com/iost-official/go-iost/db/kv"
+	"github.com/iost-official/go-iost/v3/db/kv"
 )
 
 // TXRMerkleTreeDB is the implementation of TXRMerkleTreeDB

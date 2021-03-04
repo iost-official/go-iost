@@ -3,7 +3,7 @@ package host
 import (
 	"strings"
 
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // const table name

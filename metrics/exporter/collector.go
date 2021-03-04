@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 const (

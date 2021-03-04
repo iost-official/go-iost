@@ -9,8 +9,8 @@ import (
 
 	"github.com/shirou/gopsutil/disk"
 
-	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/metrics"
+	"github.com/iost-official/go-iost/v3/core/global"
+	"github.com/iost-official/go-iost/v3/metrics"
 )
 
 var (

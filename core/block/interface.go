@@ -1,8 +1,8 @@
 package block
 
-import "github.com/iost-official/go-iost/core/tx"
+import "github.com/iost-official/go-iost/v3/core/tx"
 
-//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/go-iost/core/block Chain
+//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/go-iost/v3/core/block Chain
 
 // Chain defines Chain's API.
 type Chain interface {

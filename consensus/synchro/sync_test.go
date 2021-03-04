@@ -11,16 +11,16 @@ import (
 
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/chainbase"
-	"github.com/iost-official/go-iost/consensus/synchro/pb"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/blockcache/mock"
-	core_mock "github.com/iost-official/go-iost/core/mocks"
-	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/p2p"
-	p2p_mock "github.com/iost-official/go-iost/p2p/mocks"
+	"github.com/iost-official/go-iost/v3/chainbase"
+	"github.com/iost-official/go-iost/v3/consensus/synchro/pb"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/core/blockcache"
+	"github.com/iost-official/go-iost/v3/core/blockcache/mock"
+	core_mock "github.com/iost-official/go-iost/v3/core/mocks"
+	"github.com/iost-official/go-iost/v3/crypto"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/p2p"
+	p2p_mock "github.com/iost-official/go-iost/v3/p2p/mocks"
 )
 
 type registerInfo struct {

@@ -5,10 +5,10 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/common"
-	msgpb "github.com/iost-official/go-iost/consensus/synchro/pb"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/p2p"
+	"github.com/iost-official/go-iost/v3/common"
+	msgpb "github.com/iost-official/go-iost/v3/consensus/synchro/pb"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/p2p"
 )
 
 // Constant of blockhash sync

@@ -8,7 +8,7 @@ import (
 
 	"github.com/btcsuite/btcd/btcec"
 
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // Secp256k1 is the secp256k1 crypto algorithm

@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // TokenContractName name of basic token contract

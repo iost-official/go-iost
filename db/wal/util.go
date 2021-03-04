@@ -10,7 +10,7 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 var errBadWALName = errors.New("bad wal name")

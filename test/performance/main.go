@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iost-official/go-iost/test/performance/call"
-	_ "github.com/iost-official/go-iost/test/performance/handles/gobang"
-	_ "github.com/iost-official/go-iost/test/performance/handles/luckybet"
-	_ "github.com/iost-official/go-iost/test/performance/handles/transfer"
+	"github.com/iost-official/go-iost/v3/test/performance/call"
+	_ "github.com/iost-official/go-iost/v3/test/performance/handles/gobang"
+	_ "github.com/iost-official/go-iost/v3/test/performance/handles/luckybet"
+	_ "github.com/iost-official/go-iost/v3/test/performance/handles/transfer"
 )
 
 func init() {

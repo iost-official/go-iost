@@ -1,7 +1,7 @@
 package kv
 
 import (
-	"github.com/iost-official/go-iost/db/kv/leveldb"
+	"github.com/iost-official/go-iost/v3/db/kv/leveldb"
 )
 
 // StorageType is the type of storage, include leveldb and rocksdb

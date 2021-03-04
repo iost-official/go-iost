@@ -10,9 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/ilog"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
 )
 

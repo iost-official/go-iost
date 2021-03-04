@@ -9,14 +9,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/v3/common"
 
-	"github.com/iost-official/go-iost/sdk"
+	"github.com/iost-official/go-iost/v3/sdk"
 
-	"github.com/iost-official/go-iost/account"
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/v3/account"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 
-	"github.com/iost-official/go-iost/iwallet"
+	"github.com/iost-official/go-iost/v3/iwallet"
 )
 
 var (

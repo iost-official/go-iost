@@ -11,8 +11,8 @@ import (
 
 	//"runtime/pprof"
 
-	"github.com/iost-official/go-iost/core/version"
-	"github.com/iost-official/go-iost/db"
+	"github.com/iost-official/go-iost/v3/core/version"
+	"github.com/iost-official/go-iost/v3/db"
 )
 
 func watchTimeout(t *testing.T, f func()) {

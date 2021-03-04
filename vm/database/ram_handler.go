@@ -3,7 +3,7 @@ package database
 import (
 	"strconv"
 
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // RAMContractName name of basic token contract

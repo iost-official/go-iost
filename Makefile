@@ -31,7 +31,7 @@ ifeq ($(shell uname),Linux)
 endif
 
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
-LD_FLAGS := -X github.com/iost-official/go-iost/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/core/global.GitHash=$(shell git rev-parse HEAD) -X github.com/iost-official/go-iost/core/global.CodeVersion=$(VERSION)
+LD_FLAGS := -X github.com/iost-official/go-iost/v3/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/v3/core/global.GitHash=$(shell git rev-parse HEAD) -X github.com/iost-official/go-iost/v3/core/global.CodeVersion=$(VERSION)
 
 .PHONY: all build iserver iwallet itest lint test e2e_test image push devimage swagger protobuf install clean debug clear_debug_file env
 
@@ -40,17 +40,17 @@ all: build
 build: iserver iwallet itest
 
 iserver: $(eval SHELL:=/bin/bash) 
-	$(GO_BUILD) -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver $(PROJECT)/cmd/iserver
+	$(GO_BUILD) -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver ./cmd/iserver
 	@if [[ "`uname`" == "Darwin"* ]]; then \
 		echo change libvm dylib path; \
 		install_name_tool -change libvm.dylib $(DYLD_LIBRARY_PATH)/libvm.dylib ./target/iserver; \
 	fi
 
 iwallet:
-	$(GO_BUILD) -o $(TARGET_DIR)/iwallet $(PROJECT)/cmd/iwallet
+	$(GO_BUILD) -o $(TARGET_DIR)/iwallet ./cmd/iwallet
 
 itest:
-	$(GO_BUILD) -o $(TARGET_DIR)/itest $(PROJECT)/cmd/itest
+	$(GO_BUILD) -o $(TARGET_DIR)/itest ./cmd/itest
 
 lint:
 	golangci-lint run --verbose

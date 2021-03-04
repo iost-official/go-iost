@@ -12,10 +12,10 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/common"
 	"golang.org/x/crypto/scrypt"
 	"golang.org/x/crypto/ssh/terminal"
 )

@@ -7,9 +7,9 @@ import (
 
 	"strconv"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/db/kv"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/db/kv"
 )
 
 // BlockChain is the implementation of chain

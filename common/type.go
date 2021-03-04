@@ -4,7 +4,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/metrics"
+	"github.com/iost-official/go-iost/v3/metrics"
 )
 
 // ModeType is the type of mode.

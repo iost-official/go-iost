@@ -3,11 +3,11 @@ package host
 import (
 	"fmt"
 
-	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/v3/vm/database"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // GasManager handle the logic of gas. It should be called in a contract

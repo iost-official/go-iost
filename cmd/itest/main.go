@@ -3,9 +3,9 @@ package main
 import (
 	"os"
 
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/itest/command/create"
-	"github.com/iost-official/go-iost/itest/command/run"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/itest/command/create"
+	"github.com/iost-official/go-iost/v3/itest/command/run"
 	"github.com/urfave/cli"
 )
 

@@ -1,7 +1,7 @@
 package database
 
 import (
-	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/v3/core/contract"
 )
 
 // ContractPrefix ...
