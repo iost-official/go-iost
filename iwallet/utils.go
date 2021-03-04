@@ -10,16 +10,16 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/crypto"
+	"github.com/iost-official/go-iost/v3/ilog"
 
 	simplejson "github.com/bitly/go-simplejson"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
-	"github.com/iost-official/go-iost/sdk"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
+	"github.com/iost-official/go-iost/v3/sdk"
 )
 
 func errorWithHelp(cmd *cobra.Command, format string, a ...interface{}) error {

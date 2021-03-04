@@ -1,6 +1,6 @@
 package database
 
-//go:generate mockgen -destination mvcc_mock.go -package database github.com/iost-official/go-iost/vm/database IMultiValue
+//go:generate mockgen -destination mvcc_mock.go -package database github.com/iost-official/go-iost/v3/vm/database IMultiValue
 
 // IMultiValue mvcc database interface
 type IMultiValue interface {

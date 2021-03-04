@@ -5,7 +5,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/v3/common"
 )
 
 // const prefixs

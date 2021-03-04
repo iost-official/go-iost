@@ -1,6 +1,6 @@
 package database
 
-import "github.com/iost-official/go-iost/core/version"
+import "github.com/iost-official/go-iost/v3/core/version"
 
 // WriteCache ...
 type WriteCache struct {

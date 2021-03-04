@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/db/wal/pcrc"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/db/wal/pcrc"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 const (

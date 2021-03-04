@@ -2,14 +2,14 @@ package genesis
 
 import (
 	"fmt"
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/crypto"
 	"os"
 	"testing"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/db"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 func randWitness(idx int) *common.Witness {

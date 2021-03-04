@@ -12,8 +12,8 @@ import (
 
 	"math/rand"
 
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
 const vmRefLimit = 60

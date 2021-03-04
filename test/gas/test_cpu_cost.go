@@ -8,13 +8,13 @@ import (
 	"path"
 	"time"
 
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/version"
-	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/host"
-	v8 "github.com/iost-official/go-iost/vm/v8vm"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/core/version"
+	"github.com/iost-official/go-iost/v3/db"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/vm/database"
+	"github.com/iost-official/go-iost/v3/vm/host"
+	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
 	"github.com/wcharczuk/go-chart"
 )
 

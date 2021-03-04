@@ -1,8 +1,8 @@
 package verifier
 
 import (
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/txpool"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/core/txpool"
 )
 
 // ProviderImpl impl of provider

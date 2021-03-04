@@ -1,6 +1,6 @@
 package database
 
-import "github.com/iost-official/go-iost/core/version"
+import "github.com/iost-official/go-iost/v3/core/version"
 
 // Visitor combine of every handler, to be api of database
 type Visitor struct {

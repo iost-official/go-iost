@@ -1,14 +1,14 @@
 package iserver
 
 import (
-	"github.com/iost-official/go-iost/chainbase"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/metrics/exporter"
-	"github.com/iost-official/go-iost/p2p"
-	"github.com/iost-official/go-iost/rpc"
+	"github.com/iost-official/go-iost/v3/chainbase"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/consensus"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/metrics/exporter"
+	"github.com/iost-official/go-iost/v3/p2p"
+	"github.com/iost-official/go-iost/v3/rpc"
 )
 
 // Service defines APIs of resident goroutines.

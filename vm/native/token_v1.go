@@ -9,10 +9,10 @@ import (
 
 	"strings"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/vm/database"
+	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
 var tokenABIs *abiSet

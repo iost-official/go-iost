@@ -1,8 +1,8 @@
 package create
 
 import (
-	"github.com/iost-official/go-iost/crypto"
-	"github.com/iost-official/go-iost/itest"
+	"github.com/iost-official/go-iost/v3/crypto"
+	"github.com/iost-official/go-iost/v3/itest"
 	"github.com/urfave/cli"
 )
 

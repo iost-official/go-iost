@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/common"
-	sigpb "github.com/iost-official/go-iost/crypto/pb"
+	"github.com/iost-official/go-iost/v3/common"
+	sigpb "github.com/iost-official/go-iost/v3/crypto/pb"
 )
 
 // Signature is the signature of some message

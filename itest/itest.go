@@ -6,11 +6,11 @@ import (
 	"math/rand"
 	"strconv"
 
-	"github.com/iost-official/go-iost/core/contract"
+	"github.com/iost-official/go-iost/v3/core/contract"
 
 	"reflect"
 
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // Constant of itest

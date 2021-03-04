@@ -1,8 +1,8 @@
 package crypto
 
 import (
-	"github.com/iost-official/go-iost/crypto/backend"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/crypto/backend"
+	"github.com/iost-official/go-iost/v3/ilog"
 )
 
 // AlgorithmBackend is the interface of algorithm backend

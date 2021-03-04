@@ -5,8 +5,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/go-iost/core/event"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/core/event"
+	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/stretchr/testify/assert"
 )
 

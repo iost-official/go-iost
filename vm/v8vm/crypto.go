@@ -6,8 +6,8 @@ package v8
 import "C"
 import (
 	"encoding/hex"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/crypto"
 )
 
 const cryptGasBase = 100

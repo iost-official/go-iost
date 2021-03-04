@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
-	. "github.com/iost-official/go-iost/verifier"
-	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/ilog"
+	. "github.com/iost-official/go-iost/v3/verifier"
+	"github.com/iost-official/go-iost/v3/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

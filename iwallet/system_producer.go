@@ -7,8 +7,8 @@ import (
 
 	"github.com/spf13/cobra"
 
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
-	"github.com/iost-official/go-iost/sdk"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
+	"github.com/iost-official/go-iost/v3/sdk"
 )
 
 var location string

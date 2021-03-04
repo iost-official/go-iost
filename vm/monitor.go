@@ -10,13 +10,13 @@ import (
 
 	"github.com/bitly/go-simplejson"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/vm/host"
-	"github.com/iost-official/go-iost/vm/native"
-	v8 "github.com/iost-official/go-iost/vm/v8vm"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/vm/host"
+	"github.com/iost-official/go-iost/v3/vm/native"
+	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
 )
 
 // Monitor ...

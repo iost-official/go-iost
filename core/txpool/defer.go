@@ -7,9 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/ilog"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/ilog"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
 	"go.uber.org/atomic"

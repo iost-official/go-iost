@@ -1,8 +1,8 @@
 package account
 
 import (
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/crypto"
 )
 
 // KeyPair account of the ios

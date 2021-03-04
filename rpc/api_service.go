@@ -12,32 +12,32 @@ import (
 	"strings"
 	"time"
 
-	blockpb "github.com/iost-official/go-iost/core/block/pb"
+	blockpb "github.com/iost-official/go-iost/v3/core/block/pb"
 
 	"github.com/syndtr/goleveldb/leveldb/util"
 
 	simplejson "github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/vm"
+	"github.com/iost-official/go-iost/v3/vm"
 
-	"github.com/iost-official/go-iost/chainbase"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/consensus/cverifier"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/event"
-	"github.com/iost-official/go-iost/core/global"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/db"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/p2p"
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
-	"github.com/iost-official/go-iost/verifier"
-	"github.com/iost-official/go-iost/vm/database"
-	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/v3/chainbase"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/consensus/cverifier"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/core/blockcache"
+	"github.com/iost-official/go-iost/v3/core/event"
+	"github.com/iost-official/go-iost/v3/core/global"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/core/txpool"
+	"github.com/iost-official/go-iost/v3/db"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/p2p"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
+	"github.com/iost-official/go-iost/v3/verifier"
+	"github.com/iost-official/go-iost/v3/vm/database"
+	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
-//go:generate mockgen -destination mock_rpc/mock_api.go -package main github.com/iost-official/go-iost/rpc/pb ApiServiceServer
+//go:generate mockgen -destination mock_rpc/mock_api.go -package main github.com/iost-official/go-iost/v3/rpc/pb ApiServiceServer
 
 // APIService implements all rpc APIs.
 type APIService struct {

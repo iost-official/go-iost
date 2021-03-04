@@ -1,7 +1,7 @@
 package run
 
 import (
-	"github.com/iost-official/go-iost/itest"
+	"github.com/iost-official/go-iost/v3/itest"
 	"github.com/urfave/cli"
 )
 

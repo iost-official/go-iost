@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx/pb"
-	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/core/tx/pb"
+	"github.com/iost-official/go-iost/v3/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 )
 

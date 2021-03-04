@@ -1,7 +1,7 @@
 package global
 
 import (
-	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/v3/common"
 )
 
 // BuildTime build time

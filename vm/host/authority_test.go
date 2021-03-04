@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/vm/database"
 )
 
 func TestRequireAuth_ByKey(t *testing.T) {

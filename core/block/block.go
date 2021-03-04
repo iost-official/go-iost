@@ -5,13 +5,13 @@ import (
 	"fmt"
 
 	"github.com/golang/protobuf/proto"
-	"github.com/iost-official/go-iost/account"
-	"github.com/iost-official/go-iost/common"
-	blockpb "github.com/iost-official/go-iost/core/block/pb"
-	"github.com/iost-official/go-iost/core/merkletree"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/core/version"
-	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/common"
+	blockpb "github.com/iost-official/go-iost/v3/core/block/pb"
+	"github.com/iost-official/go-iost/v3/core/merkletree"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/core/version"
+	"github.com/iost-official/go-iost/v3/crypto"
 )
 
 // BlockHead versions

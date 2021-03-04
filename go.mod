@@ -1,4 +1,4 @@
-module github.com/iost-official/go-iost
+module github.com/iost-official/go-iost/v3
 
 go 1.16
 

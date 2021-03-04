@@ -9,7 +9,7 @@ package rpcpb
 import (
 	context "context"
 	proto "github.com/golang/protobuf/proto"
-	pb "github.com/iost-official/go-iost/core/block/pb"
+	pb "github.com/iost-official/go-iost/v3/core/block/pb"
 	_ "google.golang.org/genproto/googleapis/api/annotations"
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"

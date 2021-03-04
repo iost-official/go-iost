@@ -7,7 +7,7 @@ import (
 	"strconv"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/common"
+	"github.com/iost-official/go-iost/v3/common"
 )
 
 func checkAmount(amount string, token string) error {

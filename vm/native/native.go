@@ -3,9 +3,9 @@ package native
 import (
 	"fmt"
 
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/vm/host"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
 type abi struct {

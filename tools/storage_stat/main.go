@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/db/kv/leveldb"
-	"github.com/iost-official/go-iost/vm/database"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/db/kv/leveldb"
+	"github.com/iost-official/go-iost/v3/vm/database"
 )
 
 func padTo(s string, ptn string, l int) string {

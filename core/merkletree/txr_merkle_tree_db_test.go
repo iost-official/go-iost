@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/iost-official/go-iost/core/tx"
+	"github.com/iost-official/go-iost/v3/core/tx"
 	"github.com/smartystreets/goconvey/convey"
 )
 

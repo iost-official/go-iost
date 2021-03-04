@@ -3,7 +3,7 @@ package database
 import (
 	"os"
 
-	"github.com/iost-official/go-iost/account"
+	"github.com/iost-official/go-iost/v3/account"
 
 	"io/ioutil"
 
@@ -16,10 +16,10 @@ import (
 	"errors"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/contract"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/crypto"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/crypto"
 )
 
 // SimpleDB implements simple database interface

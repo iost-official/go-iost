@@ -7,10 +7,10 @@ import (
 	"time"
 
 	"github.com/emirpasic/gods/trees/redblacktree"
-	"github.com/iost-official/go-iost/core/block"
-	"github.com/iost-official/go-iost/core/blockcache"
-	"github.com/iost-official/go-iost/core/tx"
-	"github.com/iost-official/go-iost/metrics"
+	"github.com/iost-official/go-iost/v3/core/block"
+	"github.com/iost-official/go-iost/v3/core/blockcache"
+	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/metrics"
 )
 
 // Values.

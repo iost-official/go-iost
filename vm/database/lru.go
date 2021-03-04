@@ -2,7 +2,7 @@ package database
 
 import (
 	lru "github.com/hashicorp/golang-lru"
-	"github.com/iost-official/go-iost/core/version"
+	"github.com/iost-official/go-iost/v3/core/version"
 )
 
 // LRU lru cache

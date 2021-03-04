@@ -8,12 +8,12 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/iost-official/go-iost/chainbase"
-	"github.com/iost-official/go-iost/common"
-	"github.com/iost-official/go-iost/core/txpool"
-	"github.com/iost-official/go-iost/ilog"
-	"github.com/iost-official/go-iost/p2p"
-	rpcpb "github.com/iost-official/go-iost/rpc/pb"
+	"github.com/iost-official/go-iost/v3/chainbase"
+	"github.com/iost-official/go-iost/v3/common"
+	"github.com/iost-official/go-iost/v3/core/txpool"
+	"github.com/iost-official/go-iost/v3/ilog"
+	"github.com/iost-official/go-iost/v3/p2p"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"github.com/rs/cors"
 	"golang.org/x/net/netutil"
 
