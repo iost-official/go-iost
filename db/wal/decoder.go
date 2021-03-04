@@ -156,12 +156,12 @@ func (d *decoder) lastCRC() uint64 {
 
 func (d *decoder) getLastOffset() int64 { return d.lastOffset }
 
-func mustUnmarshalEntry(d []byte) Entry {
+func mustUnmarshalEntry(d []byte) *Entry {
 	var e Entry
 	if err := proto.Unmarshal(d, &e); err != nil {
 		ilog.Fatal("unmarshal should never fai")
 	}
-	return e
+	return &e
 }
 
 func readInt64(r io.Reader) (int64, error) {

@@ -8,5 +8,6 @@ module.exports = {
         libraryTarget: 'commonjs2',
         path: path.resolve(__dirname, 'dist'),
         filename: 'bundle.js'
-    }
+    },
+    target: 'node'
 };

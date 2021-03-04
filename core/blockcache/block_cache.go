@@ -46,7 +46,7 @@ var (
 // BlockCacheNode is the implementation of BlockCacheNode
 type BlockCacheNode struct { //nolint:golint
 	*block.Block
-	WitnessList
+	*WitnessList
 	rw           sync.RWMutex
 	parent       *BlockCacheNode
 	Children     map[*BlockCacheNode]bool
@@ -99,20 +99,20 @@ func encodeUpdateActive(bcn *BlockCacheNode) (b []byte, err error) {
 	// First add block
 	uaRaw := &UpdateActiveRaw{
 		BlockHashBytes: bcn.HeadHash(),
-		WitnessList:    &bcn.WitnessList,
+		WitnessList:    bcn.WitnessList,
 	}
 	b, err = proto.Marshal(uaRaw)
 	return
 }
 
-func decodeUpdateActive(b []byte) (blockHeadHash []byte, wt WitnessList, err error) {
+func decodeUpdateActive(b []byte) (blockHeadHash []byte, wt *WitnessList, err error) {
 	var uaRaw UpdateActiveRaw
 	err = proto.Unmarshal(b, &uaRaw)
 	if err != nil {
 		return
 	}
 	blockHeadHash = uaRaw.BlockHashBytes
-	wt = *(uaRaw.WitnessList)
+	wt = uaRaw.WitnessList
 	return
 }
 
@@ -124,14 +124,14 @@ func encodeBCN(bcn *BlockCacheNode) (b []byte, err error) {
 	}
 	bcRaw := &BlockCacheRaw{
 		BlockBytes:  blockByte,
-		WitnessList: &bcn.WitnessList,
+		WitnessList: bcn.WitnessList,
 		SerialNum:   bcn.SerialNum,
 	}
 	b, err = proto.Marshal(bcRaw)
 	return
 }
 
-func decodeBCN(b []byte) (block block.Block, wt WitnessList, serialNum int64, err error) {
+func decodeBCN(b []byte) (block block.Block, wt *WitnessList, serialNum int64, err error) {
 	var bcRaw BlockCacheRaw
 	err = proto.Unmarshal(b, &bcRaw)
 	if err != nil {
@@ -141,7 +141,7 @@ func decodeBCN(b []byte) (block block.Block, wt WitnessList, serialNum int64, er
 	if err != nil {
 		return
 	}
-	wt = *(bcRaw.WitnessList)
+	wt = bcRaw.WitnessList
 	serialNum = bcRaw.SerialNum
 	return
 }
@@ -154,7 +154,7 @@ func NewBCN(parent *BlockCacheNode, blk *block.Block) *BlockCacheNode {
 		parent:       parent,
 		Children:     make(map[*BlockCacheNode]bool),
 		ValidWitness: make([]string, 0),
-		WitnessList: WitnessList{
+		WitnessList: &WitnessList{
 			WitnessInfo: make([]string, 0),
 		},
 	}
@@ -353,7 +353,7 @@ func (bc *BlockCacheImpl) Recover(p ConAlgo) (err error) {
 	return
 }
 
-func (bc *BlockCacheImpl) apply(entry wal.Entry, p ConAlgo) (err error) {
+func (bc *BlockCacheImpl) apply(entry *wal.Entry, p ConAlgo) (err error) {
 	var bcMessage BcMessage
 	proto.Unmarshal(entry.Data, &bcMessage)
 	switch bcMessage.Type {
@@ -740,7 +740,7 @@ func (bc *BlockCacheImpl) writeUpdateLinkedRootWitnessWAL() (err error) {
 	ent := wal.Entry{
 		Data: data,
 	}
-	_, err = bc.wal.SaveSingle(ent)
+	_, err = bc.wal.SaveSingle(&ent)
 	return
 }
 
@@ -760,7 +760,7 @@ func (bc *BlockCacheImpl) writeUpdateActiveWAL(h *BlockCacheNode) (err error) {
 	ent := wal.Entry{
 		Data: data,
 	}
-	_, err = bc.wal.SaveSingle(ent)
+	_, err = bc.wal.SaveSingle(&ent)
 	return
 }
 
@@ -780,7 +780,7 @@ func (bc *BlockCacheImpl) writeAddNodeWAL(h *BlockCacheNode) (uint64, error) {
 	ent := wal.Entry{
 		Data: data,
 	}
-	return bc.wal.SaveSingle(ent)
+	return bc.wal.SaveSingle(&ent)
 }
 
 // GetBlockByNumber get a block by number

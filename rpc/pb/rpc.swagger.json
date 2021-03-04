@@ -14,12 +14,18 @@
     "/execTx": {
       "post": {
         "summary": "execute transaction",
-        "operationId": "ExecTransaction",
+        "operationId": "ApiService_ExecTransaction",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbTxReceipt"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -41,12 +47,18 @@
     "/getAccount/{name}/{by_longest_chain}": {
       "get": {
         "summary": "get account",
-        "operationId": "GetAccount",
+        "operationId": "ApiService_GetAccount",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbAccount"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -63,8 +75,7 @@
             "description": "get account by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -75,12 +86,18 @@
     "/getBatchContractStorage": {
       "post": {
         "summary": "get batch contract storage",
-        "operationId": "GetBatchContractStorage",
+        "operationId": "ApiService_GetBatchContractStorage",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetBatchContractStorageResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -102,12 +119,18 @@
     "/getBlockByHash/{hash}/{complete}": {
       "get": {
         "summary": "get block by hash",
-        "operationId": "GetBlockByHash",
+        "operationId": "ApiService_GetBlockByHash",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbBlockResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -124,8 +147,7 @@
             "description": "complete means whether including the full transactions and transaction receipts",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -136,12 +158,18 @@
     "/getBlockByNumber/{number}/{complete}": {
       "get": {
         "summary": "get block by number",
-        "operationId": "GetBlockByNumber",
+        "operationId": "ApiService_GetBlockByNumber",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbBlockResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -159,8 +187,7 @@
             "description": "complete means whether including the full transactions and transaction receipts",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -171,12 +198,18 @@
     "/getBlockHeaderByRange": {
       "post": {
         "summary": "get batch of block header",
-        "operationId": "GetBlockHeaderByRange",
+        "operationId": "ApiService_GetBlockHeaderByRange",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbBlockHeaderByRangeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -197,12 +230,18 @@
     },
     "/getCandidateBonus/{name}/{by_longest_chain}": {
       "get": {
-        "operationId": "GetCandidateBonus",
+        "operationId": "ApiService_GetCandidateBonus",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbCandidateBonus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -219,8 +258,7 @@
             "description": "get account by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -231,12 +269,18 @@
     "/getChainInfo": {
       "get": {
         "summary": "get blockchain information",
-        "operationId": "GetChainInfo",
+        "operationId": "ApiService_GetChainInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbChainInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -248,12 +292,18 @@
     "/getContract/{id}/{by_longest_chain}": {
       "get": {
         "summary": "get contract",
-        "operationId": "GetContract",
+        "operationId": "ApiService_GetContract",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbContract"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -270,8 +320,7 @@
             "description": "get data by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -282,12 +331,18 @@
     "/getContractStorage": {
       "post": {
         "summary": "get contract storage",
-        "operationId": "GetContractStorage",
+        "operationId": "ApiService_GetContractStorage",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetContractStorageResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -309,12 +364,18 @@
     "/getContractStorageFields": {
       "post": {
         "summary": "get contract fields storage",
-        "operationId": "GetContractStorageFields",
+        "operationId": "ApiService_GetContractStorageFields",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetContractStorageFieldsResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -336,12 +397,18 @@
     "/getContractVote/{id}/{by_longest_chain}": {
       "get": {
         "summary": "get contract vote",
-        "operationId": "GetContractVote",
+        "operationId": "ApiService_GetContractVote",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbContractVote"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -358,8 +425,7 @@
             "description": "get data by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -370,12 +436,18 @@
     "/getGasRatio": {
       "get": {
         "summary": "get gas ratio infomation",
-        "operationId": "GetGasRatio",
+        "operationId": "ApiService_GetGasRatio",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGasRatioResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -387,12 +459,18 @@
     "/getNodeInfo": {
       "get": {
         "summary": "get the node information",
-        "operationId": "GetNodeInfo",
+        "operationId": "ApiService_GetNodeInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbNodeInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -404,12 +482,18 @@
     "/getProducerVoteInfo/{account}/{by_longest_chain}": {
       "get": {
         "summary": "get producer vote infomation",
-        "operationId": "GetProducerVoteInfo",
+        "operationId": "ApiService_GetProducerVoteInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetProducerVoteInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -426,8 +510,7 @@
             "description": "get data by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -438,12 +521,18 @@
     "/getRAMInfo": {
       "get": {
         "summary": "get current blockchain ram information",
-        "operationId": "GetRAMInfo",
+        "operationId": "ApiService_GetRAMInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbRAMInfoResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -455,12 +544,18 @@
     "/getRawBlockByNumber/{number}/{complete}": {
       "get": {
         "summary": "get raw block by number, including block signature etc",
-        "operationId": "GetRawBlockByNumber",
+        "operationId": "ApiService_GetRawBlockByNumber",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbRawBlockResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -478,8 +573,7 @@
             "description": "complete means whether including the full transactions and transaction receipts",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -490,12 +584,18 @@
     "/getToken721Balance/{account}/{token}/{by_longest_chain}": {
       "get": {
         "summary": "get token721 balance",
-        "operationId": "GetToken721Balance",
+        "operationId": "ApiService_GetToken721Balance",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetToken721BalanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -519,8 +619,7 @@
             "description": "get data by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -531,12 +630,18 @@
     "/getToken721Metadata/{token}/{token_id}/{by_longest_chain}": {
       "get": {
         "summary": "get token721 metadata",
-        "operationId": "GetToken721Metadata",
+        "operationId": "ApiService_GetToken721Metadata",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetToken721MetadataResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -560,8 +665,7 @@
             "description": "get data by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -572,12 +676,18 @@
     "/getToken721Owner/{token}/{token_id}/{by_longest_chain}": {
       "get": {
         "summary": "get token721 owner",
-        "operationId": "GetToken721Owner",
+        "operationId": "ApiService_GetToken721Owner",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetToken721OwnerResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -601,8 +711,7 @@
             "description": "get data by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -613,12 +722,18 @@
     "/getTokenBalance/{account}/{token}/{by_longest_chain}": {
       "get": {
         "summary": "get token balance",
-        "operationId": "GetTokenBalance",
+        "operationId": "ApiService_GetTokenBalance",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbGetTokenBalanceResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -642,8 +757,7 @@
             "description": "get data by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -653,12 +767,18 @@
     },
     "/getTokenInfo/{symbol}/{by_longest_chain}": {
       "get": {
-        "operationId": "GetTokenInfo",
+        "operationId": "ApiService_GetTokenInfo",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbTokenInfo"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -675,8 +795,7 @@
             "description": "get tokeninfo by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -687,12 +806,18 @@
     "/getTxByHash/{hash}": {
       "get": {
         "summary": "get transaction by hash",
-        "operationId": "GetTxByHash",
+        "operationId": "ApiService_GetTxByHash",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbTransactionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -713,12 +838,18 @@
     "/getTxReceiptByTxHash/{hash}": {
       "get": {
         "summary": "get transaction receipt by transaction hash",
-        "operationId": "GetTxReceiptByTxHash",
+        "operationId": "ApiService_GetTxReceiptByTxHash",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbTxReceipt"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -738,12 +869,18 @@
     },
     "/getVoterBonus/{name}/{by_longest_chain}": {
       "get": {
-        "operationId": "GetVoterBonus",
+        "operationId": "ApiService_GetVoterBonus",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbVoterBonus"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -760,8 +897,7 @@
             "description": "get account by longest chain's head block or last irreversible block",
             "in": "path",
             "required": true,
-            "type": "boolean",
-            "format": "boolean"
+            "type": "boolean"
           }
         ],
         "tags": [
@@ -771,12 +907,18 @@
     },
     "/listContractStorage": {
       "post": {
-        "operationId": "ListContractStorage",
+        "operationId": "ApiService_ListContractStorage",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbListContractStorageResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -798,12 +940,18 @@
     "/sendTx": {
       "post": {
         "summary": "send transaction",
-        "operationId": "SendTransaction",
+        "operationId": "ApiService_SendTransaction",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
               "$ref": "#/definitions/rpcpbSendTransactionResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -825,12 +973,27 @@
     "/subscribe": {
       "post": {
         "summary": "subscribe an event",
-        "operationId": "Subscribe",
+        "operationId": "ApiService_Subscribe",
         "responses": {
           "200": {
             "description": "A successful response.(streaming responses)",
             "schema": {
-              "$ref": "#/x-stream-definitions/rpcpbSubscribeResponse"
+              "type": "object",
+              "properties": {
+                "result": {
+                  "$ref": "#/definitions/rpcpbSubscribeResponse"
+                },
+                "error": {
+                  "$ref": "#/definitions/runtimeStreamError"
+                }
+              },
+              "title": "Stream result of rpcpbSubscribeResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/runtimeError"
             }
           }
         },
@@ -913,7 +1076,6 @@
         },
         "is_key_pair": {
           "type": "boolean",
-          "format": "boolean",
           "title": "whether it's a key pair"
         },
         "weight": {
@@ -1601,7 +1763,6 @@
         },
         "by_longest_chain": {
           "type": "boolean",
-          "format": "boolean",
           "title": "get data by longest chain's head block or last irreversible block"
         }
       },
@@ -1656,7 +1817,6 @@
         },
         "by_longest_chain": {
           "type": "boolean",
-          "format": "boolean",
           "title": "get data by longest chain's head block or last irreversible block"
         }
       },
@@ -1701,7 +1861,6 @@
         },
         "by_longest_chain": {
           "type": "boolean",
-          "format": "boolean",
           "title": "get data by longest chain's head block or last irreversible block"
         }
       },
@@ -1747,7 +1906,6 @@
         },
         "is_producer": {
           "type": "boolean",
-          "format": "boolean",
           "title": "is producer"
         },
         "status": {
@@ -1756,7 +1914,6 @@
         },
         "online": {
           "type": "boolean",
-          "format": "boolean",
           "title": "is online"
         },
         "votes": {
@@ -1849,7 +2006,6 @@
         },
         "by_longest_chain": {
           "type": "boolean",
-          "format": "boolean",
           "title": "get data by longest chain's head block or last irreversible block"
         }
       }
@@ -2063,12 +2219,10 @@
         },
         "can_transfer": {
           "type": "boolean",
-          "format": "boolean",
           "title": "whether the token can be transfered"
         },
         "only_issuer_can_transfer": {
           "type": "boolean",
-          "format": "boolean",
           "title": "whether the token can only be transfered by issuer"
         },
         "total_supply_float": {
@@ -2359,6 +2513,27 @@
       },
       "description": "The message defines the getVoterBonus response."
     },
+    "runtimeError": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "string"
+        },
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    },
     "runtimeStreamError": {
       "type": "object",
       "properties": {
@@ -2542,20 +2717,6 @@
           }
         }
       }
-    }
-  },
-  "x-stream-definitions": {
-    "rpcpbSubscribeResponse": {
-      "type": "object",
-      "properties": {
-        "result": {
-          "$ref": "#/definitions/rpcpbSubscribeResponse"
-        },
-        "error": {
-          "$ref": "#/definitions/runtimeStreamError"
-        }
-      },
-      "title": "Stream result of rpcpbSubscribeResponse"
     }
   }
 }

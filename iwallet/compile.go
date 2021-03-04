@@ -1,22 +1,25 @@
 package iwallet
 
 import (
+	_ "embed" //nolint, need go1.16 or later
 	"fmt"
 	"os/exec"
 	"strings"
 
-	"github.com/iost-official/go-iost/iwallet/contract"
 	"github.com/spf13/cobra"
 )
+
+// CompiledContract is the compiled js code. Need go 1.16 or later
+//go:embed contract/dist/bundle.js
+var CompiledContract string
 
 // Generate ABI file.
 func generateABI(codePath string) (string, error) {
 	contractToRun := fmt.Sprintf(`
-	const fs = require('fs');
 	%s;
 	const processContract = module.exports;
 	processContract("%s");
-	`, contract.CompiledContract, codePath)
+	`, CompiledContract, codePath)
 
 	cmd := exec.Command("node", "-")
 	cmd.Stdin = strings.NewReader(contractToRun)

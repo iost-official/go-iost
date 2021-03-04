@@ -117,7 +117,7 @@ func Create(dirpath string, metadata []byte) (*WAL, error) {
 // nolint
 // ReadAll reads out records of the current WAL.
 // After ReadAll, the WAL will be ready for appending new records.
-func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
+func (w *WAL) ReadAll() (metadata []byte, ents []*Entry, err error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -213,11 +213,11 @@ func (w *WAL) ReadAll() (metadata []byte, ents []Entry, err error) {
 }
 
 // SaveSingle save single entry, Return entry index and error
-func (w *WAL) SaveSingle(ent Entry) (uint64, error) {
+func (w *WAL) SaveSingle(ent *Entry) (uint64, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
-	if err := w.saveEntry(&ent); err != nil {
+	if err := w.saveEntry(ent); err != nil {
 		return 0, err
 	}
 
@@ -567,7 +567,7 @@ func (w *WAL) saveEntry(e *Entry) error {
 }
 
 // Save save entries
-func (w *WAL) Save(ents []Entry) (uint64, error) {
+func (w *WAL) Save(ents []*Entry) (uint64, error) {
 	w.mu.Lock()
 	defer w.mu.Unlock()
 
@@ -576,7 +576,7 @@ func (w *WAL) Save(ents []Entry) (uint64, error) {
 	}
 
 	for i := range ents {
-		if err := w.saveEntry(&ents[i]); err != nil {
+		if err := w.saveEntry(ents[i]); err != nil {
 			return 0, err
 		}
 	}

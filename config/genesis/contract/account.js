@@ -142,16 +142,6 @@ class Account {
         if (block.number !== 0) {
             const defaultGasPledge = "10";
             blockchain.callWithAuth("gas.iost", "pledge", [referrer, id, defaultGasPledge]);
-
-            const enableReferrerReward = false;
-            if (enableReferrerReward) {
-                const defaultRegisterReward = "3";
-                const producerMap = JSON.parse(storage.globalGet("vote_producer.iost", "producerMap") || "{}");
-                if (producerMap[referrer]) {
-                    blockchain.callWithAuth("issue.iost", "issueIOSTTo", [referrer, defaultRegisterReward]);
-                }
-            }
-
         }
 
         blockchain.receipt(JSON.stringify([id, owner, active]));

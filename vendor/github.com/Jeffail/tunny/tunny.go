@@ -21,6 +21,7 @@
 package tunny
 
 import (
+	"context"
 	"errors"
 	"sync"
 	"sync/atomic"
@@ -211,6 +212,46 @@ func (p *Pool) ProcessTimed(
 	}
 
 	tout.Stop()
+	return payload, nil
+}
+
+// ProcessCtx will use the Pool to process a payload and synchronously return
+// the result. If the context cancels before the job has finished the worker will
+// be interrupted and ErrJobTimedOut will be returned. ProcessCtx can be
+// called safely by any goroutines.
+func (p *Pool) ProcessCtx(ctx context.Context, payload interface{}) (interface{}, error) {
+	atomic.AddInt64(&p.queuedJobs, 1)
+	defer atomic.AddInt64(&p.queuedJobs, -1)
+
+	var request workRequest
+	var open bool
+
+	select {
+	case request, open = <-p.reqChan:
+		if !open {
+			return nil, ErrPoolNotRunning
+		}
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+
+	select {
+	case request.jobChan <- payload:
+	case <-ctx.Done():
+		request.interruptFunc()
+		return nil, ctx.Err()
+	}
+
+	select {
+	case payload, open = <-request.retChan:
+		if !open {
+			return nil, ErrWorkerClosed
+		}
+	case <-ctx.Done():
+		request.interruptFunc()
+		return nil, ctx.Err()
+	}
+
 	return payload, nil
 }
 

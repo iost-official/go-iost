@@ -211,6 +211,9 @@ func loadAccount() (*AccountInfo, error) {
 		if accountName != "" && acc.Name != accountName {
 			return nil, fmt.Errorf("inconsistent account: %s from cmd args VS %s from key file", accountName, acc.Name)
 		}
+		if accountName == "" {
+			accountName = acc.Name
+		}
 		return acc, nil
 	}
 	return loadAccountByName(accountName, true)
