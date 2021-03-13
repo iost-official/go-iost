@@ -1,3 +1,14 @@
+## v3.5.0
+Mon Mar  8 17:06:41 CST 2021
+
+Compatible upgrade.
+- Migrate to go.mod. go-iost does not need GOPATH any more
+- Upgrade go version to 1.16
+- Upgrade base docker image to ubuntu18.04
+- iWallet can be built when CGO\_ENABLED=0
+- Upgrade some third party dependencies including protobuf grpc
+
+
 ## v3.4.0
 Wed Nov 25 18:06:58 CST 2020
 
