@@ -21,6 +21,8 @@ import (
 	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/runtime"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
 
 const (
@@ -127,7 +129,11 @@ func (s *Server) startGateway() error {
 
 func errorHandler(_ context.Context, _ *runtime.ServeMux, _ runtime.Marshaler, w http.ResponseWriter, _ *http.Request, err error) {
 	w.WriteHeader(400)
-	bytes, e := json.Marshal(err)
+	s, ok := status.FromError(err)
+	if !ok {
+		s = status.New(codes.Unknown, err.Error())
+	}
+	bytes, e := json.Marshal(s.Proto())
 	if e != nil {
 		bytes = []byte(fmt.Sprint(err))
 	}
