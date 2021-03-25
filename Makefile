@@ -3,12 +3,13 @@ GO_BUILD = $(GO) build -mod vendor
 GO_TEST := $(GO) test -mod vendor -race -timeout 600s
 GO_INSTALL := $(GO) install -mod vendor
 
-VERSION = 3.5.0
+BUILDER_VERSION = 3.5.0
+VERSION = 3.5.1
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
 DOCKER_RELEASE_IMAGE = iostio/iost-node:$(VERSION)
-DOCKER_DEVIMAGE = iostio/iost-dev:$(VERSION)
+DOCKER_DEVIMAGE = iostio/iost-dev:$(BUILDER_VERSION)
 TARGET_DIR = target
 CLUSTER = devnet
 DEV_DOCKER_RUN = docker run --rm -v `pwd`:/go-iost $(DOCKER_DEVIMAGE)

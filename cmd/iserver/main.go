@@ -61,7 +61,11 @@ func main() {
 	}
 
 	if *configFile == "" {
-		*configFile = os.Getenv("GOIOST") + "//config/iserver.yml"
+		repoDir, ok := os.LookupEnv("GOIOST")
+		if !ok {
+			repoDir = "."
+		}
+		*configFile = repoDir + "/config/iserver.yml"
 	}
 
 	conf := common.NewConfig(*configFile)

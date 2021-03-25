@@ -1,3 +1,9 @@
+## v3.5.1
+Thu Mar 25 20:48:34 CST 2021
+
+Compatible upgrade.
+- Fix rpc grpc gateway cannot show error message
+
 ## v3.5.0
 Mon Mar  8 17:06:41 CST 2021
 

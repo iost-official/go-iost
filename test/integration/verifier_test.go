@@ -79,7 +79,7 @@ func TestSetCode(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 		So(r.Status.Code, ShouldEqual, tx.Success)
-		So(cname, ShouldEqual, "Contract63Y53NzXRuLE1Ri4ePm5ZReKAaQy7Fx6p8JPGjZXwvzf")
+		So(cname, ShouldEqual, "ContractDPya9exiBgbwGSbSrGYuMLQ2QE6vAndtMR3EEtTmV3VS")
 		So(r.GasUsage, ShouldEqual, 24425800)
 		So(s.Visitor.TokenBalance("ram", acc.ID), ShouldEqual, int64(2550))
 
