@@ -20,6 +20,8 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/database"
 )
 
+var txTime = common.MaxTxTimeLimit
+
 // Simulator of txs and contract
 type Simulator struct {
 	Visitor  *database.Visitor
@@ -115,7 +117,7 @@ func (s *Simulator) DeploySystemContract(c *contract.Contract, publisher string,
 		Contract:   "system.iost",
 		ActionName: "initSetCode",
 		Data:       string(jargs),
-	}}, nil, 400000000, 100, s.Head.Time+10000000, 0, 0)
+	}}, nil, 400000000, 100, s.Head.Time+int64(txTime), 0, 0)
 
 	trx.Time = s.Head.Time
 
@@ -148,7 +150,7 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 		Contract:   "system.iost",
 		ActionName: "setCode",
 		Data:       string(jargs),
-	}}, nil, 400000000, 100, s.Head.Time+10000000, 0, 0)
+	}}, nil, 400000000, 100, s.Head.Time+int64(txTime), 0, 0)
 
 	trx.Time = s.Head.Time
 
@@ -201,7 +203,7 @@ func (s *Simulator) Call(contractName, abi, args string, publisher string, auth 
 		Contract:   contractName,
 		ActionName: abi,
 		Data:       args,
-	}}, signers, s.GasLimit, 100, s.Head.Time+10000000, 0, 0)
+	}}, signers, s.GasLimit, 100, s.Head.Time+int64(txTime), 0, 0)
 
 	trx.Time = s.Head.Time
 	trx.AmountLimit = append(trx.AmountLimit, &contract.Amount{Token: "*", Val: "unlimited"})
