@@ -9,7 +9,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 
 	"github.com/iost-official/go-iost/v3/ilog"
@@ -17,7 +16,7 @@ import (
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"golang.org/x/crypto/scrypt"
-	"golang.org/x/crypto/ssh/terminal"
+	"golang.org/x/term"
 )
 
 // KeyPairInfo ...
@@ -171,7 +170,7 @@ func (a *AccountInfo) SaveTo(fileName string) error {
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile(fileName, data, 0400)
+	err = os.WriteFile(fileName, data, 0400)
 	return err
 }
 
@@ -214,7 +213,7 @@ func (a *AccountInfo) Save(encrypt bool) error {
 // LoadAccountFromKeyStore ...
 func LoadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo, error) {
 	a := NewAccountInfo()
-	data, err := ioutil.ReadFile(fileName)
+	data, err := os.ReadFile(fileName)
 	if err != nil {
 		return nil, err
 	}
@@ -235,9 +234,9 @@ func LoadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo,
 
 func readPassword(prompt string) (pw []byte, err error) {
 	fd := int(os.Stdin.Fd())
-	if terminal.IsTerminal(fd) {
+	if term.IsTerminal(fd) {
 		fmt.Fprint(os.Stderr, prompt)
-		pw, err = terminal.ReadPassword(fd)
+		pw, err = term.ReadPassword(fd)
 		fmt.Fprintln(os.Stderr)
 		return
 	}

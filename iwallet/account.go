@@ -3,7 +3,6 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strings"
 
@@ -157,7 +156,7 @@ var viewCmd = &cobra.Command{
 			a.Account = append(a.Account, &acc{ac.Name, &k})
 		}
 		if len(args) < 1 {
-			files, err := ioutil.ReadDir(dir)
+			files, err := os.ReadDir(dir)
 			if err != nil {
 				return err
 			}

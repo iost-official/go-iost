@@ -28,8 +28,9 @@ func init() {
 }
 
 type ReserveToken struct {
-	sym   string
-	until time.Time
+	sym     string
+	sudoAcc string
+	until   time.Time
 }
 
 var ReserveList []ReserveToken
@@ -37,22 +38,30 @@ var ReserveList []ReserveToken
 func initReserveList() {
 	ReserveList = make([]ReserveToken, 0)
 	husdTime, err := time.Parse(time.RFC3339, "2021-01-10T00:00:00Z")
-	// husdTime, err := time.Parse(time.RFC3339, "2020-11-25T00:00:00Z")
 	if err != nil {
 		panic(err)
 	}
-	ReserveList = append(ReserveList, ReserveToken{"husd", husdTime})
+	ReserveList = append(ReserveList, ReserveToken{"husd", "admin", husdTime})
+	lolTime, err := time.Parse(time.RFC3339, "2021-05-30T00:00:00Z")
+	if err != nil {
+		panic(err)
+	}
+	ReserveList = append(ReserveList, ReserveToken{"lol", "emogi", lolTime})
 }
 
 func checkReserveToken(h *host.Host, tokenSym string) bool {
 	valid := false
+	blockTime := h.Context().Value("time").(int64)
+	publisher := h.Context().Value("publisher").(string)
 	for _, item := range ReserveList {
-		blockTime := h.Context().Value("time").(int64)
-		fmt.Println(item.sym, item.until.UnixNano(), blockTime)
-		if item.sym == tokenSym && blockTime < item.until.UnixNano() {
+		fmt.Println("checkReserveToken", item.sym, item.until.UnixNano(), blockTime)
+		if item.sym == tokenSym && blockTime < item.until.UnixNano() && (publisher == "admin" || publisher == item.sudoAcc) {
 			valid = true
 			break
 		}
+	}
+	if valid {
+		fmt.Println("checkReserveToken bypass", tokenSym, publisher)
 	}
 	return valid
 }

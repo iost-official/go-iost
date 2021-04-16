@@ -2,7 +2,7 @@ package itest
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/ilog"
@@ -42,7 +42,7 @@ func LoadConfig(file string) (*Config, error) {
 		data = []byte(DefaultITestConfig)
 	} else {
 		var err error
-		data, err = ioutil.ReadFile(file)
+		data, err = os.ReadFile(file)
 		if err != nil {
 			return nil, err
 		}

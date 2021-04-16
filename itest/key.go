@@ -2,7 +2,6 @@ package itest
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 
 	"github.com/iost-official/go-iost/v3/account"
@@ -44,7 +43,7 @@ func LoadKeys(file string) ([]*Key, error) {
 		data = []byte(DefaultKeys)
 	} else {
 		var err error
-		data, err = ioutil.ReadFile(file)
+		data, err = os.ReadFile(file)
 		if err != nil {
 			return nil, err
 		}

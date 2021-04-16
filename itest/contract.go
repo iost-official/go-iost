@@ -1,7 +1,7 @@
 package itest
 
 import (
-	"io/ioutil"
+	"os"
 
 	"github.com/iost-official/go-iost/v3/core/contract"
 )
@@ -70,7 +70,7 @@ func LoadContract(codepath, abipath string) (*Contract, error) {
 	abi := DefaultABI
 
 	if codepath != "" {
-		data, err := ioutil.ReadFile(codepath)
+		data, err := os.ReadFile(codepath)
 		if err != nil {
 			return nil, err
 		}
@@ -78,7 +78,7 @@ func LoadContract(codepath, abipath string) (*Contract, error) {
 	}
 
 	if abipath != "" {
-		data, err := ioutil.ReadFile(abipath)
+		data, err := os.ReadFile(abipath)
 		if err != nil {
 			return nil, err
 		}

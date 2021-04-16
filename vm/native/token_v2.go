@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
+// fix amount string
 var tokenABIsV2 *abiSet
 
 func init() {
@@ -411,7 +412,7 @@ var (
 			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
-				if !(h.Context().Value("publisher").(string) == "admin" && checkReserveToken(h, tokenSym)) {
+				if !checkReserveToken(h, tokenSym) {
 					return nil, cost, host.ErrPermissionLost
 				}
 			}

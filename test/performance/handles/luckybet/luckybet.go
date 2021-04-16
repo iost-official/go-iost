@@ -3,7 +3,6 @@ package luckybet
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"strconv"
@@ -50,7 +49,7 @@ func newLuckyBetHandler() *luckyBetHandler {
 }
 
 func (t *luckyBetHandler) readCache() {
-	content, err := ioutil.ReadFile(cache)
+	content, err := os.ReadFile(cache)
 	if err == nil {
 		strs := strings.Split(string(content), sep)
 		if len(strs) > 2 {
@@ -65,7 +64,7 @@ func (t *luckyBetHandler) readCache() {
 }
 
 func (t *luckyBetHandler) writeCache() {
-	err := ioutil.WriteFile(cache, []byte(t.testID+sep+common.Base58Encode(t.testKp.Seckey)+sep+t.contractID), os.ModePerm)
+	err := os.WriteFile(cache, []byte(t.testID+sep+common.Base58Encode(t.testKp.Seckey)+sep+t.contractID), os.ModePerm)
 	if err != nil {
 		fmt.Println("write cache error: ", err)
 		panic(err)

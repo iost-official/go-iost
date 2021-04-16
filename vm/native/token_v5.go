@@ -11,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
+// token name space
 var tokenABIsV5 *abiSet
 
 func init() {

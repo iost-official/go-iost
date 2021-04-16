@@ -2,7 +2,7 @@ package p2p
 
 import (
 	"crypto/rand"
-	"io/ioutil"
+	"os"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
 )
@@ -24,7 +24,7 @@ func unmarshalPrivKey(data string) (crypto.PrivKey, error) {
 }
 
 func getKeyFromFile(path string) (crypto.PrivKey, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}
@@ -36,7 +36,7 @@ func writeKeyToFile(path string, key crypto.PrivKey) error {
 	if err != nil {
 		return err
 	}
-	return ioutil.WriteFile(path, []byte(data), 0666)
+	return os.WriteFile(path, []byte(data), 0666)
 }
 
 func getOrCreateKey(path string) (crypto.PrivKey, error) {

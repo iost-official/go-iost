@@ -3,7 +3,6 @@ package wal
 import (
 	"bytes"
 	"io"
-	"io/ioutil"
 	"math"
 	"os"
 	"path/filepath"
@@ -12,7 +11,7 @@ import (
 )
 
 func TestNew(t *testing.T) {
-	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	p, err := os.MkdirTemp(os.TempDir(), "waltest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -63,7 +62,7 @@ func TestNew(t *testing.T) {
 }
 
 func TestCreateFailFromNoSpaceLeft(t *testing.T) {
-	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	p, err := os.MkdirTemp(os.TempDir(), "waltest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -82,7 +81,7 @@ func TestCreateFailFromNoSpaceLeft(t *testing.T) {
 }
 
 func TestSave(t *testing.T) {
-	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	p, err := os.MkdirTemp(os.TempDir(), "waltest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +138,7 @@ func TestSave(t *testing.T) {
 }
 
 func TestSaveSingle(t *testing.T) {
-	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	p, err := os.MkdirTemp(os.TempDir(), "waltest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -181,7 +180,7 @@ func TestSaveSingle(t *testing.T) {
 }
 
 func TestSave10000(t *testing.T) {
-	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	p, err := os.MkdirTemp(os.TempDir(), "waltest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -204,7 +203,7 @@ func TestSave10000(t *testing.T) {
 	}
 	ents = append(ents, entry1)
 	ents = append(ents, entry2)
-	for i:= 0; i< 10000; i++ {
+	for i := 0; i < 10000; i++ {
 		w.Save(ents)
 	}
 	w.Close()
@@ -239,7 +238,7 @@ func TestSave10000(t *testing.T) {
 }
 
 func TestSaveWithCut(t *testing.T) {
-	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	p, err := os.MkdirTemp(os.TempDir(), "waltest")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -296,9 +295,8 @@ func TestSaveWithCut(t *testing.T) {
 	}
 }
 
-
 func TestRemoveFiles(t *testing.T) {
-	p, err := ioutil.TempDir(os.TempDir(), "waltest")
+	p, err := os.MkdirTemp(os.TempDir(), "waltest")
 	if err != nil {
 		t.Fatal(err)
 	}

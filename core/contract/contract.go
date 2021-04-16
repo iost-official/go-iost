@@ -3,9 +3,9 @@ package contract
 import (
 	"encoding/base64"
 	"errors"
+	"os"
 
 	"encoding/json"
-	"io/ioutil"
 
 	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/common"
@@ -116,13 +116,13 @@ func (c *Contract) ABI(name string) *ABI {
 
 // Compile read src and abi file, generate contract structure
 func Compile(id, src, abi string) (*Contract, error) {
-	bs, err := ioutil.ReadFile(src)
+	bs, err := os.ReadFile(src)
 	if err != nil {
 		return nil, err
 	}
 	code := string(bs)
 
-	as, err := ioutil.ReadFile(abi)
+	as, err := os.ReadFile(abi)
 	if err != nil {
 		return nil, err
 	}
