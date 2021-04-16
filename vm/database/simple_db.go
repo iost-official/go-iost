@@ -1,21 +1,16 @@
 package database
 
 import (
-	"os"
-
-	"github.com/iost-official/go-iost/v3/account"
-
-	"io/ioutil"
-
 	"encoding/json"
-
+	"errors"
+	"fmt"
+	"io"
+	"os"
 	"strings"
 
-	"fmt"
-
-	"errors"
-
 	"github.com/bitly/go-simplejson"
+
+	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/core/block"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/core/tx"
@@ -197,7 +192,7 @@ func readJSON(path string) (*simplejson.Json, error) {
 	if err != nil {
 		return nil, err
 	}
-	fd, err := ioutil.ReadAll(f)
+	fd, err := io.ReadAll(f)
 	if err != nil {
 		return nil, err
 	}
@@ -212,7 +207,7 @@ func (d *SimpleDB) AddSystem(path string) {
 	if err != nil {
 		panic(err)
 	}
-	fd, err := ioutil.ReadAll(f)
+	fd, err := io.ReadAll(f)
 	if err != nil {
 		panic(err)
 	}

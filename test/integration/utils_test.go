@@ -3,7 +3,6 @@ package integration
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -121,12 +120,12 @@ func createToken(t fataler, s *Simulator, acc *TestAccount) error {
 func setNonNativeContract(s *Simulator, name string, filename string, ContractPath string) (*tx.TxReceipt, error) {
 	jsPath := filepath.Join(ContractPath, filename)
 	abiPath := filepath.Join(ContractPath, filename+".abi")
-	fd, err := ioutil.ReadFile(jsPath)
+	fd, err := os.ReadFile(jsPath)
 	if err != nil {
 		return nil, err
 	}
 	rawCode := string(fd)
-	fd, err = ioutil.ReadFile(abiPath)
+	fd, err = os.ReadFile(abiPath)
 	if err != nil {
 		return nil, err
 	}

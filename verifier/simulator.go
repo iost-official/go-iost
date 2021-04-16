@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"time"
 
@@ -166,13 +165,13 @@ func (s *Simulator) DeployContract(c *contract.Contract, publisher string, kp *a
 
 // Compile files
 func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {
-	bs, err := ioutil.ReadFile(src + ".js")
+	bs, err := os.ReadFile(src + ".js")
 	if err != nil {
 		return nil, err
 	}
 	code := string(bs)
 
-	as, err := ioutil.ReadFile(abi + ".abi")
+	as, err := os.ReadFile(abi + ".abi")
 	if err != nil {
 		return nil, err
 	}

@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -16,7 +15,7 @@ var (
 
 func TestGetKeyFromFile(t *testing.T) {
 	// valid key in file
-	err := ioutil.WriteFile(testCacheFile, []byte(testPrivKey), 0666)
+	err := os.WriteFile(testCacheFile, []byte(testPrivKey), 0666)
 	assert.Nil(t, err)
 	pk, err := getKeyFromFile(testCacheFile)
 	assert.Nil(t, err)
@@ -24,7 +23,7 @@ func TestGetKeyFromFile(t *testing.T) {
 	assert.Nil(t, os.Remove(testCacheFile))
 
 	// invalid key in file
-	err = ioutil.WriteFile(testCacheFile, []byte(testInvalidKey), 0666)
+	err = os.WriteFile(testCacheFile, []byte(testInvalidKey), 0666)
 	assert.Nil(t, err)
 	pk, err = getKeyFromFile(testCacheFile)
 	assert.NotNil(t, err)

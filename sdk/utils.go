@@ -2,7 +2,6 @@ package sdk
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 
 	"github.com/golang/protobuf/jsonpb"
@@ -36,7 +35,7 @@ func SaveProtoStructToJSONFile(pb proto.Message, fileName string) error {
 
 // LoadProtoStructFromJSONFile ...
 func LoadProtoStructFromJSONFile(fileName string, pb proto.Message) error {
-	bytes, err := ioutil.ReadFile(fileName)
+	bytes, err := os.ReadFile(fileName)
 	if err != nil {
 		return fmt.Errorf("failed to read file %v: %v", fileName, err)
 	}

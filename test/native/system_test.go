@@ -1,7 +1,7 @@
 package native
 
 import (
-	"io/ioutil"
+	"os"
 	"testing"
 
 	"time"
@@ -59,11 +59,11 @@ func TestEngine_SetCode(t *testing.T) {
 	host.SetDeadline(time.Now().Add(10 * time.Second))
 	hash := "Contractiamhash"
 
-	rawCode, err := ioutil.ReadFile(testDataPath + "test.js")
+	rawCode, err := os.ReadFile(testDataPath + "test.js")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}
-	rawAbi, err := ioutil.ReadFile(testDataPath + "test.js.abi")
+	rawAbi, err := os.ReadFile(testDataPath + "test.js.abi")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}
@@ -85,11 +85,11 @@ func TestEngine_SetCode(t *testing.T) {
 
 	con.ID = "Contractiamhash"
 
-	rawCode, err = ioutil.ReadFile(testDataPath + "test_new.js")
+	rawCode, err = os.ReadFile(testDataPath + "test_new.js")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}
-	rawAbi, err = ioutil.ReadFile(testDataPath + "test_new.js.abi")
+	rawAbi, err = os.ReadFile(testDataPath + "test_new.js.abi")
 	if err != nil {
 		t.Fatalf("read file error: %v\n", err)
 	}

@@ -3,7 +3,6 @@ package transfer
 import (
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -48,7 +47,7 @@ func newTransferHandler() *transferHandler {
 }
 
 func (t *transferHandler) readCache() {
-	content, err := ioutil.ReadFile(cache)
+	content, err := os.ReadFile(cache)
 	if err == nil {
 		strs := strings.Split(string(content), sep)
 		if len(strs) > 1 {
@@ -58,7 +57,7 @@ func (t *transferHandler) readCache() {
 }
 
 func (t *transferHandler) writeCache() {
-	err := ioutil.WriteFile(cache, []byte(t.testID+sep+t.contractID), os.ModePerm)
+	err := os.WriteFile(cache, []byte(t.testID+sep+t.contractID), os.ModePerm)
 	if err != nil {
 		fmt.Println("write cache error: ", err)
 		panic(err)

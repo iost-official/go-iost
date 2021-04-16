@@ -5,7 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"time"
 
 	"github.com/golang/protobuf/proto"
@@ -552,13 +552,13 @@ func (s *IOSTDevSDK) CreateNewAccount(newID string, ownerKey string, activeKey s
 
 // PublishContractActions makes actions for publishing contract.
 func (s *IOSTDevSDK) PublishContractActions(codePath string, abiPath string, conID string, update bool, updateID string) ([]*rpcpb.Action, error) {
-	fd, err := ioutil.ReadFile(codePath)
+	fd, err := os.ReadFile(codePath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read source code file: %v", err)
 	}
 	code := string(fd)
 
-	fd, err = ioutil.ReadFile(abiPath)
+	fd, err = os.ReadFile(abiPath)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read abi file: %v", err)
 	}

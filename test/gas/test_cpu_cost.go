@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path"
@@ -164,7 +163,7 @@ var testDataPath = "./test_data/"
 var baseCPUCost = int64(30000)
 
 func runOp(vi *database.Visitor, name string, api string, num int) (float64, int64) {
-	b, err := ioutil.ReadFile(path.Join(testDataPath, name))
+	b, err := os.ReadFile(path.Join(testDataPath, name))
 	if err != nil {
 		log.Fatalf("Read file failed: %v", err)
 	}

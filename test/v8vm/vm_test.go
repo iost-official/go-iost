@@ -2,7 +2,7 @@ package v8vm
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -51,7 +51,7 @@ func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, 
 	ctx.Set("contract_name", conName)
 	h := host.NewHost(ctx, vi, version.NewRules(0), nil, ilog.DefaultLogger())
 
-	fd, err := ioutil.ReadFile(testDataPath + conName + ".js")
+	fd, err := os.ReadFile(testDataPath + conName + ".js")
 	if err != nil {
 		t.Fatal("Read file failed: ", err.Error())
 		return nil, nil
@@ -781,7 +781,6 @@ func TestEngine_Crypto(t *testing.T) {
 		t.Fatalf("wrong gas %v", c.ToGas())
 	}
 }
-
 
 func TestEngine_Crypto2(t *testing.T) {
 	host, code := MyInit(t, "crypto2", int64(1e8))

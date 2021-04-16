@@ -3,7 +3,6 @@ package itest
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"sync"
@@ -57,7 +56,7 @@ func LoadAccounts(file string) ([]*Account, error) {
 
 	files := []string{}
 	if strings.HasSuffix(file, "/") {
-		fis, err := ioutil.ReadDir(file)
+		fis, err := os.ReadDir(file)
 		if err != nil {
 			return nil, err
 		}
@@ -73,7 +72,7 @@ func LoadAccounts(file string) ([]*Account, error) {
 	for i := 0; i < len(files); i++ {
 		var data []byte
 		var err error
-		data, err = ioutil.ReadFile(files[i])
+		data, err = os.ReadFile(files[i])
 		if err != nil {
 			return nil, err
 		}
