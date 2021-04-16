@@ -1,3 +1,11 @@
+## v3.6.0
+Fri Apr 16 15:42:09 CST 2021
+
+Breaking Change! Every node should upgrade before 2021.04.25
+
+- Golang: Switch deprecated ioutil to os/io
+- Special processing for lol token
+
 ## v3.5.1
 Thu Mar 25 20:48:34 CST 2021
 
