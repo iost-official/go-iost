@@ -19,7 +19,7 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/database"
 )
 
-var txTime = common.MaxTxTimeLimit
+var txTime = 2 * common.MaxTxTimeLimit
 
 // Simulator of txs and contract
 type Simulator struct {
