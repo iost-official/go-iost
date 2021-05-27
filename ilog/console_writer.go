@@ -3,8 +3,6 @@ package ilog
 import (
 	"fmt"
 	"os"
-
-	"golang.org/x/crypto/ssh/terminal"
 )
 
 var _ LogWriter = &ConsoleWriter{}
@@ -21,8 +19,12 @@ type ConsoleWriter struct {
 
 // NewConsoleWriter returns a new instance of ConsoleWriter.
 func NewConsoleWriter() *ConsoleWriter {
+	colorful := false
+	if fileInfo, _ := os.Stdout.Stat(); (fileInfo.Mode() & os.ModeCharDevice) != 0 {
+		colorful = true
+	}
 	return &ConsoleWriter{
-		colorful: terminal.IsTerminal(int(os.Stdout.Fd())),
+		colorful: colorful,
 	}
 }
 
