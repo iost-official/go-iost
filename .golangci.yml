@@ -39,9 +39,7 @@ linters:
     - goimports
     - gomodguard
     - goprintffuncname
-    - interfacer
     - rowserrcheck
-    - scopelint
     - testpackage
     - whitespace
   disable:
