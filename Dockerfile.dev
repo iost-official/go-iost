@@ -15,7 +15,6 @@ RUN mkdir /goroot && \
 ENV CGO_ENABLED 1
 ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$PATH
-ENV GO111MODULE on
 
 # Install golangci-lint
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b /usr/local/bin v1.37.0

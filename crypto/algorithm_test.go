@@ -2,9 +2,10 @@ package crypto
 
 import (
 	"crypto/rand"
-	"github.com/iost-official/go-iost/v3/common"
 	"reflect"
 	"testing"
+
+	"github.com/iost-official/go-iost/v3/common"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -23,7 +24,7 @@ func TestSecp256k1(t *testing.T) {
 	secKey := common.Base58Decode("3W7YGWd2XjuMVSP2wEhTnGaPs6S5A9UpHpDSyLMc2xYb")
 	pubkey := Secp256k1.GetPubkey(secKey)
 	assert.Equal(t, "mN6t6fLnSW2iYx7QkCVFZMDseCU2BjednbfCF7NeXcPj", common.Base58Encode(pubkey))
-	msg := common.Sha256([]byte("hello world"))
+	msg := common.Sha3([]byte("hello world"))
 	sig := Secp256k1.Sign(msg, secKey)
 	assert.Equal(t, "67EXBLbnijj8U9J98HLkd6Stf3PQx4z5Hk2bvTD4KYAbD1PbU5vK1v6p4qSfW6djA5RW3JEa13E2JgFq73Yk6VNs", common.Base58Encode(sig))
 	assert.True(t, Secp256k1.Verify(msg, pubkey, sig))
