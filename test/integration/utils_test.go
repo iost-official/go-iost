@@ -23,7 +23,7 @@ type TestAccount struct {
 }
 
 func (t *TestAccount) ToAccount() *account.Account {
-	return account.NewInitAccount(t.ID, t.KeyPair.ReadablePubkey(), t.KeyPair.ReadablePubkey())
+	return account.NewAccountFromKeys(t.ID, t.KeyPair.ReadablePubkey(), t.KeyPair.ReadablePubkey())
 }
 
 var testAccounts = make([]*TestAccount, 0)
@@ -94,7 +94,7 @@ func createAccountsWithResource(s *Simulator) {
 	// deploy token.iost
 	s.SetContract(native.TokenABI())
 	// used in ram contract
-	s.SetAccount(account.NewInitAccount("deadaddr", "hahaha", "hahaha"))
+	s.SetAccount(account.NewAccountFromKeys("deadaddr", "hahaha", "hahaha"))
 	s.Visitor.SetTokenBalance("iost", "deadaddr", 0)
 	s.Visitor.Commit()
 }

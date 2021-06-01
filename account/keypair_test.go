@@ -2,9 +2,7 @@ package account
 
 import (
 	"testing"
-
 	"bytes"
-
 	"fmt"
 
 	. "github.com/iost-official/go-iost/v3/common"
@@ -12,10 +10,10 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-func TestMember(t *testing.T) {
+func TestKeypair(t *testing.T) {
 	Convey("Test of KeyPair", t, func() {
 		m, err := NewKeyPair(nil, crypto.Secp256k1)
-		Convey("New member: ", func() {
+		Convey("New keypair: ", func() {
 			So(err, ShouldBeNil)
 			So(len(m.Pubkey), ShouldEqual, 33)
 			So(len(m.Seckey), ShouldEqual, 32)
@@ -39,21 +37,21 @@ func TestMember(t *testing.T) {
 	})
 }
 
-func TestPubkeyAndID(t *testing.T) {
+func TestSeckeyToPubkey(t *testing.T) {
+	seckey := Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB")
+	pubkey := crypto.Ed25519.GetPubkey(seckey)
+	fmt.Println("id >", EncodePubkey(pubkey))
+}
+
+func TestPubkeyEncodeDecode(t *testing.T) {
 	for i := 0; i < 10; i++ {
 		seckey := crypto.Secp256k1.GenSeckey()
 		pubkey := crypto.Secp256k1.GetPubkey(seckey)
-		id := EncodePubkey(pubkey)
-		pub2 := DecodePubkey(id)
-		id2 := EncodePubkey(pub2)
-		if id != id2 {
+		pubkeyStr := EncodePubkey(pubkey)
+		pubkeyStr2 := EncodePubkey(DecodePubkey(pubkeyStr))
+		if pubkeyStr != pubkeyStr2 {
 			t.Fail()
 		}
 	}
 }
 
-func TestID_Platform(t *testing.T) {
-	seckey := Base58Decode("1rANSfcRzr4HkhbUFZ7L1Zp69JZZHiDDq5v7dNSbbEqeU4jxy3fszV4HGiaLQEyqVpS1dKT9g7zCVRxBVzuiUzB")
-	pubkey := crypto.Ed25519.GetPubkey(seckey)
-	fmt.Println("id >", EncodePubkey(pubkey))
-}

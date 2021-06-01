@@ -5,14 +5,14 @@ import (
 	"github.com/iost-official/go-iost/v3/crypto"
 )
 
-// KeyPair account of the ios
+// KeyPair keypair of the iost account
 type KeyPair struct {
 	Algorithm crypto.Algorithm
 	Pubkey    []byte
 	Seckey    []byte
 }
 
-// NewKeyPair create an account
+// NewKeyPair create a keypair
 func NewKeyPair(seckey []byte, algo crypto.Algorithm) (*KeyPair, error) {
 	if seckey == nil {
 		seckey = algo.GenSeckey()

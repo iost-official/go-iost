@@ -39,8 +39,8 @@ func NewAccount(id string) *Account {
 	}
 }
 
-// NewInitAccount new account with owner and active
-func NewInitAccount(id, ownerKey, activeKey string) *Account {
+// NewAccountFromKeys new account with owner and active key
+func NewAccountFromKeys(id, ownerKey, activeKey string) *Account {
 	a := &Account{
 		ID:          id,
 		Groups:      make(map[string]*Group),
