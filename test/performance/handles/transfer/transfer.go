@@ -8,16 +8,14 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iost-official/go-iost/v3/sdk"
-
-	"github.com/iost-official/go-iost/v3/test/performance/call"
-
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/core/tx"
 	"github.com/iost-official/go-iost/v3/crypto"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
+	"github.com/iost-official/go-iost/v3/sdk"
+	"github.com/iost-official/go-iost/v3/test/performance/call"
 )
 
 func init() {

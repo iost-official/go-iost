@@ -2,18 +2,12 @@ package gobang
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"math/rand"
 	"os"
 	"strconv"
 	"time"
-
-	"github.com/iost-official/go-iost/v3/sdk"
-
-	"github.com/iost-official/go-iost/v3/test/performance/call"
-
-	"encoding/json"
-
-	"math/rand"
 
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
@@ -21,6 +15,8 @@ import (
 	"github.com/iost-official/go-iost/v3/crypto"
 	"github.com/iost-official/go-iost/v3/ilog"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
+	"github.com/iost-official/go-iost/v3/sdk"
+	"github.com/iost-official/go-iost/v3/test/performance/call"
 )
 
 var rootKey = "2yquS3ySrGWPEKywCPzX4RTJugqRh7kJSo5aehsLYPEWkUxBWA39oMrZ7ZxuM4fgyXYs2cPwh5n8aNNpH5x2VyK1"

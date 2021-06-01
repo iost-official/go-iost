@@ -1,17 +1,16 @@
 package run
 
 import (
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
 	"encoding/json"
 	"fmt"
 	"math"
 	"math/rand"
+	"os"
+	"os/signal"
 	"strconv"
 	"sync"
+	"syscall"
+	"time"
 
 	"github.com/iost-official/go-iost/v3/core/tx"
 	"github.com/iost-official/go-iost/v3/ilog"

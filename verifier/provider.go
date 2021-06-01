@@ -5,6 +5,13 @@ import (
 	"github.com/iost-official/go-iost/v3/core/txpool"
 )
 
+type Provider interface {
+	Tx() *tx.Tx
+	Return(*tx.Tx)
+	Drop(t *tx.Tx, err error)
+	Close()
+}
+
 // ProviderImpl impl of provider
 type ProviderImpl struct {
 	cache    []*tx.Tx
