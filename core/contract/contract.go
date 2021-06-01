@@ -7,23 +7,14 @@ import (
 
 	"encoding/json"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/common"
+	"google.golang.org/protobuf/proto"
 )
 
 //go:generate protoc --gofast_out=. contract.proto
 
 // VersionCode version of contract
 type VersionCode string
-
-// PaymentCode payment mode of contract
-type PaymentCode int32
-
-// Payment mode
-const (
-	SelfPay PaymentCode = iota
-	ContractPay
-)
 
 const codeSizeLimit = 49152
 
@@ -32,20 +23,6 @@ type FixedAmount struct {
 	Token string
 	Val   *common.Fixed
 }
-
-//type ContractInfo struct {
-//	Name     string
-//	Lang     string
-//	Version  VersionCode
-//	Payment  PaymentCode
-//	Limit    Cost
-//	GasPrice uint64
-//}
-//
-//type ContractOld struct {
-//	ContractInfo
-//	Code string
-//}
 
 // Encode contract to string using proto buf
 func (c *Contract) Encode() string {

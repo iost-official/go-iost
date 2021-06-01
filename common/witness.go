@@ -1,3 +1,8 @@
+package common
+
+import (
+	"time"
+)
 
 // Witness
 var (
@@ -6,16 +11,6 @@ var (
 	BlockInterval      = 500 * time.Millisecond
 	BlockNumPerWitness = 6
 )
-
-// IsWitness will judage if a public key is a witness.
-func IsWitness(w string, witnessList []string) bool {
-	for _, v := range witnessList {
-		if v == w {
-			return true
-		}
-	}
-	return false
-}
 
 // WitnessOfNanoSec will return which witness is the current time.
 func WitnessOfNanoSec(nanosec int64, witnessList []string) string {
@@ -40,4 +35,3 @@ func TimeOfBlock(slot int64, num int64) time.Time {
 	unixNano := slot*int64(SlotInterval) + num*int64(BlockInterval)
 	return time.Unix(unixNano/int64(time.Second), unixNano%int64(time.Second))
 }
-

@@ -527,7 +527,7 @@ func (bc *BlockCacheImpl) updateLinkedRootWitness(parent, bcn *BlockCacheNode) {
 	if !common.StringSliceEqual(parent.Pending(), bcn.Pending()) {
 		bc.linkedRootWitness = make([]string, 0)
 	}
-	SetInsert(&bc.linkedRootWitness, bcn.Head.Witness)
+	common.AppendIfNotExists(&bc.linkedRootWitness, bcn.Head.Witness)
 }
 
 func (bc *BlockCacheImpl) setActiveFromBlockReceipt(h *BlockCacheNode) error {
