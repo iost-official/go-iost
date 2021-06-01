@@ -1,9 +1,8 @@
 package native
 
 import (
-	"sort"
-
 	"fmt"
+	"sort"
 	"strconv"
 
 	"github.com/iost-official/go-iost/v3/core/contract"

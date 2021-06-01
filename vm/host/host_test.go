@@ -2,7 +2,6 @@ package host
 
 import (
 	"testing"
-
 	"time"
 
 	. "github.com/golang/mock/gomock"
@@ -13,7 +12,7 @@ import (
 func watchTime(f func()) time.Duration {
 	ta := time.Now()
 	f()
-	tb := time.Now().Sub(ta)
+	tb := time.Since(ta)
 	return tb
 }
 
@@ -299,8 +298,4 @@ func TestHost_MapKeys_Owner(t *testing.T) {
 	if !sliceEqual(ans, []string{"a", "b", "c"}) {
 		t.Fatal(ans)
 	}
-}
-
-func TestHost_BlockInfo(t *testing.T) {
-
 }

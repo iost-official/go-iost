@@ -1,9 +1,8 @@
 package database
 
 import (
-	"testing"
-
 	"os"
+	"testing"
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/core/version"

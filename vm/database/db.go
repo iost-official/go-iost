@@ -43,26 +43,20 @@ func NewBatchVisitorRoot(cacheLength int, cb IMultiValue, rules *version.Rules) 
 	return lruDB
 }
 
-// Mapper generator of conflict map
-type Mapper interface {
-	Map() map[string]Access
-}
-
 // NewBatchVisitor get visitor with mapper
-func NewBatchVisitor(lruDB *LRU) (*Visitor, Mapper) {
+func NewBatchVisitor(lruDB *LRU) *Visitor {
 	cachedDB := NewWriteCache(lruDB)
-	watcher := NewWatcher(cachedDB)
 	v := &Visitor{
-		BasicHandler:    BasicHandler{watcher},
-		MapHandler:      MapHandler{watcher},
-		ContractHandler: ContractHandler{watcher},
-		TokenHandler:    TokenHandler{watcher},
-		Token721Handler: Token721Handler{watcher},
+		BasicHandler:    BasicHandler{cachedDB},
+		MapHandler:      MapHandler{cachedDB},
+		ContractHandler: ContractHandler{cachedDB},
+		TokenHandler:    TokenHandler{cachedDB},
+		Token721Handler: Token721Handler{cachedDB},
 		DelaytxHandler:  DelaytxHandler{cachedDB},
 	}
 	v.GasHandler = GasHandler{v.BasicHandler, v.MapHandler}
 	v.RAMHandler = RAMHandler{v.BasicHandler}
 	v.VoteHandler = VoteHandler{v.BasicHandler, v.MapHandler}
 	v.RollbackHandler = newRollbackHandler(lruDB, cachedDB)
-	return v, watcher
+	return v
 }

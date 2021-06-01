@@ -30,7 +30,6 @@ linters:
     - typecheck
     - unconvert
     - gofmt
-    - unused
     - varcheck
     - asciicheck
     - bodyclose
@@ -68,3 +67,4 @@ linters:
     - gocognit
     - goconst
     - gocyclo
+    - unused

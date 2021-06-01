@@ -16,10 +16,6 @@ const (
 	GasStockKey = "gs"
 	// GasPledgeKey : i pledge how much coins for others
 	GasPledgeKey = "gp"
-	// TransferableGasKey :
-	TransferableGasKey = "tg"
-	// TransferableGasQuotaKey :
-	TransferableGasQuotaKey = "tq"
 )
 
 // decimals of gas
@@ -139,22 +135,6 @@ func (g *GasHandler) GasStock(name string) *common.Fixed {
 	return f
 }
 
-// TGas ...
-func (g *GasHandler) TGas(name string) *common.Fixed {
-	f := g.getFixed(name + TransferableGasKey)
-	if f == nil {
-		return EmptyGas()
-	}
-	return f
-}
-
-// ChangeTGas ...
-func (g *GasHandler) ChangeTGas(name string, delta *common.Fixed) {
-	oldValue := g.TGas(name)
-	newValue := oldValue.Add(delta)
-	g.putFixed(name+TransferableGasKey, newValue)
-}
-
 // GasPledge ...
 func (g *GasHandler) GasPledge(name string, pledger string) *common.Fixed {
 	ok := g.MapHandler.MHas(GasContractName+Separator+pledger+GasPledgeKey, name)
@@ -238,5 +218,5 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 
 // TotalGasAtTime return total gas at given time.. It is pgas + tgas
 func (g *GasHandler) TotalGasAtTime(name string, t int64) (result *common.Fixed) {
-	return g.TGas(name).Add(g.PGasAtTime(name, t))
+	return g.PGasAtTime(name, t)
 }

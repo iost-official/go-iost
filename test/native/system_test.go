@@ -3,7 +3,6 @@ package native
 import (
 	"os"
 	"testing"
-
 	"time"
 
 	"github.com/iost-official/go-iost/v3/core/contract"
