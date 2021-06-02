@@ -12,7 +12,7 @@ import (
 func main() {
 	app := cli.NewApp()
 	app.Name = "itest"
-	app.Usage = "The cli tool for testing the IOST testnet"
+	app.Usage = "The cli tool for testing the IOST blockchain"
 	app.Version = "0.0.1"
 	app.Commands = []cli.Command{
 		create.Command,

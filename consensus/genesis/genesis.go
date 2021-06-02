@@ -197,7 +197,7 @@ func GenGenesis(db db.MVCCDB, gConf *common.GenesisConfig) (*block.Block, error)
 		Witness:    "0",
 		Time:       t.UnixNano(),
 	}
-	v := verifier.Verifier{}
+	v := verifier.Executor{}
 	txr, err := v.Exec(&blockHead, db, trx, GenesisTxExecTime)
 	if err != nil || txr.Status.Code != tx.Success {
 		return nil, fmt.Errorf("exec tx failed, stop the pogram. err: %v, receipt: %v", err, txr)

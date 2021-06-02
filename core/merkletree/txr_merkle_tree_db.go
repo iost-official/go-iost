@@ -3,7 +3,7 @@ package merkletree
 import (
 	"encoding/binary"
 	"errors"
-	fmt "fmt"
+	"fmt"
 	"sync"
 
 	"github.com/iost-official/go-iost/v3/db/kv"

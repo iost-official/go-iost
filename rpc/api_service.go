@@ -317,16 +317,14 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	} else {
 		blkTime = as.bc.LinkedRoot().Head.Time
 	}
-	pGas := dbVisitor.PGasAtTime(req.GetName(), blkTime)
-	tGas := dbVisitor.TGas(req.GetName())
-	totalGas := pGas.Add(tGas)
+	totalGas := dbVisitor.PGasAtTime(req.GetName(), blkTime)
 	gasLimit := dbVisitor.GasLimit(req.GetName())
 	gasRate := dbVisitor.GasPledgeTotal(req.GetName()).Multiply(database.GasIncreaseRate)
 	pledgedInfo := dbVisitor.PledgerInfo(req.GetName())
 	ret.GasInfo = &rpcpb.Account_GasInfo{
 		CurrentTotal:    totalGas.ToFloat(),
-		PledgeGas:       pGas.ToFloat(),
-		TransferableGas: tGas.ToFloat(),
+		PledgeGas:       totalGas.ToFloat(),
+		TransferableGas: 0,
 		Limit:           gasLimit.ToFloat(),
 		IncreaseSpeed:   gasRate.ToFloat(),
 	}
@@ -675,7 +673,7 @@ func (as *APIService) tryTransaction(t *tx.Tx) (*tx.TxReceipt, error) {
 		Number:     topBlock.Head.Number + 1,
 		Time:       time.Now().UnixNano(),
 	}
-	v := verifier.Verifier{}
+	v := verifier.Executor{}
 	stateDB := as.stateDB.Fork()
 	ok := stateDB.Checkout(string(topBlock.HeadHash()))
 	if !ok {

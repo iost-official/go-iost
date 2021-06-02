@@ -229,7 +229,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		actionCost.AddAssign(contract.NewCost(0, int64(len(ret)), 0))
 		if (status.Code == tx.ErrorRuntime && status.Message == "out of gas") ||
 			(vmGasLimit < actionCost.ToGas()) ||
-			(!i.genesisMode && !i.blockBaseMode && i.h.TotalGas(i.t.Publisher).Value/i.t.GasRatio < i.h.GasPaid()+vmGasLimit) {
+			(!i.genesisMode && !i.blockBaseMode && i.h.TotalGas(i.t.Publisher).ChangeDecimal(2).Value/i.t.GasRatio < i.h.GasPaid()+vmGasLimit) {
 			ilog.Debugf("out of gas vmGasLimit %v actionCost %v totalGas %v gasPaid %v", vmGasLimit, actionCost.ToGas(), i.h.TotalGas(i.t.Publisher).ToString(), i.h.GasPaid())
 			status.Code = tx.ErrorRuntime
 			status.Message = "out of gas"

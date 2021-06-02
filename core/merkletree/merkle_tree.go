@@ -3,10 +3,9 @@ package merkletree
 import (
 	"encoding/hex"
 	"errors"
+	"math"
 
 	"github.com/iost-official/go-iost/v3/common"
-
-	"math"
 )
 
 // Build return the merkle tree

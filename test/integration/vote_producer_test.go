@@ -310,7 +310,7 @@ func Test_Register(t *testing.T) {
 		s.Head.Number = 0
 
 		kp, _ := account.NewKeyPair(nil, crypto.Ed25519)
-		operator := account.NewInitAccount("operator", kp.ReadablePubkey(), kp.ReadablePubkey())
+		operator := account.NewAccountFromKeys("operator", kp.ReadablePubkey(), kp.ReadablePubkey())
 		s.SetAccount(operator)
 		s.SetGas(operator.ID, 1e12)
 		s.SetRAM(operator.ID, 1e12)

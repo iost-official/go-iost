@@ -219,7 +219,7 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 	}
 
 	p.produceDB.Checkout(string(head.HeadHash()))
-	v := &verifier.Verifier{}
+	v := &verifier.Executor{}
 	// TODO: stateDb and block head is consisdent, pTx may be inconsisdent.
 	dropList, _, err := v.Gen(
 		blk, head.Block, head.WitnessList, p.produceDB, pTx,
@@ -263,7 +263,7 @@ func (p *PoB) tickerLoop() {
 			}
 
 			head := p.cBase.HeadBlock()
-			if common.IsWitness(p.account.ReadablePubkey(), head.Active()) {
+			if common.BelongsTo(p.account.ReadablePubkey(), head.Active()) {
 				p.p2pService.ConnectBPs(head.NetID())
 			} else {
 				p.p2pService.ConnectBPs(nil)

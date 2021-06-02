@@ -1,13 +1,12 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
-	"time"
-
-	"flag"
 	"runtime/pprof"
+	"time"
 
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/core/version"

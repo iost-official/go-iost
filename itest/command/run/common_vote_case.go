@@ -84,7 +84,7 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 	for range allArgs {
 		switch value := (<-res).(type) {
 		case error:
-			return value.(error)
+			return value
 		}
 	}
 

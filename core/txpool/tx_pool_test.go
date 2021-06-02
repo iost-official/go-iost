@@ -2,10 +2,9 @@ package txpool
 
 import (
 	"encoding/json"
+	"os"
 	"testing"
 	"time"
-
-	"os"
 
 	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/account"

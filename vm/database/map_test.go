@@ -1,12 +1,10 @@
 package database
 
 import (
-	"testing"
-
-	"strings"
-
 	"encoding/json"
 	"os"
+	"strings"
+	"testing"
 	"time"
 
 	//"runtime/pprof"
@@ -18,7 +16,7 @@ import (
 func watchTimeout(t *testing.T, f func()) {
 	ta := time.Now()
 	f()
-	tb := time.Now().Sub(ta)
+	tb := time.Since(ta)
 	if tb > 5*time.Millisecond {
 		t.Error("time overflow")
 	}

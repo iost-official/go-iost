@@ -2,11 +2,9 @@ package database
 
 import (
 	"fmt"
-	"testing"
-
-	"reflect"
-
 	"os"
+	"reflect"
+	"testing"
 
 	"github.com/bitly/go-simplejson"
 )

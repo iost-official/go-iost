@@ -6,11 +6,10 @@ import (
 	"fmt"
 	"log"
 	"math/rand"
+	"os"
 	"reflect"
 	"testing"
 	"time"
-
-	"os"
 
 	"github.com/iost-official/go-iost/v3/core/tx"
 	"github.com/smartystreets/goconvey/convey"

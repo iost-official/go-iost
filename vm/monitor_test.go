@@ -2,7 +2,6 @@ package vm
 
 import (
 	"testing"
-
 	"time"
 
 	. "github.com/golang/mock/gomock"

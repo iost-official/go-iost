@@ -1,20 +1,19 @@
 package run
 
 import (
+	"fmt"
+	"math/rand"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
 
 	"github.com/iost-official/go-iost/v3/account"
-	"github.com/iost-official/go-iost/v3/crypto"
-
-	"fmt"
-	"math/rand"
-
 	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/crypto"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/itest"
+
 	"github.com/urfave/cli"
 )
 

@@ -8,19 +8,13 @@ import (
 var raw = `{
 "lang": "javascript",
 "version": "1.0.0",
-"abi": [{
-	"name": "abc",
-	"args": ["", "", ""]
+"abi": [
+	{
+		"name": "abc",
+		"args": ["", "", ""]
 	}, {
 		"name": "def",
-	"args": ["string", "string", "number"],
-	"payment": 2,
-	"limit": {
-		"data": 1,
-		"net": 2,
-		"cpu": 3
-	},
-	"gas_price": 123
+		"args": ["string", "string", "number"]
 	}]
 }
 `

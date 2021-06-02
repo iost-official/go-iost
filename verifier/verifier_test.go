@@ -1,10 +1,9 @@
 package verifier
 
 import (
+	"os"
 	"testing"
 	"time"
-
-	"os"
 
 	"github.com/iost-official/go-iost/v3/core/block"
 	"github.com/iost-official/go-iost/v3/core/tx"
@@ -39,9 +38,9 @@ func TestVerifier_Gen(t *testing.T) {
 		Txs:      []*tx.Tx{},
 		Receipts: []*tx.TxReceipt{},
 	}
-
+	var e Executor
 	var v Verifier
-	a, b, c := v.Gen(&blk, nil, nil, mvccdb, mti, &Config{
+	a, b, c := e.Gen(&blk, nil, nil, mvccdb, mti, &Config{
 		Mode:        0,
 		Timeout:     time.Second,
 		TxTimeLimit: time.Millisecond * 100,

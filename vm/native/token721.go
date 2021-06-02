@@ -3,9 +3,8 @@ package native
 import (
 	"encoding/json"
 	"errors"
-	"strconv"
-
 	"fmt"
+	"strconv"
 
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/vm/host"

@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
-	"sync"
-
 	"strings"
+	"sync"
 
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"

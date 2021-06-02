@@ -530,6 +530,7 @@ func Test_MixVoteOption(t *testing.T) {
 }
 
 func Test_LargeVote(t *testing.T) {
+	t.Skip()
 	ilog.Stop()
 	Convey("test latge vote", t, func() {
 		s := NewSimulator()
@@ -539,15 +540,16 @@ func Test_LargeVote(t *testing.T) {
 		prepareToken(t, s, acc0)
 		prepareVote(t, s, acc0)
 		s.GasLimit = 2e8
+		voteNum := 1000
 
-		for i := 5; i < 1000; i++ {
+		for i := 5; i < voteNum; i++ {
 			s.SetGas(acc0.ID, 1e9)
 			r, err := s.Call("vote.iost", "addOption", fmt.Sprintf(`["1", "option%d", true]`, i), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(fmt.Sprintf("%s,%d,%d", r.Status.Message, i, r.GasUsage), ShouldEqual, fmt.Sprintf(",%d,%d", i, r.GasUsage))
 		}
 
-		for i := 1; i < 1000; i++ {
+		for i := 1; i < voteNum; i++ {
 			s.SetGas(acc0.ID, 1e9)
 			r, err := s.Call("vote.iost", "vote", fmt.Sprintf(`["1", "%v", "option%d", "%d"]`, acc0.ID, i, i), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)

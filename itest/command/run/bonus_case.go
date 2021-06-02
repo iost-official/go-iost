@@ -7,11 +7,10 @@ import (
 	"sync"
 
 	"github.com/bitly/go-simplejson"
+	"github.com/urfave/cli"
 
 	"github.com/iost-official/go-iost/v3/ilog"
-
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
 )
 
 // BonusCaseCommand is the command of account test case

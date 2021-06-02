@@ -3,12 +3,12 @@ package integration
 import (
 	"testing"
 
-	"github.com/iost-official/go-iost/v3/vm/database"
-	"github.com/iost-official/go-iost/v3/vm/native"
-
 	"github.com/iost-official/go-iost/v3/core/tx"
 	"github.com/iost-official/go-iost/v3/ilog"
 	. "github.com/iost-official/go-iost/v3/verifier"
+	"github.com/iost-official/go-iost/v3/vm/database"
+	"github.com/iost-official/go-iost/v3/vm/native"
+
 	. "github.com/smartystreets/goconvey/convey"
 )
 
