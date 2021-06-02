@@ -73,6 +73,11 @@ else
 	$(GO_TEST) -v ./...
 endif
 
+e2e_test_local:
+	$(TARGET_DIR)/itest run a_case
+	$(TARGET_DIR)/itest run t_case
+	$(TARGET_DIR)/itest run c_case
+
 e2e_test: image
 	docker rm -f iserver || true
 	docker run -d --name iserver $(DOCKER_IMAGE)

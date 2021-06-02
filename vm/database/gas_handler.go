@@ -213,10 +213,11 @@ func (g *GasHandler) PGasAtTime(name string, t int64) (result *common.Fixed) {
 	} else {
 		result = finalResult
 	}
+	result = result.ChangeDecimal(GasDecimal)
 	return
 }
 
-// TotalGasAtTime return total gas at given time.. It is pgas + tgas
+// TotalGasAtTime return total gas at given time..
 func (g *GasHandler) TotalGasAtTime(name string, t int64) (result *common.Fixed) {
-	return g.PGasAtTime(name, t)
+	return g.PGasAtTime(name, t).ChangeDecimal(GasDecimal)
 }
