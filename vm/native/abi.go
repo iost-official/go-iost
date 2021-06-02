@@ -69,8 +69,6 @@ func getABISetByVersion(conID string, version string) (aset *abiSet, err error) 
 	abiMap["token.iost"]["1.0.0"] = tokenABIs
 	abiMap["token.iost"]["1.0.2"] = tokenABIsV2
 	abiMap["token.iost"]["1.0.3"] = tokenABIsV3
-	tokenABIsV4 := tokenABIsV3.Clone()
-	tokenABIsV4.Register(updateTokenTotalSupplyABI)
 	abiMap["token.iost"]["1.0.4"] = tokenABIsV4
 	abiMap["token.iost"]["1.0.5"] = tokenABIsV5
 	abiMap["token.iost"]["1.0.6"] = tokenABIsV6
