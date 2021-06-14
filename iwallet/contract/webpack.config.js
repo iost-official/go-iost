@@ -4,10 +4,9 @@ module.exports = {
     mode: 'production',
     entry: './contract.js',
     output: {
-        library: 'contractCompile',
-        libraryTarget: 'commonjs2',
+        library: { type: 'commonjs2' },
         path: path.resolve(__dirname, 'dist'),
-        filename: 'bundle.js'
+        filename: 'bundle.js',
     },
-    target: 'node'
+    target: 'node',
 };

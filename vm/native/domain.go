@@ -2,9 +2,7 @@ package native
 
 import (
 	"errors"
-
 	"fmt"
-
 	"strings"
 
 	"github.com/bitly/go-simplejson"
