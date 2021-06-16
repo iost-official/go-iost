@@ -10,14 +10,13 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iost-official/go-iost/v3/crypto"
-	"github.com/iost-official/go-iost/v3/ilog"
-
 	simplejson "github.com/bitly/go-simplejson"
-
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
+	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/crypto"
+	"github.com/iost-official/go-iost/v3/ilog"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"github.com/iost-official/go-iost/v3/sdk"
 )
@@ -199,12 +198,12 @@ func GetSignAlgoByName(name string) crypto.Algorithm {
 	}
 }
 
-func loadAccount() (*AccountInfo, error) {
+func loadAccount(ensureDecrypt bool) (*AccountInfo, error) {
 	if keyFile != "" {
 		if accountDir != "" {
 			ilog.Warn("--key_file is set, so --account_dir will be ignored")
 		}
-		acc, err := LoadAccountFromKeyStore(keyFile, true)
+		acc, err := LoadAccountFromKeyStore(keyFile, ensureDecrypt)
 		if err != nil {
 			return nil, err
 		}
@@ -216,7 +215,7 @@ func loadAccount() (*AccountInfo, error) {
 		}
 		return acc, nil
 	}
-	return loadAccountByName(accountName, true)
+	return loadAccountByName(accountName, ensureDecrypt)
 }
 
 func getAccountDir() (string, error) {
@@ -246,24 +245,41 @@ func loadAccountByName(name string, ensureDecrypt bool) (*AccountInfo, error) {
 	return LoadAccountFromKeyStore(fileName, ensureDecrypt)
 }
 
-// SetAccountForSDK ...
-func SetAccountForSDK(s *sdk.IOSTDevSDK, a *AccountInfo, signPerm string) error {
+func GetKeyPairOfAccount(a *AccountInfo, signPerm string) (*account.KeyPair, error) {
+	if a.isEncrypted() {
+		err := a.decrypt()
+		if err != nil {
+			return nil, err
+		}
+	}
 	kp, ok := a.Keypairs[signPerm]
 	if !ok {
-		return fmt.Errorf("invalid permission %v", signPerm)
+		return nil, fmt.Errorf("invalid permission %v", signPerm)
 	}
 	keyPair, err := kp.toKeyPair()
+	if err != nil {
+		return nil, err
+	}
+	return keyPair, nil
+}
+
+// SetAccountForSDK ...
+func SetAccountForSDK(s *sdk.IOSTDevSDK, a *AccountInfo, signPerm string) error {
+	if s.GetAccount(a.Name) != nil {
+		return nil
+	}
+	keyPair, err := GetKeyPairOfAccount(a, signPerm)
 	if err != nil {
 		return err
 	}
 	s.SetAccount(a.Name, keyPair)
-	s.SetSignAlgo(kp.KeyType)
+	s.UseAccount(a.Name)
 	return nil
 }
 
 // LoadAndSetAccountForSDK load account from file
 func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
-	a, err := loadAccount()
+	a, err := loadAccount(false)
 	if err != nil {
 		return err
 	}

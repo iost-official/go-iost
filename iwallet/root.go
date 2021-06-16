@@ -33,7 +33,6 @@ var rootCmd = &cobra.Command{
 		}
 		iwalletSDK.SetServer(server)
 		iwalletSDK.SetVerbose(verbose)
-		iwalletSDK.SetSignAlgo(signAlgo)
 		iwalletSDK.SetCheckResult(checkResult, checkResultDelay, checkResultMaxRetry)
 		limit, err := ParseAmountLimit(amountLimit)
 		if err != nil {
