@@ -143,7 +143,7 @@ func run() {
 }
 
 func publish() {
-	codePath := os.Getenv("GOIOST") + "//test/vote/test_data/vote_checker.js"
+	codePath := os.Getenv("GOBASE") + "//test/vote/test_data/vote_checker.js"
 	abiPath := codePath + ".abi"
 	_, txHash, err := iostSDKs["admin"].PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {

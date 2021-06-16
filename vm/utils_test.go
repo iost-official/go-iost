@@ -1,10 +1,9 @@
 package vm
 
 import (
+	"encoding/json"
 	"os"
 	"testing"
-
-	"encoding/json"
 
 	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/account"

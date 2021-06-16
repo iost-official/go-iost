@@ -3,6 +3,7 @@ GO_BUILD = $(GO) build -mod vendor
 GO_TEST := $(GO) test -mod vendor -race -timeout 600s
 GO_INSTALL := $(GO) install -mod vendor
 
+PROJECT_NAME := $(shell basename "$(PWD)")
 BUILDER_VERSION = 3.5.0
 VERSION = 3.6.0
 COMMIT = $(shell git rev-parse --short HEAD)
@@ -11,10 +12,9 @@ DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
 DOCKER_RELEASE_IMAGE = iostio/iost-node:$(VERSION)
 DOCKER_DEVIMAGE = iostio/iost-dev:$(BUILDER_VERSION)
 TARGET_DIR = target
-CLUSTER = devnet
 DEV_DOCKER_RUN = docker run --rm -v `pwd`:/go-iost $(DOCKER_DEVIMAGE)
 
-export GOIOST = $(shell pwd)
+export GOBASE = $(shell pwd)
 export GOARCH=amd64
 export CGO_ENABLED=1
 
@@ -66,7 +66,7 @@ vmlib_linux:
 	$(DEV_DOCKER_RUN) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
 
 test:
-	go clean -testcache
+	$(GO) clean -testcache
 ifeq ($(origin VERBOSE),undefined)
 	$(GO_TEST) ./...
 else
@@ -144,7 +144,7 @@ clear_debug_file:
 	rm -f p2p/routing.table
 
 env:
-	@echo export GOIOST=$(GOIOST)
+	@echo export GOBASE=$(GOBASE)
 	@echo export GOARCH=$(GOARCH)
 	@echo export CGO_ENABLED=$(CGO_ENABLED)
 	@echo export CGO_CFLAGS=$(CGO_CFLAGS)

@@ -2,19 +2,16 @@ package cverifier
 
 import (
 	"testing"
-
-	"github.com/smartystreets/goconvey/convey"
-
 	"time"
 
 	"github.com/iost-official/go-iost/v3/core/block"
 	"github.com/iost-official/go-iost/v3/core/tx"
-	. "github.com/smartystreets/goconvey/convey"
+	"github.com/smartystreets/goconvey/convey"
 )
 
 func TestVerifyBlockHead(t *testing.T) {
 	stamp := time.Now().UnixNano()
-	Convey("Test of verify block head", t, func() {
+	convey.Convey("Test of verify block head", t, func() {
 		parentBlk := &block.Block{
 			Head: &block.BlockHead{
 				Number: 3,

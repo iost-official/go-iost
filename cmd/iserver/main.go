@@ -61,7 +61,7 @@ func main() {
 	}
 
 	if *configFile == "" {
-		repoDir, ok := os.LookupEnv("GOIOST")
+		repoDir, ok := os.LookupEnv("GOBASE")
 		if !ok {
 			repoDir = "."
 		}
