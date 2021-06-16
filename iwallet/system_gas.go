@@ -26,7 +26,7 @@ var pledgeCmd = &cobra.Command{
 		if gasUser == "" {
 			gasUser = accountName
 		}
-		return processAction("gas.iost", "pledge", accountName, gasUser, args[0])
+		return processMethod("gas.iost", "pledge", accountName, gasUser, args[0])
 	},
 }
 
@@ -42,7 +42,7 @@ var unpledgeCmd = &cobra.Command{
 		if gasUser == "" {
 			gasUser = accountName
 		}
-		return processAction("gas.iost", "unpledge", accountName, gasUser, args[0])
+		return processMethod("gas.iost", "unpledge", accountName, gasUser, args[0])
 	},
 }
 

@@ -95,14 +95,14 @@ func initTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, erro
 	return tx, nil
 }
 
-func initTxFromMethod(contract, method string, methodArgs ...interface{}) (*rpcpb.TransactionRequest, error) {
+func initActionsFromMethod(contract, method string, methodArgs ...interface{}) ([]*rpcpb.Action, error) {
 	methodArgsBytes, err := json.Marshal(methodArgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal method args %v: %v", methodArgs, err)
 	}
 	action := sdk.NewAction(contract, method, string(methodArgsBytes))
 	actions := []*rpcpb.Action{action}
-	return initTxFromActions(actions)
+	return actions, nil
 }
 
 func checkTxTime(tx *rpcpb.TransactionRequest) error {
@@ -179,12 +179,20 @@ func processTx(tx *rpcpb.TransactionRequest) (string, error) {
 	return iwalletSDK.SendTx(tx)
 }
 
-func processAction(contract, method string, methodArgs ...interface{}) error {
-	tx, err := initTxFromMethod(contract, method, methodArgs...)
+func processActions(actions []*rpcpb.Action) (string, error) {
+	tx, err := initTxFromActions(actions)
+	if err != nil {
+		return "", err
+	}
+	return processTx(tx)
+}
+
+func processMethod(contract, method string, methodArgs ...interface{}) error {
+	actions, err := initActionsFromMethod(contract, method, methodArgs...)
 	if err != nil {
 		return err
 	}
-	_, err = processTx(tx)
+	_, err = processActions(actions)
 	return err
 }
 

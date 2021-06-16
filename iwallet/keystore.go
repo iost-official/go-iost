@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"time"
 
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
@@ -114,7 +115,7 @@ func NewAccountInfo() *AccountInfo {
 }
 
 func (a *AccountInfo) isEncrypted() bool {
-	return a.Keypairs["active"].RawKey == ""
+	return a.Keypairs[signPerm].RawKey == ""
 }
 
 func (a *AccountInfo) decrypt() error {
@@ -169,26 +170,40 @@ func (a *AccountInfo) SaveTo(fileName string) error {
 	if err != nil {
 		return err
 	}
+	fmt.Printf("saving keyfile of account %v to %v\n", a.Name, fileName)
 	err = os.WriteFile(fileName, data, 0400)
 	return err
 }
 
 func (a *AccountInfo) getOutputKeyFileSaveLocation() (string, error) {
-	var fileName string
-	if outputKeyFile == "" {
-		dir, err := getAccountDir()
-		if err != nil {
-			return "", err
-		}
-		err = os.MkdirAll(dir, 0700)
-		if err != nil {
-			return "", err
-		}
-		fileName = dir + "/" + a.Name + ".json"
-	} else {
-		fileName = outputKeyFile
+	if outputKeyFile != "" {
 		if accountDir != "" {
 			ilog.Warn("--key_file is set, so --account_dir will be ignored")
+		}
+		return outputKeyFile, nil
+	}
+	dir, err := getAccountDir()
+	if err != nil {
+		return "", err
+	}
+	err = os.MkdirAll(dir, 0700)
+	if err != nil {
+		return "", err
+	}
+	fileName := dir + "/" + a.Name + ".json"
+	// back up old keystore file if needed
+	if _, err := os.Stat(fileName); !os.IsNotExist(err) {
+		timeStr := time.Now().Format(time.RFC3339)
+		backupDir := dir + "/backup"
+		err = os.MkdirAll(backupDir, 0700)
+		if err != nil {
+			return "", err
+		}
+		backupFileName := backupDir + "/" + a.Name + "." + timeStr + ".json"
+		fmt.Printf("backing up %v to %v\n", fileName, backupFileName)
+		err = os.Rename(fileName, backupFileName)
+		if err != nil {
+			return "", err
 		}
 	}
 	return fileName, nil
@@ -196,16 +211,15 @@ func (a *AccountInfo) getOutputKeyFileSaveLocation() (string, error) {
 
 // Save ...
 func (a *AccountInfo) Save(encrypt bool) error {
-	fileName, err := a.getOutputKeyFileSaveLocation()
-	if err != nil {
-		return err
-	}
 	if encrypt {
 		if err := a.Encrypt(); err != nil {
 			return err
 		}
 	}
-	fmt.Printf("keyfile of account %v saved to %v\n", a.Name, fileName)
+	fileName, err := a.getOutputKeyFileSaveLocation()
+	if err != nil {
+		return err
+	}
 	return a.SaveTo(fileName)
 }
 

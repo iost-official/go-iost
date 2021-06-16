@@ -33,7 +33,7 @@ var transferCmd = &cobra.Command{
 		if accountName == "" {
 			return fmt.Errorf("invalid account name")
 		}
-		return processAction("token.iost", "transfer", "iost", accountName, args[0], args[1], memo)
+		return processMethod("token.iost", "transfer", "iost", accountName, args[0], args[1], memo)
 	},
 }
 

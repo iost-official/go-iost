@@ -48,23 +48,23 @@ func NewAccountFromKeys(id, ownerKey, activeKey string) *Account {
 	}
 	a.Permissions["owner"] = &Permission{
 		Name:      "owner",
-		Threshold: 1,
+		Threshold: 100,
 		Items: []*Item{
 			{
 				ID:        ownerKey,
 				IsKeyPair: true,
-				Weight:    1,
+				Weight:    100,
 			},
 		},
 	}
 	a.Permissions["active"] = &Permission{
 		Name:      "active",
-		Threshold: 1,
+		Threshold: 100,
 		Items: []*Item{
 			{
 				ID:        activeKey,
 				IsKeyPair: true,
-				Weight:    1,
+				Weight:    100,
 			},
 		},
 	}

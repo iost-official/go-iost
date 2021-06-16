@@ -343,7 +343,7 @@ func (s *IOSTDevSDK) SendTransaction(signedTx *rpcpb.TransactionRequest) (string
 		if err := s.Connect(); err != nil {
 			return "", err
 		}
-		defer s.CloseConn()
+		//defer s.CloseConn()
 	}
 	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	resp, err := client.SendTransaction(context.Background(), signedTx)
@@ -524,6 +524,22 @@ func (s *IOSTDevSDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *IOSTDevSDK) UpdateAccountKeysActions(account string, ownerKey string, activeKey string) ([]*rpcpb.Action, error) {
+	acc, err := s.GetAccountInfo(account)
+	if err != nil {
+		return nil, err
+	}
+	oldActiveKey := acc.Permissions["active"].Items[0].Id
+	oldOwnerKey := acc.Permissions["owner"].Items[0].Id
+	var acts []*rpcpb.Action
+	acts = append(acts, NewAction("auth.iost", "assignPermission", fmt.Sprintf(`["%v", "%v", "%v", %v]`, account, "active", activeKey, 100)))
+	acts = append(acts, NewAction("auth.iost", "assignPermission", fmt.Sprintf(`["%v", "%v", "%v", %v]`, account, "owner", ownerKey, 100)))
+	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "active", oldActiveKey)))
+	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "owner", oldOwnerKey)))
+	acts = append(acts, NewAction("auth.iost", "checkPerm", fmt.Sprintf(`["%v", "%v"]`, account, "owner")))
+	return acts, nil
 }
 
 // CreateNewAccountActions makes actions for creating new account.

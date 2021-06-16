@@ -1,21 +1,30 @@
 class Account {
-    init() {
-
+    init() {}
+    setAdmin(adminID) {
+        if (storage.get("adminID") == "" || blockchain.requireAuth(storage.get("adminID"), "active")) {
+            storage.put("adminID", adminID);
+        }
     }
     initAdmin(adminID) {
         const bn = block.number;
-        if(bn !== 0) {
-            throw new Error("init out of genesis block")
+        if (bn !== 0) {
+            throw new Error("init out of genesis block");
         }
-        storage.put("adminID", adminID);
+        this.setAdmin(adminID);
     }
     can_update(data) {
         const admin = storage.get("adminID");
-        return blockchain.requireAuth(admin, "active");
+        return blockchain.requireAuth(admin, "active") || blockchain.requireAuth("admin", "active");
+    }
+    check_can_update() {
+	if (!this.can_update("")) {
+		throw new Error("cannot update");
+	}
+	return true;
     }
     _saveAccount(account, payer) {
         if (payer === undefined) {
-            payer = account.id
+            payer = account.id;
         }
         storage.mapPut("auth", account.id, JSON.stringify(account), payer);
     }
@@ -28,10 +37,10 @@ class Account {
     static _find(items, name) {
         for (let i = 0; i < items.length; i++) {
             if (items[i].id === name) {
-                return i
+                return i;
             }
         }
-        return -1
+        return -1;
     }
 
     static _findPermission(items, name) {
@@ -39,23 +48,29 @@ class Account {
         if (len < 0) {
             for (let i = 0; i < items.length; i++) {
                 if (items[i].id === name && items[i].permission === undefined) {
-                    return i
+                    return i;
                 }
             }
         } else if (len > 0) {
             for (let i = 0; i < items.length; i++) {
-                if (items[i].id === name.substring(0, len) && items[i].permission === name.substring(len+1, name.length)) {
-                    return i
+                if (items[i].id === name.substring(0, len) && items[i].permission === name.substring(len + 1, name.length)) {
+                    return i;
                 }
             }
         } else {
-            throw "unexpected item"
+            throw "unexpected item";
         }
-        return -1
+        return -1;
     }
 
     _hasAccount(id) {
         return storage.mapHas("auth", id);
+    }
+
+    checkPerm(id, perm) {
+	if (!blockchain.requireAuth(id, perm)) {
+            throw new Error("require auth failed");
+	}
     }
 
     _ra(id) {
@@ -66,17 +81,17 @@ class Account {
 
     _checkIdValid(id) {
         if (block.number === 0) {
-            return
+            return;
         }
         if (id.length < 5 || id.length > 11) {
-            throw new Error("id invalid. id length should be between 5,11 > " + id)
+            throw new Error("id invalid. id length should be between 5,11 > " + id);
         }
         if (id.startsWith("Contract")) {
             throw new Error("id invalid. id shouldn't start with 'Contract'.");
         }
         for (let i in id) {
             let ch = id[i];
-            if (!(ch >= 'a' && ch <= 'z' || ch >= '0' && ch <= '9' || ch === '_')) {
+            if (!((ch >= "a" && ch <= "z") || (ch >= "0" && ch <= "9") || ch === "_")) {
                 throw new Error("id invalid. id contains invalid character > " + ch);
             }
         }
@@ -84,14 +99,14 @@ class Account {
 
     _checkPermValid(perm) {
         if (block.number === 0) {
-            return
+            return;
         }
         if (perm.length < 1 || perm.length > 32) {
-            throw new Error("id invalid. id length should be between 1,32 > " + id)
+            throw new Error("id invalid. id length should be between 1,32 > " + id);
         }
         for (let i in perm) {
             let ch = perm[i];
-            if (!(ch >= 'a' && ch <= 'z' || ch >= 'A' && ch <= 'Z' || ch >= '0' && ch <= '9' || ch === '_')) {
+            if (!((ch >= "a" && ch <= "z") || (ch >= "A" && ch <= "Z") || (ch >= "0" && ch <= "9") || ch === "_")) {
                 throw new Error("id invalid. id contains invalid character > " + ch);
             }
         }
@@ -99,7 +114,7 @@ class Account {
 
     _checkWeight(weight) {
         if (weight <= 0) {
-            throw "weight less than zero"
+            throw "weight less than zero";
         }
     }
 
@@ -120,21 +135,25 @@ class Account {
         account.permissions.active = {
             name: "active",
             groups: [],
-            items: [{
-                id: active,
-                is_key_pair: true,
-                weight: 100,
-            }],
+            items: [
+                {
+                    id: active,
+                    is_key_pair: true,
+                    weight: 100,
+                },
+            ],
             threshold: 100,
         };
         account.permissions.owner = {
             name: "owner",
             groups: [],
-            items: [{
-                id: owner,
-                is_key_pair: true,
-                weight: 100,
-            }],
+            items: [
+                {
+                    id: owner,
+                    is_key_pair: true,
+                    weight: 100,
+                },
+            ],
             threshold: 100,
         };
         account.groups = {};
@@ -168,7 +187,7 @@ class Account {
     dropPermission(id, perm) {
         this._ra(id);
         if (perm === "active" || perm === "owner") {
-            throw "drop active or owner is forbidden"
+            throw "drop active or owner is forbidden";
         }
         let acc = this._loadAccount(id);
         acc.permissions[perm] = undefined;
@@ -188,20 +207,20 @@ class Account {
                 acc.permissions[perm].items.push({
                     id: un,
                     is_key_pair: true,
-                    weight: weight
+                    weight: weight,
                 });
             } else if (len > 0) {
                 acc.permissions[perm].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len+1, un.length),
+                    permission: un.substring(len + 1, un.length),
                     is_key_pair: false,
-                    weight: weight
+                    weight: weight,
                 });
             } else {
-                throw "unexpected item"
+                throw "unexpected item";
             }
         } else {
-            acc.permissions[perm].items[index].weight = weight
+            acc.permissions[perm].items[index].weight = weight;
         }
         this._saveAccount(acc);
 
@@ -215,7 +234,7 @@ class Account {
         if (index < 0) {
             throw new Error("item not found");
         } else {
-            acc.permissions[perm].items.splice(index, 1)
+            acc.permissions[perm].items.splice(index, 1);
         }
         this._saveAccount(acc);
 
@@ -245,7 +264,7 @@ class Account {
         for (let i = 0; i < acc.permissions.length; i++) {
             for (let j = 0; j < acc.permissions[i].groups.length; j++) {
                 if (acc.permissions[i].groups[j] === group) {
-                    acc.permissions[i].groups.splice(j, 1)
+                    acc.permissions[i].groups.splice(j, 1);
                 }
             }
         }
@@ -265,18 +284,18 @@ class Account {
                 acc.groups[group].items.push({
                     id: un,
                     is_key_pair: true,
-                    weight: weight
+                    weight: weight,
                 });
             } else {
                 acc.groups[group].items.push({
                     id: un.substring(0, len),
-                    permission: un.substring(len+1, un.length),
+                    permission: un.substring(len + 1, un.length),
                     is_key_pair: false,
-                    weight: weight
+                    weight: weight,
                 });
             }
         } else {
-            acc.groups[group].items[index].weight = weight
+            acc.groups[group].items[index].weight = weight;
         }
 
         this._saveAccount(acc);
@@ -291,7 +310,7 @@ class Account {
         if (index < 0) {
             throw new Error("item not found");
         } else {
-            acc.groups[grp].items.splice(index, 1)
+            acc.groups[grp].items.splice(index, 1);
         }
         this._saveAccount(acc);
 
