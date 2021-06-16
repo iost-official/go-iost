@@ -86,8 +86,8 @@ func (s *IOSTDevSDK) SetAccount(name string, kp *account.KeyPair) {
 	s.accountName = name
 }
 
-func (s *IOSTDevSDK) GetAccount(name string) *account.KeyPair {
-	return s.accounts[name]
+func (s *IOSTDevSDK) CurrentAccount() string {
+	return s.accountName
 }
 
 // SetTxInfo ...

@@ -127,8 +127,10 @@ func checkTxTime(tx *rpcpb.TransactionRequest) error {
 }
 
 func prepareTx(tx *rpcpb.TransactionRequest) error {
-	if err := LoadAndSetAccountForSDK(iwalletSDK); err != nil {
-		return err
+	if iwalletSDK.CurrentAccount() == "" {
+		if err := LoadAndSetAccountForSDK(iwalletSDK); err != nil {
+			return err
+		}
 	}
 	if err := handleMultiSig(tx, signatureFiles, signKeyFiles, asPublisherSign); err != nil {
 		return err
@@ -273,10 +275,11 @@ func GetKeyPairOfAccount(a *AccountInfo, signPerm string) (*account.KeyPair, err
 	return keyPair, nil
 }
 
-// SetAccountForSDK ...
-func SetAccountForSDK(s *sdk.IOSTDevSDK, a *AccountInfo, signPerm string) error {
-	if s.GetAccount(a.Name) != nil {
-		return nil
+// LoadAndSetAccountForSDK load account from file
+func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
+	a, err := loadAccount(false)
+	if err != nil {
+		return err
 	}
 	keyPair, err := GetKeyPairOfAccount(a, signPerm)
 	if err != nil {
@@ -285,15 +288,6 @@ func SetAccountForSDK(s *sdk.IOSTDevSDK, a *AccountInfo, signPerm string) error 
 	s.SetAccount(a.Name, keyPair)
 	s.UseAccount(a.Name)
 	return nil
-}
-
-// LoadAndSetAccountForSDK load account from file
-func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
-	a, err := loadAccount(false)
-	if err != nil {
-		return err
-	}
-	return SetAccountForSDK(s, a, signPerm)
 }
 
 func argsFormatter(data string) (string, error) {

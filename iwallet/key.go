@@ -5,7 +5,6 @@ import (
 	"fmt"
 
 	"github.com/iost-official/go-iost/v3/sdk"
-
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/spf13/cobra"
