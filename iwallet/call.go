@@ -1,10 +1,7 @@
 package iwallet
 
 import (
-	"fmt"
-
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
-	"github.com/iost-official/go-iost/v3/sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -34,20 +31,8 @@ var callCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if !tryTx {
-			return saveOrSendTx(tx)
-		}
-
-		err = prepareTx(tx)
-		if err != nil {
-			return err
-		}
-		r, err := iwalletSDK.TryTx(tx)
-		if err != nil {
-			return err
-		}
-		fmt.Println(sdk.MarshalTextString(r))
-		return nil
+		_, err = processTx(tx)
+		return err
 	},
 }
 

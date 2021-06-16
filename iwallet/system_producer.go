@@ -34,7 +34,7 @@ var voteCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "vote", accountName, args[0], args[1])
+		return processAction("vote_producer.iost", "vote", accountName, args[0], args[1])
 	},
 }
 var unvoteCmd = &cobra.Command{
@@ -45,7 +45,7 @@ var unvoteCmd = &cobra.Command{
 	Example: `  iwallet sys unvote producer000 1000000 --account test0`,
 	Args:    voteCmd.Args,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return saveOrSendAction("vote_producer.iost", "unvote", accountName, args[0], args[1])
+		return processAction("vote_producer.iost", "unvote", accountName, args[0], args[1])
 	},
 }
 
@@ -66,7 +66,7 @@ var registerCmd = &cobra.Command{
 		if target == "" {
 			target = accountName
 		}
-		return saveOrSendAction("vote_producer.iost", "applyRegister", target, args[0], location, url, networkID, !isPartner)
+		return processAction("vote_producer.iost", "applyRegister", target, args[0], location, url, networkID, !isPartner)
 	},
 }
 var unregisterCmd = &cobra.Command{
@@ -82,7 +82,7 @@ var unregisterCmd = &cobra.Command{
 		if target == "" {
 			target = accountName
 		}
-		return saveOrSendAction("vote_producer.iost", "applyUnregister", target)
+		return processAction("vote_producer.iost", "applyUnregister", target)
 	},
 }
 var pcleanCmd = &cobra.Command{
@@ -98,7 +98,7 @@ var pcleanCmd = &cobra.Command{
 		if target == "" {
 			target = accountName
 		}
-		return saveOrSendAction("vote_producer.iost", "unregister", target)
+		return processAction("vote_producer.iost", "unregister", target)
 	},
 }
 
@@ -115,7 +115,7 @@ var ploginCmd = &cobra.Command{
 		if target == "" {
 			target = accountName
 		}
-		return saveOrSendAction("vote_producer.iost", "logInProducer", target)
+		return processAction("vote_producer.iost", "logInProducer", target)
 	},
 }
 var plogoutCmd = &cobra.Command{
@@ -131,7 +131,7 @@ var plogoutCmd = &cobra.Command{
 		if target == "" {
 			target = accountName
 		}
-		return saveOrSendAction("vote_producer.iost", "logOutProducer", target)
+		return processAction("vote_producer.iost", "logOutProducer", target)
 	},
 }
 
@@ -260,7 +260,7 @@ var pupdateCmd = &cobra.Command{
 		if networkID == "" {
 			networkID = info.NetId
 		}
-		return saveOrSendAction("vote_producer.iost", "updateProducer", target, publicKey, location, url, networkID)
+		return processAction("vote_producer.iost", "updateProducer", target, publicKey, location, url, networkID)
 	},
 }
 
@@ -285,7 +285,7 @@ var predeemCmd = &cobra.Command{
 		if len(args) > 0 {
 			amount = args[0]
 		}
-		return saveOrSendAction("bonus.iost", "exchangeIOST", accountName, amount)
+		return processAction("bonus.iost", "exchangeIOST", accountName, amount)
 	},
 }
 
@@ -302,7 +302,7 @@ var pwithdrawCmd = &cobra.Command{
 		if target == "" {
 			target = accountName
 		}
-		return saveOrSendAction("vote_producer.iost", "candidateWithdraw", target)
+		return processAction("vote_producer.iost", "candidateWithdraw", target)
 	},
 }
 
@@ -319,7 +319,7 @@ var vwithdrawCmd = &cobra.Command{
 		if target == "" {
 			target = accountName
 		}
-		return saveOrSendAction("vote_producer.iost", "voterWithdraw", target)
+		return processAction("vote_producer.iost", "voterWithdraw", target)
 	},
 }
 

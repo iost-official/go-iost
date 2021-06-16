@@ -99,8 +99,8 @@ var createCmd = &cobra.Command{
 			return err
 		}
 		defer iwalletSDK.CloseConn()
-
-		if err := sendTx(tx); err != nil {
+		_, err = sendTx(tx)
+		if err != nil {
 			return err
 		}
 		if checkResult {

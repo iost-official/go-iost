@@ -25,7 +25,8 @@ var sendCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return sendTx(tx)
+		_, err = sendTx(tx)
+		return err
 	},
 }
 

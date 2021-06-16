@@ -63,10 +63,7 @@ var publishCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		if outputTxFile != "" {
-			return saveTx(tx)
-		}
-		txHash, err := sendTxGetHash(tx)
+		txHash, err := processTx(tx)
 		if err != nil {
 			return err
 		}

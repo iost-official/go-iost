@@ -139,23 +139,12 @@ func prepareTx(tx *rpcpb.TransactionRequest) error {
 	return nil
 }
 
-func sendTxGetHash(tx *rpcpb.TransactionRequest) (string, error) {
+func sendTx(tx *rpcpb.TransactionRequest) (string, error) {
 	err := prepareTx(tx)
 	if err != nil {
 		return "", err
 	}
-	if !iwalletSDK.Connected() {
-		if err := iwalletSDK.Connect(); err != nil {
-			return "", err
-		}
-		defer iwalletSDK.CloseConn()
-	}
 	return iwalletSDK.SendTx(tx)
-}
-
-func sendTx(tx *rpcpb.TransactionRequest) error {
-	_, err := sendTxGetHash(tx)
-	return err
 }
 
 func saveTx(tx *rpcpb.TransactionRequest) error {
@@ -171,19 +160,32 @@ func saveTx(tx *rpcpb.TransactionRequest) error {
 	return nil
 }
 
-func saveOrSendTx(tx *rpcpb.TransactionRequest) error {
+func processTx(tx *rpcpb.TransactionRequest) (string, error) {
 	if outputTxFile != "" {
-		return saveTx(tx)
+		return "", saveTx(tx)
 	}
-	return sendTx(tx)
+	err := prepareTx(tx)
+	if err != nil {
+		return "", err
+	}
+	if tryTx {
+		r, err := iwalletSDK.TryTx(tx)
+		if err != nil {
+			return "", err
+		}
+		fmt.Println(sdk.MarshalTextString(r))
+		return "", nil
+	}
+	return iwalletSDK.SendTx(tx)
 }
 
-func saveOrSendAction(contract, method string, methodArgs ...interface{}) error {
+func processAction(contract, method string, methodArgs ...interface{}) error {
 	tx, err := initTxFromMethod(contract, method, methodArgs...)
 	if err != nil {
 		return err
 	}
-	return saveOrSendTx(tx)
+	_, err = processTx(tx)
+	return err
 }
 
 // GetSignAlgoByName ...
