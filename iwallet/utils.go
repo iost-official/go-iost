@@ -14,7 +14,6 @@ import (
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
-	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/crypto"
 	"github.com/iost-official/go-iost/v3/ilog"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
@@ -257,31 +256,13 @@ func loadAccountByName(name string, ensureDecrypt bool) (*AccountInfo, error) {
 	return LoadAccountFromKeyStore(fileName, ensureDecrypt)
 }
 
-func GetKeyPairOfAccount(a *AccountInfo, signPerm string) (*account.KeyPair, error) {
-	if a.isEncrypted() {
-		err := a.decrypt()
-		if err != nil {
-			return nil, err
-		}
-	}
-	kp, ok := a.Keypairs[signPerm]
-	if !ok {
-		return nil, fmt.Errorf("invalid permission %v", signPerm)
-	}
-	keyPair, err := kp.toKeyPair()
-	if err != nil {
-		return nil, err
-	}
-	return keyPair, nil
-}
-
 // LoadAndSetAccountForSDK load account from file
 func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
-	a, err := loadAccount(false)
+	a, err := loadAccount(true)
 	if err != nil {
 		return err
 	}
-	keyPair, err := GetKeyPairOfAccount(a, signPerm)
+	keyPair, err := a.GetKeyPair(signPerm)
 	if err != nil {
 		return err
 	}

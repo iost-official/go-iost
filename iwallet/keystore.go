@@ -114,6 +114,18 @@ func NewAccountInfo() *AccountInfo {
 	return &AccountInfo{Name: "", Keypairs: make(map[string]*KeyPairInfo)}
 }
 
+func (a *AccountInfo) GetKeyPair(perm string) (*account.KeyPair, error) {
+	kp, ok := a.Keypairs[signPerm]
+	if !ok {
+		return nil, fmt.Errorf("invalid permission %v", signPerm)
+	}
+	keyPair, err := kp.toKeyPair()
+	if err != nil {
+		return nil, err
+	}
+	return keyPair, nil
+}
+
 func (a *AccountInfo) isEncrypted() bool {
 	return a.Keypairs[signPerm].RawKey == ""
 }

@@ -99,7 +99,7 @@ func loadKeyPairFromFile(account string) (*account.KeyPair, error) {
 	if err != nil {
 		return nil, err
 	}
-	kp, err := iwallet.GetKeyPairOfAccount(a, "active")
+	kp, err := a.GetKeyPair("active")
 	if err != nil {
 		return nil, err
 	}

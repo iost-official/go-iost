@@ -1,7 +1,7 @@
 class Account {
     init() {}
     setAdmin(adminID) {
-        if (storage.get("adminID") == "" || blockchain.requireAuth(storage.get("adminID"), "active")) {
+        if (storage.get("adminID") == null || blockchain.requireAuth(storage.get("adminID") , "active")) {
             storage.put("adminID", adminID);
         }
     }
