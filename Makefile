@@ -54,7 +54,7 @@ itest:
 	$(GO_BUILD) -o $(TARGET_DIR)/itest ./cmd/itest
 
 lint:
-	golangci-lint run --verbose
+	golangci-lint run
 
 vmlib:
 	(cd vm/v8vm/v8/; make clean js_bin vm install; cd ../../..)

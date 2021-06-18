@@ -20,7 +20,6 @@ issues:
 linters:
   enable:
     - govet
-    - golint
     - gosimple
     - ineffassign
     - misspell

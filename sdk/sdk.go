@@ -538,7 +538,7 @@ func (s *IOSTDevSDK) UpdateAccountKeysActions(account string, ownerKey string, a
 	acts = append(acts, NewAction("auth.iost", "assignPermission", fmt.Sprintf(`["%v", "%v", "%v", %v]`, account, "owner", ownerKey, 100)))
 	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "active", oldActiveKey)))
 	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "owner", oldOwnerKey)))
-	acts = append(acts, NewAction("auth.iost", "checkPerm", fmt.Sprintf(`["%v", "%v"]`, account, "owner")))
+	//acts = append(acts, NewAction("auth.iost", "checkPerm", fmt.Sprintf(`["%v", "%v"]`, account, "owner")))
 	return acts, nil
 }
 
