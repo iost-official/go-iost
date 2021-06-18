@@ -18,14 +18,15 @@ import (
 var defaultFileAccountStore *sdk.FileAccountStore
 
 func initFileAccountStore() {
-	if accountDir == "" {
+	dir := accountDir
+	if dir == "" {
 		home, err := homedir.Dir()
 		if err != nil {
 			panic(fmt.Errorf("cannot get home dir %v", err))
 		}
-		accountDir = path.Join(home, ".iwallet")
+		dir = path.Join(home, ".iwallet")
 	}
-	defaultFileAccountStore = NewFileAccountStore(accountDir)
+	defaultFileAccountStore = NewFileAccountStore(dir)
 }
 
 func encryptAccount(a *AccountInfo) error {

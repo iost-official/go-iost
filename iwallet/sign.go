@@ -36,7 +36,7 @@ var signCmd = &cobra.Command{
 		if err != nil {
 			return fmt.Errorf("failed to load account from file %v: %v", signKeyFile, err)
 		}
-		kp, err := accInfo.Keypairs["active"].ToKeyPair()
+		kp, err := accInfo.GetKeyPair(signPerm)
 		if err != nil {
 			return fmt.Errorf("failed to get key pair from file %v: %v", signKeyFile, err)
 		}

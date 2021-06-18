@@ -292,7 +292,8 @@ var dumpKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		acc, err := loadAccountFrom(args[0], true)
+		accountName = args[0]
+		acc, err := loadAccount(true)
 		if err != nil {
 			return err
 		}

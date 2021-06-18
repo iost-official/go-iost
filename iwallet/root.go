@@ -73,7 +73,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&verbose, "verbose", "v", true, "print verbose information")
 	rootCmd.PersistentFlags().BoolVarP(&elapsedTime, "elapsed_time", "", false, "print elapsed time")
 	rootCmd.PersistentFlags().StringVarP(&accountName, "account", "a", "", "which account to use")
-	rootCmd.PersistentFlags().StringVarP(&accountDir, "account_dir", "", "", "$(account_dir)/.iwallet will be used to save accounts (default $HOME/.iwallet)")
+	rootCmd.PersistentFlags().StringVarP(&accountDir, "account_dir", "", "", "$(account_dir) will be used to save accounts (default $HOME/.iwallet)")
 	rootCmd.PersistentFlags().StringVarP(&keyFile, "key_file", "k", "", "the json file that stores your account name and keypair")
 	rootCmd.PersistentFlags().StringVarP(&outputKeyFile, "output_key_file", "", "", "the json file used to save your newly created account name and keypair, only used in 'iwallet account create/import' command")
 	rootCmd.PersistentFlags().StringVarP(&server, "server", "s", "localhost:30002", "set server of this client")
