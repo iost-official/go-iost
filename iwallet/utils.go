@@ -4,21 +4,18 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"os"
-	"path"
 	"strconv"
 	"strings"
 	"time"
 
 	simplejson "github.com/bitly/go-simplejson"
-	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 
-	"github.com/iost-official/go-iost/v3/crypto"
-	"github.com/iost-official/go-iost/v3/ilog"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"github.com/iost-official/go-iost/v3/sdk"
 )
+
+////////////////////// check input args ////////////////////
 
 func errorWithHelp(cmd *cobra.Command, format string, a ...interface{}) error {
 	cmd.Help()
@@ -57,6 +54,35 @@ func checkSigners(signers []string) error {
 	return nil
 }
 
+///////////////////////// construct tx /////////////////////////
+
+// ParseAmountLimit ...
+func ParseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
+	result := make([]*rpcpb.AmountLimit, 0)
+	if limitStr == "" {
+		return result, nil
+	}
+	splits := strings.Split(limitStr, "|")
+	for _, gram := range splits {
+		limit := strings.Split(gram, ":")
+		if len(limit) != 2 {
+			return nil, fmt.Errorf("invalid amount limit %v", gram)
+		}
+		token := limit[0]
+		if limit[1] != "unlimited" {
+			amountLimit, err := strconv.ParseFloat(limit[1], 64)
+			if err != nil {
+				return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
+			}
+		}
+		tokenLimit := &rpcpb.AmountLimit{}
+		tokenLimit.Token = token
+		tokenLimit.Value = limit[1]
+		result = append(result, tokenLimit)
+	}
+	return result, nil
+}
+
 func parseTxTime() (int64, error) {
 	if txTime != "" && txTimeDelay != 0 {
 		return 0, fmt.Errorf("can not set flags --tx_time and --tx_time_delay simultaneously")
@@ -71,37 +97,6 @@ func parseTxTime() (int64, error) {
 	t := time.Now()
 	t = t.Add(time.Second * time.Duration(txTimeDelay))
 	return t.UnixNano(), nil
-}
-
-func initTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
-	tx, err := iwalletSDK.CreateTxFromActions(actions)
-	if err != nil {
-		return nil, err
-	}
-
-	t, err := parseTxTime()
-	if err != nil {
-		return nil, err
-	}
-	tx.Time = t
-	tx.Expiration = tx.Time + expiration*1e9
-
-	if err := checkSigners(signers); err != nil {
-		return nil, err
-	}
-	tx.Signers = signers
-
-	return tx, nil
-}
-
-func initActionsFromMethod(contract, method string, methodArgs ...interface{}) ([]*rpcpb.Action, error) {
-	methodArgsBytes, err := json.Marshal(methodArgs)
-	if err != nil {
-		return nil, fmt.Errorf("failed to marshal method args %v: %v", methodArgs, err)
-	}
-	action := sdk.NewAction(contract, method, string(methodArgsBytes))
-	actions := []*rpcpb.Action{action}
-	return actions, nil
 }
 
 func checkTxTime(tx *rpcpb.TransactionRequest) error {
@@ -125,9 +120,98 @@ func checkTxTime(tx *rpcpb.TransactionRequest) error {
 	return nil
 }
 
+func createActionFromMethod(contract, method string, methodArgs ...interface{}) (*rpcpb.Action, error) {
+	methodArgsBytes, err := json.Marshal(methodArgs)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal method args %v: %v", methodArgs, err)
+	}
+	return sdk.NewAction(contract, method, string(methodArgsBytes)), nil
+}
+
+func createTxFromActions(actions []*rpcpb.Action) (*rpcpb.TransactionRequest, error) {
+	tx, err := iwalletSDK.CreateTxFromActions(actions)
+	if err != nil {
+		return nil, err
+	}
+
+	t, err := parseTxTime()
+	if err != nil {
+		return nil, err
+	}
+	tx.Time = t
+	tx.Expiration = tx.Time + expiration*1e9
+
+	if err := checkSigners(signers); err != nil {
+		return nil, err
+	}
+	tx.Signers = signers
+
+	return tx, nil
+}
+
+func formatContractArgs(data string) (string, error) {
+	if !strings.ContainsAny(data, "[]{}'\",") {
+		// we treat xxx as '["xxx"]'
+		return "[\"" + data + "\"]", nil
+	}
+	js, err := simplejson.NewJson([]byte(data))
+	if err != nil {
+		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
+	}
+	_, err = js.Array()
+	if err != nil {
+		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
+	}
+	b, err := js.MarshalJSON()
+	if err != nil {
+		return "", err
+	}
+	return string(b), nil
+}
+
+func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signKeyFiles []string, asPublisherSign bool) error {
+	if len(signatureFiles) == 0 && len(signKeyFiles) == 0 {
+		return nil
+	}
+	sigs := make([]*rpcpb.Signature, 0)
+	if len(signatureFiles) != 0 && len(signKeyFiles) != 0 {
+		return fmt.Errorf("can not set flags --sign_key_files and --signature_files simultaneously")
+	}
+	if len(signKeyFiles) > 0 {
+		for _, f := range signKeyFiles {
+			accInfo, err := loadAccountFrom(f, true)
+			if err != nil {
+				return fmt.Errorf("failed to load account from file %v: %v", f, err)
+			}
+			kp, err := accInfo.GetKeyPair("avtive")
+			if err != nil {
+				return fmt.Errorf("failed to get key pair from file %v: %v", f, err)
+			}
+			sigs = append(sigs, sdk.GetSignatureOfTx(tx, kp, asPublisherSign))
+			fmt.Println("Signed transaction with private key file:", f)
+		}
+	} else if len(signatureFiles) > 0 {
+		for _, f := range signatureFiles {
+			sig := &rpcpb.Signature{}
+			err := sdk.LoadProtoStructFromJSONFile(f, sig)
+			if err != nil {
+				return err
+			}
+			sigs = append(sigs, sig)
+			fmt.Println("Successfully added signature contained in:", f)
+		}
+	}
+	if asPublisherSign {
+		tx.PublisherSigs = sigs
+	} else {
+		tx.Signatures = sigs
+	}
+	return nil
+}
+
 func prepareTx(tx *rpcpb.TransactionRequest) error {
 	if iwalletSDK.CurrentAccount() == "" {
-		if err := LoadAndSetAccountForSDK(iwalletSDK); err != nil {
+		if err := initAccountForSDK(iwalletSDK); err != nil {
 			return err
 		}
 	}
@@ -181,7 +265,7 @@ func processTx(tx *rpcpb.TransactionRequest) (string, error) {
 }
 
 func processActions(actions []*rpcpb.Action) (string, error) {
-	tx, err := initTxFromActions(actions)
+	tx, err := createTxFromActions(actions)
 	if err != nil {
 		return "", err
 	}
@@ -189,191 +273,10 @@ func processActions(actions []*rpcpb.Action) (string, error) {
 }
 
 func processMethod(contract, method string, methodArgs ...interface{}) error {
-	actions, err := initActionsFromMethod(contract, method, methodArgs...)
+	action, err := createActionFromMethod(contract, method, methodArgs...)
 	if err != nil {
 		return err
 	}
-	_, err = processActions(actions)
+	_, err = processActions([]*rpcpb.Action{action})
 	return err
 }
-
-// GetSignAlgoByName ...
-func GetSignAlgoByName(name string) crypto.Algorithm {
-	switch name {
-	case "secp256k1":
-		return crypto.Secp256k1
-	case "ed25519":
-		return crypto.Ed25519
-	default:
-		return crypto.Ed25519
-	}
-}
-
-func loadAccount(ensureDecrypt bool) (*AccountInfo, error) {
-	if keyFile != "" {
-		if accountDir != "" {
-			ilog.Warn("--key_file is set, so --account_dir will be ignored")
-		}
-		acc, err := LoadAccountFromKeyStore(keyFile, ensureDecrypt)
-		if err != nil {
-			return nil, err
-		}
-		if accountName != "" && acc.Name != accountName {
-			return nil, fmt.Errorf("inconsistent account: %s from cmd args VS %s from key file", accountName, acc.Name)
-		}
-		if accountName == "" {
-			accountName = acc.Name
-		}
-		return acc, nil
-	}
-	return loadAccountByName(accountName, ensureDecrypt)
-}
-
-func getAccountDir() (string, error) {
-	if accountDir != "" {
-		return path.Join(accountDir, ".iwallet"), nil
-	}
-	home, err := homedir.Dir()
-	if err != nil {
-		return "", err
-	}
-	return path.Join(home, ".iwallet"), nil
-}
-
-func loadAccountByName(name string, ensureDecrypt bool) (*AccountInfo, error) {
-	if name == "" {
-		return nil, fmt.Errorf("account name should be provived by --account_name")
-	}
-	accountDir, err := getAccountDir()
-	if err != nil {
-		return nil, err
-	}
-	fileName := accountDir + "/" + name + ".json"
-	_, err = os.Stat(fileName)
-	if err != nil {
-		return nil, fmt.Errorf("account is not imported at %s: %v. use 'iwallet account import %s <private-key>' to import it", fileName, err, name)
-	}
-	return LoadAccountFromKeyStore(fileName, ensureDecrypt)
-}
-
-// LoadAndSetAccountForSDK load account from file
-func LoadAndSetAccountForSDK(s *sdk.IOSTDevSDK) error {
-	a, err := loadAccount(true)
-	if err != nil {
-		return err
-	}
-	keyPair, err := a.GetKeyPair(signPerm)
-	if err != nil {
-		return err
-	}
-	s.SetAccount(a.Name, keyPair)
-	s.UseAccount(a.Name)
-	return nil
-}
-
-func argsFormatter(data string) (string, error) {
-	if !strings.ContainsAny(data, "[]{}'\",") {
-		// we treat xxx as '["xxx"]'
-		return "[\"" + data + "\"]", nil
-	}
-	js, err := simplejson.NewJson([]byte(data))
-	if err != nil {
-		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
-	}
-	_, err = js.Array()
-	if err != nil {
-		return "", fmt.Errorf("invalid args, should be json array: %v, %v", data, err)
-	}
-	b, err := js.MarshalJSON()
-	if err != nil {
-		return "", err
-	}
-	return string(b), nil
-}
-
-func actionsFromFlags(args []string) ([]*rpcpb.Action, error) {
-	argc := len(args)
-	if argc%3 != 0 {
-		return nil, fmt.Errorf(`number of args should be a multiplier of 3`)
-	}
-	var actions = make([]*rpcpb.Action, 0)
-	for i := 0; i < len(args); i += 3 {
-		v, err := argsFormatter(args[i+2])
-		if err != nil {
-			return nil, err
-		}
-		act := sdk.NewAction(args[i], args[i+1], v)
-		actions = append(actions, act)
-	}
-	return actions, nil
-}
-
-func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signKeyFiles []string, asPublisherSign bool) error {
-	if len(signatureFiles) == 0 && len(signKeyFiles) == 0 {
-		return nil
-	}
-	sigs := make([]*rpcpb.Signature, 0)
-	if len(signatureFiles) != 0 && len(signKeyFiles) != 0 {
-		return fmt.Errorf("can not set flags --sign_key_files and --signature_files simultaneously")
-	}
-	if len(signKeyFiles) > 0 {
-		for _, f := range signKeyFiles {
-			accInfo, err := LoadAccountFromKeyStore(f, true)
-			if err != nil {
-				return fmt.Errorf("failed to load account from file %v: %v", f, err)
-			}
-			kp, err := accInfo.Keypairs["active"].toKeyPair()
-			if err != nil {
-				return fmt.Errorf("failed to get key pair from file %v: %v", f, err)
-			}
-			sigs = append(sigs, sdk.GetSignatureOfTx(tx, kp, asPublisherSign))
-			fmt.Println("Signed transaction with private key file:", f)
-		}
-	} else if len(signatureFiles) > 0 {
-		for _, f := range signatureFiles {
-			sig := &rpcpb.Signature{}
-			err := sdk.LoadProtoStructFromJSONFile(f, sig)
-			if err != nil {
-				return err
-			}
-			sigs = append(sigs, sig)
-			fmt.Println("Successfully added signature contained in:", f)
-		}
-	}
-	if asPublisherSign {
-		tx.PublisherSigs = sigs
-	} else {
-		tx.Signatures = sigs
-	}
-	return nil
-}
-
-// ParseAmountLimit ...
-func ParseAmountLimit(limitStr string) ([]*rpcpb.AmountLimit, error) {
-	result := make([]*rpcpb.AmountLimit, 0)
-	if limitStr == "" {
-		return result, nil
-	}
-	splits := strings.Split(limitStr, "|")
-	for _, gram := range splits {
-		limit := strings.Split(gram, ":")
-		if len(limit) != 2 {
-			return nil, fmt.Errorf("invalid amount limit %v", gram)
-		}
-		token := limit[0]
-		if limit[1] != "unlimited" {
-			amountLimit, err := strconv.ParseFloat(limit[1], 64)
-			if err != nil {
-				return nil, fmt.Errorf("invalid amount limit %v %v", amountLimit, err)
-			}
-		}
-		tokenLimit := &rpcpb.AmountLimit{}
-		tokenLimit.Token = token
-		tokenLimit.Value = limit[1]
-		result = append(result, tokenLimit)
-	}
-	return result, nil
-}
-
-// ValidSignAlgos ...
-var ValidSignAlgos = []string{"ed25519", "secp256k1"}

@@ -2,259 +2,134 @@ package iwallet
 
 import (
 	"bytes"
-	"crypto/aes"
-	"crypto/cipher"
-	"crypto/rand"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"os"
-	"time"
+	"path"
 
-	"github.com/iost-official/go-iost/v3/account"
-	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/ilog"
-	"golang.org/x/crypto/scrypt"
+	"github.com/iost-official/go-iost/v3/sdk"
+	. "github.com/iost-official/go-iost/v3/sdk"
+	"github.com/mitchellh/go-homedir"
 	"golang.org/x/term"
 )
 
-// KeyPairInfo ...
-type KeyPairInfo struct {
-	RawKey        string `json:"raw_key,omitempty"`
-	KeyType       string `json:"key_type"`
-	PubKey        string `json:"public_key"`
-	EncryptMethod string `json:"encrypt_method,omitempty"`
-	Salt          string `json:"salt,omitempty"`
-	EncryptedKey  string `json:"encrypted_key,omitempty"`
-	Mac           string `json:"mac,omitempty"`
-}
+var defaultFileAccountStore *sdk.FileAccountStore
 
-// NewKeyPairInfo ...
-func NewKeyPairInfo(rawKey string, keyType string) (*KeyPairInfo, error) {
-	kp := &KeyPairInfo{}
-	kp.RawKey = rawKey
-	kp.KeyType = keyType
-	key, err := account.NewKeyPair(common.Base58Decode(kp.RawKey), GetSignAlgoByName(kp.KeyType))
-	if err != nil {
-		return nil, err
-	}
-	kp.PubKey = common.Base58Encode(key.Pubkey)
-	return kp, nil
-}
-
-func (k *KeyPairInfo) toKeyPair() (*account.KeyPair, error) {
-	return account.NewKeyPair(common.Base58Decode(k.RawKey), GetSignAlgoByName(k.KeyType))
-}
-
-func (k *KeyPairInfo) encrypt(password []byte) error {
-	if k.EncryptedKey != "" {
-		return nil
-	}
-	salt := make([]byte, 48) // encryptKey + iv + hashSalt
-	if _, err := io.ReadFull(rand.Reader, salt[0:32]); err != nil {
-		return fmt.Errorf("reading from crypto/rand failed: " + err.Error())
-	}
-	key, err := scrypt.Key(password, salt[0:32], 32768, 8, 1, 32)
-	if err != nil {
-		return err
-	}
-	aesBlock, err := aes.NewCipher(key[0:16])
-	if err != nil {
-		return err
-	}
-	stream := cipher.NewCTR(aesBlock, salt[32:48])
-	inText := common.Base58Decode(k.RawKey)
-	outText := make([]byte, len(inText))
-	stream.XORKeyStream(outText, inText)
-	mac := common.Sha3(append(key[16:32], outText...))
-
-	k.EncryptMethod = "v0"
-	k.Salt = common.Base58Encode(salt)
-	k.EncryptedKey = common.Base58Encode(outText)
-	k.Mac = common.Base58Encode(mac)
-	return nil
-}
-
-func (k *KeyPairInfo) decrypt(password []byte) error {
-	if k.EncryptMethod != "v0" {
-		return fmt.Errorf("version mismatch")
-	}
-	salt := common.Base58Decode(k.Salt)
-
-	key, err := scrypt.Key(password, salt[0:32], 32768, 8, 1, 32)
-	if err != nil {
-		return err
-	}
-	aesBlock, err := aes.NewCipher(key[0:16])
-	if err != nil {
-		return err
-	}
-	stream := cipher.NewCTR(aesBlock, salt[32:48])
-	inText := common.Base58Decode(k.EncryptedKey)
-	outText := make([]byte, len(inText))
-	stream.XORKeyStream(outText, inText)
-	mac := common.Sha3(append(key[16:32], inText...))
-	if !bytes.Equal(mac, common.Base58Decode(k.Mac)) {
-		return fmt.Errorf("wrong password")
-	}
-
-	k.RawKey = common.Base58Encode(outText)
-	return nil
-}
-
-// AccountInfo ...
-type AccountInfo struct {
-	Name     string                  `json:"name"`
-	Keypairs map[string]*KeyPairInfo `json:"keypairs"`
-}
-
-// NewAccountInfo ...
-func NewAccountInfo() *AccountInfo {
-	return &AccountInfo{Name: "", Keypairs: make(map[string]*KeyPairInfo)}
-}
-
-func (a *AccountInfo) GetKeyPair(perm string) (*account.KeyPair, error) {
-	kp, ok := a.Keypairs[signPerm]
-	if !ok {
-		return nil, fmt.Errorf("invalid permission %v", signPerm)
-	}
-	keyPair, err := kp.toKeyPair()
-	if err != nil {
-		return nil, err
-	}
-	return keyPair, nil
-}
-
-func (a *AccountInfo) isEncrypted() bool {
-	return a.Keypairs[signPerm].RawKey == ""
-}
-
-func (a *AccountInfo) decrypt() error {
-	cnt := 0
-	for cnt <= 3 {
-		cnt++
-		password, err := readPasswordFromStdin(false)
+func initFileAccountStore() {
+	if accountDir == "" {
+		home, err := homedir.Dir()
 		if err != nil {
-			return err
+			panic(fmt.Errorf("cannot get home dir %v", err))
 		}
-		retry := false
-		for _, kp := range a.Keypairs {
-			err := kp.decrypt(password)
-			if err != nil {
-				if err.Error() == "wrong password" {
-					fmt.Println("decrypt error:", err)
-					fmt.Println("Please retry")
-					retry = true
-					break
-				} else {
-					return err
-				}
-			}
-		}
-		if !retry {
-			fmt.Println("decrypt keystore succeed")
-			return nil
-		}
+		accountDir = path.Join(home, ".iwallet")
 	}
-	return fmt.Errorf("load key failed")
+	defaultFileAccountStore = NewFileAccountStore(accountDir)
 }
 
-func (a *AccountInfo) Encrypt() error {
+func encryptAccount(a *AccountInfo) error {
 	fmt.Println("encrypting seckey, need password")
 	password, err := readPasswordFromStdin(true)
 	if err != nil {
 		return err
 	}
-	for _, k := range a.Keypairs {
-		err = k.encrypt(password)
-		if err != nil {
-			return err
-		}
-		k.RawKey = ""
-	}
-	return nil
+	return a.Encrypt(password)
 }
 
-// SaveTo ...
-func (a *AccountInfo) SaveTo(fileName string) error {
-	data, err := json.MarshalIndent(a, "", "  ")
-	if err != nil {
-		return err
-	}
-	fmt.Printf("saving keyfile of account %v to %v\n", a.Name, fileName)
-	err = os.WriteFile(fileName, data, 0400)
-	return err
-}
-
-func (a *AccountInfo) getOutputKeyFileSaveLocation() (string, error) {
-	if outputKeyFile != "" {
-		if accountDir != "" {
-			ilog.Warn("--key_file is set, so --account_dir will be ignored")
-		}
-		return outputKeyFile, nil
-	}
-	dir, err := getAccountDir()
-	if err != nil {
-		return "", err
-	}
-	err = os.MkdirAll(dir, 0700)
-	if err != nil {
-		return "", err
-	}
-	fileName := dir + "/" + a.Name + ".json"
-	// back up old keystore file if needed
-	if _, err := os.Stat(fileName); !os.IsNotExist(err) {
-		timeStr := time.Now().Format(time.RFC3339)
-		backupDir := dir + "/backup"
-		err = os.MkdirAll(backupDir, 0700)
-		if err != nil {
-			return "", err
-		}
-		backupFileName := backupDir + "/" + a.Name + "." + timeStr + ".json"
-		fmt.Printf("backing up %v to %v\n", fileName, backupFileName)
-		err = os.Rename(fileName, backupFileName)
-		if err != nil {
-			return "", err
-		}
-	}
-	return fileName, nil
-}
-
-// Save ...
-func (a *AccountInfo) Save(encrypt bool) error {
+// nolint
+func saveAccountTo(a *AccountInfo, fileName string, encrypt bool) error {
 	if encrypt {
-		if err := a.Encrypt(); err != nil {
+		err := encryptAccount(a)
+		if err != nil {
 			return err
 		}
-	}
-	fileName, err := a.getOutputKeyFileSaveLocation()
-	if err != nil {
-		return err
 	}
 	return a.SaveTo(fileName)
 }
 
-// LoadAccountFromKeyStore ...
-func LoadAccountFromKeyStore(fileName string, ensureDecrypt bool) (*AccountInfo, error) {
-	a := NewAccountInfo()
-	data, err := os.ReadFile(fileName)
+func saveAccount(a *AccountInfo, encrypt bool) error {
+	if encrypt {
+		err := encryptAccount(a)
+		if err != nil {
+			return err
+		}
+	}
+	if outputKeyFile != "" {
+		if accountDir != "" {
+			ilog.Warn("--key_file is set, so --account_dir will be ignored")
+		}
+		return a.SaveTo(outputKeyFile)
+	}
+	return defaultFileAccountStore.SaveAccount(a)
+}
+
+func ensureDecryptAccount(a *AccountInfo) error {
+	if !a.IsEncrypted() {
+		return nil
+	}
+	password, err := readPasswordFromStdin(false)
+	if err != nil {
+		return err
+	}
+	return a.Decrypt(password)
+}
+
+func loadAccountFrom(fileName string, ensureDecrypt bool) (*AccountInfo, error) {
+	a, err := LoadAccountFrom(fileName)
 	if err != nil {
 		return nil, err
 	}
-	err = json.Unmarshal(data, a)
-	if err != nil {
-		return nil, fmt.Errorf("key store should be a json file, %v", err)
-	}
 	if ensureDecrypt {
-		if a.isEncrypted() {
-			err := a.decrypt()
-			if err != nil {
-				return nil, err
-			}
+		err = ensureDecryptAccount(a)
+		if err != nil {
+			return nil, err
 		}
 	}
 	return a, nil
+}
+
+func loadAccount(ensureDecrypt bool) (*AccountInfo, error) {
+	var acc *AccountInfo
+	var err error
+	if keyFile != "" {
+		if accountDir != "" {
+			ilog.Warn("--key_file is set, so --account_dir will be ignored")
+		}
+		acc, err = LoadAccountFrom(keyFile)
+		if err != nil {
+			return nil, err
+		}
+		if accountName != "" && acc.Name != accountName {
+			return nil, fmt.Errorf("inconsistent account: %s from cmd args VS %s from key file", accountName, acc.Name)
+		}
+		if accountName == "" {
+			accountName = acc.Name
+		}
+	} else {
+		acc, err = defaultFileAccountStore.LoadAccount(accountName)
+	}
+	if ensureDecrypt {
+		err = ensureDecryptAccount(acc)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return acc, err
+}
+
+func initAccountForSDK(s *sdk.IOSTDevSDK) error {
+	a, err := loadAccount(true)
+	if err != nil {
+		return err
+	}
+	keyPair, err := a.GetKeyPair(signPerm)
+	if err != nil {
+		return err
+	}
+	s.SetAccount(a.Name, keyPair)
+	s.UseAccount(a.Name)
+	return nil
 }
 
 func readPassword(prompt string) (pw []byte, err error) {

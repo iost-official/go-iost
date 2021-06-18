@@ -59,7 +59,7 @@ var publishCmd = &cobra.Command{
 				actions = append(actions, sdk.NewAction(conID, postCheck, string(`[]`)))
 			}
 		}
-		tx, err := initTxFromActions(actions)
+		tx, err := createTxFromActions(actions)
 		if err != nil {
 			return err
 		}

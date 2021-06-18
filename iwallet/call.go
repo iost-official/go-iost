@@ -1,7 +1,10 @@
 package iwallet
 
 import (
+	"fmt"
+
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
+	"github.com/iost-official/go-iost/v3/sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -22,12 +25,20 @@ var callCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var actions []*rpcpb.Action
-		actions, err := actionsFromFlags(args)
-		if err != nil {
-			return err
+		argc := len(args)
+		if argc%3 != 0 {
+			return fmt.Errorf(`number of args should be a multiplier of 3`)
 		}
-		tx, err := initTxFromActions(actions)
+		var actions = make([]*rpcpb.Action, 0)
+		for i := 0; i < len(args); i += 3 {
+			v, err := formatContractArgs(args[i+2])
+			if err != nil {
+				return err
+			}
+			act := sdk.NewAction(args[i], args[i+1], v)
+			actions = append(actions, act)
+		}
+		tx, err := createTxFromActions(actions)
 		if err != nil {
 			return err
 		}

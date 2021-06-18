@@ -11,7 +11,6 @@ import (
 
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
-	"github.com/iost-official/go-iost/v3/iwallet"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"github.com/iost-official/go-iost/v3/sdk"
 )
@@ -64,7 +63,7 @@ func initSDKs() {
 	iostSDK.SetVerbose(true)
 }
 
-var accountsFileDir = "."
+var accountsStore = sdk.NewFileAccountStore(".")
 
 func createAndSaveKeyPair(acc string) (*account.KeyPair, error) {
 	// generate new keypair locally
@@ -82,12 +81,12 @@ func createAndSaveKeyPair(acc string) (*account.KeyPair, error) {
 		log.Fatalf("create new account error %v", err)
 	}
 	// save this account
-	accInfo := iwallet.NewAccountInfo()
+	accInfo := sdk.NewAccountInfo()
 	accInfo.Name = acc
-	kp := &iwallet.KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
+	kp := &sdk.KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
 	accInfo.Keypairs["active"] = kp
 	accInfo.Keypairs["owner"] = kp
-	err = accInfo.SaveTo(accountsFileDir + "/" + acc + ".json")
+	err = accountsStore.SaveAccount(accInfo)
 	if err != nil {
 		log.Fatalf("failed to save account: %v", err)
 	}
@@ -95,7 +94,7 @@ func createAndSaveKeyPair(acc string) (*account.KeyPair, error) {
 }
 
 func loadKeyPairFromFile(account string) (*account.KeyPair, error) {
-	a, err := iwallet.LoadAccountFromKeyStore(accountsFileDir+"/"+account+".json", true)
+	a, err := accountsStore.LoadAccount(account)
 	if err != nil {
 		return nil, err
 	}

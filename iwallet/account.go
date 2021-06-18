@@ -3,12 +3,12 @@ package iwallet
 import (
 	"encoding/json"
 	"fmt"
-	"os"
 	"strings"
 
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/sdk"
+	. "github.com/iost-official/go-iost/v3/sdk"
 	"github.com/spf13/cobra"
 )
 
@@ -50,7 +50,7 @@ var updateCmd = &cobra.Command{
 		// Set account since making actions needs accountName.
 		// TODO: make these lines more clean...
 		signPerm = "owner"
-		err := LoadAndSetAccountForSDK(iwalletSDK)
+		err := initAccountForSDK(iwalletSDK)
 		if err != nil {
 			return err
 		}
@@ -131,7 +131,7 @@ func postAccountUpdateHandler(newName string, accInfo *AccountInfo) error {
 	if realUpdated {
 		// step3 save account info
 		if accInfo.Keypairs["active"].RawKey != "" || accInfo.Keypairs["owner"].RawKey != "" {
-			err := accInfo.Save(encrypt)
+			err := saveAccount(accInfo, encrypt)
 			if err != nil {
 				return fmt.Errorf("failed to save account: %v %v", err, accInfo)
 			}
@@ -169,7 +169,7 @@ var createCmd = &cobra.Command{
 		akey := accInfo.Keypairs["active"].PubKey
 		okey := accInfo.Keypairs["owner"].PubKey
 		// Set account since making actions needs accountName.
-		err = LoadAndSetAccountForSDK(iwalletSDK)
+		err = initAccountForSDK(iwalletSDK)
 		if err != nil {
 			return err
 		}
@@ -192,17 +192,13 @@ var viewCmd = &cobra.Command{
 	Example: `  iwallet account view test0
   iwallet account view`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		dir, err := getAccountDir()
-		if err != nil {
-			return fmt.Errorf("failed to get account dir: %v", err)
-		}
 		a := accounts{}
-		a.Dir = dir
+		a.Dir = defaultFileAccountStore.AccountDir
 		addAcc := func(ac *AccountInfo) {
 			var k key
 			k.Algorithm = ac.Keypairs["active"].KeyType
 			k.Pubkey = ac.Keypairs["active"].PubKey
-			if ac.isEncrypted() {
+			if ac.IsEncrypted() {
 				k.Seckey = "---encrypted secret key---"
 			} else {
 				k.Seckey = ac.Keypairs["active"].RawKey
@@ -210,20 +206,16 @@ var viewCmd = &cobra.Command{
 			a.Account = append(a.Account, &acc{ac.Name, &k})
 		}
 		if len(args) < 1 {
-			files, err := os.ReadDir(dir)
+			accs, err := defaultFileAccountStore.ListAccounts()
 			if err != nil {
 				return err
 			}
-			for _, f := range files {
-				ac, err := LoadAccountFromKeyStore(dir+"/"+f.Name(), false)
-				if err != nil {
-					continue
-				}
+			for _, ac := range accs {
 				addAcc(ac)
 			}
 		} else {
 			name := args[0]
-			ac, err := loadAccountByName(name, false)
+			ac, err := defaultFileAccountStore.LoadAccount(name)
 			if err != nil {
 				return err
 			}
@@ -279,7 +271,7 @@ var importCmd = &cobra.Command{
 				acc.Keypairs[splits[0]] = kp
 			}
 		}
-		err := acc.Save(encrypt)
+		err := saveAccount(&acc, encrypt)
 		if err != nil {
 			return fmt.Errorf("failed to save account: %v", err)
 		}
@@ -300,7 +292,7 @@ var dumpKeyCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		acc, err := loadAccountByName(args[0], true)
+		acc, err := loadAccountFrom(args[0], true)
 		if err != nil {
 			return err
 		}
@@ -325,35 +317,11 @@ var deleteCmd = &cobra.Command{
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		name := args[0]
-		dir, err := getAccountDir()
+		err := defaultFileAccountStore.DeleteAccount(name)
 		if err != nil {
-			return fmt.Errorf("failed to get account dir: %v", err)
-		}
-		found := false
-		sufs := []string{".json"}
-		for _, algo := range ValidSignAlgos {
-			sufs = append(sufs, "_"+algo)
-		}
-		for _, suf := range sufs {
-			f := fmt.Sprintf("%s/%s%s", dir, name, suf)
-			err = os.Remove(f)
-			if err == nil {
-				found = true
-				fmt.Println("File", f, "has been removed.")
-			}
-			err = os.Remove(f + ".id")
-			if err == nil {
-				fmt.Println("File", f+".id", "has been removed.")
-			}
-			err = os.Remove(f + ".pub")
-			if err == nil {
-				fmt.Println("File", f+".pub", "has been removed.")
-			}
-		}
-		if found {
-			fmt.Println("Successfully deleted <", name, ">.")
+			fmt.Println("Account <", name, "> does not exist:", err)
 		} else {
-			fmt.Println("Account <", name, "> does not exist.")
+			fmt.Println("Successfully deleted <", name, ">.")
 		}
 		return nil
 	},
