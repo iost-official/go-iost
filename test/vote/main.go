@@ -9,24 +9,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/iost-official/go-iost/v3/common"
-
-	"github.com/iost-official/go-iost/v3/sdk"
-
 	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/common"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
-
-	"github.com/iost-official/go-iost/v3/iwallet"
+	"github.com/iost-official/go-iost/v3/sdk"
 )
 
 var (
-	iostSDKs     = make(map[string]*sdk.IOSTDevSDK)
-	witness      = []string{}
-	accounts     = []string{}
-	server       = "localhost:30002"
-	contractName = ""
-	pledgeGAS    = int64(0)
-	exchangeIOST = false
+	iostSDK      *sdk.IOSTDevSDK = nil
+	witness                      = []string{}
+	accounts                     = []string{}
+	server                       = "localhost:30002"
+	contractName                 = ""
+	pledgeGAS                    = int64(0)
+	exchangeIOST                 = false
 )
 
 func init() {
@@ -59,67 +55,79 @@ func parseFlag() {
 }
 
 func initSDKs() {
-	accs := append(accounts, witness...)
-	accs = append(accs, "admin")
-	for _, a := range accs {
-		iostSDK := sdk.NewIOSTDevSDK()
-		iostSDK.SetChainID(1024)
-		iostSDK.SetServer(server)
-		iostSDK.SetTxInfo(2000000, 1, 300, 0, nil)
-		iostSDK.SetCheckResult(true, 3, 10)
-		iostSDK.SetVerbose(true)
-		iostSDKs[a] = iostSDK
-	}
+	iostSDK = sdk.NewIOSTDevSDK()
+	iostSDK.SetChainID(1024)
+	iostSDK.SetServer(server)
+	iostSDK.SetTxInfo(2000000, 1, 300, 0, nil)
+	iostSDK.SetCheckResult(true, 3, 10)
+	iostSDK.SetVerbose(true)
 }
 
-var accountsFileDir = "."
+var accountsStore = sdk.NewFileAccountStore(".")
 
-func setupSDK(iostsdk *sdk.IOSTDevSDK, account string) error {
-	a, err := iwallet.LoadAccountFromKeyStore(accountsFileDir+"/"+account+".json", true)
+func createAndSaveKeyPair(acc string) (*account.KeyPair, error) {
+	// generate new keypair locally
+	newKp, err := account.NewKeyPair(nil, sdk.GetSignAlgoByName(signAlgo))
 	if err != nil {
-		return err
+		log.Fatalf("create key pair failed %v", err)
 	}
-	return iwallet.SetAccountForSDK(iostsdk, a, "active")
+	k := newKp.ReadablePubkey()
+	okey := k
+	akey := k
+	// create new account with keypair on chain
+	iostSDK.UseAccount("admin")
+	_, err = iostSDK.CreateNewAccount(acc, okey, akey, 1024, 1000, 2100000)
+	if err != nil {
+		log.Fatalf("create new account error %v", err)
+	}
+	// save this account
+	accInfo := sdk.NewAccountInfo()
+	accInfo.Name = acc
+	kp := &sdk.KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
+	accInfo.Keypairs["active"] = kp
+	accInfo.Keypairs["owner"] = kp
+	err = accountsStore.SaveAccount(accInfo)
+	if err != nil {
+		log.Fatalf("failed to save account: %v", err)
+	}
+	return newKp, nil
+}
+
+func loadKeyPairFromFile(account string) (*account.KeyPair, error) {
+	a, err := accountsStore.LoadAccount(account)
+	if err != nil {
+		return nil, err
+	}
+	kp, err := a.GetKeyPair("active")
+	if err != nil {
+		return nil, err
+	}
+	return kp, nil
 }
 
 func prepareAccounts() {
-	iostSDK := iostSDKs["admin"]
-	err := setupSDK(iostSDK, "admin")
+	// load admin and pledge gas
+	adminKp, err := loadKeyPairFromFile("admin")
 	if err != nil {
 		panic(err)
 	}
+	iostSDK.SetAccount("admin", adminKp)
 	if pledgeGAS > 0 {
 		err = iostSDK.PledgeForGasAndRAM(pledgeGAS, 0)
 		if err != nil {
 			log.Fatalf("pledge gas and ram err: %v", err)
 		}
 	}
-	for _, acc := range accounts {
-		if setupSDK(iostSDKs[acc], acc) == nil {
-			continue
-		}
-		newKp, err := account.NewKeyPair(nil, sdk.GetSignAlgoByName(signAlgo))
+	// load or create other accounts
+	for _, acc := range append(accounts, witness...) {
+		kp, err := loadKeyPairFromFile(acc)
 		if err != nil {
-			log.Fatalf("create key pair failed %v", err)
+			kp, err = createAndSaveKeyPair(acc)
 		}
-		k := newKp.ReadablePubkey()
-		okey := k
-		akey := k
-
-		_, err = iostSDK.CreateNewAccount(acc, okey, akey, 1024, 1000, 2100000)
 		if err != nil {
-			log.Fatalf("create new account error %v", err)
+			panic(err)
 		}
-		accInfo := iwallet.NewAccountInfo()
-		accInfo.Name = acc
-		kp := &iwallet.KeyPairInfo{RawKey: common.Base58Encode(newKp.Seckey), PubKey: common.Base58Encode(newKp.Pubkey), KeyType: signAlgo}
-		accInfo.Keypairs["active"] = kp
-		accInfo.Keypairs["owner"] = kp
-		err = accInfo.SaveTo(accountsFileDir + "/" + acc + ".json")
-		if err != nil {
-			log.Fatalf("failed to save account: %v", err)
-		}
-		iostSDKs[acc].SetAccount(acc, newKp)
+		iostSDK.SetAccount(acc, kp)
 	}
 }
 
@@ -143,9 +151,10 @@ func run() {
 }
 
 func publish() {
-	codePath := os.Getenv("GOIOST") + "//test/vote/test_data/vote_checker.js"
+	codePath := os.Getenv("GOBASE") + "//test/vote/test_data/vote_checker.js"
 	abiPath := codePath + ".abi"
-	_, txHash, err := iostSDKs["admin"].PublishContract(codePath, abiPath, "", false, "")
+	iostSDK.UseAccount("admin")
+	_, txHash, err := iostSDK.PublishContract(codePath, abiPath, "", false, "")
 	if err != nil {
 		log.Fatalf("publish contract error: %v", err)
 	}
@@ -154,7 +163,7 @@ func publish() {
 
 func vote() {
 	for _, acc := range accounts {
-		iostSDK := iostSDKs[acc]
+		iostSDK.UseAccount(acc)
 		iostSDK.SendTxFromActions([]*rpcpb.Action{
 			sdk.NewAction(contractName, "vote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*100000)),
 		})
@@ -163,7 +172,7 @@ func vote() {
 
 func unvote() {
 	for _, acc := range accounts {
-		iostSDK := iostSDKs[acc]
+		iostSDK.UseAccount(acc)
 		iostSDK.SendTxFromActions([]*rpcpb.Action{
 			sdk.NewAction(contractName, "unvote", fmt.Sprintf(`["%s","%s","%v"]`, acc, witness[rand.Intn(len(witness))], (rand.Intn(10)+2)*1000)),
 		})
@@ -171,7 +180,8 @@ func unvote() {
 }
 
 func issueIOST() {
-	iostSDKs["admin"].SendTxFromActions([]*rpcpb.Action{
+	iostSDK.UseAccount("admin")
+	iostSDK.SendTxFromActions([]*rpcpb.Action{
 		sdk.NewAction(contractName, "issueIOST", `[]`),
 	})
 }
@@ -181,7 +191,7 @@ func withdrawBlockBonus() {
 		return
 	}
 	for _, acc := range witness {
-		iostSDK := iostSDKs[acc]
+		iostSDK.UseAccount(acc)
 		iostSDK.SendTxFromActions([]*rpcpb.Action{
 			sdk.NewAction(contractName, "exchangeIOST", `[]`),
 		})
@@ -190,7 +200,7 @@ func withdrawBlockBonus() {
 
 func withdrawVoteBonus() {
 	for _, acc := range witness {
-		iostSDK := iostSDKs[acc]
+		iostSDK.UseAccount(acc)
 		iostSDK.SendTxFromActions([]*rpcpb.Action{
 			sdk.NewAction(contractName, "candidateWithdraw", `[]`),
 		})
@@ -198,7 +208,7 @@ func withdrawVoteBonus() {
 }
 
 func topupVoterBonus() {
-	iostSDK := iostSDKs["admin"]
+	iostSDK.UseAccount("admin")
 	for _, acc := range witness {
 		iostSDK.SendTxFromActions([]*rpcpb.Action{
 			sdk.NewAction(contractName, "topupVoterBonus", fmt.Sprintf(`["%v", "%v"]`, acc, (rand.Intn(10)+2)*100000)),
@@ -208,7 +218,7 @@ func topupVoterBonus() {
 
 func withdrawVoterBonus() {
 	for _, acc := range accounts {
-		iostSDK := iostSDKs[acc]
+		iostSDK.UseAccount(acc)
 		iostSDK.SendTxFromActions([]*rpcpb.Action{
 			sdk.NewAction(contractName, "voterWithdraw", `[]`),
 		})
@@ -216,7 +226,8 @@ func withdrawVoterBonus() {
 }
 
 func checkResult() {
-	iostSDKs["admin"].SendTxFromActions([]*rpcpb.Action{
+	iostSDK.UseAccount("admin")
+	iostSDK.SendTxFromActions([]*rpcpb.Action{
 		sdk.NewAction(contractName, "checkResult", `[]`),
 	})
 }

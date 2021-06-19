@@ -25,29 +25,25 @@ var callCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var actions []*rpcpb.Action
-		actions, err := actionsFromFlags(args)
+		argc := len(args)
+		if argc%3 != 0 {
+			return fmt.Errorf(`number of args should be a multiplier of 3`)
+		}
+		var actions = make([]*rpcpb.Action, 0)
+		for i := 0; i < len(args); i += 3 {
+			v, err := formatContractArgs(args[i+2])
+			if err != nil {
+				return err
+			}
+			act := sdk.NewAction(args[i], args[i+1], v)
+			actions = append(actions, act)
+		}
+		tx, err := createTxFromActions(actions)
 		if err != nil {
 			return err
 		}
-		tx, err := initTxFromActions(actions)
-		if err != nil {
-			return err
-		}
-		if !tryTx {
-			return saveOrSendTx(tx)
-		}
-
-		err = prepareTx(tx)
-		if err != nil {
-			return err
-		}
-		r, err := iwalletSDK.TryTx(tx)
-		if err != nil {
-			return err
-		}
-		fmt.Println(sdk.MarshalTextString(r))
-		return nil
+		_, err = processTx(tx)
+		return err
 	},
 }
 

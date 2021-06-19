@@ -65,7 +65,7 @@ func (t *transferHandler) writeCache() {
 // Prepare ...
 func (t *transferHandler) Prepare() error {
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
-	codePath := os.Getenv("GOIOST") + "//test/performance/handles/transfer/transfer.js"
+	codePath := os.Getenv("GOBASE") + "//test/performance/handles/transfer/transfer.js"
 	abiPath := codePath + ".abi"
 	client := call.GetClient(0)
 	iostSDK.SetServer(client.Addr())

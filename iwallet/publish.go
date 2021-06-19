@@ -59,14 +59,11 @@ var publishCmd = &cobra.Command{
 				actions = append(actions, sdk.NewAction(conID, postCheck, string(`[]`)))
 			}
 		}
-		tx, err := initTxFromActions(actions)
+		tx, err := createTxFromActions(actions)
 		if err != nil {
 			return err
 		}
-		if outputTxFile != "" {
-			return saveTx(tx)
-		}
-		txHash, err := sendTxGetHash(tx)
+		txHash, err := processTx(tx)
 		if err != nil {
 			return err
 		}

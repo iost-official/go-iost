@@ -5,14 +5,12 @@ package v8
 */
 import "C"
 import (
+	"encoding/json"
 	"errors"
 	"strconv"
 
-	"github.com/iost-official/go-iost/v3/vm/database"
-
-	"encoding/json"
-
 	"github.com/iost-official/go-iost/v3/core/contract"
+	"github.com/iost-official/go-iost/v3/vm/database"
 )
 
 // ErrInvalidDBValType error

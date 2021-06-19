@@ -10,6 +10,7 @@ linters-settings:
       - ifElseChain
       - singleCaseSwitch
       - commentFormatting
+      - appendAssign
 
 issues:
   exclude-rules:
@@ -20,7 +21,6 @@ issues:
 linters:
   enable:
     - govet
-    - golint
     - gosimple
     - ineffassign
     - misspell

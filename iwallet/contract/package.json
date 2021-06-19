@@ -9,11 +9,10 @@
   "author": "",
   "license": "Apache-2.0",
   "dependencies": {
-    "escodegen": "^1.14.1",
     "esprima": "^4.0.1"
   },
   "devDependencies": {
-    "webpack": "^4.44.2",
-    "webpack-cli": "^3.3.12"
+    "webpack": "^5.38.1",
+    "webpack-cli": "^4.7.2"
   }
 }

@@ -43,7 +43,7 @@ func init() {
 func (t *gobangHandle) Prepare() error {
 	var err error
 	rootAcc, _ = account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
-	codePath := os.Getenv("GOIOST") + "//test/performance/handles/gobang/gobang.js"
+	codePath := os.Getenv("GOBASE") + "//test/performance/handles/gobang/gobang.js"
 	abiPath := codePath + ".abi"
 	iostSDK.SetServer(call.GetClient(0).Addr())
 	iostSDK.SetAccount("admin", rootAcc)

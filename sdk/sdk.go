@@ -21,11 +21,10 @@ type IOSTDevSDK struct {
 	// the remote server to connect to
 	server string
 
-	// account used for sending tx
+	// all available accounts keys
+	accounts map[string]*account.KeyPair
+	// default account used for sending tx
 	accountName string
-	keyPair     *account.KeyPair
-	// signing algorithm
-	signAlgo string
 
 	// fields used to fill tx
 	gasLimit    float64
@@ -59,7 +58,7 @@ func NewIOSTDevSDK() *IOSTDevSDK {
 		checkResult:         true,
 		checkResultDelay:    3,
 		checkResultMaxRetry: 20,
-		signAlgo:            "ed25519",
+		accounts:            make(map[string]*account.KeyPair),
 		gasLimit:            1000000,
 		gasRatio:            1.0,
 		amountLimit:         []*rpcpb.AmountLimit{{Token: "*", Value: "unlimited"}},
@@ -75,10 +74,20 @@ func (s *IOSTDevSDK) SetChainID(chainID uint32) {
 	s.chainID = chainID
 }
 
+func (s *IOSTDevSDK) UseAccount(name string) {
+	s.accountName = name
+}
+
 // SetAccount ...
 func (s *IOSTDevSDK) SetAccount(name string, kp *account.KeyPair) {
+	if kp != nil {
+		s.accounts[name] = kp
+	}
 	s.accountName = name
-	s.keyPair = kp
+}
+
+func (s *IOSTDevSDK) CurrentAccount() string {
+	return s.accountName
 }
 
 // SetTxInfo ...
@@ -103,9 +112,9 @@ func (s *IOSTDevSDK) SetServer(server string) {
 }
 
 // SetSignAlgo ...
-func (s *IOSTDevSDK) SetSignAlgo(signAlgo string) {
-	s.signAlgo = signAlgo
-}
+//func (s *IOSTDevSDK) SetSignAlgo(signAlgo string) {
+//	s.signAlgo = signAlgo
+//}
 
 // SetVerbose ...
 func (s *IOSTDevSDK) SetVerbose(verbose bool) {
@@ -334,7 +343,7 @@ func (s *IOSTDevSDK) SendTransaction(signedTx *rpcpb.TransactionRequest) (string
 		if err := s.Connect(); err != nil {
 			return "", err
 		}
-		defer s.CloseConn()
+		//defer s.CloseConn()
 	}
 	client := rpcpb.NewApiServiceClient(s.rpcConn)
 	resp, err := client.SendTransaction(context.Background(), signedTx)
@@ -384,15 +393,16 @@ func (s *IOSTDevSDK) CreateTxFromActions(actions []*rpcpb.Action) (*rpcpb.Transa
 }
 
 // SignTx ...
-func (s *IOSTDevSDK) SignTx(t *rpcpb.TransactionRequest, signAlgo string) (*rpcpb.TransactionRequest, error) {
+func (s *IOSTDevSDK) SignTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, error) {
 	t.Publisher = s.accountName
+	kp := s.accounts[s.accountName]
 	if len(t.PublisherSigs) == 0 {
-		signAlgorithm := GetSignAlgoByName(signAlgo)
+		signAlgorithm := kp.Algorithm
 		txHashBytes := common.Sha3(txToBytes(t, true))
 		publishSig := &rpcpb.Signature{
 			Algorithm: rpcpb.Signature_Algorithm(signAlgorithm),
-			Signature: signAlgorithm.Sign(txHashBytes, s.keyPair.Seckey),
-			PublicKey: signAlgorithm.GetPubkey(s.keyPair.Seckey),
+			Signature: signAlgorithm.Sign(txHashBytes, kp.Seckey),
+			PublicKey: signAlgorithm.GetPubkey(kp.Seckey),
 		}
 		t.PublisherSigs = []*rpcpb.Signature{publishSig}
 	}
@@ -451,7 +461,7 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 }
 
 func (s *IOSTDevSDK) TryTx(tx *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
-	signedTx, err := s.SignTx(tx, s.signAlgo)
+	signedTx, err := s.SignTx(tx)
 	if err != nil {
 		return nil, fmt.Errorf("sign tx error %v", err)
 	}
@@ -466,7 +476,7 @@ func (s *IOSTDevSDK) TryTx(tx *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, erro
 
 // SendTx send transaction and check result if sdk.checkResult is set
 func (s *IOSTDevSDK) SendTx(tx *rpcpb.TransactionRequest) (string, error) {
-	signedTx, err := s.SignTx(tx, s.signAlgo)
+	signedTx, err := s.SignTx(tx)
 	if err != nil {
 		return "", fmt.Errorf("sign tx error %v", err)
 	}
@@ -514,6 +524,22 @@ func (s *IOSTDevSDK) PledgeForGasAndRAM(gasPledged int64, ram int64) error {
 		return err
 	}
 	return nil
+}
+
+func (s *IOSTDevSDK) UpdateAccountKeysActions(account string, ownerKey string, activeKey string) ([]*rpcpb.Action, error) {
+	acc, err := s.GetAccountInfo(account)
+	if err != nil {
+		return nil, err
+	}
+	oldActiveKey := acc.Permissions["active"].Items[0].Id
+	oldOwnerKey := acc.Permissions["owner"].Items[0].Id
+	var acts []*rpcpb.Action
+	acts = append(acts, NewAction("auth.iost", "assignPermission", fmt.Sprintf(`["%v", "%v", "%v", %v]`, account, "active", activeKey, 100)))
+	acts = append(acts, NewAction("auth.iost", "assignPermission", fmt.Sprintf(`["%v", "%v", "%v", %v]`, account, "owner", ownerKey, 100)))
+	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "active", oldActiveKey)))
+	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "owner", oldOwnerKey)))
+	//acts = append(acts, NewAction("auth.iost", "checkPerm", fmt.Sprintf(`["%v", "%v"]`, account, "owner")))
+	return acts, nil
 }
 
 // CreateNewAccountActions makes actions for creating new account.

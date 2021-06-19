@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"math"
 	"sort"
-
 	"strings"
 
 	"github.com/iost-official/go-iost/v3/common"
