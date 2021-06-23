@@ -16,7 +16,7 @@ issues:
   exclude-rules:
     - linters:
         - staticcheck
-      text: "SA1019:" # use old protobuf
+      text: "SA1019: package github.com/golang/protobuf"
 
 linters:
   enable:

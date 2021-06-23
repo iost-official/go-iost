@@ -124,12 +124,14 @@ func initAccountForSDK(s *sdk.IOSTDevSDK) error {
 	if err != nil {
 		return err
 	}
-	keyPair, err := a.GetKeyPair(signPerm)
-	if err != nil {
-		return err
+	for p := range a.Keypairs {
+		keyPair, err := a.GetKeyPair(p)
+		if err != nil {
+			return err
+		}
+		s.AddAccountWithPerm(a.Name, keyPair, p)
 	}
-	s.SetAccount(a.Name, keyPair)
-	s.UseAccount(a.Name)
+	s.UseAccountAndPerm(a.Name, signPerm)
 	return nil
 }
 
