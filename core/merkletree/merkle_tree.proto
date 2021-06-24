@@ -1,6 +1,6 @@
 syntax = "proto3";
 package merkletree;
-option go_package = "github.com/iost-official/go-iost/core/merkletree";
+option go_package = "github.com/iost-official/go-iost/v3/core/merkletree";
 
 message MerkleTree {
     repeated bytes hash_list = 1;

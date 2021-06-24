@@ -7,9 +7,9 @@ import (
 	"os"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/db/wal/pcrc"
 	"github.com/iost-official/go-iost/v3/ilog"
+	"google.golang.org/protobuf/proto"
 )
 
 // walPageBytes is the alignment for flushing logs to the backing Writer.

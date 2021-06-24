@@ -13,8 +13,8 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/ilog"
+	"google.golang.org/protobuf/proto"
 )
 
 var (

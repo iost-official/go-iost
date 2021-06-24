@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package blockcache;
-option go_package = "github.com/iost-official/go-iost/core/blockcache";
+option go_package = "github.com/iost-official/go-iost/v3/core/blockcache";
 
 message bcMessage {
   bytes data = 1;

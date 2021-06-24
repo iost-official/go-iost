@@ -4,11 +4,11 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/common"
 	msgpb "github.com/iost-official/go-iost/v3/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/p2p"
+	"google.golang.org/protobuf/proto"
 )
 
 // Constant of blockhash sync

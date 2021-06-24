@@ -4,7 +4,7 @@ package rpcpb;
 
 import "google/api/annotations.proto";
 import "core/block/pb/block.proto";
-option go_package = "github.com/iost-official/go-iost/rpc/rpcpb";
+option go_package = "github.com/iost-official/go-iost/v3/rpc/rpcpb";
 
 service ApiService {
     // get the node information

@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/block"
 	"github.com/iost-official/go-iost/v3/db"
 	"github.com/iost-official/go-iost/v3/db/wal"
 	"github.com/iost-official/go-iost/v3/ilog"
+	"google.golang.org/protobuf/proto"
 )
 
 //go:generate mockgen -destination mock/mock_blockcache.go -package mock github.com/iost-official/go-iost/v3/core/blockcache BlockCache

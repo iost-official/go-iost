@@ -1,9 +1,9 @@
 package account
 
 import (
-	"testing"
 	"bytes"
 	"fmt"
+	"testing"
 
 	. "github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/crypto"
@@ -54,4 +54,3 @@ func TestPubkeyEncodeDecode(t *testing.T) {
 		}
 	}
 }
-

@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/golang/protobuf/jsonpb"
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/crypto"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
+	jsonpb "google.golang.org/protobuf/encoding/protojson"
+	"google.golang.org/protobuf/proto"
 )
 
 ///////////////////////////// file operation /////////////////////////////
@@ -26,11 +26,11 @@ func writeFile(output string, data []byte) error {
 
 // SaveProtoStructToJSONFile ...
 func SaveProtoStructToJSONFile(pb proto.Message, fileName string) error {
-	r, err := (&jsonpb.Marshaler{EmitDefaults: true, Indent: "    "}).MarshalToString(pb)
+	r, err := (&jsonpb.MarshalOptions{EmitUnpopulated: true, Indent: "    "}).Marshal(pb)
 	if err != nil {
 		return err
 	}
-	return writeFile(fileName, []byte(r))
+	return writeFile(fileName, r)
 }
 
 // LoadProtoStructFromJSONFile ...
@@ -39,7 +39,7 @@ func LoadProtoStructFromJSONFile(fileName string, pb proto.Message) error {
 	if err != nil {
 		return fmt.Errorf("failed to read file %v: %v", fileName, err)
 	}
-	err = jsonpb.UnmarshalString(string(bytes), pb)
+	err = jsonpb.Unmarshal(bytes, pb)
 	if err != nil {
 		return fmt.Errorf("invalid file %v: %v", fileName, err)
 	}
@@ -48,11 +48,11 @@ func LoadProtoStructFromJSONFile(fileName string, pb proto.Message) error {
 
 // MarshalTextString ...
 func MarshalTextString(pb proto.Message) string {
-	r, err := (&jsonpb.Marshaler{EmitDefaults: true, Indent: "    "}).MarshalToString(pb)
+	r, err := (&jsonpb.MarshalOptions{EmitUnpopulated: true, Indent: "    "}).Marshal(pb)
 	if err != nil {
 		return "json.Marshal error: " + err.Error()
 	}
-	return r
+	return string(r)
 }
 
 ////////////////////////////////// signature related /////////////////////////////////
