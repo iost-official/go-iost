@@ -62,8 +62,6 @@ github.com/golang/protobuf/ptypes/timestamp
 # github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
 ## explicit
 github.com/golang/snappy
-# github.com/golangci/golangci-lint v1.41.1
-## explicit
 # github.com/google/uuid v1.1.2
 github.com/google/uuid
 # github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe
@@ -132,6 +130,8 @@ github.com/jbenet/goprocess/periodic
 github.com/jtolds/gls
 # github.com/koron/go-ssdp v0.0.0-20191105050749-2e1c40ed0b5d
 github.com/koron/go-ssdp
+# github.com/kr/text v0.2.0
+## explicit
 # github.com/libp2p/go-addr-util v0.0.1
 github.com/libp2p/go-addr-util
 # github.com/libp2p/go-buffer-pool v0.0.2
@@ -266,6 +266,12 @@ github.com/multiformats/go-multihash
 github.com/multiformats/go-multistream
 # github.com/multiformats/go-varint v0.0.5
 github.com/multiformats/go-varint
+# github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e
+## explicit
+# github.com/onsi/ginkgo v1.16.1
+## explicit
+# github.com/onsi/gomega v1.11.0
+## explicit
 # github.com/opentracing/opentracing-go v1.1.0
 github.com/opentracing/opentracing-go
 github.com/opentracing/opentracing-go/ext
@@ -367,8 +373,6 @@ github.com/syndtr/goleveldb/leveldb/opt
 github.com/syndtr/goleveldb/leveldb/storage
 github.com/syndtr/goleveldb/leveldb/table
 github.com/syndtr/goleveldb/leveldb/util
-# github.com/ugorji/go v1.1.4
-## explicit
 # github.com/urfave/cli v1.22.2
 ## explicit
 github.com/urfave/cli
@@ -577,6 +581,8 @@ google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/fieldmaskpb
 google.golang.org/protobuf/types/known/timestamppb
 google.golang.org/protobuf/types/known/wrapperspb
+# gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f
+## explicit
 # gopkg.in/ini.v1 v1.52.0
 ## explicit
 gopkg.in/ini.v1
@@ -584,4 +590,7 @@ gopkg.in/ini.v1
 ## explicit
 gopkg.in/yaml.v2
 # gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+## explicit
 gopkg.in/yaml.v3
+# honnef.co/go/tools v0.2.0
+## explicit
