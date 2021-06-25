@@ -1,7 +1,7 @@
 syntax = "proto3";
 
 package contract;
-option go_package = "github.com/iost-official/go-iost/core/contract";
+option go_package = "github.com/iost-official/go-iost/v3/core/contract";
 
 message Info {
     string lang = 1;

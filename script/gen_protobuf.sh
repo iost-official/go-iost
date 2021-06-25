@@ -20,7 +20,8 @@ fi
 find * -name "*.proto" | grep -v "vendor" | grep -v "third_party" | xargs -n1 \
 protoc -I/usr/local/include -I. -Ivendor \
        -Iproto/third_party/googleapis \
-       --go_out=plugins=grpc,paths=source_relative:.
+       --go_out=. --go_opt=paths=source_relative \
+       --go-grpc_out=. --go-grpc_opt=require_unimplemented_servers=false,paths=source_relative
 
 protoc -I/usr/local/include -I. -Ivendor \
        -Iproto/third_party/googleapis \

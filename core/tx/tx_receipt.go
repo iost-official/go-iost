@@ -3,10 +3,10 @@ package tx
 import (
 	"encoding/json"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/common"
 	txpb "github.com/iost-official/go-iost/v3/core/tx/pb"
 	"github.com/iost-official/go-iost/v3/ilog"
+	"google.golang.org/protobuf/proto"
 )
 
 // StatusCode status code of transaction execution result

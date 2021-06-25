@@ -8,12 +8,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/protobuf/proto"
 )
 
 // IOSTDevSDK ...
@@ -21,10 +21,11 @@ type IOSTDevSDK struct {
 	// the remote server to connect to
 	server string
 
-	// all available accounts keys
-	accounts map[string]*account.KeyPair
+	// all available accounts keys, name->perm->keypair
+	accounts map[string]map[string]*account.KeyPair
 	// default account used for sending tx
 	accountName string
+	permission  string
 
 	// fields used to fill tx
 	gasLimit    float64
@@ -58,7 +59,7 @@ func NewIOSTDevSDK() *IOSTDevSDK {
 		checkResult:         true,
 		checkResultDelay:    3,
 		checkResultMaxRetry: 20,
-		accounts:            make(map[string]*account.KeyPair),
+		accounts:            make(map[string]map[string]*account.KeyPair),
 		gasLimit:            1000000,
 		gasRatio:            1.0,
 		amountLimit:         []*rpcpb.AmountLimit{{Token: "*", Value: "unlimited"}},
@@ -74,21 +75,34 @@ func (s *IOSTDevSDK) SetChainID(chainID uint32) {
 	s.chainID = chainID
 }
 
-func (s *IOSTDevSDK) UseAccount(name string) {
-	s.accountName = name
-}
-
-// SetAccount ...
-func (s *IOSTDevSDK) SetAccount(name string, kp *account.KeyPair) {
+func (s *IOSTDevSDK) AddAccountWithPerm(name string, kp *account.KeyPair, perm string) {
 	if kp != nil {
-		s.accounts[name] = kp
+		if s.accounts[name] == nil {
+			s.accounts[name] = make(map[string]*account.KeyPair)
+		}
+		s.accounts[name][perm] = kp
 	}
-	s.accountName = name
 }
-
+func (s *IOSTDevSDK) UseAccountAndPerm(name string, perm string) {
+	s.accountName = name
+	s.permission = perm
+}
+func (s *IOSTDevSDK) UseAccount(name string) {
+	s.UseAccountAndPerm(name, "active")
+}
 func (s *IOSTDevSDK) CurrentAccount() string {
 	return s.accountName
 }
+
+func (s *IOSTDevSDK) SetAccount(name string, kp *account.KeyPair) {
+	s.AddAccountWithPerm(name, kp, "active")
+	s.UseAccountAndPerm(name, "active")
+}
+
+// SetSignAlgo ...
+//func (s *IOSTDevSDK) SetSignAlgo(signAlgo string) {
+//	s.signAlgo = signAlgo
+//}
 
 // SetTxInfo ...
 func (s *IOSTDevSDK) SetTxInfo(gasLimit float64, gasRatio float64, expiration int64, delaySecond int64, amountLimit []*rpcpb.AmountLimit) {
@@ -110,11 +124,6 @@ func (s *IOSTDevSDK) SetCheckResult(checkResult bool, checkResultDelay float32, 
 func (s *IOSTDevSDK) SetServer(server string) {
 	s.server = server
 }
-
-// SetSignAlgo ...
-//func (s *IOSTDevSDK) SetSignAlgo(signAlgo string) {
-//	s.signAlgo = signAlgo
-//}
 
 // SetVerbose ...
 func (s *IOSTDevSDK) SetVerbose(verbose bool) {
@@ -395,7 +404,7 @@ func (s *IOSTDevSDK) CreateTxFromActions(actions []*rpcpb.Action) (*rpcpb.Transa
 // SignTx ...
 func (s *IOSTDevSDK) SignTx(t *rpcpb.TransactionRequest) (*rpcpb.TransactionRequest, error) {
 	t.Publisher = s.accountName
-	kp := s.accounts[s.accountName]
+	kp := s.accounts[s.accountName][s.permission]
 	if len(t.PublisherSigs) == 0 {
 		signAlgorithm := kp.Algorithm
 		txHashBytes := common.Sha3(txToBytes(t, true))
@@ -531,12 +540,25 @@ func (s *IOSTDevSDK) UpdateAccountKeysActions(account string, ownerKey string, a
 	if err != nil {
 		return nil, err
 	}
-	oldActiveKey := acc.Permissions["active"].Items[0].Id
-	oldOwnerKey := acc.Permissions["owner"].Items[0].Id
+	oldActiveKey := s.accounts[account]["active"].ReadablePubkey()
+	oldOwnerKey := s.accounts[account]["owner"].ReadablePubkey()
 	var acts []*rpcpb.Action
 	acts = append(acts, NewAction("auth.iost", "assignPermission", fmt.Sprintf(`["%v", "%v", "%v", %v]`, account, "active", activeKey, 100)))
 	acts = append(acts, NewAction("auth.iost", "assignPermission", fmt.Sprintf(`["%v", "%v", "%v", %v]`, account, "owner", ownerKey, 100)))
-	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "active", oldActiveKey)))
+
+	foundOldActiveKey := false
+	for _, item := range acc.Permissions["active"].Items {
+		if item.IsKeyPair && item.Id == oldActiveKey {
+			foundOldActiveKey = true
+			break
+		}
+	}
+	if foundOldActiveKey {
+		acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "active", oldActiveKey)))
+	} else {
+		s.log("cannot delete old active key, skip", oldActiveKey)
+	}
+
 	acts = append(acts, NewAction("auth.iost", "revokePermission", fmt.Sprintf(`["%v", "%v", "%v"]`, account, "owner", oldOwnerKey)))
 	//acts = append(acts, NewAction("auth.iost", "checkPerm", fmt.Sprintf(`["%v", "%v"]`, account, "owner")))
 	return acts, nil

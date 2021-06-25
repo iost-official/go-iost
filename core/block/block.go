@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	blockpb "github.com/iost-official/go-iost/v3/core/block/pb"
@@ -12,6 +11,7 @@ import (
 	"github.com/iost-official/go-iost/v3/core/tx"
 	"github.com/iost-official/go-iost/v3/core/version"
 	"github.com/iost-official/go-iost/v3/crypto"
+	"google.golang.org/protobuf/proto"
 )
 
 // BlockHead versions

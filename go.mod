@@ -14,7 +14,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/mock v1.4.0
-	github.com/golang/protobuf v1.4.3
+	github.com/golang/protobuf v1.4.2
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
 	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0

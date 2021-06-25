@@ -47,13 +47,11 @@ var updateCmd = &cobra.Command{
 		return checkAccount(cmd)
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
-		// Set account since making actions needs accountName.
-		// TODO: make these lines more clean...
-		signPerm = "owner"
 		err := initAccountForSDK(iwalletSDK)
 		if err != nil {
 			return err
 		}
+		iwalletSDK.UseAccountAndPerm(accountName, "owner")
 		signers = append(signers, accountName+"@owner")
 
 		accInfo, err := getAccountInfoFromArgs(accountName)

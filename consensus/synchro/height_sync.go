@@ -5,10 +5,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/golang/protobuf/proto"
 	msgpb "github.com/iost-official/go-iost/v3/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/p2p"
+	"google.golang.org/protobuf/proto"
 )
 
 const (

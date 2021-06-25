@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
 	"github.com/iost-official/go-iost/v3/chainbase"
 	"github.com/iost-official/go-iost/v3/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/v3/core/block"
@@ -21,6 +20,7 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/p2p"
 	p2p_mock "github.com/iost-official/go-iost/v3/p2p/mocks"
+	"google.golang.org/protobuf/proto"
 )
 
 type registerInfo struct {
