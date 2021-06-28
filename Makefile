@@ -53,6 +53,9 @@ iwallet:
 itest:
 	$(GO_BUILD) -o $(TARGET_DIR)/itest ./cmd/itest
 
+format:
+	find . -name "*.go" |grep -v vendor |xargs gofmt -s -w
+
 lint:
 	golangci-lint run
 

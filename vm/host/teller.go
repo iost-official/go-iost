@@ -108,11 +108,11 @@ func (t *Teller) PayCost(c contract.Cost, who string) {
 }
 
 // DoPay ...
-func (t *Teller) DoPay(gasRatio int64) (paidGas *common.Fixed, err error) {
+func (t *Teller) DoPay(gasRatio int64) (paidGas *common.Decimal, err error) {
 	for payer, costOfPayer := range t.cost {
-		gas := &common.Fixed{
-			Value:   gasRatio * costOfPayer.ToGas(),
-			Decimal: database.GasDecimal,
+		gas := &common.Decimal{
+			Value: gasRatio * costOfPayer.ToGas(),
+			Scale: database.GasDecimal,
 		}
 		if !gas.IsZero() {
 			err := t.h.CostGas(payer, gas)
