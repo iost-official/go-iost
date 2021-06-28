@@ -212,11 +212,11 @@ func RescalePair(a *Decimal, b *Decimal) (*Decimal, *Decimal, error) {
 }
 
 func NewDecimalFromInt(v int) *Decimal {
-	return &Decimal{Value: int64(v), Scale: 1}
+	return &Decimal{Value: int64(v), Scale: 0}
 }
 
 func NewDecimalFromIntWithScale(v int, s int) *Decimal {
-	return (&Decimal{Value: int64(v), Scale: 1}).Rescale(s)
+	return (&Decimal{Value: int64(v), Scale: 0}).Rescale(s)
 }
 
 func NewDecimalExp10(i int) *Decimal {
