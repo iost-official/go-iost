@@ -6,6 +6,7 @@ require (
 	github.com/Jeffail/tunny v0.0.0-20210126202424-1b37d6cb867a
 	github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d // indirect
 	github.com/bitly/go-simplejson v0.5.1-0.20171023175154-0c965951289c
+	github.com/bits-and-blooms/bloom/v3 v3.0.1
 	github.com/blend/go-sdk v2.0.0+incompatible // indirect
 	github.com/btcsuite/btcd v0.21.0-beta
 	github.com/btcsuite/btcutil v1.0.2
@@ -14,7 +15,7 @@ require (
 	github.com/go-ole/go-ole v1.2.4 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/mock v1.4.0
-	github.com/golang/protobuf v1.4.2
+	github.com/golang/protobuf v1.4.3
 	github.com/golang/snappy v0.0.3-0.20201103224600-674baa8c7fc3
 	github.com/gopherjs/gopherjs v0.0.0-20210202160940-bed99a852dfe // indirect
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.0
@@ -33,8 +34,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/pelletier/go-toml v1.6.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
-	github.com/prometheus/client_golang v1.4.1
-	github.com/prometheus/procfs v0.0.10 // indirect
+	github.com/prometheus/client_golang v1.11.0
 	github.com/rs/cors v1.7.0
 	github.com/shirou/gopsutil v3.21.6+incompatible
 	github.com/smartystreets/assertions v1.2.0 // indirect
@@ -51,8 +51,6 @@ require (
 	github.com/urfave/cli v1.22.2
 	github.com/wcharczuk/go-chart v2.0.2-0.20181012164330-3cb33d48d32d+incompatible
 	github.com/whyrusleeping/go-smux-multiplex v3.0.16+incompatible
-	github.com/willf/bitset v1.1.10 // indirect
-	github.com/willf/bloom v2.0.3+incompatible
 	github.com/xlab/treeprint v1.0.0
 	go.opencensus.io v0.22.3 // indirect
 	go.uber.org/atomic v1.6.0
@@ -68,7 +66,7 @@ require (
 	golang.org/x/tools v0.1.0 // indirect
 	google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
 	google.golang.org/grpc v1.33.1
-	google.golang.org/protobuf v1.25.0
+	google.golang.org/protobuf v1.26.0-rc.1
 	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/yaml.v2 v2.3.0
 )
