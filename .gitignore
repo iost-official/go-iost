@@ -4,6 +4,12 @@
 accounts.json
 bak/
 core/txpool/DelayTxDB/
+consensus/snapshot/DB/
+core/merkletree/TXRMerkleTreeDB/
+db/kv/db/
+db/mvccdb/
+ilog/logs1/
+ilog/logs2/
 coverage.txt
 data/
 logs/
