@@ -1,3 +1,11 @@
+## v3.7.0
+Thu Aug  5 11:01:19 UTC 2021
+
+Compatible upgrade.
+
+- iwallet cli: add account keypair change command 'iwallet account update'
+- sdk: sdk can support multi users and multi keypairs now
+
 ## v3.6.0
 Fri Apr 16 15:42:09 CST 2021
 
