@@ -4,8 +4,8 @@ GO_TEST := $(GO) test -mod vendor -race -timeout 600s
 GO_INSTALL := $(GO) install -mod vendor
 
 PROJECT_NAME := $(shell basename "$(PWD)")
-BUILDER_VERSION = 3.5.0
-VERSION = 3.6.0
+BUILDER_VERSION = 3.7.0
+VERSION = 3.7.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -76,10 +76,13 @@ else
 	$(GO_TEST) -v ./...
 endif
 
-e2e_test_local:
+e2e_test_local: clear_debug_file build
+	target/iserver -f config/iserver.yml &
+	sleep 20
 	$(TARGET_DIR)/itest run a_case
 	$(TARGET_DIR)/itest run t_case
 	$(TARGET_DIR)/itest run c_case
+	killall iserver
 
 e2e_test: image
 	docker rm -f iserver || true
