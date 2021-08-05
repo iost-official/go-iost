@@ -256,3 +256,11 @@ vm/test_data/lucky_bet.js.after
 /block_cache_wal/
 
 node_modules
+
+accounts.json
+consensus/snapshot/DB/
+core/merkletree/TXRMerkleTreeDB/
+db/kv/db/
+db/mvccdb/
+tmp/
+var/
