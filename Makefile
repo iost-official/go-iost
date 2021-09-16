@@ -1,6 +1,6 @@
 GO = go
 GO_BUILD = $(GO) build -mod vendor
-GO_TEST := $(GO) test -mod vendor -race -timeout 600s
+GO_TEST := $(GO) test -mod vendor -timeout 600s
 GO_INSTALL := $(GO) install -mod vendor
 
 PROJECT_NAME := $(shell basename "$(PWD)")
@@ -29,6 +29,7 @@ ifeq ($(shell uname),Linux)
 	export CGO_LDFLAGS=-L$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
 	export CGO_CFLAGS=-I$(shell pwd)/vm/v8vm/v8/include/_linux_amd64
 	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
+	GO_TEST := $(GO_TEST) -race 
 endif
 
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
