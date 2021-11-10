@@ -1040,8 +1040,8 @@ func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemFixed, longe
 	return unfrozen, stillFrozen
 }
 
-// GetBlockTxsByRange returns block txs of a range
-func (as *APIService) GetBlockTxsByRange(ctx context.Context, req *rpcpb.GetBlockTxsByRangeRequest) (*rpcpb.BlockTxsByRangeResponse, error) {
+// GetBlockTxsByContract returns block txs of a range
+func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetBlockTxsByContractRequest) (*rpcpb.BlockTxsByContractResponse, error) {
 
 	fromBlock := req.GetFromBlock()
 	toBlock := req.GetToBlock()
@@ -1050,7 +1050,7 @@ func (as *APIService) GetBlockTxsByRange(ctx context.Context, req *rpcpb.GetBloc
 		return nil, fmt.Errorf("invalid range %v to %v", fromBlock, toBlock)
 	}
 
-	res := &rpcpb.BlockTxsByRangeResponse{
+	res := &rpcpb.BlockTxsByContractResponse{
 		BlocktxList: make([]*rpcpb.BlockTxs, 0),
 	}
 

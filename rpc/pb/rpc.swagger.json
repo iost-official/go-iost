@@ -233,14 +233,14 @@
         ]
       }
     },
-    "/getBlockTxsByRange": {
+    "/getBlockTxsByContract": {
       "post": {
-        "operationId": "ApiService_GetBlockTxsByRange",
+        "operationId": "ApiService_GetBlockTxsByContract",
         "responses": {
           "200": {
             "description": "A successful response.",
             "schema": {
-              "$ref": "#/definitions/rpcpbBlockTxsByRangeResponse"
+              "$ref": "#/definitions/rpcpbBlockTxsByContractResponse"
             }
           },
           "default": {
@@ -256,7 +256,7 @@
             "in": "body",
             "required": true,
             "schema": {
-              "$ref": "#/definitions/rpcpbGetBlockTxsByRangeRequest"
+              "$ref": "#/definitions/rpcpbGetBlockTxsByContractRequest"
             }
           }
         ],
@@ -1609,7 +1609,8 @@
         },
         "blockNumber": {
           "type": "string",
-          "format": "int64"
+          "format": "int64",
+          "title": "block number"
         },
         "txList": {
           "type": "array",
@@ -1620,7 +1621,7 @@
         }
       }
     },
-    "rpcpbBlockTxsByRangeResponse": {
+    "rpcpbBlockTxsByContractResponse": {
       "type": "object",
       "properties": {
         "blocktxList": {
@@ -1887,7 +1888,7 @@
       },
       "title": "The request message containing range start and end"
     },
-    "rpcpbGetBlockTxsByRangeRequest": {
+    "rpcpbGetBlockTxsByContractRequest": {
       "type": "object",
       "properties": {
         "fromBlock": {

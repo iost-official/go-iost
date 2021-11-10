@@ -3,7 +3,7 @@ Thu Nov  9 17:10:05 UTC 2021
 
 Compatible upgrade.
 
-- Add GetBlockTxsByRange rpc
+- Add GetBlockTxsByContract rpc
 - protobuf upgrade
  
 ## v3.7.0
