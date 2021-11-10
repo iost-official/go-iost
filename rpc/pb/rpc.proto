@@ -202,7 +202,12 @@ service ApiService {
         };
     }
 
-
+    rpc GetBlockTxsByRange (GetBlockTxsByRangeRequest) returns (BlockTxsByRangeResponse) {
+        option (google.api.http) = {
+            post: "/getBlockTxsByRange"
+            body: "*"
+        };
+    }
 
 }
 
@@ -971,4 +976,24 @@ message TokenInfo {
     double total_supply_float = 9;
     // the amount of current supply
     double current_supply_float = 10;
+}
+
+message GetBlockTxsByRangeRequest {
+    int64 from_block = 1;
+    int64 to_block = 2;
+    string contract = 3;
+    string action_name = 4;
+}
+
+message BlockTxs {
+    // block status
+    BlockResponse.Status status = 1;
+    // block number
+    int64 block_number = 2;
+    // transaction
+    repeated Transaction tx_list = 3;
+}
+
+message BlockTxsByRangeResponse{
+    repeated BlockTxs blocktx_list = 1;
 }

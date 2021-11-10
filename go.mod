@@ -13,7 +13,7 @@ require (
 	github.com/golang/mock v1.4.4
 	github.com/golang/snappy v0.0.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.2.2
-	github.com/grpc-ecosystem/grpc-gateway/v2 v2.5.0
+	github.com/grpc-ecosystem/grpc-gateway/v2 v2.6.0
 	github.com/hashicorp/golang-lru v0.5.5-0.20210104140557-80c98217689d
 	github.com/libp2p/go-libp2p v0.5.2
 	github.com/libp2p/go-libp2p-core v0.3.1
@@ -147,7 +147,7 @@ require (
 	golang.org/x/sync v0.0.0-20210220032951-036812b2e83c // indirect
 	golang.org/x/sys v0.0.0-20211029165221-6e7872819dc8 // indirect
 	golang.org/x/text v0.3.6 // indirect
-	golang.org/x/tools v0.1.3 // indirect
+	google.golang.org/grpc/cmd/protoc-gen-go-grpc v1.1.0 // indirect
 	gopkg.in/ini.v1 v1.52.0 // indirect
 	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 	honnef.co/go/tools v0.2.0 // indirect

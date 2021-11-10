@@ -70,6 +70,7 @@ type ApiServiceClient interface {
 	GetVoterBonus(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*VoterBonus, error)
 	GetCandidateBonus(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*CandidateBonus, error)
 	GetTokenInfo(ctx context.Context, in *GetTokenInfoRequest, opts ...grpc.CallOption) (*TokenInfo, error)
+	GetBlockTxsByRange(ctx context.Context, in *GetBlockTxsByRangeRequest, opts ...grpc.CallOption) (*BlockTxsByRangeResponse, error)
 }
 
 type apiServiceClient struct {
@@ -355,6 +356,15 @@ func (c *apiServiceClient) GetTokenInfo(ctx context.Context, in *GetTokenInfoReq
 	return out, nil
 }
 
+func (c *apiServiceClient) GetBlockTxsByRange(ctx context.Context, in *GetBlockTxsByRangeRequest, opts ...grpc.CallOption) (*BlockTxsByRangeResponse, error) {
+	out := new(BlockTxsByRangeResponse)
+	err := c.cc.Invoke(ctx, "/rpcpb.ApiService/GetBlockTxsByRange", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiServiceServer is the server API for ApiService service.
 // All implementations should embed UnimplementedApiServiceServer
 // for forward compatibility
@@ -411,6 +421,7 @@ type ApiServiceServer interface {
 	GetVoterBonus(context.Context, *GetAccountRequest) (*VoterBonus, error)
 	GetCandidateBonus(context.Context, *GetAccountRequest) (*CandidateBonus, error)
 	GetTokenInfo(context.Context, *GetTokenInfoRequest) (*TokenInfo, error)
+	GetBlockTxsByRange(context.Context, *GetBlockTxsByRangeRequest) (*BlockTxsByRangeResponse, error)
 }
 
 // UnimplementedApiServiceServer should be embedded to have forward compatible implementations.
@@ -500,6 +511,9 @@ func (UnimplementedApiServiceServer) GetCandidateBonus(context.Context, *GetAcco
 }
 func (UnimplementedApiServiceServer) GetTokenInfo(context.Context, *GetTokenInfoRequest) (*TokenInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTokenInfo not implemented")
+}
+func (UnimplementedApiServiceServer) GetBlockTxsByRange(context.Context, *GetBlockTxsByRangeRequest) (*BlockTxsByRangeResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockTxsByRange not implemented")
 }
 
 // UnsafeApiServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -1020,6 +1034,24 @@ func _ApiService_GetTokenInfo_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApiService_GetBlockTxsByRange_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBlockTxsByRangeRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServiceServer).GetBlockTxsByRange(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.ApiService/GetBlockTxsByRange",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServiceServer).GetBlockTxsByRange(ctx, req.(*GetBlockTxsByRangeRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ApiService_ServiceDesc is the grpc.ServiceDesc for ApiService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1134,6 +1166,10 @@ var ApiService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTokenInfo",
 			Handler:    _ApiService_GetTokenInfo_Handler,
+		},
+		{
+			MethodName: "GetBlockTxsByRange",
+			Handler:    _ApiService_GetBlockTxsByRange_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
