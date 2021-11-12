@@ -1040,6 +1040,72 @@ func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemFixed, longe
 	return unfrozen, stillFrozen
 }
 
+// GetBlockTxsByContract returns block txs of a range
+func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetBlockTxsByContractRequest) (*rpcpb.BlockTxsByContractResponse, error) {
+
+	fromBlock := req.GetFromBlock()
+	toBlock := req.GetToBlock()
+	var rangeLimit int64 = 100
+	if toBlock <= fromBlock || toBlock > fromBlock+rangeLimit {
+		return nil, fmt.Errorf("invalid range %v to %v", fromBlock, toBlock)
+	}
+
+	res := &rpcpb.BlockTxsByContractResponse{
+		BlocktxList: make([]*rpcpb.BlockTxs, 0),
+	}
+
+	contract := req.GetContract()
+	action_name := req.GetActionName()
+
+	for bn := fromBlock; bn < toBlock; bn++ {
+		status := rpcpb.BlockResponse_IRREVERSIBLE
+		var (
+			blk *block.Block
+			err error
+		)
+
+		blk, err = as.blockchain.GetBlockByNumber(bn)
+
+		if err != nil {
+			status = rpcpb.BlockResponse_PENDING
+			blk, err = as.bc.GetBlockByNumber(bn)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		rblk := &rpcpb.BlockResponse{
+			Status: status,
+			Block:  toPbBlock(blk, true),
+		}
+
+		rblktx := &rpcpb.BlockTxs{
+			Status:      status,
+			BlockNumber: bn,
+		}
+
+		if rblk.Block.Transactions != nil && len(rblk.Block.Transactions) > 0 {
+			for _, t := range rblk.Block.Transactions {
+				if t.Actions != nil && len(t.Actions) > 0 {
+					for _, a := range t.Actions {
+						if contract != "" && a.Contract == contract && action_name == "" ||
+							contract == "" && action_name != "" && a.ActionName == action_name ||
+							contract != "" && a.Contract == contract && action_name != "" && a.ActionName == action_name ||
+							contract == "" && action_name == "" {
+							rblktx.TxList = append(rblktx.TxList, t)
+							res.BlocktxList = append(res.BlocktxList, rblktx)
+						}
+					}
+				}
+			}
+		}
+
+	}
+
+	return res, nil
+
+}
+
 func formatInternalValue(value interface{}) (data string, err error) {
 	if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
 		data = value.(string)

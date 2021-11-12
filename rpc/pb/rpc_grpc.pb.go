@@ -70,6 +70,7 @@ type ApiServiceClient interface {
 	GetVoterBonus(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*VoterBonus, error)
 	GetCandidateBonus(ctx context.Context, in *GetAccountRequest, opts ...grpc.CallOption) (*CandidateBonus, error)
 	GetTokenInfo(ctx context.Context, in *GetTokenInfoRequest, opts ...grpc.CallOption) (*TokenInfo, error)
+	GetBlockTxsByContract(ctx context.Context, in *GetBlockTxsByContractRequest, opts ...grpc.CallOption) (*BlockTxsByContractResponse, error)
 }
 
 type apiServiceClient struct {
@@ -355,6 +356,15 @@ func (c *apiServiceClient) GetTokenInfo(ctx context.Context, in *GetTokenInfoReq
 	return out, nil
 }
 
+func (c *apiServiceClient) GetBlockTxsByContract(ctx context.Context, in *GetBlockTxsByContractRequest, opts ...grpc.CallOption) (*BlockTxsByContractResponse, error) {
+	out := new(BlockTxsByContractResponse)
+	err := c.cc.Invoke(ctx, "/rpcpb.ApiService/GetBlockTxsByContract", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // ApiServiceServer is the server API for ApiService service.
 // All implementations should embed UnimplementedApiServiceServer
 // for forward compatibility
@@ -411,6 +421,7 @@ type ApiServiceServer interface {
 	GetVoterBonus(context.Context, *GetAccountRequest) (*VoterBonus, error)
 	GetCandidateBonus(context.Context, *GetAccountRequest) (*CandidateBonus, error)
 	GetTokenInfo(context.Context, *GetTokenInfoRequest) (*TokenInfo, error)
+	GetBlockTxsByContract(context.Context, *GetBlockTxsByContractRequest) (*BlockTxsByContractResponse, error)
 }
 
 // UnimplementedApiServiceServer should be embedded to have forward compatible implementations.
@@ -500,6 +511,9 @@ func (UnimplementedApiServiceServer) GetCandidateBonus(context.Context, *GetAcco
 }
 func (UnimplementedApiServiceServer) GetTokenInfo(context.Context, *GetTokenInfoRequest) (*TokenInfo, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetTokenInfo not implemented")
+}
+func (UnimplementedApiServiceServer) GetBlockTxsByContract(context.Context, *GetBlockTxsByContractRequest) (*BlockTxsByContractResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetBlockTxsByContract not implemented")
 }
 
 // UnsafeApiServiceServer may be embedded to opt out of forward compatibility for this service.
@@ -1020,6 +1034,24 @@ func _ApiService_GetTokenInfo_Handler(srv interface{}, ctx context.Context, dec 
 	return interceptor(ctx, in, info, handler)
 }
 
+func _ApiService_GetBlockTxsByContract_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetBlockTxsByContractRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(ApiServiceServer).GetBlockTxsByContract(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/rpcpb.ApiService/GetBlockTxsByContract",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(ApiServiceServer).GetBlockTxsByContract(ctx, req.(*GetBlockTxsByContractRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // ApiService_ServiceDesc is the grpc.ServiceDesc for ApiService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -1134,6 +1166,10 @@ var ApiService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetTokenInfo",
 			Handler:    _ApiService_GetTokenInfo_Handler,
+		},
+		{
+			MethodName: "GetBlockTxsByContract",
+			Handler:    _ApiService_GetBlockTxsByContract_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

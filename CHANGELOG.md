@@ -1,3 +1,11 @@
+## v3.7.1
+Thu Nov  9 17:10:05 UTC 2021
+
+Compatible upgrade.
+
+- Add GetBlockTxsByContract rpc
+- protobuf upgrade
+ 
 ## v3.7.0
 Thu Aug  5 11:01:19 UTC 2021
 

@@ -233,6 +233,38 @@
         ]
       }
     },
+    "/getBlockTxsByContract": {
+      "post": {
+        "operationId": "ApiService_GetBlockTxsByContract",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/rpcpbBlockTxsByContractResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/googlerpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/rpcpbGetBlockTxsByContractRequest"
+            }
+          }
+        ],
+        "tags": [
+          "ApiService"
+        ]
+      }
+    },
     "/getCandidateBonus/{name}/{byLongestChain}": {
       "get": {
         "operationId": "ApiService_GetCandidateBonus",
@@ -1356,14 +1388,11 @@
     "protobufAny": {
       "type": "object",
       "properties": {
-        "typeUrl": {
+        "@type": {
           "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
         }
-      }
+      },
+      "additionalProperties": {}
     },
     "rpcpbAccount": {
       "type": "object",
@@ -1570,6 +1599,38 @@
       ],
       "default": "PENDING",
       "description": "The enumeration defines block status.\n\n - PENDING: pending in block cache\n - IRREVERSIBLE: irreversible"
+    },
+    "rpcpbBlockTxs": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/rpcpbBlockResponseStatus",
+          "title": "block status"
+        },
+        "blockNumber": {
+          "type": "string",
+          "format": "int64",
+          "title": "block number"
+        },
+        "txList": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbTransaction"
+          },
+          "title": "transaction"
+        }
+      }
+    },
+    "rpcpbBlockTxsByContractResponse": {
+      "type": "object",
+      "properties": {
+        "blocktxList": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/rpcpbBlockTxs"
+          }
+        }
+      }
     },
     "rpcpbCandidateBonus": {
       "type": "object",
@@ -1826,6 +1887,25 @@
         }
       },
       "title": "The request message containing range start and end"
+    },
+    "rpcpbGetBlockTxsByContractRequest": {
+      "type": "object",
+      "properties": {
+        "fromBlock": {
+          "type": "string",
+          "format": "int64"
+        },
+        "toBlock": {
+          "type": "string",
+          "format": "int64"
+        },
+        "contract": {
+          "type": "string"
+        },
+        "actionName": {
+          "type": "string"
+        }
+      }
     },
     "rpcpbGetContractStorageFieldsRequest": {
       "type": "object",
