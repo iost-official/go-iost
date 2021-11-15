@@ -190,7 +190,7 @@ var BenchmarkToken721Action = func(c *cli.Context) error {
 			// create 1, issue 1000, transfer 1000, balanceOf 100, ownerOf 100, tokenOfOwner 100, tokenMetadata 100
 			tIndex := rand.Intn(2400)
 			var abiName string
-			switch true {
+			switch {
 			case tIndex <= 0 || len(tokenList) < 5:
 				abiName = createToken721
 				tokenSym := tokenPrefix + strconv.FormatInt(int64(tokenOffset), 10)

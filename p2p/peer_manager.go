@@ -462,7 +462,7 @@ func (pm *PeerManager) DumpRoutingTable() {
 
 // LoadRoutingTable reads routing table file and parses it.
 func (pm *PeerManager) LoadRoutingTable() {
-	routingFile := filepath.Join(pm.config.DataPath + routingTableFile)
+	routingFile := filepath.Join(pm.config.DataPath, routingTableFile)
 	if _, err := os.Stat(routingFile); err != nil {
 		if os.IsNotExist(err) {
 			ilog.Infof("no routing file. file=%v", routingFile)

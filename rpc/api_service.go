@@ -37,7 +37,7 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
-//go:generate mockgen -destination mock_rpc/mock_api.go -package main github.com/iost-official/go-iost/v3/rpc/pb ApiServiceServer
+//go:generate mockgen --build_flags=--mod=mod -destination mock_rpc/mock_api.go -package main github.com/iost-official/go-iost/v3/rpc/pb ApiServiceServer
 
 // APIService implements all rpc APIs.
 type APIService struct {
@@ -1042,7 +1042,6 @@ func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemFixed, longe
 
 // GetBlockTxsByContract returns block txs of a range
 func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetBlockTxsByContractRequest) (*rpcpb.BlockTxsByContractResponse, error) {
-
 	fromBlock := req.GetFromBlock()
 	toBlock := req.GetToBlock()
 	var rangeLimit int64 = 100
@@ -1099,11 +1098,9 @@ func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetB
 				}
 			}
 		}
-
 	}
 
 	return res, nil
-
 }
 
 func formatInternalValue(value interface{}) (data string, err error) {

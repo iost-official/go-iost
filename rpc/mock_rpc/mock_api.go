@@ -6,393 +6,465 @@ package main
 
 import (
 	context "context"
-	gomock "github.com/golang/mock/gomock"
-	pb "github.com/iost-official/go-iost/v3/rpc/pb"
 	reflect "reflect"
+
+	gomock "github.com/golang/mock/gomock"
+	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 )
 
-// MockApiServiceServer is a mock of ApiServiceServer interface
+// MockApiServiceServer is a mock of ApiServiceServer interface.
 type MockApiServiceServer struct {
 	ctrl     *gomock.Controller
 	recorder *MockApiServiceServerMockRecorder
 }
 
-// MockApiServiceServerMockRecorder is the mock recorder for MockApiServiceServer
+// MockApiServiceServerMockRecorder is the mock recorder for MockApiServiceServer.
 type MockApiServiceServerMockRecorder struct {
 	mock *MockApiServiceServer
 }
 
-// NewMockApiServiceServer creates a new mock instance
+// NewMockApiServiceServer creates a new mock instance.
 func NewMockApiServiceServer(ctrl *gomock.Controller) *MockApiServiceServer {
 	mock := &MockApiServiceServer{ctrl: ctrl}
 	mock.recorder = &MockApiServiceServerMockRecorder{mock}
 	return mock
 }
 
-// EXPECT returns an object that allows the caller to indicate expected use
+// EXPECT returns an object that allows the caller to indicate expected use.
 func (m *MockApiServiceServer) EXPECT() *MockApiServiceServerMockRecorder {
 	return m.recorder
 }
 
-// ExecTransaction mocks base method
-func (m *MockApiServiceServer) ExecTransaction(arg0 context.Context, arg1 *pb.TransactionRequest) (*pb.TxReceipt, error) {
+// ExecTransaction mocks base method.
+func (m *MockApiServiceServer) ExecTransaction(arg0 context.Context, arg1 *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ExecTransaction", arg0, arg1)
-	ret0, _ := ret[0].(*pb.TxReceipt)
+	ret0, _ := ret[0].(*rpcpb.TxReceipt)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ExecTransaction indicates an expected call of ExecTransaction
+// ExecTransaction indicates an expected call of ExecTransaction.
 func (mr *MockApiServiceServerMockRecorder) ExecTransaction(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ExecTransaction", reflect.TypeOf((*MockApiServiceServer)(nil).ExecTransaction), arg0, arg1)
 }
 
-// GetAccount mocks base method
-func (m *MockApiServiceServer) GetAccount(arg0 context.Context, arg1 *pb.GetAccountRequest) (*pb.Account, error) {
+// GetAccount mocks base method.
+func (m *MockApiServiceServer) GetAccount(arg0 context.Context, arg1 *rpcpb.GetAccountRequest) (*rpcpb.Account, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetAccount", arg0, arg1)
-	ret0, _ := ret[0].(*pb.Account)
+	ret0, _ := ret[0].(*rpcpb.Account)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetAccount indicates an expected call of GetAccount
+// GetAccount indicates an expected call of GetAccount.
 func (mr *MockApiServiceServerMockRecorder) GetAccount(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetAccount", reflect.TypeOf((*MockApiServiceServer)(nil).GetAccount), arg0, arg1)
 }
 
-// GetBatchContractStorage mocks base method
-func (m *MockApiServiceServer) GetBatchContractStorage(arg0 context.Context, arg1 *pb.GetBatchContractStorageRequest) (*pb.GetBatchContractStorageResponse, error) {
+// GetBatchContractStorage mocks base method.
+func (m *MockApiServiceServer) GetBatchContractStorage(arg0 context.Context, arg1 *rpcpb.GetBatchContractStorageRequest) (*rpcpb.GetBatchContractStorageResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBatchContractStorage", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetBatchContractStorageResponse)
+	ret0, _ := ret[0].(*rpcpb.GetBatchContractStorageResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetBatchContractStorage indicates an expected call of GetBatchContractStorage
+// GetBatchContractStorage indicates an expected call of GetBatchContractStorage.
 func (mr *MockApiServiceServerMockRecorder) GetBatchContractStorage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBatchContractStorage", reflect.TypeOf((*MockApiServiceServer)(nil).GetBatchContractStorage), arg0, arg1)
 }
 
-// GetBlockByHash mocks base method
-func (m *MockApiServiceServer) GetBlockByHash(arg0 context.Context, arg1 *pb.GetBlockByHashRequest) (*pb.BlockResponse, error) {
+// GetBlockByHash mocks base method.
+func (m *MockApiServiceServer) GetBlockByHash(arg0 context.Context, arg1 *rpcpb.GetBlockByHashRequest) (*rpcpb.BlockResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBlockByHash", arg0, arg1)
-	ret0, _ := ret[0].(*pb.BlockResponse)
+	ret0, _ := ret[0].(*rpcpb.BlockResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetBlockByHash indicates an expected call of GetBlockByHash
+// GetBlockByHash indicates an expected call of GetBlockByHash.
 func (mr *MockApiServiceServerMockRecorder) GetBlockByHash(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByHash", reflect.TypeOf((*MockApiServiceServer)(nil).GetBlockByHash), arg0, arg1)
 }
 
-// GetBlockByNumber mocks base method
-func (m *MockApiServiceServer) GetBlockByNumber(arg0 context.Context, arg1 *pb.GetBlockByNumberRequest) (*pb.BlockResponse, error) {
+// GetBlockByNumber mocks base method.
+func (m *MockApiServiceServer) GetBlockByNumber(arg0 context.Context, arg1 *rpcpb.GetBlockByNumberRequest) (*rpcpb.BlockResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBlockByNumber", arg0, arg1)
-	ret0, _ := ret[0].(*pb.BlockResponse)
+	ret0, _ := ret[0].(*rpcpb.BlockResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetBlockByNumber indicates an expected call of GetBlockByNumber
+// GetBlockByNumber indicates an expected call of GetBlockByNumber.
 func (mr *MockApiServiceServerMockRecorder) GetBlockByNumber(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockByNumber", reflect.TypeOf((*MockApiServiceServer)(nil).GetBlockByNumber), arg0, arg1)
 }
 
-// GetBlockHeaderByRange mocks base method
-func (m *MockApiServiceServer) GetBlockHeaderByRange(arg0 context.Context, arg1 *pb.GetBlockHeaderByRangeRequest) (*pb.BlockHeaderByRangeResponse, error) {
+// GetBlockHeaderByRange mocks base method.
+func (m *MockApiServiceServer) GetBlockHeaderByRange(arg0 context.Context, arg1 *rpcpb.GetBlockHeaderByRangeRequest) (*rpcpb.BlockHeaderByRangeResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetBlockHeaderByRange", arg0, arg1)
-	ret0, _ := ret[0].(*pb.BlockHeaderByRangeResponse)
+	ret0, _ := ret[0].(*rpcpb.BlockHeaderByRangeResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetBlockHeaderByRange indicates an expected call of GetBlockHeaderByRange
+// GetBlockHeaderByRange indicates an expected call of GetBlockHeaderByRange.
 func (mr *MockApiServiceServerMockRecorder) GetBlockHeaderByRange(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockHeaderByRange", reflect.TypeOf((*MockApiServiceServer)(nil).GetBlockHeaderByRange), arg0, arg1)
 }
 
-// GetCandidateBonus mocks base method
-func (m *MockApiServiceServer) GetCandidateBonus(arg0 context.Context, arg1 *pb.GetAccountRequest) (*pb.CandidateBonus, error) {
-	ret := m.ctrl.Call(m, "GetCandidateBonus", arg0, arg1)
-	ret0, _ := ret[0].(*pb.CandidateBonus)
+// GetBlockTxsByContract mocks base method.
+func (m *MockApiServiceServer) GetBlockTxsByContract(arg0 context.Context, arg1 *rpcpb.GetBlockTxsByContractRequest) (*rpcpb.BlockTxsByContractResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBlockTxsByContract", arg0, arg1)
+	ret0, _ := ret[0].(*rpcpb.BlockTxsByContractResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetCandidateBonus indicates an expected call of GetCandidateBonus
+// GetBlockTxsByContract indicates an expected call of GetBlockTxsByContract.
+func (mr *MockApiServiceServerMockRecorder) GetBlockTxsByContract(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBlockTxsByContract", reflect.TypeOf((*MockApiServiceServer)(nil).GetBlockTxsByContract), arg0, arg1)
+}
+
+// GetCandidateBonus mocks base method.
+func (m *MockApiServiceServer) GetCandidateBonus(arg0 context.Context, arg1 *rpcpb.GetAccountRequest) (*rpcpb.CandidateBonus, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCandidateBonus", arg0, arg1)
+	ret0, _ := ret[0].(*rpcpb.CandidateBonus)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCandidateBonus indicates an expected call of GetCandidateBonus.
 func (mr *MockApiServiceServerMockRecorder) GetCandidateBonus(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCandidateBonus", reflect.TypeOf((*MockApiServiceServer)(nil).GetCandidateBonus), arg0, arg1)
 }
 
-// GetChainInfo mocks base method
-func (m *MockApiServiceServer) GetChainInfo(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.ChainInfoResponse, error) {
+// GetChainInfo mocks base method.
+func (m *MockApiServiceServer) GetChainInfo(arg0 context.Context, arg1 *rpcpb.EmptyRequest) (*rpcpb.ChainInfoResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetChainInfo", arg0, arg1)
-	ret0, _ := ret[0].(*pb.ChainInfoResponse)
+	ret0, _ := ret[0].(*rpcpb.ChainInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetChainInfo indicates an expected call of GetChainInfo
+// GetChainInfo indicates an expected call of GetChainInfo.
 func (mr *MockApiServiceServerMockRecorder) GetChainInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetChainInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetChainInfo), arg0, arg1)
 }
 
-// GetContract mocks base method
-func (m *MockApiServiceServer) GetContract(arg0 context.Context, arg1 *pb.GetContractRequest) (*pb.Contract, error) {
+// GetContract mocks base method.
+func (m *MockApiServiceServer) GetContract(arg0 context.Context, arg1 *rpcpb.GetContractRequest) (*rpcpb.Contract, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContract", arg0, arg1)
-	ret0, _ := ret[0].(*pb.Contract)
+	ret0, _ := ret[0].(*rpcpb.Contract)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetContract indicates an expected call of GetContract
+// GetContract indicates an expected call of GetContract.
 func (mr *MockApiServiceServerMockRecorder) GetContract(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContract", reflect.TypeOf((*MockApiServiceServer)(nil).GetContract), arg0, arg1)
 }
 
-// GetContractStorage mocks base method
-func (m *MockApiServiceServer) GetContractStorage(arg0 context.Context, arg1 *pb.GetContractStorageRequest) (*pb.GetContractStorageResponse, error) {
+// GetContractStorage mocks base method.
+func (m *MockApiServiceServer) GetContractStorage(arg0 context.Context, arg1 *rpcpb.GetContractStorageRequest) (*rpcpb.GetContractStorageResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContractStorage", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetContractStorageResponse)
+	ret0, _ := ret[0].(*rpcpb.GetContractStorageResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetContractStorage indicates an expected call of GetContractStorage
+// GetContractStorage indicates an expected call of GetContractStorage.
 func (mr *MockApiServiceServerMockRecorder) GetContractStorage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractStorage", reflect.TypeOf((*MockApiServiceServer)(nil).GetContractStorage), arg0, arg1)
 }
 
-// GetContractStorageFields mocks base method
-func (m *MockApiServiceServer) GetContractStorageFields(arg0 context.Context, arg1 *pb.GetContractStorageFieldsRequest) (*pb.GetContractStorageFieldsResponse, error) {
+// GetContractStorageFields mocks base method.
+func (m *MockApiServiceServer) GetContractStorageFields(arg0 context.Context, arg1 *rpcpb.GetContractStorageFieldsRequest) (*rpcpb.GetContractStorageFieldsResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContractStorageFields", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetContractStorageFieldsResponse)
+	ret0, _ := ret[0].(*rpcpb.GetContractStorageFieldsResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetContractStorageFields indicates an expected call of GetContractStorageFields
+// GetContractStorageFields indicates an expected call of GetContractStorageFields.
 func (mr *MockApiServiceServerMockRecorder) GetContractStorageFields(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractStorageFields", reflect.TypeOf((*MockApiServiceServer)(nil).GetContractStorageFields), arg0, arg1)
 }
 
-// GetContractVote mocks base method
-func (m *MockApiServiceServer) GetContractVote(arg0 context.Context, arg1 *pb.GetContractRequest) (*pb.ContractVote, error) {
+// GetContractVote mocks base method.
+func (m *MockApiServiceServer) GetContractVote(arg0 context.Context, arg1 *rpcpb.GetContractRequest) (*rpcpb.ContractVote, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetContractVote", arg0, arg1)
-	ret0, _ := ret[0].(*pb.ContractVote)
+	ret0, _ := ret[0].(*rpcpb.ContractVote)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetContractVote indicates an expected call of GetContractVote
+// GetContractVote indicates an expected call of GetContractVote.
 func (mr *MockApiServiceServerMockRecorder) GetContractVote(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetContractVote", reflect.TypeOf((*MockApiServiceServer)(nil).GetContractVote), arg0, arg1)
 }
 
-// GetGasRatio mocks base method
-func (m *MockApiServiceServer) GetGasRatio(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.GasRatioResponse, error) {
+// GetGasRatio mocks base method.
+func (m *MockApiServiceServer) GetGasRatio(arg0 context.Context, arg1 *rpcpb.EmptyRequest) (*rpcpb.GasRatioResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetGasRatio", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GasRatioResponse)
+	ret0, _ := ret[0].(*rpcpb.GasRatioResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetGasRatio indicates an expected call of GetGasRatio
+// GetGasRatio indicates an expected call of GetGasRatio.
 func (mr *MockApiServiceServerMockRecorder) GetGasRatio(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetGasRatio", reflect.TypeOf((*MockApiServiceServer)(nil).GetGasRatio), arg0, arg1)
 }
 
-// GetNodeInfo mocks base method
-func (m *MockApiServiceServer) GetNodeInfo(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.NodeInfoResponse, error) {
+// GetNodeInfo mocks base method.
+func (m *MockApiServiceServer) GetNodeInfo(arg0 context.Context, arg1 *rpcpb.EmptyRequest) (*rpcpb.NodeInfoResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetNodeInfo", arg0, arg1)
-	ret0, _ := ret[0].(*pb.NodeInfoResponse)
+	ret0, _ := ret[0].(*rpcpb.NodeInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetNodeInfo indicates an expected call of GetNodeInfo
+// GetNodeInfo indicates an expected call of GetNodeInfo.
 func (mr *MockApiServiceServerMockRecorder) GetNodeInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetNodeInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetNodeInfo), arg0, arg1)
 }
 
-// GetProducerVoteInfo mocks base method
-func (m *MockApiServiceServer) GetProducerVoteInfo(arg0 context.Context, arg1 *pb.GetProducerVoteInfoRequest) (*pb.GetProducerVoteInfoResponse, error) {
+// GetProducerVoteInfo mocks base method.
+func (m *MockApiServiceServer) GetProducerVoteInfo(arg0 context.Context, arg1 *rpcpb.GetProducerVoteInfoRequest) (*rpcpb.GetProducerVoteInfoResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetProducerVoteInfo", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetProducerVoteInfoResponse)
+	ret0, _ := ret[0].(*rpcpb.GetProducerVoteInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetProducerVoteInfo indicates an expected call of GetProducerVoteInfo
+// GetProducerVoteInfo indicates an expected call of GetProducerVoteInfo.
 func (mr *MockApiServiceServerMockRecorder) GetProducerVoteInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProducerVoteInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetProducerVoteInfo), arg0, arg1)
 }
 
-// GetRAMInfo mocks base method
-func (m *MockApiServiceServer) GetRAMInfo(arg0 context.Context, arg1 *pb.EmptyRequest) (*pb.RAMInfoResponse, error) {
+// GetRAMInfo mocks base method.
+func (m *MockApiServiceServer) GetRAMInfo(arg0 context.Context, arg1 *rpcpb.EmptyRequest) (*rpcpb.RAMInfoResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRAMInfo", arg0, arg1)
-	ret0, _ := ret[0].(*pb.RAMInfoResponse)
+	ret0, _ := ret[0].(*rpcpb.RAMInfoResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetRAMInfo indicates an expected call of GetRAMInfo
+// GetRAMInfo indicates an expected call of GetRAMInfo.
 func (mr *MockApiServiceServerMockRecorder) GetRAMInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRAMInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetRAMInfo), arg0, arg1)
 }
 
-// GetRawBlockByNumber mocks base method
-func (m *MockApiServiceServer) GetRawBlockByNumber(arg0 context.Context, arg1 *pb.GetBlockByNumberRequest) (*pb.RawBlockResponse, error) {
+// GetRawBlockByNumber mocks base method.
+func (m *MockApiServiceServer) GetRawBlockByNumber(arg0 context.Context, arg1 *rpcpb.GetBlockByNumberRequest) (*rpcpb.RawBlockResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetRawBlockByNumber", arg0, arg1)
-	ret0, _ := ret[0].(*pb.RawBlockResponse)
+	ret0, _ := ret[0].(*rpcpb.RawBlockResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetRawBlockByNumber indicates an expected call of GetRawBlockByNumber
+// GetRawBlockByNumber indicates an expected call of GetRawBlockByNumber.
 func (mr *MockApiServiceServerMockRecorder) GetRawBlockByNumber(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetRawBlockByNumber", reflect.TypeOf((*MockApiServiceServer)(nil).GetRawBlockByNumber), arg0, arg1)
 }
 
-// GetToken721Balance mocks base method
-func (m *MockApiServiceServer) GetToken721Balance(arg0 context.Context, arg1 *pb.GetTokenBalanceRequest) (*pb.GetToken721BalanceResponse, error) {
+// GetToken721Balance mocks base method.
+func (m *MockApiServiceServer) GetToken721Balance(arg0 context.Context, arg1 *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetToken721BalanceResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetToken721Balance", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetToken721BalanceResponse)
+	ret0, _ := ret[0].(*rpcpb.GetToken721BalanceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetToken721Balance indicates an expected call of GetToken721Balance
+// GetToken721Balance indicates an expected call of GetToken721Balance.
 func (mr *MockApiServiceServerMockRecorder) GetToken721Balance(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToken721Balance", reflect.TypeOf((*MockApiServiceServer)(nil).GetToken721Balance), arg0, arg1)
 }
 
-// GetToken721Metadata mocks base method
-func (m *MockApiServiceServer) GetToken721Metadata(arg0 context.Context, arg1 *pb.GetToken721InfoRequest) (*pb.GetToken721MetadataResponse, error) {
+// GetToken721Metadata mocks base method.
+func (m *MockApiServiceServer) GetToken721Metadata(arg0 context.Context, arg1 *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721MetadataResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetToken721Metadata", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetToken721MetadataResponse)
+	ret0, _ := ret[0].(*rpcpb.GetToken721MetadataResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetToken721Metadata indicates an expected call of GetToken721Metadata
+// GetToken721Metadata indicates an expected call of GetToken721Metadata.
 func (mr *MockApiServiceServerMockRecorder) GetToken721Metadata(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToken721Metadata", reflect.TypeOf((*MockApiServiceServer)(nil).GetToken721Metadata), arg0, arg1)
 }
 
-// GetToken721Owner mocks base method
-func (m *MockApiServiceServer) GetToken721Owner(arg0 context.Context, arg1 *pb.GetToken721InfoRequest) (*pb.GetToken721OwnerResponse, error) {
+// GetToken721Owner mocks base method.
+func (m *MockApiServiceServer) GetToken721Owner(arg0 context.Context, arg1 *rpcpb.GetToken721InfoRequest) (*rpcpb.GetToken721OwnerResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetToken721Owner", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetToken721OwnerResponse)
+	ret0, _ := ret[0].(*rpcpb.GetToken721OwnerResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetToken721Owner indicates an expected call of GetToken721Owner
+// GetToken721Owner indicates an expected call of GetToken721Owner.
 func (mr *MockApiServiceServerMockRecorder) GetToken721Owner(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetToken721Owner", reflect.TypeOf((*MockApiServiceServer)(nil).GetToken721Owner), arg0, arg1)
 }
 
-// GetTokenBalance mocks base method
-func (m *MockApiServiceServer) GetTokenBalance(arg0 context.Context, arg1 *pb.GetTokenBalanceRequest) (*pb.GetTokenBalanceResponse, error) {
+// GetTokenBalance mocks base method.
+func (m *MockApiServiceServer) GetTokenBalance(arg0 context.Context, arg1 *rpcpb.GetTokenBalanceRequest) (*rpcpb.GetTokenBalanceResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTokenBalance", arg0, arg1)
-	ret0, _ := ret[0].(*pb.GetTokenBalanceResponse)
+	ret0, _ := ret[0].(*rpcpb.GetTokenBalanceResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTokenBalance indicates an expected call of GetTokenBalance
+// GetTokenBalance indicates an expected call of GetTokenBalance.
 func (mr *MockApiServiceServerMockRecorder) GetTokenBalance(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTokenBalance", reflect.TypeOf((*MockApiServiceServer)(nil).GetTokenBalance), arg0, arg1)
 }
 
-// GetTokenInfo mocks base method
-func (m *MockApiServiceServer) GetTokenInfo(arg0 context.Context, arg1 *pb.GetTokenInfoRequest) (*pb.TokenInfo, error) {
+// GetTokenInfo mocks base method.
+func (m *MockApiServiceServer) GetTokenInfo(arg0 context.Context, arg1 *rpcpb.GetTokenInfoRequest) (*rpcpb.TokenInfo, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTokenInfo", arg0, arg1)
-	ret0, _ := ret[0].(*pb.TokenInfo)
+	ret0, _ := ret[0].(*rpcpb.TokenInfo)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTokenInfo indicates an expected call of GetTokenInfo
+// GetTokenInfo indicates an expected call of GetTokenInfo.
 func (mr *MockApiServiceServerMockRecorder) GetTokenInfo(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTokenInfo", reflect.TypeOf((*MockApiServiceServer)(nil).GetTokenInfo), arg0, arg1)
 }
 
-// GetTxByHash mocks base method
-func (m *MockApiServiceServer) GetTxByHash(arg0 context.Context, arg1 *pb.TxHashRequest) (*pb.TransactionResponse, error) {
+// GetTxByHash mocks base method.
+func (m *MockApiServiceServer) GetTxByHash(arg0 context.Context, arg1 *rpcpb.TxHashRequest) (*rpcpb.TransactionResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTxByHash", arg0, arg1)
-	ret0, _ := ret[0].(*pb.TransactionResponse)
+	ret0, _ := ret[0].(*rpcpb.TransactionResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTxByHash indicates an expected call of GetTxByHash
+// GetTxByHash indicates an expected call of GetTxByHash.
 func (mr *MockApiServiceServerMockRecorder) GetTxByHash(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTxByHash", reflect.TypeOf((*MockApiServiceServer)(nil).GetTxByHash), arg0, arg1)
 }
 
-// GetTxReceiptByTxHash mocks base method
-func (m *MockApiServiceServer) GetTxReceiptByTxHash(arg0 context.Context, arg1 *pb.TxHashRequest) (*pb.TxReceipt, error) {
+// GetTxReceiptByTxHash mocks base method.
+func (m *MockApiServiceServer) GetTxReceiptByTxHash(arg0 context.Context, arg1 *rpcpb.TxHashRequest) (*rpcpb.TxReceipt, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetTxReceiptByTxHash", arg0, arg1)
-	ret0, _ := ret[0].(*pb.TxReceipt)
+	ret0, _ := ret[0].(*rpcpb.TxReceipt)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetTxReceiptByTxHash indicates an expected call of GetTxReceiptByTxHash
+// GetTxReceiptByTxHash indicates an expected call of GetTxReceiptByTxHash.
 func (mr *MockApiServiceServerMockRecorder) GetTxReceiptByTxHash(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetTxReceiptByTxHash", reflect.TypeOf((*MockApiServiceServer)(nil).GetTxReceiptByTxHash), arg0, arg1)
 }
 
-// GetVoterBonus mocks base method
-func (m *MockApiServiceServer) GetVoterBonus(arg0 context.Context, arg1 *pb.GetAccountRequest) (*pb.VoterBonus, error) {
+// GetVoterBonus mocks base method.
+func (m *MockApiServiceServer) GetVoterBonus(arg0 context.Context, arg1 *rpcpb.GetAccountRequest) (*rpcpb.VoterBonus, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetVoterBonus", arg0, arg1)
-	ret0, _ := ret[0].(*pb.VoterBonus)
+	ret0, _ := ret[0].(*rpcpb.VoterBonus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// GetVoterBonus indicates an expected call of GetVoterBonus
+// GetVoterBonus indicates an expected call of GetVoterBonus.
 func (mr *MockApiServiceServerMockRecorder) GetVoterBonus(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetVoterBonus", reflect.TypeOf((*MockApiServiceServer)(nil).GetVoterBonus), arg0, arg1)
 }
 
-// ListContractStorage mocks base method
-func (m *MockApiServiceServer) ListContractStorage(arg0 context.Context, arg1 *pb.ListContractStorageRequest) (*pb.ListContractStorageResponse, error) {
+// ListContractStorage mocks base method.
+func (m *MockApiServiceServer) ListContractStorage(arg0 context.Context, arg1 *rpcpb.ListContractStorageRequest) (*rpcpb.ListContractStorageResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ListContractStorage", arg0, arg1)
-	ret0, _ := ret[0].(*pb.ListContractStorageResponse)
+	ret0, _ := ret[0].(*rpcpb.ListContractStorageResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// ListContractStorage indicates an expected call of ListContractStorage
+// ListContractStorage indicates an expected call of ListContractStorage.
 func (mr *MockApiServiceServerMockRecorder) ListContractStorage(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListContractStorage", reflect.TypeOf((*MockApiServiceServer)(nil).ListContractStorage), arg0, arg1)
 }
 
-// SendTransaction mocks base method
-func (m *MockApiServiceServer) SendTransaction(arg0 context.Context, arg1 *pb.TransactionRequest) (*pb.SendTransactionResponse, error) {
+// SendTransaction mocks base method.
+func (m *MockApiServiceServer) SendTransaction(arg0 context.Context, arg1 *rpcpb.TransactionRequest) (*rpcpb.SendTransactionResponse, error) {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "SendTransaction", arg0, arg1)
-	ret0, _ := ret[0].(*pb.SendTransactionResponse)
+	ret0, _ := ret[0].(*rpcpb.SendTransactionResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
-// SendTransaction indicates an expected call of SendTransaction
+// SendTransaction indicates an expected call of SendTransaction.
 func (mr *MockApiServiceServerMockRecorder) SendTransaction(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendTransaction", reflect.TypeOf((*MockApiServiceServer)(nil).SendTransaction), arg0, arg1)
 }
 
-// Subscribe mocks base method
-func (m *MockApiServiceServer) Subscribe(arg0 *pb.SubscribeRequest, arg1 pb.ApiService_SubscribeServer) error {
+// Subscribe mocks base method.
+func (m *MockApiServiceServer) Subscribe(arg0 *rpcpb.SubscribeRequest, arg1 rpcpb.ApiService_SubscribeServer) error {
+	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Subscribe", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
-// Subscribe indicates an expected call of Subscribe
+// Subscribe indicates an expected call of Subscribe.
 func (mr *MockApiServiceServerMockRecorder) Subscribe(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Subscribe", reflect.TypeOf((*MockApiServiceServer)(nil).Subscribe), arg0, arg1)
 }

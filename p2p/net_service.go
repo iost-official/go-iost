@@ -20,7 +20,7 @@ import (
 	mplex "github.com/whyrusleeping/go-smux-multiplex"
 )
 
-//go:generate mockgen -destination mocks/mock_service.go -package p2p_mock github.com/iost-official/go-iost/v3/p2p Service
+//go:generate mockgen --build_flags=--mod=mod -destination mocks/mock_service.go -package p2p_mock github.com/iost-official/go-iost/v3/p2p Service
 
 // PeerID is the alias of peer.ID
 type PeerID = peer.ID
