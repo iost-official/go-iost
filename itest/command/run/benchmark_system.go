@@ -150,7 +150,7 @@ var BenchmarkSystemAction = func(c *cli.Context) error {
 			// receipt 1, requireAuth 1, setCode 1, updateCode 1, cancelDelayTx 1
 			tIndex := rand.Intn(5)
 			var abiName string
-			switch true {
+			switch {
 			case tIndex <= 0 || len(contractList) == 0:
 				abiName = setCode
 				from := accounts[rand.Intn(len(accounts))]
