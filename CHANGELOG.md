@@ -5,6 +5,7 @@ Compatible upgrade.
 
 - Add GetBlockTxsByContract rpc
 - protobuf upgrade
+- upgrade Go to 1.17
  
 ## v3.7.0
 Thu Aug  5 11:01:19 UTC 2021

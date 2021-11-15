@@ -1,12 +1,4 @@
-<p>
-<img src="https://i.loli.net/2019/02/24/5c72b13b98f8e.jpeg" >
-</p>
-
 # IOST - A Scalable & Developer Friendly Blockchain 
-
-[![Go Report Card](https://goreportcard.com/badge/github.com/iost-official/go-iost)](https://goreportcard.com/report/github.com/iost-official/go-iost)
-[![Build Status](https://api.travis-ci.com/iost-official/go-iost.svg?branch=master)](https://api.travis-ci.com/iost-official/go-iost.svg?branch=master)
-[![codecov](https://codecov.io/gh/iost-official/go-iost/branch/master/graph/badge.svg)](https://codecov.io/gh/iost-official/go-iost)
 
 IOST is a smart contract platform focusing on performance and developer friendliness. 
 
