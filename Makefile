@@ -5,7 +5,7 @@ GO_INSTALL := $(GO) install -mod vendor
 
 PROJECT_NAME := $(shell basename "$(PWD)")
 BUILDER_VERSION = 3.7.1
-VERSION = 3.7.1
+VERSION = 3.7.2
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -125,8 +125,10 @@ devpush: dev_image_tag
 	docker push $(DOCKER_DEVIMAGE)
 	docker push iostio/iost-dev:latest
 
-release: devimage devpush release_image
-	docker push $(DOCKER_RELEASE_IMAGE)
+release: release_image
+        docker push $(DOCKER_RELEASE_IMAGE)
+        docker tag $(DOCKER_RELEASE_IMAGE) iostio/iost-node:latest
+        docker push iostio/iost-node:latest
 
 protobuf:
 	./script/gen_protobuf.sh
