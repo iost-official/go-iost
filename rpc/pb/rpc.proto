@@ -418,6 +418,7 @@ message TransactionRequest {
     string publisher = 11;
     // signatures of publisher
     repeated Signature publisher_sigs = 12;
+    string reserved = 13;
 }
 
 // The message defines the block struct.

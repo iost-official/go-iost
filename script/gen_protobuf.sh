@@ -41,7 +41,7 @@ function generate_openapi() {
 		rpc/pb/rpc.proto
 }
 
-install_tools
+#install_tools
 generate_proto_and_grpc
 generate_grpc_gateway
 generate_openapi
