@@ -126,9 +126,9 @@ devpush: dev_image_tag
 	docker push iostio/iost-dev:latest
 
 release: release_image
-        docker push $(DOCKER_RELEASE_IMAGE)
-        docker tag $(DOCKER_RELEASE_IMAGE) iostio/iost-node:latest
-        docker push iostio/iost-node:latest
+	docker push $(DOCKER_RELEASE_IMAGE)
+	docker tag $(DOCKER_RELEASE_IMAGE) iostio/iost-node:latest
+	docker push iostio/iost-node:latest
 
 protobuf:
 	./script/gen_protobuf.sh
