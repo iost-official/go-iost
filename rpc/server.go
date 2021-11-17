@@ -105,7 +105,10 @@ func (s *Server) startGrpc() error {
 
 func (s *Server) startGateway() error {
 	marshaler := &runtime.JSONPb{
-		MarshalOptions: protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true}}
+		MarshalOptions: protojson.MarshalOptions{UseProtoNames: true, EmitUnpopulated: true},
+		UnmarshalOptions: protojson.UnmarshalOptions{
+			DiscardUnknown: true,
+		}}
 	marshalerOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler)
 	errOption := runtime.WithErrorHandler(errorHandler)
 	mux := runtime.NewServeMux(marshalerOption, errOption)
