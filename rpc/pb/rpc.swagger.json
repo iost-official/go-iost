@@ -1388,14 +1388,11 @@
     "protobufAny": {
       "type": "object",
       "properties": {
-        "typeUrl": {
+        "@type": {
           "type": "string"
-        },
-        "value": {
-          "type": "string",
-          "format": "byte"
         }
-      }
+      },
+      "additionalProperties": {}
     },
     "rpcpbAccount": {
       "type": "object",
@@ -2488,9 +2485,6 @@
             "$ref": "#/definitions/rpcpbSignature"
           },
           "title": "signatures of publisher"
-        },
-        "reserved": {
-          "type": "string"
         }
       },
       "description": "The message defines the transaction request."
