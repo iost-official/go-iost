@@ -1056,7 +1056,7 @@ func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetB
 	contract := req.GetContract()
 	action_name := req.GetActionName()
 
-	for bn := fromBlock; bn < toBlock; bn++ {
+	for bn := fromBlock; bn <= toBlock; bn++ {
 		status := rpcpb.BlockResponse_IRREVERSIBLE
 		var (
 			blk *block.Block
@@ -1087,16 +1087,21 @@ func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetB
 			for _, t := range rblk.Block.Transactions {
 				if t.Actions != nil && len(t.Actions) > 0 {
 					for _, a := range t.Actions {
-						if contract != "" && a.Contract == contract && action_name == "" ||
-							contract == "" && action_name != "" && a.ActionName == action_name ||
-							contract != "" && a.Contract == contract && action_name != "" && a.ActionName == action_name ||
-							contract == "" && action_name == "" {
+						if (contract != "" && a.Contract == contract && action_name == "") ||
+							(contract == "" && action_name != "" && a.ActionName == action_name) ||
+							(contract != "" && a.Contract == contract && action_name != "" && a.ActionName == action_name) ||
+							(contract == "" && action_name == "") {
 							rblktx.TxList = append(rblktx.TxList, t)
-							res.BlocktxList = append(res.BlocktxList, rblktx)
+
+							break
 						}
 					}
 				}
 			}
+		}
+
+		if rblktx.TxList != nil && len(rblktx.TxList) > 0 {
+			res.BlocktxList = append(res.BlocktxList, rblktx)
 		}
 	}
 
