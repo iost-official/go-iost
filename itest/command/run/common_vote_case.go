@@ -41,7 +41,7 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 		return err
 	}
 
-	newVoteConfig := make(map[string]interface{})
+	newVoteConfig := make(map[string]any)
 	newVoteConfig["resultNumber"] = 2
 	newVoteConfig["minVote"] = 10
 	newVoteConfig["options"] = []string{"option1", "option2", "option3", "option4"}
@@ -65,17 +65,17 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 		return err
 	}
 	fmt.Println("vote id is", voteID)
-	allArgs := make([][]interface{}, 0)
-	allArgs = append(allArgs, []interface{}{voteID, accounts[1].ID, "option3", "5"})
-	allArgs = append(allArgs, []interface{}{voteID, accounts[1].ID, "option3", "5"})
-	allArgs = append(allArgs, []interface{}{voteID, accounts[1].ID, "option1", "20"})
-	allArgs = append(allArgs, []interface{}{voteID, accounts[0].ID, "option3", "100"})
+	allArgs := make([][]any, 0)
+	allArgs = append(allArgs, []any{voteID, accounts[1].ID, "option3", "5"})
+	allArgs = append(allArgs, []any{voteID, accounts[1].ID, "option3", "5"})
+	allArgs = append(allArgs, []any{voteID, accounts[1].ID, "option1", "20"})
+	allArgs = append(allArgs, []any{voteID, accounts[0].ID, "option3", "100"})
 	var callingAccounts = []*itest.Account{accounts[1], accounts[1], accounts[1], accounts[0]}
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		for idx := range allArgs {
-			go func(i int, res chan interface{}) {
+			go func(i int, res chan any) {
 				_, err := it.CallActionWithRandClient(callingAccounts[i], "vote.iost", "vote", allArgs[i]...)
 				res <- err
 			}(idx, res)
@@ -88,7 +88,7 @@ var CommonVoteCaseAction = func(c *cli.Context) error {
 		}
 	}
 
-	checkReturn := func(actionName string, expected string, args ...interface{}) error {
+	checkReturn := func(actionName string, expected string, args ...any) error {
 		hash, err := client.CallAction(true, bank, "vote.iost", actionName, args...)
 		if err != nil {
 			return err

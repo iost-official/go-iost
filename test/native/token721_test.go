@@ -18,7 +18,7 @@ import (
 
 var test721DataPath = "./test_data/"
 
-func initVM(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
+func initVM(t *testing.T, conName string, optional ...any) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(test721DataPath + conName + ".json")
 	vi := database.NewVisitor(100, db, version.NewRules(0))
 	vi.MPut("auth.iost-auth", "issuer0", database.MustMarshal(`{"id":"issuer0","permissions":{"active":{"name":"active","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1},"owner":{"name":"owner","groups":[],"items":[{"id":"issuer0","is_key_pair":true,"weight":1}],"threshold":1}}}`))

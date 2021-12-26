@@ -5,6 +5,7 @@ accounts.json
 bak/
 core/txpool/DelayTxDB/
 consensus/snapshot/DB/
+consensus/genesis/mvcc/
 core/merkletree/TXRMerkleTreeDB/
 db/kv/db/
 db/mvccdb/

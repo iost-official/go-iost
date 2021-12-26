@@ -60,14 +60,14 @@ var (
 	initToken721ABI = &abi{
 		name: "init",
 		args: []string{},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			return []interface{}{}, host.CommonErrorCost(1), nil
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			return []any{}, host.CommonErrorCost(1), nil
 		},
 	}
 	createToken721ABI = &abi{
 		name: "create",
 		args: []string{"string", "string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -113,14 +113,14 @@ var (
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 
 	issueToken721ABI = &abi{
 		name: "issue",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -197,14 +197,14 @@ var (
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 
-			return []interface{}{tokenID}, cost, nil
+			return []any{tokenID}, cost, nil
 		},
 	}
 
 	transferToken721ABI = &abi{
 		name: "transfer",
 		args: []string{"string", "string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -213,7 +213,7 @@ var (
 			tokenID := args[3].(string)
 
 			if from == to {
-				return []interface{}{}, cost, nil
+				return []any{}, cost, nil
 			}
 
 			// get token info
@@ -290,14 +290,14 @@ var (
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 
 	balanceOfToken721ABI = &abi{
 		name: "balanceOf",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -316,14 +316,14 @@ var (
 				return nil, cost, err
 			}
 
-			return []interface{}{tbalance}, cost, nil
+			return []any{tbalance}, cost, nil
 		},
 	}
 
 	ownerOfToken721ABI = &abi{
 		name: "ownerOf",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -345,14 +345,14 @@ var (
 			cost.AddAssign(cost0)
 			owner := tmp.(string)
 
-			return []interface{}{owner}, cost, nil
+			return []any{owner}, cost, nil
 		},
 	}
 
 	tokenOfOwnerByIndexToken721ABI = &abi{
 		name: "tokenOfOwnerByIndex",
 		args: []string{"string", "string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -369,14 +369,14 @@ var (
 				return nil, cost, errors.New("out of range")
 			}
 
-			return []interface{}{tokens[index]}, cost, nil
+			return []any{tokens[index]}, cost, nil
 		},
 	}
 
 	tokenMetadataToken721ABI = &abi{
 		name: "tokenMetadata",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -403,7 +403,7 @@ var (
 
 			metaDataJSON, cost0 := h.MapGet(Token721MetadataMapPrefix+tokenSym+Token721MetadataKeySeparator+owner, tokenID)
 			cost.AddAssign(cost0)
-			return []interface{}{metaDataJSON.(string)}, cost, nil
+			return []any{metaDataJSON.(string)}, cost, nil
 		},
 	}
 )

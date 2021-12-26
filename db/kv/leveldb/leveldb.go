@@ -132,7 +132,7 @@ func (d *DB) Close() error {
 }
 
 // NewIteratorByPrefix returns a new iterator by prefix
-func (d *DB) NewIteratorByPrefix(prefix []byte) interface{} {
+func (d *DB) NewIteratorByPrefix(prefix []byte) any {
 	iter := d.db.NewIterator(util.BytesPrefix(prefix), nil)
 	return &Iter{
 		iter: iter,

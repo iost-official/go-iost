@@ -351,14 +351,14 @@ func TestGas_Increase(t *testing.T) {
 		createAccountsWithResource(s)
 		createToken(t, s, acc0)
 		s.SetContract(native.GasABI())
-		r, err := s.Call("gas.iost", "pledge", array2json([]interface{}{acc0.ID, acc0.ID, "10"}), acc0.ID, acc0.KeyPair)
+		r, err := s.Call("gas.iost", "pledge", array2json([]any{acc0.ID, acc0.ID, "10"}), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		oldGas := s.Visitor.PGasAtTime(acc0.ID, s.Head.Time)
 		var usage int64 = 0
 		for i := 0; i < 10; i += 1 {
 			s.Head.Time += 3 * 1e8
-			r, err = s.Call("token.iost", "transfer", array2json([]interface{}{"iost", acc0.ID, acc1.ID, "1", ""}), acc0.ID, acc0.KeyPair)
+			r, err = s.Call("token.iost", "transfer", array2json([]any{"iost", acc0.ID, acc1.ID, "1", ""}), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			usage += r.GasUsage
 		}
@@ -379,12 +379,12 @@ func TestGas_Overflow(t *testing.T) {
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		s.SetContract(native.GasABI())
-		r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc0.ID, acc0.ID, "20000.00000000"}), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("gas.iost", "pledge", array2json([]any{acc0.ID, acc0.ID, "20000.00000000"}), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.PGasAtTime(acc0.ID, s.Head.Time).Value, ShouldBeGreaterThan, 0)
 		s.Head.Time += 3 * 24 * 3600 * 1e9
-		r, err = s.Call("gas.iost", "pledge", array2json([]interface{}{acc0.ID, acc0.ID, "1.00000010"}), acc0.ID, acc0.KeyPair)
+		r, err = s.Call("gas.iost", "pledge", array2json([]any{acc0.ID, acc0.ID, "1.00000010"}), acc0.ID, acc0.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
 		So(s.Visitor.PGasAtTime(acc0.ID, s.Head.Time).Value, ShouldBeGreaterThan, 0)

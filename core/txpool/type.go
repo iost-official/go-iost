@@ -143,7 +143,7 @@ type SortedTxMap struct {
 	rw    *sync.RWMutex
 }
 
-func compareTx(a, b interface{}) int {
+func compareTx(a, b any) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
 	if txa.GasRatio == txb.GasRatio && txb.Time == txa.Time {

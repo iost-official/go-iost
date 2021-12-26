@@ -143,21 +143,21 @@ var ( // nolint: deadcode
 	constructor = &abi{
 		name: "constructor",
 		args: []string{},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			return []interface{}{}, host.CommonErrorCost(1), nil
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			return []any{}, host.CommonErrorCost(1), nil
 		},
 	}
 	initFunc = &abi{
 		name: "init",
 		args: []string{},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			return []interface{}{}, host.CommonErrorCost(1), nil
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			return []any{}, host.CommonErrorCost(1), nil
 		},
 	}
 	pledgeGas = &abi{
 		name: "pledge",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			pledger, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
@@ -207,13 +207,13 @@ var ( // nolint: deadcode
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 	unpledgeGas = &abi{
 		name: "unpledge",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			pledger, ok := args[0].(string)
 			cost.AddAssign(host.CommonErrorCost(1))
@@ -273,7 +273,7 @@ var ( // nolint: deadcode
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 )

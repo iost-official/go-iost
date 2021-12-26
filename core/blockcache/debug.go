@@ -10,13 +10,13 @@ import (
 // Draw returns the linkedroot's and singleroot's tree graph.
 func (bc *BlockCacheImpl) Draw() string {
 	nmLen := 0
-	bc.number2node.Range(func(k, v interface{}) bool {
+	bc.number2node.Range(func(k, v any) bool {
 		nmLen++
 		return true
 	})
 
 	hmLen := 0
-	bc.hash2node.Range(func(k, v interface{}) bool {
+	bc.hash2node.Range(func(k, v any) bool {
 		hmLen++
 		return true
 	})

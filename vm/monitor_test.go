@@ -83,14 +83,14 @@ func TestMonitor_Context(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
 		outerFlag = true
 		monitor.Call(h, "Contract", "inner", "[\"hello\"]")
 
 		return []string{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
 		innerFlag = true
 		return []string{"world"}, cost, nil
 	})
@@ -142,7 +142,7 @@ func TestMonitor_HostCall(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
 		cost = contract.Cost0()
 		outerFlag = true
 		h.Call("Contract", "inner", "[\"hello\"]")
@@ -150,7 +150,7 @@ func TestMonitor_HostCall(t *testing.T) {
 		return []string{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...interface{}) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
 		cost = contract.Cost0()
 		innerFlag = true
 		if h.Context().Value("abi_name") != "inner" {

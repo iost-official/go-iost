@@ -17,10 +17,10 @@ const (
 
 // Cache is the cache interface
 type Cache interface {
-	Get(key []byte) interface{}
-	Put(key []byte, value interface{})
-	All(prefix []byte) []interface{}
-	Fork() interface{}
+	Get(key []byte) any
+	Put(key []byte, value any)
+	All(prefix []byte) []any
+	Fork() any
 	Free()
 }
 

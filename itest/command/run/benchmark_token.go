@@ -164,7 +164,7 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 							tokenMutex.Unlock()
 							break
 						} else if r.Receipts[i].FuncName == "token.iost/create" {
-							args := make([]interface{}, 4)
+							args := make([]any, 4)
 							err := json.Unmarshal([]byte(r.Receipts[i].Content), &args)
 							if err != nil {
 								continue

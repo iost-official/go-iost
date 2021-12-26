@@ -28,10 +28,10 @@ var (
 	requireAuth = &abi{
 		name: "requireAuth",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			var b bool
 			b, cost = h.RequireAuth(args[0].(string), args[1].(string))
-			rtn = []interface{}{
+			rtn = []any{
 				b,
 			}
 			return rtn, cost, nil
@@ -40,16 +40,16 @@ var (
 	receipt = &abi{
 		name: "receipt",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = h.Receipt(args[0].(string))
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 	// setcode can only be invoked in native vm, avoid updating contract during running
 	setCode = &abi{
 		name: "setCode",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 
 			cost = contract.Cost0()
 			con := &contract.Contract{}
@@ -98,14 +98,14 @@ var (
 			cost2, err = h.MapPut("contract_owner", actID, publisher, publisher)
 			cost.AddAssign(cost2)
 
-			return []interface{}{actID}, cost, err
+			return []any{actID}, cost, err
 		},
 	}
 	// updateCode can only be invoked in native vm, avoid updating contract during running
 	updateCode = &abi{
 		name: "updateCode",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			codeRaw := args[0].(string)
@@ -135,7 +135,7 @@ var (
 
 			cost1, err := h.UpdateCode(con, []byte(args[1].(string)))
 			cost.AddAssign(cost1)
-			return []interface{}{}, cost, err
+			return []any{}, cost, err
 		},
 	}
 
@@ -143,11 +143,11 @@ var (
 	initSetCode = &abi{
 		name: "initSetCode",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 
 			if h.Context().Value("number").(int64) != 0 {
-				return []interface{}{}, cost, errors.New("initSetCode in normal block")
+				return []any{}, cost, errors.New("initSetCode in normal block")
 			}
 
 			con := &contract.Contract{}
@@ -168,7 +168,7 @@ var (
 			cost2, err = h.MapPut("contract_owner", actID, AdminAccount)
 			cost.AddAssign(cost2)
 
-			return []interface{}{actID}, cost, err
+			return []any{actID}, cost, err
 		},
 	}
 
@@ -176,7 +176,7 @@ var (
 	updateNativeCode = &abi{
 		name: "updateNativeCode",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			conID := args[0].(string)
@@ -212,7 +212,7 @@ var (
 
 			cost0, err = h.UpdateCode(con, []byte(""))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, err
+			return []any{}, cost, err
 		},
 	}
 
@@ -220,11 +220,11 @@ var (
 	cancelDelaytx = &abi{
 		name: "cancelDelaytx",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 
 			cost, err = h.CancelDelaytx(args[0].(string))
 			if err != nil {
-				return []interface{}{}, cost, err
+				return []any{}, cost, err
 			}
 
 			// generate receipt
@@ -234,7 +234,7 @@ var (
 				return nil, cost, err
 			}
 			cost.AddAssign(h.Receipt(string(message)))
-			return []interface{}{}, cost, err
+			return []any{}, cost, err
 		},
 	}
 
@@ -242,7 +242,7 @@ var (
 	hostSettings = &abi{
 		name: "hostSettings",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			// check auth
 			ok, cost0 := h.RequireAuth(AdminAccount, SystemPermission)
 			cost.AddAssign(cost0)

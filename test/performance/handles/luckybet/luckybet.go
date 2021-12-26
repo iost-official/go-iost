@@ -115,7 +115,7 @@ func (t *luckyBetHandler) Prepare() error {
 }
 
 // Run ...
-func (t *luckyBetHandler) Run(i int) (interface{}, error) {
+func (t *luckyBetHandler) Run(i int) (any, error) {
 	action := tx.NewAction(t.contractID, "bet", fmt.Sprintf(`["%v",%d,%d,%d]`, t.testID, i%10, 1, 1))
 	trx := tx.NewTx([]*tx.Action{action}, []string{}, 10000000000+int64(i), 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, chainID)
 	stx, err := tx.SignTx(trx, t.testID, []*account.KeyPair{t.testKp})

@@ -118,7 +118,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 		i.h.PopStack()
 	}()
 
-	var rtn []interface{}
+	var rtn []any
 
 	rtn, cost, err = staticMonitor.Call(i.h, action.Contract, action.ActionName, action.Data)
 

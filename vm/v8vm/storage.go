@@ -70,7 +70,7 @@ func goGet(cSbx C.SandboxPtr, key, ramPayer C.CStr, result *C.CStr, gasUsed *C.s
 	}
 
 	k := key.GoString()
-	var val interface{}
+	var val any
 	var cost contract.Cost
 
 	val, cost = sbx.host.Get(k)
@@ -165,7 +165,7 @@ func goMapGet(cSbx C.SandboxPtr, key, field, ramPayer C.CStr, result *C.CStr, ga
 	k := key.GoString()
 	f := field.GoString()
 	var cost contract.Cost
-	var val interface{}
+	var val any
 	val, cost = sbx.host.MapGet(k, f)
 
 	*gasUsed = C.size_t(cost.CPU)
@@ -271,7 +271,7 @@ func goGlobalGet(cSbx C.SandboxPtr, contractName, key, ramPayer C.CStr, result *
 	k := key.GoString()
 
 	var cost contract.Cost
-	var val interface{}
+	var val any
 	val, cost = sbx.host.GlobalGet(c, k)
 
 	*gasUsed = C.size_t(cost.CPU)
@@ -316,7 +316,7 @@ func goGlobalMapGet(cSbx C.SandboxPtr, contractName, key, field, ramPayer C.CStr
 	k := key.GoString()
 	f := field.GoString()
 	var cost contract.Cost
-	var val interface{}
+	var val any
 	val, cost = sbx.host.GlobalMapGet(c, k, f)
 
 	*gasUsed = C.size_t(cost.CPU)
@@ -372,7 +372,7 @@ func goGlobalMapLen(cSbx C.SandboxPtr, contractName, key, ramPayer C.CStr, resul
 	return nil
 }
 
-func dbValToString(val interface{}) (string, error) {
+func dbValToString(val any) (string, error) {
 	switch v := val.(type) {
 	case int64:
 		return strconv.FormatInt(v, 10), nil

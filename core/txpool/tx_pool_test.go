@@ -35,7 +35,7 @@ func (pool *TxPImpl) testPendingTxsNum() int64 {
 
 func (pool *TxPImpl) testBlockListNum() int64 {
 	var r int64
-	pool.blockList.Range(func(key, value interface{}) bool {
+	pool.blockList.Range(func(key, value any) bool {
 		r++
 		return true
 	})

@@ -25,7 +25,7 @@ type StorageBackend interface {
 	CommitBatch() error
 	Size() (int64, error)
 	Close() error
-	NewIteratorByPrefix(prefix []byte) interface{}
+	NewIteratorByPrefix(prefix []byte) any
 }
 
 // Storage is a kv database

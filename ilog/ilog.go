@@ -68,76 +68,76 @@ func Flush() {
 }
 
 // Debug generates a debug-level log.
-func Debug(v ...interface{}) {
+func Debug(v ...any) {
 	defaultLogger.Debug(v...)
 }
 
 // Info generates a info-level log.
-func Info(v ...interface{}) {
+func Info(v ...any) {
 	defaultLogger.Info(v...)
 }
 
 // Warn generates a warn-level log.
-func Warn(v ...interface{}) {
+func Warn(v ...any) {
 	defaultLogger.Warn(v...)
 }
 
 // Error generates a error-level log.
-func Error(v ...interface{}) {
+func Error(v ...any) {
 	defaultLogger.Error(v...)
 }
 
 // Fatal generates a fatal-level log and exits the program.
-func Fatal(v ...interface{}) {
+func Fatal(v ...any) {
 	defaultLogger.Fatal(v...)
 }
 
 // Debugln generates a debug-level log.
-func Debugln(v ...interface{}) {
+func Debugln(v ...any) {
 	defaultLogger.Debugln(v...)
 }
 
 // Infoln generates a info-level log.
-func Infoln(v ...interface{}) {
+func Infoln(v ...any) {
 	defaultLogger.Infoln(v...)
 }
 
 // Warnln generates a warn-level log.
-func Warnln(v ...interface{}) {
+func Warnln(v ...any) {
 	defaultLogger.Warnln(v...)
 }
 
 // Errorln generates a error-level log.
-func Errorln(v ...interface{}) {
+func Errorln(v ...any) {
 	defaultLogger.Errorln(v...)
 }
 
 // Fatalln generates a fatal-level log and exits the program.
-func Fatalln(v ...interface{}) {
+func Fatalln(v ...any) {
 	defaultLogger.Fatalln(v...)
 }
 
 // Debugf generates a debug-level log.
-func Debugf(format string, v ...interface{}) {
+func Debugf(format string, v ...any) {
 	defaultLogger.Debugf(format, v...)
 }
 
 // Infof generates a info-level log.
-func Infof(format string, v ...interface{}) {
+func Infof(format string, v ...any) {
 	defaultLogger.Infof(format, v...)
 }
 
 // Warnf generates a warn-level log.
-func Warnf(format string, v ...interface{}) {
+func Warnf(format string, v ...any) {
 	defaultLogger.Warnf(format, v...)
 }
 
 // Errorf generates a error-level log.
-func Errorf(format string, v ...interface{}) {
+func Errorf(format string, v ...any) {
 	defaultLogger.Errorf(format, v...)
 }
 
 // Fatalf generates a fatal-level log and exits the program.
-func Fatalf(format string, v ...interface{}) {
+func Fatalf(format string, v ...any) {
 	defaultLogger.Fatalf(format, v...)
 }

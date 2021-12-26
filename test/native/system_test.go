@@ -15,7 +15,7 @@ import (
 
 var testDataPath = "./test_data/"
 
-func InitVMWithMonitor(t *testing.T, conName string, optional ...interface{}) (*native.Impl, *host.Host, *contract.Contract) {
+func InitVMWithMonitor(t *testing.T, conName string, optional ...any) (*native.Impl, *host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db, version.NewRules(0))
 

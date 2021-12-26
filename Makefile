@@ -1,4 +1,4 @@
-GO = go
+GO = gotip
 GO_BUILD = $(GO) build -mod vendor
 GO_TEST := $(GO) test -mod vendor -timeout 600s
 GO_INSTALL := $(GO) install -mod vendor

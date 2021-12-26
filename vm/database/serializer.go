@@ -27,7 +27,7 @@ var (
 type SerializedJSON []byte
 
 // Marshal marshal go types to value string
-func Marshal(in interface{}, extras ...string) (string, error) {
+func Marshal(in any, extras ...string) (string, error) {
 	extra := ""
 	if len(extras) > 0 {
 		extra = extras[0]
@@ -50,7 +50,7 @@ func Marshal(in interface{}, extras ...string) (string, error) {
 }
 
 // MustMarshal marshal go types to value string, panic on error
-func MustMarshal(in interface{}, extra ...string) string {
+func MustMarshal(in any, extra ...string) string {
 	s, err := Marshal(in, extra...)
 	if err != nil {
 		panic(err)
@@ -59,7 +59,7 @@ func MustMarshal(in interface{}, extra ...string) string {
 }
 
 // unmarshalInner unmarshal value string to go types
-func unmarshalInner(o string) interface{} {
+func unmarshalInner(o string) any {
 	if len(o) < 1 {
 		return errInvalidData
 	}
@@ -88,7 +88,7 @@ func unmarshalInner(o string) interface{} {
 }
 
 // Unmarshal unmarshal value string to go types
-func Unmarshal(o string) interface{} {
+func Unmarshal(o string) any {
 	idx := strings.LastIndex(o, RAMOwnerSeparator)
 	if idx == -1 {
 		return unmarshalInner(o)
@@ -97,7 +97,7 @@ func Unmarshal(o string) interface{} {
 }
 
 // UnmarshalWithExtra unmarshal value string to go types
-func UnmarshalWithExtra(o string) (interface{}, string) {
+func UnmarshalWithExtra(o string) (any, string) {
 	idx := strings.LastIndex(o, RAMOwnerSeparator)
 	if idx == -1 {
 		return unmarshalInner(o), ""
@@ -106,7 +106,7 @@ func UnmarshalWithExtra(o string) (interface{}, string) {
 }
 
 // MustUnmarshal  unmarshal value string to go types, panic on error
-func MustUnmarshal(o string) interface{} {
+func MustUnmarshal(o string) any {
 	rtn := Unmarshal(o)
 	if err, ok := rtn.(error); ok {
 		panic(err.Error() + ":" + o)
@@ -115,7 +115,7 @@ func MustUnmarshal(o string) interface{} {
 }
 
 // MustUnmarshalWithExtra  unmarshal value string to go types, panic on error
-func MustUnmarshalWithExtra(o string) (interface{}, string) {
+func MustUnmarshalWithExtra(o string) (any, string) {
 	rtn, extra := UnmarshalWithExtra(o)
 	if err, ok := rtn.(error); ok {
 		panic(err.Error() + ":" + o)

@@ -35,7 +35,7 @@ var (
 	updateTokenTotalSupplyABI = &abi{
 		name: "updateTotalSupply",
 		args: []string{"string", "number"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -88,7 +88,7 @@ var (
 			publisher := h.Context().Value("publisher").(string)
 			cost0, _ = h.MapPut(TokenInfoMapPrefix+tokenSym, TotalSupplyMapField, newTotalSupply, publisher)
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 )

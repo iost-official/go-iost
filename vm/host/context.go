@@ -8,8 +8,8 @@ import (
 // Context thread unsafe context with global fields
 type Context struct { // thread unsafe
 	base   *Context
-	value  map[string]interface{}
-	gValue map[string]interface{}
+	value  map[string]any
+	gValue map[string]any
 }
 
 // NewContext new context based on base
@@ -17,14 +17,14 @@ func NewContext(base *Context) *Context {
 	if base != nil {
 		return &Context{
 			base:  base,
-			value: make(map[string]interface{}),
+			value: make(map[string]any),
 		}
 	}
 
 	return &Context{
 		base:   nil,
-		value:  make(map[string]interface{}),
-		gValue: make(map[string]interface{}),
+		value:  make(map[string]any),
+		gValue: make(map[string]any),
 	}
 }
 
@@ -45,7 +45,7 @@ func (c *Context) String() string {
 }
 
 // Value get value of key
-func (c *Context) Value(key string) (value interface{}) {
+func (c *Context) Value(key string) (value any) {
 	cc := c
 	for {
 		var ok bool
@@ -64,13 +64,13 @@ func (c *Context) Value(key string) (value interface{}) {
 }
 
 // Set  set value of k
-func (c *Context) Set(key string, value interface{}) {
+func (c *Context) Set(key string, value any) {
 	// ilog.Debugf("set %s -> %v", key, value)
 	c.value[key] = value
 }
 
 // GValue get global value of key
-func (c *Context) GValue(key string) (value interface{}) {
+func (c *Context) GValue(key string) (value any) {
 	cc := c
 	for cc.base != nil {
 		cc = cc.base
@@ -79,7 +79,7 @@ func (c *Context) GValue(key string) (value interface{}) {
 }
 
 // GSet set global value of key, thread unsafe
-func (c *Context) GSet(key string, value interface{}) {
+func (c *Context) GSet(key string, value any) {
 	cc := c
 	for cc.base != nil {
 		cc = cc.base
@@ -93,7 +93,7 @@ func (c *Context) GClear() {
 	for cc.base != nil {
 		cc = cc.base
 	}
-	cc.gValue = make(map[string]interface{})
+	cc.gValue = make(map[string]any)
 }
 
 // Base get base of context

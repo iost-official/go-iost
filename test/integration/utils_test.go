@@ -74,10 +74,10 @@ func init() {
 var ContractPath = os.Getenv("GOBASE") + "//config/genesis/contract/"
 
 type fataler interface {
-	Fatal(args ...interface{})
+	Fatal(args ...any)
 }
 
-func array2json(ss []interface{}) string {
+func array2json(ss []any) string {
 	x, err := json.Marshal(ss)
 	if err != nil {
 		panic(err)

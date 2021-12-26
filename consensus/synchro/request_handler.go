@@ -167,7 +167,7 @@ func (r *requestHandlerWorker) handleBlockRequest(request *p2p.IncomingMessage, 
 	r.p.SendToPeer(request.From(), msg, mtype, priority)
 }
 
-func (r *requestHandlerWorker) process(payload interface{}) interface{} {
+func (r *requestHandlerWorker) process(payload any) any {
 	request, ok := payload.(*p2p.IncomingMessage)
 	if !ok {
 		ilog.Warnf("Assert payload %+v to IncomingMessage failed", payload)

@@ -8,7 +8,7 @@ import (
 )
 
 // DBHandler is an application layer abstraction of our base basic_handler and map_handler.
-// it offers interface which has an interface{} type value and ramPayer semantic
+// it offers interface which has an any type value and ramPayer semantic
 // it also handles the Marshal and Unmarshal work and determine the cost of each operation
 type DBHandler struct {
 	h *Host
@@ -35,7 +35,7 @@ func IsValidKey(key string) error {
 }
 
 // Put put kv to db
-func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) (contract.Cost, error) {
+func (h *DBHandler) Put(key string, value any, ramPayer ...string) (contract.Cost, error) {
 	err := IsValidKey(key)
 	if err != nil {
 		return CommonErrorCost(1), err
@@ -66,7 +66,7 @@ func (h *DBHandler) Put(key string, value interface{}, ramPayer ...string) (cont
 }
 
 // Get get value of key from db
-func (h *DBHandler) Get(key string) (value interface{}, cost contract.Cost) {
+func (h *DBHandler) Get(key string) (value any, cost contract.Cost) {
 	mk := h.modifyKey(key)
 	rtn := h.parseValue(h.h.db.Get(mk))
 	return rtn, Costs["GetCost"]
@@ -91,7 +91,7 @@ func (h *DBHandler) Has(key string) (bool, contract.Cost) {
 }
 
 // MapPut put kfv to db
-func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...string) (contract.Cost, error) {
+func (h *DBHandler) MapPut(key, field string, value any, ramPayer ...string) (contract.Cost, error) {
 	err := IsValidKey(key)
 	if err != nil {
 		return CommonErrorCost(1), err
@@ -125,7 +125,7 @@ func (h *DBHandler) MapPut(key, field string, value interface{}, ramPayer ...str
 }
 
 // MapGet get value by kf from db
-func (h *DBHandler) MapGet(key, field string) (value interface{}, cost contract.Cost) {
+func (h *DBHandler) MapGet(key, field string) (value any, cost contract.Cost) {
 	mk := h.modifyKey(key)
 	rtn := h.parseValue(h.h.db.MGet(mk, field))
 	return rtn, Costs["GetCost"]
@@ -172,7 +172,7 @@ func (h *DBHandler) GlobalHas(con, key string) (bool, contract.Cost) {
 }
 
 // GlobalGet get another contract's data
-func (h *DBHandler) GlobalGet(con, key string) (value interface{}, cost contract.Cost) {
+func (h *DBHandler) GlobalGet(con, key string) (value any, cost contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
 	rtn := h.parseValue(h.h.db.Get(mk))
 	return rtn, Costs["GetCost"]
@@ -185,7 +185,7 @@ func (h *DBHandler) GlobalMapHas(con, key, field string) (bool, contract.Cost) {
 }
 
 // GlobalMapGet get another contract's map data
-func (h *DBHandler) GlobalMapGet(con, key, field string) (value interface{}, cost contract.Cost) {
+func (h *DBHandler) GlobalMapGet(con, key, field string) (value any, cost contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
 	rtn := h.parseValue(h.h.db.MGet(mk, field))
 	return rtn, Costs["GetCost"]
@@ -215,7 +215,7 @@ func (h *DBHandler) modifyGlobalKey(contractName, key string) string {
 	return contractName + database.Separator + key
 }
 
-func (h *DBHandler) modifyValue(value interface{}, ramPayer ...string) string {
+func (h *DBHandler) modifyValue(value any, ramPayer ...string) string {
 	payer := ""
 	if len(ramPayer) > 0 {
 		payer = ramPayer[0]
@@ -223,7 +223,7 @@ func (h *DBHandler) modifyValue(value interface{}, ramPayer ...string) string {
 	return database.MustMarshal(value, payer)
 }
 
-func (h *DBHandler) parseValue(value string) interface{} {
+func (h *DBHandler) parseValue(value string) any {
 	return database.MustUnmarshal(value)
 }
 

@@ -42,15 +42,15 @@ var (
 	initDomainABI = &abi{
 		name: "init",
 		args: []string{},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
-			return []interface{}{}, host.CommonErrorCost(1), nil
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			return []any{}, host.CommonErrorCost(1), nil
 		},
 	}
 
 	linkDomainABI = &abi{
 		name: "link",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			cid := args[1].(string)
@@ -103,7 +103,7 @@ var (
 	transferDomainABI = &abi{
 		name: "transfer",
 		args: []string{"string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			url := args[0].(string)
 			to := args[1].(string)

@@ -525,7 +525,7 @@ func (as *APIService) GetContractStorage(ctx context.Context, req *rpcpb.GetCont
 		return nil, err
 	}
 	h := host.NewHost(host.NewContext(nil), dbVisitor, bcn.Head.Rules(), nil, nil)
-	var value interface{}
+	var value any
 	switch {
 	case req.GetField() == "":
 		value, _ = h.GlobalGet(req.GetId(), req.GetKey())
@@ -559,7 +559,7 @@ func (as *APIService) GetBatchContractStorage(ctx context.Context, req *rpcpb.Ge
 
 	for _, keyField := range keyFields {
 		var data string
-		var value interface{}
+		var value any
 		switch {
 		case keyField.Field == "":
 			value, _ = h.GlobalGet(req.GetId(), keyField.Key)
@@ -646,7 +646,7 @@ func (as *APIService) ListContractStorage(ctx context.Context, req *rpcpb.ListCo
 		if err != nil {
 			return nil, err
 		}
-		var res interface{}
+		var res any
 		if (req.StorageType == rpcpb.ListContractStorageRequest_MAP) && strings.HasPrefix(value, database.MapKeysSeparator) {
 			// map keys
 			res = strings.Split(value, database.MapKeysSeparator)[1:]
@@ -800,7 +800,7 @@ func (as *APIService) GetVoterBonus(ctx context.Context, req *rpcpb.GetAccountRe
 	if value == nil {
 		return ret, nil
 	}
-	var userVotes map[string][]interface{}
+	var userVotes map[string][]any
 	err = json.Unmarshal([]byte(value.(string)), &userVotes)
 	if err != nil {
 		ilog.Errorf("JSON decoding failed. str=%v, err=%v", value, err)
@@ -1108,7 +1108,7 @@ func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetB
 	return res, nil
 }
 
-func formatInternalValue(value interface{}) (data string, err error) {
+func formatInternalValue(value any) (data string, err error) {
 	if value != nil && reflect.TypeOf(value).Kind() == reflect.String {
 		data = value.(string)
 	} else {

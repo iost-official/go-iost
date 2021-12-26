@@ -43,7 +43,7 @@ func NewDatabaseFromPath(path string) *SimpleDB {
 // Get key-value from db with marshal
 func (d *SimpleDB) Get(table string, key string) (string, error) {
 	jso := d.json.Get(key)
-	var out interface{}
+	var out any
 	var err error
 
 	if jso.Interface() == nil {

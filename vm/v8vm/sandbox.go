@@ -229,7 +229,7 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 }
 
 // Prepare for contract, inject code
-func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []interface{}) (string, error) {
+func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []any) (string, error) {
 	code := contract.Code
 
 	if function == "constructor" {
@@ -299,7 +299,7 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	return result, int64(gasUsed), err
 }
 
-func formatFuncArgs(args []interface{}) (string, error) {
+func formatFuncArgs(args []any) (string, error) {
 	var strArgs []string
 	for _, arg := range args {
 		switch v := arg.(type) {

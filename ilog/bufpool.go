@@ -13,7 +13,7 @@ type BufPool struct {
 // NewBufPool returns a new instance of BufPool.
 func NewBufPool() *BufPool {
 	p := &sync.Pool{
-		New: func() interface{} {
+		New: func() any {
 			return new(bytes.Buffer)
 		},
 	}

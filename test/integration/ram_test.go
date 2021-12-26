@@ -36,7 +36,7 @@ func ramSetup(t *testing.T) (*Simulator, *TestAccount) {
 
 	s.Head.Number = 0
 	admin := acc1
-	r, err = s.Call(ramContractName, "initAdmin", array2json([]interface{}{admin.ID}), admin.ID, admin.KeyPair)
+	r, err = s.Call(ramContractName, "initAdmin", array2json([]any{admin.ID}), admin.ID, admin.KeyPair)
 	if err != nil {
 		panic(err)
 	}
@@ -44,7 +44,7 @@ func ramSetup(t *testing.T) (*Simulator, *TestAccount) {
 		panic("call failed " + r.String())
 	}
 
-	r, err = s.Call(ramContractName, "issue", array2json([]interface{}{initialTotal, increaseInterval, increaseAmount, 0}), admin.ID, admin.KeyPair)
+	r, err = s.Call(ramContractName, "issue", array2json([]any{initialTotal, increaseInterval, increaseAmount, 0}), admin.ID, admin.KeyPair)
 	if err != nil {
 		panic(err)
 	}
@@ -71,7 +71,7 @@ func TestRAM(t *testing.T) {
 				//balanceBefore := s.Visitor.TokenBalance("iost", acc.ID)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", ramContractName)
 				s.Visitor.SetTokenBalance("iost", ramContractName, 0)
-				r, err := s.Call(ramContractName, "buy", array2json([]interface{}{acc.ID, acc.ID, buyAmount}), acc.ID, acc.KeyPair)
+				r, err := s.Call(ramContractName, "buy", array2json([]any{acc.ID, acc.ID, buyAmount}), acc.ID, acc.KeyPair)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", acc.ID)
@@ -86,7 +86,7 @@ func TestRAM(t *testing.T) {
 				head.Time = head.Time + 144*increaseInterval*1000*1000*1000
 				s.SetBlockHead(head)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", ramContractName)
-				r, err := s.Call(ramContractName, "buy", array2json([]interface{}{acc.ID, acc.ID, buyAmount}), acc.ID, acc.KeyPair)
+				r, err := s.Call(ramContractName, "buy", array2json([]any{acc.ID, acc.ID, buyAmount}), acc.ID, acc.KeyPair)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				ramAvailableAfter := s.Visitor.TokenBalance("ram", ramContractName)
@@ -96,7 +96,7 @@ func TestRAM(t *testing.T) {
 				//balanceBefore := s.Visitor.TokenBalance("iost", acc.ID)
 				otherRAMBefore := s.Visitor.TokenBalance("ram", other)
 				myRAMBefore := s.Visitor.TokenBalance("ram", acc.ID)
-				r, err := s.Call(ramContractName, "buy", array2json([]interface{}{acc.ID, other, buyAmount}), acc.ID, acc.KeyPair)
+				r, err := s.Call(ramContractName, "buy", array2json([]any{acc.ID, other, buyAmount}), acc.ID, acc.KeyPair)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", acc.ID)
@@ -110,7 +110,7 @@ func TestRAM(t *testing.T) {
 		})
 		Convey("test sell", func() {
 			Convey("user cannot sell more than he owns", func() {
-				r, err := s.Call(ramContractName, "sell", array2json([]interface{}{acc.ID, acc.ID, 6000}), acc.ID, acc.KeyPair)
+				r, err := s.Call(ramContractName, "sell", array2json([]any{acc.ID, acc.ID, 6000}), acc.ID, acc.KeyPair)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Code, ShouldEqual, tx.StatusCode(tx.ErrorRuntime))
 			})
@@ -119,7 +119,7 @@ func TestRAM(t *testing.T) {
 				//balanceBefore := s.Visitor.TokenBalance("iost", acc.ID)
 				ramAvailableBefore := s.Visitor.TokenBalance("ram", ramContractName)
 				myRAMBefore := s.Visitor.TokenBalance("ram", acc.ID)
-				r, err := s.Call(ramContractName, "sell", array2json([]interface{}{acc.ID, acc.ID, sellAmount}), acc.ID, acc.KeyPair)
+				r, err := s.Call(ramContractName, "sell", array2json([]any{acc.ID, acc.ID, sellAmount}), acc.ID, acc.KeyPair)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", acc.ID)
@@ -135,7 +135,7 @@ func TestRAM(t *testing.T) {
 				balanceBefore := s.Visitor.TokenBalance("iost", acc.ID)
 				//otherBalanceBefore := s.Visitor.TokenBalance("iost", other)
 				myRAMBefore := s.Visitor.TokenBalance("ram", acc.ID)
-				r, err := s.Call(ramContractName, "sell", array2json([]interface{}{acc.ID, other, sellAmount}), acc.ID, acc.KeyPair)
+				r, err := s.Call(ramContractName, "sell", array2json([]any{acc.ID, other, sellAmount}), acc.ID, acc.KeyPair)
 				So(err, ShouldEqual, nil)
 				So(r.Status.Message, ShouldEqual, "")
 				balanceAfter := s.Visitor.TokenBalance("iost", acc.ID)
@@ -158,28 +158,28 @@ func TestRAM2(t *testing.T) {
 		s.Visitor.SetTokenBalance("iost", acc3.ID, 100*100000000)
 		s.SetRAM(acc2.ID, 0)
 		s.SetRAM(acc3.ID, 0)
-		r, err := s.Call(ramContractName, "buy", array2json([]interface{}{acc2.ID, acc2.ID, 1000}), acc2.ID, acc2.KeyPair)
+		r, err := s.Call(ramContractName, "buy", array2json([]any{acc2.ID, acc2.ID, 1000}), acc2.ID, acc2.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldEqual, "")
-		r, err = s.Call(ramContractName, "buy", array2json([]interface{}{acc3.ID, acc3.ID, 300}), acc3.ID, acc3.KeyPair)
+		r, err = s.Call(ramContractName, "buy", array2json([]any{acc3.ID, acc3.ID, 300}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldEqual, "")
-		r, err = s.Call("token.iost", "transfer", array2json([]interface{}{"ram", acc3.ID, acc2.ID, "200", ""}), acc3.ID, acc3.KeyPair)
+		r, err = s.Call("token.iost", "transfer", array2json([]any{"ram", acc3.ID, acc2.ID, "200", ""}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldContainSubstring, "transfer need issuer permission")
-		r, err = s.Call(ramContractName, "lend", array2json([]interface{}{acc2.ID, acc3.ID, 500}), acc2.ID, acc2.KeyPair)
+		r, err = s.Call(ramContractName, "lend", array2json([]any{acc2.ID, acc3.ID, 500}), acc2.ID, acc2.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldEqual, "")
-		r, err = s.Call(ramContractName, "sell", array2json([]interface{}{acc3.ID, acc3.ID, 200}), acc3.ID, acc3.KeyPair)
+		r, err = s.Call(ramContractName, "sell", array2json([]any{acc3.ID, acc3.ID, 200}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldEqual, "")
-		r, err = s.Call(ramContractName, "sell", array2json([]interface{}{acc3.ID, acc3.ID, 200}), acc3.ID, acc3.KeyPair)
+		r, err = s.Call(ramContractName, "sell", array2json([]any{acc3.ID, acc3.ID, 200}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldContainSubstring, "self ram amount 100, not enough for sell")
-		r, err = s.Call(ramContractName, "lend", array2json([]interface{}{acc3.ID, acc2.ID, 200}), acc3.ID, acc3.KeyPair)
+		r, err = s.Call(ramContractName, "lend", array2json([]any{acc3.ID, acc2.ID, 200}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldContainSubstring, "self ram amount 100, not enough for lend")
-		r, err = s.Call("token.iost", "transfer", array2json([]interface{}{"ram", acc3.ID, acc2.ID, "200", ""}), acc3.ID, acc3.KeyPair)
+		r, err = s.Call("token.iost", "transfer", array2json([]any{"ram", acc3.ID, acc2.ID, "200", ""}), acc3.ID, acc3.KeyPair)
 		So(err, ShouldEqual, nil)
 		So(r.Status.Message, ShouldContainSubstring, "transfer need issuer permission")
 	})

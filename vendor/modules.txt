@@ -3,7 +3,6 @@
 github.com/Jeffail/tunny
 # github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
 ## explicit
-github.com/StackExchange/wmi
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
@@ -51,7 +50,7 @@ github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/src/modules/recove
 # github.com/fsnotify/fsnotify v1.4.9
 ## explicit; go 1.13
 github.com/fsnotify/fsnotify
-# github.com/go-ole/go-ole v1.2.4
+# github.com/go-ole/go-ole v1.2.6
 ## explicit; go 1.12
 github.com/go-ole/go-ole
 github.com/go-ole/go-ole/oleutil
@@ -376,7 +375,7 @@ github.com/rs/cors
 # github.com/russross/blackfriday/v2 v2.0.1
 ## explicit
 github.com/russross/blackfriday/v2
-# github.com/shirou/gopsutil v3.21.9+incompatible
+# github.com/shirou/gopsutil v3.21.11+incompatible
 ## explicit
 github.com/shirou/gopsutil/cpu
 github.com/shirou/gopsutil/disk
@@ -475,6 +474,9 @@ github.com/whyrusleeping/multiaddr-filter
 # github.com/xlab/treeprint v1.0.0
 ## explicit; go 1.13
 github.com/xlab/treeprint
+# github.com/yusufpapurcu/wmi v1.2.2
+## explicit; go 1.16
+github.com/yusufpapurcu/wmi
 # go.opencensus.io v0.22.4
 ## explicit; go 1.13
 go.opencensus.io/internal/tagencoding

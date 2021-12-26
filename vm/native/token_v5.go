@@ -97,7 +97,7 @@ var (
 	transferTokenNamespace = &abi{
 		name: "transferNamespace",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenNs := args[0].(string)
@@ -130,13 +130,13 @@ var (
 			c = h.Receipt(string(message))
 			cost.AddAssign(c)
 
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 	createTokenABIV5 = &abi{
 		name: "create",
 		args: []string{"string", "string", "number", "json"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -151,7 +151,7 @@ var (
 			}
 
 			// config
-			config := make(map[string]interface{})
+			config := make(map[string]any)
 			err = json.Unmarshal(configJSON, &config)
 			cost.AddAssign(host.CommonOpCost(2))
 			if err != nil {
@@ -254,7 +254,7 @@ var (
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 )

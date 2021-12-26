@@ -7,7 +7,7 @@ import (
 
 // MVCCMap is the mvcc map
 type MVCCMap struct {
-	data   map[string]interface{}
+	data   map[string]any
 	parent *MVCCMap
 	refs   []*MVCCMap
 	rwmu   *sync.RWMutex
@@ -16,14 +16,14 @@ type MVCCMap struct {
 // New returns new map
 func New() *MVCCMap {
 	return &MVCCMap{
-		data:   make(map[string]interface{}),
+		data:   make(map[string]any),
 		parent: nil,
 		refs:   make([]*MVCCMap, 0),
 		rwmu:   new(sync.RWMutex),
 	}
 }
 
-func (m *MVCCMap) getFromLink(key string) interface{} {
+func (m *MVCCMap) getFromLink(key string) any {
 	v, ok := m.data[key]
 	if !ok {
 		if m.parent == nil {
@@ -35,7 +35,7 @@ func (m *MVCCMap) getFromLink(key string) interface{} {
 }
 
 // Get returns the value of specify key
-func (m *MVCCMap) Get(key []byte) interface{} {
+func (m *MVCCMap) Get(key []byte) any {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
 
@@ -43,15 +43,15 @@ func (m *MVCCMap) Get(key []byte) interface{} {
 }
 
 // Put will insert the key-value pair
-func (m *MVCCMap) Put(key []byte, value interface{}) {
+func (m *MVCCMap) Put(key []byte, value any) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 
 	m.data[string(key)] = value
 }
 
-func (m *MVCCMap) allFromLink(prefix []byte) []interface{} {
-	values := make([]interface{}, 0)
+func (m *MVCCMap) allFromLink(prefix []byte) []any {
+	values := make([]any, 0)
 	for k, v := range m.data {
 		if strings.HasPrefix(k, string(prefix)) {
 			values = append(values, v)
@@ -64,7 +64,7 @@ func (m *MVCCMap) allFromLink(prefix []byte) []interface{} {
 }
 
 // All returns the list of nodes prefixed with prefix
-func (m *MVCCMap) All(prefix []byte) []interface{} {
+func (m *MVCCMap) All(prefix []byte) []any {
 	m.rwmu.RLock()
 	defer m.rwmu.RUnlock()
 
@@ -73,12 +73,12 @@ func (m *MVCCMap) All(prefix []byte) []interface{} {
 
 // Fork will fork the map
 // thread safe between all forks of the map
-func (m *MVCCMap) Fork() interface{} {
+func (m *MVCCMap) Fork() any {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()
 
 	mvccmap := &MVCCMap{
-		data:   make(map[string]interface{}),
+		data:   make(map[string]any),
 		parent: m,
 		refs:   make([]*MVCCMap, 0),
 		rwmu:   m.rwmu,

@@ -11,7 +11,7 @@ import (
 type abi struct {
 	name string
 	args []string
-	do   func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error)
+	do   func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error)
 }
 
 type abiSet struct {
@@ -99,7 +99,7 @@ func (i *Impl) Compile(contract *contract.Contract) (string, error) {
 }
 
 // LoadAndCall implement
-func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+func (i *Impl) LoadAndCall(h *host.Host, con *contract.Contract, api string, args ...any) (rtn []any, cost contract.Cost, err error) {
 	var (
 		a  *abi
 		ok bool

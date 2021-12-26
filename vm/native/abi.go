@@ -14,9 +14,9 @@ var (
 	onlyAdminCanUpdateABI = &abi{
 		name: "can_update",
 		args: []string{"string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			ok, cost := h.RequireAuth(AdminAccount, SystemPermission)
-			return []interface{}{strconv.FormatBool(ok)}, cost, nil
+			return []any{strconv.FormatBool(ok)}, cost, nil
 		},
 	}
 )

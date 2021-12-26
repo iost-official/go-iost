@@ -229,7 +229,7 @@ func (pool *TxPImpl) getTxAndReceiptInBlock(txHash []byte, blockHash []byte) (*t
 
 func (pool *TxPImpl) clearBlock() {
 	filterLimit := pool.blockCache.LinkedRoot().Block.Head.Time - filterTime
-	pool.blockList.Range(func(key, value interface{}) bool {
+	pool.blockList.Range(func(key, value any) bool {
 		if value.(*blockTx).time < filterLimit {
 			pool.blockList.Delete(key)
 		}
@@ -329,7 +329,7 @@ func (pool *TxPImpl) doChainChangeByTimeout() {
 			if ob.time < filterLimit {
 				break
 			}
-			ob.txMap.Range(func(k, v interface{}) bool {
+			ob.txMap.Range(func(k, v any) bool {
 				pool.pendingTx.Add(v.(*tx.Tx))
 				return true
 			})
@@ -345,7 +345,7 @@ func (pool *TxPImpl) doChainChangeByTimeout() {
 			if nb.time < filterLimit {
 				break
 			}
-			nb.txMap.Range(func(k, v interface{}) bool {
+			nb.txMap.Range(func(k, v any) bool {
 				pool.DelTx(v.(*tx.Tx).Hash())
 				return true
 			})

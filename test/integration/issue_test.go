@@ -28,14 +28,14 @@ func prepareIssue(s *Simulator, acc *TestAccount) (*tx.TxReceipt, error) {
 		Active:  acc0.KeyPair.ReadablePubkey(),
 		Balance: 21000000000,
 	}
-	params := []interface{}{
+	params := []any{
 		acc0.ID,
 		common.TokenInfo{
 			FoundationAccount: acc1.ID,
 			IOSTTotalSupply:   90000000000,
 			IOSTDecimal:       8,
 		},
-		[]interface{}{witness},
+		[]any{witness},
 	}
 	b, _ := json.Marshal(params)
 	r, err = s.Call("issue.iost", "initGenesis", string(b), acc.ID, acc.KeyPair)

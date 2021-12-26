@@ -187,7 +187,7 @@ func (logger *Logger) flushWriters() {
 }
 
 // Debugf generates a debug-level log.
-func (logger *Logger) Debugf(format string, v ...interface{}) {
+func (logger *Logger) Debugf(format string, v ...any) {
 	if LevelDebug < logger.lowestLevel {
 		return
 	}
@@ -195,7 +195,7 @@ func (logger *Logger) Debugf(format string, v ...interface{}) {
 }
 
 // Infof generates a info-level log.
-func (logger *Logger) Infof(format string, v ...interface{}) {
+func (logger *Logger) Infof(format string, v ...any) {
 	if LevelInfo < logger.lowestLevel {
 		return
 	}
@@ -203,7 +203,7 @@ func (logger *Logger) Infof(format string, v ...interface{}) {
 }
 
 // Warnf generates a warn-level log.
-func (logger *Logger) Warnf(format string, v ...interface{}) {
+func (logger *Logger) Warnf(format string, v ...any) {
 	if LevelWarn < logger.lowestLevel {
 		return
 	}
@@ -211,7 +211,7 @@ func (logger *Logger) Warnf(format string, v ...interface{}) {
 }
 
 // Errorf generates a error-level log.
-func (logger *Logger) Errorf(format string, v ...interface{}) {
+func (logger *Logger) Errorf(format string, v ...any) {
 	if LevelError < logger.lowestLevel {
 		return
 	}
@@ -219,7 +219,7 @@ func (logger *Logger) Errorf(format string, v ...interface{}) {
 }
 
 // Fatalf generates a fatal-level log and exits the program.
-func (logger *Logger) Fatalf(format string, v ...interface{}) {
+func (logger *Logger) Fatalf(format string, v ...any) {
 	if LevelFatal < logger.lowestLevel {
 		return
 	}
@@ -229,7 +229,7 @@ func (logger *Logger) Fatalf(format string, v ...interface{}) {
 }
 
 // Debugln generates a debug-level log.
-func (logger *Logger) Debugln(v ...interface{}) {
+func (logger *Logger) Debugln(v ...any) {
 	if LevelDebug < logger.lowestLevel {
 		return
 	}
@@ -238,7 +238,7 @@ func (logger *Logger) Debugln(v ...interface{}) {
 }
 
 // Infoln generates a info-level log.
-func (logger *Logger) Infoln(v ...interface{}) {
+func (logger *Logger) Infoln(v ...any) {
 	if LevelInfo < logger.lowestLevel {
 		return
 	}
@@ -247,7 +247,7 @@ func (logger *Logger) Infoln(v ...interface{}) {
 }
 
 // Warnln generates a warn-level log.
-func (logger *Logger) Warnln(v ...interface{}) {
+func (logger *Logger) Warnln(v ...any) {
 	if LevelWarn < logger.lowestLevel {
 		return
 	}
@@ -256,7 +256,7 @@ func (logger *Logger) Warnln(v ...interface{}) {
 }
 
 // Errorln generates a error-level log.
-func (logger *Logger) Errorln(v ...interface{}) {
+func (logger *Logger) Errorln(v ...any) {
 	if LevelError < logger.lowestLevel {
 		return
 	}
@@ -265,7 +265,7 @@ func (logger *Logger) Errorln(v ...interface{}) {
 }
 
 // Fatalln generates a fatal-level log and exits the program.
-func (logger *Logger) Fatalln(v ...interface{}) {
+func (logger *Logger) Fatalln(v ...any) {
 	if LevelFatal < logger.lowestLevel {
 		return
 	}
@@ -276,7 +276,7 @@ func (logger *Logger) Fatalln(v ...interface{}) {
 }
 
 // Debug generates a debug-level log.
-func (logger *Logger) Debug(v ...interface{}) {
+func (logger *Logger) Debug(v ...any) {
 	if LevelDebug < logger.lowestLevel {
 		return
 	}
@@ -284,7 +284,7 @@ func (logger *Logger) Debug(v ...interface{}) {
 }
 
 // Info generates a info-level log.
-func (logger *Logger) Info(v ...interface{}) {
+func (logger *Logger) Info(v ...any) {
 	if LevelInfo < logger.lowestLevel {
 		return
 	}
@@ -292,7 +292,7 @@ func (logger *Logger) Info(v ...interface{}) {
 }
 
 // Warn generates a warn-level log.
-func (logger *Logger) Warn(v ...interface{}) {
+func (logger *Logger) Warn(v ...any) {
 	if LevelWarn < logger.lowestLevel {
 		return
 	}
@@ -300,7 +300,7 @@ func (logger *Logger) Warn(v ...interface{}) {
 }
 
 // Error generates a error-level log.
-func (logger *Logger) Error(v ...interface{}) {
+func (logger *Logger) Error(v ...any) {
 	if LevelError < logger.lowestLevel {
 		return
 	}
@@ -308,7 +308,7 @@ func (logger *Logger) Error(v ...interface{}) {
 }
 
 // Fatal generates a fatal-level log and exits the program.
-func (logger *Logger) Fatal(v ...interface{}) {
+func (logger *Logger) Fatal(v ...any) {
 	if LevelFatal < logger.lowestLevel {
 		return
 	}

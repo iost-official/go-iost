@@ -312,7 +312,7 @@ func (c *Client) ExchangeTransfer(sender, recipient *Account, token, amount stri
 }
 
 // CallAction send a tx with given actions
-func (c *Client) CallAction(check bool, sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
+func (c *Client) CallAction(check bool, sender *Account, contractName, actionName string, args ...any) (string, error) {
 	argsBytes, err := json.Marshal(args)
 	if err != nil {
 		return "", err

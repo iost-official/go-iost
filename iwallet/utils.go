@@ -17,7 +17,7 @@ import (
 
 ////////////////////// check input args ////////////////////
 
-func errorWithHelp(cmd *cobra.Command, format string, a ...interface{}) error {
+func errorWithHelp(cmd *cobra.Command, format string, a ...any) error {
 	cmd.Help()
 	fmt.Println()
 	return fmt.Errorf(format, a...)
@@ -120,7 +120,7 @@ func checkTxTime(tx *rpcpb.TransactionRequest) error {
 	return nil
 }
 
-func createActionFromMethod(contract, method string, methodArgs ...interface{}) (*rpcpb.Action, error) {
+func createActionFromMethod(contract, method string, methodArgs ...any) (*rpcpb.Action, error) {
 	methodArgsBytes, err := json.Marshal(methodArgs)
 	if err != nil {
 		return nil, fmt.Errorf("failed to marshal method args %v: %v", methodArgs, err)
@@ -272,7 +272,7 @@ func processActions(actions []*rpcpb.Action) (string, error) {
 	return processTx(tx)
 }
 
-func processMethod(contract, method string, methodArgs ...interface{}) error {
+func processMethod(contract, method string, methodArgs ...any) error {
 	action, err := createActionFromMethod(contract, method, methodArgs...)
 	if err != nil {
 		return err

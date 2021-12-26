@@ -12,7 +12,7 @@ const (
 // Node is node of trie
 type Node struct {
 	context  *Context
-	value    interface{}
+	value    any
 	keys     []byte
 	children []*Node
 }
@@ -50,7 +50,7 @@ func (n *Node) all() []*Node {
 	return nodelist
 }
 
-func (n *Node) put(key []byte, value interface{}, i int) *Node {
+func (n *Node) put(key []byte, value any, i int) *Node {
 	if i >= len(key) {
 		n.value = value
 		return n
@@ -206,7 +206,7 @@ func New() *Trie {
 }
 
 // Get returns the value of specify key
-func (t *Trie) Get(key []byte) interface{} {
+func (t *Trie) Get(key []byte) any {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
 
@@ -218,7 +218,7 @@ func (t *Trie) Get(key []byte) interface{} {
 }
 
 // Put will insert the key-value pair
-func (t *Trie) Put(key []byte, value interface{}) {
+func (t *Trie) Put(key []byte, value any) {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
 
@@ -230,12 +230,12 @@ func (t *Trie) Put(key []byte, value interface{}) {
 }
 
 // All returns the list of node prefixed with prefix
-func (t *Trie) All(prefix []byte) []interface{} {
+func (t *Trie) All(prefix []byte) []any {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
 
 	node := t.root.get(prefix, 0)
-	valuelist := []interface{}{}
+	valuelist := []any{}
 	for _, n := range node.all() {
 		if n.value != nil {
 			valuelist = append(valuelist, n.value)
@@ -246,7 +246,7 @@ func (t *Trie) All(prefix []byte) []interface{} {
 
 // Fork will fork the trie
 // thread safe between all forks of the trie
-func (t *Trie) Fork() interface{} {
+func (t *Trie) Fork() any {
 	t.rwmu.RLock()
 	defer t.rwmu.RUnlock()
 

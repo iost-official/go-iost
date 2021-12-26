@@ -85,12 +85,12 @@ func Load(keysfile, configfile string) (*ITest, error) {
 func (t *ITest) CreateAccountN(num int, randName bool, check bool) ([]*Account, error) {
 	ilog.Infof("Create %v account...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(n int, res chan interface{}) {
+			go func(n int, res chan any) {
 				defer sem.release()
 				var name string
 				if randName {
@@ -140,12 +140,12 @@ func (t *ITest) CreateAccountN(num int, randName bool, check bool) ([]*Account, 
 func (t *ITest) CreateAccountRoundN(num int, randName bool, check bool, round int) ([]*Account, error) {
 	ilog.Infof("Create %v account... round %v", num, round)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, 2000)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(n int, res chan interface{}) {
+			go func(n int, res chan any) {
 				defer sem.release()
 				var name string
 				if randName {
@@ -206,7 +206,7 @@ func (t *ITest) CreateAccount(creator *Account, name string, check bool) (*Accou
 func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 	ilog.Infof("Send %v vote transaction...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	producers := []string{}
 	if pnum == 1 {
 		producers = append(producers, "producer00001")
@@ -219,7 +219,7 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(res chan interface{}) {
+			go func(res chan any) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
 				amount := float64(rand.Int63n(10000)+1) / 100
@@ -250,13 +250,13 @@ func (t *ITest) VoteN(num, pnum int, accounts []*Account) error {
 func (t *ITest) VoteNode(num int, accounts []*Account) error {
 	ilog.Infof("Send %v vote transaction...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	times := len(accounts)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < times; i++ {
 			sem.acquire()
-			go func(res chan interface{}, i int) {
+			go func(res chan any, i int) {
 				defer sem.release()
 				A := t.bank
 				B := accounts[i].ID
@@ -290,13 +290,13 @@ func (t *ITest) VoteNode(num int, accounts []*Account) error {
 func (t *ITest) CancelVoteNode(num int, accounts []*Account) error {
 	ilog.Infof("Send %v Cancel vote transaction...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	times := len(accounts)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < times; i++ {
 			sem.acquire()
-			go func(res chan interface{}, i int) {
+			go func(res chan any, i int) {
 				defer sem.release()
 				A := t.bank
 				B := accounts[i].ID
@@ -331,12 +331,12 @@ func (t *ITest) CancelVoteNode(num int, accounts []*Account) error {
 func (t *ITest) TransferN(num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
 	ilog.Infof("Sending %v transfer transactions...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(res chan interface{}) {
+			go func(res chan any) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
 				balance, _ := strconv.ParseFloat(A.balance, 64)
@@ -378,12 +378,12 @@ func (t *ITest) TransferN(num int, accounts []*Account, memoSize int, check bool
 func (t *ITest) PledgeGasN(actionType string, num int, accounts []*Account, check bool) (successNum int, firstErr error) {
 	ilog.Infof("Sending %v gas transaction...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(res chan interface{}) {
+			go func(res chan any) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
 				balance, _ := strconv.ParseFloat(A.balance, 64)
@@ -440,12 +440,12 @@ func (t *ITest) BuyRAMN(actionType string, num int, accounts []*Account, check b
 
 	AmountLimit = []*contract.Amount{{Token: "iost", Val: "1000"}, {Token: "ram", Val: "1000"}}
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(res chan interface{}) {
+			go func(res chan any) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
 				amount := rand.Int63n(10) + 10
@@ -492,12 +492,12 @@ func (t *ITest) BuyRAMN(actionType string, num int, accounts []*Account, check b
 func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
 	ilog.Infof("Sending %v contract transfer transaction...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(res chan interface{}) {
+			go func(res chan any) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
 				balance, _ := strconv.ParseFloat(A.balance, 64)
@@ -539,12 +539,12 @@ func (t *ITest) ContractTransferN(cid string, num int, accounts []*Account, memo
 func (t *ITest) ExchangeTransferN(num int, accounts []*Account, memoSize int, check bool) (successNum int, firstErr error) {
 	ilog.Infof("Sending %v exchange transfer transaction...", num)
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < num; i++ {
 			sem.acquire()
-			go func(res chan interface{}) {
+			go func(res chan any) {
 				defer sem.release()
 				A := accounts[rand.Intn(len(accounts))]
 				balance, _ := strconv.ParseFloat(A.balance, 64)
@@ -586,9 +586,9 @@ func (t *ITest) ExchangeTransferN(num int, accounts []*Account, memoSize int, ch
 func (t *ITest) CheckAccounts(a []*Account) error {
 	ilog.Infof("Get %v accounts info...", len(a))
 
-	res := make(chan interface{})
+	res := make(chan any)
 	for _, i := range a {
-		go func(name string, res chan interface{}) {
+		go func(name string, res chan any) {
 			account, err := t.GetAccount(name)
 			if err != nil {
 				res <- err
@@ -692,7 +692,7 @@ func (t *ITest) cancelVote(sender *Account, recipient, amount string) error {
 }
 
 // CallActionWithRandClient randomly select one client and use it to send a tx
-func (t *ITest) CallActionWithRandClient(sender *Account, contractName, actionName string, args ...interface{}) (string, error) {
+func (t *ITest) CallActionWithRandClient(sender *Account, contractName, actionName string, args ...any) (string, error) {
 	cIndex := rand.Intn(len(t.clients))
 	client := t.clients[cIndex]
 	return client.CallAction(true, sender, contractName, actionName, args...)
@@ -824,12 +824,12 @@ func (t *ITest) GetBlockByNumber(number int64) (*Block, error) {
 func (t *ITest) SendTransactionN(trxs []*Transaction, check bool) ([]string, []error) {
 	ilog.Infof("Send %v transaction...", len(trxs))
 
-	res := make(chan interface{})
+	res := make(chan any)
 	go func() {
 		sem := make(semaphore, concurrentNum)
 		for i := 0; i < len(trxs); i++ {
 			sem.acquire()
-			go func(idx int, res chan interface{}) {
+			go func(idx int, res chan any) {
 				defer sem.release()
 				cIndex := rand.Intn(len(t.clients))
 				client := t.clients[cIndex]

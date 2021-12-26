@@ -25,7 +25,7 @@ func init() {
 }
 
 // MyInit init host and contract
-func MyInit(conName string, optional ...interface{}) (*host.Host, *contract.Contract) {
+func MyInit(conName string, optional ...any) (*host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath("simple.json")
 	vi := database.NewVisitor(100, db, version.NewRules(0))
 

@@ -89,7 +89,7 @@ func Test_VMMethod(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
 			So(len(r.Returns), ShouldEqual, 1)
-			res, err := json.Marshal([]interface{}{cname})
+			res, err := json.Marshal([]any{cname})
 			So(err, ShouldBeNil)
 			So(r.Returns[0], ShouldEqual, string(res))
 		})
@@ -427,7 +427,7 @@ func Test_SpecialChar(t *testing.T) {
 
 		s.Visitor.SetTokenBalanceFixed("iost", acc.ID, "1000")
 		s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "1000")
-		params := []interface{}{
+		params := []any{
 			acc.ID,
 			acc1.ID,
 			map[string]string{

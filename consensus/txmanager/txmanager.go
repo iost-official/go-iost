@@ -54,7 +54,7 @@ func (t *TxManager) Close() {
 	ilog.Infof("Stopped tx manager.")
 }
 
-func (t *TxManager) handleTx(payload interface{}) interface{} {
+func (t *TxManager) handleTx(payload any) any {
 	msg, ok := payload.(*p2p.IncomingMessage)
 	if !ok {
 		ilog.Warnf("Assert payload to IncomingMessage failed")

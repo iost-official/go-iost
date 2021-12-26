@@ -19,7 +19,7 @@ var (
 	minTickerTime = time.Second
 )
 
-func compareDeferTx(a, b interface{}) int {
+func compareDeferTx(a, b any) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
 	if txa.Time == txb.Time {

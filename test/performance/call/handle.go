@@ -8,7 +8,7 @@ import (
 // Handler ...
 type Handler interface {
 	Prepare() error
-	Run(i int) (interface{}, error)
+	Run(i int) (any, error)
 }
 
 // Handle ...

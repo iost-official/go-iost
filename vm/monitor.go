@@ -34,7 +34,7 @@ func NewMonitor() *Monitor {
 	return m
 }
 
-func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) (c *contract.Contract, abi *contract.ABI, args []interface{}, err error) {
+func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) (c *contract.Contract, abi *contract.ABI, args []any, err error) {
 	var cid string
 	if h.IsDomain(contractName) {
 		cid = h.ContractID(contractName)
@@ -94,7 +94,7 @@ func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]
 
 // Call ...
 // nolint
-func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error) {
+func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []any, cost contract.Cost, err error) {
 	if h.IsFork3_3_0 {
 		// TODO: reorganize monitor to remove this code
 		callerName := h.Caller().Name
@@ -170,7 +170,7 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			receipt := receipts[i]
 			token := ""
 			amount, _ := common.NewDecimalFromString("0", 0)
-			args := []interface{}{}
+			args := []any{}
 			if receipt.FuncName == "token.iost/transfer" || receipt.FuncName == "token.iost/transferFreeze" {
 				_ = json.Unmarshal([]byte(receipt.Content), &args)
 				token = args[0].(string)
@@ -297,7 +297,7 @@ func Factory(lang string) VM {
 }
 
 // UnmarshalArgs convert action data to args according to abi
-func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
+func UnmarshalArgs(abi *contract.ABI, data string) ([]any, error) {
 	if strings.HasSuffix(data, ",]") {
 		data = data[:len(data)-2] + "]"
 	}
@@ -306,7 +306,7 @@ func UnmarshalArgs(abi *contract.ABI, data string) ([]interface{}, error) {
 		return nil, fmt.Errorf("error in data: %v, %v", err, data)
 	}
 
-	rtn := make([]interface{}, 0)
+	rtn := make([]any, 0)
 	arr, err := js.Array()
 	if err != nil {
 		ilog.Error(js.EncodePretty())

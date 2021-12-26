@@ -46,7 +46,7 @@ type Server struct {
 	enable bool
 }
 
-func p(pp interface{}) error {
+func p(pp any) error {
 	return fmt.Errorf("%v", pp)
 }
 

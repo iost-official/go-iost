@@ -808,7 +808,7 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 	default:
 		inMsg := NewIncomingMessage(peerID, data, msg.messageType())
 		if m, exist := pm.subs.Load(msg.messageType()); exist {
-			m.(*sync.Map).Range(func(k, v interface{}) bool {
+			m.(*sync.Map).Range(func(k, v any) bool {
 				select {
 				case v.(chan IncomingMessage) <- *inMsg:
 				default:
@@ -821,8 +821,8 @@ func (pm *PeerManager) HandleMessage(msg *p2pMessage, peerID peer.ID) {
 }
 
 // NeighborStat dumps neighbors' status for debug.
-func (pm *PeerManager) NeighborStat() map[string]interface{} {
-	ret := make(map[string]interface{})
+func (pm *PeerManager) NeighborStat() map[string]any {
+	ret := make(map[string]any)
 
 	blackIPs := make([]string, 0)
 	blackPIDs := make([]string, 0)
@@ -847,12 +847,12 @@ func (pm *PeerManager) NeighborStat() map[string]interface{} {
 			out = append(out, addr)
 		}
 	}
-	ret["neighbors"] = map[string]interface{}{
+	ret["neighbors"] = map[string]any{
 		"outbound": out,
 		"inbound":  in,
 	}
 
-	ret["neighbor_count"] = map[string]interface{}{
+	ret["neighbor_count"] = map[string]any{
 		"outbound": pm.NeighborCount(outbound),
 		"inbound":  pm.NeighborCount(inbound),
 	}

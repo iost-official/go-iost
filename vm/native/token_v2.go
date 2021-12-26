@@ -45,7 +45,7 @@ var (
 	issueTokenABIV2 = &abi{
 		name: "issue",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -131,14 +131,14 @@ var (
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 
 	transferTokenABIV2 = &abi{
 		name: "transfer",
 		args: []string{"string", "string", "string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -159,7 +159,7 @@ var (
 			//fmt.Printf("token transfer %v %v %v %v\n", tokenSym, from, to, amountStr)
 
 			if from == to {
-				return []interface{}{}, cost, nil
+				return []any{}, cost, nil
 			}
 
 			// get token info
@@ -261,14 +261,14 @@ var (
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 
 	transferFreezeTokenABIV2 = &abi{
 		name: "transferFreeze",
 		args: []string{"string", "string", "string", "string", "number", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -378,14 +378,14 @@ var (
 			}
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 
 	destroyTokenABIV2 = &abi{
 		name: "destroy",
 		args: []string{"string", "string", "string"},
-		do: func(h *host.Host, args ...interface{}) (rtn []interface{}, cost contract.Cost, err error) {
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
 			cost = contract.Cost0()
 			cost.AddAssign(host.CommonOpCost(1))
 			tokenSym := args[0].(string)
@@ -476,7 +476,7 @@ var (
 			cost0 = h.Receipt(string(message))
 			cost.AddAssign(cost0)
 
-			return []interface{}{}, cost, nil
+			return []any{}, cost, nil
 		},
 	}
 )

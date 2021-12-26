@@ -45,13 +45,13 @@ func prepareVote(t *testing.T, s *Simulator, acc *TestAccount) (*tx.TxReceipt, e
 	s.SetGas(acc.ID, 1e12)
 	s.SetRAM(acc.ID, 1e12)
 
-	config := make(map[string]interface{})
+	config := make(map[string]any)
 	config["resultNumber"] = 2
 	config["minVote"] = 10
 	config["options"] = []string{"option1", "option2", "option3", "option4"}
 	config["anyOption"] = false
 	config["freezeTime"] = 0
-	params := []interface{}{
+	params := []any{
 		acc0.ID,
 		"test vote",
 		config,
@@ -575,14 +575,14 @@ func Test_CanVote(t *testing.T) {
 		prepareVote(t, s, acc0)
 
 		s.Head.Number = 1
-		config := make(map[string]interface{})
+		config := make(map[string]any)
 		config["resultNumber"] = 2
 		config["minVote"] = 10
 		config["options"] = []string{"option1", "option2", "option3", "option4"}
 		config["anyOption"] = false
 		config["freezeTime"] = 0
 		config["canVote"] = false
-		params := []interface{}{
+		params := []any{
 			acc0.ID,
 			"test vote",
 			config,

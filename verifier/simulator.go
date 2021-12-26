@@ -191,7 +191,7 @@ func (s *Simulator) Compile(id, src, abi string) (*contract.Contract, error) {
 }
 
 // Call abi with basic settings
-func (s *Simulator) Call(contractName, abi, args string, publisher string, auth *account.KeyPair, otherArgs ...interface{}) (*tx.TxReceipt, error) {
+func (s *Simulator) Call(contractName, abi, args string, publisher string, auth *account.KeyPair, otherArgs ...any) (*tx.TxReceipt, error) {
 	var signers []string
 	if len(otherArgs) >= 1 {
 		if s, ok := otherArgs[0].([]string); ok {

@@ -37,7 +37,7 @@ func Init(t *testing.T) *database.Visitor {
 	return vi
 }
 
-func MyInit(t *testing.T, conName string, optional ...interface{}) (*host.Host, *contract.Contract) {
+func MyInit(t *testing.T, conName string, optional ...any) (*host.Host, *contract.Contract) {
 	db := database.NewDatabaseFromPath(testDataPath + conName + ".json")
 	vi := database.NewVisitor(100, db, version.NewRules(0))
 

@@ -1,6 +1,6 @@
 module github.com/iost-official/go-iost/v3
 
-go 1.17
+go 1.18
 
 require (
 	github.com/Jeffail/tunny v0.1.4
@@ -24,7 +24,7 @@ require (
 	github.com/patrickmn/go-cache v2.1.1-0.20180815053127-5633e0862627+incompatible
 	github.com/prometheus/client_golang v1.11.0
 	github.com/rs/cors v1.7.0
-	github.com/shirou/gopsutil v3.21.9+incompatible
+	github.com/shirou/gopsutil v3.21.11+incompatible
 	github.com/smartystreets/goconvey v1.6.4
 	github.com/spf13/cobra v1.1.3
 	github.com/spf13/pflag v1.0.5
@@ -56,7 +56,7 @@ require (
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
-	github.com/go-ole/go-ole v1.2.4 // indirect
+	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/gogo/protobuf v1.3.1 // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
@@ -139,6 +139,7 @@ require (
 	github.com/tklauser/numcpus v0.2.2 // indirect
 	github.com/whyrusleeping/mafmt v1.2.8 // indirect
 	github.com/whyrusleeping/multiaddr-filter v0.0.0-20160516205228-e903e4adabd7 // indirect
+	github.com/yusufpapurcu/wmi v1.2.2 // indirect
 	go.opencensus.io v0.22.4 // indirect
 	go.uber.org/multierr v1.5.0 // indirect
 	go.uber.org/zap v1.14.0 // indirect

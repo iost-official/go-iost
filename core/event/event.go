@@ -110,7 +110,7 @@ func (ec *Collector) Unsubscribe(id int64, topics []Topic) {
 
 func (ec *Collector) sendEvent(e *Event, meta *Meta) {
 	if m, exist := ec.subMap.Load(e.Topic); exist {
-		m.(*sync.Map).Range(func(k, v interface{}) bool {
+		m.(*sync.Map).Range(func(k, v any) bool {
 			sub := v.(*Subscription)
 			if sub.filter != nil && !sub.filter.Match(meta) {
 				return true

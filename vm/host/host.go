@@ -16,7 +16,7 @@ import (
 
 // Monitor monitor interface
 type Monitor interface {
-	Call(host *Host, contractName, api string, jarg string) (rtn []interface{}, cost contract.Cost, err error)
+	Call(host *Host, contractName, api string, jarg string) (rtn []any, cost contract.Cost, err error)
 	Validate(con *contract.Contract) error
 	Compile(con *contract.Contract) (string, error)
 }
@@ -73,7 +73,7 @@ func (h *Host) SetContext(ctx *Context) {
 	h.ctx = ctx
 }
 
-func (h *Host) call(cont, api, jarg string, withAuth bool) ([]interface{}, contract.Cost, error) {
+func (h *Host) call(cont, api, jarg string, withAuth bool) ([]any, contract.Cost, error) {
 	reenter, cost := h.PushStack(cont, api, withAuth)
 	defer func() {
 		h.PopStack()
@@ -94,12 +94,12 @@ func (h *Host) call(cont, api, jarg string, withAuth bool) ([]interface{}, contr
 }
 
 // Call call a new contract in this context
-func (h *Host) Call(contract, api, jarg string) ([]interface{}, contract.Cost, error) {
+func (h *Host) Call(contract, api, jarg string) ([]any, contract.Cost, error) {
 	return h.call(contract, api, jarg, false)
 }
 
 // CallWithAuth call a new contract with permission of current contract
-func (h *Host) CallWithAuth(contract, api, jarg string) ([]interface{}, contract.Cost, error) {
+func (h *Host) CallWithAuth(contract, api, jarg string) ([]any, contract.Cost, error) {
 	return h.call(contract, api, jarg, true)
 }
 

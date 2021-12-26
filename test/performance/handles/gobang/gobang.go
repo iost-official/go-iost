@@ -89,7 +89,7 @@ func (t *gobangHandle) wait(i int, h string, id string) bool {
 			time.Sleep(3000 * time.Millisecond)
 			continue
 		}
-		var f interface{}
+		var f any
 		err = json.Unmarshal([]byte(v.Data), &f)
 		if err != nil {
 			ilog.Error(err)
@@ -97,7 +97,7 @@ func (t *gobangHandle) wait(i int, h string, id string) bool {
 		if f == nil {
 			continue
 		}
-		m := f.(map[string]interface{})
+		m := f.(map[string]any)
 		if m["hash"] == h {
 			return m["winner"] != nil
 		}
@@ -115,7 +115,7 @@ func (t *gobangHandle) getGameID(h string) string {
 		if len(v.Returns) == 0 {
 			continue
 		}
-		var f interface{}
+		var f any
 		err = json.Unmarshal([]byte(v.Returns[0]), &f)
 		if err != nil {
 			ilog.Error(err)
@@ -123,12 +123,12 @@ func (t *gobangHandle) getGameID(h string) string {
 		if f == nil {
 			continue
 		}
-		m := f.([]interface{})
+		m := f.([]any)
 		return m[0].(string)
 	}
 }
 
-func (t *gobangHandle) Run(i int) (interface{}, error) {
+func (t *gobangHandle) Run(i int) (any, error) {
 	ilog.Info("run ", i)
 	var board = make(map[string]bool)
 	act := tx.NewAction(contractID, "newGameWith", fmt.Sprintf(`["%v"]`, testID))

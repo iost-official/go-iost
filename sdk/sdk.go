@@ -157,7 +157,7 @@ func (s *IOSTDevSDK) CloseConn() {
 	}
 }
 
-func (s *IOSTDevSDK) log(a ...interface{}) {
+func (s *IOSTDevSDK) log(a ...any) {
 	if s.verbose {
 		fmt.Println(a...)
 	}

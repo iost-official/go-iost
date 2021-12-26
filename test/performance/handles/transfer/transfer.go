@@ -107,7 +107,7 @@ func (t *transferHandler) Prepare() error {
 }
 
 // Run ...
-func (t *transferHandler) Run(i int) (interface{}, error) {
+func (t *transferHandler) Run(i int) (any, error) {
 	action := tx.NewAction(t.contractID, "transfer", fmt.Sprintf(`["admin","%v",1]`, t.testID))
 	acc, _ := account.NewKeyPair(common.Base58Decode(rootKey), crypto.Ed25519)
 	trx := tx.NewTx([]*tx.Action{action}, []string{}, 6000000, 100, time.Now().Add(time.Second*time.Duration(10000)).UnixNano(), 0, chainID)
