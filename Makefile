@@ -1,7 +1,7 @@
 GO = gotip
-GO_BUILD = $(GO) build -mod vendor
-GO_TEST := $(GO) test -mod vendor -timeout 600s
-GO_INSTALL := $(GO) install -mod vendor
+GO_BUILD = $(GO) build
+GO_TEST := $(GO) test -timeout 600s
+GO_INSTALL := $(GO) install
 
 PROJECT_NAME := $(shell basename "$(PWD)")
 BUILDER_VERSION = 3.7.1
@@ -131,7 +131,7 @@ release: release_image
 	docker push iostio/iost-node:latest
 
 protobuf:
-	./script/gen_protobuf.sh
+	env GOARCH= ./script/gen_protobuf.sh
 
 install:
 	$(GO_INSTALL) -ldflags "$(LD_FLAGS)" ./cmd/iserver/
