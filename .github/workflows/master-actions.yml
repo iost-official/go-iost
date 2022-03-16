@@ -5,7 +5,7 @@ name: go-iost CI
 on:
   push:
     branches:
-      - feature/github_ci
+      - feature/cbdev01/add_github_ci
 
 #on:
 #  pull_request:
