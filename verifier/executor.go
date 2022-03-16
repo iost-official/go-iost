@@ -55,10 +55,11 @@ func (v *Executor) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
-	r, err := isolator.Run()
+	_, err = isolator.Run()
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
+	r, err := isolator.PayCost()
 	return r, err
 }
 
