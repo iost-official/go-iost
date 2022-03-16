@@ -12,11 +12,11 @@ func newCStr(str string) C.CStr {
 	return cstr
 }
 
-func (cstr *C.CStr) SetString(str string) {
+func SetString(cstr *C.CStr, str string) {
 	cstr.data = C.CString(str)
 	cstr.size = C.int(len(str))
 }
 
-func (cstr C.CStr) GoString() string {
+func GoString(cstr C.CStr) string {
 	return C.GoStringN(cstr.data, cstr.size)
 }

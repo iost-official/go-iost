@@ -28,8 +28,8 @@ func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail C.CStr) *C.char {
 		return C.CString(ErrGetSandbox.Error())
 	}
 
-	levelStr := logLevel.GoString()
-	detailStr := logDetail.GoString()
+	levelStr := GoString(logLevel)
+	detailStr := GoString(logDetail)
 
 	if sbx.host.Logger() == nil {
 		return C.CString(ErrConsoleNoLogger.Error())

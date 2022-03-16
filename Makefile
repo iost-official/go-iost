@@ -1,4 +1,4 @@
-GO = gotip
+GO = go
 GO_BUILD = $(GO) build
 GO_TEST := $(GO) test -timeout 600s
 GO_INSTALL := $(GO) install

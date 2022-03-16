@@ -193,11 +193,11 @@ func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 	)
 	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg) // nolint
 
-	result := cResult.GoString()
+	result := GoString(cResult)
 	C.free(unsafe.Pointer(cResult.data))
 
 	if ret == 1 || result != "success" {
-		errMsg := cErrMsg.GoString()
+		errMsg := GoString(cErrMsg)
 		C.free(unsafe.Pointer(cErrMsg.data))
 		return fmt.Errorf("validate code error: %v, result: %v", errMsg, result)
 	}
@@ -217,12 +217,12 @@ func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	)
 	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg) // nolint
 	if ret == 1 {
-		errMsg := cErrMsg.GoString()
+		errMsg := GoString(cErrMsg)
 		C.free(unsafe.Pointer(cErrMsg.data))
 		return "", errors.New(errMsg)
 	}
 
-	compiledCode := cCompiledCode.GoString()
+	compiledCode := GoString(cCompiledCode)
 	C.free(unsafe.Pointer(cCompiledCode.data))
 
 	return compiledCode, nil
@@ -289,11 +289,11 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 		return "", int64(gasUsed), ErrResultTooLong
 	}
 
-	result := rs.Value.GoString()
+	result := GoString(rs.Value)
 
 	var err error
 	if rs.Err.data != nil {
-		err = errors.New(rs.Err.GoString())
+		err = errors.New(GoString(rs.Err))
 	}
 
 	return result, int64(gasUsed), err

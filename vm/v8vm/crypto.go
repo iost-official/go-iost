@@ -14,7 +14,7 @@ const cryptGasBase = 100
 
 //export goSha3
 func goSha3(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
-	msgStr := msg.GoString()
+	msgStr := GoString(msg)
 	val := common.Base58Encode(common.Sha3([]byte(msgStr)))
 
 	*gasUsed = C.size_t(len(msgStr) + cryptGasBase)
@@ -24,7 +24,7 @@ func goSha3(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
 
 //export goSha3Hex
 func goSha3Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
-	msgBytes, err := hex.DecodeString(msg.GoString())
+	msgBytes, err := hex.DecodeString(GoString(msg))
 	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 	if err != nil {
 		return newCStr("")
@@ -35,7 +35,7 @@ func goSha3Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
 
 //export goRipemd160Hex
 func goRipemd160Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
-	msgBytes, err := hex.DecodeString(msg.GoString())
+	msgBytes, err := hex.DecodeString(GoString(msg))
 	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 	if err != nil {
 		return newCStr("")
@@ -46,10 +46,10 @@ func goRipemd160Hex(cSbx C.SandboxPtr, msg C.CStr, gasUsed *C.size_t) C.CStr {
 
 //export goVerify
 func goVerify(cSbx C.SandboxPtr, algo C.CStr, msg C.CStr, sig C.CStr, pubkey C.CStr, gasUsed *C.size_t) C.int {
-	algoStr := algo.GoString()
-	msgBytes := common.Base58Decode(msg.GoString())
-	sigBytes := common.Base58Decode(sig.GoString())
-	pubkeyBytes := common.Base58Decode(pubkey.GoString())
+	algoStr := GoString(algo)
+	msgBytes := common.Base58Decode(GoString(msg))
+	sigBytes := common.Base58Decode(GoString(sig))
+	pubkeyBytes := common.Base58Decode(GoString(pubkey))
 	*gasUsed = C.size_t(len(msgBytes) + cryptGasBase)
 	if algoStr != "secp256k1" && algoStr != "ed25519" {
 		return 0
