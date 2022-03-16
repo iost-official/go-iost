@@ -63,10 +63,7 @@ func privateIP(ip string) (bool, error) {
 	if IP == nil {
 		return false, errors.New("invalid IP")
 	}
-	_, private24BitBlock, _ := net.ParseCIDR("10.0.0.0/8")
-	_, private20BitBlock, _ := net.ParseCIDR("172.16.0.0/12")
-	_, private16BitBlock, _ := net.ParseCIDR("192.168.0.0/16")
-	return private24BitBlock.Contains(IP) || private20BitBlock.Contains(IP) || private16BitBlock.Contains(IP), nil
+	return IP.IsPrivate(), nil
 }
 
 func isPublicMaddr(s string) bool {

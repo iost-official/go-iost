@@ -14,7 +14,7 @@ IOST is a smart contract platform focusing on performance and developer friendli
 ### Environments
 
 OS: Ubuntu 18.04 or later  
-Go: 1.17 or later
+Go: 1.18 or later
 
 IOST node uses CGO V8 javascript engine, so only x64 is supported now.
 

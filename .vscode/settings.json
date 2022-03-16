@@ -1,0 +1,7 @@
+{
+  "go.toolsEnvVars": {
+    "CGO_ENABLED": "1",
+    "DYLD_LIBRARY_PATH": "vm/v8vm/v8/libv8/_darwin_amd64",
+    "GOARCH": "amd64"
+  }
+}
