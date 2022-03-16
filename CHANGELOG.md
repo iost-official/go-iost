@@ -1,3 +1,12 @@
+## v3.8.0
+Wed Mar 16 16:07:42 UTC 2022
+
+Compatible upgrade.
+
+- Upgrade to Go 1.18
+- Return gas/ram usage of tx in ExecTransaction
+- Show free disk space in metric
+
 ## v3.7.1
 Thu Nov  9 17:10:05 UTC 2021
 
