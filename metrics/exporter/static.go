@@ -39,7 +39,7 @@ func getDiskSize() float64 {
 		ilog.Errorf("Getting disk info failed. err=%v", err)
 		return unknown
 	}
-	return float64(diskStat.Total)
+	return float64(diskStat.Free)
 }
 
 func getPlatform() string {
