@@ -57,6 +57,9 @@ itest:
 format:
 	find . -name "*.go" |grep -v vendor |xargs gofmt -s -w
 
+lint-tool:
+	env GOARCH= go install github.com/golangci/golangci-lint/cmd/golangci-lint@v1.44.2 
+
 lint:
 	golangci-lint run
 
