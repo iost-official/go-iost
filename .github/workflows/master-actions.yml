@@ -1,22 +1,11 @@
 name: go-iost CI
 
-#on: workflow_dispatch
-
-#on:
-#  push:
-#    branches:
-#      - feature/cbdev01/add_github_ci
-
-#on:
-#  push:
-#    branches:
-#      - master
-
-
 on:
   pull_request:
-    branches: [ master ]
-    types: [opened, closed]
+    types: [synchronize, opened, reopened, ready_for_review]
+  push:
+    branches:
+      - master  
 
 jobs:
   #  Mac_Test:
