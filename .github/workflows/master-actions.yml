@@ -2,10 +2,10 @@ name: go-iost CI
 
 #on: workflow_dispatch
 
-#on:
-#  push:
-#    branches:
-#      - feature/cbdev01/add_github_ci
+on:
+  push:
+    branches:
+      - feature/cbdev01/add_github_ci
 
 #on:
 #  push:
@@ -13,31 +13,31 @@ name: go-iost CI
 #      - master
 
 
-on:
-  pull_request:
-    branches: [ master ]
-    types: [opened, closed]
+#on:
+#  pull_request:
+#    branches: [ master ]
+#    types: [opened, closed]
 
 jobs:
-  #  Mac_Test:
-  #    runs-on: macos-latest
-  #    steps:
-  #      - uses: actions/checkout@v2
-  #      - run: |
-  #          rm -rf /usr/local/bin/go
-  #          rm -rf /usr/local/bin/gofmt
-  #          brew install go@1.17
-  #          go version
-  #          brew install golangci-lint
-  #          brew upgrade golangci-lint
-  #          go mod vendor
-  #          HOMEBREW_NO_AUTO_UPDATE=1 brew install git-lfs
-  #          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.37.0
-  #          git lfs pull
-  #          make vmlib_install
-  #          make build
-  #          PATH=$HOME/bin:$PATH make lint
-  #          make test
+  Mac_Test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.17
+      - run: |
+          brew install golangci-lint
+          brew upgrade golangci-lint
+          go mod vendor
+          HOMEBREW_NO_AUTO_UPDATE=1 brew install git-lfs
+          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.37.0
+          git lfs pull
+          make vmlib_install
+          make build
+          PATH=$HOME/bin:$PATH make lint
+          make test
 
   #  Docker_Test:
   #    runs-on: ubuntu-18.04
@@ -86,7 +86,6 @@ jobs:
         go-version: 1.17
 
     - run: |
-        go version
         git lfs pull
         make e2e_test_local
 
