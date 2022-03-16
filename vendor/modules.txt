@@ -1,8 +1,6 @@
 # github.com/Jeffail/tunny v0.1.4
 ## explicit; go 1.13
 github.com/Jeffail/tunny
-# github.com/StackExchange/wmi v0.0.0-20190523213315-cbe66965904d
-## explicit
 # github.com/beorn7/perks v1.0.1
 ## explicit; go 1.11
 github.com/beorn7/perks/quantile
