@@ -157,3 +157,5 @@ env:
 	@echo export CGO_LDFLAGS=$(CGO_LDFLAGS)
 	@echo export LD_LIBRARY_PATH=$(LD_LIBRARY_PATH)
 	@echo export DYLD_LIBRARY_PATH=$(DYLD_LIBRARY_PATH)
+
+# GitHub CI Test
