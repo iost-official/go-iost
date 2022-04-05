@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/iost-official/go-iost/v3/account"
@@ -35,7 +36,13 @@ func NewKeyPairInfo(rawKey string, keyType string) (*KeyPairInfo, error) {
 	kp := &KeyPairInfo{}
 	kp.RawKey = rawKey
 	kp.KeyType = keyType
-	key, err := account.NewKeyPair(common.Base58Decode(kp.RawKey), GetSignAlgoByName(kp.KeyType))
+	var keyBytes []byte
+	if strings.HasPrefix(rawKey, "0x") {
+		keyBytes = common.ParseHex(strings.TrimPrefix(rawKey, "0x"))
+	} else {
+		keyBytes = common.Base58Decode(kp.RawKey)
+	}
+	key, err := account.NewKeyPair(keyBytes, GetSignAlgoByName(kp.KeyType))
 	if err != nil {
 		return nil, err
 	}
