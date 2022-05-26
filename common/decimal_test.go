@@ -8,7 +8,7 @@ import (
 
 func TestDecimal_ToString(t *testing.T) {
 	f := Decimal{-9223372036854775808, 4, nil}
-	f.String()
+	_ = f.String()
 	assert.Equal(t, f.Err, errOverflow)
 	f = Decimal{100, 0, nil}
 	s := f.String()

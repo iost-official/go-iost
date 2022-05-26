@@ -3,6 +3,7 @@ package sdk
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
@@ -100,6 +101,16 @@ func GetSignAlgoByEnum(enum rpcpb.Signature_Algorithm) crypto.Algorithm {
 func CheckPubKey(k string) bool {
 	bytes := common.Base58Decode(k)
 	return len(bytes) == 32
+}
+
+func ParsePrivKey(rawKey string) []byte {
+	var keyBytes []byte
+	if strings.HasPrefix(rawKey, "0x") {
+		keyBytes = common.ParseHex(strings.TrimPrefix(rawKey, "0x"))
+	} else {
+		keyBytes = common.Base58Decode(rawKey)
+	}
+	return keyBytes
 }
 
 // VerifySigForTx ...
