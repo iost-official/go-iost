@@ -19,6 +19,7 @@ import (
 	noise "github.com/libp2p/go-libp2p-noise"
 	secio "github.com/libp2p/go-libp2p-secio"
 	tls "github.com/libp2p/go-libp2p-tls"
+	yamux "github.com/libp2p/go-libp2p-yamux"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	mplex "github.com/whyrusleeping/go-smux-multiplex"
 )
@@ -139,7 +140,11 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		libp2p.Identity(pk),
 		libp2p.NATPortMap(),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
-		libp2p.Muxer(protocolID, mplex.DefaultTransport),
+		libp2p.ChainOptions(
+			libp2p.Muxer(protocolID, mplex.DefaultTransport),
+			libp2p.Muxer("/yamux/1.0.0", yamux.DefaultTransport),
+			libp2p.Muxer("/mplex/6.7.0", mplex.DefaultTransport),
+		),
 		libp2p.ChainOptions(
 			libp2p.Security(secio.ID, secio.New),
 			libp2p.Security(tls.ID, tls.New),
