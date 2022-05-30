@@ -9,8 +9,6 @@ import (
 	"go.uber.org/zap"
 )
 
-var log = Logger("eventlog")
-
 // StandardLogger provides API compatibility with standard printf loggers
 // eg. go-logging
 type StandardLogger interface {

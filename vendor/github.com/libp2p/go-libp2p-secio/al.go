@@ -8,7 +8,6 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/hmac"
-	"crypto/sha1"
 	"crypto/sha512"
 	"hash"
 
@@ -72,8 +71,6 @@ func (e *encParams) makeMacAndCipher() error {
 
 func newMac(hashType string, key []byte) (HMAC, error) {
 	switch hashType {
-	case "SHA1":
-		return HMAC{hmac.New(sha1.New, key), sha1.Size}, nil
 	case "SHA512":
 		return HMAC{hmac.New(sha512.New, key), sha512.Size}, nil
 	case "SHA256":

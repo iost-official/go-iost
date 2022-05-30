@@ -18,7 +18,7 @@ import (
 var WsProtocol = ma.ProtocolWithCode(ma.P_WS)
 
 // WsFmt is multiaddr formatter for WsProtocol
-var WsFmt = mafmt.And(mafmt.TCP, mafmt.Base(WsProtocol.Code))
+var WsFmt = mafmt.And(mafmt.TCP, mafmt.Base(ma.P_WS))
 
 // WsCodec is the multiaddr-net codec definition for the websocket transport
 var WsCodec = &manet.NetCodec{
@@ -27,6 +27,10 @@ var WsCodec = &manet.NetCodec{
 	ConvertMultiaddr: ConvertWebsocketMultiaddrToNetAddr,
 	ParseNetAddr:     ParseWebsocketNetAddr,
 }
+
+// This is _not_ WsFmt because we want the transport to stick to dialing fully
+// resolved addresses.
+var dialMatcher = mafmt.And(mafmt.IP, mafmt.Base(ma.P_TCP), mafmt.Base(ma.P_WS))
 
 func init() {
 	manet.RegisterNetCodec(WsCodec)
@@ -44,7 +48,7 @@ func New(u *tptu.Upgrader) *WebsocketTransport {
 }
 
 func (t *WebsocketTransport) CanDial(a ma.Multiaddr) bool {
-	return WsFmt.Matches(a)
+	return dialMatcher.Matches(a)
 }
 
 func (t *WebsocketTransport) Protocols() []int {

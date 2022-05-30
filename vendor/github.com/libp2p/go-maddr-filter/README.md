@@ -1,3 +1,5 @@
+## ⚠️ DEPRECATED: Filters have been migrated to [multiformats/go-multiaddr](https://github.com/multiformats/go-multiaddr). 
+
 go-maddr-filter
 ==================
 

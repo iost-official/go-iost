@@ -336,10 +336,7 @@ func (el *ZapEventLogger) Event(ctx context.Context, event string, metadata ...L
 		existing = Metadata{}
 	}
 	loggables = append(loggables, existing)
-
-	for _, datum := range metadata {
-		loggables = append(loggables, datum)
-	}
+	loggables = append(loggables, metadata...)
 
 	e := entry{
 		loggables: loggables,
@@ -367,7 +364,7 @@ func (el *ZapEventLogger) Event(ctx context.Context, event string, metadata ...L
 		return
 	}
 
-	writer.WriterGroup.Write(buf.Bytes())
+	_, _ = writer.WriterGroup.Write(buf.Bytes())
 }
 
 // DEPRECATED

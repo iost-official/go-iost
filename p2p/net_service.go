@@ -16,6 +16,9 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	libnet "github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
+	noise "github.com/libp2p/go-libp2p-noise"
+	secio "github.com/libp2p/go-libp2p-secio"
+	tls "github.com/libp2p/go-libp2p-tls"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	mplex "github.com/whyrusleeping/go-smux-multiplex"
 )
@@ -137,6 +140,11 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		libp2p.NATPortMap(),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
 		libp2p.Muxer(protocolID, mplex.DefaultTransport),
+		libp2p.ChainOptions(
+			libp2p.Security(secio.ID, secio.New),
+			libp2p.Security(tls.ID, tls.New),
+			libp2p.Security(noise.ID, noise.New),
+		),
 	}
 	h, err := libp2p.New(context.Background(), opts...)
 	if err != nil {

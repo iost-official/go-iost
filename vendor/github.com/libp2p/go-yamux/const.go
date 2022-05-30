@@ -5,69 +5,69 @@ import (
 	"fmt"
 )
 
-type YamuxError struct {
+type Error struct {
 	msg                string
 	timeout, temporary bool
 }
 
-func (ye YamuxError) Error() string {
+func (ye *Error) Error() string {
 	return ye.msg
 }
 
-func (ye YamuxError) Timeout() bool {
+func (ye *Error) Timeout() bool {
 	return ye.timeout
 }
 
-func (ye YamuxError) Temporary() bool {
+func (ye *Error) Temporary() bool {
 	return ye.temporary
 }
 
 var (
 	// ErrInvalidVersion means we received a frame with an
 	// invalid version
-	ErrInvalidVersion = &YamuxError{msg: "invalid protocol version"}
+	ErrInvalidVersion = &Error{msg: "invalid protocol version"}
 
 	// ErrInvalidMsgType means we received a frame with an
 	// invalid message type
-	ErrInvalidMsgType = &YamuxError{msg: "invalid msg type"}
+	ErrInvalidMsgType = &Error{msg: "invalid msg type"}
 
 	// ErrSessionShutdown is used if there is a shutdown during
 	// an operation
-	ErrSessionShutdown = &YamuxError{msg: "session shutdown"}
+	ErrSessionShutdown = &Error{msg: "session shutdown"}
 
 	// ErrStreamsExhausted is returned if we have no more
 	// stream ids to issue
-	ErrStreamsExhausted = &YamuxError{msg: "streams exhausted"}
+	ErrStreamsExhausted = &Error{msg: "streams exhausted"}
 
 	// ErrDuplicateStream is used if a duplicate stream is
 	// opened inbound
-	ErrDuplicateStream = &YamuxError{msg: "duplicate stream initiated"}
+	ErrDuplicateStream = &Error{msg: "duplicate stream initiated"}
 
 	// ErrReceiveWindowExceeded indicates the window was exceeded
-	ErrRecvWindowExceeded = &YamuxError{msg: "recv window exceeded"}
+	ErrRecvWindowExceeded = &Error{msg: "recv window exceeded"}
 
 	// ErrTimeout is used when we reach an IO deadline
-	ErrTimeout = &YamuxError{msg: "i/o deadline reached", timeout: true, temporary: true}
+	ErrTimeout = &Error{msg: "i/o deadline reached", timeout: true, temporary: true}
 
 	// ErrStreamClosed is returned when using a closed stream
-	ErrStreamClosed = &YamuxError{msg: "stream closed"}
+	ErrStreamClosed = &Error{msg: "stream closed"}
 
 	// ErrUnexpectedFlag is set when we get an unexpected flag
-	ErrUnexpectedFlag = &YamuxError{msg: "unexpected flag"}
+	ErrUnexpectedFlag = &Error{msg: "unexpected flag"}
 
 	// ErrRemoteGoAway is used when we get a go away from the other side
-	ErrRemoteGoAway = &YamuxError{msg: "remote end is not accepting connections"}
+	ErrRemoteGoAway = &Error{msg: "remote end is not accepting connections"}
 
-	// ErrConnectionReset is sent if a stream is reset. This can happen
+	// ErrStreamReset is sent if a stream is reset. This can happen
 	// if the backlog is exceeded, or if there was a remote GoAway.
-	ErrConnectionReset = &YamuxError{msg: "stream reset"}
+	ErrStreamReset = &Error{msg: "stream reset"}
 
 	// ErrConnectionWriteTimeout indicates that we hit the "safety valve"
 	// timeout writing to the underlying stream connection.
-	ErrConnectionWriteTimeout = &YamuxError{msg: "connection write timeout", timeout: true}
+	ErrConnectionWriteTimeout = &Error{msg: "connection write timeout", timeout: true}
 
 	// ErrKeepAliveTimeout is sent if a missed keepalive caused the stream close
-	ErrKeepAliveTimeout = &YamuxError{msg: "keepalive timeout", timeout: true}
+	ErrKeepAliveTimeout = &Error{msg: "keepalive timeout", timeout: true}
 )
 
 const (

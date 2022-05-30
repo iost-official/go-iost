@@ -7,9 +7,12 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-libp2p-core/mux"
-
 	pool "github.com/libp2p/go-buffer-pool"
+)
+
+var (
+	ErrStreamReset  = errors.New("stream reset")
+	ErrStreamClosed = errors.New("closed stream")
 )
 
 // streamID is a convenience type for operating on stream IDs
@@ -74,7 +77,7 @@ func (s *Stream) waitForData() error {
 	case <-s.reset:
 		// This is the only place where it's safe to return these.
 		s.returnBuffers()
-		return mux.ErrReset
+		return ErrStreamReset
 	case read, ok := <-s.dataIn:
 		if !ok {
 			return io.EOF
@@ -112,7 +115,7 @@ func (s *Stream) returnBuffers() {
 func (s *Stream) Read(b []byte) (int, error) {
 	select {
 	case <-s.reset:
-		return 0, mux.ErrReset
+		return 0, ErrStreamReset
 	default:
 	}
 	if s.extra == nil {
@@ -160,14 +163,14 @@ func (s *Stream) Write(b []byte) (int, error) {
 
 func (s *Stream) write(b []byte) (int, error) {
 	if s.isClosed() {
-		return 0, errors.New("cannot write to closed stream")
+		return 0, ErrStreamClosed
 	}
 
 	err := s.mp.sendMsg(s.wDeadline.wait(), s.id.header(messageTag), b)
 
 	if err != nil {
 		if err == context.Canceled {
-			err = errors.New("cannot write to closed stream")
+			err = ErrStreamClosed
 		}
 		return 0, err
 	}
@@ -203,7 +206,7 @@ func (s *Stream) Close() error {
 	}
 
 	if err != nil && !s.mp.isShutdown() {
-		log.Warningf("Error closing stream: %s; killing connection", err.Error())
+		log.Warnf("Error closing stream: %s; killing connection", err.Error())
 		s.mp.Close()
 	}
 

@@ -57,7 +57,7 @@ func (id ID) String() string {
 	return id.Pretty()
 }
 
-// String prints out the peer ID.
+// ShortString prints out the peer ID.
 //
 // TODO(brian): ensure correctness at ID generation and
 // enforce this by only exposing functions that generate
@@ -85,7 +85,7 @@ func (id ID) MatchesPublicKey(pk ic.PubKey) bool {
 	return oid == id
 }
 
-// ExtractPublicKey attempts to extract the public key from an ID
+// ExtractPublicKey attempts to extract the public key from an ID.
 //
 // This method returns ErrNoPublicKey if the peer ID looks valid but it can't extract
 // the public key.
@@ -237,7 +237,7 @@ func IDFromPrivateKey(sk ic.PrivKey) (ID, error) {
 	return IDFromPublicKey(sk.GetPublic())
 }
 
-// IDSlice for sorting peers
+// IDSlice for sorting peers.
 type IDSlice []ID
 
 func (es IDSlice) Len() int           { return len(es) }

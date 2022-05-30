@@ -7,13 +7,34 @@
 [![GoDoc](https://godoc.org/github.com/libp2p/go-libp2p-secio?status.svg)](https://godoc.org/github.com/libp2p/go-libp2p-secio)
 [![Build Status](https://travis-ci.org/libp2p/go-libp2p-secio.svg?branch=master)](https://travis-ci.org/libp2p/go-libp2p-secio)
 
-> go-libp2p's secio encrypted transport
+> A secure transport module for go-libp2p
 
-Package `go-libp2p-secio` is a libp2p [stream security transport](https://github.com/libp2p/go-stream-security). Connections wrapped by `secio` use secure sessions provided by this package to encrypt all traffic. A TLS-like handshake is used to setup the communication channel.
+
+`go-libp2p-secio` is a component of the [libp2p project](https://libp2p.io), a
+modular networking stack for developing peer-to-peer applications. It provides a
+secure transport channel for [`go-libp2p`][go-libp2p]. Following an initial
+plaintext handshake, all data exchanged between peers using `go-libp2p-secio` is
+encrypted and protected from eavesdropping.
+
+libp2p supports multiple [transport protocols][docs-transport], many of which
+lack native channel security. `go-libp2p-secio` is designed to work with
+go-libp2p's ["transport upgrader"][transport-upgrader], which applies security
+modules (like `go-libp2p-secio`) to an insecure channel. `go-libp2p-secio`
+implements the [`SecureTransport` interface][godoc-securetransport], which
+allows the upgrader to secure any underlying connection.
+
+More detail on the handshake protocol and wire format used is available in the
+[SECIO spec][secio-spec].
 
 ## Install
 
-`go-libp2p-secio` is a standard Go module which can be installed with:
+Most people building applications with libp2p will have no need to install
+`go-libp2p-secio` directly. It is included as a dependency of the main
+[`go-libp2p`][go-libp2p] "entry point" module and is enabled by default.
+
+For users who do not depend on `go-libp2p` and are managing their libp2p module
+dependencies in a more manual fashion, `go-libp2p-secio` is a standard Go module
+which can be installed with:
 
 ```sh
 go get github.com/libp2p/go-libp2p-secio
@@ -26,17 +47,27 @@ or by editing your `go.mod` file as [described by the gomod documentation](https
 
 ## Usage
 
-For more information about how `go-libp2p-secio` is used in the libp2p context, you can see the [go-libp2p-conn](https://github.com/libp2p/go-libp2p-conn) module.
+`go-libp2p-secio` is enabled by default when constructing a new libp2p
+[Host][godoc-host], and it will be used to secure connections if both peers
+support it and [agree to use it][conn-spec] when establishing the connection.
+
+You can disable SECIO by using the [`Security` option][godoc-security-option]
+when constructing a libp2p `Host` and passing in a different `SecureTransport`
+implementation, for example,
+[`go-libp2p-tls`](https://github.com/libp2p/go-libp2p-tls).
+
+Transport security can be disabled for development and testing by passing the
+`NoSecurity` global [`Option`][godoc-option].
 
 ## Contribute
 
 Feel free to join in. All welcome. Open an [issue](https://github.com/libp2p/go-libp2p-secio/issues)!
 
-This repository falls under the IPFS [Code of Conduct](https://github.com/libp2p/community/blob/master/code-of-conduct.md).
+This repository falls under the libp2p [Code of Conduct](https://github.com/libp2p/community/blob/master/code-of-conduct.md).
 
-### Want to hack on IPFS?
+### Want to hack on libp2p?
 
-[![](https://cdn.rawgit.com/jbenet/contribute-ipfs-gif/master/img/contribute.gif)](https://github.com/ipfs/community/blob/master/contributing.md)
+[![](https://cdn.rawgit.com/libp2p/community/master/img/contribute.gif)](https://github.com/libp2p/community/blob/master/CONTRIBUTE.md)
 
 ## License
 
@@ -45,3 +76,13 @@ MIT
 ---
 
 The last gx published version of this module was: 2.0.30: QmSVaJe1aRjc78cZARTtf4pqvXERYwihyYhZWoVWceHnsK
+
+[go-libp2p]: https://github.com/libp2p/go-libp2p
+[secio-spec]: https://github.com/libp2p/specs/blob/master/secio/README.md
+[conn-spec]: https://github.com/libp2p/specs/blob/master/connections/README.md
+[docs-transport]: https://docs.libp2p.io/concepts/transport
+[transport-upgrader]: https://github.com/libp2p/go-libp2p-transport-upgrader
+[godoc-host]: https://godoc.org/github.com/libp2p/go-libp2p-core/host#Host
+[godoc-option]: https://godoc.org/github.com/libp2p/go-libp2p#Option
+[godoc-security-option]: https://godoc.org/github.com/libp2p/go-libp2p#Security
+[godoc-securetransport]: https://godoc.org/github.com/libp2p/go-libp2p-core/sec#SecureTransport

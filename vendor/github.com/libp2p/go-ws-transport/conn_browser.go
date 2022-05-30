@@ -117,8 +117,8 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 		return 0, err
 	}
 	uint8Array := js.Global().Get("Uint8Array").New(len(b))
-	for i, bi := range b {
-		uint8Array.SetIndex(i, bi)
+	if js.CopyBytesToJS(uint8Array, b) != len(b) {
+		panic("expected to copy all bytes")
 	}
 	c.Call("send", uint8Array.Get("buffer"))
 	return len(b), nil
@@ -262,10 +262,10 @@ func (c *Conn) waitForOpen() error {
 // arrayBufferToBytes converts a JavaScript ArrayBuffer to a slice of bytes.
 func arrayBufferToBytes(buffer js.Value) []byte {
 	view := js.Global().Get("Uint8Array").New(buffer)
-	dataLen := view.Get("length").Int()
+	dataLen := view.Length()
 	data := make([]byte, dataLen)
-	for i := 0; i < dataLen; i++ {
-		data[i] = byte(view.Index(i).Int())
+	if js.CopyBytesToGo(data, view) != dataLen {
+		panic("expected to copy all bytes")
 	}
 	return data
 }

@@ -8,9 +8,10 @@ import (
 
 	"github.com/libp2p/go-libp2p-core/mux"
 	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/pnet"
+	ipnet "github.com/libp2p/go-libp2p-core/pnet"
 	"github.com/libp2p/go-libp2p-core/sec"
 	"github.com/libp2p/go-libp2p-core/transport"
+	"github.com/libp2p/go-libp2p-pnet"
 
 	filter "github.com/libp2p/go-maddr-filter"
 	manet "github.com/multiformats/go-multiaddr-net"
@@ -26,10 +27,10 @@ var AcceptQueueLength = 16
 // Upgrader is a multistream upgrader that can upgrade an underlying connection
 // to a full transport connection (secure and multiplexed).
 type Upgrader struct {
-	Protector pnet.Protector
-	Secure    sec.SecureTransport
-	Muxer     mux.Multiplexer
-	Filters   *filter.Filters
+	PSK     ipnet.PSK
+	Secure  sec.SecureTransport
+	Muxer   mux.Multiplexer
+	Filters *filter.Filters
 }
 
 // UpgradeListener upgrades the passed multiaddr-net listener into a full libp2p-transport listener.
@@ -71,17 +72,17 @@ func (u *Upgrader) upgrade(ctx context.Context, t transport.Transport, maconn ma
 	}
 
 	var conn net.Conn = maconn
-	if u.Protector != nil {
-		pconn, err := u.Protector.Protect(conn)
+	if u.PSK != nil {
+		pconn, err := pnet.NewProtectedConn(u.PSK, conn)
 		if err != nil {
 			conn.Close()
 			return nil, fmt.Errorf("failed to setup private network protector: %s", err)
 		}
 		conn = pconn
-	} else if pnet.ForcePrivateNetwork {
+	} else if ipnet.ForcePrivateNetwork {
 		log.Error("tried to dial with no Private Network Protector but usage" +
 			" of Private Networks is forced by the enviroment")
-		return nil, pnet.ErrNotInPrivateNetwork
+		return nil, ipnet.ErrNotInPrivateNetwork
 	}
 	sconn, err := u.setupSecurity(ctx, conn, p)
 	if err != nil {
@@ -91,7 +92,7 @@ func (u *Upgrader) upgrade(ctx context.Context, t transport.Transport, maconn ma
 	smconn, err := u.setupMuxer(ctx, sconn, p)
 	if err != nil {
 		sconn.Close()
-		return nil, fmt.Errorf("failed to negotiate security stream multiplexer: %s", err)
+		return nil, fmt.Errorf("failed to negotiate stream multiplexer: %s", err)
 	}
 	return &transportConn{
 		MuxedConn:      smconn,

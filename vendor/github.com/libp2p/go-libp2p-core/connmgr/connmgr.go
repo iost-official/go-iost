@@ -61,7 +61,7 @@ type ConnManager interface {
 	// See notes on Protect() for more info.
 	Unprotect(id peer.ID, tag string) (protected bool)
 
-	// Close closes the connection manager and stops background processes
+	// Close closes the connection manager and stops background processes.
 	Close() error
 }
 

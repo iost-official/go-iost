@@ -1,15 +1,17 @@
 package libp2p
 
 // This file contains all libp2p configuration options (except the defaults,
-// those are in defaults.go)
+// those are in defaults.go).
 
 import (
 	"fmt"
 	"net"
+	"time"
 
 	"github.com/libp2p/go-libp2p-core/connmgr"
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/metrics"
+	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/pnet"
@@ -147,13 +149,13 @@ func Peerstore(ps peerstore.Peerstore) Option {
 }
 
 // PrivateNetwork configures libp2p to use the given private network protector.
-func PrivateNetwork(prot pnet.Protector) Option {
+func PrivateNetwork(psk pnet.PSK) Option {
 	return func(cfg *Config) error {
-		if cfg.Protector != nil {
+		if cfg.PSK != nil {
 			return fmt.Errorf("cannot specify multiple private network options")
 		}
 
-		cfg.Protector = prot
+		cfg.PSK = psk
 		return nil
 	}
 }
@@ -228,9 +230,11 @@ func DisableRelay() Option {
 	}
 }
 
-// EnableAutoRelay configures libp2p to enable the AutoRelay subsystem. It is an
-// error to enable AutoRelay without enabling relay (enabled by default) and
-// routing (not enabled by default).
+// EnableAutoRelay configures libp2p to enable the AutoRelay subsystem.
+//
+// Dependencies:
+//  * Relay (enabled by default)
+//  * Routing (to find relays), or StaticRelays/DefaultStaticRelays.
 //
 // This subsystem performs two functions:
 //
@@ -249,7 +253,7 @@ func EnableAutoRelay() Option {
 
 // StaticRelays configures known relays for autorelay; when this option is enabled
 // then the system will use the configured relays instead of querying the DHT to
-// discover relays
+// discover relays.
 func StaticRelays(relays []peer.AddrInfo) Option {
 	return func(cfg *Config) error {
 		cfg.StaticRelays = append(cfg.StaticRelays, relays...)
@@ -257,7 +261,7 @@ func StaticRelays(relays []peer.AddrInfo) Option {
 	}
 }
 
-// DefaultStaticRelays configures the static relays to use the known PL-operated relays
+// DefaultStaticRelays configures the static relays to use the known PL-operated relays.
 func DefaultStaticRelays() Option {
 	return func(cfg *Config) error {
 		for _, addr := range autorelay.DefaultRelays {
@@ -272,6 +276,49 @@ func DefaultStaticRelays() Option {
 			cfg.StaticRelays = append(cfg.StaticRelays, *pi)
 		}
 
+		return nil
+	}
+}
+
+// ForceReachabilityPublic overrides automatic reachability detection in the AutoNAT subsystem,
+// forcing the local node to believe it is reachable externally.
+func ForceReachabilityPublic() Option {
+	return func(cfg *Config) error {
+		public := network.Reachability(network.ReachabilityPublic)
+		cfg.AutoNATConfig.ForceReachability = &public
+		return nil
+	}
+}
+
+// ForceReachabilityPrivate overrides automatic reachability detection in the AutoNAT subsystem,
+// forceing the local node to believe it is behind a NAT and not reachable externally.
+func ForceReachabilityPrivate() Option {
+	return func(cfg *Config) error {
+		private := network.Reachability(network.ReachabilityPrivate)
+		cfg.AutoNATConfig.ForceReachability = &private
+		return nil
+	}
+}
+
+// EnableNATService configures libp2p to provide a service to peers for determining
+// their reachability status. When enabled, the host will attempt to dial back
+// to peers, and then tell them if it was successful in making such connections.
+func EnableNATService() Option {
+	return func(cfg *Config) error {
+		cfg.AutoNATConfig.EnableService = true
+		return nil
+	}
+}
+
+// AutoNATServiceRateLimit changes the default rate limiting configured in helping
+// other peers determine their reachability status. When set, the host will limit
+// the number of requests it responds to in each 60 second period to the set
+// numbers. A value of '0' disables throttling.
+func AutoNATServiceRateLimit(global, perPeer int, interval time.Duration) Option {
+	return func(cfg *Config) error {
+		cfg.AutoNATConfig.ThrottleGlobalLimit = global
+		cfg.AutoNATConfig.ThrottlePeerLimit = perPeer
+		cfg.AutoNATConfig.ThrottleInterval = interval
 		return nil
 	}
 }
@@ -292,7 +339,7 @@ func FilterAddresses(addrs ...*net.IPNet) Option {
 }
 
 // Filters configures libp2p to use the given filters for accepting/denying
-// certain addresses. Filters offers more control and should be use when the
+// certain addresses. Filters offers more control and should be used when the
 // addresses you want to accept/deny are not known ahead of time and can
 // dynamically change.
 func Filters(filters *filter.Filters) Option {

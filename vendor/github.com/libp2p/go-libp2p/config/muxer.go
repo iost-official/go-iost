@@ -8,7 +8,7 @@ import (
 	msmux "github.com/libp2p/go-stream-muxer-multistream"
 )
 
-// MuxC is a stream multiplex transport constructor
+// MuxC is a stream multiplex transport constructor.
 type MuxC func(h host.Host) (mux.Multiplexer, error)
 
 // MsMuxC is a tuple containing a multiplex transport constructor and a protocol

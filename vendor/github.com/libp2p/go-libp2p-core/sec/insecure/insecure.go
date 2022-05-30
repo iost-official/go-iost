@@ -9,10 +9,9 @@ import (
 	"io"
 	"net"
 
-	gogoio "github.com/gogo/protobuf/io"
-
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/sec"
+	"github.com/libp2p/go-msgio"
 
 	ci "github.com/libp2p/go-libp2p-core/crypto"
 	pb "github.com/libp2p/go-libp2p-core/sec/insecure/pb"
@@ -183,27 +182,34 @@ func (ic *Conn) runHandshakeSync() error {
 
 // read and write a message at the same time.
 func readWriteMsg(rw io.ReadWriter, out *pb.Exchange) (*pb.Exchange, error) {
-	const maxMsgSize = 1 << 16
-	r := gogoio.NewDelimitedReader(rw, maxMsgSize)
-	w := gogoio.NewDelimitedWriter(rw)
-	wresult := make(chan error)
-	go func() {
-		wresult <- w.WriteMsg(out)
-	}()
+	const maxMessageSize = 1 << 16
 
-	inMsg := pb.Exchange{}
-	err := r.ReadMsg(&inMsg)
-
-	// Always wait for the write to finish.
-	err2 := <-wresult
-
+	outBytes, err := out.Marshal()
 	if err != nil {
 		return nil, err
 	}
+	wresult := make(chan error)
+	go func() {
+		w := msgio.NewVarintWriter(rw)
+		wresult <- w.WriteMsg(outBytes)
+	}()
+
+	r := msgio.NewVarintReaderSize(rw, maxMessageSize)
+	msg, err1 := r.ReadMsg()
+
+	// Always wait for the read to finish.
+	err2 := <-wresult
+
+	if err1 != nil {
+		return nil, err1
+	}
 	if err2 != nil {
+		r.ReleaseMsg(msg)
 		return nil, err2
 	}
-	return &inMsg, err
+	inMsg := new(pb.Exchange)
+	err = inMsg.Unmarshal(msg)
+	return inMsg, err
 }
 
 // LocalPeer returns the local peer ID.

@@ -91,7 +91,7 @@ START:
 			return 0, io.EOF
 		}
 	case streamReset:
-		return 0, ErrConnectionReset
+		return 0, ErrStreamReset
 	}
 
 	// If there is no data available, block
@@ -152,7 +152,7 @@ START:
 	case streamClosed:
 		return 0, ErrStreamClosed
 	case streamReset:
-		return 0, ErrConnectionReset
+		return 0, ErrStreamReset
 	}
 
 	// If there is no data available, block
@@ -321,14 +321,14 @@ func (s *Stream) forceClose() {
 	s.notifyWaiting()
 
 	s.readDeadline.set(time.Time{})
-	s.readDeadline.set(time.Time{})
+	s.writeDeadline.set(time.Time{})
 }
 
 // called when fully closed to release any system resources.
 func (s *Stream) cleanup() {
 	s.session.closeStream(s.id)
 	s.readDeadline.set(time.Time{})
-	s.readDeadline.set(time.Time{})
+	s.writeDeadline.set(time.Time{})
 }
 
 // processFlags is used to update the state of the stream

@@ -17,7 +17,6 @@ type Conn struct {
 	DefaultMessageType int
 	reader             io.Reader
 	closeOnce          sync.Once
-	mx                 sync.Mutex
 }
 
 func (c *Conn) Read(b []byte) (int, error) {
@@ -68,9 +67,6 @@ func (c *Conn) prepNextReader() error {
 }
 
 func (c *Conn) Write(b []byte) (n int, err error) {
-	c.mx.Lock()
-	defer c.mx.Unlock()
-
 	if err := c.Conn.WriteMessage(c.DefaultMessageType, b); err != nil {
 		return 0, err
 	}
@@ -82,9 +78,6 @@ func (c *Conn) Write(b []byte) (n int, err error) {
 // close error, subsequent and concurrent calls will return nil.
 // This method is thread-safe.
 func (c *Conn) Close() error {
-	c.mx.Lock()
-	defer c.mx.Unlock()
-
 	var err error
 	c.closeOnce.Do(func() {
 		err1 := c.Conn.WriteControl(

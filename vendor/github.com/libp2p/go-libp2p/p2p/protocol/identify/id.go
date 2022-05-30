@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/libp2p/go-eventbus"
 	ic "github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/event"
 	"github.com/libp2p/go-libp2p-core/helpers"
@@ -17,12 +16,14 @@ import (
 	"github.com/libp2p/go-libp2p-core/peerstore"
 	"github.com/libp2p/go-libp2p-core/protocol"
 
+	"github.com/libp2p/go-eventbus"
 	pb "github.com/libp2p/go-libp2p/p2p/protocol/identify/pb"
 
 	ggio "github.com/gogo/protobuf/io"
 	logging "github.com/ipfs/go-log"
 
 	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr-net"
 	msmux "github.com/multiformats/go-multistream"
 )
 
@@ -70,7 +71,12 @@ type IDService struct {
 	Host      host.Host
 	UserAgent string
 
-	ctx context.Context
+	ctx       context.Context
+	ctxCancel context.CancelFunc
+	// ensure we shutdown ONLY once
+	closeSync sync.Once
+	// track resources that need to be shut down before we shut down
+	refCount sync.WaitGroup
 
 	// connections undergoing identification
 	// for wait purposes
@@ -85,13 +91,15 @@ type IDService struct {
 
 	subscription event.Subscription
 	emitters     struct {
-		evtPeerProtocolsUpdated event.Emitter
+		evtPeerProtocolsUpdated        event.Emitter
+		evtPeerIdentificationCompleted event.Emitter
+		evtPeerIdentificationFailed    event.Emitter
 	}
 }
 
 // NewIDService constructs a new *IDService and activates it by
 // attaching its stream handler to the given host.Host.
-func NewIDService(ctx context.Context, h host.Host, opts ...Option) *IDService {
+func NewIDService(h host.Host, opts ...Option) *IDService {
 	var cfg config
 	for _, opt := range opts {
 		opt(&cfg)
@@ -102,13 +110,15 @@ func NewIDService(ctx context.Context, h host.Host, opts ...Option) *IDService {
 		userAgent = cfg.userAgent
 	}
 
+	hostCtx, cancel := context.WithCancel(context.Background())
 	s := &IDService{
 		Host:      h,
 		UserAgent: userAgent,
 
-		ctx:           ctx,
+		ctx:           hostCtx,
+		ctxCancel:     cancel,
 		currid:        make(map[network.Conn]chan struct{}),
-		observedAddrs: NewObservedAddrSet(ctx),
+		observedAddrs: NewObservedAddrSet(hostCtx),
 	}
 
 	// handle local protocol handler updates, and push deltas to peers.
@@ -117,12 +127,21 @@ func NewIDService(ctx context.Context, h host.Host, opts ...Option) *IDService {
 	if err != nil {
 		log.Warningf("identify service not subscribed to local protocol handlers updates; err: %s", err)
 	} else {
+		s.refCount.Add(1)
 		go s.handleEvents()
 	}
 
 	s.emitters.evtPeerProtocolsUpdated, err = h.EventBus().Emitter(&event.EvtPeerProtocolsUpdated{})
 	if err != nil {
 		log.Warningf("identify service not emitting peer protocol updates; err: %s", err)
+	}
+	s.emitters.evtPeerIdentificationCompleted, err = h.EventBus().Emitter(&event.EvtPeerIdentificationCompleted{})
+	if err != nil {
+		log.Warningf("identify service not emitting identification completed events; err: %s", err)
+	}
+	s.emitters.evtPeerIdentificationFailed, err = h.EventBus().Emitter(&event.EvtPeerIdentificationFailed{})
+	if err != nil {
+		log.Warningf("identify service not emitting identification failed events; err: %s", err)
 	}
 
 	h.SetStreamHandler(ID, s.requestHandler)
@@ -132,14 +151,19 @@ func NewIDService(ctx context.Context, h host.Host, opts ...Option) *IDService {
 	return s
 }
 
+// Close shuts down the IDService
+func (ids *IDService) Close() error {
+	ids.closeSync.Do(func() {
+		ids.ctxCancel()
+		ids.refCount.Wait()
+	})
+	return nil
+}
+
 func (ids *IDService) handleEvents() {
 	sub := ids.subscription
-	defer func() {
-		_ = sub.Close()
-		// drain the channel.
-		for range sub.Out() {
-		}
-	}()
+	defer ids.refCount.Done()
+	defer sub.Close()
 
 	for {
 		select {
@@ -164,6 +188,11 @@ func (ids *IDService) ObservedAddrsFor(local ma.Multiaddr) []ma.Multiaddr {
 }
 
 func (ids *IDService) IdentifyConn(c network.Conn) {
+	var (
+		s   network.Stream
+		err error
+	)
+
 	ids.currmu.Lock()
 	if wait, found := ids.currid[c]; found {
 		ids.currmu.Unlock()
@@ -180,9 +209,16 @@ func (ids *IDService) IdentifyConn(c network.Conn) {
 		ids.currmu.Lock()
 		delete(ids.currid, c)
 		ids.currmu.Unlock()
+
+		// emit the appropriate event.
+		if p := c.RemotePeer(); err == nil {
+			ids.emitters.evtPeerIdentificationCompleted.Emit(event.EvtPeerIdentificationCompleted{Peer: p})
+		} else {
+			ids.emitters.evtPeerIdentificationFailed.Emit(event.EvtPeerIdentificationFailed{Peer: p, Reason: err})
+		}
 	}()
 
-	s, err := c.NewStream()
+	s, err = c.NewStream()
 	if err != nil {
 		log.Debugf("error opening initial stream for %s: %s", ID, err)
 		log.Event(context.TODO(), "IdentifyOpenFailed", c.RemotePeer())
@@ -193,7 +229,7 @@ func (ids *IDService) IdentifyConn(c network.Conn) {
 	s.SetProtocol(ID)
 
 	// ok give the response to our handler.
-	if err := msmux.SelectProtoOrFail(ID, s); err != nil {
+	if err = msmux.SelectProtoOrFail(ID, s); err != nil {
 		log.Event(context.TODO(), "IdentifyOpenFailed", c.RemotePeer(), logging.Metadata{"error": err})
 		s.Reset()
 		return
@@ -310,9 +346,14 @@ func (ids *IDService) populateMessage(mes *pb.Identify, c network.Conn) {
 
 	// set listen addrs, get our latest addrs from Host.
 	laddrs := ids.Host.Addrs()
-	mes.ListenAddrs = make([][]byte, len(laddrs))
-	for i, addr := range laddrs {
-		mes.ListenAddrs[i] = addr.Bytes()
+	// Note: LocalMultiaddr is sometimes 0.0.0.0
+	viaLoopback := manet.IsIPLoopback(c.LocalMultiaddr()) || manet.IsIPLoopback(c.RemoteMultiaddr())
+	mes.ListenAddrs = make([][]byte, 0, len(laddrs))
+	for _, addr := range laddrs {
+		if !viaLoopback && manet.IsIPLoopback(addr) {
+			continue
+		}
+		mes.ListenAddrs = append(mes.ListenAddrs, addr.Bytes())
 	}
 	log.Debugf("%s sent listen addrs to %s: %s", c.LocalPeer(), c.RemotePeer(), laddrs)
 

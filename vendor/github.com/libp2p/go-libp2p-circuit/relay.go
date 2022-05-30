@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"sync"
 	"sync/atomic"
 	"time"
 
@@ -45,14 +44,10 @@ type Relay struct {
 	ctx      context.Context
 	self     peer.ID
 
-	active    bool
-	hop       bool
-	discovery bool
+	active bool
+	hop    bool
 
 	incoming chan *Conn
-
-	relays map[peer.ID]struct{}
-	mx     sync.Mutex
 
 	// atomic counters
 	streamCount  int32
@@ -72,9 +67,14 @@ var (
 	// this will only relay traffic between peers already connected to this
 	// node.
 	OptHop = RelayOpt(1)
-	// OptDiscovery configures this relay transport to discover new relays
-	// by probing every new peer. You almost _certainly_ don't want to
-	// enable this.
+	// OptDiscovery is a no-op. It was introduced as a way to probe new
+	// peers to see if they were willing to act as a relays. However, in
+	// practice, it's useless. While it does test to see if these peers are
+	// relays, it doesn't (and can't), check to see if these peers are
+	// _active_ relays (i.e., will actively dial the target peer).
+	//
+	// This option may be re-enabled in the future but for now you shouldn't
+	// use it.
 	OptDiscovery = RelayOpt(2)
 )
 
@@ -94,7 +94,6 @@ func NewRelay(ctx context.Context, h host.Host, upgrader *tptu.Upgrader, opts ..
 		ctx:      ctx,
 		self:     h.ID(),
 		incoming: make(chan *Conn),
-		relays:   make(map[peer.ID]struct{}),
 	}
 
 	for _, opt := range opts {
@@ -104,17 +103,16 @@ func NewRelay(ctx context.Context, h host.Host, upgrader *tptu.Upgrader, opts ..
 		case OptHop:
 			r.hop = true
 		case OptDiscovery:
-			r.discovery = true
+			log.Errorf(
+				"circuit.OptDiscovery is now a no-op: %s",
+				"dialing peers with a random relay is no longer supported",
+			)
 		default:
 			return nil, fmt.Errorf("unrecognized option: %d", opt)
 		}
 	}
 
 	h.SetStreamHandler(ProtoID, r.handleNewStream)
-
-	if r.discovery {
-		h.Network().Notify(r.notifiee())
-	}
 
 	return r, nil
 }

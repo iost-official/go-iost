@@ -40,6 +40,9 @@ var ErrSwarmClosed = errors.New("swarm closed")
 // transport is misbehaving.
 var ErrAddrFiltered = errors.New("address filtered")
 
+// ErrDialTimeout is returned when one a dial times out due to the global timeout
+var ErrDialTimeout = errors.New("dial timed out")
+
 // Swarm is a connection muxer, allowing connections to other peers to
 // be opened and closed, while still using the same Chan for all
 // communication. The Chan sends/receives Messages, which note the
@@ -109,8 +112,13 @@ func NewSwarm(ctx context.Context, local peer.ID, peers peerstore.Peerstore, bwc
 
 	s.dsync = NewDialSync(s.doDial)
 	s.limiter = newDialLimiter(s.dialAddr)
-	s.proc = goprocessctx.WithContextAndTeardown(ctx, s.teardown)
+	s.proc = goprocessctx.WithContext(ctx)
 	s.ctx = goprocessctx.OnClosingContext(s.proc)
+	s.backf.init(s.ctx)
+
+	// Set teardown after setting the context/process so we don't start the
+	// teardown process early.
+	s.proc.SetTeardown(s.teardown)
 
 	return s
 }
@@ -227,7 +235,9 @@ func (s *Swarm) addConn(tc transport.CapableConn, dir network.Direction) (*Conn,
 
 	// We have a connection now. Cancel all other in-progress dials.
 	// This should be fast, no reason to wait till later.
-	s.dsync.CancelDial(p)
+	if dir == network.DirOutbound {
+		s.dsync.CancelDial(p)
+	}
 
 	s.notifyAll(func(f network.Notifiee) {
 		f.Connected(s, c)

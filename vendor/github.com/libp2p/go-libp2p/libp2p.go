@@ -8,7 +8,7 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 )
 
-// Config describes a set of settings for a libp2p node
+// Config describes a set of settings for a libp2p node.
 type Config = config.Config
 
 // Option is a libp2p config option that can be given to the libp2p constructor
@@ -46,7 +46,7 @@ func ChainOptions(opts ...Option) Option {
 // - If no security transport is provided, the host uses the go-libp2p's secio
 // encrypted transport to encrypt all traffic;
 //
-// - If no peer identity is provided, it generates a random RSA 2048 key-par
+// - If no peer identity is provided, it generates a random RSA 2048 key-pair
 // and derives a new identity from it;
 //
 // - If no peerstore is provided, the host is initialized with an empty
