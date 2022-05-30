@@ -1,6 +1,6 @@
 FROM ubuntu:18.04
 
-ENV GOVERSION 1.17
+ENV GOVERSION 1.18
 
 # Install Base Tools
 RUN apt update && \
