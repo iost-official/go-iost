@@ -1,3 +1,12 @@
+## v3.8.1
+Tue May 31 19:55:13 CST 2022
+
+Nodes should upgrade to this new version.
+
+- Support yamux muxer in libp2p
+- Support tls and noise security protocol in libp2p
+- Improve p2p rejoin time when reboot
+
 ## v3.8.0
 Wed Mar 16 16:07:42 UTC 2022
 
