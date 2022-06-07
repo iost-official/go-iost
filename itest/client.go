@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // Constant of Client
@@ -37,7 +38,7 @@ type Client struct {
 // GetGRPC return the underlying grpc client
 func (c *Client) GetGRPC() (rpcpb.ApiServiceClient, error) {
 	c.o.Do(func() {
-		conn, err := grpc.Dial(c.Addr, grpc.WithInsecure())
+		conn, err := grpc.Dial(c.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			panic(err)
 		}

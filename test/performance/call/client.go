@@ -3,6 +3,7 @@ package call
 import (
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 var clients []*GrpcClient
@@ -22,7 +23,7 @@ func (c *GrpcClient) Addr() string {
 func InitClients(addrs []string) {
 	clients = make([]*GrpcClient, len(addrs))
 	for i, addr := range addrs {
-		conn, err := grpc.Dial(addr, grpc.WithInsecure())
+		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			panic(err)
 		}

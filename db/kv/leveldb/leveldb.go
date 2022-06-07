@@ -119,11 +119,7 @@ func (d *DB) Size() (int64, error) {
 	if err := d.db.Stats(stats); err != nil {
 		return 0, err
 	}
-	total := int64(0)
-	for _, size := range stats.LevelSizes {
-		total += size
-	}
-	return total, nil
+	return stats.LevelSizes.Sum(), nil
 }
 
 // Close will close the database

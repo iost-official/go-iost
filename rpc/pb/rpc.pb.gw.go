@@ -1604,12 +1604,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetNodeInfo", runtime.WithHTTPPathPattern("/getNodeInfo"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetNodeInfo", runtime.WithHTTPPathPattern("/getNodeInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetNodeInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetNodeInfo_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1627,12 +1628,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetChainInfo", runtime.WithHTTPPathPattern("/getChainInfo"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetChainInfo", runtime.WithHTTPPathPattern("/getChainInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetChainInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetChainInfo_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1650,12 +1652,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetRAMInfo", runtime.WithHTTPPathPattern("/getRAMInfo"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetRAMInfo", runtime.WithHTTPPathPattern("/getRAMInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetRAMInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetRAMInfo_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1673,12 +1676,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTxByHash", runtime.WithHTTPPathPattern("/getTxByHash/{hash}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTxByHash", runtime.WithHTTPPathPattern("/getTxByHash/{hash}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetTxByHash_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetTxByHash_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1696,12 +1700,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTxReceiptByTxHash", runtime.WithHTTPPathPattern("/getTxReceiptByTxHash/{hash}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTxReceiptByTxHash", runtime.WithHTTPPathPattern("/getTxReceiptByTxHash/{hash}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetTxReceiptByTxHash_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetTxReceiptByTxHash_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1719,12 +1724,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByHash", runtime.WithHTTPPathPattern("/getBlockByHash/{hash}/{complete}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByHash", runtime.WithHTTPPathPattern("/getBlockByHash/{hash}/{complete}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetBlockByHash_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetBlockByHash_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1742,12 +1748,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByNumber", runtime.WithHTTPPathPattern("/getBlockByNumber/{number}/{complete}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByNumber", runtime.WithHTTPPathPattern("/getBlockByNumber/{number}/{complete}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetBlockByNumber_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetBlockByNumber_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1765,12 +1772,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetRawBlockByNumber", runtime.WithHTTPPathPattern("/getRawBlockByNumber/{number}/{complete}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetRawBlockByNumber", runtime.WithHTTPPathPattern("/getRawBlockByNumber/{number}/{complete}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetRawBlockByNumber_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetRawBlockByNumber_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1788,12 +1796,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockHeaderByRange", runtime.WithHTTPPathPattern("/getBlockHeaderByRange"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockHeaderByRange", runtime.WithHTTPPathPattern("/getBlockHeaderByRange"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetBlockHeaderByRange_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetBlockHeaderByRange_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1811,12 +1820,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetAccount", runtime.WithHTTPPathPattern("/getAccount/{name}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetAccount", runtime.WithHTTPPathPattern("/getAccount/{name}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetAccount_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetAccount_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1834,12 +1844,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenBalance", runtime.WithHTTPPathPattern("/getTokenBalance/{account}/{token}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenBalance", runtime.WithHTTPPathPattern("/getTokenBalance/{account}/{token}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetTokenBalance_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetTokenBalance_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1857,12 +1868,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Balance", runtime.WithHTTPPathPattern("/getToken721Balance/{account}/{token}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Balance", runtime.WithHTTPPathPattern("/getToken721Balance/{account}/{token}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetToken721Balance_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetToken721Balance_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1880,12 +1892,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Metadata", runtime.WithHTTPPathPattern("/getToken721Metadata/{token}/{token_id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Metadata", runtime.WithHTTPPathPattern("/getToken721Metadata/{token}/{token_id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetToken721Metadata_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetToken721Metadata_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1903,12 +1916,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Owner", runtime.WithHTTPPathPattern("/getToken721Owner/{token}/{token_id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Owner", runtime.WithHTTPPathPattern("/getToken721Owner/{token}/{token_id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetToken721Owner_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetToken721Owner_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1926,12 +1940,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetGasRatio", runtime.WithHTTPPathPattern("/getGasRatio"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetGasRatio", runtime.WithHTTPPathPattern("/getGasRatio"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetGasRatio_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetGasRatio_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1949,12 +1964,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetProducerVoteInfo", runtime.WithHTTPPathPattern("/getProducerVoteInfo/{account}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetProducerVoteInfo", runtime.WithHTTPPathPattern("/getProducerVoteInfo/{account}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetProducerVoteInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetProducerVoteInfo_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1972,12 +1988,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContract", runtime.WithHTTPPathPattern("/getContract/{id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContract", runtime.WithHTTPPathPattern("/getContract/{id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetContract_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetContract_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -1995,12 +2012,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContractVote", runtime.WithHTTPPathPattern("/getContractVote/{id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContractVote", runtime.WithHTTPPathPattern("/getContractVote/{id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetContractVote_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetContractVote_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2018,12 +2036,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorage", runtime.WithHTTPPathPattern("/getContractStorage"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorage", runtime.WithHTTPPathPattern("/getContractStorage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetContractStorage_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetContractStorage_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2041,12 +2060,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBatchContractStorage", runtime.WithHTTPPathPattern("/getBatchContractStorage"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBatchContractStorage", runtime.WithHTTPPathPattern("/getBatchContractStorage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetBatchContractStorage_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetBatchContractStorage_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2064,12 +2084,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/ListContractStorage", runtime.WithHTTPPathPattern("/listContractStorage"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/ListContractStorage", runtime.WithHTTPPathPattern("/listContractStorage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_ListContractStorage_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_ListContractStorage_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2087,12 +2108,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorageFields", runtime.WithHTTPPathPattern("/getContractStorageFields"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorageFields", runtime.WithHTTPPathPattern("/getContractStorageFields"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetContractStorageFields_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetContractStorageFields_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2110,12 +2132,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/SendTransaction", runtime.WithHTTPPathPattern("/sendTx"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/SendTransaction", runtime.WithHTTPPathPattern("/sendTx"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_SendTransaction_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_SendTransaction_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2133,12 +2156,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/ExecTransaction", runtime.WithHTTPPathPattern("/execTx"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/ExecTransaction", runtime.WithHTTPPathPattern("/execTx"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_ExecTransaction_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_ExecTransaction_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2163,12 +2187,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetVoterBonus", runtime.WithHTTPPathPattern("/getVoterBonus/{name}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetVoterBonus", runtime.WithHTTPPathPattern("/getVoterBonus/{name}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetVoterBonus_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetVoterBonus_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2186,12 +2211,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetCandidateBonus", runtime.WithHTTPPathPattern("/getCandidateBonus/{name}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetCandidateBonus", runtime.WithHTTPPathPattern("/getCandidateBonus/{name}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetCandidateBonus_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetCandidateBonus_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2209,12 +2235,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenInfo", runtime.WithHTTPPathPattern("/getTokenInfo/{symbol}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenInfo", runtime.WithHTTPPathPattern("/getTokenInfo/{symbol}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetTokenInfo_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetTokenInfo_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2232,12 +2259,13 @@ func RegisterApiServiceHandlerServer(ctx context.Context, mux *runtime.ServeMux,
 		var stream runtime.ServerTransportStream
 		ctx = grpc.NewContextWithServerTransportStream(ctx, &stream)
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockTxsByContract", runtime.WithHTTPPathPattern("/getBlockTxsByContract"))
+		var err error
+		ctx, err = runtime.AnnotateIncomingContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockTxsByContract", runtime.WithHTTPPathPattern("/getBlockTxsByContract"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := local_request_ApiService_GetBlockTxsByContract_0(rctx, inboundMarshaler, server, req, pathParams)
+		resp, md, err := local_request_ApiService_GetBlockTxsByContract_0(ctx, inboundMarshaler, server, req, pathParams)
 		md.HeaderMD, md.TrailerMD = metadata.Join(md.HeaderMD, stream.Header()), metadata.Join(md.TrailerMD, stream.Trailer())
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
@@ -2294,12 +2322,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetNodeInfo", runtime.WithHTTPPathPattern("/getNodeInfo"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetNodeInfo", runtime.WithHTTPPathPattern("/getNodeInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetNodeInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetNodeInfo_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2314,12 +2343,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetChainInfo", runtime.WithHTTPPathPattern("/getChainInfo"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetChainInfo", runtime.WithHTTPPathPattern("/getChainInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetChainInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetChainInfo_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2334,12 +2364,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetRAMInfo", runtime.WithHTTPPathPattern("/getRAMInfo"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetRAMInfo", runtime.WithHTTPPathPattern("/getRAMInfo"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetRAMInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetRAMInfo_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2354,12 +2385,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTxByHash", runtime.WithHTTPPathPattern("/getTxByHash/{hash}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTxByHash", runtime.WithHTTPPathPattern("/getTxByHash/{hash}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetTxByHash_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetTxByHash_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2374,12 +2406,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTxReceiptByTxHash", runtime.WithHTTPPathPattern("/getTxReceiptByTxHash/{hash}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTxReceiptByTxHash", runtime.WithHTTPPathPattern("/getTxReceiptByTxHash/{hash}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetTxReceiptByTxHash_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetTxReceiptByTxHash_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2394,12 +2427,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByHash", runtime.WithHTTPPathPattern("/getBlockByHash/{hash}/{complete}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByHash", runtime.WithHTTPPathPattern("/getBlockByHash/{hash}/{complete}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetBlockByHash_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetBlockByHash_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2414,12 +2448,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByNumber", runtime.WithHTTPPathPattern("/getBlockByNumber/{number}/{complete}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockByNumber", runtime.WithHTTPPathPattern("/getBlockByNumber/{number}/{complete}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetBlockByNumber_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetBlockByNumber_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2434,12 +2469,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetRawBlockByNumber", runtime.WithHTTPPathPattern("/getRawBlockByNumber/{number}/{complete}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetRawBlockByNumber", runtime.WithHTTPPathPattern("/getRawBlockByNumber/{number}/{complete}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetRawBlockByNumber_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetRawBlockByNumber_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2454,12 +2490,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockHeaderByRange", runtime.WithHTTPPathPattern("/getBlockHeaderByRange"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockHeaderByRange", runtime.WithHTTPPathPattern("/getBlockHeaderByRange"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetBlockHeaderByRange_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetBlockHeaderByRange_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2474,12 +2511,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetAccount", runtime.WithHTTPPathPattern("/getAccount/{name}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetAccount", runtime.WithHTTPPathPattern("/getAccount/{name}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetAccount_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetAccount_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2494,12 +2532,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenBalance", runtime.WithHTTPPathPattern("/getTokenBalance/{account}/{token}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenBalance", runtime.WithHTTPPathPattern("/getTokenBalance/{account}/{token}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetTokenBalance_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetTokenBalance_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2514,12 +2553,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Balance", runtime.WithHTTPPathPattern("/getToken721Balance/{account}/{token}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Balance", runtime.WithHTTPPathPattern("/getToken721Balance/{account}/{token}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetToken721Balance_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetToken721Balance_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2534,12 +2574,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Metadata", runtime.WithHTTPPathPattern("/getToken721Metadata/{token}/{token_id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Metadata", runtime.WithHTTPPathPattern("/getToken721Metadata/{token}/{token_id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetToken721Metadata_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetToken721Metadata_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2554,12 +2595,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Owner", runtime.WithHTTPPathPattern("/getToken721Owner/{token}/{token_id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetToken721Owner", runtime.WithHTTPPathPattern("/getToken721Owner/{token}/{token_id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetToken721Owner_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetToken721Owner_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2574,12 +2616,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetGasRatio", runtime.WithHTTPPathPattern("/getGasRatio"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetGasRatio", runtime.WithHTTPPathPattern("/getGasRatio"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetGasRatio_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetGasRatio_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2594,12 +2637,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetProducerVoteInfo", runtime.WithHTTPPathPattern("/getProducerVoteInfo/{account}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetProducerVoteInfo", runtime.WithHTTPPathPattern("/getProducerVoteInfo/{account}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetProducerVoteInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetProducerVoteInfo_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2614,12 +2658,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContract", runtime.WithHTTPPathPattern("/getContract/{id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContract", runtime.WithHTTPPathPattern("/getContract/{id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetContract_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetContract_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2634,12 +2679,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContractVote", runtime.WithHTTPPathPattern("/getContractVote/{id}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContractVote", runtime.WithHTTPPathPattern("/getContractVote/{id}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetContractVote_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetContractVote_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2654,12 +2700,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorage", runtime.WithHTTPPathPattern("/getContractStorage"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorage", runtime.WithHTTPPathPattern("/getContractStorage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetContractStorage_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetContractStorage_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2674,12 +2721,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBatchContractStorage", runtime.WithHTTPPathPattern("/getBatchContractStorage"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBatchContractStorage", runtime.WithHTTPPathPattern("/getBatchContractStorage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetBatchContractStorage_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetBatchContractStorage_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2694,12 +2742,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/ListContractStorage", runtime.WithHTTPPathPattern("/listContractStorage"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/ListContractStorage", runtime.WithHTTPPathPattern("/listContractStorage"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_ListContractStorage_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_ListContractStorage_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2714,12 +2763,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorageFields", runtime.WithHTTPPathPattern("/getContractStorageFields"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetContractStorageFields", runtime.WithHTTPPathPattern("/getContractStorageFields"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetContractStorageFields_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetContractStorageFields_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2734,12 +2784,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/SendTransaction", runtime.WithHTTPPathPattern("/sendTx"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/SendTransaction", runtime.WithHTTPPathPattern("/sendTx"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_SendTransaction_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_SendTransaction_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2754,12 +2805,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/ExecTransaction", runtime.WithHTTPPathPattern("/execTx"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/ExecTransaction", runtime.WithHTTPPathPattern("/execTx"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_ExecTransaction_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_ExecTransaction_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2774,12 +2826,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/Subscribe", runtime.WithHTTPPathPattern("/subscribe"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/Subscribe", runtime.WithHTTPPathPattern("/subscribe"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_Subscribe_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_Subscribe_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2794,12 +2847,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetVoterBonus", runtime.WithHTTPPathPattern("/getVoterBonus/{name}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetVoterBonus", runtime.WithHTTPPathPattern("/getVoterBonus/{name}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetVoterBonus_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetVoterBonus_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2814,12 +2868,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetCandidateBonus", runtime.WithHTTPPathPattern("/getCandidateBonus/{name}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetCandidateBonus", runtime.WithHTTPPathPattern("/getCandidateBonus/{name}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetCandidateBonus_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetCandidateBonus_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2834,12 +2889,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenInfo", runtime.WithHTTPPathPattern("/getTokenInfo/{symbol}/{by_longest_chain}"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetTokenInfo", runtime.WithHTTPPathPattern("/getTokenInfo/{symbol}/{by_longest_chain}"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetTokenInfo_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetTokenInfo_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
@@ -2854,12 +2910,13 @@ func RegisterApiServiceHandlerClient(ctx context.Context, mux *runtime.ServeMux,
 		ctx, cancel := context.WithCancel(req.Context())
 		defer cancel()
 		inboundMarshaler, outboundMarshaler := runtime.MarshalerForRequest(mux, req)
-		rctx, err := runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockTxsByContract", runtime.WithHTTPPathPattern("/getBlockTxsByContract"))
+		var err error
+		ctx, err = runtime.AnnotateContext(ctx, mux, req, "/rpcpb.ApiService/GetBlockTxsByContract", runtime.WithHTTPPathPattern("/getBlockTxsByContract"))
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)
 			return
 		}
-		resp, md, err := request_ApiService_GetBlockTxsByContract_0(rctx, inboundMarshaler, client, req, pathParams)
+		resp, md, err := request_ApiService_GetBlockTxsByContract_0(ctx, inboundMarshaler, client, req, pathParams)
 		ctx = runtime.NewServerMetadataContext(ctx, md)
 		if err != nil {
 			runtime.HTTPError(ctx, mux, outboundMarshaler, w, req, err)

@@ -2,16 +2,49 @@ package runtime
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"net/textproto"
+	"regexp"
 	"strings"
 
 	"github.com/grpc-ecosystem/grpc-gateway/v2/internal/httprule"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/grpclog"
+	"google.golang.org/grpc/health/grpc_health_v1"
 	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/proto"
+)
+
+// UnescapingMode defines the behavior of ServeMux when unescaping path parameters.
+type UnescapingMode int
+
+const (
+	// UnescapingModeLegacy is the default V2 behavior, which escapes the entire
+	// path string before doing any routing.
+	UnescapingModeLegacy UnescapingMode = iota
+
+	// UnescapingModeAllExceptReserved unescapes all path parameters except RFC 6570
+	// reserved characters.
+	UnescapingModeAllExceptReserved
+
+	// UnescapingModeAllExceptSlash unescapes URL path parameters except path
+	// separators, which will be left as "%2F".
+	UnescapingModeAllExceptSlash
+
+	// UnescapingModeAllCharacters unescapes all URL path parameters.
+	UnescapingModeAllCharacters
+
+	// UnescapingModeDefault is the default escaping type.
+	// TODO(v3): default this to UnescapingModeAllExceptReserved per grpc-httpjson-transcoding's
+	// reference implementation
+	UnescapingModeDefault = UnescapingModeLegacy
+)
+
+var (
+	encodedPathSplitter = regexp.MustCompile("(/|%2F)")
 )
 
 // A HandlerFunc handles a specific pair of path pattern and HTTP method.
@@ -31,6 +64,7 @@ type ServeMux struct {
 	streamErrorHandler        StreamErrorHandlerFunc
 	routingErrorHandler       RoutingErrorHandlerFunc
 	disablePathLengthFallback bool
+	unescapingMode            UnescapingMode
 }
 
 // ServeMuxOption is an option that can be given to a ServeMux on construction.
@@ -45,6 +79,14 @@ type ServeMuxOption func(*ServeMux)
 func WithForwardResponseOption(forwardResponseOption func(context.Context, http.ResponseWriter, proto.Message) error) ServeMuxOption {
 	return func(serveMux *ServeMux) {
 		serveMux.forwardResponseOptions = append(serveMux.forwardResponseOptions, forwardResponseOption)
+	}
+}
+
+// WithEscapingType sets the escaping type. See the definitions of UnescapingMode
+// for more information.
+func WithUnescapingMode(mode UnescapingMode) ServeMuxOption {
+	return func(serveMux *ServeMux) {
+		serveMux.unescapingMode = mode
 	}
 }
 
@@ -78,9 +120,28 @@ func DefaultHeaderMatcher(key string) (string, bool) {
 // This matcher will be called with each header in http.Request. If matcher returns true, that header will be
 // passed to gRPC context. To transform the header before passing to gRPC context, matcher should return modified header.
 func WithIncomingHeaderMatcher(fn HeaderMatcherFunc) ServeMuxOption {
+	for _, header := range fn.matchedMalformedHeaders() {
+		grpclog.Warningf("The configured forwarding filter would allow %q to be sent to the gRPC server, which will likely cause errors. See https://github.com/grpc/grpc-go/pull/4803#issuecomment-986093310 for more information.", header)
+	}
+
 	return func(mux *ServeMux) {
 		mux.incomingHeaderMatcher = fn
 	}
+}
+
+// matchedMalformedHeaders returns the malformed headers that would be forwarded to gRPC server.
+func (fn HeaderMatcherFunc) matchedMalformedHeaders() []string {
+	if fn == nil {
+		return nil
+	}
+	headers := make([]string, 0)
+	for header := range malformedHTTPHeaders {
+		out, accept := fn(header)
+		if accept && isMalformedHTTPHeader(out) {
+			headers = append(headers, out)
+		}
+	}
+	return headers
 }
 
 // WithOutgoingHeaderMatcher returns a ServeMuxOption representing a headerMatcher for outgoing response from gateway.
@@ -144,6 +205,57 @@ func WithDisablePathLengthFallback() ServeMuxOption {
 	}
 }
 
+// WithHealthEndpointAt returns a ServeMuxOption that will add an endpoint to the created ServeMux at the path specified by endpointPath.
+// When called the handler will forward the request to the upstream grpc service health check (defined in the
+// gRPC Health Checking Protocol).
+//
+// See here https://grpc-ecosystem.github.io/grpc-gateway/docs/operations/health_check/ for more information on how
+// to setup the protocol in the grpc server.
+//
+// If you define a service as query parameter, this will also be forwarded as service in the HealthCheckRequest.
+func WithHealthEndpointAt(healthCheckClient grpc_health_v1.HealthClient, endpointPath string) ServeMuxOption {
+	return func(s *ServeMux) {
+		// error can be ignored since pattern is definitely valid
+		_ = s.HandlePath(
+			http.MethodGet, endpointPath, func(w http.ResponseWriter, r *http.Request, _ map[string]string,
+			) {
+				_, outboundMarshaler := MarshalerForRequest(s, r)
+
+				resp, err := healthCheckClient.Check(r.Context(), &grpc_health_v1.HealthCheckRequest{
+					Service: r.URL.Query().Get("service"),
+				})
+				if err != nil {
+					s.errorHandler(r.Context(), s, outboundMarshaler, w, r, err)
+					return
+				}
+
+				w.Header().Set("Content-Type", "application/json")
+
+				if resp.GetStatus() != grpc_health_v1.HealthCheckResponse_SERVING {
+					var err error
+					switch resp.GetStatus() {
+					case grpc_health_v1.HealthCheckResponse_NOT_SERVING, grpc_health_v1.HealthCheckResponse_UNKNOWN:
+						err = status.Error(codes.Unavailable, resp.String())
+					case grpc_health_v1.HealthCheckResponse_SERVICE_UNKNOWN:
+						err = status.Error(codes.NotFound, resp.String())
+					}
+
+					s.errorHandler(r.Context(), s, outboundMarshaler, w, r, err)
+					return
+				}
+
+				_ = outboundMarshaler.NewEncoder(w).Encode(resp)
+			})
+	}
+}
+
+// WithHealthzEndpoint returns a ServeMuxOption that will add a /healthz endpoint to the created ServeMux.
+//
+// See WithHealthEndpointAt for the general implementation.
+func WithHealthzEndpoint(healthCheckClient grpc_health_v1.HealthClient) ServeMuxOption {
+	return WithHealthEndpointAt(healthCheckClient, "/healthz")
+}
+
 // NewServeMux returns a new ServeMux whose internal mapping is empty.
 func NewServeMux(opts ...ServeMuxOption) *ServeMux {
 	serveMux := &ServeMux{
@@ -153,6 +265,7 @@ func NewServeMux(opts ...ServeMuxOption) *ServeMux {
 		errorHandler:           DefaultHTTPErrorHandler,
 		streamErrorHandler:     DefaultStreamErrorHandler,
 		routingErrorHandler:    DefaultRoutingErrorHandler,
+		unescapingMode:         UnescapingModeDefault,
 	}
 
 	for _, opt := range opts {
@@ -193,7 +306,7 @@ func (s *ServeMux) HandlePath(meth string, pathPattern string, h HandlerFunc) er
 	return nil
 }
 
-// ServeHTTP dispatches the request to the first handler whose pattern matches to r.Method and r.Path.
+// ServeHTTP dispatches the request to the first handler whose pattern matches to r.Method and r.URL.Path.
 func (s *ServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
@@ -204,7 +317,21 @@ func (s *ServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	components := strings.Split(path[1:], "/")
+	// TODO(v3): remove UnescapingModeLegacy
+	if s.unescapingMode != UnescapingModeLegacy && r.URL.RawPath != "" {
+		path = r.URL.RawPath
+	}
+
+	var components []string
+	// since in UnescapeModeLegacy, the URL will already have been fully unescaped, if we also split on "%2F"
+	// in this escaping mode we would be double unescaping but in UnescapingModeAllCharacters, we still do as the
+	// path is the RawPath (i.e. unescaped). That does mean that the behavior of this function will change its default
+	// behavior when the UnescapingModeDefault gets changed from UnescapingModeLegacy to UnescapingModeAllExceptReserved
+	if s.unescapingMode == UnescapingModeAllCharacters {
+		components = encodedPathSplitter.Split(path[1:], -1)
+	} else {
+		components = strings.Split(path[1:], "/")
+	}
 
 	if override := r.Header.Get("X-HTTP-Method-Override"); override != "" && s.isPathLengthFallback(r) {
 		r.Method = strings.ToUpper(override)
@@ -244,8 +371,16 @@ func (s *ServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			components[l-1], verb = lastComponent[:idx], lastComponent[idx+1:]
 		}
 
-		pathParams, err := h.pat.Match(components, verb)
+		pathParams, err := h.pat.MatchAndEscape(components, verb, s.unescapingMode)
 		if err != nil {
+			var mse MalformedSequenceError
+			if ok := errors.As(err, &mse); ok {
+				_, outboundMarshaler := MarshalerForRequest(s, r)
+				s.errorHandler(ctx, s, outboundMarshaler, w, r, &HTTPStatusError{
+					HTTPStatus: http.StatusBadRequest,
+					Err:        mse,
+				})
+			}
 			continue
 		}
 		h.h(w, r, pathParams)
@@ -259,8 +394,16 @@ func (s *ServeMux) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 			continue
 		}
 		for _, h := range handlers {
-			pathParams, err := h.pat.Match(components, verb)
+			pathParams, err := h.pat.MatchAndEscape(components, verb, s.unescapingMode)
 			if err != nil {
+				var mse MalformedSequenceError
+				if ok := errors.As(err, &mse); ok {
+					_, outboundMarshaler := MarshalerForRequest(s, r)
+					s.errorHandler(ctx, s, outboundMarshaler, w, r, &HTTPStatusError{
+						HTTPStatus: http.StatusBadRequest,
+						Err:        mse,
+					})
+				}
 				continue
 			}
 			// X-HTTP-Method-Override is optional. Always allow fallback to POST.

@@ -57,7 +57,7 @@ const (
 	routingTableFile = "routing.table"
 )
 
-// PeerManager manages all peers we connect directily.
+// PeerManager manages all peers we connect directly.
 //
 // PeerManager's jobs are:
 //   * holding a certain amount of peers.

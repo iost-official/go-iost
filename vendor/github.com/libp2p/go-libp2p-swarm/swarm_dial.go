@@ -10,11 +10,10 @@ import (
 	"github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/transport"
-	lgbl "github.com/libp2p/go-libp2p-loggables"
 
-	logging "github.com/ipfs/go-log"
 	addrutil "github.com/libp2p/go-addr-util"
 	ma "github.com/multiformats/go-multiaddr"
+	manet "github.com/multiformats/go-multiaddr/net"
 )
 
 // Diagram of dial sync:
@@ -50,6 +49,10 @@ var (
 	// ErrNoGoodAddresses is returned when we find addresses for a peer but
 	// can't use any of them.
 	ErrNoGoodAddresses = errors.New("no good addresses")
+
+	// ErrGaterDisallowedConnection is returned when the gater prevents us from
+	// forming a connection with a peer.
+	ErrGaterDisallowedConnection = errors.New("gater disallows connection to peer")
 )
 
 // DialAttempts governs how many times a goroutine will try to dial a given peer.
@@ -218,7 +221,17 @@ func (db *DialBackoff) cleanup() {
 // This allows us to use various transport protocols, do NAT traversal/relay,
 // etc. to achieve connection.
 func (s *Swarm) DialPeer(ctx context.Context, p peer.ID) (network.Conn, error) {
-	return s.dialPeer(ctx, p)
+	if s.gater != nil && !s.gater.InterceptPeerDial(p) {
+		log.Debugf("gater disallowed outbound connection to peer %s", p.Pretty())
+		return nil, &DialError{Peer: p, Cause: ErrGaterDisallowedConnection}
+	}
+
+	// Avoid typed nil issues.
+	c, err := s.dialPeer(ctx, p)
+	if err != nil {
+		return nil, err
+	}
+	return c, nil
 }
 
 // internal dial method that returns an unwrapped conn
@@ -226,22 +239,18 @@ func (s *Swarm) DialPeer(ctx context.Context, p peer.ID) (network.Conn, error) {
 // It is gated by the swarm's dial synchronization systems: dialsync and
 // dialbackoff.
 func (s *Swarm) dialPeer(ctx context.Context, p peer.ID) (*Conn, error) {
-	log.Debugf("[%s] swarm dialing peer [%s]", s.local, p)
-	var logdial = lgbl.Dial("swarm", s.LocalPeer(), p, nil, nil)
+	log.Debugw("dialing peer", "from", s.local, "to", p)
 	err := p.Validate()
 	if err != nil {
 		return nil, err
 	}
 
 	if p == s.local {
-		log.Event(ctx, "swarmDialSelf", logdial)
 		return nil, ErrDialToSelf
 	}
 
-	defer log.EventBegin(ctx, "swarmDialAttemptSync", p).Done()
-
-	// check if we already have an open connection first
-	conn := s.bestConnToPeer(p)
+	// check if we already have an open (usable) connection first
+	conn := s.bestAcceptableConnToPeer(ctx, p)
 	if conn != nil {
 		return conn, nil
 	}
@@ -270,39 +279,328 @@ func (s *Swarm) dialPeer(ctx context.Context, p peer.ID) (*Conn, error) {
 	return nil, err
 }
 
-// doDial is an ugly shim method to retain all the logging and backoff logic
-// of the old dialsync code
-func (s *Swarm) doDial(ctx context.Context, p peer.ID) (*Conn, error) {
-	// Short circuit.
-	// By the time we take the dial lock, we may already *have* a connection
-	// to the peer.
-	c := s.bestConnToPeer(p)
-	if c != nil {
-		return c, nil
+///////////////////////////////////////////////////////////////////////////////////
+// lo and behold, The Dialer
+// TODO explain how all this works
+//////////////////////////////////////////////////////////////////////////////////
+
+type dialRequest struct {
+	ctx   context.Context
+	resch chan dialResponse
+}
+
+type dialResponse struct {
+	conn *Conn
+	err  error
+}
+
+// startDialWorker starts an active dial goroutine that synchronizes and executes concurrent dials
+func (s *Swarm) startDialWorker(ctx context.Context, p peer.ID, reqch <-chan dialRequest) error {
+	if p == s.local {
+		return ErrDialToSelf
 	}
 
-	logdial := lgbl.Dial("swarm", s.LocalPeer(), p, nil, nil)
+	go s.dialWorkerLoop(ctx, p, reqch)
+	return nil
+}
 
-	// ok, we have been charged to dial! let's do it.
-	// if it succeeds, dial will add the conn to the swarm itself.
-	defer log.EventBegin(ctx, "swarmDialAttemptStart", logdial).Done()
+func (s *Swarm) dialWorkerLoop(ctx context.Context, p peer.ID, reqch <-chan dialRequest) {
+	defer s.limiter.clearAllPeerDials(p)
 
-	conn, err := s.dial(ctx, p)
-	if err != nil {
-		conn = s.bestConnToPeer(p)
-		if conn != nil {
-			// Hm? What error?
-			// Could have canceled the dial because we received a
-			// connection or some other random reason.
-			// Just ignore the error and return the connection.
-			log.Debugf("ignoring dial error because we have a connection: %s", err)
-			return conn, nil
+	type pendRequest struct {
+		req   dialRequest               // the original request
+		err   *DialError                // dial error accumulator
+		addrs map[ma.Multiaddr]struct{} // pending addr dials
+	}
+
+	type addrDial struct {
+		addr     ma.Multiaddr
+		ctx      context.Context
+		conn     *Conn
+		err      error
+		requests []int
+		dialed   bool
+	}
+
+	reqno := 0
+	requests := make(map[int]*pendRequest)
+	pending := make(map[ma.Multiaddr]*addrDial)
+
+	dispatchError := func(ad *addrDial, err error) {
+		ad.err = err
+		for _, reqno := range ad.requests {
+			pr, ok := requests[reqno]
+			if !ok {
+				// has already been dispatched
+				continue
+			}
+
+			// accumulate the error
+			pr.err.recordErr(ad.addr, err)
+
+			delete(pr.addrs, ad.addr)
+			if len(pr.addrs) == 0 {
+				// all addrs have erred, dispatch dial error
+				// but first do a last one check in case an acceptable connection has landed from
+				// a simultaneous dial that started later and added new acceptable addrs
+				c := s.bestAcceptableConnToPeer(pr.req.ctx, p)
+				if c != nil {
+					pr.req.resch <- dialResponse{conn: c}
+				} else {
+					pr.req.resch <- dialResponse{err: pr.err}
+				}
+				delete(requests, reqno)
+			}
 		}
 
-		// ok, we failed.
-		return nil, err
+		ad.requests = nil
+
+		// if it was a backoff, clear the address dial so that it doesn't inhibit new dial requests.
+		// this is necessary to support active listen scenarios, where a new dial comes in while
+		// another dial is in progress, and needs to do a direct connection without inhibitions from
+		// dial backoff.
+		// it is also necessary to preserve consisent behaviour with the old dialer -- TestDialBackoff
+		// regresses without this.
+		if err == ErrDialBackoff {
+			delete(pending, ad.addr)
+		}
 	}
-	return conn, nil
+
+	var triggerDial <-chan struct{}
+	triggerNow := make(chan struct{})
+	close(triggerNow)
+
+	var nextDial []ma.Multiaddr
+	active := 0
+	done := false      // true when the request channel has been closed
+	connected := false // true when a connection has been successfully established
+
+	resch := make(chan dialResult)
+
+loop:
+	for {
+		select {
+		case req, ok := <-reqch:
+			if !ok {
+				// request channel has been closed, wait for pending dials to complete
+				if active > 0 {
+					done = true
+					reqch = nil
+					triggerDial = nil
+					continue loop
+				}
+
+				// no active dials, we are done
+				return
+			}
+
+			c := s.bestAcceptableConnToPeer(req.ctx, p)
+			if c != nil {
+				req.resch <- dialResponse{conn: c}
+				continue loop
+			}
+
+			addrs, err := s.addrsForDial(req.ctx, p)
+			if err != nil {
+				req.resch <- dialResponse{err: err}
+				continue loop
+			}
+
+			// at this point, len(addrs) > 0 or else it would be error from addrsForDial
+			// ranke them to process in order
+			addrs = s.rankAddrs(addrs)
+
+			// create the pending request object
+			pr := &pendRequest{
+				req:   req,
+				err:   &DialError{Peer: p},
+				addrs: make(map[ma.Multiaddr]struct{}),
+			}
+			for _, a := range addrs {
+				pr.addrs[a] = struct{}{}
+			}
+
+			// check if any of the addrs has been successfully dialed and accumulate
+			// errors from complete dials while collecting new addrs to dial/join
+			var todial []ma.Multiaddr
+			var tojoin []*addrDial
+
+			for _, a := range addrs {
+				ad, ok := pending[a]
+				if !ok {
+					todial = append(todial, a)
+					continue
+				}
+
+				if ad.conn != nil {
+					// dial to this addr was successful, complete the request
+					req.resch <- dialResponse{conn: ad.conn}
+					continue loop
+				}
+
+				if ad.err != nil {
+					// dial to this addr errored, accumulate the error
+					pr.err.recordErr(a, ad.err)
+					delete(pr.addrs, a)
+					continue
+				}
+
+				// dial is still pending, add to the join list
+				tojoin = append(tojoin, ad)
+			}
+
+			if len(todial) == 0 && len(tojoin) == 0 {
+				// all request applicable addrs have been dialed, we must have errored
+				req.resch <- dialResponse{err: pr.err}
+				continue loop
+			}
+
+			// the request has some pending or new dials, track it and schedule new dials
+			reqno++
+			requests[reqno] = pr
+
+			for _, ad := range tojoin {
+				if !ad.dialed {
+					ad.ctx = s.mergeDialContexts(ad.ctx, req.ctx)
+				}
+				ad.requests = append(ad.requests, reqno)
+			}
+
+			if len(todial) > 0 {
+				for _, a := range todial {
+					pending[a] = &addrDial{addr: a, ctx: req.ctx, requests: []int{reqno}}
+				}
+
+				nextDial = append(nextDial, todial...)
+				nextDial = s.rankAddrs(nextDial)
+
+				// trigger a new dial now to account for the new addrs we added
+				triggerDial = triggerNow
+			}
+
+		case <-triggerDial:
+			for _, addr := range nextDial {
+				// spawn the dial
+				ad := pending[addr]
+				err := s.dialNextAddr(ad.ctx, p, addr, resch)
+				if err != nil {
+					dispatchError(ad, err)
+				}
+			}
+
+			nextDial = nil
+			triggerDial = nil
+
+		case res := <-resch:
+			active--
+
+			if res.Conn != nil {
+				connected = true
+			}
+
+			if done && active == 0 {
+				if res.Conn != nil {
+					// we got an actual connection, but the dial has been cancelled
+					// Should we close it? I think not, we should just add it to the swarm
+					_, err := s.addConn(res.Conn, network.DirOutbound)
+					if err != nil {
+						// well duh, now we have to close it
+						res.Conn.Close()
+					}
+				}
+				return
+			}
+
+			ad := pending[res.Addr]
+
+			if res.Conn != nil {
+				// we got a connection, add it to the swarm
+				conn, err := s.addConn(res.Conn, network.DirOutbound)
+				if err != nil {
+					// oops no, we failed to add it to the swarm
+					res.Conn.Close()
+					dispatchError(ad, err)
+					if active == 0 && len(nextDial) > 0 {
+						triggerDial = triggerNow
+					}
+					continue loop
+				}
+
+				// dispatch to still pending requests
+				for _, reqno := range ad.requests {
+					pr, ok := requests[reqno]
+					if !ok {
+						// it has already dispatched a connection
+						continue
+					}
+
+					pr.req.resch <- dialResponse{conn: conn}
+					delete(requests, reqno)
+				}
+
+				ad.conn = conn
+				ad.requests = nil
+
+				continue loop
+			}
+
+			// it must be an error -- add backoff if applicable and dispatch
+			if res.Err != context.Canceled && !connected {
+				// we only add backoff if there has not been a successful connection
+				// for consistency with the old dialer behavior.
+				s.backf.AddBackoff(p, res.Addr)
+			}
+
+			dispatchError(ad, res.Err)
+			if active == 0 && len(nextDial) > 0 {
+				triggerDial = triggerNow
+			}
+		}
+	}
+}
+
+func (s *Swarm) addrsForDial(ctx context.Context, p peer.ID) ([]ma.Multiaddr, error) {
+	peerAddrs := s.peers.Addrs(p)
+	if len(peerAddrs) == 0 {
+		return nil, ErrNoAddresses
+	}
+
+	goodAddrs := s.filterKnownUndialables(p, peerAddrs)
+	if forceDirect, _ := network.GetForceDirectDial(ctx); forceDirect {
+		goodAddrs = addrutil.FilterAddrs(goodAddrs, s.nonProxyAddr)
+	}
+
+	if len(goodAddrs) == 0 {
+		return nil, ErrNoGoodAddresses
+	}
+
+	return goodAddrs, nil
+}
+
+func (s *Swarm) mergeDialContexts(a, b context.Context) context.Context {
+	dialCtx := a
+
+	if simConnect, reason := network.GetSimultaneousConnect(b); simConnect {
+		if simConnect, _ := network.GetSimultaneousConnect(a); !simConnect {
+			dialCtx = network.WithSimultaneousConnect(dialCtx, reason)
+		}
+	}
+
+	return dialCtx
+}
+
+func (s *Swarm) dialNextAddr(ctx context.Context, p peer.ID, addr ma.Multiaddr, resch chan dialResult) error {
+	// check the dial backoff
+	if forceDirect, _ := network.GetForceDirectDial(ctx); !forceDirect {
+		if s.backf.Backoff(p, addr) {
+			return ErrDialBackoff
+		}
+	}
+
+	// start the dial
+	s.limitedDial(ctx, p, addr, resch)
+
+	return nil
 }
 
 func (s *Swarm) canDial(addr ma.Multiaddr) bool {
@@ -310,82 +608,46 @@ func (s *Swarm) canDial(addr ma.Multiaddr) bool {
 	return t != nil && t.CanDial(addr)
 }
 
-// dial is the actual swarm's dial logic, gated by Dial.
-func (s *Swarm) dial(ctx context.Context, p peer.ID) (*Conn, error) {
-	var logdial = lgbl.Dial("swarm", s.LocalPeer(), p, nil, nil)
-	if p == s.local {
-		log.Event(ctx, "swarmDialDoDialSelf", logdial)
-		return nil, ErrDialToSelf
-	}
-	defer log.EventBegin(ctx, "swarmDialDo", logdial).Done()
-	logdial["dial"] = "failure" // start off with failure. set to "success" at the end.
+func (s *Swarm) nonProxyAddr(addr ma.Multiaddr) bool {
+	t := s.TransportForDialing(addr)
+	return !t.Proxy()
+}
 
-	sk := s.peers.PrivKey(s.local)
-	logdial["encrypted"] = sk != nil // log whether this will be an encrypted dial or not.
-	if sk == nil {
-		// fine for sk to be nil, just log.
-		log.Debug("Dial not given PrivateKey, so WILL NOT SECURE conn.")
-	}
-
-	//////
-	/*
-		This slice-to-chan code is temporary, the peerstore can currently provide
-		a channel as an interface for receiving addresses, but more thought
-		needs to be put into the execution. For now, this allows us to use
-		the improved rate limiter, while maintaining the outward behaviour
-		that we previously had (halting a dial when we run out of addrs)
-	*/
-	peerAddrs := s.peers.Addrs(p)
-	if len(peerAddrs) == 0 {
-		return nil, &DialError{Peer: p, Cause: ErrNoAddresses}
-	}
-	goodAddrs := s.filterKnownUndialables(peerAddrs)
-	if len(goodAddrs) == 0 {
-		return nil, &DialError{Peer: p, Cause: ErrNoGoodAddresses}
-	}
-	goodAddrsChan := make(chan ma.Multiaddr, len(goodAddrs))
-	nonBackoff := false
-	for _, a := range goodAddrs {
-		// skip addresses in back-off
-		if !s.backf.Backoff(p, a) {
-			nonBackoff = true
-			goodAddrsChan <- a
+// ranks addresses in descending order of preference for dialing, with the following rules:
+// NonRelay > Relay
+// NonWS > WS
+// Private > Public
+// UDP > TCP
+func (s *Swarm) rankAddrs(addrs []ma.Multiaddr) []ma.Multiaddr {
+	addrTier := func(a ma.Multiaddr) (tier int) {
+		if isRelayAddr(a) {
+			tier |= 0b1000
 		}
-	}
-	close(goodAddrsChan)
-	if !nonBackoff {
-		return nil, ErrDialBackoff
-	}
-	/////////
-
-	// try to get a connection to any addr
-	connC, dialErr := s.dialAddrs(ctx, p, goodAddrsChan)
-	if dialErr != nil {
-		logdial["error"] = dialErr.Cause.Error()
-		switch dialErr.Cause {
-		case context.Canceled, context.DeadlineExceeded:
-			// Always prefer the context errors as we rely on being
-			// able to check them.
-			//
-			// Removing this will BREAK backoff (causing us to
-			// backoff when canceling dials).
-			return nil, dialErr.Cause
+		if isExpensiveAddr(a) {
+			tier |= 0b0100
 		}
-		return nil, dialErr
-	}
-	logdial["conn"] = logging.Metadata{
-		"localAddr":  connC.LocalMultiaddr(),
-		"remoteAddr": connC.RemoteMultiaddr(),
-	}
-	swarmC, err := s.addConn(connC, network.DirOutbound)
-	if err != nil {
-		logdial["error"] = err.Error()
-		connC.Close() // close the connection. didn't work out :(
-		return nil, &DialError{Peer: p, Cause: err}
+		if !manet.IsPrivateAddr(a) {
+			tier |= 0b0010
+		}
+		if isFdConsumingAddr(a) {
+			tier |= 0b0001
+		}
+
+		return tier
 	}
 
-	logdial["dial"] = "success"
-	return swarmC, nil
+	tiers := make([][]ma.Multiaddr, 16)
+	for _, a := range addrs {
+		tier := addrTier(a)
+		tiers[tier] = append(tiers[tier], a)
+	}
+
+	result := make([]ma.Multiaddr, 0, len(addrs))
+	for _, tier := range tiers {
+		result = append(result, tier...)
+	}
+
+	return result
 }
 
 // filterKnownUndialables takes a list of multiaddrs, and removes those
@@ -393,13 +655,13 @@ func (s *Swarm) dial(ctx context.Context, p peer.ID) (*Conn, error) {
 // IPv6 link-local addresses, addresses without a dial-capable transport,
 // and addresses that we know to be our own.
 // This is an optimization to avoid wasting time on dials that we know are going to fail.
-func (s *Swarm) filterKnownUndialables(addrs []ma.Multiaddr) []ma.Multiaddr {
+func (s *Swarm) filterKnownUndialables(p peer.ID, addrs []ma.Multiaddr) []ma.Multiaddr {
 	lisAddrs, _ := s.InterfaceListenAddresses()
 	var ourAddrs []ma.Multiaddr
 	for _, addr := range lisAddrs {
 		protos := addr.Protocols()
 		// we're only sure about filtering out /ip4 and /ip6 addresses, so far
-		if len(protos) == 2 && (protos[0].Code == ma.P_IP4 || protos[0].Code == ma.P_IP6) {
+		if protos[0].Code == ma.P_IP4 || protos[0].Code == ma.P_IP6 {
 			ourAddrs = append(ourAddrs, addr)
 		}
 	}
@@ -409,84 +671,10 @@ func (s *Swarm) filterKnownUndialables(addrs []ma.Multiaddr) []ma.Multiaddr {
 		s.canDial,
 		// TODO: Consider allowing link-local addresses
 		addrutil.AddrOverNonLocalIP,
-		addrutil.FilterNeg(s.Filters.AddrBlocked),
+		func(addr ma.Multiaddr) bool {
+			return s.gater == nil || s.gater.InterceptAddrDial(p, addr)
+		},
 	)
-}
-
-func (s *Swarm) dialAddrs(ctx context.Context, p peer.ID, remoteAddrs <-chan ma.Multiaddr) (transport.CapableConn, *DialError) {
-	log.Debugf("%s swarm dialing %s", s.local, p)
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel() // cancel work when we exit func
-
-	// use a single response type instead of errs and conns, reduces complexity *a ton*
-	respch := make(chan dialResult)
-	err := &DialError{Peer: p}
-
-	defer s.limiter.clearAllPeerDials(p)
-
-	var active int
-dialLoop:
-	for remoteAddrs != nil || active > 0 {
-		// Check for context cancellations and/or responses first.
-		select {
-		case <-ctx.Done():
-			break dialLoop
-		case resp := <-respch:
-			active--
-			if resp.Err != nil {
-				// Errors are normal, lots of dials will fail
-				if resp.Err != context.Canceled {
-					s.backf.AddBackoff(p, resp.Addr)
-				}
-
-				log.Infof("got error on dial: %s", resp.Err)
-				err.recordErr(resp.Addr, resp.Err)
-			} else if resp.Conn != nil {
-				return resp.Conn, nil
-			}
-
-			// We got a result, try again from the top.
-			continue
-		default:
-		}
-
-		// Now, attempt to dial.
-		select {
-		case addr, ok := <-remoteAddrs:
-			if !ok {
-				remoteAddrs = nil
-				continue
-			}
-
-			s.limitedDial(ctx, p, addr, respch)
-			active++
-		case <-ctx.Done():
-			break dialLoop
-		case resp := <-respch:
-			active--
-			if resp.Err != nil {
-				// Errors are normal, lots of dials will fail
-				if resp.Err != context.Canceled {
-					s.backf.AddBackoff(p, resp.Addr)
-				}
-
-				log.Infof("got error on dial: %s", resp.Err)
-				err.recordErr(resp.Addr, resp.Err)
-			} else if resp.Conn != nil {
-				return resp.Conn, nil
-			}
-		}
-	}
-
-	if ctxErr := ctx.Err(); ctxErr != nil {
-		err.Cause = ctxErr
-	} else if len(err.DialErrors) == 0 {
-		err.Cause = network.ErrNoRemoteAddrs
-	} else {
-		err.Cause = ErrAllDialsFailed
-	}
-	return nil, err
 }
 
 // limitedDial will start a dial to the given peer when
@@ -501,6 +689,7 @@ func (s *Swarm) limitedDial(ctx context.Context, p peer.ID, a ma.Multiaddr, resp
 	})
 }
 
+// dialAddr is the actual dial for an addr, indirectly invoked through the limiter
 func (s *Swarm) dialAddr(ctx context.Context, p peer.ID, addr ma.Multiaddr) (transport.CapableConn, error) {
 	// Just to double check. Costs nothing.
 	if s.local == p {
@@ -528,4 +717,36 @@ func (s *Swarm) dialAddr(ctx context.Context, p peer.ID, addr ma.Multiaddr) (tra
 
 	// success! we got one!
 	return connC, nil
+}
+
+// TODO We should have a `IsFdConsuming() bool` method on the `Transport` interface in go-libp2p-core/transport.
+// This function checks if any of the transport protocols in the address requires a file descriptor.
+// For now:
+// A Non-circuit address which has the TCP/UNIX protocol is deemed FD consuming.
+// For a circuit-relay address, we look at the address of the relay server/proxy
+// and use the same logic as above to decide.
+func isFdConsumingAddr(addr ma.Multiaddr) bool {
+	first, _ := ma.SplitFunc(addr, func(c ma.Component) bool {
+		return c.Protocol().Code == ma.P_CIRCUIT
+	})
+
+	// for safety
+	if first == nil {
+		return true
+	}
+
+	_, err1 := first.ValueForProtocol(ma.P_TCP)
+	_, err2 := first.ValueForProtocol(ma.P_UNIX)
+	return err1 == nil || err2 == nil
+}
+
+func isExpensiveAddr(addr ma.Multiaddr) bool {
+	_, err1 := addr.ValueForProtocol(ma.P_WS)
+	_, err2 := addr.ValueForProtocol(ma.P_WSS)
+	return err1 == nil || err2 == nil
+}
+
+func isRelayAddr(addr ma.Multiaddr) bool {
+	_, err := addr.ValueForProtocol(ma.P_CIRCUIT)
+	return err == nil
 }

@@ -3,9 +3,8 @@ package relay
 import (
 	"encoding/binary"
 
-	circuit "github.com/libp2p/go-libp2p-circuit"
 	ma "github.com/multiformats/go-multiaddr"
-	manet "github.com/multiformats/go-multiaddr-net"
+	manet "github.com/multiformats/go-multiaddr/net"
 )
 
 // This function cleans up a relay's address set to remove private addresses and curtail
@@ -41,7 +40,7 @@ func isRelayAddr(a ma.Multiaddr) bool {
 
 	ma.ForEach(a, func(c ma.Component) bool {
 		switch c.Protocol().Code {
-		case circuit.P_CIRCUIT:
+		case ma.P_CIRCUIT:
 			isRelay = true
 			return false
 		default:

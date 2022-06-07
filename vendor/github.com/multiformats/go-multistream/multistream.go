@@ -6,10 +6,13 @@ package multistream
 import (
 	"bufio"
 	"bytes"
-	"encoding/binary"
 	"errors"
+	"fmt"
+
 	"io"
 	"sync"
+
+	"github.com/multiformats/go-varint"
 )
 
 // ErrTooLarge is an error to signal that an incoming message was too large
@@ -50,9 +53,16 @@ func NewMultistreamMuxer() *MultistreamMuxer {
 	return new(MultistreamMuxer)
 }
 
+// LazyConn is the connection type returned by the lazy negotiation functions.
+type LazyConn interface {
+	io.ReadWriteCloser
+	// Flush flushes the lazy negotiation, if any.
+	Flush() error
+}
+
 func writeUvarint(w io.Writer, i uint64) error {
 	varintbuf := make([]byte, 16)
-	n := binary.PutUvarint(varintbuf, i)
+	n := varint.PutUvarint(varintbuf, i)
 	_, err := w.Write(varintbuf[:n])
 	if err != nil {
 		return err
@@ -70,6 +80,16 @@ func delimWriteBuffered(w io.Writer, mes []byte) error {
 	}
 
 	return bw.Flush()
+}
+
+func delitmWriteAll(w io.Writer, messages ...[]byte) error {
+	for _, mes := range messages {
+		if err := delimWrite(w, mes); err != nil {
+			return fmt.Errorf("failed to write messages %s, err: %v	", string(mes), err)
+		}
+	}
+
+	return nil
 }
 
 func delimWrite(w io.Writer, mes []byte) error {
@@ -412,7 +432,7 @@ func lpReadBuf(r io.Reader) ([]byte, error) {
 		br = &byteReader{r}
 	}
 
-	length, err := binary.ReadUvarint(br)
+	length, err := varint.ReadUvarint(br)
 	if err != nil {
 		return nil, err
 	}

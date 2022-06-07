@@ -8,12 +8,13 @@ import (
 	"github.com/iost-official/go-iost/v3/core/block"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func testVerifier() error {
 	verifier := Verifier{}
 	server := "54.180.196.80:30002"
-	rpcConn, err := grpc.Dial(server, grpc.WithInsecure())
+	rpcConn, err := grpc.Dial(server, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
