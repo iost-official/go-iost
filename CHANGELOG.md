@@ -1,3 +1,8 @@
+## v3.8.2
+Tue Jun  7 17:05:50 CST 2022
+
+Fix p2p too much logs in some network conditions
+
 ## v3.8.1
 Tue May 31 19:55:13 CST 2022
 
