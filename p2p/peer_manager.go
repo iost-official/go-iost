@@ -531,10 +531,13 @@ func (pm *PeerManager) routingQuery(ids []string) {
 		if pm.NeighborCount(outbound) >= pm.neighborCap[outbound] {
 			return
 		}
+
+		time.Sleep(2 * time.Second)
 		maxConcurrentQueryNum := pm.neighborCap[outbound] - pm.NeighborCount(outbound)
 		queryingPeerIDs := []PeerID{}
-		for ; i < len(perm); i++ {
+		for i < len(perm) {
 			peerID := allPeerIDs[perm[i]]
+			i++
 			if peerID == pm.host.ID() {
 				continue
 			}
