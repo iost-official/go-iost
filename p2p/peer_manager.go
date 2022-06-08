@@ -95,7 +95,7 @@ type PeerManager struct {
 
 // NewPeerManager returns a new instance of PeerManager struct.
 func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
-	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Second, host.Peerstore())
+	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), 10*time.Second, host.Peerstore())
 	pm := &PeerManager{
 		neighbors:     make(map[peer.ID]*Peer),
 		neighborCount: make(map[connDirection]int),
