@@ -33,7 +33,7 @@ var (
 	findBPInterval           = 2 * time.Second
 
 	dialTimeout        = 10 * time.Second
-	deadPeerRetryTimes = 5
+	deadPeerRetryTimes = 2
 )
 
 type connDirection int
@@ -95,7 +95,7 @@ type PeerManager struct {
 
 // NewPeerManager returns a new instance of PeerManager struct.
 func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
-	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), 10*time.Second, host.Peerstore())
+	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Minute, host.Peerstore())
 	pm := &PeerManager{
 		neighbors:     make(map[peer.ID]*Peer),
 		neighborCount: make(map[connDirection]int),
@@ -272,8 +272,9 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 		if !pm.isBP(remotePID) {
 			ilog.Infof("neighbor count exceeds, close connection. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
 			if direction == inbound {
-				pid, _ := randomPID()
-				bytes, _ := pm.getRoutingResponse([]string{pid.Pretty()})
+				//pid, _ := randomPID()
+				//bytes, _ := pm.getRoutingResponse([]string{pid.Pretty()})
+				bytes, _ := pm.getOutboundNeighborsResponse()
 				if len(bytes) > 0 {
 					msg := newP2PMessage(pm.config.ChainID, RoutingTableResponse, pm.config.Version, defaultReservedFlag, bytes)
 					s.Write(msg.content())
@@ -666,6 +667,46 @@ func (pm *PeerManager) Deregister(id string, mTyps ...MessageType) {
 	}
 }
 
+func (pm *PeerManager) getOutboundNeighborsResponse() ([]byte, error) {
+	resp := &p2pb.RoutingResponse{}
+	neighbors := pm.GetAllNeighbors()
+	for _, n := range neighbors {
+		if n.direction == inbound {
+			continue
+		}
+		pid := n.id
+		info := pm.peerStore.PeerInfo(pid)
+		if len(info.Addrs) > 0 {
+			peerInfo := &p2pb.PeerInfo{
+				Id: info.ID.Pretty(),
+			}
+			for _, addr := range info.Addrs {
+				if isPublicMaddr(addr.String()) {
+					peerInfo.Addrs = append(peerInfo.Addrs, addr.String())
+				}
+			}
+			if len(peerInfo.Addrs) > maxAddrCount {
+				peerInfo.Addrs = peerInfo.Addrs[:maxAddrCount]
+			}
+			if len(peerInfo.Addrs) > 0 {
+				resp.Peers = append(resp.Peers, peerInfo)
+			}
+		}
+	}
+
+	if len(resp.Peers) > peerResponseCount {
+		rand.Seed(time.Now().UnixNano())
+		rand.Shuffle(len(resp.Peers), func(i, j int) { resp.Peers[i], resp.Peers[j] = resp.Peers[j], resp.Peers[i] })
+		resp.Peers = resp.Peers[:peerResponseCount]
+	}
+
+	bytes, err := proto.Marshal(resp)
+	if err != nil {
+		ilog.Errorf("pb encode failed. err=%v, obj=%+v", err, resp)
+		return nil, err
+	}
+	return bytes, nil
+}
 func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 	queryIDs := peerIDs
 	if len(queryIDs) > maxPeerQuery {

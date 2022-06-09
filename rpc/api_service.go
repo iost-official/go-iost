@@ -74,10 +74,18 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		Network:     &rpcpb.NetworkInfo{},
 		ServerTime:  time.Now().UnixNano(),
 	}
+
 	p2pNeighbors := as.p2pService.GetAllNeighbors()
 	networkInfo := &rpcpb.NetworkInfo{
 		Id:        as.p2pService.ID(),
 		PeerCount: int32(len(p2pNeighbors)),
+	}
+	for _, p := range p2pNeighbors {
+		if p.IsOutbound() {
+			networkInfo.PeerCountOutbound++
+		} else {
+			networkInfo.PeerCountInbound++
+		}
 	}
 	res.Network = networkInfo
 	return res, nil

@@ -86,6 +86,10 @@ func (p *Peer) ID() string {
 	return p.id.Pretty()
 }
 
+func (p *Peer) IsOutbound() bool {
+	return p.direction == outbound
+}
+
 // Addr return the address.
 func (p *Peer) Addr() string {
 	return p.addr.String()
