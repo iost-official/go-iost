@@ -18,6 +18,9 @@ require (
 	github.com/libp2p/go-libp2p v0.8.1
 	github.com/libp2p/go-libp2p-core v0.5.1
 	github.com/libp2p/go-libp2p-kbucket v0.2.3
+	github.com/libp2p/go-libp2p-noise v0.2.2
+	github.com/libp2p/go-libp2p-secio v0.2.2
+	github.com/libp2p/go-libp2p-tls v0.2.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
 	github.com/multiformats/go-multiaddr-dns v0.2.0
@@ -89,12 +92,9 @@ require (
 	github.com/libp2p/go-libp2p-loggables v0.1.0 // indirect
 	github.com/libp2p/go-libp2p-mplex v0.2.3 // indirect
 	github.com/libp2p/go-libp2p-nat v0.0.6 // indirect
-	github.com/libp2p/go-libp2p-noise v0.2.2 // indirect
 	github.com/libp2p/go-libp2p-peerstore v0.2.2 // indirect
 	github.com/libp2p/go-libp2p-pnet v0.2.0 // indirect
-	github.com/libp2p/go-libp2p-secio v0.2.2 // indirect
 	github.com/libp2p/go-libp2p-swarm v0.2.3 // indirect
-	github.com/libp2p/go-libp2p-tls v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-transport-upgrader v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-yamux v0.2.7 // indirect
 	github.com/libp2p/go-maddr-filter v0.1.0 // indirect
