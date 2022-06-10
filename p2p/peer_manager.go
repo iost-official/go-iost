@@ -32,7 +32,7 @@ var (
 	metricsStatInterval      = 3 * time.Second
 	findBPInterval           = 2 * time.Second
 
-	dialTimeout        = 10 * time.Second
+	dialTimeout        = 6 * time.Second
 	deadPeerRetryTimes = 2
 )
 
@@ -311,10 +311,15 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 
 	defer pm.wg.Done()
 	for {
+		interval := syncRoutingTableInterval
+		if len(pm.GetAllNeighbors()) == 0 {
+			ilog.Infoln("p2p: no neighbors. syncing route table more frequently")
+			interval = 5 * time.Second
+		}
 		select {
 		case <-pm.quitCh:
 			return
-		case <-time.After(syncRoutingTableInterval):
+		case <-time.After(interval):
 			//ilog.Debugf("start sync routing table.")
 			pid, _ := randomPID()
 			pm.routingQuery([]string{pid.Pretty()})
