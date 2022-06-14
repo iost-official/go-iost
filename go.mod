@@ -22,7 +22,6 @@ require (
 	github.com/libp2p/go-libp2p-noise v0.2.2
 	github.com/libp2p/go-libp2p-secio v0.2.2
 	github.com/libp2p/go-libp2p-tls v0.2.0
-	github.com/libp2p/go-libp2p-yamux v0.5.4
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.3
 	github.com/multiformats/go-multiaddr-dns v0.3.1
@@ -93,6 +92,7 @@ require (
 	github.com/libp2p/go-libp2p-pnet v0.2.0 // indirect
 	github.com/libp2p/go-libp2p-swarm v0.5.0 // indirect
 	github.com/libp2p/go-libp2p-transport-upgrader v0.4.2 // indirect
+	github.com/libp2p/go-libp2p-yamux v0.5.4 // indirect
 	github.com/libp2p/go-maddr-filter v0.1.0 // indirect
 	github.com/libp2p/go-mplex v0.3.0 // indirect
 	github.com/libp2p/go-msgio v0.0.6 // indirect

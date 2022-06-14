@@ -2144,6 +2144,16 @@
           "type": "integer",
           "format": "int32",
           "title": "peer connection count"
+        },
+        "peerCountInbound": {
+          "type": "integer",
+          "format": "int32",
+          "title": "peer connection count inbound"
+        },
+        "peerCountOutbound": {
+          "type": "integer",
+          "format": "int32",
+          "title": "peer connection count outbound"
         }
       },
       "description": "The message defines network connection information."

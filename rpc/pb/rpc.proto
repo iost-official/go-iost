@@ -220,6 +220,10 @@ message NetworkInfo {
     string id = 1;
     // peer connection count
     int32 peer_count = 2;
+    // peer connection count inbound
+    int32 peer_count_inbound = 3;
+    // peer connection count outbound
+    int32 peer_count_outbound = 4;
 }
 
 // The message containing blockchain's ram information.
