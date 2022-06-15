@@ -90,6 +90,7 @@ func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) *msg
 	for num := start; num <= end; num++ {
 		hash, ok := r.cBase.GetBlockHashByNum(num)
 		if !ok {
+			time.Sleep(100 * time.Millisecond)
 			// TODO: Maybe should break.
 			ilog.Debugf("Get block by num %v failed.", num)
 			continue

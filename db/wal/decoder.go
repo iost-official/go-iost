@@ -159,7 +159,7 @@ func (d *decoder) getLastOffset() int64 { return d.lastOffset }
 func mustUnmarshalEntry(d []byte) *Entry {
 	var e Entry
 	if err := proto.Unmarshal(d, &e); err != nil {
-		ilog.Fatal("unmarshal should never fai")
+		ilog.Fatal("unmarshal should never fail")
 	}
 	return &e
 }
