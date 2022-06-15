@@ -33,7 +33,7 @@ const (
 	maxContinuousTimeout = 10
 )
 
-// Peer represents a neighbor which we connect directily.
+// Peer represents a neighbor which we connect directly.
 //
 // Peer's jobs are:
 //   * managing streams which are responsible for sending and reading messages.

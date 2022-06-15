@@ -9,12 +9,13 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 // SPVFetchInitialBlockFromSeed get the most recent voting block older than the 'syncFrom' block
 // if 'syncFrom' is 0, fetch the most recent voting block
 func SPVFetchInitialBlockFromSeed(server string, syncFrom int64) (*block.Block, error) {
-	rpcConn, err := grpc.Dial(server, grpc.WithInsecure())
+	rpcConn, err := grpc.Dial(server, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}

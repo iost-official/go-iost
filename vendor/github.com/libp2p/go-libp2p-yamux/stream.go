@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"github.com/libp2p/go-libp2p-core/mux"
-	"github.com/libp2p/go-yamux"
+	"github.com/libp2p/go-yamux/v2"
 )
 
 // stream implements mux.MuxedStream over yamux.Stream.
@@ -34,6 +34,14 @@ func (s *stream) Close() error {
 
 func (s *stream) Reset() error {
 	return s.yamux().Reset()
+}
+
+func (s *stream) CloseRead() error {
+	return s.yamux().CloseRead()
+}
+
+func (s *stream) CloseWrite() error {
+	return s.yamux().CloseWrite()
 }
 
 func (s *stream) SetDeadline(t time.Time) error {

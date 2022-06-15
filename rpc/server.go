@@ -23,6 +23,7 @@ import (
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/encoding/protojson"
 )
@@ -112,7 +113,7 @@ func (s *Server) startGateway() error {
 	marshalerOption := runtime.WithMarshalerOption(runtime.MIMEWildcard, marshaler)
 	errOption := runtime.WithErrorHandler(errorHandler)
 	mux := runtime.NewServeMux(marshalerOption, errOption)
-	opts := []grpc.DialOption{grpc.WithInsecure()}
+	opts := []grpc.DialOption{grpc.WithTransportCredentials(insecure.NewCredentials())}
 	err := rpcpb.RegisterApiServiceHandlerFromEndpoint(context.Background(), mux, s.grpcAddr, opts)
 	if err != nil {
 		return err

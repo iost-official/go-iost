@@ -14,7 +14,7 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/database"
 	"github.com/iost-official/go-iost/v3/vm/host"
 	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
-	"github.com/wcharczuk/go-chart"
+	"github.com/wcharczuk/go-chart/v2"
 )
 
 var (
@@ -240,17 +240,17 @@ func getOpDetail() {
 
 			graph := chart.Chart{
 				XAxis: chart.XAxis{
-					Style: chart.StyleShow(),
+					Style: chart.Shown(),
 				},
 				YAxis: chart.YAxis{
-					Style: chart.StyleShow(),
+					Style: chart.Shown(),
 					Range: &chart.ContinuousRange{
 						Min: 0.0,
 						Max: 200.0,
 					},
 				},
 				YAxisSecondary: chart.YAxis{
-					Style: chart.StyleShow(),
+					Style: chart.Shown(),
 					Range: &chart.ContinuousRange{
 						Min: 0.0,
 						Max: 20000000.0,
@@ -357,7 +357,7 @@ func getOverview() {
 
 	graph := chart.BarChart{
 		Title:      "Time (ns)",
-		TitleStyle: chart.StyleShow(),
+		TitleStyle: chart.Shown(),
 		Background: chart.Style{
 			Padding: chart.Box{
 				Top: 40,
@@ -368,13 +368,11 @@ func getOverview() {
 		BarWidth:   100,
 		BarSpacing: 10,
 		XAxis: chart.Style{
-			Show:     true,
+			Hidden:   false,
 			FontSize: 6,
 		},
 		YAxis: chart.YAxis{
-			Style: chart.Style{
-				Show: true,
-			},
+			Style: chart.Shown(),
 		},
 		Bars: barsT,
 	}

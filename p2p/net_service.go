@@ -16,11 +16,11 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	libnet "github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
+	mplex "github.com/libp2p/go-libp2p-mplex"
 	noise "github.com/libp2p/go-libp2p-noise"
 	secio "github.com/libp2p/go-libp2p-secio"
 	tls "github.com/libp2p/go-libp2p-tls"
 	multiaddr "github.com/multiformats/go-multiaddr"
-	mplex "github.com/whyrusleeping/go-smux-multiplex"
 )
 
 //go:generate mockgen --build_flags=--mod=mod -destination mocks/mock_service.go -package p2p_mock github.com/iost-official/go-iost/v3/p2p Service

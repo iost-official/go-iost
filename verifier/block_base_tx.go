@@ -41,7 +41,7 @@ func baseTxData(b, pb *block.Block, witnessList *blockcache.WitnessList) (string
 		return fmt.Sprintf(`[{"parent":["%v", "%v", %v]}]`, pb.Head.Witness, pb.CalculateGasUsage(), witnessChanged), nil
 	}
 	if b.Head.Number != 0 {
-		return "", fmt.Errorf("block dit not have parent")
+		return "", fmt.Errorf("block did not have parent")
 	}
 	return `[{"parent":["", "0", false]}]`, nil
 }

@@ -13,6 +13,7 @@ import (
 	"github.com/iost-official/go-iost/v3/core/contract"
 	rpcpb "github.com/iost-official/go-iost/v3/rpc/pb"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -144,7 +145,7 @@ func (s *IOSTDevSDK) Connected() bool {
 func (s *IOSTDevSDK) Connect() (err error) {
 	if s.rpcConn == nil {
 		s.log("Connecting to server", s.server, "...")
-		s.rpcConn, err = grpc.Dial(s.server, grpc.WithInsecure())
+		s.rpcConn, err = grpc.Dial(s.server, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	return
 }
