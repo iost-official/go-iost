@@ -329,10 +329,10 @@ var deleteCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(accountCmd)
 	accountCmd.PersistentFlags().BoolVarP(&encrypt, "encrypt", "", false, "whether to encrypt local key file")
+	accountCmd.PersistentFlags().StringVarP(&ownerKey, "owner", "", "", "owner key")
+	accountCmd.PersistentFlags().StringVarP(&activeKey, "active", "", "", "active key")
 
 	accountCmd.AddCommand(createCmd)
-	createCmd.Flags().StringVarP(&ownerKey, "owner", "", "", "owner key")
-	createCmd.Flags().StringVarP(&activeKey, "active", "", "", "active key")
 	createCmd.Flags().Int64VarP(&initialRAM, "initial_ram", "", 1024, "buy $initial_ram bytes ram for the new account")
 	createCmd.Flags().Int64VarP(&initialGasPledge, "initial_gas_pledge", "", 10, "pledge $initial_gas_pledge IOSTs for the new account")
 	createCmd.Flags().Int64VarP(&initialBalance, "initial_balance", "", 0, "transfer $initial_balance IOSTs to the new account")
