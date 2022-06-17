@@ -95,7 +95,7 @@ type PeerManager struct {
 
 // NewPeerManager returns a new instance of PeerManager struct.
 func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
-	routingTable := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Minute, host.Peerstore())
+	routingTable, _ := kbucket.NewRoutingTable(bucketSize, kbucket.ConvertPeerID(host.ID()), time.Minute, host.Peerstore(), time.Second, nil)
 	pm := &PeerManager{
 		neighbors:     make(map[peer.ID]*Peer),
 		neighborCount: make(map[connDirection]int),
@@ -346,7 +346,7 @@ func (pm *PeerManager) storePeerInfo(peerID peer.ID, addrs []multiaddr.Multiaddr
 	// SetAddrs won't overwrite old value. clear and add.
 	pm.peerStore.ClearAddrs(peerID)
 	pm.peerStore.AddAddrs(peerID, addrs, peerstore.PermanentAddrTTL)
-	pm.routingTable.Update(peerID)
+	pm.routingTable.TryAddPeer(peerID, true, true)
 	pm.lastUpdateTime.Store(time.Now().Unix())
 }
 
@@ -354,7 +354,7 @@ func (pm *PeerManager) storePeerInfo(peerID peer.ID, addrs []multiaddr.Multiaddr
 // peerStore.ClearAddrs and routingTable.Update function are thread safe.
 func (pm *PeerManager) deletePeerInfo(peerID peer.ID) {
 	pm.peerStore.ClearAddrs(peerID)
-	pm.routingTable.Remove(peerID)
+	pm.routingTable.RemovePeer(peerID)
 	pm.lastUpdateTime.Store(time.Now().Unix())
 }
 

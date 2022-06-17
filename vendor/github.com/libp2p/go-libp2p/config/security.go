@@ -3,13 +3,13 @@ package config
 import (
 	"fmt"
 
+	csms "github.com/libp2p/go-libp2p/p2p/net/conn-security-multistream"
+
 	"github.com/libp2p/go-libp2p-core/crypto"
 	"github.com/libp2p/go-libp2p-core/host"
 	"github.com/libp2p/go-libp2p-core/peer"
 	"github.com/libp2p/go-libp2p-core/sec"
 	"github.com/libp2p/go-libp2p-core/sec/insecure"
-
-	csms "github.com/libp2p/go-conn-security-multistream"
 )
 
 // SecC is a security transport constructor.
@@ -42,7 +42,7 @@ func SecurityConstructor(security interface{}) (SecC, error) {
 		return nil, err
 	}
 	return func(h host.Host) (sec.SecureTransport, error) {
-		t, err := ctor(h, nil, nil)
+		t, err := ctor(h, nil, nil, nil, nil)
 		if err != nil {
 			return nil, err
 		}
