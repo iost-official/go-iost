@@ -51,12 +51,6 @@ class Base {
         blockchain.callWithAuth("issue.iost", "issueIOST", `[]`);
     }
 
-    _saveBlockInfo() {
-        let json = storage.get("current_block_info");
-        storage.put("chain_info_" + block.parentHash, JSON.stringify(json));
-        storage.put("current_block_info", JSON.stringify(block))
-    }
-
     _saveWitnessInfo() {
         let map = JSON.parse(storage.get("witness_produced") || '{}');
         map[block.witness] = (map[block.witness] || 0) + 1;
@@ -76,7 +70,6 @@ class Base {
         }
         this._put("execBlockNumber", bn);
 
-        this._saveBlockInfo();
         this._saveWitnessInfo();
         if (bn%voteStatInterval === 0 && data.parent[2] === false){
             this._vote();
