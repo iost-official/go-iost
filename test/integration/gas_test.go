@@ -335,7 +335,7 @@ func TestGas_PledgeunpledgeForOther(t *testing.T) {
 			signerList := make(map[string]bool)
 			signerList[otherAcc+"@active"] = true
 			h.Context().Set("signer_list", signerList)
-			h.DB().SetTokenBalanceFixed("iost", otherAcc, "20")
+			h.DB().SetTokenBalanceDecimal("iost", otherAcc, "20")
 			_, _, err = e.LoadAndCall(h, code, "pledge", otherAcc, otherAcc, "20")
 			So(err, ShouldBeNil)
 			_, _, err = e.LoadAndCall(h, code, "unpledge", otherAcc, otherAcc, "20")

@@ -23,8 +23,8 @@ type FreezeItem struct {
 	Ftime  int64
 }
 
-// FreezeItemFixed ...
-type FreezeItemFixed struct {
+// FreezeItemDecimal ...
+type FreezeItemDecimal struct {
 	Amount common.Decimal
 	Ftime  int64
 }
@@ -53,8 +53,8 @@ func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 	return ib
 }
 
-// TokenBalanceFixed get token balance of acc
-func (m *TokenHandler) TokenBalanceFixed(tokenName, acc string) *common.Decimal {
+// TokenBalanceDecimal get token balance of acc
+func (m *TokenHandler) TokenBalanceDecimal(tokenName, acc string) *common.Decimal {
 	ib := m.TokenBalance(tokenName, acc)
 	return &common.Decimal{Value: ib, Scale: m.Decimal(tokenName)}
 }
@@ -97,18 +97,18 @@ func (m *TokenHandler) AllFreezedTokenBalance(tokenName, acc string) []FreezeIte
 	return freezeList
 }
 
-// AllFreezedTokenBalanceFixed get freezed token balance of acc
-func (m *TokenHandler) AllFreezedTokenBalanceFixed(tokenName, acc string) []FreezeItemFixed {
+// AllFreezedTokenBalanceDecimal get freezed token balance of acc
+func (m *TokenHandler) AllFreezedTokenBalanceDecimal(tokenName, acc string) []FreezeItemDecimal {
 	freezeList := m.AllFreezedTokenBalance(tokenName, acc)
-	result := make([]FreezeItemFixed, 0)
+	result := make([]FreezeItemDecimal, 0)
 	for _, item := range freezeList {
-		result = append(result, FreezeItemFixed{Amount: common.Decimal{Value: item.Amount, Scale: m.Decimal(tokenName)}, Ftime: item.Ftime})
+		result = append(result, FreezeItemDecimal{Amount: common.Decimal{Value: item.Amount, Scale: m.Decimal(tokenName)}, Ftime: item.Ftime})
 	}
 	return result
 }
 
-// FreezedTokenBalanceFixed get token balance of acc
-func (m *TokenHandler) FreezedTokenBalanceFixed(tokenName, acc string) *common.Decimal {
+// FreezedTokenBalanceDecimal get token balance of acc
+func (m *TokenHandler) FreezedTokenBalanceDecimal(tokenName, acc string) *common.Decimal {
 	ib := m.FreezedTokenBalance(tokenName, acc)
 	return &common.Decimal{Value: ib, Scale: m.Decimal(tokenName)}
 }
@@ -118,11 +118,11 @@ func (m *TokenHandler) SetTokenBalance(tokenName, acc string, amount int64) {
 	m.db.Put(m.balanceKey(tokenName, acc), MustMarshal(amount))
 }
 
-// SetTokenBalanceFixed set token balance of acc, used for test
-func (m *TokenHandler) SetTokenBalanceFixed(tokenName, acc string, amountStr string) {
+// SetTokenBalanceDecimal set token balance of acc, used for test
+func (m *TokenHandler) SetTokenBalanceDecimal(tokenName, acc string, amountStr string) {
 	amountNumber, err := common.NewDecimalFromString(amountStr, m.Decimal(tokenName))
 	if err != nil {
-		panic(errors.New("construct Fixed number failed. str = " + amountStr + ", decimal = " + fmt.Sprintf("%d", m.Decimal(tokenName))))
+		panic(errors.New("construct decimal number failed. str = " + amountStr + ", decimal = " + fmt.Sprintf("%d", m.Decimal(tokenName))))
 	}
 	m.db.Put(m.balanceKey(tokenName, acc), MustMarshal(amountNumber.Value))
 }

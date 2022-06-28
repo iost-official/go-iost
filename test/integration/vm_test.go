@@ -37,7 +37,7 @@ func Test_callWithAuth(t *testing.T) {
 		So(r.Status.Code, ShouldEqual, tx.Success)
 
 		Convey("test of callWithoutAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", cname, "1000")
 			r, err := s.Call(cname, "withdrawWithoutAuth", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldContainSubstring, "transaction has no permission")
@@ -45,7 +45,7 @@ func Test_callWithAuth(t *testing.T) {
 		})
 
 		Convey("test of callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", cname, "1000")
 			r, err = s.Call(cname, "withdraw", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 
@@ -56,7 +56,7 @@ func Test_callWithAuth(t *testing.T) {
 		})
 
 		Convey("test of callWithoutAuth after callWithAuth", func() {
-			s.Visitor.SetTokenBalanceFixed("iost", cname, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", cname, "1000")
 			r, err = s.Call(cname, "withdrawWithoutAuthAfterWithAuth", fmt.Sprintf(`["%v", "%v"]`, acc0.ID, "10"), acc0.ID, acc0.KeyPair)
 			s.Visitor.Commit()
 			So(err, ShouldBeNil)
@@ -267,7 +267,7 @@ func Test_RamPayer(t *testing.T) {
 			ram0 = s.GetRAM(acc0.ID)
 			ram4 := s.GetRAM(acc2.ID)
 			ram6 := s.GetRAM(acc3.ID)
-			s.Visitor.SetTokenBalanceFixed("iost", acc2.ID, "100")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc2.ID, "100")
 			r, err = s.Call(cname0, "call", fmt.Sprintf(`["%v", "test", "%v"]`, cname1,
 				fmt.Sprintf(`[\"%v\", \"%v\"]`, acc2.ID, acc3.ID)), acc2.ID, acc2.KeyPair)
 			So(err, ShouldBeNil)
@@ -425,8 +425,8 @@ func Test_SpecialChar(t *testing.T) {
 		s.Visitor.Commit()
 		So(err, ShouldBeNil)
 
-		s.Visitor.SetTokenBalanceFixed("iost", acc.ID, "1000")
-		s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "1000")
+		s.Visitor.SetTokenBalanceDecimal("iost", acc.ID, "1000")
+		s.Visitor.SetTokenBalanceDecimal("iost", acc1.ID, "1000")
 		params := []any{
 			acc.ID,
 			acc1.ID,
@@ -440,7 +440,7 @@ func Test_SpecialChar(t *testing.T) {
 		r, err := s.Call(cname, "transfer", string(paramsByte), acc.ID, acc.KeyPair)
 		So(err, ShouldBeNil)
 		So(r.Status.Message, ShouldEqual, "")
-		So(s.Visitor.TokenBalanceFixed("iost", acc1.ID).String(), ShouldEqual, "2000")
+		So(s.Visitor.TokenBalanceDecimal("iost", acc1.ID).String(), ShouldEqual, "2000")
 	})
 }
 

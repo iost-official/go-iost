@@ -602,7 +602,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "0")
 
-			freezedBalance := host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			freezedBalance := host.DB().FreezedTokenBalanceDecimal("iost", "user0")
 			So(freezedBalance.String(), ShouldEqual, "22.3")
 
 			rs, cost, err = e.LoadAndCall(host, code, "balanceOf", "iost", "issuer0")
@@ -619,7 +619,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "22.3")
 
-			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			freezedBalance = host.DB().FreezedTokenBalanceDecimal("iost", "user0")
 			So(freezedBalance.String(), ShouldEqual, "0")
 
 			// transferFreeze to self
@@ -640,7 +640,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "11.3")
 
-			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			freezedBalance = host.DB().FreezedTokenBalanceDecimal("iost", "user0")
 			So(freezedBalance.String(), ShouldEqual, "11")
 
 			host.Context().Set("time", now+11)
@@ -648,7 +648,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "21.3")
 
-			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			freezedBalance = host.DB().FreezedTokenBalanceDecimal("iost", "user0")
 			So(freezedBalance.String(), ShouldEqual, "1")
 
 			host.Context().Set("time", now+21)
@@ -656,7 +656,7 @@ func TestTokenV2_TransferFreeze(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(true, ShouldEqual, len(rs) > 0 && rs[0] == "22.3")
 
-			freezedBalance = host.DB().FreezedTokenBalanceFixed("iost", "user0")
+			freezedBalance = host.DB().FreezedTokenBalanceDecimal("iost", "user0")
 			So(freezedBalance.String(), ShouldEqual, "0")
 		})
 

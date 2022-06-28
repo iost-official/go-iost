@@ -30,8 +30,8 @@ func TestTransfer(t *testing.T) {
 		createToken(t, s, acc)
 
 		Reset(func() {
-			s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-			s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc0.ID, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc1.ID, "0")
 			s.SetGas(acc.ID, 100000)
 			s.SetRAM(acc.ID, 10000)
 		})
@@ -186,8 +186,8 @@ func TestAmountLimit(t *testing.T) {
 		s.SetRAM(acc0.ID, 10000)
 
 		Reset(func() {
-			s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-			s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc0.ID, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc1.ID, "0")
 			s.SetGas(acc0.ID, 100000)
 			s.SetRAM(acc0.ID, 10000)
 		})
@@ -329,7 +329,7 @@ func TestAmountLimit(t *testing.T) {
 
 		Convey("test amount limit transfer from multi signers", func() {
 			s.SetAccount(acc2.ToAccount())
-			s.Visitor.SetTokenBalanceFixed("iost", acc2.ID, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc2.ID, "1000")
 
 			trx := tx.NewTx([]*tx.Action{{
 				Contract:   "Contracttransfer",
@@ -397,8 +397,8 @@ func TestTxAmountLimit(t *testing.T) {
 		s.SetRAM(acc0.ID, 10000)
 
 		Reset(func() {
-			s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-			s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc0.ID, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc1.ID, "0")
 			s.SetGas(acc0.ID, 100000)
 			s.SetRAM(acc0.ID, 10000)
 		})
@@ -528,8 +528,8 @@ func TestTokenMemo(t *testing.T) {
 		s.SetRAM(acc0.ID, 10000)
 
 		Reset(func() {
-			s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-			s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc0.ID, "1000")
+			s.Visitor.SetTokenBalanceDecimal("iost", acc1.ID, "0")
 			s.SetGas(acc0.ID, 100000)
 			s.SetRAM(acc0.ID, 10000)
 		})
@@ -591,7 +591,7 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 			So(r.Status.Message, ShouldEqual, "")
 			txGasUsage := r.GasUsage / 100
 			So(s.GetGas(acc0.ID), ShouldEqual, expectedGasAfterPlegde-txGasUsage)
-			So(s.Visitor.TokenBalanceFixed("iost", acc0.ID).String(), ShouldEqual, strconv.Itoa(int(initialBalance-pledgeAmount)))
+			So(s.Visitor.TokenBalanceDecimal("iost", acc0.ID).String(), ShouldEqual, strconv.Itoa(int(initialBalance-pledgeAmount)))
 		})
 		SkipConvey("vm can kill tx if gas limit is not enough(TODO it is not possible in current code)", func() {
 			s.SetGas(acc0.ID, 0)
@@ -609,7 +609,7 @@ func TestNativeVM_GasPledgeShortCut(t *testing.T) {
 			So(r.Status.Message, ShouldContainSubstring, "out of gas")
 			So(r.Status.Code, ShouldEqual, tx.ErrorRuntime)
 			So(s.GetGas(acc0.ID), ShouldEqual, expectedGasAfterPlegde-txGasLimit)
-			So(s.Visitor.TokenBalanceFixed("iost", acc0.ID).String(), ShouldEqual, strconv.Itoa(int(initialBalance-pledgeAmount)))
+			So(s.Visitor.TokenBalanceDecimal("iost", acc0.ID).String(), ShouldEqual, strconv.Itoa(int(initialBalance-pledgeAmount)))
 		})
 	})
 }
@@ -709,8 +709,8 @@ func TestGasLimit2(t *testing.T) {
 	assert.NotNil(t, ca)
 	s.SetContract(ca)
 
-	s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-	s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+	s.Visitor.SetTokenBalanceDecimal("iost", acc0.ID, "1000")
+	s.Visitor.SetTokenBalanceDecimal("iost", acc1.ID, "0")
 	s.SetGas(acc0.ID, 2000000)
 	s.SetRAM(acc0.ID, 10000)
 
@@ -733,8 +733,8 @@ func TestGasLimit2(t *testing.T) {
 	assert.Equal(t, "20", balance2.String())
 
 	// out of gas
-	s.Visitor.SetTokenBalanceFixed("iost", acc0.ID, "1000")
-	s.Visitor.SetTokenBalanceFixed("iost", acc1.ID, "0")
+	s.Visitor.SetTokenBalanceDecimal("iost", acc0.ID, "1000")
+	s.Visitor.SetTokenBalanceDecimal("iost", acc1.ID, "0")
 	s.SetGas(acc0.ID, 2000000)
 	s.SetRAM(acc0.ID, 10000)
 	acts = []*tx.Action{}

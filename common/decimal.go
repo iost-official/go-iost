@@ -211,6 +211,10 @@ func RescalePair(a *Decimal, b *Decimal) (*Decimal, *Decimal, error) {
 	return a, bChanged, nil
 }
 
+func NewDecimalZero() *Decimal {
+	return &Decimal{Value: 0, Scale: 0}
+}
+
 func NewDecimalFromInt(v int) *Decimal {
 	return &Decimal{Value: int64(v), Scale: 0}
 }

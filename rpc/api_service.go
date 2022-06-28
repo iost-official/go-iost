@@ -309,8 +309,7 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	ret := toPbAccount(acc)
 
 	// pack balance and ram information
-	balance := dbVisitor.TokenBalanceFixed("iost", req.GetName()).Float64()
-	ret.Balance = balance
+	balance := dbVisitor.TokenBalanceDecimal("iost", req.GetName())
 	ramInfo := dbVisitor.RAMHandler.GetAccountRAMInfo(req.GetName())
 	ret.RamInfo = &rpcpb.Account_RAMInfo{
 		Available: ramInfo.Available,
@@ -344,10 +343,10 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	}
 
 	// pack frozen balance information
-	frozen := dbVisitor.AllFreezedTokenBalanceFixed("iost", req.GetName())
+	frozen := dbVisitor.AllFreezedTokenBalanceDecimal("iost", req.GetName())
 	unfrozen, stillFrozen := as.getUnfrozenToken(frozen, req.ByLongestChain)
 	ret.FrozenBalances = stillFrozen
-	ret.Balance += unfrozen
+	ret.Balance = unfrozen.Add(balance).Float64()
 
 	voteInfo := dbVisitor.GetAccountVoteInfo(req.GetName())
 	for _, v := range voteInfo {
@@ -376,12 +375,12 @@ func (as *APIService) GetTokenBalance(ctx context.Context, req *rpcpb.GetTokenBa
 	//if acc == nil {
 	//	return nil, errors.New("account not found")
 	//}
-	balance := dbVisitor.TokenBalanceFixed(req.GetToken(), req.GetAccount()).Float64()
+	balance := dbVisitor.TokenBalanceDecimal(req.GetToken(), req.GetAccount())
 	// pack frozen balance information
-	frozen := dbVisitor.AllFreezedTokenBalanceFixed(req.GetToken(), req.GetAccount())
+	frozen := dbVisitor.AllFreezedTokenBalanceDecimal(req.GetToken(), req.GetAccount())
 	unfrozen, stillFrozen := as.getUnfrozenToken(frozen, req.ByLongestChain)
 	return &rpcpb.GetTokenBalanceResponse{
-		Balance:        balance + unfrozen,
+		Balance:        balance.Add(unfrozen).Float64(),
 		FrozenBalances: stillFrozen,
 	}, nil
 }
@@ -1026,18 +1025,18 @@ func (as *APIService) getStateDBVisitor(longestChain bool) (*database.Visitor, *
 	return nil, nil, err
 }
 
-func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemFixed, longestChain bool) (float64, []*rpcpb.FrozenBalance) {
+func (as *APIService) getUnfrozenToken(frozens []database.FreezeItemDecimal, longestChain bool) (*common.Decimal, []*rpcpb.FrozenBalance) {
 	var blockTime int64
 	if longestChain {
 		blockTime = as.bc.Head().Head.Time
 	} else {
 		blockTime = as.bc.LinkedRoot().Head.Time
 	}
-	var unfrozen float64
+	var unfrozen *common.Decimal = common.NewDecimalZero()
 	var stillFrozen []*rpcpb.FrozenBalance
 	for _, f := range frozens {
 		if f.Ftime <= blockTime {
-			unfrozen += f.Amount.Float64()
+			unfrozen = unfrozen.Add(&f.Amount)
 		} else {
 			stillFrozen = append(stillFrozen, &rpcpb.FrozenBalance{
 				Amount: f.Amount.Float64(),

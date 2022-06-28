@@ -27,7 +27,7 @@ func CheckTxGasLimitValid(t *tx.Tx, currentGas *common.Decimal, dbVisitor *datab
 	if !(args[0] == t.Publisher && args[1] == t.Publisher) {
 		return defaultErr
 	}
-	balance := dbVisitor.TokenBalanceFixed("iost", t.Publisher)
+	balance := dbVisitor.TokenBalanceDecimal("iost", t.Publisher)
 	pledgeAmount, err := common.NewDecimalFromString(args[2].(string), 8)
 	if err != nil {
 		return fmt.Errorf("invalid gas pledge amount %v %v", err, args[2].(string))
