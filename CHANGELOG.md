@@ -1,3 +1,9 @@
+## v3.8.5
+Tue Jun 28 19:35:37 CST 2022
+
+Fix some floating point display rounding precision error in RPC (example: 556.3878738799999 vs 556.38787388)
+Fix iwallet account update key command example
+
 ## v3.8.2
 Tue Jun  7 17:05:50 CST 2022
 
