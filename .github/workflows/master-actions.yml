@@ -91,6 +91,7 @@ jobs:
           git lfs pull
           make vmlib_install
           make build
-          make lint-tool
-          PATH=$(HOME)/bin:$PATH make lint
+          GOBIN=/usr/local/bin/ make lint-tool
+          golangci-lint version
+          PATH=/usr/local/bin/:$PATH make lint
           make test
