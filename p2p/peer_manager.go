@@ -60,9 +60,9 @@ const (
 // PeerManager manages all peers we connect directly.
 //
 // PeerManager's jobs are:
-//   * holding a certain amount of peers.
-//   * handling messages according to its type.
-//   * discovering peers and maintaining routing table.
+//   - holding a certain amount of peers.
+//   - handling messages according to its type.
+//   - discovering peers and maintaining routing table.
 type PeerManager struct {
 	neighbors     map[peer.ID]*Peer
 	neighborCount map[connDirection]int

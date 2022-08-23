@@ -70,7 +70,7 @@ type Sandbox struct {
 	host    *host.Host
 }
 
-//var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+// var sbxMap = make(map[C.SandboxPtr]*Sandbox)
 var sbxMap sync.Map
 
 // GetSandbox from sandbox map by sandbox ptr

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"os"
 	"sync"
 
 	"github.com/iost-official/go-iost/v3/common"
@@ -228,6 +229,7 @@ type BlockCacheImpl struct { //nolint:golint
 	stateDB           db.MVCCDB
 	wal               *wal.WAL
 	spvConf           *common.SPVConfig
+	stop              int64
 }
 
 func (bc *BlockCacheImpl) hmget(hash []byte) (*BlockCacheNode, bool) {
@@ -288,6 +290,10 @@ func NewBlockCache(conf *common.Config, bChain block.Chain, stateDB db.MVCCDB) (
 		blockChain:        bChain,
 		stateDB:           stateDB.Fork(),
 		wal:               w,
+		stop:              conf.Stop,
+	}
+	if bc.stop != 0 {
+		ilog.Warnf("iserver will stop after flushing block %v\n", bc.stop)
 	}
 	if conf.SPV != nil {
 		bc.spvConf = conf.SPV
@@ -721,6 +727,12 @@ func (bc *BlockCacheImpl) flush() {
 	err = bc.wal.RemoveFilesBefore(bcn.walIndex)
 	if err != nil {
 		ilog.Errorf("Cut wal files error: %v %v", common.Base58Encode(bcn.HeadHash()), err)
+	}
+
+	if bc.stop != 0 && bc.stop == bcn.Block.Head.Number {
+		ilog.Warnf("Block %v(hash: %v) flushed. Stopping iserver...", bcn.Block.Head.Number, common.Base58Encode(bcn.Block.HeadHash()))
+		ilog.Flush()
+		os.Exit(0)
 	}
 }
 

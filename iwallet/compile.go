@@ -10,6 +10,7 @@ import (
 )
 
 // CompiledContract is the compiled js code. Need go 1.16 or later
+//
 //go:embed contract/dist/bundle.js
 var CompiledContract string
 

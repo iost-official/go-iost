@@ -75,7 +75,7 @@ type P2PConfig struct {
 	AdminPort    string
 }
 
-//RPCConfig is the config for RPC Server.
+// RPCConfig is the config for RPC Server.
 type RPCConfig struct {
 	Enable       bool
 	GatewayAddr  string
@@ -152,6 +152,7 @@ type Config struct {
 	Debug    *DebugConfig
 	Version  *VersionConfig
 	SPV      *SPVConfig
+	Stop     int64
 }
 
 // LoadYamlAsViper load yaml file as viper object

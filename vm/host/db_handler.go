@@ -2,6 +2,7 @@ package host
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/vm/database"
@@ -174,6 +175,11 @@ func (h *DBHandler) GlobalHas(con, key string) (bool, contract.Cost) {
 // GlobalGet get another contract's data
 func (h *DBHandler) GlobalGet(con, key string) (value any, cost contract.Cost) {
 	mk := h.modifyGlobalKey(con, key)
+	if h.h.IsFork3_9_0 {
+		if strings.HasPrefix(mk, "base.iost-chain_info_") {
+			return nil, Costs["GetCost"]
+		}
+	}
 	rtn := h.parseValue(h.h.db.Get(mk))
 	return rtn, Costs["GetCost"]
 }

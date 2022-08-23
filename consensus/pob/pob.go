@@ -35,7 +35,7 @@ var (
 	last2GenBlockTime = 50 * time.Millisecond
 )
 
-//PoB is a struct that handles the consensus logic.
+// PoB is a struct that handles the consensus logic.
 type PoB struct {
 	account    *account.KeyPair
 	cBase      *chainbase.ChainBase

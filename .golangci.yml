@@ -20,20 +20,17 @@ linters:
     - misspell
     - deadcode
     - staticcheck
-    - structcheck
     - typecheck
     - unconvert
     - gofmt
     - varcheck
     - asciicheck
-    - bodyclose
     - depguard
     - dogsled
     - gocritic
     - goimports
     - gomodguard
     - goprintffuncname
-    - rowserrcheck
     - testpackage
     - whitespace
     - unused
@@ -59,3 +56,4 @@ linters:
     - gocognit
     - goconst
     - gocyclo
+    - structcheck

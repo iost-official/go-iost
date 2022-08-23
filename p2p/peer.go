@@ -36,9 +36,9 @@ const (
 // Peer represents a neighbor which we connect directly.
 //
 // Peer's jobs are:
-//   * managing streams which are responsible for sending and reading messages.
-//   * recording messages we have sent and received so as to reduce redundant message in network.
-//   * maintaning a priority queue of message to be sending.
+//   - managing streams which are responsible for sending and reading messages.
+//   - recording messages we have sent and received so as to reduce redundant message in network.
+//   - maintaning a priority queue of message to be sending.
 type Peer struct {
 	id          peer.ID
 	addr        multiaddr.Multiaddr

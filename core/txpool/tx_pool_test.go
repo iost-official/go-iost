@@ -420,7 +420,7 @@ func TestNewTxPImplB(t *testing.T) {
 
 }
 
-//result 55.3 ns/op
+// result 55.3 ns/op
 func BenchmarkAddBlock(b *testing.B) {
 	_, accountList, witnessList, txPool, bChain, stateDB := envInit(b)
 	listTxCnt := 500
@@ -436,7 +436,7 @@ func BenchmarkAddBlock(b *testing.B) {
 
 }
 
-//result 472185 ns/op  tps:2147
+// result 472185 ns/op  tps:2147
 // no verify 17730 ns/op tps:58823
 func BenchmarkAddTx(b *testing.B) {
 	_, accountList, witnessList, txPool, bChain, stateDB := envInit(b)
@@ -463,7 +463,7 @@ func BenchmarkAddTx(b *testing.B) {
 	stopTest(bChain, stateDB)
 }
 
-//result 4445 ns/op
+// result 4445 ns/op
 func BenchmarkDecodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
@@ -488,7 +488,7 @@ func BenchmarkDecodeTx(b *testing.B) {
 	b.StopTimer()
 }
 
-//result 3416 ns/op
+// result 3416 ns/op
 func BenchmarkEncodeTx(b *testing.B) {
 	acc := common.Base58Decode("3BZ3HWs2nWucCCvLp7FRFv1K7RR3fAjjEQccf9EJrTv4")
 	newAccount, err := account.NewKeyPair(acc, crypto.Secp256k1)
@@ -506,7 +506,7 @@ func BenchmarkEncodeTx(b *testing.B) {
 	b.StopTimer()
 }
 
-//result 3.8S ~ 4.2S  10000 tx verify
+// result 3.8S ~ 4.2S  10000 tx verify
 func BenchmarkVerifyTx(b *testing.B) {
 
 	_, accountList, _, txPool, bChain, stateDB := envInit(b)

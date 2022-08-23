@@ -8,18 +8,6 @@ import (
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-/*
-func gentx() Tx {
-	main := lua.NewMethod(0, "main", 0, 1)
-	code := `function main()
-				Put("hello", "world")
-				return "success"
-			end`
-	lc := lua.NewContract(vm.ContractInfo{Prefix: "test", GasLimit: 100, Price: 1, PublishSign: vm.IOSTAccount("ahaha")}, code, main)
-
-	return NewTx(int64(0), &lc, [1]byte)
-}
-*/
 func TestTxReceipt(t *testing.T) {
 	Convey("Test of Tx Receipt", t, func() {
 
