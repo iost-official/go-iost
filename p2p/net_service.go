@@ -135,6 +135,14 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		return nil, ErrPortUnavailable
 	}
 
+	secOptions := []libp2p.Option{
+		libp2p.Security(tls.ID, tls.New),
+		libp2p.Security(noise.ID, noise.New),
+	}
+	ilog.Infoln("secio enabled:", ns.config.Secio)
+	if ns.config.Secio {
+		secOptions = append(secOptions, libp2p.Security(secio.ID, secio.New))
+	}
 	opts := []libp2p.Option{
 		libp2p.Identity(pk),
 		libp2p.NATPortMap(),
@@ -142,11 +150,7 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		libp2p.ChainOptions(
 			libp2p.Muxer(protocolID, mplex.DefaultTransport),
 		),
-		libp2p.ChainOptions(
-			libp2p.Security(secio.ID, secio.New),
-			libp2p.Security(tls.ID, tls.New),
-			libp2p.Security(noise.ID, noise.New),
-		),
+		libp2p.ChainOptions(secOptions...),
 	}
 	h, err := libp2p.New(context.Background(), opts...)
 	if err != nil {
