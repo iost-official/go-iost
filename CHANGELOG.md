@@ -1,3 +1,10 @@
+## v3.9.0
+Wed Aug 24 15:07:54 CST 2022
+
+- Upgrade to Ubuntu 20.04 and Go 1.19
+- Upgrade libp2p and disable secio by default
+- No longer store history block header inside statedb to save disk size
+
 ## v3.8.5
 Tue Jun 28 19:35:37 CST 2022
 

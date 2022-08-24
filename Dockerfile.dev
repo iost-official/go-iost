@@ -18,6 +18,7 @@ ENV PATH $GOROOT/bin:$PATH
 
 # Install golangci-lint
 RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b /usr/local/bin v1.48.0
+RUN git config --global --add safe.directory '*'
 
 WORKDIR /go-iost
 
