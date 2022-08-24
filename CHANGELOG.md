@@ -1,4 +1,4 @@
-## v3.9.0
+## v3.9.1
 Wed Aug 24 15:07:54 CST 2022
 
 - Upgrade to Ubuntu 20.04 and Go 1.19
