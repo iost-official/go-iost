@@ -3,7 +3,7 @@ package mplex
 import (
 	"net"
 
-	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p/core/network"
 
 	mp "github.com/libp2p/go-mplex"
 )
@@ -22,5 +22,5 @@ func (t *Transport) NewConn(nc net.Conn, isServer bool, scope network.PeerScope)
 	if err != nil {
 		return nil, err
 	}
-	return (*conn)(m), nil
+	return NewMuxedConn(m), nil
 }

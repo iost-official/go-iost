@@ -3,7 +3,7 @@ package mplex
 import (
 	"context"
 
-	"github.com/libp2p/go-libp2p-core/network"
+	"github.com/libp2p/go-libp2p/core/network"
 
 	mp "github.com/libp2p/go-mplex"
 )
@@ -11,6 +11,11 @@ import (
 type conn mp.Multiplex
 
 var _ network.MuxedConn = &conn{}
+
+// NewMuxedConn constructs a new Conn from a *mp.Multiplex.
+func NewMuxedConn(m *mp.Multiplex) network.MuxedConn {
+	return (*conn)(m)
+}
 
 func (c *conn) Close() error {
 	return c.mplex().Close()

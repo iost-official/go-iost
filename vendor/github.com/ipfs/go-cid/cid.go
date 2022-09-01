@@ -181,6 +181,15 @@ func Parse(v interface{}) (Cid, error) {
 	}
 }
 
+// MustParse calls Parse but will panic on error.
+func MustParse(v interface{}) Cid {
+	c, err := Parse(v)
+	if err != nil {
+		panic(err)
+	}
+	return c
+}
+
 // Decode parses a Cid-encoded string and returns a Cid object.
 // For CidV1, a Cid-encoded string is primarily a multibase string:
 //
@@ -369,7 +378,13 @@ func (c Cid) Hash() mh.Multihash {
 // Bytes returns the byte representation of a Cid.
 // The output of bytes can be parsed back into a Cid
 // with Cast().
+//
+// If c.Defined() == false, it return a nil slice and may not
+// be parsable with Cast().
 func (c Cid) Bytes() []byte {
+	if !c.Defined() {
+		return nil
+	}
 	return []byte(c.str)
 }
 
