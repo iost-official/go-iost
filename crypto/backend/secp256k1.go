@@ -1,13 +1,10 @@
-//go:build !cgo
-// +build !cgo
-
 package backend
 
 import (
 	"fmt"
-	"math/big"
 
-	"github.com/btcsuite/btcd/btcec/v2"
+	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
+	secp_ecdsa "github.com/decred/dcrd/dcrec/secp256k1/v4/ecdsa"
 
 	"github.com/iost-official/go-iost/v3/ilog"
 )
@@ -21,12 +18,8 @@ func (b *Secp256k1) Sign(hash []byte, seckey []byte) []byte {
 		ilog.Errorf("hash is required to be exactly 32 bytes (%d)", len(hash))
 		return nil
 	}
-	privKey, _ := btcec.PrivKeyFromBytes(btcec.S256(), seckey)
-	sig, err := btcec.SignCompact(btcec.S256(), privKey, hash, false)
-	if err != nil {
-		ilog.Errorf("Failed to sign, %v", err)
-		return nil
-	}
+	privKey := secp.PrivKeyFromBytes(seckey)
+	sig := secp_ecdsa.SignCompact(privKey, hash, false)
 	return sig[1:]
 }
 
@@ -35,23 +28,34 @@ func (b *Secp256k1) Verify(hash []byte, pubkey []byte, signature []byte) bool {
 	if len(signature) != 64 {
 		return false
 	}
-	pubKey, err := btcec.ParsePubKey(pubkey, btcec.S256())
+	pubKey, err := secp.ParsePubKey(pubkey)
 	if err != nil {
 		return false
 	}
-	sig := &btcec.Signature{R: new(big.Int).SetBytes(signature[:32]), S: new(big.Int).SetBytes(signature[32:])}
+	var r, s secp.ModNScalar
+	if r.SetByteSlice(signature[:32]) {
+		return false // overflow
+	}
+	if s.SetByteSlice(signature[32:]) {
+		return false
+	}
+	if s.IsOverHalfOrder() {
+		return false
+	}
+	sig := secp_ecdsa.NewSignature(&r, &s)
 	return sig.Verify(hash, pubKey)
 }
 
 // GetPubkey will get the public key of the secret key by secp256k1
 func (b *Secp256k1) GetPubkey(seckey []byte) []byte {
-	_, pubKey := btcec.PrivKeyFromBytes(btcec.S256(), seckey)
+	privKey := secp.PrivKeyFromBytes(seckey)
+	pubKey := privKey.PubKey()
 	return pubKey.SerializeCompressed()
 }
 
 // GenSeckey will generate the secret key by secp256k1
 func (b *Secp256k1) GenSeckey() []byte {
-	seckey, err := btcec.NewPrivateKey(btcec.S256())
+	seckey, err := secp.GeneratePrivateKey()
 	if err != nil {
 		ilog.Errorf("Failed to random seckey, %v", err)
 		return nil
