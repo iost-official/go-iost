@@ -11,8 +11,8 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 
 	bloom "github.com/bits-and-blooms/bloom/v3"
-	libnet "github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
+	libnet "github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	"go.uber.org/atomic"
 )

@@ -16,11 +16,11 @@ import (
 	p2pb "github.com/iost-official/go-iost/v3/p2p/pb"
 	"google.golang.org/protobuf/proto"
 
-	"github.com/libp2p/go-libp2p-core/host"
-	libnet "github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
-	"github.com/libp2p/go-libp2p-core/peerstore"
 	kbucket "github.com/libp2p/go-libp2p-kbucket"
+	"github.com/libp2p/go-libp2p/core/host"
+	libnet "github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
+	"github.com/libp2p/go-libp2p/core/peerstore"
 	multiaddr "github.com/multiformats/go-multiaddr"
 	madns "github.com/multiformats/go-multiaddr-dns"
 	"go.uber.org/atomic"
@@ -134,7 +134,7 @@ func NewPeerManager(host host.Host, config *common.P2PConfig) *PeerManager {
 
 // Start starts peer manager's job.
 func (pm *PeerManager) Start() {
-	if !pm.started.CAS(0, 1) {
+	if !pm.started.CompareAndSwap(0, 1) {
 		return
 	}
 
@@ -150,7 +150,7 @@ func (pm *PeerManager) Start() {
 
 // Stop stops peer manager's loop.
 func (pm *PeerManager) Stop() {
-	if !pm.started.CAS(1, 0) {
+	if !pm.started.CompareAndSwap(1, 0) {
 		return
 	}
 

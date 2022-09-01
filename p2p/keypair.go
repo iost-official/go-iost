@@ -4,7 +4,7 @@ import (
 	"crypto/rand"
 	"os"
 
-	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p/core/crypto"
 )
 
 func marshalPrivKey(key crypto.PrivKey) (string, error) {

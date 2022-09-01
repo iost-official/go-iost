@@ -11,10 +11,10 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 
 	libp2p "github.com/libp2p/go-libp2p"
-	"github.com/libp2p/go-libp2p-core/crypto"
-	"github.com/libp2p/go-libp2p-core/host"
-	libnet "github.com/libp2p/go-libp2p-core/network"
-	"github.com/libp2p/go-libp2p-core/peer"
+	"github.com/libp2p/go-libp2p/core/crypto"
+	"github.com/libp2p/go-libp2p/core/host"
+	libnet "github.com/libp2p/go-libp2p/core/network"
+	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	tls "github.com/libp2p/go-libp2p/p2p/security/tls"
@@ -137,10 +137,6 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 	secOptions := []libp2p.Option{
 		libp2p.Security(tls.ID, tls.New),
 		libp2p.Security(noise.ID, noise.New),
-	}
-	ilog.Infoln("secio enabled:", ns.config.Secio)
-	if ns.config.Secio {
-		secOptions = append(secOptions, libp2p.Security(secio.ID, secio.New))
 	}
 	opts := []libp2p.Option{
 		libp2p.Identity(pk),

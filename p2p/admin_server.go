@@ -10,7 +10,7 @@ import (
 
 	"github.com/iost-official/go-iost/v3/ilog"
 
-	peer "github.com/libp2p/go-libp2p-core/peer"
+	peer "github.com/libp2p/go-libp2p/core/peer"
 )
 
 type adminServer struct {

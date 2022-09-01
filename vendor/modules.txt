@@ -16,13 +16,9 @@ github.com/bits-and-blooms/bitset
 # github.com/bits-and-blooms/bloom/v3 v3.3.0
 ## explicit; go 1.14
 github.com/bits-and-blooms/bloom/v3
-# github.com/btcsuite/btcd v0.23.1
-## explicit; go 1.17
 # github.com/btcsuite/btcd/btcec/v2 v2.2.1
 ## explicit; go 1.17
 github.com/btcsuite/btcd/btcec/v2
-# github.com/btcsuite/btcd/chaincfg/chainhash v1.0.1
-## explicit; go 1.17
 # github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
 ## explicit; go 1.14
 github.com/btcsuite/btcutil/base58
@@ -208,8 +204,6 @@ github.com/libp2p/go-buffer-pool
 ## explicit; go 1.14
 github.com/libp2p/go-cidranger
 github.com/libp2p/go-cidranger/net
-# github.com/libp2p/go-eventbus v0.3.0
-## explicit; go 1.17
 # github.com/libp2p/go-flow-metrics v0.1.0
 ## explicit; go 1.17
 github.com/libp2p/go-flow-metrics
@@ -284,17 +278,11 @@ github.com/libp2p/go-libp2p/p2p/transport/websocket
 # github.com/libp2p/go-libp2p-asn-util v0.2.0
 ## explicit; go 1.17
 github.com/libp2p/go-libp2p-asn-util
-# github.com/libp2p/go-libp2p-core v0.20.0
-## explicit; go 1.17
 # github.com/libp2p/go-libp2p-kbucket v0.4.8-0.20220901033234-03c1432b8303
 ## explicit; go 1.18
 github.com/libp2p/go-libp2p-kbucket
 github.com/libp2p/go-libp2p-kbucket/keyspace
 github.com/libp2p/go-libp2p-kbucket/peerdiversity
-# github.com/libp2p/go-libp2p-peerstore v0.8.0
-## explicit; go 1.17
-# github.com/libp2p/go-libp2p-resource-manager v0.6.0
-## explicit; go 1.17
 # github.com/libp2p/go-mplex v0.7.0
 ## explicit; go 1.17
 github.com/libp2p/go-mplex
@@ -373,8 +361,6 @@ github.com/mikioh/tcpinfo
 # github.com/mikioh/tcpopt v0.0.0-20190314235656-172688c1accc
 ## explicit
 github.com/mikioh/tcpopt
-# github.com/minio/blake2b-simd v0.0.0-20160723061019-3f5f724cb5b1
-## explicit
 # github.com/minio/sha256-simd v1.0.0
 ## explicit; go 1.13
 github.com/minio/sha256-simd
@@ -508,8 +494,6 @@ github.com/prometheus/common/model
 github.com/prometheus/procfs
 github.com/prometheus/procfs/internal/fs
 github.com/prometheus/procfs/internal/util
-# github.com/raulk/clock v1.1.0
-## explicit; go 1.14
 # github.com/raulk/go-watchdog v1.3.0
 ## explicit; go 1.15
 github.com/raulk/go-watchdog
@@ -610,8 +594,6 @@ github.com/wcharczuk/go-chart/v2
 github.com/wcharczuk/go-chart/v2/drawing
 github.com/wcharczuk/go-chart/v2/matrix
 github.com/wcharczuk/go-chart/v2/roboto
-# github.com/whyrusleeping/multiaddr-filter v0.0.0-20160516205228-e903e4adabd7
-## explicit
 # github.com/xlab/treeprint v1.1.0
 ## explicit; go 1.13
 github.com/xlab/treeprint
@@ -651,8 +633,6 @@ golang.org/x/crypto/ripemd160
 golang.org/x/crypto/salsa20/salsa
 golang.org/x/crypto/scrypt
 golang.org/x/crypto/sha3
-# golang.org/x/exp v0.0.0-20220827204233-334a2380cb91
-## explicit; go 1.18
 # golang.org/x/image v0.0.0-20220722155232-062f8c9fd539
 ## explicit; go 1.12
 golang.org/x/image/draw
