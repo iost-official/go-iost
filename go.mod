@@ -6,7 +6,7 @@ require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/bitly/go-simplejson v0.5.1-0.20171023175154-0c965951289c
 	github.com/bits-and-blooms/bloom/v3 v3.3.0
-	github.com/btcsuite/btcutil v1.0.3-0.20201208143702-a53e38424cce
+	github.com/btcsuite/btcd/btcutil v1.1.2
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/emirpasic/gods v1.18.1
 	github.com/golang/mock v1.6.0

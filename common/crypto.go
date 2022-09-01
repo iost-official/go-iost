@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"hash/crc32"
 
-	"github.com/btcsuite/btcutil/base58"
+	"github.com/btcsuite/btcd/btcutil/base58"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"golang.org/x/crypto/ripemd160" // nolint:staticcheck
 	"golang.org/x/crypto/sha3"
