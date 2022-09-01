@@ -9,6 +9,7 @@ import (
 	"io"
 
 	pb "github.com/libp2p/go-libp2p-core/crypto/pb"
+	"github.com/libp2p/go-libp2p-core/internal/catch"
 )
 
 // Ed25519PrivateKey is an ed25519 private key.
@@ -40,11 +41,6 @@ func GenerateEd25519Key(src io.Reader) (PrivKey, PubKey, error) {
 // Type of the private key (Ed25519).
 func (k *Ed25519PrivateKey) Type() pb.KeyType {
 	return pb.KeyType_Ed25519
-}
-
-// Bytes marshals an ed25519 private key to protobuf bytes.
-func (k *Ed25519PrivateKey) Bytes() ([]byte, error) {
-	return MarshalPrivateKey(k)
 }
 
 // Raw private key bytes.
@@ -79,18 +75,15 @@ func (k *Ed25519PrivateKey) GetPublic() PubKey {
 }
 
 // Sign returns a signature from an input message.
-func (k *Ed25519PrivateKey) Sign(msg []byte) ([]byte, error) {
+func (k *Ed25519PrivateKey) Sign(msg []byte) (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "ed15519 signing") }()
+
 	return ed25519.Sign(k.k, msg), nil
 }
 
 // Type of the public key (Ed25519).
 func (k *Ed25519PublicKey) Type() pb.KeyType {
 	return pb.KeyType_Ed25519
-}
-
-// Bytes returns a ed25519 public key as protobuf bytes.
-func (k *Ed25519PublicKey) Bytes() ([]byte, error) {
-	return MarshalPublicKey(k)
 }
 
 // Raw public key bytes.
@@ -109,7 +102,15 @@ func (k *Ed25519PublicKey) Equals(o Key) bool {
 }
 
 // Verify checks a signature agains the input data.
-func (k *Ed25519PublicKey) Verify(data []byte, sig []byte) (bool, error) {
+func (k *Ed25519PublicKey) Verify(data []byte, sig []byte) (success bool, err error) {
+	defer func() {
+		catch.HandlePanic(recover(), &err, "ed15519 signature verification")
+
+		// To be safe.
+		if err != nil {
+			success = false
+		}
+	}()
 	return ed25519.Verify(k.k, data, sig), nil
 }
 

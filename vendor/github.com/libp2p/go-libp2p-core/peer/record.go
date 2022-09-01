@@ -2,8 +2,10 @@ package peer
 
 import (
 	"fmt"
+	"sync"
 	"time"
 
+	"github.com/libp2p/go-libp2p-core/internal/catch"
 	pb "github.com/libp2p/go-libp2p-core/peer/pb"
 	"github.com/libp2p/go-libp2p-core/record"
 
@@ -125,9 +127,23 @@ func PeerRecordFromProtobuf(msg *pb.PeerRecord) (*PeerRecord, error) {
 	return record, nil
 }
 
+var (
+	lastTimestampMu sync.Mutex
+	lastTimestamp   uint64
+)
+
 // TimestampSeq is a helper to generate a timestamp-based sequence number for a PeerRecord.
 func TimestampSeq() uint64 {
-	return uint64(time.Now().UnixNano())
+	now := uint64(time.Now().UnixNano())
+	lastTimestampMu.Lock()
+	defer lastTimestampMu.Unlock()
+	// Not all clocks are strictly increasing, but we need these sequence numbers to be strictly
+	// increasing.
+	if now <= lastTimestamp {
+		now = lastTimestamp + 1
+	}
+	lastTimestamp = now
+	return now
 }
 
 // Domain is used when signing and validating PeerRecords contained in Envelopes.
@@ -145,13 +161,15 @@ func (r *PeerRecord) Codec() []byte {
 // This method is called automatically when consuming a record.Envelope
 // whose PayloadType indicates that it contains a PeerRecord.
 // It is generally not necessary or recommended to call this method directly.
-func (r *PeerRecord) UnmarshalRecord(bytes []byte) error {
+func (r *PeerRecord) UnmarshalRecord(bytes []byte) (err error) {
 	if r == nil {
 		return fmt.Errorf("cannot unmarshal PeerRecord to nil receiver")
 	}
 
+	defer func() { catch.HandlePanic(recover(), &err, "libp2p peer record unmarshal") }()
+
 	var msg pb.PeerRecord
-	err := proto.Unmarshal(bytes, &msg)
+	err = proto.Unmarshal(bytes, &msg)
 	if err != nil {
 		return err
 	}
@@ -168,7 +186,9 @@ func (r *PeerRecord) UnmarshalRecord(bytes []byte) error {
 // MarshalRecord serializes a PeerRecord to a byte slice.
 // This method is called automatically when constructing a routing.Envelope
 // using Seal or PeerRecord.Sign.
-func (r *PeerRecord) MarshalRecord() ([]byte, error) {
+func (r *PeerRecord) MarshalRecord() (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "libp2p peer record marshal") }()
+
 	msg, err := r.ToProtobuf()
 	if err != nil {
 		return nil, err
@@ -190,7 +210,7 @@ func (r *PeerRecord) Equal(other *PeerRecord) bool {
 	if len(r.Addrs) != len(other.Addrs) {
 		return false
 	}
-	for i, _ := range r.Addrs {
+	for i := range r.Addrs {
 		if !r.Addrs[i].Equal(other.Addrs[i]) {
 			return false
 		}

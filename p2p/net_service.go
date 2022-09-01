@@ -1,7 +1,6 @@
 package p2p
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -16,10 +15,10 @@ import (
 	"github.com/libp2p/go-libp2p-core/host"
 	libnet "github.com/libp2p/go-libp2p-core/network"
 	"github.com/libp2p/go-libp2p-core/peer"
-	mplex "github.com/libp2p/go-libp2p-mplex"
-	noise "github.com/libp2p/go-libp2p-noise"
-	secio "github.com/libp2p/go-libp2p-secio"
-	tls "github.com/libp2p/go-libp2p-tls"
+	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
+	"github.com/libp2p/go-libp2p/p2p/security/noise"
+	tls "github.com/libp2p/go-libp2p/p2p/security/tls"
+
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
 
@@ -152,7 +151,7 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		),
 		libp2p.ChainOptions(secOptions...),
 	}
-	h, err := libp2p.New(context.Background(), opts...)
+	h, err := libp2p.New(opts...)
 	if err != nil {
 		return nil, err
 	}

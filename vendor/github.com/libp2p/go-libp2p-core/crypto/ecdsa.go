@@ -11,8 +11,9 @@ import (
 	"math/big"
 
 	pb "github.com/libp2p/go-libp2p-core/crypto/pb"
+	"github.com/libp2p/go-libp2p-core/internal/catch"
 
-	sha256 "github.com/minio/sha256-simd"
+	"github.com/minio/sha256-simd"
 )
 
 // ECDSAPrivateKey is an implementation of an ECDSA private key
@@ -67,18 +68,27 @@ func ECDSAKeyPairFromKey(priv *ecdsa.PrivateKey) (PrivKey, PubKey, error) {
 	return &ECDSAPrivateKey{priv}, &ECDSAPublicKey{&priv.PublicKey}, nil
 }
 
+// ECDSAPublicKeyFromPubKey generates a new ecdsa public key from an input public key
+func ECDSAPublicKeyFromPubKey(pub ecdsa.PublicKey) (PubKey, error) {
+	return &ECDSAPublicKey{pub: &pub}, nil
+}
+
 // MarshalECDSAPrivateKey returns x509 bytes from a private key
-func MarshalECDSAPrivateKey(ePriv ECDSAPrivateKey) ([]byte, error) {
+func MarshalECDSAPrivateKey(ePriv ECDSAPrivateKey) (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "ECDSA private-key marshal") }()
 	return x509.MarshalECPrivateKey(ePriv.priv)
 }
 
 // MarshalECDSAPublicKey returns x509 bytes from a public key
-func MarshalECDSAPublicKey(ePub ECDSAPublicKey) ([]byte, error) {
+func MarshalECDSAPublicKey(ePub ECDSAPublicKey) (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "ECDSA public-key marshal") }()
 	return x509.MarshalPKIXPublicKey(ePub.pub)
 }
 
 // UnmarshalECDSAPrivateKey returns a private key from x509 bytes
-func UnmarshalECDSAPrivateKey(data []byte) (PrivKey, error) {
+func UnmarshalECDSAPrivateKey(data []byte) (res PrivKey, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "ECDSA private-key unmarshal") }()
+
 	priv, err := x509.ParseECPrivateKey(data)
 	if err != nil {
 		return nil, err
@@ -88,7 +98,9 @@ func UnmarshalECDSAPrivateKey(data []byte) (PrivKey, error) {
 }
 
 // UnmarshalECDSAPublicKey returns the public key from x509 bytes
-func UnmarshalECDSAPublicKey(data []byte) (PubKey, error) {
+func UnmarshalECDSAPublicKey(data []byte) (key PubKey, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "ECDSA public-key unmarshal") }()
+
 	pubIfc, err := x509.ParsePKIXPublicKey(data)
 	if err != nil {
 		return nil, err
@@ -102,18 +114,14 @@ func UnmarshalECDSAPublicKey(data []byte) (PubKey, error) {
 	return &ECDSAPublicKey{pub}, nil
 }
 
-// Bytes returns the private key as protobuf bytes
-func (ePriv *ECDSAPrivateKey) Bytes() ([]byte, error) {
-	return MarshalPrivateKey(ePriv)
-}
-
 // Type returns the key type
 func (ePriv *ECDSAPrivateKey) Type() pb.KeyType {
 	return pb.KeyType_ECDSA
 }
 
 // Raw returns x509 bytes from a private key
-func (ePriv *ECDSAPrivateKey) Raw() ([]byte, error) {
+func (ePriv *ECDSAPrivateKey) Raw() (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "ECDSA private-key marshal") }()
 	return x509.MarshalECPrivateKey(ePriv.priv)
 }
 
@@ -123,7 +131,8 @@ func (ePriv *ECDSAPrivateKey) Equals(o Key) bool {
 }
 
 // Sign returns the signature of the input data
-func (ePriv *ECDSAPrivateKey) Sign(data []byte) ([]byte, error) {
+func (ePriv *ECDSAPrivateKey) Sign(data []byte) (sig []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "ECDSA signing") }()
 	hash := sha256.Sum256(data)
 	r, s, err := ecdsa.Sign(rand.Reader, ePriv.priv, hash[:])
 	if err != nil {
@@ -139,11 +148,6 @@ func (ePriv *ECDSAPrivateKey) Sign(data []byte) ([]byte, error) {
 // GetPublic returns a public key
 func (ePriv *ECDSAPrivateKey) GetPublic() PubKey {
 	return &ECDSAPublicKey{&ePriv.priv.PublicKey}
-}
-
-// Bytes returns the public key as protobuf bytes
-func (ePub *ECDSAPublicKey) Bytes() ([]byte, error) {
-	return MarshalPublicKey(ePub)
 }
 
 // Type returns the key type
@@ -162,13 +166,19 @@ func (ePub *ECDSAPublicKey) Equals(o Key) bool {
 }
 
 // Verify compares data to a signature
-func (ePub *ECDSAPublicKey) Verify(data, sigBytes []byte) (bool, error) {
+func (ePub *ECDSAPublicKey) Verify(data, sigBytes []byte) (success bool, err error) {
+	defer func() {
+		catch.HandlePanic(recover(), &err, "ECDSA signature verification")
+
+		// Just to be extra paranoid.
+		if err != nil {
+			success = false
+		}
+	}()
+
 	sig := new(ECDSASig)
 	if _, err := asn1.Unmarshal(sigBytes, sig); err != nil {
 		return false, err
-	}
-	if sig == nil {
-		return false, ErrNilSig
 	}
 
 	hash := sha256.Sum256(data)

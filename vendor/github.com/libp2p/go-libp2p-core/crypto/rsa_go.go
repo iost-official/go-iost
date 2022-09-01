@@ -1,3 +1,4 @@
+//go:build !openssl
 // +build !openssl
 
 package crypto
@@ -9,9 +10,9 @@ import (
 	"crypto/x509"
 	"errors"
 	"io"
-	"sync"
 
 	pb "github.com/libp2p/go-libp2p-core/crypto/pb"
+	"github.com/libp2p/go-libp2p-core/internal/catch"
 
 	"github.com/minio/sha256-simd"
 )
@@ -25,8 +26,7 @@ type RsaPrivateKey struct {
 type RsaPublicKey struct {
 	k rsa.PublicKey
 
-	cacheLk sync.Mutex
-	cached  []byte
+	cached []byte
 }
 
 // GenerateRSAKeyPair generates a new rsa private and public key
@@ -43,9 +43,17 @@ func GenerateRSAKeyPair(bits int, src io.Reader) (PrivKey, PubKey, error) {
 }
 
 // Verify compares a signature against input data
-func (pk *RsaPublicKey) Verify(data, sig []byte) (bool, error) {
+func (pk *RsaPublicKey) Verify(data, sig []byte) (success bool, err error) {
+	defer func() {
+		catch.HandlePanic(recover(), &err, "RSA signature verification")
+
+		// To be safe
+		if err != nil {
+			success = false
+		}
+	}()
 	hashed := sha256.Sum256(data)
-	err := rsa.VerifyPKCS1v15(&pk.k, crypto.SHA256, hashed[:], sig)
+	err = rsa.VerifyPKCS1v15(&pk.k, crypto.SHA256, hashed[:], sig)
 	if err != nil {
 		return false, err
 	}
@@ -56,18 +64,8 @@ func (pk *RsaPublicKey) Type() pb.KeyType {
 	return pb.KeyType_RSA
 }
 
-// Bytes returns protobuf bytes of a public key
-func (pk *RsaPublicKey) Bytes() ([]byte, error) {
-	pk.cacheLk.Lock()
-	var err error
-	if pk.cached == nil {
-		pk.cached, err = MarshalPublicKey(pk)
-	}
-	pk.cacheLk.Unlock()
-	return pk.cached, err
-}
-
-func (pk *RsaPublicKey) Raw() ([]byte, error) {
+func (pk *RsaPublicKey) Raw() (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "RSA public-key marshaling") }()
 	return x509.MarshalPKIXPublicKey(&pk.k)
 }
 
@@ -83,7 +81,8 @@ func (pk *RsaPublicKey) Equals(k Key) bool {
 }
 
 // Sign returns a signature of the input data
-func (sk *RsaPrivateKey) Sign(message []byte) ([]byte, error) {
+func (sk *RsaPrivateKey) Sign(message []byte) (sig []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "RSA signing") }()
 	hashed := sha256.Sum256(message)
 	return rsa.SignPKCS1v15(rand.Reader, &sk.sk, crypto.SHA256, hashed[:])
 }
@@ -97,12 +96,8 @@ func (sk *RsaPrivateKey) Type() pb.KeyType {
 	return pb.KeyType_RSA
 }
 
-// Bytes returns protobuf bytes from a private key
-func (sk *RsaPrivateKey) Bytes() ([]byte, error) {
-	return MarshalPrivateKey(sk)
-}
-
-func (sk *RsaPrivateKey) Raw() ([]byte, error) {
+func (sk *RsaPrivateKey) Raw() (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "RSA private-key marshaling") }()
 	b := x509.MarshalPKCS1PrivateKey(&sk.sk)
 	return b, nil
 }
@@ -123,7 +118,8 @@ func (sk *RsaPrivateKey) Equals(k Key) bool {
 }
 
 // UnmarshalRsaPrivateKey returns a private key from the input x509 bytes
-func UnmarshalRsaPrivateKey(b []byte) (PrivKey, error) {
+func UnmarshalRsaPrivateKey(b []byte) (key PrivKey, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "RSA private-key unmarshaling") }()
 	sk, err := x509.ParsePKCS1PrivateKey(b)
 	if err != nil {
 		return nil, err
@@ -135,7 +131,8 @@ func UnmarshalRsaPrivateKey(b []byte) (PrivKey, error) {
 }
 
 // UnmarshalRsaPublicKey returns a public key from the input x509 bytes
-func UnmarshalRsaPublicKey(b []byte) (PubKey, error) {
+func UnmarshalRsaPublicKey(b []byte) (key PubKey, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "RSA public-key unmarshaling") }()
 	pub, err := x509.ParsePKIXPublicKey(b)
 	if err != nil {
 		return nil, err

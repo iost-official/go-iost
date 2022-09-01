@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/libp2p/go-libp2p-core/crypto"
+	"github.com/libp2p/go-libp2p-core/internal/catch"
 	pb "github.com/libp2p/go-libp2p-core/record/pb"
 
 	pool "github.com/libp2p/go-buffer-pool"
@@ -192,7 +193,8 @@ func UnmarshalEnvelope(data []byte) (*Envelope, error) {
 
 // Marshal returns a byte slice containing a serialized protobuf representation
 // of a Envelope.
-func (e *Envelope) Marshal() ([]byte, error) {
+func (e *Envelope) Marshal() (res []byte, err error) {
+	defer func() { catch.HandlePanic(recover(), &err, "libp2p envelope marshal") }()
 	key, err := crypto.PublicKeyToProto(e.PublicKey)
 	if err != nil {
 		return nil, err
@@ -215,9 +217,9 @@ func (e *Envelope) Equal(other *Envelope) bool {
 		return e == nil
 	}
 	return e.PublicKey.Equals(other.PublicKey) &&
-		bytes.Compare(e.PayloadType, other.PayloadType) == 0 &&
-		bytes.Compare(e.signature, other.signature) == 0 &&
-		bytes.Compare(e.RawPayload, other.RawPayload) == 0
+		bytes.Equal(e.PayloadType, other.PayloadType) &&
+		bytes.Equal(e.signature, other.signature) &&
+		bytes.Equal(e.RawPayload, other.RawPayload)
 }
 
 // Record returns the Envelope's payload unmarshalled as a Record.

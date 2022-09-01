@@ -8,7 +8,7 @@ import (
 )
 
 func marshalPrivKey(key crypto.PrivKey) (string, error) {
-	bytes, err := key.Bytes()
+	bytes, err := crypto.MarshalPrivateKey(key)
 	if err != nil {
 		return "", err
 	}
