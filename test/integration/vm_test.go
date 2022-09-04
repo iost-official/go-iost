@@ -696,26 +696,19 @@ func Test_MapDel2(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_1_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	r, err := s.Call(cname, "keys", `[]`, acc.ID, acc.KeyPair)
 	assert.Nil(t, err)
 	assert.Empty(t, r.Status.Message)
 	assert.Len(t, r.Returns, 1)
-	assert.Equal(t, `["[\"scd\",\"abc\",\"ab\",\"ab\"]"]`, r.Returns[0])
-
-	conf.P2P.ChainID = 1000
-	version.InitChainConf(conf)
-	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_1_0)
-	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
+	assert.Equal(t, `["[\"s\",\"abcd\",\"abc\",\"ab\"]"]`, r.Returns[0])
 
 	r, err = s.Call(cname, "del", `[]`, acc.ID, acc.KeyPair)
 	assert.Nil(t, err)
 	assert.Empty(t, r.Status.Message)
 	assert.Len(t, r.Returns, 1)
-	assert.Equal(t, `["[\"abc\"]"]`, r.Returns[0])
+	assert.Equal(t, `["[\"s\",\"abcd\",\"abc\"]"]`, r.Returns[0])
 
 	conf.P2P.ChainID = 0
 	version.InitChainConf(conf)

@@ -152,12 +152,10 @@ func (h *Host) CheckSigners(t *tx.Tx) error {
 func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
 	tokenMap := make(map[string]bool)
 	for _, limit := range amountLimit {
-		if h.IsFork3_1_0 {
-			if tokenMap[limit.Token] {
-				return fmt.Errorf("duplicated token in amountLimit: %s", limit.Token)
-			}
-			tokenMap[limit.Token] = true
+		if tokenMap[limit.Token] {
+			return fmt.Errorf("duplicated token in amountLimit: %s", limit.Token)
 		}
+		tokenMap[limit.Token] = true
 		decimal := h.DB().Decimal(limit.Token)
 		if limit.Token == "*" {
 			decimal = 0
@@ -221,11 +219,9 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 	_, cost0, err = h.Call(c.ID, "init", "[]")
 	cost.AddAssign(cost0)
 
-	if h.IsFork3_3_0 {
-		// remove init
-		c.Info.Abi = c.Info.Abi[:len(c.Info.Abi)-1]
-		h.db.SetContract(c)
-	}
+	// remove init
+	c.Info.Abi = c.Info.Abi[:len(c.Info.Abi)-1]
+	h.db.SetContract(c)
 
 	return cost, err
 }
@@ -355,8 +351,5 @@ func (h *Host) ReadSettings() {
 
 // GetVMFlags return target vm bitwise flags
 func (h *Host) GetVMFlags() int64 {
-	if h.IsFork3_3_1 {
-		return 1
-	}
-	return 0
+	return 1
 }

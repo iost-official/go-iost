@@ -64,18 +64,12 @@ func (s *Stack) PushStack(cont, api string, withAuth bool) (reenter bool, cost c
 	// handle withAuth
 	if withAuth {
 		authList := s.h.ctx.Value("auth_contract_list").(map[string]int)
-
-		if s.h.IsFork3_0_10 {
-			newAuthList := make(map[string]int, len(authList))
-			for k, v := range authList {
-				newAuthList[k] = v
-			}
-			newAuthList[s.h.ctx.Value("contract_name").(string)] = 1
-			s.h.ctx.Set("auth_contract_list", newAuthList)
-		} else {
-			authList[s.h.ctx.Value("contract_name").(string)] = 1
-			s.h.ctx.Set("auth_contract_list", authList)
+		newAuthList := make(map[string]int, len(authList))
+		for k, v := range authList {
+			newAuthList[k] = v
 		}
+		newAuthList[s.h.ctx.Value("contract_name").(string)] = 1
+		s.h.ctx.Set("auth_contract_list", newAuthList)
 	}
 
 	return false, CommonOpCost(height)

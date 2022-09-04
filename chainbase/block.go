@@ -198,7 +198,6 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 	}
 	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
 	blkTxSet := make(map[string]bool, len(blk.Txs))
-	rules := blk.Head.Rules()
 	for i, t := range blk.Txs {
 		if blkTxSet[string(t.Hash())] {
 			return errDoubleTx
@@ -209,11 +208,9 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 			// base tx
 			continue
 		}
-		if rules.IsFork3_1_0 {
-			// reject delay tx
-			if t.Delay > 0 {
-				return errDelayTx
-			}
+		// reject delay tx
+		if t.Delay > 0 {
+			return errDelayTx
 		}
 		if c.txPool.ExistTxs(t.Hash(), parent) {
 			ilog.Infof("FoundChain: %v, %v", t, common.Base58Encode(t.Hash()))

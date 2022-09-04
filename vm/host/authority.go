@@ -20,14 +20,8 @@ func (h *Authority) requireContractAuth(id, p string) (bool, contract.Cost) {
 	}
 	cost := CommonOpCost(1)
 	authContractList := h.h.ctx.Value("auth_contract_list").(map[string]int)
-	if h.h.IsFork3_1_0 {
-		if _, ok := authContractList[id]; ok {
-			return true, cost
-		}
-	} else {
-		if _, ok := authContractList[id]; ok || h.h.ctx.Value("contract_name").(string) == id {
-			return true, cost
-		}
+	if _, ok := authContractList[id]; ok {
+		return true, cost
 	}
 	return false, cost
 }
@@ -52,10 +46,7 @@ func (h *Authority) requireAuth(id, p string, authType int) (bool, contract.Cost
 
 // RequireAuth check auth
 func (h *Authority) RequireAuth(id, p string) (bool, contract.Cost) {
-	if h.h.IsFork3_3_0 {
-		return h.requireAuth(id, p, authNormal)
-	}
-	return h.requireAuth(id, p, authSigner)
+	return h.requireAuth(id, p, authNormal)
 }
 
 // RequireSignerAuth check signer auth

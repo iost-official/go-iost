@@ -698,7 +698,6 @@ func TestGasLimit2(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	createAccountsWithResource(s)
@@ -726,7 +725,7 @@ func TestGasLimit2(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
-	assert.Equal(t, int64(7516900), r.GasUsage)
+	assert.Equal(t, int64(7441100), r.GasUsage)
 	balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
 	balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
 	assert.Equal(t, "980", balance0.String())

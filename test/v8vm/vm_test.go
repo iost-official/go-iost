@@ -787,20 +787,8 @@ func TestEngine_Crypto2(t *testing.T) {
 	helloWorld := "hello world"
 	input := "823b54d3aabaf8e3122800ca5238afb2ccef071ce83b8d5654a597a5dd06347e"
 
-	// invalid function before fork
-	host.IsFork3_3_1 = false
-	rs, c, err := vmPool.LoadAndCall(host, code, "ripemd160Hex", input)
-	if err == nil || !strings.Contains(err.Error(), "IOSTCrypto.ripemd160Hex is not a function") {
-		t.Fatalf("LoadAndCall console error: %v", err)
-	}
-
-	if c.ToGas() != 180 {
-		t.Fatalf("invalid gas %v", c.ToGas())
-	}
-
-	host.IsFork3_3_1 = true
 	// test sha3Hex
-	rs, c, err = vmPool.LoadAndCall(host, code, "sha3Hex", common.ToHex([]byte(helloWorld)))
+	rs, c, err := vmPool.LoadAndCall(host, code, "sha3Hex", common.ToHex([]byte(helloWorld)))
 	if err != nil {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}

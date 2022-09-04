@@ -204,9 +204,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 				ilog.Warnf("isolator run action %v failed, status=%+v, will rollback", action, status)
 				executionKillCounter.Add(1, nil)
 			}
-			if i.h.IsFork3_3_0 {
-				i.tr.Returns = nil
-			}
+			i.tr.Returns = nil
 			i.tr.Receipts = nil
 			i.h.DB().Rollback()
 			i.h.ClearRAMCosts()
@@ -234,10 +232,8 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 	if err != nil {
 		ilog.Errorf("DoPay failed, rollback %v", err)
 
-		if i.h.IsFork3_3_0 {
-			i.tr.Returns = nil
-			i.tr.Receipts = nil
-		}
+		i.tr.Returns = nil
+		i.tr.Receipts = nil
 		i.h.DB().Rollback()
 		i.h.ClearRAMCosts()
 		i.tr.RAMUsage = make(map[string]int64)

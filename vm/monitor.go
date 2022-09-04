@@ -95,12 +95,10 @@ func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []any, cost contract.Cost, err error) {
-	if h.IsFork3_3_0 {
-		// TODO: reorganize monitor to remove this code
-		callerName := h.Caller().Name
-		if api == "init" && callerName != "system.iost" && callerName != "" {
-			return nil, host.CommonErrorCost(1), errors.New("prepare contract: cannot call 'init' manually")
-		}
+	// TODO: reorganize monitor to remove this code
+	callerName := h.Caller().Name
+	if api == "init" && callerName != "system.iost" && callerName != "" {
+		return nil, host.CommonErrorCost(1), errors.New("prepare contract: cannot call 'init' manually")
 	}
 	c, abi, args, err := m.prepareContract(h, contractName, api, jarg)
 	if err != nil {
@@ -175,15 +173,8 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				_ = json.Unmarshal([]byte(receipt.Content), &args)
 				token = args[0].(string)
 				from := args[1].(string)
-				to := args[2].(string)
-				if h.IsFork3_1_0 {
-					if !h.IsContract(from) {
-						amount, _ = common.NewDecimalFromString(args[3].(string), h.DB().Decimal(token))
-					}
-				} else {
-					if from != to && !h.IsContract(from) {
-						amount, _ = common.NewDecimalFromString(args[3].(string), h.DB().Decimal(token))
-					}
+				if !h.IsContract(from) {
+					amount, _ = common.NewDecimalFromString(args[3].(string), h.DB().Decimal(token))
 				}
 			} else if receipt.FuncName == "token.iost/destroy" {
 				_ = json.Unmarshal([]byte(receipt.Content), &args)
@@ -216,19 +207,10 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 					fmt.Errorf("token %s exceed amountLimit in abi. need %v",
 						token, amount.String())
 			}
-			if h.IsFork3_1_0 {
-				if !checkLimit(txAmountLimit, token, amountTotal[token]) {
-					return nil, cost,
-						fmt.Errorf("token %s exceed amountLimit in tx. need %v",
-							token, amount.String())
-				}
-
-			} else {
-				if !checkLimit(txAmountLimit, token, amount) {
-					return nil, cost,
-						fmt.Errorf("token %s exceed amountLimit in tx. need %v",
-							token, amount.String())
-				}
+			if !checkLimit(txAmountLimit, token, amountTotal[token]) {
+				return nil, cost,
+					fmt.Errorf("token %s exceed amountLimit in tx. need %v",
+						token, amount.String())
 			}
 		}
 		h.Context().GSet("amount_total", amountTotal)

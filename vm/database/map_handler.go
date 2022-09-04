@@ -46,7 +46,7 @@ func (m *MapHandler) addField(key, field string) {
 	m.db.Put(MapPrefix+key, s)
 }
 
-func (m *MapHandler) delField3_1_0(key, field string) {
+func (m *MapHandler) delField(key, field string) {
 	s := m.db.Get(MapPrefix + key)
 	fixed := m.db.Get(MapPrefix + key + MapKeysSeparator)
 	fields := strings.Split(s, MapKeysSeparator)[1:]
@@ -69,16 +69,6 @@ func (m *MapHandler) delField3_1_0(key, field string) {
 			s2 = s2 + MapKeysSeparator + f
 		}
 	}
-	if s2 == "" {
-		m.db.Del(MapPrefix + key)
-		return
-	}
-	m.db.Put(MapPrefix+key, s2)
-}
-
-func (m *MapHandler) delField(key, field string) {
-	s := m.db.Get(MapPrefix + key)
-	s2 := strings.Replace(s, MapKeysSeparator+field, "", 1)
 	if s2 == "" {
 		m.db.Del(MapPrefix + key)
 		return
@@ -109,9 +99,5 @@ func (m *MapHandler) MDel(key, field string) {
 		return
 	}
 	m.db.Del(MapPrefix + key + Separator + field)
-	if m.db.Rules().IsFork3_1_0 {
-		m.delField3_1_0(key, field)
-	} else {
-		m.delField(key, field)
-	}
+	m.delField(key, field)
 }

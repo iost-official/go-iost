@@ -34,7 +34,6 @@ func Test_Caller(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -44,20 +43,6 @@ func Test_Caller(t *testing.T) {
 	cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
-
-	r, err = s.Call(cname, "caller", `[]`, acc0.ID, acc0.KeyPair)
-	assert.Nil(t, err)
-	assert.Contains(t, r.Status.Message, "blockchain.caller is not a function")
-
-	r, err = s.Call(cname, "caller2", `[]`, acc0.ID, acc0.KeyPair)
-	assert.Nil(t, err)
-	assert.Contains(t, r.Status.Message, "blockchain.caller is not a function")
-
-	conf.P2P.ChainID = 0
-	version.InitChainConf(conf)
-	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_3_0)
-	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	r, err = s.Call(cname, "caller", `[]`, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
@@ -87,7 +72,6 @@ func Test_TxInfo(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -97,16 +81,6 @@ func Test_TxInfo(t *testing.T) {
 	cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
-
-	r, err = s.Call(cname, "txInfo", `[]`, acc0.ID, acc0.KeyPair)
-	assert.Nil(t, err)
-	assert.Contains(t, r.Returns[0], `"undefined-undefined"`)
-
-	conf.P2P.ChainID = 0
-	version.InitChainConf(conf)
-	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_3_0)
-	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	r, err = s.Call(cname, "txInfo", `[]`, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
@@ -129,7 +103,6 @@ func Test_Transfer(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -139,16 +112,6 @@ func Test_Transfer(t *testing.T) {
 	cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
-
-	r, err = s.Call(cname, "transfer", fmt.Sprintf(`["%s"]`, acc1.ID), acc0.ID, acc0.KeyPair)
-	assert.Nil(t, err)
-	assert.Contains(t, r.Status.Message, "invalid amount 1e-8 abnormal char in amount")
-
-	conf.P2P.ChainID = 0
-	version.InitChainConf(conf)
-	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_3_0)
-	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	r, err = s.Call(cname, "transfer", fmt.Sprintf(`["%s"]`, acc1.ID), acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
@@ -209,7 +172,6 @@ func Test_SignerAuth(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -221,17 +183,6 @@ func Test_SignerAuth(t *testing.T) {
 	assert.Equal(t, "", r.Status.Message)
 
 	signers := []string{}
-	r, err = s.Call(cname, "requireAuth", `[]`, a1.ID, a1.KeyPair, signers)
-	assert.Nil(t, err)
-	assert.Equal(t, `["[true,true,true,true,true,true,true]"]`, r.Returns[0])
-
-	conf.P2P.ChainID = 0
-	version.InitChainConf(conf)
-	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_3_0)
-	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
-
-	signers = []string{}
 	r, err = s.Call(cname, "requireAuth", `[]`, a1.ID, a1.KeyPair, signers)
 	assert.Nil(t, err)
 	assert.Equal(t, `["[true,true,false,true,false,false,false]"]`, r.Returns[0])
@@ -276,7 +227,6 @@ func Test_SetCode(t *testing.T) {
 	}
 	version.InitChainConf(conf)
 	rules := version.NewRules(0)
-	assert.False(t, rules.IsFork3_3_0)
 	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
 
 	ca, err := s.Compile("", "./test_data/v320", "./test_data/v320.js")
@@ -284,26 +234,6 @@ func Test_SetCode(t *testing.T) {
 	assert.NotNil(t, ca)
 
 	cname, r, err := s.DeployContract(ca, acc0.ID, acc0.KeyPair)
-	assert.Nil(t, err)
-	assert.Equal(t, "", r.Status.Message)
-
-	r, err = s.Call(cname, "init", `[]`, acc.ID, acc.KeyPair)
-	assert.Nil(t, err)
-	assert.Equal(t, "", r.Status.Message)
-
-	s.Head.Time += 1000 // for different cname
-
-	conf.P2P.ChainID = 0
-	version.InitChainConf(conf)
-	rules = version.NewRules(0)
-	assert.True(t, rules.IsFork3_3_0)
-	s.Visitor = database.NewVisitor(0, s.Mvcc, rules)
-
-	ca, err = s.Compile("", "./test_data/v320", "./test_data/v320.js")
-	assert.Nil(t, err)
-	assert.NotNil(t, ca)
-
-	cname, r, err = s.DeployContract(ca, acc0.ID, acc0.KeyPair)
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
 
