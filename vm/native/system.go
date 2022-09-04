@@ -18,6 +18,7 @@ func init() {
 	systemABIs.Register(setCode)
 	systemABIs.Register(updateCode)
 	systemABIs.Register(initSetCode)
+	systemABIs.Register(cancelDelaytx)
 	systemABIs.Register(hostSettings)
 	systemABIs.Register(updateNativeCode)
 }
@@ -212,6 +213,15 @@ var (
 			cost0, err = h.UpdateCode(con, []byte(""))
 			cost.AddAssign(cost0)
 			return []any{}, cost, err
+		},
+	}
+
+	// cancelDelaytx cancels a delay transaction.
+	cancelDelaytx = &abi{
+		name: "cancelDelaytx",
+		args: []string{"string"},
+		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			return []any{}, host.Costs["GetCost"], errors.New("delaytx not exists")
 		},
 	}
 
