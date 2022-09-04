@@ -9,7 +9,7 @@ import (
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/contract"
-	"github.com/iost-official/go-iost/v3/core/tx/pb"
+	txpb "github.com/iost-official/go-iost/v3/core/tx/pb"
 	"github.com/iost-official/go-iost/v3/crypto"
 	. "github.com/smartystreets/goconvey/convey"
 	"google.golang.org/protobuf/proto"
@@ -174,14 +174,6 @@ func TestTx(t *testing.T) {
 			tx.Expiration = tx.Time
 			So(tx.VerifySelf().Error(), ShouldEqual, "invalid time and expiration")
 			tx.Expiration = tx.Time + 1
-			tx.Delay = -1
-			So(tx.VerifySelf().Error(), ShouldEqual, "invalid delay time")
-			tx.Delay = 999999999999999999
-			So(tx.VerifySelf().Error(), ShouldEqual, "invalid delay time")
-			tx.Delay = 1000
-			tx.ReferredTx = []byte("b")
-			So(tx.VerifySelf().Error(), ShouldEqual, "invalid tx. including both delay and referredtx field")
-			tx.ReferredTx = nil
 			tx.Actions = []*Action{{"", "", string(make([]byte, 1000000))}}
 			So(tx.VerifySelf().Error(), ShouldContainSubstring, "tx size illegal, should <= 65536")
 		})

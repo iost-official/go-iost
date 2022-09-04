@@ -2,7 +2,7 @@ package block
 
 import "github.com/iost-official/go-iost/v3/core/tx"
 
-//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock github.com/iost-official/go-iost/v3/core/block Chain
+//go:generate mockgen -destination ../mocks/mock_blockchain.go -package core_mock -source interface.go
 
 // Chain defines Chain's API.
 type Chain interface {
@@ -22,7 +22,6 @@ type Chain interface {
 	HasReceipt(hash []byte) (bool, error)
 	Size() (int64, error)
 	Close()
-	AllDelaytx() ([]*tx.Tx, error)
 	Draw(int64, int64) string
 	GetBlockNumberByTxHash(hash []byte) (int64, error)
 }

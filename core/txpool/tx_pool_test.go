@@ -106,7 +106,6 @@ func TestNewTxPImpl(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
-		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		config := &common.Config{
 			DB: &common.DBConfig{
@@ -275,7 +274,6 @@ func TestNewTxPImplB(t *testing.T) {
 		base.EXPECT().Push(Any()).AnyTimes().Return(nil)
 		base.EXPECT().Length().AnyTimes().Return(int64(1))
 		base.EXPECT().Close().AnyTimes()
-		base.EXPECT().AllDelaytx().AnyTimes().Return(nil, nil)
 
 		config := &common.Config{
 			DB: &common.DBConfig{

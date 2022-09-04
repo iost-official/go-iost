@@ -29,7 +29,4 @@ var (
 	ErrTokenNoTransfer           = errors.New("token can't transfer")
 	ErrTokenIssueRefused         = errors.New("token issue refused")
 	ErrMemoTooLarge              = errors.New("memo too large")
-
-	ErrDelaytxNotFound   = errors.New("delaytx not exists")
-	ErrCannotCancelDelay = errors.New("can not cancel delaytx")
 )

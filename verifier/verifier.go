@@ -80,7 +80,7 @@ func verify(isolator vm.Isolator, t *tx.Tx, r *tx.TxReceipt, timeout time.Durati
 	if !t.IsCreatedBefore(blk.Head.Time) {
 		return ErrNotArrivedTx
 	}
-	if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
+	if t.IsExpired(blk.Head.Time) {
 		return ErrExpiredTx
 	}
 	isolator.ClearTx()

@@ -151,9 +151,6 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if pool.pendingTx.Size() > maxCacheTxs {
 		return ErrCacheFull
 	}
-	if t.IsDefer() {
-		return errors.New("reject defertx")
-	}
 	// Add one second delay for tx created time check
 	currentTime := time.Now().UnixNano()
 	if !t.IsCreatedBefore(currentTime + maxTxTimeGap) {
@@ -251,7 +248,7 @@ func (pool *TxPImpl) clearTimeoutTx() {
 	iter := pool.pendingTx.Iter()
 	t, ok := iter.Next()
 	for ok {
-		if t.IsExpired(time.Now().UnixNano()) && !t.IsDefer() {
+		if t.IsExpired(time.Now().UnixNano()) {
 			pool.pendingTx.Del(t.Hash())
 		}
 		t, ok = iter.Next()

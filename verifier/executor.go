@@ -142,7 +142,7 @@ L:
 			ilog.Errorf("bad tx %v", t)
 			continue L
 		}
-		if t.IsExpired(blk.Head.Time) && !t.IsDefer() {
+		if t.IsExpired(blk.Head.Time) {
 			ilog.Errorf(
 				"Tx %v is expired, tx time is %v, tx expiration time is %v, blk time is %v",
 				common.Base58Encode(t.Hash()),

@@ -1,9 +1,7 @@
 package vm
 
 import (
-	"bytes"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -159,12 +157,6 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 	return
 }
 
-func (i *Isolator) delDelaytx(refTxHash, publisher, deferTxHash string) {
-	i.h.DB().DelDelaytx(refTxHash)
-	cost := host.DelDelayTxCost(len(refTxHash)+len(i.publisherID)+len(deferTxHash), i.publisherID)
-	i.h.PayCost(cost, i.publisherID)
-}
-
 // Run actions in tx
 func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	startTime := time.Now()
@@ -177,43 +169,6 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	i.h.Context().GSet("amount_total", make(map[string]*common.Decimal))
 
 	i.tr = tx.NewTxReceipt(i.t.Hash())
-
-	if i.t.Delay > 0 {
-		txHash := i.t.Hash()
-		deferTxHash := i.t.DeferTx().Hash()
-		i.h.DB().StoreDelaytx(string(txHash), i.publisherID, string(deferTxHash))
-		i.tr.Status = &tx.Status{
-			Code:    tx.Success,
-			Message: "defertx hash: " + common.Base58Encode(deferTxHash),
-		}
-		cost := host.DelayTxCost(len(txHash)+len(i.publisherID)+len(deferTxHash), i.publisherID)
-		i.h.PayCost(cost, i.publisherID)
-		return i.tr, nil
-	}
-
-	var refTxHash, deferTxHash string
-	if i.t.IsDefer() {
-		refTxHash = string(i.t.ReferredTx)
-		_, deferTxHash = i.h.DB().GetDelaytx(refTxHash)
-		if deferTxHash == "" {
-			return nil, fmt.Errorf("delay tx not found, hash=%v", common.Base58Encode(i.t.ReferredTx))
-		}
-
-		if !bytes.Equal(i.t.Hash(), []byte(deferTxHash)) {
-			return nil, errors.New("defertx hash not match")
-		}
-
-		i.h.PayCost(host.Costs["GetCost"], i.publisherID)
-
-		if i.t.IsExpired(i.blockBaseCtx.Value("time").(int64)) {
-			i.tr.Status = &tx.Status{
-				Code:    tx.ErrorRuntime,
-				Message: "transaction expired",
-			}
-			i.delDelaytx(refTxHash, i.publisherID, deferTxHash)
-			return i.tr, nil
-		}
-	}
 
 	for _, action := range i.t.Actions {
 		actionCost, status, ret, receipts, err := i.runAction(*action)
@@ -263,10 +218,6 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 		i.tr.Returns = append(i.tr.Returns, ret)
 		vmGasLimit -= actionCost.ToGas()
 		i.h.Context().GSet("gas_limit", vmGasLimit)
-	}
-
-	if i.t.IsDefer() {
-		i.delDelaytx(refTxHash, i.publisherID, deferTxHash)
 	}
 
 	endTime := time.Now()

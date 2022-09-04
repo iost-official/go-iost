@@ -25,12 +25,11 @@ var (
 	blockTxTotal      = []byte("BlockTxTotal")
 	blockNumberPrefix = []byte("n")
 	blockPrefix       = []byte("H")
-	txPrefix          = []byte("t")      // txPrefix + tx hash -> block hash + tx hash
-	bTxPrefix         = []byte("B")      // bTxPrefix + block hash + tx hash -> tx data
-	txReceiptPrefix   = []byte("h")      // txReceiptPrefix + tx hash -> block hash + receipt hash
-	receiptPrefix     = []byte("r")      // receiptPrefix + receipt hash -> block hash + receipt hash
-	bReceiptPrefix    = []byte("b")      // bReceiptPrefix + block hash + receipt hash -> receipt data
-	delaytxPrefix     = []byte("delay-") // delaytxPrefix + tx hash -> tx data
+	txPrefix          = []byte("t") // txPrefix + tx hash -> block hash + tx hash
+	bTxPrefix         = []byte("B") // bTxPrefix + block hash + tx hash -> tx data
+	txReceiptPrefix   = []byte("h") // txReceiptPrefix + tx hash -> block hash + receipt hash
+	receiptPrefix     = []byte("r") // receiptPrefix + receipt hash -> block hash + receipt hash
+	bReceiptPrefix    = []byte("b") // bReceiptPrefix + block hash + receipt hash -> receipt data
 )
 
 // NewBlockChain returns a Chain instance
@@ -179,18 +178,6 @@ func (bc *BlockChain) Push(block *Block) error {
 		bc.blockChainDB.Put(append(txReceiptPrefix, tHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(receiptPrefix, rHash...), append(hash, rHash...))
 		bc.blockChainDB.Put(append(bReceiptPrefix, append(hash, rHash...)...), block.Receipts[i].Encode())
-
-		if t.Delay > 0 && block.Receipts[i].Status.Code == tx.Success {
-			bc.blockChainDB.Put(append(delaytxPrefix, tHash...), txBytes)
-		}
-		if t.IsDefer() {
-			bc.blockChainDB.Delete(append(delaytxPrefix, t.ReferredTx...))
-		}
-
-		canceledDelayHashes := block.Receipts[i].ParseCancelDelaytx()
-		for _, canceledHash := range canceledDelayHashes {
-			bc.blockChainDB.Delete(append(delaytxPrefix, canceledHash...))
-		}
 	}
 	err = bc.blockChainDB.CommitBatch()
 	if err != nil {
@@ -433,21 +420,6 @@ func (bc *BlockChain) Size() (int64, error) {
 // Close is close database
 func (bc *BlockChain) Close() {
 	bc.blockChainDB.Close()
-}
-
-// AllDelaytx returns all delay transactions.
-func (bc *BlockChain) AllDelaytx() ([]*tx.Tx, error) {
-	iter := bc.blockChainDB.NewIteratorByPrefix(delaytxPrefix)
-	ret := make([]*tx.Tx, 0)
-	for iter.Next() {
-		t := &tx.Tx{}
-		err := t.Decode(iter.Value())
-		if err != nil {
-			continue
-		}
-		ret = append(ret, t)
-	}
-	return ret, nil
 }
 
 // Draw the graph about blockchain

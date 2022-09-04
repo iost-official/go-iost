@@ -291,26 +291,6 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 	return cost, nil
 }
 
-// CancelDelaytx deletes delaytx hash.
-//
-// The given argument txHash is from user's input. So we should Base58Decode it first.
-func (h *Host) CancelDelaytx(txHash string) (contract.Cost, error) {
-	hashString := string(common.Base58Decode(txHash))
-	cost := Costs["GetCost"]
-	publisher, deferTxHash := h.db.GetDelaytx(hashString)
-
-	if publisher == "" {
-		return cost, ErrDelaytxNotFound
-	}
-	if publisher != h.Context().Value("publisher").(string) {
-		return cost, ErrCannotCancelDelay
-	}
-
-	h.db.DelDelaytx(hashString)
-	cost.AddAssign(DelDelayTxCost(len(hashString)+len(publisher)+len(deferTxHash), publisher))
-	return cost, nil
-}
-
 // Logger get a log in host
 func (h *Host) Logger() *ilog.Logger {
 	return h.logger
