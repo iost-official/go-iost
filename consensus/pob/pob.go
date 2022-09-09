@@ -146,7 +146,8 @@ func (p *PoB) doGenerateBlock(slot int64) {
 
 	// IsMyGenerateBlockTime
 	witnessList := p.cBase.HeadBlock().Active()
-	if common.WitnessOfNanoSec(time.Now().UnixNano(), witnessList) != p.account.ReadablePubkey() {
+	t1 := time.Now().UnixNano()
+	if common.WitnessOfNanoSec(t1, witnessList) != p.account.ReadablePubkey() {
 		return
 	}
 	if p.spvConf != nil && p.spvConf.IsSPV {
@@ -157,7 +158,7 @@ func (p *PoB) doGenerateBlock(slot int64) {
 	p.mu.Lock()
 	for num := 0; num < common.BlockNumPerWitness; num++ {
 		<-time.After(time.Until(common.TimeOfBlock(slot, int64(num))))
-		blk, err := p.generateBlock(num)
+		blk, err := p.generateBlock(num, t1)
 		if err != nil {
 			ilog.Errorf("Generate block failed: %v", err)
 			// Maybe should break.
@@ -187,19 +188,19 @@ func (p *PoB) generateLoop() {
 	}
 }
 
-func (p *PoB) generateBlock(num int) (*block.Block, error) {
-	now := time.Now().UnixNano()
+func (p *PoB) generateBlock(num int, t1 int64) (*block.Block, error) {
+	t2 := time.Now().UnixNano()
 	defer func() {
 		// TODO: Confirm the most appropriate metrics definition.
-		generateBlockTimeGauge.Set(float64(time.Now().UnixNano()-now), nil)
+		generateBlockTimeGauge.Set(float64(time.Now().UnixNano()-t2), nil)
 		generateBlockCount.Add(1, nil)
 	}()
 
-	st := time.Now()
+	t3 := time.Now()
 	pTx, head := p.txPool.PendingTx()
 	witnessList := head.Active()
-	if common.WitnessOfNanoSec(st.UnixNano(), witnessList) != p.account.ReadablePubkey() {
-		return nil, fmt.Errorf("Now time %v exceeding the slot of witness %v", st.UnixNano(), p.account.ReadablePubkey())
+	if common.WitnessOfNanoSec(t3.UnixNano(), witnessList) != p.account.ReadablePubkey() {
+		return nil, fmt.Errorf("now time %v exceeding the slot of witness %v. t2: %v, t1: %v", t3.UnixNano(), p.account.ReadablePubkey(), t2, t1)
 	}
 	limitTime := common.MaxBlockTimeLimit
 	if num >= common.BlockNumPerWitness-2 {
@@ -225,7 +226,7 @@ func (p *PoB) generateBlock(num int) (*block.Block, error) {
 		blk, head.Block, head.WitnessList, p.produceDB, pTx,
 		&verifier.Config{
 			Mode:        0,
-			Timeout:     limitTime - time.Since(st),
+			Timeout:     limitTime - time.Since(t3),
 			TxTimeLimit: common.MaxTxTimeLimit,
 		},
 	)
