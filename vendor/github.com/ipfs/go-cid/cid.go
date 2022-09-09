@@ -10,7 +10,7 @@
 //
 // A CIDv1 has four parts:
 //
-//     <cidv1> ::= <multibase-prefix><cid-version><multicodec-packed-content-type><multihash-content-address>
+//	<cidv1> ::= <multibase-prefix><cid-version><multicodec-packed-content-type><multihash-content-address>
 //
 // As shown above, the CID implementation relies heavily on Multiformats,
 // particularly Multibase
@@ -193,7 +193,7 @@ func MustParse(v interface{}) Cid {
 // Decode parses a Cid-encoded string and returns a Cid object.
 // For CidV1, a Cid-encoded string is primarily a multibase string:
 //
-//     <multibase-type-code><base-encoded-string>
+//	<multibase-type-code><base-encoded-string>
 //
 // The base-encoded string represents a:
 //
@@ -249,7 +249,7 @@ func ExtractEncoding(v string) (mbase.Encoding, error) {
 // Cast takes a Cid data slice, parses it and returns a Cid.
 // For CidV1, the data buffer is in the form:
 //
-//     <version><codec-type><multihash>
+//	<version><codec-type><multihash>
 //
 // CidV0 are also supported. In particular, data buffers starting
 // with length 34 bytes, which starts with bytes [18,32...] are considered
@@ -465,7 +465,7 @@ func (c *Cid) UnmarshalJSON(b []byte) error {
 
 // MarshalJSON procudes a JSON representation of a Cid, which looks as follows:
 //
-//    { "/": "<cid-string>" }
+//	{ "/": "<cid-string>" }
 //
 // Note that this formatting comes from the IPLD specification
 // (https://github.com/ipld/specs/tree/master/ipld)
@@ -522,7 +522,8 @@ func (c Cid) Prefix() Prefix {
 // and the Multihash length. It does not contains
 // any actual content information.
 // NOTE: The use -1 in MhLength to mean default length is deprecated,
-//   use the V0Builder or V1Builder structures instead
+//
+//	use the V0Builder or V1Builder structures instead
 type Prefix struct {
 	Version  uint64
 	Codec    uint64
@@ -561,7 +562,7 @@ func (p Prefix) Sum(data []byte) (Cid, error) {
 
 // Bytes returns a byte representation of a Prefix. It looks like:
 //
-//     <version><codec><mh-type><mh-length>
+//	<version><codec><mh-type><mh-length>
 func (p Prefix) Bytes() []byte {
 	size := varint.UvarintSize(p.Version)
 	size += varint.UvarintSize(p.Codec)

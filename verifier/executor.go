@@ -150,9 +150,6 @@ L:
 				t.Expiration,
 				blk.Head.Time,
 			)
-			if t.Expiration == 0 {
-				ilog.Errorf("refresh hash %v", common.Base58Encode(common.Sha3(t.ToBytes(tx.Full))))
-			}
 			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
