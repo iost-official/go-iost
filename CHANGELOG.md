@@ -1,3 +1,10 @@
+## v3.9.2
+Fri Sep  9 20:36:40 CST 2022
+
+- Upgrade libp2p to v0.22.0
+- Remove some unused codes like delaytx and old fork
+- Fix the error "The request SyncBlockHashRequest from ... timed out"
+
 ## v3.9.1
 Wed Aug 24 15:07:54 CST 2022
 
