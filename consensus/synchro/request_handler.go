@@ -94,10 +94,8 @@ func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) (*ms
 			if waitNum == 0 {
 				waitNum = num
 			}
-			time.Sleep(10 * time.Millisecond)
-			// TODO: Maybe should break.
 			ilog.Debugf("Get block by num %v failed.", num)
-			continue
+			break
 		}
 		blockInfo := &msgpb.BlockInfo{
 			Number: num,
