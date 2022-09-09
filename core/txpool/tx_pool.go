@@ -164,6 +164,7 @@ func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
 	if err := t.VerifySelf(); err != nil {
 		return fmt.Errorf("VerifyError %v", err)
 	}
+	_ = t.Hash()
 
 	return nil
 }

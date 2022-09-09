@@ -100,11 +100,6 @@ func (s *IOSTDevSDK) SetAccount(name string, kp *account.KeyPair) {
 	s.UseAccountAndPerm(name, "active")
 }
 
-// SetSignAlgo ...
-//func (s *IOSTDevSDK) SetSignAlgo(signAlgo string) {
-//	s.signAlgo = signAlgo
-//}
-
 // SetTxInfo ...
 func (s *IOSTDevSDK) SetTxInfo(gasLimit float64, gasRatio float64, expiration int64, delaySecond int64, amountLimit []*rpcpb.AmountLimit) {
 	s.gasLimit = gasLimit
