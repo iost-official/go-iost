@@ -13,9 +13,15 @@ var (
 )
 
 // WitnessOfNanoSec will return which witness is the current time.
-func WitnessOfNanoSec(nanosec int64, witnessList []string) string {
+func WitnessIndexOfNanoSec(nanosec int64, witnessList []string) int64 {
 	slot := nanosec / int64(SlotInterval)
 	index := slot % int64(len(witnessList))
+	return index
+}
+
+// WitnessOfNanoSec will return which witness is the current time.
+func WitnessOfNanoSec(nanosec int64, witnessList []string) string {
+	index := WitnessIndexOfNanoSec(nanosec, witnessList)
 	witness := witnessList[index]
 	return witness
 }

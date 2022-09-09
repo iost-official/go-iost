@@ -158,7 +158,7 @@ func (p *PoB) doGenerateBlock(slot int64) {
 	p.mu.Lock()
 	for num := 0; num < common.BlockNumPerWitness; num++ {
 		<-time.After(time.Until(common.TimeOfBlock(slot, int64(num))))
-		blk, err := p.generateBlock(num, t1)
+		blk, err := p.generateBlock(num, t1, witnessList)
 		if err != nil {
 			ilog.Errorf("Generate block failed: %v", err)
 			// Maybe should break.
@@ -188,7 +188,7 @@ func (p *PoB) generateLoop() {
 	}
 }
 
-func (p *PoB) generateBlock(num int, t1 int64) (*block.Block, error) {
+func (p *PoB) generateBlock(num int, t1 int64, oldWitnessList []string) (*block.Block, error) {
 	t2 := time.Now().UnixNano()
 	defer func() {
 		// TODO: Confirm the most appropriate metrics definition.
@@ -199,8 +199,12 @@ func (p *PoB) generateBlock(num int, t1 int64) (*block.Block, error) {
 	t3 := time.Now()
 	pTx, head := p.txPool.PendingTx()
 	witnessList := head.Active()
-	if common.WitnessOfNanoSec(t3.UnixNano(), witnessList) != p.account.ReadablePubkey() {
-		return nil, fmt.Errorf("now time %v exceeding the slot of witness %v. t2: %v, t1: %v", t3.UnixNano(), p.account.ReadablePubkey(), t2, t1)
+	witnessIndex := common.WitnessIndexOfNanoSec(t3.UnixNano(), witnessList)
+	if witnessList[witnessIndex] != p.account.ReadablePubkey() {
+		oldWitnessListIndex := common.WitnessIndexOfNanoSec(t1, oldWitnessList)
+		ilog.Errorf("oldWitnessList %v, index %v, t %v", oldWitnessList, oldWitnessListIndex, t1)
+		ilog.Errorf("witnessList %v, index %v, t %v", witnessList, witnessIndex, t3.UnixNano())
+		return nil, fmt.Errorf("now time %v exceeding the slot of witness %v. num: %v, blk.num: %v", t2, p.account.ReadablePubkey(), num, head.Head.Number+1)
 	}
 	limitTime := common.MaxBlockTimeLimit
 	if num >= common.BlockNumPerWitness-2 {
