@@ -85,12 +85,16 @@ func newRequestHandlerWorker(cBase *chainbase.ChainBase, p p2p.Service) *request
 	return r
 }
 
-func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) *msgpb.BlockHashResponse {
+func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) (*msgpb.BlockHashResponse, int64) {
 	blockInfos := make([]*msgpb.BlockInfo, 0)
+	var waitNum int64 = 0
 	for num := start; num <= end; num++ {
 		hash, ok := r.cBase.GetBlockHashByNum(num)
 		if !ok {
-			time.Sleep(100 * time.Millisecond)
+			if waitNum == 0 {
+				waitNum = num
+			}
+			time.Sleep(10 * time.Millisecond)
 			// TODO: Maybe should break.
 			ilog.Debugf("Get block by num %v failed.", num)
 			continue
@@ -104,10 +108,11 @@ func (r *requestHandlerWorker) getBlockHashResponse(start int64, end int64) *msg
 
 	return &msgpb.BlockHashResponse{
 		BlockInfos: blockInfos,
-	}
+	}, waitNum
 }
 
 func (r *requestHandlerWorker) handleBlockHashRequest(request *p2p.IncomingMessage) {
+	t1 := time.Now()
 	blockHashQuery := &msgpb.BlockHashQuery{}
 	if err := proto.Unmarshal(request.Data(), blockHashQuery); err != nil {
 		ilog.Warnf("Unmarshal BlockHashQuery failed: %v", err)
@@ -136,15 +141,19 @@ func (r *requestHandlerWorker) handleBlockHashRequest(request *p2p.IncomingMessa
 	if end > head {
 		end = head
 	}
-
-	blockHashResponse := r.getBlockHashResponse(start, end)
+	blockHashResponse, waitNum := r.getBlockHashResponse(start, end)
 
 	msg, err := proto.Marshal(blockHashResponse)
 	if err != nil {
 		ilog.Warnf("Marshal BlockHashResponse failed: struct=%+v, err=%v", blockHashResponse, err)
 		return
 	}
+	t2 := time.Now()
 	r.p.SendToPeer(request.From(), msg, p2p.SyncBlockHashResponse, p2p.NormalMessage)
+	t3 := time.Now()
+	if t3.Sub(t1) > 2*time.Second {
+		ilog.Errorf("handleBlockHashRequest timeout. fetching time: %v, network time: %v, sync range: %v %v %v", t2.Sub(t1), t3.Sub(t2), start, waitNum, end)
+	}
 }
 
 func (r *requestHandlerWorker) handleBlockRequest(request *p2p.IncomingMessage, mtype p2p.MessageType, priority p2p.MessagePriority) {
