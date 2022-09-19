@@ -111,7 +111,7 @@ func (bc *BlockChain) CopyBlocks(newLocation string, offset int64) error {
 		return fmt.Errorf("fail to init blockchaindb, %v", err)
 	}
 	lastBlockNumber := bc.Length() - 1
-	var blockNumber int64 = 0
+	var blockNumber int64
 	if offset < 0 {
 		blockNumber = lastBlockNumber - (-offset) + 1
 	} else {
