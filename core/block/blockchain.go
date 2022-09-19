@@ -102,20 +102,22 @@ func (bc *BlockChain) TxTotal() int64 {
 	return bc.txTotal
 }
 
-func (bc *BlockChain) CopyLastNBlockTo(newLocation string, numberToKeep int64) error {
+func (bc *BlockChain) CopyBlocks(newLocation string, offset int64) error {
 	if bc.Length() == 0 {
 		return errors.New("no block in blockChaindb")
-	}
-	if numberToKeep < 0 {
-		return fmt.Errorf("invalid numberToKeep: %d", numberToKeep)
 	}
 	newChain, err := NewBlockChain(newLocation)
 	if err != nil {
 		return fmt.Errorf("fail to init blockchaindb, %v", err)
 	}
 	lastBlockNumber := bc.Length() - 1
-	blockNumber := lastBlockNumber - numberToKeep + 1
-	fmt.Printf("copy block in range [%d, %d)\n", blockNumber, lastBlockNumber+1)
+	var blockNumber int64 = 0
+	if offset < 0 {
+		blockNumber = lastBlockNumber - (-offset) + 1
+	} else {
+		blockNumber = offset
+	}
+	fmt.Printf("copy block in range [%d, %d]\n", blockNumber, lastBlockNumber)
 	for blockNumber <= lastBlockNumber {
 		blk, err := bc.GetBlockByNumber(blockNumber)
 		if err != nil {

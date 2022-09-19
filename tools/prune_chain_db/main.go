@@ -60,18 +60,18 @@ func pruneStateDb(from, to string) error {
 	if err != nil {
 		return err
 	}
-	fmt.Println("prune state done")
+	fmt.Println("prune blockchain state done")
 	return nil
 }
 
-func pruneHistoryDb(from, to string, keepLastNBlock int) error {
+func pruneHistoryDb(from, to string, offset int64) error {
 	chainDB, err := block.NewBlockChain(from)
 	if err != nil {
 		fmt.Println("cannot load chain", err)
 		return err
 	}
 	fmt.Println("start prune blockchain history: src", from, "dst", to)
-	err = chainDB.(*block.BlockChain).CopyLastNBlockTo(to, (int64)(keepLastNBlock))
+	err = chainDB.(*block.BlockChain).CopyBlocks(to, offset)
 	if err != nil {
 		fmt.Println("cannot write chain", err)
 		return err
@@ -93,16 +93,17 @@ func ensureDir(fileName string) {
 func main() {
 	var from = flag.String("from", "/data/iserver/storage", "")
 	var to = flag.String("to", "./storage", "")
-	// TODO: keep block after block N
-	var keepLastNBlock = flag.Int("keep", 10000, "")
-	var pruneState = flag.Bool("pruneState", false, "")
+	var pruneHistoryOffset = flag.Int("offset", 0, "")
+	var pruneState = flag.Bool("state", false, "")
 	flag.Parse()
 
 	ensureDir(*to)
 
-	err := pruneHistoryDb(*from+"/BlockChainDB", *to+"/BlockChainDB", *keepLastNBlock)
-	if err != nil {
-		panic(err)
+	if *pruneHistoryOffset != 0 {
+		err := pruneHistoryDb(*from+"/BlockChainDB", *to+"/BlockChainDB", int64(*pruneHistoryOffset))
+		if err != nil {
+			panic(err)
+		}
 	}
 	if *pruneState {
 		err := pruneStateDb(*from+"/StateDB", *to+"/StateDB")
@@ -110,4 +111,5 @@ func main() {
 			panic(err)
 		}
 	}
+	fmt.Println("prune done")
 }
