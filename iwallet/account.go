@@ -88,6 +88,7 @@ func getAccountInfoFromArgs(name string) (*AccountInfo, error) {
 		}
 		accInfo.Keypairs["active"] = kp
 		accInfo.Keypairs["owner"] = kp
+		fmt.Println("auto generated account info:", accInfo)
 		return accInfo, nil
 	} else if sdk.CheckPubKey(ownerKey) && sdk.CheckPubKey(activeKey) {
 		accInfo.Keypairs["active"] = &KeyPairInfo{
