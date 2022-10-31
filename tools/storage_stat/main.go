@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/iost-official/go-iost/v3/common"
@@ -30,6 +31,22 @@ func printTokenBalance(db *leveldb.DB, tokenType string) {
 		panic(err)
 	}
 	decimal := database.MustUnmarshal(string(decimalRaw))
+
+	supplyKey := "state/m-token.iost-TI" + tokenType + "-supply"
+	supplyRaw, err := db.Get([]byte(supplyKey))
+	if err != nil {
+		panic(err)
+	}
+	supply := database.MustUnmarshal(string(supplyRaw))
+	supplyD := common.Decimal{Value: supply.(int64), Scale: int(decimal.(int64))}
+	fmt.Println("supply", supplyD.String())
+
+	type Elem struct {
+		name  string
+		value int64
+	}
+
+	elems := make([]Elem, 0)
 	for _, k := range keys {
 		if !strings.HasSuffix(string(k), suffix) {
 			continue
@@ -39,12 +56,35 @@ func printTokenBalance(db *leveldb.DB, tokenType string) {
 			panic(err)
 		}
 		v := database.MustUnmarshal(string(rawValue))
-		f := common.Decimal{Value: v.(int64), Scale: int(decimal.(int64))}
+		if v.(int64) == 0 {
+			continue
+		}
 		tmp := string(k)[len(prefix):]
 		user := tmp[:len(tmp)-len(suffix)]
-		user = padTo(user, " ", 20)
+		elems = append(elems, Elem{
+			name:  user,
+			value: v.(int64),
+		})
+	}
+	sort.Slice(elems, func(i, j int) bool {
+		if elems[i].value != elems[j].value {
+			return elems[i].value > elems[j].value
+		}
+		return elems[i].name < elems[j].name
+	})
+	sum := (int64)(0)
+	for _, e := range elems {
+		sum += e.value
+		f := common.Decimal{Value: e.value, Scale: int(decimal.(int64))}
+		if f.Float64() < 1 {
+			continue
+		}
+		user := padTo(e.name, " ", 20)
 		fmt.Printf("%v\t%v\n", user, f.String())
 	}
+	fmt.Println()
+	s := common.Decimal{Value: sum, Scale: int(decimal.(int64))}
+	fmt.Println("total: ", s.String())
 	fmt.Println()
 }
 
@@ -97,11 +137,14 @@ func printRAMUsage(db *leveldb.DB) {
 			}
 			ramUse = len(v)
 		} else {
+			contractName := strings.Split(k, "-")[1]
 			idx := strings.LastIndex(v, "@")
 			if idx == -1 {
-				panic("empty owner " + k + ":" + v)
+				owner = contractName
+				//panic("empty owner " + k + ":" + v)
+			} else {
+				owner = v[(idx + 1):]
 			}
-			owner = v[(idx + 1):]
 			ramUse = idx
 			//if !strings.HasPrefix(k, "state/b-base.iost-chain_info_") {
 			//	fmt.Printf("%v\t%v\t%v\n", owner, k, v)
@@ -111,7 +154,7 @@ func printRAMUsage(db *leveldb.DB) {
 			owner = "[unknown]"
 			//fmt.Printf("WHY!! %v %v %v\n", owner, k, v)
 		}
-		owner = padTo(owner, " ", 20)
+		owner = padTo(owner, " ", 60)
 		old, ok := m[owner]
 		if ok {
 			m[owner] = old + ramUse
@@ -124,8 +167,28 @@ func printRAMUsage(db *leveldb.DB) {
 	if err != nil {
 		panic(err)
 	}
+
+	type Elem struct {
+		name  string
+		value int
+	}
+
+	elems := make([]Elem, 0)
 	for k := range m {
-		fmt.Printf("%v\t%v\n", k, m[k])
+		elems = append(elems, Elem{
+			name:  k,
+			value: m[k],
+		})
+	}
+
+	sort.Slice(elems, func(i, j int) bool {
+		if elems[i].value != elems[j].value {
+			return elems[i].value < elems[j].value
+		}
+		return elems[i].name < elems[j].name
+	})
+	for _, e := range elems {
+		fmt.Printf("%v\t%v\n", e.name, e.value)
 	}
 	fmt.Println()
 }
@@ -140,7 +203,7 @@ func main() {
 		panic(err)
 	}
 	printRAMUsage(db)
-	printTokenBalance(db, "iost")
-	printTokenBalance(db, "ram")
+	//printTokenBalance(db, "iost")
+	//printTokenBalance(db, "ram")
 	//printAll(db)
 }
