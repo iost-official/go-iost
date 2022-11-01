@@ -412,9 +412,7 @@ var (
 			ok, cost0 = h.RequireAuth(from, TransferPermission)
 			cost.AddAssign(cost0)
 			if !ok {
-				if !checkReserveToken(h, tokenSym) {
-					return nil, cost, host.ErrPermissionLost
-				}
+				return nil, cost, host.ErrPermissionLost
 			}
 			if !CheckCost(h, cost) {
 				return nil, cost, host.ErrOutOfGas

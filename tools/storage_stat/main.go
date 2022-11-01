@@ -203,7 +203,7 @@ func main() {
 		panic(err)
 	}
 	printRAMUsage(db)
-	//printTokenBalance(db, "iost")
+	printTokenBalance(db, "iost")
 	//printTokenBalance(db, "ram")
 	//printAll(db)
 }

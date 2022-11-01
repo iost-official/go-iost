@@ -5,10 +5,11 @@
 package vm
 
 import (
+	reflect "reflect"
+
 	gomock "github.com/golang/mock/gomock"
 	contract "github.com/iost-official/go-iost/v3/core/contract"
 	host "github.com/iost-official/go-iost/v3/vm/host"
-	reflect "reflect"
 )
 
 // MockVM is a mock of VM interface
