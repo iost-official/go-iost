@@ -1,18 +1,19 @@
 package websocket
 
 import (
+	"context"
 	"crypto/tls"
 	"fmt"
 	"net"
 	"net/http"
+	"net/url"
+
+	"github.com/libp2p/go-libp2p/core/transport"
 
 	ma "github.com/multiformats/go-multiaddr"
 	manet "github.com/multiformats/go-multiaddr/net"
-)
 
-var (
-	wsma  = ma.StringCast("/ws")
-	wssma = ma.StringCast("/wss")
+	ws "nhooyr.io/websocket"
 )
 
 type listener struct {
@@ -22,19 +23,34 @@ type listener struct {
 	laddr ma.Multiaddr
 
 	closed   chan struct{}
-	incoming chan *Conn
+	incoming chan net.Conn
+}
+
+func (pwma *parsedWebsocketMultiaddr) toMultiaddr() ma.Multiaddr {
+	if !pwma.isWSS {
+		return pwma.restMultiaddr.Encapsulate(wsComponent)
+	}
+
+	if pwma.sni == nil {
+		return pwma.restMultiaddr.Encapsulate(tlsComponent).Encapsulate(wsComponent)
+	}
+
+	return pwma.restMultiaddr.Encapsulate(tlsComponent).Encapsulate(pwma.sni).Encapsulate(wsComponent)
 }
 
 // newListener creates a new listener from a raw net.Listener.
 // tlsConf may be nil (for unencrypted websockets).
 func newListener(a ma.Multiaddr, tlsConf *tls.Config) (*listener, error) {
-	// Only look at the _last_ component.
-	maddr, wscomponent := ma.SplitLast(a)
-	isWSS := wscomponent.Equal(wssma)
-	if isWSS && tlsConf == nil {
+	parsed, err := parseWebsocketMultiaddr(a)
+	if err != nil {
+		return nil, err
+	}
+
+	if parsed.isWSS && tlsConf == nil {
 		return nil, fmt.Errorf("cannot listen on wss address %s without a tls.Config", a)
 	}
-	lnet, lnaddr, err := manet.DialArgs(maddr)
+
+	lnet, lnaddr, err := manet.DialArgs(parsed.restMultiaddr)
 	if err != nil {
 		return nil, err
 	}
@@ -54,15 +70,16 @@ func newListener(a ma.Multiaddr, tlsConf *tls.Config) (*listener, error) {
 		_, last := ma.SplitFirst(laddr)
 		laddr = first.Encapsulate(last)
 	}
+	parsed.restMultiaddr = laddr
 
 	ln := &listener{
 		nl:       nl,
-		laddr:    laddr.Encapsulate(wscomponent),
-		incoming: make(chan *Conn),
+		laddr:    parsed.toMultiaddr(),
+		incoming: make(chan net.Conn),
 		closed:   make(chan struct{}),
 	}
 	ln.server = http.Server{Handler: ln}
-	if isWSS {
+	if parsed.isWSS {
 		ln.server.TLSConfig = tlsConf
 	}
 	return ln, nil
@@ -78,16 +95,34 @@ func (l *listener) serve() {
 }
 
 func (l *listener) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	c, err := upgrader.Upgrade(w, r, nil)
+	scheme := "ws"
+	if l.server.TLSConfig != nil {
+		scheme = "wss"
+	}
+
+	c, err := ws.Accept(w, r, &ws.AcceptOptions{
+		// Allow requests from *all* origins.
+		InsecureSkipVerify: true,
+	})
 	if err != nil {
 		// The upgrader writes a response for us.
 		return
 	}
 
 	select {
-	case l.incoming <- NewConn(c, false):
+	case l.incoming <- conn{
+		Conn: ws.NetConn(context.Background(), c, ws.MessageBinary),
+		localAddr: addrWrapper{&url.URL{
+			Host:   r.Context().Value(http.LocalAddrContextKey).(net.Addr).String(),
+			Scheme: scheme,
+		}},
+		remoteAddr: addrWrapper{&url.URL{
+			Host:   r.RemoteAddr,
+			Scheme: scheme,
+		}},
+	}:
 	case <-l.closed:
-		c.Close()
+		c.Close(ws.StatusNormalClosure, "closed")
 	}
 	// The connection has been hijacked, it's safe to return.
 }
@@ -124,4 +159,16 @@ func (l *listener) Close() error {
 
 func (l *listener) Multiaddr() ma.Multiaddr {
 	return l.laddr
+}
+
+type transportListener struct {
+	transport.Listener
+}
+
+func (l *transportListener) Accept() (transport.CapableConn, error) {
+	conn, err := l.Listener.Accept()
+	if err != nil {
+		return nil, err
+	}
+	return &capableConn{CapableConn: conn}, nil
 }

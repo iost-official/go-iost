@@ -19,6 +19,7 @@ import (
 
 	logging "github.com/ipfs/go-log/v2"
 	ma "github.com/multiformats/go-multiaddr"
+	madns "github.com/multiformats/go-multiaddr-dns"
 )
 
 const (
@@ -54,10 +55,25 @@ func WithConnectionGater(gater connmgr.ConnectionGater) Option {
 	}
 }
 
+// WithMultiaddrResolver sets a custom multiaddress resolver
+func WithMultiaddrResolver(maResolver *madns.Resolver) Option {
+	return func(s *Swarm) error {
+		s.maResolver = maResolver
+		return nil
+	}
+}
+
 // WithMetrics sets a metrics reporter
 func WithMetrics(reporter metrics.Reporter) Option {
 	return func(s *Swarm) error {
 		s.bwc = reporter
+		return nil
+	}
+}
+
+func WithMetricsTracer(t MetricsTracer) Option {
+	return func(s *Swarm) error {
+		s.metricsTracer = t
 		return nil
 	}
 }
@@ -127,6 +143,8 @@ type Swarm struct {
 		m map[int]transport.Transport
 	}
 
+	maResolver *madns.Resolver
+
 	// stream handlers
 	streamh atomic.Value
 
@@ -140,7 +158,8 @@ type Swarm struct {
 	ctx       context.Context // is canceled when Close is called
 	ctxCancel context.CancelFunc
 
-	bwc metrics.Reporter
+	bwc           metrics.Reporter
+	metricsTracer MetricsTracer
 }
 
 // NewSwarm constructs a Swarm.
@@ -153,6 +172,7 @@ func NewSwarm(local peer.ID, peers peerstore.Peerstore, opts ...Option) (*Swarm,
 		ctxCancel:        cancel,
 		dialTimeout:      defaultDialTimeout,
 		dialTimeoutLocal: defaultDialTimeoutLocal,
+		maResolver:       madns.DefaultResolver,
 	}
 
 	s.conns.m = make(map[peer.ID][]*Conn)
@@ -166,7 +186,7 @@ func NewSwarm(local peer.ID, peers peerstore.Peerstore, opts ...Option) (*Swarm,
 		}
 	}
 	if s.rcmgr == nil {
-		s.rcmgr = network.NullResourceManager
+		s.rcmgr = &network.NullResourceManager{}
 	}
 
 	s.dsync = newDialSync(s.dialWorkerLoop)
@@ -225,8 +245,14 @@ func (s *Swarm) close() {
 	s.transports.m = nil
 	s.transports.Unlock()
 
-	var wg sync.WaitGroup
+	// Dedup transports that may be listening on multiple protocols
+	transportsToClose := make(map[transport.Transport]struct{}, len(transports))
 	for _, t := range transports {
+		transportsToClose[t] = struct{}{}
+	}
+
+	var wg sync.WaitGroup
+	for t := range transportsToClose {
 		if closer, ok := t.(io.Closer); ok {
 			wg.Add(1)
 			go func(c io.Closer) {

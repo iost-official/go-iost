@@ -15,8 +15,10 @@ import (
 	quic "github.com/libp2p/go-libp2p/p2p/transport/quic"
 	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 	ws "github.com/libp2p/go-libp2p/p2p/transport/websocket"
+	webtransport "github.com/libp2p/go-libp2p/p2p/transport/webtransport"
 
 	"github.com/multiformats/go-multiaddr"
+	madns "github.com/multiformats/go-multiaddr-dns"
 )
 
 // DefaultSecurity is the default security option.
@@ -32,7 +34,7 @@ var DefaultSecurity = ChainOptions(
 //
 // Use this option when you want to *extend* the set of multiplexers used by
 // libp2p instead of replacing them.
-var DefaultMuxers = Muxer("/yamux/1.0.0", yamux.DefaultTransport)
+var DefaultMuxers = Muxer(yamux.ID, yamux.DefaultTransport)
 
 // DefaultTransports are the default libp2p transports.
 //
@@ -41,6 +43,16 @@ var DefaultMuxers = Muxer("/yamux/1.0.0", yamux.DefaultTransport)
 var DefaultTransports = ChainOptions(
 	Transport(tcp.NewTCPTransport),
 	Transport(quic.NewTransport),
+	Transport(ws.New),
+	Transport(webtransport.New),
+)
+
+// DefaultPrivateTransports are the default libp2p transports when a PSK is supplied.
+//
+// Use this option when you want to *extend* the set of transports used by
+// libp2p instead of replacing them.
+var DefaultPrivateTransports = ChainOptions(
+	Transport(tcp.NewTCPTransport),
 	Transport(ws.New),
 )
 
@@ -64,19 +76,25 @@ var RandomIdentity = func(cfg *Config) error {
 
 // DefaultListenAddrs configures libp2p to use default listen address.
 var DefaultListenAddrs = func(cfg *Config) error {
-	defaultIP4ListenAddr, err := multiaddr.NewMultiaddr("/ip4/0.0.0.0/tcp/0")
-	if err != nil {
-		return err
+	addrs := []string{
+		"/ip4/0.0.0.0/tcp/0",
+		"/ip4/0.0.0.0/udp/0/quic",
+		"/ip4/0.0.0.0/udp/0/quic-v1",
+		"/ip4/0.0.0.0/udp/0/quic-v1/webtransport",
+		"/ip6/::/tcp/0",
+		"/ip6/::/udp/0/quic",
+		"/ip6/::/udp/0/quic-v1",
+		"/ip6/::/udp/0/quic-v1/webtransport",
 	}
-
-	defaultIP6ListenAddr, err := multiaddr.NewMultiaddr("/ip6/::/tcp/0")
-	if err != nil {
-		return err
+	listenAddrs := make([]multiaddr.Multiaddr, 0, len(addrs))
+	for _, s := range addrs {
+		addr, err := multiaddr.NewMultiaddr(s)
+		if err != nil {
+			return err
+		}
+		listenAddrs = append(listenAddrs, addr)
 	}
-	return cfg.Apply(ListenAddrs(
-		defaultIP4ListenAddr,
-		defaultIP6ListenAddr,
-	))
+	return cfg.Apply(ListenAddrs(listenAddrs...))
 }
 
 // DefaultEnableRelay enables relay dialing and listening by default.
@@ -106,6 +124,11 @@ var DefaultConnectionManager = func(cfg *Config) error {
 	return cfg.Apply(ConnectionManager(mgr))
 }
 
+// DefaultMultiaddrResolver creates a default connection manager
+var DefaultMultiaddrResolver = func(cfg *Config) error {
+	return cfg.Apply(MultiaddrResolver(madns.DefaultResolver))
+}
+
 // Complete list of default options and when to fallback on them.
 //
 // Please *DON'T* specify default options any other way. Putting this all here
@@ -119,8 +142,12 @@ var defaults = []struct {
 		opt:      DefaultListenAddrs,
 	},
 	{
-		fallback: func(cfg *Config) bool { return cfg.Transports == nil },
+		fallback: func(cfg *Config) bool { return cfg.Transports == nil && cfg.PSK == nil },
 		opt:      DefaultTransports,
+	},
+	{
+		fallback: func(cfg *Config) bool { return cfg.Transports == nil && cfg.PSK != nil },
+		opt:      DefaultPrivateTransports,
 	},
 	{
 		fallback: func(cfg *Config) bool { return cfg.Muxers == nil },
@@ -149,6 +176,10 @@ var defaults = []struct {
 	{
 		fallback: func(cfg *Config) bool { return cfg.ConnManager == nil },
 		opt:      DefaultConnectionManager,
+	},
+	{
+		fallback: func(cfg *Config) bool { return cfg.MultiaddrResolver == nil },
+		opt:      DefaultMultiaddrResolver,
 	},
 }
 

@@ -2,6 +2,8 @@ package rcmgr
 
 import (
 	"fmt"
+	"math"
+	"math/big"
 	"strings"
 	"sync"
 
@@ -79,15 +81,56 @@ func IsSpan(name string) bool {
 	return strings.Contains(name, ".span-")
 }
 
+func addInt64WithOverflow(a int64, b int64) (c int64, ok bool) {
+	c = a + b
+	return c, (c > a) == (b > 0)
+}
+
+// mulInt64WithOverflow checks for overflow in multiplying two int64s. See
+// https://groups.google.com/g/golang-nuts/c/h5oSN5t3Au4/m/KaNQREhZh0QJ
+func mulInt64WithOverflow(a, b int64) (c int64, ok bool) {
+	const mostPositive = 1<<63 - 1
+	const mostNegative = -(mostPositive + 1)
+	c = a * b
+	if a == 0 || b == 0 || a == 1 || b == 1 {
+		return c, true
+	}
+	if a == mostNegative || b == mostNegative {
+		return c, false
+	}
+	return c, c/b == a
+}
+
 // Resources implementation
 func (rc *resources) checkMemory(rsvp int64, prio uint8) error {
-	// overflow check; this also has the side effect that we cannot reserve negative memory.
-	newmem := rc.memory + rsvp
-	limit := rc.limit.GetMemoryLimit()
-	threshold := (1 + int64(prio)) * limit / 256
+	if rsvp < 0 {
+		return fmt.Errorf("can't reserve negative memory. rsvp=%v", rsvp)
+	}
 
-	if newmem > threshold {
-		return &errMemoryLimitExceeded{
+	limit := rc.limit.GetMemoryLimit()
+	if limit == math.MaxInt64 {
+		// Special case where we've set max limits.
+		return nil
+	}
+
+	newmem, addOk := addInt64WithOverflow(rc.memory, rsvp)
+
+	threshold, mulOk := mulInt64WithOverflow(1+int64(prio), limit)
+	if !mulOk {
+		thresholdBig := big.NewInt(limit)
+		thresholdBig = thresholdBig.Mul(thresholdBig, big.NewInt(1+int64(prio)))
+		thresholdBig.Rsh(thresholdBig, 8) // Divide 256
+		if !thresholdBig.IsInt64() {
+			// Shouldn't happen since the threshold can only be <= limit
+			threshold = limit
+		}
+		threshold = thresholdBig.Int64()
+	} else {
+		threshold = threshold / 256
+	}
+
+	if !addOk || newmem > threshold {
+		return &ErrMemoryLimitExceeded{
 			current:   rc.memory,
 			attempted: rsvp,
 			limit:     limit,
@@ -128,7 +171,7 @@ func (rc *resources) addStreams(incount, outcount int) error {
 	if incount > 0 {
 		limit := rc.limit.GetStreamLimit(network.DirInbound)
 		if rc.nstreamsIn+incount > limit {
-			return &errStreamOrConnLimitExceeded{
+			return &ErrStreamOrConnLimitExceeded{
 				current:   rc.nstreamsIn,
 				attempted: incount,
 				limit:     limit,
@@ -139,7 +182,7 @@ func (rc *resources) addStreams(incount, outcount int) error {
 	if outcount > 0 {
 		limit := rc.limit.GetStreamLimit(network.DirOutbound)
 		if rc.nstreamsOut+outcount > limit {
-			return &errStreamOrConnLimitExceeded{
+			return &ErrStreamOrConnLimitExceeded{
 				current:   rc.nstreamsOut,
 				attempted: outcount,
 				limit:     limit,
@@ -149,7 +192,7 @@ func (rc *resources) addStreams(incount, outcount int) error {
 	}
 
 	if limit := rc.limit.GetStreamTotalLimit(); rc.nstreamsIn+incount+rc.nstreamsOut+outcount > limit {
-		return &errStreamOrConnLimitExceeded{
+		return &ErrStreamOrConnLimitExceeded{
 			current:   rc.nstreamsIn + rc.nstreamsOut,
 			attempted: incount + outcount,
 			limit:     limit,
@@ -201,7 +244,7 @@ func (rc *resources) addConns(incount, outcount, fdcount int) error {
 	if incount > 0 {
 		limit := rc.limit.GetConnLimit(network.DirInbound)
 		if rc.nconnsIn+incount > limit {
-			return &errStreamOrConnLimitExceeded{
+			return &ErrStreamOrConnLimitExceeded{
 				current:   rc.nconnsIn,
 				attempted: incount,
 				limit:     limit,
@@ -212,7 +255,7 @@ func (rc *resources) addConns(incount, outcount, fdcount int) error {
 	if outcount > 0 {
 		limit := rc.limit.GetConnLimit(network.DirOutbound)
 		if rc.nconnsOut+outcount > limit {
-			return &errStreamOrConnLimitExceeded{
+			return &ErrStreamOrConnLimitExceeded{
 				current:   rc.nconnsOut,
 				attempted: outcount,
 				limit:     limit,
@@ -222,7 +265,7 @@ func (rc *resources) addConns(incount, outcount, fdcount int) error {
 	}
 
 	if connLimit := rc.limit.GetConnTotalLimit(); rc.nconnsIn+incount+rc.nconnsOut+outcount > connLimit {
-		return &errStreamOrConnLimitExceeded{
+		return &ErrStreamOrConnLimitExceeded{
 			current:   rc.nconnsIn + rc.nconnsOut,
 			attempted: incount + outcount,
 			limit:     connLimit,
@@ -232,7 +275,7 @@ func (rc *resources) addConns(incount, outcount, fdcount int) error {
 	if fdcount > 0 {
 		limit := rc.limit.GetFDLimit()
 		if rc.nfd+fdcount > limit {
-			return &errStreamOrConnLimitExceeded{
+			return &ErrStreamOrConnLimitExceeded{
 				current:   rc.nfd,
 				attempted: fdcount,
 				limit:     limit,

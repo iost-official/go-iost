@@ -106,14 +106,21 @@ func WithConnectionTimeout(d time.Duration) Option {
 	}
 }
 
+func WithMetrics() Option {
+	return func(tr *TcpTransport) error {
+		tr.enableMetrics = true
+		return nil
+	}
+}
+
 // TcpTransport is the TCP transport.
 type TcpTransport struct {
 	// Connection upgrader for upgrading insecure stream connections to
 	// secure multiplex connections.
 	upgrader transport.Upgrader
 
-	// Explicitly disable reuseport.
-	disableReuseport bool
+	disableReuseport bool // Explicitly disable reuseport.
+	enableMetrics    bool
 
 	// TCP connect timeout
 	connectTimeout time.Duration
@@ -129,7 +136,7 @@ var _ transport.Transport = &TcpTransport{}
 // created. It represents an entire TCP stack (though it might not necessarily be).
 func NewTCPTransport(upgrader transport.Upgrader, rcmgr network.ResourceManager, opts ...Option) (*TcpTransport, error) {
 	if rcmgr == nil {
-		rcmgr = network.NullResourceManager
+		rcmgr = &network.NullResourceManager{}
 	}
 	tr := &TcpTransport{
 		upgrader:       upgrader,
@@ -174,14 +181,22 @@ func (t *TcpTransport) Dial(ctx context.Context, raddr ma.Multiaddr, p peer.ID) 
 		log.Debugw("resource manager blocked outgoing connection", "peer", p, "addr", raddr, "error", err)
 		return nil, err
 	}
+
+	c, err := t.dialWithScope(ctx, raddr, p, connScope)
+	if err != nil {
+		connScope.Done()
+		return nil, err
+	}
+	return c, nil
+}
+
+func (t *TcpTransport) dialWithScope(ctx context.Context, raddr ma.Multiaddr, p peer.ID, connScope network.ConnManagementScope) (transport.CapableConn, error) {
 	if err := connScope.SetPeer(p); err != nil {
 		log.Debugw("resource manager blocked outgoing connection for peer", "peer", p, "addr", raddr, "error", err)
-		connScope.Done()
 		return nil, err
 	}
 	conn, err := t.maDial(ctx, raddr)
 	if err != nil {
-		connScope.Done()
 		return nil, err
 	}
 	// Set linger to 0 so we never get stuck in the TIME-WAIT state. When
@@ -189,10 +204,13 @@ func (t *TcpTransport) Dial(ctx context.Context, raddr ma.Multiaddr, p peer.ID) 
 	// This means we can immediately reuse the 5-tuple and reconnect.
 	tryLinger(conn, 0)
 	tryKeepAlive(conn, true)
-	c, err := newTracingConn(conn, true)
-	if err != nil {
-		connScope.Done()
-		return nil, err
+	c := conn
+	if t.enableMetrics {
+		var err error
+		c, err = newTracingConn(conn, true)
+		if err != nil {
+			return nil, err
+		}
 	}
 	direction := network.DirOutbound
 	if ok, isClient, _ := network.GetSimultaneousConnect(ctx); ok && !isClient {
@@ -219,7 +237,9 @@ func (t *TcpTransport) Listen(laddr ma.Multiaddr) (transport.Listener, error) {
 	if err != nil {
 		return nil, err
 	}
-	list = newTracingListener(&tcpListener{list, 0})
+	if t.enableMetrics {
+		list = newTracingListener(&tcpListener{list, 0})
+	}
 	return t.upgrader.UpgradeListener(t, list), nil
 }
 

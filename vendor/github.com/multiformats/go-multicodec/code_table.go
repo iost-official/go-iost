@@ -69,10 +69,10 @@ const (
 	// Dccp is a draft code tagged "multiaddr".
 	Dccp Code = 0x21 // dccp
 
-	// Murmur3X64_64 is a permanent code tagged "multihash" and described by: The first 64-bits of a murmur3-x64-128 - used for UnixFS directory sharding..
+	// Murmur3X64_64 is a permanent code tagged "hash" and described by: The first 64-bits of a murmur3-x64-128 - used for UnixFS directory sharding..
 	Murmur3X64_64 Code = 0x22 // murmur3-x64-64
 
-	// Murmur3_32 is a draft code tagged "multihash".
+	// Murmur3_32 is a draft code tagged "hash".
 	Murmur3_32 Code = 0x23 // murmur3-32
 
 	// Ip6 is a permanent code tagged "multiaddr".
@@ -80,6 +80,9 @@ const (
 
 	// Ip6zone is a draft code tagged "multiaddr".
 	Ip6zone Code = 0x2a // ip6zone
+
+	// Ipcidr is a draft code tagged "multiaddr" and described by: CIDR mask for IP addresses.
+	Ipcidr Code = 0x2b // ipcidr
 
 	// Path is a permanent code tagged "namespace" and described by: Namespace for string paths. Corresponds to `/` in ASCII..
 	Path Code = 0x2f // path
@@ -243,32 +246,32 @@ const (
 	// Md5 is a draft code tagged "multihash".
 	Md5 Code = 0xd5 // md5
 
-	// Bmt is a draft code tagged "multihash" and described by: Binary Merkle Tree Hash.
-	Bmt Code = 0xd6 // bmt
-
 	// DecredBlock is a draft code tagged "ipld" and described by: Decred Block.
 	DecredBlock Code = 0xe0 // decred-block
 
 	// DecredTx is a draft code tagged "ipld" and described by: Decred Tx.
 	DecredTx Code = 0xe1 // decred-tx
 
-	// IpldNs is a draft code tagged "namespace" and described by: IPLD path.
-	IpldNs Code = 0xe2 // ipld-ns
+	// Ipld is a draft code tagged "namespace" and described by: IPLD path.
+	Ipld Code = 0xe2 // ipld
 
-	// IpfsNs is a draft code tagged "namespace" and described by: IPFS path.
-	IpfsNs Code = 0xe3 // ipfs-ns
+	// Ipfs is a draft code tagged "namespace" and described by: IPFS path.
+	Ipfs Code = 0xe3 // ipfs
 
-	// SwarmNs is a draft code tagged "namespace" and described by: Swarm path.
-	SwarmNs Code = 0xe4 // swarm-ns
+	// Swarm is a draft code tagged "namespace" and described by: Swarm path.
+	Swarm Code = 0xe4 // swarm
 
-	// IpnsNs is a draft code tagged "namespace" and described by: IPNS path.
-	IpnsNs Code = 0xe5 // ipns-ns
+	// Ipns is a draft code tagged "namespace" and described by: IPNS path.
+	Ipns Code = 0xe5 // ipns
 
 	// Zeronet is a draft code tagged "namespace" and described by: ZeroNet site address.
 	Zeronet Code = 0xe6 // zeronet
 
 	// Secp256k1Pub is a draft code tagged "key" and described by: Secp256k1 public key (compressed).
 	Secp256k1Pub Code = 0xe7 // secp256k1-pub
+
+	// Dnslink is a permanent code tagged "namespace" and described by: DNSLink path.
+	Dnslink Code = 0xe8 // dnslink
 
 	// Bls12_381G1Pub is a draft code tagged "key" and described by: BLS12-381 public key in the G1 field.
 	Bls12_381G1Pub Code = 0xea // bls12_381-g1-pub
@@ -297,6 +300,9 @@ const (
 	// SwarmFeed is a draft code tagged "ipld" and described by: Swarm Feed.
 	SwarmFeed Code = 0xfb // swarm-feed
 
+	// Beeson is a draft code tagged "ipld" and described by: Swarm BeeSon.
+	Beeson Code = 0xfc // beeson
+
 	// Udp is a draft code tagged "multiaddr".
 	Udp Code = 0x0111 // udp
 
@@ -308,6 +314,9 @@ const (
 
 	// P2pStardust is a draft code tagged "multiaddr".
 	P2pStardust Code = 0x0115 // p2p-stardust
+
+	// Webrtc is a draft code tagged "multiaddr" and described by: WebRTC.
+	Webrtc Code = 0x0118 // webrtc
 
 	// P2pCircuit is a permanent code tagged "multiaddr".
 	P2pCircuit Code = 0x0122 // p2p-circuit
@@ -321,6 +330,12 @@ const (
 	// Utp is a draft code tagged "multiaddr".
 	Utp Code = 0x012e // utp
 
+	// Crc32 is a draft code tagged "hash" and described by: CRC-32 non-cryptographic hash algorithm (IEEE 802.3).
+	Crc32 Code = 0x0132 // crc32
+
+	// Crc64Ecma is a draft code tagged "hash" and described by: CRC-64 non-cryptographic hash algorithm (ECMA-182 - Annex B).
+	Crc64Ecma Code = 0x0164 // crc64-ecma
+
 	// Unix is a permanent code tagged "multiaddr".
 	Unix Code = 0x0190 // unix
 
@@ -329,9 +344,6 @@ const (
 
 	// P2p is a permanent code tagged "multiaddr" and described by: libp2p.
 	P2p Code = 0x01a5 // p2p
-
-	// Deprecated: Ipfs is a draft code tagged "multiaddr" and described by: libp2p (deprecated).
-	Ipfs Code = 0x01a5 // ipfs
 
 	// Https is a draft code tagged "multiaddr".
 	Https Code = 0x01bb // https
@@ -351,11 +363,23 @@ const (
 	// Tls is a draft code tagged "multiaddr".
 	Tls Code = 0x01c0 // tls
 
+	// Sni is a draft code tagged "multiaddr" and described by: Server Name Indication RFC 6066 § 3.
+	Sni Code = 0x01c1 // sni
+
 	// Noise is a draft code tagged "multiaddr".
 	Noise Code = 0x01c6 // noise
 
 	// Quic is a permanent code tagged "multiaddr".
 	Quic Code = 0x01cc // quic
+
+	// QuicV1 is a permanent code tagged "multiaddr".
+	QuicV1 Code = 0x01cd // quic-v1
+
+	// Webtransport is a draft code tagged "multiaddr".
+	Webtransport Code = 0x01d1 // webtransport
+
+	// Certhash is a draft code tagged "multiaddr" and described by: TLS certificate's fingerprint as a multihash.
+	Certhash Code = 0x01d2 // certhash
 
 	// Ws is a permanent code tagged "multiaddr".
 	Ws Code = 0x01dd // ws
@@ -387,6 +411,9 @@ const (
 	// Libp2pRelayRsvp is a permanent code tagged "libp2p" and described by: libp2p relay reservation voucher.
 	Libp2pRelayRsvp Code = 0x0302 // libp2p-relay-rsvp
 
+	// Memorytransport is a permanent code tagged "libp2p" and described by: in memory transport for self-dialing and testing; arbitrary.
+	Memorytransport Code = 0x0309 // memorytransport
+
 	// CarIndexSorted is a draft code tagged "serialization" and described by: CARv2 IndexSorted index format.
 	CarIndexSorted Code = 0x0400 // car-index-sorted
 
@@ -398,6 +425,9 @@ const (
 
 	// TransportGraphsyncFilecoinv1 is a draft code tagged "transport" and described by: Filecoin graphsync datatransfer.
 	TransportGraphsyncFilecoinv1 Code = 0x0910 // transport-graphsync-filecoinv1
+
+	// Multidid is a draft code tagged "multiformat" and described by: Compact encoding for Decentralized Identifers.
+	Multidid Code = 0x0d1d // multidid
 
 	// Sha2_256Trunc254Padded is a permanent code tagged "multihash" and described by: SHA2-256 with the two most significant bits from the last byte zeroed (as via a mask with 0b00111111) - used for proving trees as in Filecoin.
 	Sha2_256Trunc254Padded Code = 0x1012 // sha2-256-trunc254-padded
@@ -411,7 +441,7 @@ const (
 	// Sha2_512_256 is a permanent code tagged "multihash" and described by: aka SHA-512/256; as specified by FIPS 180-4..
 	Sha2_512_256 Code = 0x1015 // sha2-512-256
 
-	// Murmur3X64_128 is a draft code tagged "multihash".
+	// Murmur3X64_128 is a draft code tagged "hash".
 	Murmur3X64_128 Code = 0x1022 // murmur3-x64-128
 
 	// Ripemd128 is a draft code tagged "multihash".
@@ -447,6 +477,9 @@ const (
 	// RsaPub is a draft code tagged "key" and described by: RSA public key. DER-encoded ASN.1 type RSAPublicKey according to IETF RFC 8017 (PKCS #1).
 	RsaPub Code = 0x1205 // rsa-pub
 
+	// Sm2Pub is a draft code tagged "key" and described by: SM2 public key (compressed).
+	Sm2Pub Code = 0x1206 // sm2-pub
+
 	// Ed25519Priv is a draft code tagged "key" and described by: Ed25519 private key.
 	Ed25519Priv Code = 0x1300 // ed25519-priv
 
@@ -456,8 +489,14 @@ const (
 	// X25519Priv is a draft code tagged "key" and described by: Curve25519 private key.
 	X25519Priv Code = 0x1302 // x25519-priv
 
+	// RsaPriv is a draft code tagged "key" and described by: RSA private key.
+	RsaPriv Code = 0x1305 // rsa-priv
+
 	// Kangarootwelve is a draft code tagged "multihash" and described by: KangarooTwelve is an extendable-output hash function based on Keccak-p.
 	Kangarootwelve Code = 0x1d01 // kangarootwelve
+
+	// Silverpine is a draft code tagged "multiaddr" and described by: Experimental QUIC over yggdrasil and ironwood routing protocol.
+	Silverpine Code = 0x3f42 // silverpine
 
 	// Sm3_256 is a draft code tagged "multihash".
 	Sm3_256 Code = 0x534d // sm3-256
@@ -1422,14 +1461,62 @@ const (
 	// Skein1024_1024 is a draft code tagged "multihash".
 	Skein1024_1024 Code = 0xb3e0 // skein1024-1024
 
+	// Xxh32 is a draft code tagged "hash" and described by: Extremely fast non-cryptographic hash algorithm.
+	Xxh32 Code = 0xb3e1 // xxh-32
+
+	// Xxh64 is a draft code tagged "hash" and described by: Extremely fast non-cryptographic hash algorithm.
+	Xxh64 Code = 0xb3e2 // xxh-64
+
+	// Xxh3_64 is a draft code tagged "hash" and described by: Extremely fast non-cryptographic hash algorithm.
+	Xxh3_64 Code = 0xb3e3 // xxh3-64
+
+	// Xxh3_128 is a draft code tagged "hash" and described by: Extremely fast non-cryptographic hash algorithm.
+	Xxh3_128 Code = 0xb3e4 // xxh3-128
+
 	// PoseidonBls12_381A2Fc1 is a permanent code tagged "multihash" and described by: Poseidon using BLS12-381 and arity of 2 with Filecoin parameters.
 	PoseidonBls12_381A2Fc1 Code = 0xb401 // poseidon-bls12_381-a2-fc1
 
 	// PoseidonBls12_381A2Fc1Sc is a draft code tagged "multihash" and described by: Poseidon using BLS12-381 and arity of 2 with Filecoin parameters - high-security variant.
 	PoseidonBls12_381A2Fc1Sc Code = 0xb402 // poseidon-bls12_381-a2-fc1-sc
 
+	// Urdca2015Canon is a draft code tagged "ipld" and described by: The result of canonicalizing an input according to URDCA-2015 and then expressing its hash value as a multihash value..
+	Urdca2015Canon Code = 0xb403 // urdca-2015-canon
+
+	// Ssz is a draft code tagged "serialization" and described by: SimpleSerialize (SSZ) serialization.
+	Ssz Code = 0xb501 // ssz
+
+	// SszSha2_256Bmt is a draft code tagged "multihash" and described by: SSZ Merkle tree root using SHA2-256 as the hashing function and SSZ serialization for the block binary.
+	SszSha2_256Bmt Code = 0xb502 // ssz-sha2-256-bmt
+
+	// JsonJcs is a draft code tagged "ipld" and described by: The result of canonicalizing an input according to JCS - JSON Canonicalisation Scheme (RFC 8785).
+	JsonJcs Code = 0xb601 // json-jcs
+
+	// Iscc is a draft code tagged "softhash" and described by: ISCC (International Standard Content Code) - similarity preserving hash.
+	Iscc Code = 0xcc01 // iscc
+
 	// ZeroxcertImprint256 is a draft code tagged "zeroxcert" and described by: 0xcert Asset Imprint (root hash).
 	ZeroxcertImprint256 Code = 0xce11 // zeroxcert-imprint-256
+
+	// Varsig is a draft code tagged "varsig" and described by: Namespace for all not yet standard signature algorithms.
+	Varsig Code = 0xd000 // varsig
+
+	// Es256k is a draft code tagged "varsig" and described by: ES256K Siganture Algorithm (secp256k1).
+	Es256k Code = 0xd0e7 // es256k
+
+	// Bls12381G1Sig is a draft code tagged "varsig" and described by: G1 signature for BLS-12381-G2.
+	Bls12381G1Sig Code = 0xd0ea // bls-12381-g1-sig
+
+	// Bls12381G2Sig is a draft code tagged "varsig" and described by: G2 signature for BLS-12381-G1.
+	Bls12381G2Sig Code = 0xd0eb // bls-12381-g2-sig
+
+	// Eddsa is a draft code tagged "varsig" and described by: Edwards-Curve Digital Signature Algorithm.
+	Eddsa Code = 0xd0ed // eddsa
+
+	// Eip191 is a draft code tagged "varsig" and described by: EIP-191 Ethereum Signed Data Standard.
+	Eip191 Code = 0xd191 // eip-191
+
+	// Jwk_jcsPub is a draft code tagged "key" and described by: JSON object containing only the required members of a JWK (RFC 7518 and RFC 7517) representing the public key. Serialisation based on JCS (RFC 8785).
+	Jwk_jcsPub Code = 0xeb51 // jwk_jcs-pub
 
 	// FilCommitmentUnsealed is a permanent code tagged "filecoin" and described by: Filecoin piece or sector data commitment merkle node/root (CommP & CommD).
 	FilCommitmentUnsealed Code = 0xf101 // fil-commitment-unsealed
@@ -1466,6 +1553,21 @@ const (
 
 	// SubspaceNs is a draft code tagged "namespace" and described by: Subspace Network Namespace.
 	SubspaceNs Code = 0xb39910 // subspace-ns
+
+	// KumandraNs is a draft code tagged "namespace" and described by: Kumandra Network Namespace.
+	KumandraNs Code = 0xb49910 // kumandra-ns
+
+	// Es256 is a draft code tagged "varsig" and described by: ES256 Signature Algorithm.
+	Es256 Code = 0xd01200 // es256
+
+	// Es284 is a draft code tagged "varsig" and described by: ES384 Signature Algorithm.
+	Es284 Code = 0xd01201 // es284
+
+	// Es512 is a draft code tagged "varsig" and described by: ES512 Signature Algorithm.
+	Es512 Code = 0xd01202 // es512
+
+	// Rs256 is a draft code tagged "varsig" and described by: RS256 Signature Algorithm.
+	Rs256 Code = 0xd01205 // rs256
 )
 
 var knownCodes = []Code{
@@ -1495,6 +1597,7 @@ var knownCodes = []Code{
 	Murmur3_32,
 	Ip6,
 	Ip6zone,
+	Ipcidr,
 	Path,
 	Multicodec,
 	Multihash,
@@ -1549,15 +1652,15 @@ var knownCodes = []Code{
 	StellarTx,
 	Md4,
 	Md5,
-	Bmt,
 	DecredBlock,
 	DecredTx,
-	IpldNs,
-	IpfsNs,
-	SwarmNs,
-	IpnsNs,
+	Ipld,
+	Ipfs,
+	Swarm,
+	Ipns,
 	Zeronet,
 	Secp256k1Pub,
+	Dnslink,
 	Bls12_381G1Pub,
 	Bls12_381G2Pub,
 	X25519Pub,
@@ -1567,26 +1670,33 @@ var knownCodes = []Code{
 	DashTx,
 	SwarmManifest,
 	SwarmFeed,
+	Beeson,
 	Udp,
 	P2pWebrtcStar,
 	P2pWebrtcDirect,
 	P2pStardust,
+	Webrtc,
 	P2pCircuit,
 	DagJson,
 	Udt,
 	Utp,
+	Crc32,
+	Crc64Ecma,
 	Unix,
 	Thread,
 	P2p,
-	Ipfs,
 	Https,
 	Onion,
 	Onion3,
 	Garlic64,
 	Garlic32,
 	Tls,
+	Sni,
 	Noise,
 	Quic,
+	QuicV1,
+	Webtransport,
+	Certhash,
 	Ws,
 	Wss,
 	P2pWebsocketStar,
@@ -1597,10 +1707,12 @@ var knownCodes = []Code{
 	Car,
 	Libp2pPeerRecord,
 	Libp2pRelayRsvp,
+	Memorytransport,
 	CarIndexSorted,
 	CarMultihashIndexSorted,
 	TransportBitswap,
 	TransportGraphsyncFilecoinv1,
+	Multidid,
 	Sha2_256Trunc254Padded,
 	Sha2_224,
 	Sha2_512_224,
@@ -1617,10 +1729,13 @@ var knownCodes = []Code{
 	Ed448Pub,
 	X448Pub,
 	RsaPub,
+	Sm2Pub,
 	Ed25519Priv,
 	Secp256k1Priv,
 	X25519Priv,
+	RsaPriv,
 	Kangarootwelve,
+	Silverpine,
 	Sm3_256,
 	Blake2b8,
 	Blake2b16,
@@ -1942,9 +2057,25 @@ var knownCodes = []Code{
 	Skein1024_1008,
 	Skein1024_1016,
 	Skein1024_1024,
+	Xxh32,
+	Xxh64,
+	Xxh3_64,
+	Xxh3_128,
 	PoseidonBls12_381A2Fc1,
 	PoseidonBls12_381A2Fc1Sc,
+	Urdca2015Canon,
+	Ssz,
+	SszSha2_256Bmt,
+	JsonJcs,
+	Iscc,
 	ZeroxcertImprint256,
+	Varsig,
+	Es256k,
+	Bls12381G1Sig,
+	Bls12381G2Sig,
+	Eddsa,
+	Eip191,
+	Jwk_jcsPub,
 	FilCommitmentUnsealed,
 	FilCommitmentSealed,
 	Plaintextv2,
@@ -1957,6 +2088,11 @@ var knownCodes = []Code{
 	SkynetNs,
 	ArweaveNs,
 	SubspaceNs,
+	KumandraNs,
+	Es256,
+	Es284,
+	Es512,
+	Rs256,
 }
 
 func (c Code) Tag() string {
@@ -1969,6 +2105,17 @@ func (c Code) Tag() string {
 	case FilCommitmentUnsealed,
 		FilCommitmentSealed:
 		return "filecoin"
+
+	case Murmur3X64_64,
+		Murmur3_32,
+		Crc32,
+		Crc64Ecma,
+		Murmur3X64_128,
+		Xxh32,
+		Xxh64,
+		Xxh3_64,
+		Xxh3_128:
+		return "hash"
 
 	case HolochainAdrV0,
 		HolochainAdrV1,
@@ -2015,9 +2162,12 @@ func (c Code) Tag() string {
 		DashTx,
 		SwarmManifest,
 		SwarmFeed,
+		Beeson,
 		DagJson,
 		Swhid1Snp,
-		Json:
+		Json,
+		Urdca2015Canon,
+		JsonJcs:
 		return "ipld"
 
 	case Aes128,
@@ -2037,13 +2187,17 @@ func (c Code) Tag() string {
 		Ed448Pub,
 		X448Pub,
 		RsaPub,
+		Sm2Pub,
 		Ed25519Priv,
 		Secp256k1Priv,
-		X25519Priv:
+		X25519Priv,
+		RsaPriv,
+		Jwk_jcsPub:
 		return "key"
 
 	case Libp2pPeerRecord,
-		Libp2pRelayRsvp:
+		Libp2pRelayRsvp,
+		Memorytransport:
 		return "libp2p"
 
 	case Ip4,
@@ -2051,6 +2205,7 @@ func (c Code) Tag() string {
 		Dccp,
 		Ip6,
 		Ip6zone,
+		Ipcidr,
 		Dns,
 		Dns4,
 		Dns6,
@@ -2060,6 +2215,7 @@ func (c Code) Tag() string {
 		P2pWebrtcStar,
 		P2pWebrtcDirect,
 		P2pStardust,
+		Webrtc,
 		P2pCircuit,
 		Udt,
 		Utp,
@@ -2072,12 +2228,17 @@ func (c Code) Tag() string {
 		Garlic64,
 		Garlic32,
 		Tls,
+		Sni,
 		Noise,
 		Quic,
+		QuicV1,
+		Webtransport,
+		Certhash,
 		Ws,
 		Wss,
 		P2pWebsocketStar,
 		Http,
+		Silverpine,
 		Plaintextv2:
 		return "multiaddr"
 
@@ -2085,7 +2246,8 @@ func (c Code) Tag() string {
 		Multihash,
 		Multiaddr,
 		Multibase,
-		Caip50:
+		Caip50,
+		Multidid:
 		return "multiformat"
 
 	case Identity,
@@ -2104,17 +2266,13 @@ func (c Code) Tag() string {
 		Keccak512,
 		Blake3,
 		Sha2_384,
-		Murmur3X64_64,
-		Murmur3_32,
 		DblSha2_256,
 		Md4,
 		Md5,
-		Bmt,
 		Sha2_256Trunc254Padded,
 		Sha2_224,
 		Sha2_512_224,
 		Sha2_512_256,
-		Murmur3X64_128,
 		Ripemd128,
 		Ripemd160,
 		Ripemd256,
@@ -2443,19 +2601,22 @@ func (c Code) Tag() string {
 		Skein1024_1016,
 		Skein1024_1024,
 		PoseidonBls12_381A2Fc1,
-		PoseidonBls12_381A2Fc1Sc:
+		PoseidonBls12_381A2Fc1Sc,
+		SszSha2_256Bmt:
 		return "multihash"
 
 	case Path,
 		Streamid,
-		IpldNs,
-		IpfsNs,
-		SwarmNs,
-		IpnsNs,
+		Ipld,
+		Ipfs,
+		Swarm,
+		Ipns,
 		Zeronet,
+		Dnslink,
 		SkynetNs,
 		ArweaveNs,
-		SubspaceNs:
+		SubspaceNs,
+		KumandraNs:
 		return "namespace"
 
 	case Protobuf,
@@ -2464,12 +2625,28 @@ func (c Code) Tag() string {
 		Messagepack,
 		Car,
 		CarIndexSorted,
-		CarMultihashIndexSorted:
+		CarMultihashIndexSorted,
+		Ssz:
 		return "serialization"
+
+	case Iscc:
+		return "softhash"
 
 	case TransportBitswap,
 		TransportGraphsyncFilecoinv1:
 		return "transport"
+
+	case Varsig,
+		Es256k,
+		Bls12381G1Sig,
+		Bls12381G2Sig,
+		Eddsa,
+		Eip191,
+		Es256,
+		Es284,
+		Es512,
+		Rs256:
+		return "varsig"
 
 	case ZeroxcertImprint256:
 		return "zeroxcert"

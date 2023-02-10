@@ -38,10 +38,6 @@ import (
 	msmux "github.com/multiformats/go-multistream"
 )
 
-// The maximum number of address resolution steps we'll perform for a single
-// peer (for all addresses).
-const maxAddressResolution = 32
-
 // addrChangeTickrInterval is the interval between two address change ticks.
 var addrChangeTickrInterval = 5 * time.Second
 
@@ -74,7 +70,7 @@ type BasicHost struct {
 
 	network      network.Network
 	psManager    *pstoremanager.PeerstoreManager
-	mux          *msmux.MultistreamMuxer
+	mux          *msmux.MultistreamMuxer[protocol.ID]
 	ids          identify.IDService
 	hps          *holepunch.Service
 	pings        *ping.PingService
@@ -112,7 +108,7 @@ var _ host.Host = (*BasicHost)(nil)
 // customize construction of the *BasicHost.
 type HostOpts struct {
 	// MultistreamMuxer is essential for the *BasicHost and will use a sensible default value if omitted.
-	MultistreamMuxer *msmux.MultistreamMuxer
+	MultistreamMuxer *msmux.MultistreamMuxer[protocol.ID]
 
 	// NegotiationTimeout determines the read and write timeouts on streams.
 	// If 0 or omitted, it will use DefaultNegotiationTimeout.
@@ -145,6 +141,9 @@ type HostOpts struct {
 	// UserAgent sets the user-agent for the host.
 	UserAgent string
 
+	// ProtocolVersion sets the protocol version for the host.
+	ProtocolVersion string
+
 	// DisableSignedPeerRecord disables the generation of Signed Peer Records on this host.
 	DisableSignedPeerRecord bool
 
@@ -156,7 +155,7 @@ type HostOpts struct {
 
 // NewHost constructs a new *BasicHost and activates it by attaching its stream and connection handlers to the given inet.Network.
 func NewHost(n network.Network, opts *HostOpts) (*BasicHost, error) {
-	eventBus := eventbus.NewBus()
+	eventBus := eventbus.NewBus(eventbus.WithMetricsTracer(eventbus.NewMetricsTracer()))
 	psManager, err := pstoremanager.NewPeerstoreManager(n.Peerstore(), eventBus)
 	if err != nil {
 		return nil, err
@@ -169,7 +168,7 @@ func NewHost(n network.Network, opts *HostOpts) (*BasicHost, error) {
 	h := &BasicHost{
 		network:                 n,
 		psManager:               psManager,
-		mux:                     msmux.NewMultistreamMuxer(),
+		mux:                     msmux.NewMultistreamMuxer[protocol.ID](),
 		negtimeout:              DefaultNegotiationTimeout,
 		AddrsFactory:            DefaultAddrsFactory,
 		maResolver:              madns.DefaultResolver,
@@ -182,7 +181,7 @@ func NewHost(n network.Network, opts *HostOpts) (*BasicHost, error) {
 
 	h.updateLocalIpAddr()
 
-	if h.emitters.evtLocalProtocolsUpdated, err = h.eventbus.Emitter(&event.EvtLocalProtocolsUpdated{}); err != nil {
+	if h.emitters.evtLocalProtocolsUpdated, err = h.eventbus.Emitter(&event.EvtLocalProtocolsUpdated{}, eventbus.Stateful); err != nil {
 		return nil, err
 	}
 	if h.emitters.evtLocalAddrsUpdated, err = h.eventbus.Emitter(&event.EvtLocalAddressesUpdated{}, eventbus.Stateful); err != nil {
@@ -226,9 +225,20 @@ func NewHost(n network.Network, opts *HostOpts) (*BasicHost, error) {
 
 	// we can't set this as a default above because it depends on the *BasicHost.
 	if h.disableSignedPeerRecord {
-		h.ids, err = identify.NewIDService(h, identify.UserAgent(opts.UserAgent), identify.DisableSignedPeerRecord())
+		h.ids, err = identify.NewIDService(
+			h,
+			identify.UserAgent(opts.UserAgent),
+			identify.ProtocolVersion(opts.ProtocolVersion),
+			identify.DisableSignedPeerRecord(),
+			identify.WithMetricsTracer(identify.NewMetricsTracer()),
+		)
 	} else {
-		h.ids, err = identify.NewIDService(h, identify.UserAgent(opts.UserAgent))
+		h.ids, err = identify.NewIDService(
+			h,
+			identify.UserAgent(opts.UserAgent),
+			identify.ProtocolVersion(opts.ProtocolVersion),
+			identify.WithMetricsTracer(identify.NewMetricsTracer()),
+		)
 	}
 	if err != nil {
 		return nil, fmt.Errorf("failed to create Identify service: %s", err)
@@ -359,6 +369,7 @@ func (h *BasicHost) updateLocalIpAddr() {
 func (h *BasicHost) Start() {
 	h.psManager.Start()
 	h.refCount.Add(1)
+	h.ids.Start()
 	go h.background()
 }
 
@@ -399,13 +410,13 @@ func (h *BasicHost) newStreamHandler(s network.Stream) {
 		}
 	}
 
-	if err := s.SetProtocol(protocol.ID(protoID)); err != nil {
+	if err := s.SetProtocol(protoID); err != nil {
 		log.Debugf("error setting stream protocol: %s", err)
 		s.Reset()
 		return
 	}
 
-	log.Debugf("protocol negotiation took %s", took)
+	log.Debugf("negotiated: %s (took %s)", protoID, took)
 
 	go handle(protoID, s)
 }
@@ -563,9 +574,9 @@ func (h *BasicHost) EventBus() event.Bus {
 //
 // (Threadsafe)
 func (h *BasicHost) SetStreamHandler(pid protocol.ID, handler network.StreamHandler) {
-	h.Mux().AddHandler(string(pid), func(p string, rwc io.ReadWriteCloser) error {
+	h.Mux().AddHandler(pid, func(p protocol.ID, rwc io.ReadWriteCloser) error {
 		is := rwc.(network.Stream)
-		is.SetProtocol(protocol.ID(p))
+		is.SetProtocol(p)
 		handler(is)
 		return nil
 	})
@@ -576,10 +587,10 @@ func (h *BasicHost) SetStreamHandler(pid protocol.ID, handler network.StreamHand
 
 // SetStreamHandlerMatch sets the protocol handler on the Host's Mux
 // using a matching function to do protocol comparisons
-func (h *BasicHost) SetStreamHandlerMatch(pid protocol.ID, m func(string) bool, handler network.StreamHandler) {
-	h.Mux().AddHandlerWithFunc(string(pid), m, func(p string, rwc io.ReadWriteCloser) error {
+func (h *BasicHost) SetStreamHandlerMatch(pid protocol.ID, m func(protocol.ID) bool, handler network.StreamHandler) {
+	h.Mux().AddHandlerWithFunc(pid, m, func(p protocol.ID, rwc io.ReadWriteCloser) error {
 		is := rwc.(network.Stream)
-		is.SetProtocol(protocol.ID(p))
+		is.SetProtocol(p)
 		handler(is)
 		return nil
 	})
@@ -590,7 +601,7 @@ func (h *BasicHost) SetStreamHandlerMatch(pid protocol.ID, m func(string) bool, 
 
 // RemoveStreamHandler returns ..
 func (h *BasicHost) RemoveStreamHandler(pid protocol.ID) {
-	h.Mux().RemoveHandler(string(pid))
+	h.Mux().RemoveHandler(pid)
 	h.emitters.evtLocalProtocolsUpdated.Emit(event.EvtLocalProtocolsUpdated{
 		Removed: []protocol.ID{pid},
 	})
@@ -629,9 +640,7 @@ func (h *BasicHost) NewStream(ctx context.Context, p peer.ID, pids ...protocol.I
 		return nil, ctx.Err()
 	}
 
-	pidStrings := protocol.ConvertToStrings(pids)
-
-	pref, err := h.preferredProtocol(p, pidStrings)
+	pref, err := h.preferredProtocol(p, pids)
 	if err != nil {
 		_ = s.Reset()
 		return nil, err
@@ -639,7 +648,7 @@ func (h *BasicHost) NewStream(ctx context.Context, p peer.ID, pids ...protocol.I
 
 	if pref != "" {
 		s.SetProtocol(pref)
-		lzcon := msmux.NewMSSelect(s, string(pref))
+		lzcon := msmux.NewMSSelect(s, pref)
 		return &streamWrapper{
 			Stream: s,
 			rw:     lzcon,
@@ -647,10 +656,10 @@ func (h *BasicHost) NewStream(ctx context.Context, p peer.ID, pids ...protocol.I
 	}
 
 	// Negotiate the protocol in the background, obeying the context.
-	var selected string
+	var selected protocol.ID
 	errCh := make(chan error, 1)
 	go func() {
-		selected, err = msmux.SelectOneOf(pidStrings, s)
+		selected, err = msmux.SelectOneOf(pids, s)
 		errCh <- err
 	}()
 	select {
@@ -666,13 +675,12 @@ func (h *BasicHost) NewStream(ctx context.Context, p peer.ID, pids ...protocol.I
 		return nil, ctx.Err()
 	}
 
-	selpid := protocol.ID(selected)
-	s.SetProtocol(selpid)
+	s.SetProtocol(selected)
 	h.Peerstore().AddProtocols(p, selected)
 	return s, nil
 }
 
-func (h *BasicHost) preferredProtocol(p peer.ID, pids []string) (protocol.ID, error) {
+func (h *BasicHost) preferredProtocol(p peer.ID, pids []protocol.ID) (protocol.ID, error) {
 	supported, err := h.Peerstore().SupportsProtocols(p, pids...)
 	if err != nil {
 		return "", err
@@ -680,7 +688,7 @@ func (h *BasicHost) preferredProtocol(p peer.ID, pids []string) (protocol.ID, er
 
 	var out protocol.ID
 	if len(supported) > 0 {
-		out = protocol.ID(supported[0])
+		out = supported[0]
 	}
 	return out, nil
 }
@@ -701,75 +709,7 @@ func (h *BasicHost) Connect(ctx context.Context, pi peer.AddrInfo) error {
 		}
 	}
 
-	resolved, err := h.resolveAddrs(ctx, h.Peerstore().PeerInfo(pi.ID))
-	if err != nil {
-		return err
-	}
-	h.Peerstore().AddAddrs(pi.ID, resolved, peerstore.TempAddrTTL)
-
 	return h.dialPeer(ctx, pi.ID)
-}
-
-func (h *BasicHost) resolveAddrs(ctx context.Context, pi peer.AddrInfo) ([]ma.Multiaddr, error) {
-	proto := ma.ProtocolWithCode(ma.P_P2P).Name
-	p2paddr, err := ma.NewMultiaddr("/" + proto + "/" + pi.ID.Pretty())
-	if err != nil {
-		return nil, err
-	}
-
-	resolveSteps := 0
-
-	// Recursively resolve all addrs.
-	//
-	// While the toResolve list is non-empty:
-	// * Pop an address off.
-	// * If the address is fully resolved, add it to the resolved list.
-	// * Otherwise, resolve it and add the results to the "to resolve" list.
-	toResolve := append(([]ma.Multiaddr)(nil), pi.Addrs...)
-	resolved := make([]ma.Multiaddr, 0, len(pi.Addrs))
-	for len(toResolve) > 0 {
-		// pop the last addr off.
-		addr := toResolve[len(toResolve)-1]
-		toResolve = toResolve[:len(toResolve)-1]
-
-		// if it's resolved, add it to the resolved list.
-		if !madns.Matches(addr) {
-			resolved = append(resolved, addr)
-			continue
-		}
-
-		resolveSteps++
-
-		// We've resolved too many addresses. We can keep all the fully
-		// resolved addresses but we'll need to skip the rest.
-		if resolveSteps >= maxAddressResolution {
-			log.Warnf(
-				"peer %s asked us to resolve too many addresses: %s/%s",
-				pi.ID,
-				resolveSteps,
-				maxAddressResolution,
-			)
-			continue
-		}
-
-		// otherwise, resolve it
-		reqaddr := addr.Encapsulate(p2paddr)
-		resaddrs, err := h.maResolver.Resolve(ctx, reqaddr)
-		if err != nil {
-			log.Infof("error resolving %s: %s", reqaddr, err)
-		}
-
-		// add the results to the toResolve list.
-		for _, res := range resaddrs {
-			pi, err := peer.AddrInfoFromP2pAddr(res)
-			if err != nil {
-				log.Infof("error parsing %s: %s", res, err)
-			}
-			toResolve = append(toResolve, pi.Addrs...)
-		}
-	}
-
-	return resolved, nil
 }
 
 // dialPeer opens a connection to peer, and makes sure to identify

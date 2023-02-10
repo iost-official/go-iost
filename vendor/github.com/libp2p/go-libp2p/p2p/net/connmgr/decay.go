@@ -177,7 +177,7 @@ func (d *decayer) process() {
 			d.tagsMu.Unlock()
 
 			// Visit each peer, and decay tags that need to be decayed.
-			for _, s := range d.mgr.segments {
+			for _, s := range d.mgr.segments.buckets {
 				s.Lock()
 
 				// Entered a segment that contains peers. Process each peer.
@@ -221,7 +221,7 @@ func (d *decayer) process() {
 			s := d.mgr.segments.get(peer)
 			s.Lock()
 
-			p := s.tagInfoFor(peer)
+			p := s.tagInfoFor(peer, d.clock.Now())
 			v, ok := p.decaying[tag]
 			if !ok {
 				v = &connmgr.DecayingValue{
@@ -244,7 +244,7 @@ func (d *decayer) process() {
 			s := d.mgr.segments.get(rm.peer)
 			s.Lock()
 
-			p := s.tagInfoFor(rm.peer)
+			p := s.tagInfoFor(rm.peer, d.clock.Now())
 			v, ok := p.decaying[rm.tag]
 			if !ok {
 				s.Unlock()
@@ -261,7 +261,7 @@ func (d *decayer) process() {
 			d.tagsMu.Unlock()
 
 			// Remove the tag from all peers that had it in the connmgr.
-			for _, s := range d.mgr.segments {
+			for _, s := range d.mgr.segments.buckets {
 				// visit all segments, and attempt to remove the tag from all the peers it stores.
 				s.Lock()
 				for _, p := range s.peers {

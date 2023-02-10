@@ -33,7 +33,6 @@ Example use:
 
 As an alternative to BitSets, one should check out the 'big' package,
 which provides a (less set-theoretical) view of bitsets.
-
 */
 package bitset
 
@@ -113,6 +112,12 @@ func wordsNeeded(i uint) int {
 	if i > (Cap() - wordSize + 1) {
 		return int(Cap() >> log2WordSize)
 	}
+	return int((i + (wordSize - 1)) >> log2WordSize)
+}
+
+// wordsNeededUnbound calculates the number of words needed for i bits, possibly exceeding the capacity.
+// This function is useful if you know that the capacity cannot be exceeded (e.g., you have an existing bitmap).
+func wordsNeededUnbound(i uint) int {
 	return int((i + (wordSize - 1)) >> log2WordSize)
 }
 
@@ -273,8 +278,9 @@ func (b *BitSet) Shrink(lastbitindex uint) *BitSet {
 	copy(shrunk, b.set[:idx])
 	b.set = shrunk
 	b.length = length
-	if length < 64 {
-		b.set[idx-1] &= allBits >> uint64(64-wordsIndex(length))
+	lastWordUsedBits := length % 64
+	if lastWordUsedBits != 0 {
+		b.set[idx-1] &= allBits >> uint64(64-wordsIndex(lastWordUsedBits))
 	}
 	return b
 }
@@ -434,21 +440,20 @@ func (b *BitSet) NextSet(i uint) (uint, bool) {
 // including possibly the current index and up to cap(buffer).
 // If the returned slice has len zero, then no more set bits were found
 //
-//    buffer := make([]uint, 256) // this should be reused
-//    j := uint(0)
-//    j, buffer = bitmap.NextSetMany(j, buffer)
-//    for ; len(buffer) > 0; j, buffer = bitmap.NextSetMany(j,buffer) {
-//     for k := range buffer {
-//      do something with buffer[k]
-//     }
-//     j += 1
-//    }
-//
+//	buffer := make([]uint, 256) // this should be reused
+//	j := uint(0)
+//	j, buffer = bitmap.NextSetMany(j, buffer)
+//	for ; len(buffer) > 0; j, buffer = bitmap.NextSetMany(j,buffer) {
+//	 for k := range buffer {
+//	  do something with buffer[k]
+//	 }
+//	 j += 1
+//	}
 //
 // It is possible to retrieve all set bits as follow:
 //
-//    indices := make([]uint, bitmap.Count())
-//    bitmap.NextSetMany(0, indices)
+//	indices := make([]uint, bitmap.Count())
+//	bitmap.NextSetMany(0, indices)
 //
 // However if bitmap.Count() is large, it might be preferable to
 // use several calls to NextSetMany, for performance reasons.
@@ -531,7 +536,7 @@ func (b *BitSet) ClearAll() *BitSet {
 
 // wordCount returns the number of words used in a bit set
 func (b *BitSet) wordCount() int {
-	return len(b.set)
+	return wordsNeededUnbound(b.length)
 }
 
 // Clone this BitSet
@@ -558,6 +563,9 @@ func (b *BitSet) Copy(c *BitSet) (count uint) {
 	if b.length < c.length {
 		count = b.length
 	}
+	// Cleaning the last word is needed to keep the invariant that other functions, such as Count, require
+	// that any bits in the last word that would exceed the length of the bitmask are set to 0.
+	c.cleanLastWord()
 	return
 }
 
@@ -604,10 +612,9 @@ func (b *BitSet) Equal(c *BitSet) bool {
 	if b.length == 0 { // if they have both length == 0, then could have nil set
 		return true
 	}
-	// testing for equality shoud not transform the bitset (no call to safeSet)
-
-	for p, v := range b.set {
-		if c.set[p] != v {
+	wn := b.wordCount()
+	for p:= 0; p < wn; p++ {
+		if c.set[p] != b.set[p] {
 			return false
 		}
 	}
@@ -896,7 +903,8 @@ func (b *BitSet) DumpAsBits() string {
 
 // BinaryStorageSize returns the binary storage requirements
 func (b *BitSet) BinaryStorageSize() int {
-	return binary.Size(uint64(0)) + binary.Size(b.set)
+	nWords := b.wordCount()
+	return binary.Size(uint64(0)) + binary.Size(b.set[:nWords])
 }
 
 // WriteTo writes a BitSet to a stream
@@ -914,7 +922,8 @@ func (b *BitSet) WriteTo(stream io.Writer) (int64, error) {
 	// binary.Write for large set
 	writer := bufio.NewWriter(stream)
 	var item = make([]byte, binary.Size(uint64(0))) // for serializing one uint64
-	for i := range b.set {
+	nWords := b.wordCount()
+	for i := range b.set[:nWords] {
 		binaryOrder.PutUint64(item, b.set[i])
 		if nn, err := writer.Write(item); err != nil {
 			return int64(i*binary.Size(uint64(0)) + nn), err
@@ -932,6 +941,9 @@ func (b *BitSet) ReadFrom(stream io.Reader) (int64, error) {
 	// Read length first
 	err := binary.Read(stream, binaryOrder, &length)
 	if err != nil {
+		if err == io.EOF {
+			err = io.ErrUnexpectedEOF
+		}
 		return 0, err
 	}
 	newset := New(uint(length))
@@ -940,19 +952,17 @@ func (b *BitSet) ReadFrom(stream io.Reader) (int64, error) {
 		return 0, errors.New("unmarshalling error: type mismatch")
 	}
 
-	// Read remaining bytes as set
-	// current implementation bufio.Reader is more memory efficient than
-	// binary.Read for large set
-	reader := bufio.NewReader(stream)
-	var item = make([]byte, binary.Size(uint64(0))) // one uint64
-	for i := uint64(0); i < length; i++ {
-		if _, err := reader.Read(item); err != nil {
+	var item [8]byte
+	nWords := wordsNeeded(uint(length))
+	reader := bufio.NewReader(io.LimitReader(stream, 8*int64(nWords)))
+	for i := 0; i < nWords; i++ {
+		if _, err := io.ReadFull(reader, item[:]); err != nil {
 			if err == io.EOF {
-				break // done
+				err = io.ErrUnexpectedEOF
 			}
 			return 0, err
 		}
-		newset.set[i] = binaryOrder.Uint64(item)
+		newset.set[i] = binaryOrder.Uint64(item[:])
 	}
 
 	*b = *newset

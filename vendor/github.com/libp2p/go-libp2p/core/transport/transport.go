@@ -77,6 +77,12 @@ type Transport interface {
 	Proxy() bool
 }
 
+// Resolver can be optionally implemented by transports that want to resolve or transform the
+// multiaddr.
+type Resolver interface {
+	Resolve(ctx context.Context, maddr ma.Multiaddr) ([]ma.Multiaddr, error)
+}
+
 // Listener is an interface closely resembling the net.Listener interface. The
 // only real difference is that Accept() returns Conn's of the type in this
 // package, and also exposes a Multiaddr method as opposed to a regular Addr
