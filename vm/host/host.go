@@ -324,12 +324,21 @@ func (h *Host) IsGenesisMode() bool {
 	return h.Context().Value("number") == int64(0)
 }
 
+func (h *Host) IsEthAddress(name string) bool {
+	isEthAddress := strings.HasPrefix(name, "0x") && len(name) == 42 && strings.ToLower(name) == name
+	return isEthAddress
+}
+
 // IsValidAccount check whether account exists
 func (h *Host) IsValidAccount(name string) bool {
 	if h.IsGenesisMode() {
 		return true
 	}
-	return strings.HasPrefix(name, "Contract") || strings.HasSuffix(name, ".iost") || database.Unmarshal(h.DB().MGet("auth.iost"+"-auth", name)) != nil
+	isContract := strings.HasPrefix(name, "Contract")
+	isSystemContract := strings.HasSuffix(name, ".iost")
+	isIostAccount := database.Unmarshal(h.DB().MGet("auth.iost"+"-auth", name)) != nil
+	//isEthAddress := h.IsEthAddress(name)
+	return isContract || isSystemContract || isIostAccount // || isEthAddress
 }
 
 // ReadSettings read settings from db

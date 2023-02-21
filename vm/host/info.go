@@ -2,6 +2,7 @@ package host
 
 import (
 	"encoding/json"
+	"fmt"
 
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/vm/database"
@@ -55,6 +56,7 @@ func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) 
 	ctxInfo["publisher"] = h.h.ctx.Value("publisher")
 	ctxInfo["caller"] = h.h.ctx.Value("caller")
 
+	fmt.Println("ContextInfo", ctxInfo)
 	cij, err := json.Marshal(ctxInfo)
 	if err != nil {
 		panic(err)
@@ -82,16 +84,6 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 	}
 
 	return database.SerializedJSON(tij), Costs["ContextCost"]
-}
-
-// ABIConfig set this abi config
-func (h *Info) ABIConfig(key, value string) {
-	switch key {
-	case "payment":
-		if value == "contract_pay" {
-			h.h.ctx.GSet("abi_payment", 1)
-		}
-	}
 }
 
 // GasLimitValue get gas limit

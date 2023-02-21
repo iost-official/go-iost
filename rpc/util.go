@@ -8,12 +8,22 @@ import (
 func checkHashValid(hash string) error {
 	maxLen := 100
 	if len(hash) >= maxLen {
-		return fmt.Errorf("Hash len(%v) is greater then %v", len(hash), maxLen)
+		return fmt.Errorf("hash len(%v) is greater then %v", len(hash), maxLen)
 	}
 	return nil
 }
 
+func isEthAddress(id string) bool {
+	if strings.HasPrefix(id, "0x") && len(id) == 42 && strings.ToLower(id) == id {
+		return true
+	}
+	return false
+}
+
 func checkIDValid(id string) error {
+	if isEthAddress(id) {
+		return nil
+	}
 	if strings.HasPrefix(id, "Contract") || strings.HasSuffix(id, ".iost") {
 		if len(id) >= 100 {
 			return fmt.Errorf("id invalid. ContractID length should be less then 100 - %v", len(id))

@@ -49,7 +49,7 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 
 	// deploy token.iost
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
-		fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.SystemContractABI("token.iost", "1.0.0").B64Encode())))
+		fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.SystemContractABI("token.iost", "1.0.6").B64Encode())))
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
 		fmt.Sprintf(`["%v", "%v"]`, "token721.iost", native.SystemContractABI("token721.iost", "1.0.0").B64Encode())))
 	// deploy iost.gas

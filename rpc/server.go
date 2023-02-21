@@ -154,7 +154,8 @@ func (s *Server) Stop() {
 		return
 	}
 	close(s.quitCh)
-	ctx, _ := context.WithTimeout(context.Background(), time.Second) // nolint
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
 	s.gatewayServer.Shutdown(ctx)
 	s.grpcServer.GracefulStop()
 }
