@@ -2,7 +2,6 @@ package host
 
 import (
 	"encoding/json"
-	"fmt"
 
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/vm/database"
@@ -56,7 +55,6 @@ func (h *Info) ContextInfo() (info database.SerializedJSON, cost contract.Cost) 
 	ctxInfo["publisher"] = h.h.ctx.Value("publisher")
 	ctxInfo["caller"] = h.h.ctx.Value("caller")
 
-	fmt.Println("ContextInfo", ctxInfo)
 	cij, err := json.Marshal(ctxInfo)
 	if err != nil {
 		panic(err)

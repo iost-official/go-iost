@@ -121,10 +121,10 @@ class Account {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
         }
-        let is_eth = this._checkIdValid(id);
-        if (is_eth) {
+        let isEth = this._checkIdValid(id);
+        if (isEth) {
             if (owner !== "" || active !== "") {
-            throw new Error("permission should be empty");
+                throw new Error("permission should be empty");
             } 
         }
         let caller = blockchain.contextInfo().caller;
