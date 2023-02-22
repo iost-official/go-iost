@@ -1,9 +1,13 @@
 package host
 
 import (
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"strings"
 
+	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/vm/database"
@@ -103,6 +107,29 @@ func auth(vi *database.Visitor, id, permission string, authMap, reenter map[stri
 	a, c := ReadAuth(vi, id)
 
 	if a == nil {
+		return false, c
+	}
+
+	if strings.HasPrefix(id, "0x") && len(id) == 42 {
+		fmt.Println("traveser authmap ", authMap)
+		for k := range authMap {
+			pkBytes := account.DecodePubkey(k)
+			fmt.Println("pkBytes", pkBytes)
+			pubKey, err := secp.ParsePubKey(pkBytes)
+			if err != nil {
+				println("ParsePubKey err", k, err)
+				continue
+			}
+			pkBytes2 := pubKey.SerializeUncompressed()[1:]
+			fmt.Println("pkbytes2 len", len(pkBytes2))
+			pkHash := crypto.Keccak256(pkBytes2)
+			fmt.Println("pp  ", hex.EncodeToString(pkHash))
+			addr := "0x" + hex.EncodeToString(pkHash[12:32])
+			fmt.Println("addr", addr)
+			if id == addr {
+				return true, c
+			}
+		}
 		return false, c
 	}
 

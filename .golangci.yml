@@ -11,6 +11,11 @@ linters-settings:
       - singleCaseSwitch
       - commentFormatting
       - appendAssign
+issues:
+  exclude-rules:
+    - linters:
+        - staticcheck
+      text: "SA1019: rand.Seed" 
 
 linters:
   enable:

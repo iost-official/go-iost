@@ -4,13 +4,18 @@ import (
 	"bytes"
 	"crypto/aes"
 	"crypto/cipher"
+	"crypto/elliptic"
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
+	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
+	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"golang.org/x/crypto/scrypt"
@@ -35,12 +40,39 @@ func NewKeyPairInfo(rawKey string, keyType string) (*KeyPairInfo, error) {
 	kp := &KeyPairInfo{}
 	kp.RawKey = rawKey
 	kp.KeyType = keyType
+	if strings.HasPrefix(rawKey, "0x") {
+		kp.KeyType = "secp256k1"
+		bytes, err := hex.DecodeString(rawKey[2:])
+		if err != nil {
+			return nil, err
+		}
+		kp.RawKey = common.Base58Encode(bytes)
+	}
 	keyBytes := ParsePrivKey(rawKey)
 	key, err := account.NewKeyPair(keyBytes, GetSignAlgoByName(kp.KeyType))
 	if err != nil {
 		return nil, err
 	}
 	kp.PubKey = common.Base58Encode(key.Pubkey)
+
+	pkBytes := key.Pubkey
+	fmt.Println("pkBytes", pkBytes)
+	pubKey, err := secp.ParsePubKey(pkBytes)
+	fmt.Println("x", pubKey.X(), "y", pubKey.Y())
+	if err != nil {
+		println("ParsePubKey err", pkBytes, err)
+	}
+	pkBytes2 := elliptic.Marshal(crypto.S256(), pubKey.X(), pubKey.Y())
+	pkBytes3 := pubKey.SerializeUncompressed()
+	fmt.Println("pkbytes2 len", len(pkBytes2))
+	fmt.Println("pkbytes2", pkBytes2)
+	fmt.Println("pkbytes3 len", len(pkBytes3))
+	fmt.Println("pkbytes3", pkBytes3)
+	pkHash := crypto.Keccak256(pkBytes2[1:])
+	fmt.Println("pp  ", hex.EncodeToString(pkHash))
+	addr := "0x" + hex.EncodeToString(pkHash[12:32])
+	fmt.Println("addr", addr)
+
 	return kp, nil
 }
 

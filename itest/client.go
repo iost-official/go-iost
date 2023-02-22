@@ -2,10 +2,10 @@ package itest
 
 import (
 	"context"
+	"crypto/rand"
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"math/rand"
 	"strconv"
 	"sync"
 	"time"

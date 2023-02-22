@@ -1,14 +1,16 @@
 module github.com/iost-official/go-iost/v3
 
-go 1.18
+go 1.20
 
 require (
 	github.com/Jeffail/tunny v0.1.4
 	github.com/bitly/go-simplejson v0.5.1-0.20171023175154-0c965951289c
 	github.com/bits-and-blooms/bloom/v3 v3.3.1
+	github.com/btcsuite/btcd/btcec/v2 v2.2.1
 	github.com/btcsuite/btcd/btcutil v1.1.3
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0
 	github.com/emirpasic/gods v1.18.1
+	github.com/ethereum/go-ethereum v1.11.1
 	github.com/golang/mock v1.6.0
 	github.com/golang/snappy v0.0.4
 	github.com/grpc-ecosystem/go-grpc-middleware v1.3.0

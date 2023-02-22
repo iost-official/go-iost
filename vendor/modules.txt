@@ -16,6 +16,10 @@ github.com/bits-and-blooms/bitset
 # github.com/bits-and-blooms/bloom/v3 v3.3.1
 ## explicit; go 1.14
 github.com/bits-and-blooms/bloom/v3
+# github.com/btcsuite/btcd/btcec/v2 v2.2.1
+## explicit; go 1.17
+github.com/btcsuite/btcd/btcec/v2
+github.com/btcsuite/btcd/btcec/v2/ecdsa
 # github.com/btcsuite/btcd/btcutil v1.1.3
 ## explicit; go 1.16
 github.com/btcsuite/btcd/btcutil/base58
@@ -55,6 +59,18 @@ github.com/emirpasic/gods/containers
 github.com/emirpasic/gods/trees
 github.com/emirpasic/gods/trees/redblacktree
 github.com/emirpasic/gods/utils
+# github.com/ethereum/go-ethereum v1.11.1
+## explicit; go 1.18
+github.com/ethereum/go-ethereum/common
+github.com/ethereum/go-ethereum/common/hexutil
+github.com/ethereum/go-ethereum/common/math
+github.com/ethereum/go-ethereum/crypto
+github.com/ethereum/go-ethereum/crypto/secp256k1
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/include
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/src
+github.com/ethereum/go-ethereum/crypto/secp256k1/libsecp256k1/src/modules/recovery
+github.com/ethereum/go-ethereum/rlp
+github.com/ethereum/go-ethereum/rlp/internal/rlpstruct
 # github.com/flynn/noise v1.0.0
 ## explicit; go 1.16
 github.com/flynn/noise
