@@ -46,7 +46,7 @@ var (
 			if !h.IsValidAccount(from) {
 				return nil, cost, fmt.Errorf("invalid account %v", from)
 			}
-			if h.IsEthAddress(to) && !h.IsValidAccount(to) {
+			if h.IsFork3_10_0 && h.IsEthAddress(to) && !h.IsValidAccount(to) {
 				// create this address
 				_, cost0, err := h.CallWithAuth("auth.iost", "signUp", fmt.Sprintf("[\"%s\",\"\",\"\"]", to))
 				cost.AddAssign(cost0)
