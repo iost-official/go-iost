@@ -66,8 +66,17 @@ class Account {
 
     _checkIdValid(id) {
         if (block.number === 0) {
-            return
+            return false
         }
+        
+        if (id.startsWith("0x") && id.length == 42) {
+            // eth address
+            if (id.toLowerCase() !== id) {
+                throw new Error("id invalid. upper case not allowed");
+            }
+            return true;
+        }
+        
         if (id.length < 5 || id.length > 11) {
             throw new Error("id invalid. id length should be between 5,11 > " + id)
         }
@@ -80,6 +89,7 @@ class Account {
                 throw new Error("id invalid. id contains invalid character > " + ch);
             }
         }
+        return false;
     }
 
     _checkPermValid(perm) {
@@ -111,8 +121,14 @@ class Account {
         if (this._hasAccount(id)) {
             throw new Error("id existed > " + id);
         }
-        this._checkIdValid(id);
-        const referrer = blockchain.publisher();
+        let isEth = this._checkIdValid(id);
+        if (isEth) {
+            if (owner !== "" || active !== "") {
+                throw new Error("permission should be empty");
+            } 
+        }
+        let caller = blockchain.contextInfo().caller;
+        const referrer = caller || blockchain.publisher();
         let account = {};
         account.id = id;
         account.referrer = referrer;

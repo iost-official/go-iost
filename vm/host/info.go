@@ -84,16 +84,6 @@ func (h *Info) TxInfo() (info database.SerializedJSON, cost contract.Cost) {
 	return database.SerializedJSON(tij), Costs["ContextCost"]
 }
 
-// ABIConfig set this abi config
-func (h *Info) ABIConfig(key, value string) {
-	switch key {
-	case "payment":
-		if value == "contract_pay" {
-			h.h.ctx.GSet("abi_payment", 1)
-		}
-	}
-}
-
 // GasLimitValue get gas limit
 func (h *Info) GasLimitValue() int64 {
 	return h.h.ctx.GValue("gas_limit").(int64)

@@ -5,10 +5,12 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/iost-official/go-iost/v3/account"
@@ -33,8 +35,18 @@ func NewKeyPairInfo(rawKey string, keyType string) (*KeyPairInfo, error) {
 		return nil, fmt.Errorf("empty key")
 	}
 	kp := &KeyPairInfo{}
-	kp.RawKey = rawKey
-	kp.KeyType = keyType
+	if strings.HasPrefix(rawKey, "0x") {
+		// TODO: "eth"?
+		kp.KeyType = "secp256k1"
+		bytes, err := hex.DecodeString(rawKey[2:])
+		if err != nil {
+			return nil, err
+		}
+		kp.RawKey = common.Base58Encode(bytes)
+	} else {
+		kp.RawKey = rawKey
+		kp.KeyType = keyType
+	}
 	keyBytes := ParsePrivKey(rawKey)
 	key, err := account.NewKeyPair(keyBytes, GetSignAlgoByName(kp.KeyType))
 	if err != nil {

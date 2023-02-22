@@ -405,6 +405,9 @@ const (
 	// Car is a draft code tagged "serialization" and described by: Content Addressable aRchive (CAR).
 	Car Code = 0x0202 // car
 
+	// IpnsRecord is a permanent code tagged "serialization" and described by: Signed IPNS Record.
+	IpnsRecord Code = 0x0300 // ipns-record
+
 	// Libp2pPeerRecord is a permanent code tagged "libp2p" and described by: libp2p peer record type.
 	Libp2pPeerRecord Code = 0x0301 // libp2p-peer-record
 
@@ -1705,6 +1708,7 @@ var knownCodes = []Code{
 	Json,
 	Messagepack,
 	Car,
+	IpnsRecord,
 	Libp2pPeerRecord,
 	Libp2pRelayRsvp,
 	Memorytransport,
@@ -2624,6 +2628,7 @@ func (c Code) Tag() string {
 		Bencode,
 		Messagepack,
 		Car,
+		IpnsRecord,
 		CarIndexSorted,
 		CarMultihashIndexSorted,
 		Ssz:

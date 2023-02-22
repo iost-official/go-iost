@@ -188,7 +188,7 @@ func TestAuthority_Active(t *testing.T) {
 		t.Fatal(cost)
 	}
 
-	ans, cost = host.RequireAuth("a", "owner")
+	ans, _ = host.RequireAuth("a", "owner")
 	if ans {
 		t.Fatal(ans)
 	}

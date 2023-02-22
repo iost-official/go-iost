@@ -46,6 +46,14 @@ var (
 			if !h.IsValidAccount(from) {
 				return nil, cost, fmt.Errorf("invalid account %v", from)
 			}
+			if h.IsFork3_10_0 && h.IsEthAddress(to) && !h.IsValidAccount(to) {
+				// create this address
+				_, cost0, err := h.CallWithAuth("auth.iost", "signUp", fmt.Sprintf("[\"%s\",\"\",\"\"]", to))
+				cost.AddAssign(cost0)
+				if err != nil {
+					return nil, cost, err
+				}
+			}
 			if !h.IsValidAccount(to) {
 				return nil, cost, fmt.Errorf("invalid account %v", to)
 			}

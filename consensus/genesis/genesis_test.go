@@ -55,5 +55,4 @@ func TestGenGenesis(t *testing.T) {
 	}
 
 	fmt.Println(blk.Head)
-	return
 }

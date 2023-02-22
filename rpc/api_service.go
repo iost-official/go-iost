@@ -735,7 +735,7 @@ func (as *APIService) SendTransaction(ctx context.Context, req *rpcpb.Transactio
 // ExecTransaction executes a transaction by the node and returns the receipt.
 func (as *APIService) ExecTransaction(ctx context.Context, req *rpcpb.TransactionRequest) (*rpcpb.TxReceipt, error) {
 	if !as.config.RPC.ExecTx {
-		return nil, errors.New("The node has't enabled this method")
+		return nil, errors.New("the node has't enabled this method")
 	}
 	t := toCoreTx(req)
 	receipt, err := as.tryTransaction(t)
