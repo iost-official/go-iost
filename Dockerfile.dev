@@ -1,6 +1,6 @@
-FROM ubuntu:20.04
+FROM ubuntu:22.04
 
-ENV GOVERSION 1.19
+ENV GOVERSION 1.20
 
 # Install Base Tools
 RUN apt update && \
@@ -17,7 +17,7 @@ ENV GOROOT /goroot
 ENV PATH $GOROOT/bin:$PATH
 
 # Install golangci-lint
-RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b /usr/local/bin v1.48.0
+RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b /usr/local/bin v1.52.0
 RUN git config --global --add safe.directory '*'
 
 WORKDIR /go-iost
