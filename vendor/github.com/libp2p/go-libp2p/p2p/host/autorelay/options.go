@@ -42,7 +42,6 @@ type config struct {
 	// see WithMaxCandidateAge
 	maxCandidateAge  time.Duration
 	setMinCandidates bool
-	enableCircuitV1  bool
 }
 
 var defaultConfig = config{
@@ -147,14 +146,6 @@ func WithBootDelay(d time.Duration) Option {
 func WithBackoff(d time.Duration) Option {
 	return func(c *config) error {
 		c.backoff = d
-		return nil
-	}
-}
-
-// WithCircuitV1Support enables support for circuit v1 relays.
-func WithCircuitV1Support() Option {
-	return func(c *config) error {
-		c.enableCircuitV1 = true
 		return nil
 	}
 }
