@@ -28,7 +28,6 @@ linters:
     - unconvert
     - gofmt
     - asciicheck
-    - depguard
     - dogsled
     - gocritic
     - goimports
@@ -60,3 +59,4 @@ linters:
     - goconst
     - gocyclo
     - structcheck
+    - depguard

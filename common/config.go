@@ -73,7 +73,7 @@ type P2PConfig struct {
 	BlackPID     []string
 	BlackIP      []string
 	AdminPort    string
-	Secio        bool
+	DisableMplex bool
 }
 
 // RPCConfig is the config for RPC Server.

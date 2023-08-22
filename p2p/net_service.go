@@ -16,6 +16,7 @@ import (
 	libnet "github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
 	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
+	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	tls "github.com/libp2p/go-libp2p/p2p/security/tls"
 
@@ -138,13 +139,17 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		libp2p.Security(tls.ID, tls.New),
 		libp2p.Security(noise.ID, noise.New),
 	}
+	muxOptions := []libp2p.Option{
+		libp2p.Muxer(yamux.ID, yamux.DefaultTransport),
+	}
+	if !ns.config.DisableMplex {
+		muxOptions = append(muxOptions, libp2p.Muxer(protocolID, mplex.DefaultTransport))
+	}
 	opts := []libp2p.Option{
 		libp2p.Identity(pk),
 		libp2p.NATPortMap(),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
-		libp2p.ChainOptions(
-			libp2p.Muxer(protocolID, mplex.DefaultTransport),
-		),
+		libp2p.ChainOptions(muxOptions...),
 		libp2p.ChainOptions(secOptions...),
 	}
 	h, err := libp2p.New(opts...)
@@ -152,6 +157,7 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 		return nil, err
 	}
 	h.SetStreamHandler(protocolID, ns.streamHandler)
+	h.SetStreamHandler(yamux.ID, ns.streamHandler)
 	return h, nil
 }
 
