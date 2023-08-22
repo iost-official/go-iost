@@ -1,3 +1,8 @@
+## v3.10.1
+Tue Aug 22 21:03:12 CST 2023
+
+- Support yamux in libp2p
+
 ## v3.9.2
 Fri Sep  9 20:36:40 CST 2022
 
