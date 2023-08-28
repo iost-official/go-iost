@@ -52,6 +52,19 @@ update_container_ulimit() {
     fi
 }
 
+update_container_security_opt() {
+  grep -q seccomp $PREFIX/docker-compose.yml && return
+  uu="Ubuntu"
+  sys=$(lsb_release -a 2> /dev/null | grep "Distributor ID:" | cut -d ":" -f2)
+  result=$(echo $sys | grep "${uu}")
+  if [ "$result" != ""  ]; then
+      ver=$(lsb_release -r --short)
+      if [ `echo "$ver < 22"|bc` -eq 1 ]; then
+          sed -i -e '/ulimits/{n;a\    security_opt:\n      - seccomp:unconfined' -e '}' $PREFIX/docker-compose.yml
+      fi
+  fi
+}
+
 #
 # main
 #
@@ -60,6 +73,7 @@ cd $PREFIX
 
 update_container_restart_policy
 update_container_ulimit
+update_container_security_opt
 docker-compose pull
 docker-compose up -d
 
