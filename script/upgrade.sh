@@ -54,14 +54,15 @@ update_container_ulimit() {
 
 update_container_security_opt() {
   grep -q seccomp $PREFIX/docker-compose.yml && return
-  uu="Ubuntu"
-  sys=$(lsb_release -a 2> /dev/null | grep "Distributor ID:" | cut -d ":" -f2)
-  result=$(echo $sys | grep "${uu}")
-  if [ "$result" != ""  ]; then
-      ver=$(lsb_release -r --short)
-      if [ `echo "$ver < 22"|bc` -eq 1 ]; then
-          sed -i -e '/ulimits/{n;a\    security_opt:\n      - seccomp:unconfined' -e '}' $PREFIX/docker-compose.yml
-      fi
+  _SYS=$(uname)
+  if [ x$_SYS = x"Linux" ]; then
+      sed -i -e '/ulimits/{n;a\    security_opt:\n      - seccomp:unconfined' -e '}' $PREFIX/docker-compose.yml
+  elif [ x$_SYS = x"Darwin" ]; then
+      sed -i '' -e '/ulimits/{n;a\
+          \    security_opt:' -e ';a\
+          \      - seccomp:unconfined' -e '}' $PREFIX/docker-compose.yml
+  else
+      >&2 echo System not recognized !!
   fi
 }
 
