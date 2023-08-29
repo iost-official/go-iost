@@ -52,6 +52,20 @@ update_container_ulimit() {
     fi
 }
 
+update_container_security_opt() {
+  grep -q seccomp $PREFIX/docker-compose.yml && return
+  _SYS=$(uname)
+  if [ x$_SYS = x"Linux" ]; then
+      sed -i -e '/ulimits/{n;a\    security_opt:\n      - seccomp:unconfined' -e '}' $PREFIX/docker-compose.yml
+  elif [ x$_SYS = x"Darwin" ]; then
+      sed -i '' -e '/ulimits/{n;a\
+          \    security_opt:' -e ';a\
+          \      - seccomp:unconfined' -e '}' $PREFIX/docker-compose.yml
+  else
+      >&2 echo System not recognized !!
+  fi
+}
+
 #
 # main
 #
@@ -60,6 +74,7 @@ cd $PREFIX
 
 update_container_restart_policy
 update_container_ulimit
+update_container_security_opt
 docker-compose pull
 docker-compose up -d
 
