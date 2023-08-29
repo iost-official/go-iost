@@ -15,7 +15,6 @@ import (
 	"github.com/libp2p/go-libp2p/core/host"
 	libnet "github.com/libp2p/go-libp2p/core/network"
 	"github.com/libp2p/go-libp2p/core/peer"
-	"github.com/libp2p/go-libp2p/p2p/muxer/mplex"
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	tls "github.com/libp2p/go-libp2p/p2p/security/tls"
@@ -141,9 +140,6 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 	}
 	muxOptions := []libp2p.Option{
 		libp2p.Muxer(yamux.ID, yamux.DefaultTransport),
-	}
-	if !ns.config.DisableMplex {
-		muxOptions = append(muxOptions, libp2p.Muxer(protocolID, mplex.DefaultTransport))
 	}
 	opts := []libp2p.Option{
 		libp2p.Identity(pk),

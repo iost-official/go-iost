@@ -4,8 +4,8 @@ GO_TEST := $(GO) test -timeout 600s
 GO_INSTALL := $(GO) install
 
 PROJECT_NAME := $(shell basename "$(PWD)")
-BUILDER_VERSION = 3.10.0
-VERSION = 3.10.1
+BUILDER_VERSION = 3.11.0
+VERSION = 3.11.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -55,7 +55,7 @@ itest:
 	$(GO_BUILD) -o $(TARGET_DIR)/itest ./cmd/itest
 
 format:
-	find . -name "*.go" |grep -v vendor |xargs gofmt -s -w
+	find . -name "*.go" |xargs gofmt -s -w
 
 lint-tool:
 	env GOARCH= go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
