@@ -55,7 +55,7 @@ func (r *requestHandler) Close() {
 func (r *requestHandler) handle(request *p2p.IncomingMessage) {
 	_, err := r.pool.ProcessTimed(request, timeout)
 	if err == tunny.ErrJobTimedOut {
-		ilog.Warnf("The request %v from %v timed out", request.Type(), request.From().Pretty())
+		ilog.Warnf("The request %v from %v timed out", request.Type(), request.From().String())
 	}
 }
 
@@ -126,7 +126,7 @@ func (r *requestHandlerWorker) handleBlockHashRequest(request *p2p.IncomingMessa
 	end := blockHashQuery.End
 
 	if (start < 0) || (start > end) || (end-start+1 > maxSyncRange) {
-		ilog.Warnf("Receive attack request from peer %v, start: %v, end: %v.", request.From().Pretty(), blockHashQuery.Start, blockHashQuery.End)
+		ilog.Warnf("Receive attack request from peer %v, start: %v, end: %v.", request.From().String(), blockHashQuery.Start, blockHashQuery.End)
 		return
 	}
 
@@ -163,7 +163,7 @@ func (r *requestHandlerWorker) handleBlockRequest(request *p2p.IncomingMessage, 
 
 	block, ok := r.cBase.GetBlockByHash(blockInfo.Hash)
 	if !ok {
-		ilog.Warnf("Handle block request failed, from=%v, hash=%v.", request.From().Pretty(), common.Base58Encode(blockInfo.Hash))
+		ilog.Warnf("Handle block request failed, from=%v, hash=%v.", request.From().String(), common.Base58Encode(blockInfo.Hash))
 		return
 	}
 

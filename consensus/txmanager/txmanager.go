@@ -78,7 +78,7 @@ func (t *TxManager) handleTx(payload any) any {
 func (t *TxManager) handle(msg *p2p.IncomingMessage) {
 	_, err := t.pool.ProcessTimed(msg, timeout)
 	if err == tunny.ErrJobTimedOut {
-		ilog.Warnf("The message %v from %v timed out", msg.Type(), msg.From().Pretty())
+		ilog.Warnf("The message %v from %v timed out", msg.Type(), msg.From().String())
 	}
 }
 

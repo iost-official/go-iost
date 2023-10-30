@@ -186,7 +186,7 @@ func (b *blockHashSync) handleSyncBlockHashResponse(msg *p2p.IncomingMessage) {
 		hashs[blockInfo.Number] = blockInfo.Hash
 	}
 
-	ilog.Debugf("Received block hash from peer %v, len %v.", msg.From().Pretty(), len(blockHashResponse.BlockInfos))
+	ilog.Debugf("Received block hash from peer %v, len %v.", msg.From().String(), len(blockHashResponse.BlockInfos))
 
 	b.mutex.Lock()
 	defer b.mutex.Unlock()

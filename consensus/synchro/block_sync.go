@@ -108,7 +108,7 @@ func (b *blockSync) handleBlock(msg *p2p.IncomingMessage) {
 	}
 	b.responseCache.Set(string(blk.HeadHash()), "", cache.DefaultExpiration)
 
-	ilog.Debugf("Received block %v from peer %v, num: %v", common.Base58Encode(blk.HeadHash()), msg.From().Pretty(), blk.Head.Number)
+	ilog.Debugf("Received block %v from peer %v, num: %v", common.Base58Encode(blk.HeadHash()), msg.From().String(), blk.Head.Number)
 
 	b.blockCh <- blk
 }

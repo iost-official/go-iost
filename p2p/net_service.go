@@ -98,7 +98,7 @@ func NewNetService(config *common.P2PConfig) (*NetService, error) {
 
 // ID returns the host's ID.
 func (ns *NetService) ID() string {
-	return ns.host.ID().Pretty()
+	return ns.host.ID().String()
 }
 
 // LocalAddrs returns the local's multiaddrs.

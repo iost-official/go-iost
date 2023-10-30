@@ -207,7 +207,7 @@ func (pm *PeerManager) findBPLoop() {
 			unknownBPs := make([]string, 0)
 			for _, id := range pm.getBPs() {
 				if len(pm.peerStore.Addrs(id)) == 0 {
-					unknownBPs = append(unknownBPs, id.Pretty())
+					unknownBPs = append(unknownBPs, id.String())
 				}
 			}
 			pm.routingQuery(unknownBPs)
@@ -230,7 +230,7 @@ func (pm *PeerManager) connectBPs() {
 		if pm.GetNeighbor(bpID) == nil && bpID != pm.host.ID() && len(pm.peerStore.Addrs(bpID)) > 0 {
 			stream, err := pm.newStream(bpID)
 			if err != nil {
-				ilog.Warnf("create stream to bp failed. pid=%s, err=%v", bpID.Pretty(), err)
+				ilog.Warnf("create stream to bp failed. pid=%s, err=%v", bpID.String(), err)
 				continue
 			}
 			pm.HandleStream(stream, outbound)
@@ -256,11 +256,11 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 	pm.freshPeer(remotePID)
 
 	if pm.isStreamBlack(s) {
-		ilog.Infof("Remote peer is in black list, close connection. pid=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+		ilog.Infof("Remote peer is in black list, close connection. pid=%v, addr=%v", remotePID.String(), s.Conn().RemoteMultiaddr())
 		s.Conn().Close()
 		return
 	}
-	ilog.Debugf("handle new stream. pid=%s, addr=%v, direction=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr(), direction)
+	ilog.Debugf("handle new stream. pid=%s, addr=%v, direction=%v", remotePID.String(), s.Conn().RemoteMultiaddr(), direction)
 
 	peer := pm.GetNeighbor(remotePID)
 	if peer != nil {
@@ -270,10 +270,10 @@ func (pm *PeerManager) HandleStream(s libnet.Stream, direction connDirection) {
 
 	if pm.NeighborCount(direction) >= pm.neighborCap[direction] {
 		if !pm.isBP(remotePID) {
-			ilog.Infof("neighbor count exceeds, close connection. remoteID=%v, addr=%v", remotePID.Pretty(), s.Conn().RemoteMultiaddr())
+			ilog.Infof("neighbor count exceeds, close connection. remoteID=%v, addr=%v", remotePID.String(), s.Conn().RemoteMultiaddr())
 			if direction == inbound {
 				//pid, _ := randomPID()
-				//bytes, _ := pm.getRoutingResponse([]string{pid.Pretty()})
+				//bytes, _ := pm.getRoutingResponse([]string{pid.String()})
 				bytes, _ := pm.getOutboundNeighborsResponse()
 				if len(bytes) > 0 {
 					msg := newP2PMessage(pm.config.ChainID, RoutingTableResponse, pm.config.Version, defaultReservedFlag, bytes)
@@ -307,7 +307,7 @@ func (pm *PeerManager) dumpRoutingTableLoop() {
 }
 
 func (pm *PeerManager) syncRoutingTableLoop() {
-	pm.routingQuery([]string{pm.host.ID().Pretty()})
+	pm.routingQuery([]string{pm.host.ID().String()})
 
 	defer pm.wg.Done()
 	for {
@@ -322,7 +322,7 @@ func (pm *PeerManager) syncRoutingTableLoop() {
 		case <-time.After(interval):
 			//ilog.Debugf("start sync routing table.")
 			pid, _ := randomPID()
-			pm.routingQuery([]string{pid.Pretty()})
+			pm.routingQuery([]string{pid.String()})
 		}
 	}
 }
@@ -460,7 +460,7 @@ func (pm *PeerManager) DumpRoutingTable() {
 	for _, peerID := range pm.routingTable.ListPeers() {
 		for _, addr := range pm.peerStore.Addrs(peerID) {
 			if isPublicMaddr(addr.String()) {
-				line := fmt.Sprintf("%s/ipfs/%s\n", addr.String(), peerID.Pretty())
+				line := fmt.Sprintf("%s/ipfs/%s\n", addr.String(), peerID.String())
 				file.WriteString(line)
 			}
 		}
@@ -567,10 +567,10 @@ func (pm *PeerManager) routingQuery(ids []string) {
 			peerID := peerID
 			go func(peerId PeerID) {
 				defer wg.Done()
-				ilog.Debugf("dial peer: pid=%v", peerID.Pretty())
+				ilog.Debugf("dial peer: pid=%v", peerID.String())
 				stream, err := pm.newStream(peerID)
 				if err != nil {
-					ilog.Warnf("create stream failed. pid=%s, err=%v", peerID.Pretty(), err)
+					ilog.Warnf("create stream failed. pid=%s, err=%v", peerID.String(), err)
 
 					if strings.Contains(err.Error(), "connected to wrong peer") {
 						pm.deletePeerInfo(peerID)
@@ -683,7 +683,7 @@ func (pm *PeerManager) getOutboundNeighborsResponse() ([]byte, error) {
 		info := pm.peerStore.PeerInfo(pid)
 		if len(info.Addrs) > 0 {
 			peerInfo := &p2pb.PeerInfo{
-				Id: info.ID.Pretty(),
+				Id: info.ID.String(),
 			}
 			for _, addr := range info.Addrs {
 				if isPublicMaddr(addr.String()) {
@@ -738,7 +738,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 		info := pm.peerStore.PeerInfo(pid)
 		if len(info.Addrs) > 0 {
 			peerInfo := &p2pb.PeerInfo{
-				Id: info.ID.Pretty(),
+				Id: info.ID.String(),
 			}
 			for _, addr := range info.Addrs {
 				if isPublicMaddr(addr.String()) {
@@ -753,7 +753,7 @@ func (pm *PeerManager) getRoutingResponse(peerIDs []string) ([]byte, error) {
 			}
 		}
 	}
-	selfInfo := &p2pb.PeerInfo{Id: pm.host.ID().Pretty()}
+	selfInfo := &p2pb.PeerInfo{Id: pm.host.ID().String()}
 	for _, addr := range pm.host.Addrs() {
 		selfInfo.Addrs = append(selfInfo.Addrs, addr.String())
 	}
@@ -796,7 +796,7 @@ func (pm *PeerManager) handleRoutingTableResponse(msg *p2pMessage, from peer.ID)
 		ilog.Errorf("Decoding pb failed. err=%v, bytes=%v", err, data)
 		return
 	}
-	ilog.Debugf("Receiving peer infos: %v, from=%v", resp, from.Pretty())
+	ilog.Debugf("Receiving peer infos: %v, from=%v", resp, from.String())
 	for _, peerInfo := range resp.Peers {
 		if len(peerInfo.Addrs) > 0 {
 			pid, err := peer.Decode(peerInfo.Id)
@@ -950,7 +950,7 @@ func (pm *PeerManager) PutPeerToBlack(id string) {
 // PutPIDToBlack puts the PID and corresponding ip to black list.
 func (pm *PeerManager) PutPIDToBlack(pid peer.ID) {
 	pm.blackMutex.Lock()
-	pm.blackPIDs[pid.Pretty()] = true
+	pm.blackPIDs[pid.String()] = true
 	pm.blackMutex.Unlock()
 
 	for _, ma := range pm.peerStore.Addrs(pid) {
@@ -973,7 +973,7 @@ func (pm *PeerManager) isStreamBlack(s libnet.Stream) bool {
 	pm.blackMutex.RLock()
 	defer pm.blackMutex.RUnlock()
 
-	if pm.blackPIDs[pid.Pretty()] {
+	if pm.blackPIDs[pid.String()] {
 		return true
 	}
 	ma := s.Conn().RemoteMultiaddr().String()
@@ -984,26 +984,26 @@ func (pm *PeerManager) isStreamBlack(s libnet.Stream) bool {
 func (pm *PeerManager) isPIDBlack(pid peer.ID) bool {
 	pm.blackMutex.RLock()
 	defer pm.blackMutex.RUnlock()
-	return pm.blackPIDs[pid.Pretty()]
+	return pm.blackPIDs[pid.String()]
 }
 
 func (pm *PeerManager) recordDialFail(pid peer.ID) {
 	pm.rtMutex.Lock()
 	defer pm.rtMutex.Unlock()
 
-	pm.retryTimes[pid.Pretty()]++
+	pm.retryTimes[pid.String()]++
 }
 
 func (pm *PeerManager) freshPeer(pid peer.ID) {
 	pm.rtMutex.Lock()
 	defer pm.rtMutex.Unlock()
 
-	delete(pm.retryTimes, pid.Pretty())
+	delete(pm.retryTimes, pid.String())
 }
 
 func (pm *PeerManager) isDead(pid peer.ID) bool {
 	pm.rtMutex.RLock()
 	defer pm.rtMutex.RUnlock()
 
-	return pm.retryTimes[pid.Pretty()] > deadPeerRetryTimes
+	return pm.retryTimes[pid.String()] > deadPeerRetryTimes
 }

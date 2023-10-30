@@ -83,7 +83,7 @@ func NewPeer(stream libnet.Stream, pm *PeerManager, direction connDirection) *Pe
 
 // ID return the net id.
 func (p *Peer) ID() string {
-	return p.id.Pretty()
+	return p.id.String()
 }
 
 func (p *Peer) IsOutbound() bool {
