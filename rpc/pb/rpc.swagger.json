@@ -37,6 +37,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "The message defines the transaction request.",
             "in": "body",
             "required": true,
             "schema": {
@@ -109,6 +110,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "The message defines get batch contract storage request.",
             "in": "body",
             "required": true,
             "schema": {
@@ -386,6 +388,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "The message defines get contract storage request.",
             "in": "body",
             "required": true,
             "schema": {
@@ -419,6 +422,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "The message defines get contract storage request.",
             "in": "body",
             "required": true,
             "schema": {
@@ -995,6 +999,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "The message defines the transaction request.",
             "in": "body",
             "required": true,
             "schema": {
@@ -1037,6 +1042,7 @@
         "parameters": [
           {
             "name": "body",
+            "description": "The message defines subscribe request.",
             "in": "body",
             "required": true,
             "schema": {
@@ -1080,6 +1086,7 @@
         "pledgedInfo": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/AccountPledgeInfo"
           },
           "title": "pledge information"
@@ -1097,6 +1104,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/AccountItem"
           },
           "title": "permission items"
@@ -1144,6 +1152,7 @@
         "items": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/AccountItem"
           },
           "title": "permission items"
@@ -1284,12 +1293,14 @@
         "txs": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/txpbTx"
           }
         },
         "receipts": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/txpbTxReceipt"
           }
         },
@@ -1380,6 +1391,7 @@
         "details": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/protobufAny"
           }
         }
@@ -1431,6 +1443,7 @@
         "frozenBalances": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbFrozenBalance"
           },
           "title": "frozen balance information"
@@ -1438,6 +1451,7 @@
         "voteInfos": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbVoteInfo"
           },
           "title": "vote information"
@@ -1536,6 +1550,7 @@
         "transactions": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbTransaction"
           },
           "title": "block transactions"
@@ -1549,6 +1564,7 @@
         "blockList": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/blockpbBlock"
           }
         }
@@ -1615,6 +1631,7 @@
         "txList": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbTransaction"
           },
           "title": "transaction"
@@ -1627,6 +1644,7 @@
         "blocktxList": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbBlockTxs"
           }
         }
@@ -1737,6 +1755,7 @@
         "abis": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbContractABI"
           },
           "title": "contract abis"
@@ -1761,6 +1780,7 @@
         "amountLimit": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbAmountLimit"
           },
           "title": "abi amount limt"
@@ -1774,6 +1794,7 @@
         "voteInfos": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbVoteInfo"
           },
           "title": "vote information"
@@ -1841,6 +1862,7 @@
         "keyFields": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/GetBatchContractStorageRequestKeyField"
           },
           "title": "the batch query"
@@ -2075,6 +2097,7 @@
         "frozenBalances": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbFrozenBalance"
           },
           "title": "frozen balance information"
@@ -2119,6 +2142,7 @@
         "datas": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/ListContractStorageResponseData"
           }
         },
@@ -2391,6 +2415,7 @@
         "actions": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbAction"
           },
           "title": "action list"
@@ -2413,6 +2438,7 @@
         "amountLimit": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbAmountLimit"
           },
           "title": "amount limit"
@@ -2460,6 +2486,7 @@
         "actions": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbAction"
           },
           "title": "action list"
@@ -2467,6 +2494,7 @@
         "amountLimit": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbAmountLimit"
           },
           "title": "amount limit"
@@ -2481,6 +2509,7 @@
         "signatures": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbSignature"
           },
           "title": "signatures of signers"
@@ -2492,6 +2521,7 @@
         "publisherSigs": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbSignature"
           },
           "title": "signatures of publisher"
@@ -2566,6 +2596,7 @@
         "receipts": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/rpcpbTxReceiptReceipt"
           },
           "title": "transaction receipts"
@@ -2702,6 +2733,7 @@
         "actions": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/txpbAction"
           }
         },
@@ -2714,6 +2746,7 @@
         "signs": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/sigpbSignature"
           }
         },
@@ -2723,6 +2756,7 @@
         "publishSigns": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/sigpbSignature"
           }
         },
@@ -2741,6 +2775,7 @@
         "amountLimit": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/contractAmount"
           }
         },
@@ -2780,6 +2815,7 @@
         "receipts": {
           "type": "array",
           "items": {
+            "type": "object",
             "$ref": "#/definitions/txpbReceipt"
           }
         }
