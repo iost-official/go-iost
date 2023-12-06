@@ -18,7 +18,7 @@ func TestIsPortAvailable(t *testing.T) {
 func TestParseMultiaddr(t *testing.T) {
 	peerID, addr, err := parseMultiaddr("/ip4/127.0.0.1/tcp/1111/ipfs/Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM")
 	assert.Nil(t, err)
-	assert.Equal(t, "Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM", peerID.Pretty())
+	assert.Equal(t, "Qmb6ib8i3B95HuGRoC2KTy5dzxeP4LLYQkxPUiGFiiiUtM", peerID.String())
 	assert.Equal(t, "/ip4/127.0.0.1/tcp/1111", addr.String())
 }
 
