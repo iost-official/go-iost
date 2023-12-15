@@ -146,6 +146,14 @@ type SortedTxMap struct {
 func compareTx(a, b any) int {
 	txa := a.(*tx.Tx)
 	txb := b.(*tx.Tx)
+	isSimpleTransferA := len(txa.Actions) == 1 && txa.Actions[0].Contract == "token.iost"
+	isSimpleTransferB := len(txb.Actions) == 1 && txb.Actions[0].Contract == "token.iost"
+	if isSimpleTransferA && !isSimpleTransferB {
+		return 1
+	}
+	if !isSimpleTransferA && isSimpleTransferB {
+		return -1
+	}
 	if txa.GasRatio == txb.GasRatio && txb.Time == txa.Time {
 		return bytes.Compare(txa.Hash(), txb.Hash())
 	}

@@ -254,6 +254,8 @@ message NodeInfoResponse {
     string code_version = 5;
     // server time
     int64 server_time = 6;
+    // tx pool size
+    int64 tx_pool_size = 7;
 }
 
 // The message defines transaction amount limit struct.

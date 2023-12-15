@@ -66,6 +66,7 @@ func NewAPIService(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *com
 
 // GetNodeInfo returns information abount node.
 func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.NodeInfoResponse, error) {
+	pendingTx, _ := as.txpool.PendingTx()
 	res := &rpcpb.NodeInfoResponse{
 		BuildTime:   global.BuildTime,
 		GitHash:     global.GitHash,
@@ -73,6 +74,7 @@ func (as *APIService) GetNodeInfo(context.Context, *rpcpb.EmptyRequest) (*rpcpb.
 		Mode:        common.Mode(),
 		Network:     &rpcpb.NetworkInfo{},
 		ServerTime:  time.Now().UnixNano(),
+		TxPoolSize:  int64(pendingTx.Size()),
 	}
 
 	p2pNeighbors := as.p2pService.GetAllNeighbors()

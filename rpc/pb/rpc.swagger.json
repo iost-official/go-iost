@@ -2209,6 +2209,11 @@
           "type": "string",
           "format": "int64",
           "title": "server time"
+        },
+        "txPoolSize": {
+          "type": "string",
+          "format": "int64",
+          "title": "tx pool size"
         }
       },
       "description": "The message containing the node's information."
