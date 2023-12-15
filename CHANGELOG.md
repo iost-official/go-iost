@@ -1,3 +1,8 @@
+## v3.11.0
+Fri Dec 15 12:59:23 CST 2023
+
+- prioritize transfer tx in tx pool
+
 ## v3.10.1
 Tue Aug 22 21:03:12 CST 2023
 
