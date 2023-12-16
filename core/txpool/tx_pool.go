@@ -148,7 +148,7 @@ func (pool *TxPImpl) initBlockTx() {
 }
 
 func (pool *TxPImpl) verifyTx(t *tx.Tx) error {
-	isSimpleTransfer := len(t.Actions) == 1 && t.Actions[0].Contract == "token.iost"
+	isSimpleTransfer := len(t.Actions) == 1 && t.Actions[0].Contract == "token.iost" && len(t.Actions[0].Data) <= 70
 	if isSimpleTransfer {
 		if pool.pendingTx.Size() > maxCacheTxs {
 			return ErrCacheFull

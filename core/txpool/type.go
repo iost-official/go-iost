@@ -148,6 +148,14 @@ func compareTx(a, b any) int {
 	txb := b.(*tx.Tx)
 	isSimpleTransferA := len(txa.Actions) == 1 && txa.Actions[0].Contract == "token.iost"
 	isSimpleTransferB := len(txb.Actions) == 1 && txb.Actions[0].Contract == "token.iost"
+	if isSimpleTransferA && isSimpleTransferB {
+		if len(txa.Actions[0].Data) < len(txb.Actions[0].Data) {
+			return 1
+		}
+		if len(txa.Actions[0].Data) > len(txb.Actions[0].Data) {
+			return -1
+		}
+	}
 	if isSimpleTransferA && !isSimpleTransferB {
 		return 1
 	}
