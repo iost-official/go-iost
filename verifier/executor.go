@@ -194,6 +194,9 @@ L:
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
+		if len(blk.Txs) >= 50 {
+			break L
+		}
 		blockGasLimit -= r.GasUsage
 	}
 	blk.Head.Info = []byte(`{}`) // for legacy reasons. remove it in later version

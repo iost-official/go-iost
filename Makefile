@@ -5,7 +5,7 @@ GO_INSTALL := $(GO) install
 
 PROJECT_NAME := $(shell basename "$(PWD)")
 BUILDER_VERSION = 3.11.0
-VERSION = 3.11.3
+VERSION = 3.11.4
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
