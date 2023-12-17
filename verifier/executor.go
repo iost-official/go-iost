@@ -110,6 +110,7 @@ func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isola
 	to := time.Now().Add(c.Timeout)
 	blockGasLimit := common.MaxBlockGasLimit
 
+	senderSet := map[string]struct{}{}
 L:
 	for tn.Before(to) {
 		isolator.ClearTx()
@@ -156,6 +157,11 @@ L:
 		if t.GasLimit > blockGasLimit {
 			continue L
 		}
+		_, ok := senderSet[t.Publisher]
+		if ok {
+			continue L
+		}
+		senderSet[t.Publisher] = struct{}{}
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
