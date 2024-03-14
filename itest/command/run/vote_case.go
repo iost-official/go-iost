@@ -2,36 +2,36 @@ package run
 
 import (
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // VoteCaseCommand is the command of vote test case
-var VoteCaseCommand = cli.Command{
-	Name:      "vote_case",
-	ShortName: "v_case",
-	Usage:     "run VoteProducer test case",
-	Flags:     VoteCaseFlags,
-	Action:    VoteCaseAction,
+var VoteCaseCommand = &cli.Command{
+	Name:    "vote_case",
+	Aliases: []string{"v_case"},
+	Usage:   "run VoteProducer test case",
+	Flags:   VoteCaseFlags,
+	Action:  VoteCaseAction,
 }
 
 // VoteCaseFlags is the flags of vote test case
 var VoteCaseFlags = []cli.Flag{
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "number, n",
 		Value: 1000,
 		Usage: "number of transaction",
 	},
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "pnumber, pn",
 		Value: 1,
 		Usage: "number of producer",
 	},
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "account, a",
 		Value: "accounts.json",
 		Usage: "load accounts from `FILE`",
 	},
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "output, o",
 		Value: "accounts.json",
 		Usage: "output of account information",
@@ -44,8 +44,8 @@ var VoteCaseAction = func(c *cli.Context) error {
 	output := c.String("output")
 	tnum := c.Int("number")
 	punm := c.Int("pnumber")
-	keysfile := c.GlobalString("keys")
-	configfile := c.GlobalString("config")
+	keysfile := c.String("keys")
+	configfile := c.String("config")
 
 	it, err := itest.Load(keysfile, configfile)
 	if err != nil {

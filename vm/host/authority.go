@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	secp "github.com/decred/dcrd/dcrec/secp256k1/v4"
-	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/iost-official/go-iost/v3/account"
+	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/vm/database"
@@ -119,7 +119,8 @@ func auth(vi *database.Visitor, id, permission string, authMap, reenter map[stri
 				continue
 			}
 			pkBytes2 := pubKey.SerializeUncompressed()[1:]
-			pkHash := crypto.Keccak256(pkBytes2)
+			// TODO: test this
+			pkHash := common.Sha3(pkBytes2)
 			addr := "0x" + hex.EncodeToString(pkHash[12:32])
 			if id == addr {
 				return true, c

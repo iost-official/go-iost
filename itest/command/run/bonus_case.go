@@ -7,18 +7,18 @@ import (
 	"sync"
 
 	"github.com/bitly/go-simplejson"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/itest"
 )
 
 // BonusCaseCommand is the command of account test case
-var BonusCaseCommand = cli.Command{
-	Name:      "bonus_case",
-	ShortName: "b_case",
-	Usage:     "run bonus test case",
-	Action:    BonusCaseAction,
+var BonusCaseCommand = &cli.Command{
+	Name:    "bonus_case",
+	Aliases: []string{"b_case"},
+	Usage:   "run bonus test case",
+	Action:  BonusCaseAction,
 }
 
 func countBlockProducedBy(it *itest.ITest, acc string, number int64) (cnt int64, err error) {
@@ -74,9 +74,9 @@ func countBlockProducedBy(it *itest.ITest, acc string, number int64) (cnt int64,
 
 // BonusCaseAction is the action of Bonus test case
 var BonusCaseAction = func(c *cli.Context) error {
-	acc := c.GlobalString("aname")
-	keysfile := c.GlobalString("keys")
-	configfile := c.GlobalString("config")
+	acc := c.String("aname")
+	keysfile := c.String("keys")
+	configfile := c.String("config")
 
 	it, err := itest.Load(keysfile, configfile)
 	if err != nil {

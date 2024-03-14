@@ -3,10 +3,10 @@ package create
 import (
 	"github.com/iost-official/go-iost/v3/crypto"
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
-var keyCommand = cli.Command{
+var keyCommand = &cli.Command{
 	Name:   "key",
 	Usage:  "create key pair for test",
 	Flags:  keyFlags,
@@ -14,17 +14,17 @@ var keyCommand = cli.Command{
 }
 
 var keyFlags = []cli.Flag{
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "number, n",
 		Value: 100,
 		Usage: "number of key pair",
 	},
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "algorithm, a",
 		Value: "ed25519",
 		Usage: "the algorithm for creating key pair, ed25519 or secp256k1",
 	},
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "output, o",
 		Value: "keys.json",
 		Usage: "the output file name for creating key pair",

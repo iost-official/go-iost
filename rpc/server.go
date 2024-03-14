@@ -18,8 +18,7 @@ import (
 	"github.com/rs/cors"
 	"golang.org/x/net/netutil"
 
-	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/recovery"
+	grpc_recovery "github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/recovery"
 	"github.com/grpc-ecosystem/grpc-gateway/v2/runtime"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -61,17 +60,13 @@ func New(tp txpool.TxPool, chainBase *chainbase.ChainBase, config *common.Config
 		enable:       config.RPC.Enable,
 	}
 	s.grpcServer = grpc.NewServer(
-		grpc.UnaryInterceptor(
-			grpc_middleware.ChainUnaryServer(
-				metricsUnaryMiddleware,
-				grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(p)),
-			),
+		grpc.ChainUnaryInterceptor(
+			metricsUnaryMiddleware,
+			grpc_recovery.UnaryServerInterceptor(grpc_recovery.WithRecoveryHandler(p)),
 		),
-		grpc.StreamInterceptor(
-			grpc_middleware.ChainStreamServer(
-				metricsStreamMiddleware,
-				grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(p)),
-			),
+		grpc.ChainStreamInterceptor(
+			metricsStreamMiddleware,
+			grpc_recovery.StreamServerInterceptor(grpc_recovery.WithRecoveryHandler(p)),
 		),
 		grpc.MaxConcurrentStreams(maxConcurrentStreams))
 	apiService := NewAPIService(tp, chainBase, config, p2pService, s.quitCh)

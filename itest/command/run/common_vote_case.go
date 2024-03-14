@@ -5,21 +5,21 @@ import (
 
 	"github.com/bitly/go-simplejson"
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // CommonVoteCaseCommand is the command of common vote test case
-var CommonVoteCaseCommand = cli.Command{
-	Name:      "common_vote_case",
-	ShortName: "cv_case",
-	Usage:     "run common VoteProducer test case",
-	Flags:     CommonVoteCaseFlags,
-	Action:    CommonVoteCaseAction,
+var CommonVoteCaseCommand = &cli.Command{
+	Name:    "common_vote_case",
+	Aliases: []string{"cv_case"},
+	Usage:   "run common VoteProducer test case",
+	Flags:   CommonVoteCaseFlags,
+	Action:  CommonVoteCaseAction,
 }
 
 // CommonVoteCaseFlags is the flags of vote test case
 var CommonVoteCaseFlags = []cli.Flag{
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "account, a",
 		Value: "accounts.json",
 		Usage: "load accounts from `FILE`",
@@ -29,8 +29,8 @@ var CommonVoteCaseFlags = []cli.Flag{
 // CommonVoteCaseAction is the action of vote test case
 var CommonVoteCaseAction = func(c *cli.Context) error {
 	afile := c.String("account")
-	keysfile := c.GlobalString("keys")
-	configfile := c.GlobalString("newVoteConfig")
+	keysfile := c.String("keys")
+	configfile := c.String("newVoteConfig")
 	it, err := itest.Load(keysfile, configfile)
 	if err != nil {
 		return err

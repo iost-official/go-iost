@@ -2,36 +2,36 @@ package run
 
 import (
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // ContractCaseCommand is the command of contract test case
-var ContractCaseCommand = cli.Command{
-	Name:      "contract_case",
-	ShortName: "c_case",
-	Usage:     "run contract test case",
-	Flags:     ContractCaseFlags,
-	Action:    ContractCaseAction,
+var ContractCaseCommand = &cli.Command{
+	Name:    "contract_case",
+	Aliases: []string{"c_case"},
+	Usage:   "run contract test case",
+	Flags:   ContractCaseFlags,
+	Action:  ContractCaseAction,
 }
 
 // ContractCaseFlags ...
 var ContractCaseFlags = []cli.Flag{
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "number, n",
 		Value: 1000,
 		Usage: "number of transaction",
 	},
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "account, a",
 		Value: "accounts.json",
 		Usage: "load accounts from `FILE`",
 	},
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "output, o",
 		Value: "accounts.json",
 		Usage: "output of account information",
 	},
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "memo, m",
 		Value: 0,
 		Usage: "The size of a random memo message that would be contained in the transaction",
@@ -43,10 +43,10 @@ var ContractCaseAction = func(c *cli.Context) error {
 	afile := c.String("account")
 	output := c.String("output")
 	tnum := c.Int("number")
-	keysfile := c.GlobalString("keys")
-	configfile := c.GlobalString("config")
-	codefile := c.GlobalString("code")
-	abifile := c.GlobalString("abi")
+	keysfile := c.String("keys")
+	configfile := c.String("config")
+	codefile := c.String("code")
+	abifile := c.String("abi")
 	memoSize := c.Int("memo")
 
 	it, err := itest.Load(keysfile, configfile)

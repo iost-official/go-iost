@@ -14,26 +14,26 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/itest"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // BenchmarkAccountCommand is the subcommand for benchmark.
-var BenchmarkAccountCommand = cli.Command{
-	Name:      "benchmarkAccount",
-	ShortName: "benchA",
-	Usage:     "Run account benchmark by given tps",
-	Flags:     BenchmarkAccountFlags,
-	Action:    BenchmarkAccountAction,
+var BenchmarkAccountCommand = &cli.Command{
+	Name:    "benchmarkAccount",
+	Aliases: []string{"benchA"},
+	Usage:   "Run account benchmark by given tps",
+	Flags:   BenchmarkAccountFlags,
+	Action:  BenchmarkAccountAction,
 }
 
 // BenchmarkAccountFlags is the list of flags for benchmark.
 var BenchmarkAccountFlags = []cli.Flag{
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "tps",
 		Value: 20,
 		Usage: "The expected ratio of transactions per second",
 	},
-	cli.BoolFlag{
+	&cli.BoolFlag{
 		Name:  "check",
 		Usage: "if check receipt",
 	},
@@ -175,11 +175,11 @@ var BenchmarkAccountAction = func(c *cli.Context) error {
 	itest.InitPledge = "1000"
 	itest.InitRAM = "3000"
 	//ilog.SetLevel(ilog.LevelDebug)
-	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
+	it, err := itest.Load(c.String("keys"), c.String("config"))
 	if err != nil {
 		return err
 	}
-	accountFile := c.GlobalString("account")
+	accountFile := c.String("account")
 	accounts, err := itest.LoadAccounts(accountFile)
 	if err != nil {
 		ilog.Warnf("load accounts from %v failed, creating...%v", accountFile, err)

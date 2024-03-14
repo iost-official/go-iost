@@ -6,26 +6,26 @@ import (
 
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // AccountRoundCommand is the command of account test round
-var AccountRoundCommand = cli.Command{
-	Name:      "account_round",
-	ShortName: "a_round",
-	Usage:     "run account test round",
-	Flags:     AccountRoundFlags,
-	Action:    AccountRoundAction,
+var AccountRoundCommand = &cli.Command{
+	Name:    "account_round",
+	Aliases: []string{"a_round"},
+	Usage:   "run account test round",
+	Flags:   AccountRoundFlags,
+	Action:  AccountRoundAction,
 }
 
 // AccountRoundFlags is the list of flags for account round.
 var AccountRoundFlags = []cli.Flag{
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "start",
 		Value: 1,
 		Usage: "start round",
 	},
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "round",
 		Value: 100,
 		Usage: "round number",
@@ -39,12 +39,12 @@ var AccountRoundAction = func(c *cli.Context) error {
 	itest.InitPledge = "1000"
 	itest.InitRAM = "3000"
 	logger := ilog.New()
-	fileWriter := ilog.NewFileWriter(c.GlobalString("log"))
+	fileWriter := ilog.NewFileWriter(c.String("log"))
 	fileWriter.SetLevel(ilog.LevelInfo)
 	logger.AddWriter(fileWriter)
 	ilog.InitLogger(logger)
-	keysfile := c.GlobalString("keys")
-	configfile := c.GlobalString("config")
+	keysfile := c.String("keys")
+	configfile := c.String("config")
 
 	it, err := itest.Load(keysfile, configfile)
 	if err != nil {

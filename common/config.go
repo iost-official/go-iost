@@ -6,7 +6,7 @@ import (
 
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/spf13/viper"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 // Constant of limit

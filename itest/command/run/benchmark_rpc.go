@@ -10,21 +10,21 @@ import (
 
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // BenchmarkRPCCommand is the subcommand for benchmark.
-var BenchmarkRPCCommand = cli.Command{
-	Name:      "benchmark_rpc",
-	ShortName: "bench_rpc",
-	Usage:     "Run benchmark rpc by given tps",
-	Flags:     BenchmarkRPCFlags,
-	Action:    BenchmarkRPCAction,
+var BenchmarkRPCCommand = &cli.Command{
+	Name:    "benchmark_rpc",
+	Aliases: []string{"bench_rpc"},
+	Usage:   "Run benchmark rpc by given tps",
+	Flags:   BenchmarkRPCFlags,
+	Action:  BenchmarkRPCAction,
 }
 
 // BenchmarkRPCFlags is the list of flags for benchmark.
 var BenchmarkRPCFlags = []cli.Flag{
-	cli.Float64Flag{
+	&cli.Float64Flag{
 		Name:  "interval",
 		Value: 0.2,
 		Usage: "The interval (in second) between every call",
@@ -172,7 +172,7 @@ func loopGetAccount(it *itest.ITest, interval float64) {
 
 // BenchmarkRPCAction is the action of benchmark.
 var BenchmarkRPCAction = func(c *cli.Context) error {
-	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
+	it, err := itest.Load(c.String("keys"), c.String("config"))
 	if err != nil {
 		return err
 	}

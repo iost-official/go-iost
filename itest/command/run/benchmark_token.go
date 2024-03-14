@@ -16,26 +16,26 @@ import (
 	"github.com/iost-official/go-iost/v3/core/tx"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // BenchmarkTokenCommand is the subcommand for benchmark.
-var BenchmarkTokenCommand = cli.Command{
-	Name:      "benchmarkToken",
-	ShortName: "benchT",
-	Usage:     "Run token benchmark by given tps",
-	Flags:     BenchmarkTokenFlags,
-	Action:    BenchmarkTokenAction,
+var BenchmarkTokenCommand = &cli.Command{
+	Name:    "benchmarkToken",
+	Aliases: []string{"benchT"},
+	Usage:   "Run token benchmark by given tps",
+	Flags:   BenchmarkTokenFlags,
+	Action:  BenchmarkTokenAction,
 }
 
 // BenchmarkTokenFlags is the list of flags for benchmark.
 var BenchmarkTokenFlags = []cli.Flag{
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "tps",
 		Value: 50,
 		Usage: "The expected ratio of transactions per second",
 	},
-	cli.BoolFlag{
+	&cli.BoolFlag{
 		Name:  "check",
 		Usage: "if check receipt",
 	},
@@ -71,17 +71,17 @@ var BenchmarkTokenAction = func(c *cli.Context) error {
 	itest.InitPledge = "1000"
 	itest.InitRAM = "3000"
 	logger := ilog.New()
-	fileWriter := ilog.NewFileWriter(c.GlobalString("log"))
+	fileWriter := ilog.NewFileWriter(c.String("log"))
 	fileWriter.SetLevel(ilog.LevelInfo)
 	logger.AddWriter(fileWriter)
 	ilog.InitLogger(logger)
 
 	//ilog.SetLevel(ilog.LevelDebug)
-	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
+	it, err := itest.Load(c.String("keys"), c.String("config"))
 	if err != nil {
 		return err
 	}
-	accountFile := c.GlobalString("account")
+	accountFile := c.String("account")
 	t0 := time.Now()
 	accounts, err := itest.LoadAccounts(accountFile)
 	if err != nil {

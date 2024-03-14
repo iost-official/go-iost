@@ -3,12 +3,12 @@ package database
 import (
 	"testing"
 
-	"github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
 func TestLRU(t *testing.T) {
-	lru0, err := lru.New(5)
+	lru0, err := lru.New[int, int](5)
 	if err != nil {
 		t.Fatal(err)
 	}

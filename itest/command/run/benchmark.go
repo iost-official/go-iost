@@ -9,31 +9,31 @@ import (
 
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/itest"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // BenchmarkCommand is the subcommand for benchmark.
-var BenchmarkCommand = cli.Command{
-	Name:      "benchmark",
-	ShortName: "bench",
-	Usage:     "Run benchmark by given tps",
-	Flags:     BenchmarkFlags,
-	Action:    BenchmarkAction,
+var BenchmarkCommand = &cli.Command{
+	Name:    "benchmark",
+	Aliases: []string{"bench"},
+	Usage:   "Run benchmark by given tps",
+	Flags:   BenchmarkFlags,
+	Action:  BenchmarkAction,
 }
 
 // BenchmarkFlags is the list of flags for benchmark.
 var BenchmarkFlags = []cli.Flag{
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "tps",
 		Value: 100,
 		Usage: "The expected ratio of transactions per second",
 	},
-	cli.StringFlag{
+	&cli.StringFlag{
 		Name:  "type",
 		Value: "t",
 		Usage: "The type of transaction, should be one of ['t'/'transfer', 'c'/'contract']",
 	},
-	cli.IntFlag{
+	&cli.IntFlag{
 		Name:  "memo, m",
 		Value: 0,
 		Usage: "The size of a random memo message that would be contained in the transaction",
@@ -53,7 +53,7 @@ const (
 
 // BenchmarkAction is the action of benchmark.
 var BenchmarkAction = func(c *cli.Context) error {
-	it, err := itest.Load(c.GlobalString("keys"), c.GlobalString("config"))
+	it, err := itest.Load(c.String("keys"), c.String("config"))
 	if err != nil {
 		return err
 	}
@@ -65,7 +65,7 @@ var BenchmarkAction = func(c *cli.Context) error {
 		txType = TransferTx
 	case "c", "contract":
 		txType = ContractTransferTx
-		contract, err := itest.LoadContract(c.GlobalString("code"), c.GlobalString("abi"))
+		contract, err := itest.LoadContract(c.String("code"), c.String("abi"))
 		if err != nil {
 			return err
 		}
@@ -92,7 +92,7 @@ var BenchmarkAction = func(c *cli.Context) error {
 		return fmt.Errorf("wrong transaction type: %v", txType)
 	}
 
-	accountFile := c.GlobalString("account")
+	accountFile := c.String("account")
 	accounts, err := itest.LoadAccounts(accountFile)
 	if err != nil {
 		if err := AccountCaseAction(c); err != nil {

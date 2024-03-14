@@ -1,13 +1,13 @@
 package database
 
 import (
-	lru "github.com/hashicorp/golang-lru"
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/iost-official/go-iost/v3/core/version"
 )
 
 // LRU lru cache
 type LRU struct {
-	cache *lru.Cache
+	cache *lru.Cache[string, string]
 	db    database
 }
 
@@ -20,7 +20,7 @@ func NewLRU(length int, db database) *LRU {
 		}
 	}
 
-	c, err := lru.New(length)
+	c, err := lru.New[string, string](length)
 	if err != nil {
 		panic(err)
 	}
@@ -48,7 +48,7 @@ func (m *LRU) Get(key string) (value string) {
 		}
 		return value
 	}
-	return v.(string)
+	return v
 }
 
 // Put put kv to cache
