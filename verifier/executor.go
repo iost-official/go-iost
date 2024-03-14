@@ -106,11 +106,13 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 
 // nolint:gocyclo
 func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
+	blockTxLimit := 50
+	blockGasLimit := common.MaxBlockGasLimit
+	txLimitSameSender := 10
 	var tn time.Time
 	to := time.Now().Add(c.Timeout)
-	blockGasLimit := common.MaxBlockGasLimit
 
-	senderSet := map[string]struct{}{}
+	senderCount := make(map[string]int)
 L:
 	for tn.Before(to) {
 		isolator.ClearTx()
@@ -157,11 +159,11 @@ L:
 		if t.GasLimit > blockGasLimit {
 			continue L
 		}
-		_, ok := senderSet[t.Publisher]
-		if ok {
+		thisSenderCount := senderCount[t.Publisher]
+		if thisSenderCount >= txLimitSameSender {
 			continue L
 		}
-		senderSet[t.Publisher] = struct{}{}
+		senderCount[t.Publisher] = thisSenderCount + 1
 		err := isolator.PrepareTx(t, limit)
 		if err != nil {
 			ilog.Errorf("PrepareTx failed. tx %v limit %v err %v", t.String(), limit, err)
@@ -194,7 +196,7 @@ L:
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
-		if len(blk.Txs) >= 50 {
+		if len(blk.Txs) >= blockTxLimit {
 			break L
 		}
 		blockGasLimit -= r.GasUsage
