@@ -1,3 +1,14 @@
+## v3.11.5
+Fri Jun 28 06:30:05 UTC 2024
+
+Compatible upgrade.
+
+Add iost token balance string with full precision
+
+- Rpc GetAccount add field  “BalanceString”
+- Protobuf upgrade
+- Grpc upgrade
+
 ## v3.11.4
 Sun Dec 17 22:03:09 CST 2023
 

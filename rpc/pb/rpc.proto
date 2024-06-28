@@ -694,6 +694,9 @@ message Account {
 
     // vote information
     repeated VoteInfo vote_infos = 8;
+
+    // string with full precision
+    string balance_string = 9;
 }
 
 // The message defines the get account request.

@@ -38,7 +38,7 @@ type Client struct {
 // GetGRPC return the underlying grpc client
 func (c *Client) GetGRPC() (rpcpb.ApiServiceClient, error) {
 	c.o.Do(func() {
-		conn, err := grpc.Dial(c.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(c.Addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			panic(err)
 		}

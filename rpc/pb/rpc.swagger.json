@@ -1455,6 +1455,10 @@
             "$ref": "#/definitions/rpcpbVoteInfo"
           },
           "title": "vote information"
+        },
+        "balanceString": {
+          "type": "string",
+          "title": "string with full precision"
         }
       },
       "description": "The message defines account struct."

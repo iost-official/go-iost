@@ -23,7 +23,7 @@ func (c *GrpcClient) Addr() string {
 func InitClients(addrs []string) {
 	clients = make([]*GrpcClient, len(addrs))
 	for i, addr := range addrs {
-		conn, err := grpc.Dial(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		conn, err := grpc.NewClient(addr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
 			panic(err)
 		}

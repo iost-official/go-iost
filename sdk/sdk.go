@@ -140,7 +140,7 @@ func (s *IOSTDevSDK) Connected() bool {
 func (s *IOSTDevSDK) Connect() (err error) {
 	if s.rpcConn == nil {
 		s.log("Connecting to server", s.server, "...")
-		s.rpcConn, err = grpc.Dial(s.server, grpc.WithTransportCredentials(insecure.NewCredentials()))
+		s.rpcConn, err = grpc.NewClient(s.server, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	}
 	return
 }

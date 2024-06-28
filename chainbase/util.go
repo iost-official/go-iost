@@ -15,7 +15,7 @@ import (
 // SPVFetchInitialBlockFromSeed get the most recent voting block older than the 'syncFrom' block
 // if 'syncFrom' is 0, fetch the most recent voting block
 func SPVFetchInitialBlockFromSeed(server string, syncFrom int64) (*block.Block, error) {
-	rpcConn, err := grpc.Dial(server, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	rpcConn, err := grpc.NewClient(server, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
 	}
