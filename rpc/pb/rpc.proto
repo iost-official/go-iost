@@ -613,8 +613,6 @@ message Account {
     string name = 1;
     // account balance
     double balance = 2;
-    // string with full precision
-    string balance_string = 3;
 
     // The message defines account pledged coin information.
     message PledgeInfo {
@@ -639,7 +637,7 @@ message Account {
     }
 
     // gas information
-    GasInfo gas_info = 4;
+    GasInfo gas_info = 3;
 
     // The message defines account ram information.
     message RAMInfo {
@@ -652,7 +650,7 @@ message Account {
     }
 
     // ram information
-    RAMInfo ram_info = 5;
+    RAMInfo ram_info = 4;
 
     // The message defines permission item.
     message Item {
@@ -687,15 +685,18 @@ message Account {
     }
 
     // account permission
-    map<string, Permission> permissions = 6;
+    map<string, Permission> permissions = 5;
     // account groups
-    map<string, Group> groups = 7;
+    map<string, Group> groups = 6;
 
     // frozen balance information
-    repeated FrozenBalance frozen_balances = 8;
+    repeated FrozenBalance frozen_balances = 7;
 
     // vote information
-    repeated VoteInfo vote_infos = 9;
+    repeated VoteInfo vote_infos = 8;
+
+    // string with full precision
+    string balance_string = 9;
 }
 
 // The message defines the get account request.
