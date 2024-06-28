@@ -4,6 +4,7 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
+	"math/big"
 )
 
 var errOverflow = errors.New("overflow error")
@@ -17,6 +18,13 @@ type Decimal struct {
 	Value int64
 	Scale int
 	Err   error
+}
+
+// FloatString ...
+func (f *Decimal) FloatString() string {
+	numerator := big.NewInt(f.Value)
+	denominator := big.NewInt(int64(math.Pow10(f.Scale)))
+	return new(big.Rat).SetFrac(numerator, denominator).FloatString(f.Scale)
 }
 
 // Float64 ...

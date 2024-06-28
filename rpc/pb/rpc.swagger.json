@@ -1418,6 +1418,10 @@
           "format": "double",
           "title": "account balance"
         },
+        "balanceString": {
+          "type": "string",
+          "title": "string with full precision"
+        },
         "gasInfo": {
           "$ref": "#/definitions/AccountGasInfo",
           "title": "gas information"

@@ -348,7 +348,9 @@ func (as *APIService) GetAccount(ctx context.Context, req *rpcpb.GetAccountReque
 	frozen := dbVisitor.AllFreezedTokenBalanceDecimal("iost", req.GetName())
 	unfrozen, stillFrozen := as.getUnfrozenToken(frozen, req.ByLongestChain)
 	ret.FrozenBalances = stillFrozen
-	ret.Balance = unfrozen.Add(balance).Float64()
+	tmpBalance := unfrozen.Add(balance)
+	ret.Balance = tmpBalance.Float64()
+	ret.BalanceString = strings.TrimRight(strings.TrimRight(tmpBalance.FloatString(), "0"), ".")
 
 	voteInfo := dbVisitor.GetAccountVoteInfo(req.GetName())
 	for _, v := range voteInfo {

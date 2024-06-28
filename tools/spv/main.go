@@ -14,7 +14,7 @@ import (
 func testVerifier() error {
 	verifier := Verifier{}
 	server := "54.180.196.80:30002"
-	rpcConn, err := grpc.Dial(server, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	rpcConn, err := grpc.NewClient(server, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return err
 	}
