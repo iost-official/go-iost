@@ -56,7 +56,7 @@ func (m *TokenHandler) TokenBalance(tokenName, acc string) int64 {
 // TokenBalanceDecimal get token balance of acc
 func (m *TokenHandler) TokenBalanceDecimal(tokenName, acc string) *common.Decimal {
 	ib := m.TokenBalance(tokenName, acc)
-	return &common.Decimal{Value: ib, Scale: m.Decimal(tokenName)}
+	return &common.Decimal{Value: ib, Scale: m.TokenDecimal(tokenName)}
 }
 
 // FreezedTokenBalance get freezed token balance of acc
@@ -102,7 +102,7 @@ func (m *TokenHandler) AllFreezedTokenBalanceDecimal(tokenName, acc string) []Fr
 	freezeList := m.AllFreezedTokenBalance(tokenName, acc)
 	result := make([]FreezeItemDecimal, 0)
 	for _, item := range freezeList {
-		result = append(result, FreezeItemDecimal{Amount: common.Decimal{Value: item.Amount, Scale: m.Decimal(tokenName)}, Ftime: item.Ftime})
+		result = append(result, FreezeItemDecimal{Amount: common.Decimal{Value: item.Amount, Scale: m.TokenDecimal(tokenName)}, Ftime: item.Ftime})
 	}
 	return result
 }
@@ -110,7 +110,7 @@ func (m *TokenHandler) AllFreezedTokenBalanceDecimal(tokenName, acc string) []Fr
 // FreezedTokenBalanceDecimal get token balance of acc
 func (m *TokenHandler) FreezedTokenBalanceDecimal(tokenName, acc string) *common.Decimal {
 	ib := m.FreezedTokenBalance(tokenName, acc)
-	return &common.Decimal{Value: ib, Scale: m.Decimal(tokenName)}
+	return &common.Decimal{Value: ib, Scale: m.TokenDecimal(tokenName)}
 }
 
 // SetTokenBalance set token balance of acc, used for test
@@ -120,15 +120,15 @@ func (m *TokenHandler) SetTokenBalance(tokenName, acc string, amount int64) {
 
 // SetTokenBalanceDecimal set token balance of acc, used for test
 func (m *TokenHandler) SetTokenBalanceDecimal(tokenName, acc string, amountStr string) {
-	amountNumber, err := common.NewDecimalFromString(amountStr, m.Decimal(tokenName))
+	amountNumber, err := common.NewDecimalFromString(amountStr, m.TokenDecimal(tokenName))
 	if err != nil {
-		panic(errors.New("construct decimal number failed. str = " + amountStr + ", decimal = " + fmt.Sprintf("%d", m.Decimal(tokenName))))
+		panic(errors.New("construct decimal number failed. str = " + amountStr + ", decimal = " + fmt.Sprintf("%d", m.TokenDecimal(tokenName))))
 	}
 	m.db.Put(m.balanceKey(tokenName, acc), MustMarshal(amountNumber.Value))
 }
 
-// Decimal get decimal in token info
-func (m *TokenHandler) Decimal(tokenName string) int {
+// TokenDecimal get decimal in token info
+func (m *TokenHandler) TokenDecimal(tokenName string) int {
 	decimalRaw := m.db.Get(m.decimalKey(tokenName))
 	decimal, ok := Unmarshal(decimalRaw).(int64)
 	if !ok {

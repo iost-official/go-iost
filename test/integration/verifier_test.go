@@ -198,8 +198,8 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance1 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance1 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "990")
 			So(balance1.String(), ShouldEqual, "10")
 
@@ -208,8 +208,8 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance1 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance1 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "980")
 			So(balance1.String(), ShouldEqual, "20")
 
@@ -218,8 +218,8 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance1 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance1 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "971")
 			So(balance1.String(), ShouldEqual, "29")
 
@@ -233,8 +233,8 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance1 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance1 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "960.9")
 			So(balance1.String(), ShouldEqual, "39.1")
 
@@ -251,7 +251,7 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "1000")
 
 			r, err = s.Call("Contracttransfer", "transferFreeze", fmt.Sprintf(`["%v", "%v", "%v"]`, acc0.ID, acc0.ID, "100"), acc0.ID, acc0.KeyPair)
@@ -259,7 +259,7 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 = common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "900")
 		})
 
@@ -276,7 +276,7 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "900")
 		})
 
@@ -293,7 +293,7 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "900")
 		})
 
@@ -321,8 +321,8 @@ func TestAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance1 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance1 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "880")
 			So(balance1.String(), ShouldEqual, "120")
 		})
@@ -349,9 +349,9 @@ func TestAmountLimit(t *testing.T) {
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
 
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance1 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
-			balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc2.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance1 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc2.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "940")
 			So(balance1.String(), ShouldEqual, "120")
 			So(balance2.String(), ShouldEqual, "940")
@@ -415,8 +415,8 @@ func TestTxAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "990")
 			So(balance2.String(), ShouldEqual, "10")
 		})
@@ -486,8 +486,8 @@ func TestTxAmountLimit(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Code, ShouldEqual, tx.Success)
-			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-			balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+			balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+			balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance0.String(), ShouldEqual, "900")
 			So(balance2.String(), ShouldEqual, "100")
 		})
@@ -726,8 +726,8 @@ func TestGasLimit2(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
 	assert.Equal(t, int64(7441100), r.GasUsage)
-	balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
-	balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
+	balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.TokenDecimal("iost")}
+	balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.TokenDecimal("iost")}
 	assert.Equal(t, "980", balance0.String())
 	assert.Equal(t, "20", balance2.String())
 

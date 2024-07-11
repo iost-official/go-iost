@@ -76,9 +76,9 @@ func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]
 	amountLimit := make(map[string]*common.Decimal)
 	for _, limit := range amountList {
 		if limit.Val == "unlimited" {
-			amountLimit[limit.Token] = &common.Decimal{Value: math.MaxInt64, Scale: h.DB().Decimal(limit.Token)}
+			amountLimit[limit.Token] = &common.Decimal{Value: math.MaxInt64, Scale: h.DB().TokenDecimal(limit.Token)}
 		} else {
-			decimal := h.DB().Decimal(limit.Token)
+			decimal := h.DB().TokenDecimal(limit.Token)
 			if limit.Token == "*" {
 				decimal = 0
 			}
@@ -174,14 +174,14 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 				token = args[0].(string)
 				from := args[1].(string)
 				if !h.IsContract(from) {
-					amount, _ = common.NewDecimalFromString(args[3].(string), h.DB().Decimal(token))
+					amount, _ = common.NewDecimalFromString(args[3].(string), h.DB().TokenDecimal(token))
 				}
 			} else if receipt.FuncName == "token.iost/destroy" {
 				_ = json.Unmarshal([]byte(receipt.Content), &args)
 				token = args[0].(string)
 				from := args[1].(string)
 				if !h.IsContract(from) {
-					amount, _ = common.NewDecimalFromString(args[2].(string), h.DB().Decimal(token))
+					amount, _ = common.NewDecimalFromString(args[2].(string), h.DB().TokenDecimal(token))
 				}
 			}
 			if token != "" && amount.Value >= 0 {

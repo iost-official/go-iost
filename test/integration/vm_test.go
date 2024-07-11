@@ -51,7 +51,7 @@ func Test_callWithAuth(t *testing.T) {
 
 			So(err, ShouldBeNil)
 			So(r.Status.Message, ShouldEqual, "")
-			balance := common.Decimal{Value: s.Visitor.TokenBalance("iost", cname), Scale: s.Visitor.Decimal("iost")}
+			balance := common.Decimal{Value: s.Visitor.TokenBalance("iost", cname), Scale: s.Visitor.TokenDecimal("iost")}
 			So(balance.String(), ShouldEqual, "990")
 		})
 

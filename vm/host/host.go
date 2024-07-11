@@ -156,7 +156,7 @@ func (h *Host) CheckAmountLimit(amountLimit []*contract.Amount) error {
 			return fmt.Errorf("duplicated token in amountLimit: %s", limit.Token)
 		}
 		tokenMap[limit.Token] = true
-		decimal := h.DB().Decimal(limit.Token)
+		decimal := h.DB().TokenDecimal(limit.Token)
 		if limit.Token == "*" {
 			decimal = 0
 		}
