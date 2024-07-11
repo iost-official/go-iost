@@ -32,10 +32,14 @@ const gasMaxIncreaseSeconds = 3 * 24 * 3600
 // so gas production will resume again util the limit.
 
 // GasMinPledgeOfUser Each user must pledge a minimum amount of IOST
-var GasMinPledgeOfUser = common.NewDecimalFromIntWithScale(10, 8)
+func GasMinPledgeOfUser(h *TokenHandler) *common.Decimal {
+	return common.NewDecimalFromIntWithScale(10, h.TokenDecimal("iost"))
+}
 
 // GasMinPledgePerAction One must (un)pledge more than 1 IOST
-var GasMinPledgePerAction = common.NewDecimalFromIntWithScale(1, 8)
+func GasMinPledgePerAction(h *TokenHandler) *common.Decimal {
+	return common.NewDecimalFromIntWithScale(1, h.TokenDecimal("iost"))
+}
 
 // GasImmediateReward immediate reward per IOST
 var GasImmediateReward = common.NewDecimalFromIntWithScale(100000, 2)

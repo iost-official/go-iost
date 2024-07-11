@@ -39,8 +39,9 @@ func pledge(h *host.Host, pledger string, name string, pledgeAmountF *common.Dec
 		// check total pledge is valid
 		oldTotalPledge, cost := h.GasPledgeTotal(name)
 		finalCost.AddAssign(cost)
-		if oldTotalPledge.Sub(unpledgeAmount).LessThan(database.GasMinPledgeOfUser) {
-			return finalCost, fmt.Errorf("unpledge too much (%v - %v) less than %v", oldTotalPledge.String(), unpledgeAmount.String(), database.GasMinPledgeOfUser.String())
+		midPledge := database.GasMinPledgeOfUser(&h.DB().TokenHandler)
+		if oldTotalPledge.Sub(unpledgeAmount).LessThan(midPledge) {
+			return finalCost, fmt.Errorf("unpledge too much (%v - %v) less than %v", oldTotalPledge.String(), unpledgeAmount.String(), midPledge.String())
 		}
 		// check personal pledge
 		pledged, cost := h.GasManager.GasPledge(name, pledger)
@@ -183,8 +184,9 @@ var ( // nolint: deadcode
 			if err != nil || pledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			if pledgeAmount.LessThan(database.GasMinPledgePerAction) {
-				return nil, cost, fmt.Errorf("min pledge num is %d", database.GasMinPledgePerAction)
+			minPledge := database.GasMinPledgePerAction(&h.DB().TokenHandler)
+			if pledgeAmount.LessThan(minPledge) {
+				return nil, cost, fmt.Errorf("min pledge num is %d", minPledge)
 			}
 			cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
 			cost.AddAssign(cost0)
@@ -241,8 +243,9 @@ var ( // nolint: deadcode
 			if err != nil || unpledgeAmount.Value <= 0 {
 				return nil, cost, fmt.Errorf("invalid amount %s", args[2])
 			}
-			if unpledgeAmount.LessThan(database.GasMinPledgePerAction) {
-				return nil, cost, fmt.Errorf("min unpledge num is %d", database.GasMinPledgePerAction)
+			midPledge := database.GasMinPledgePerAction(&h.DB().TokenHandler)
+			if unpledgeAmount.LessThan(midPledge) {
+				return nil, cost, fmt.Errorf("min unpledge num is %d", midPledge)
 			}
 			pledged, cost0 := h.GasManager.GasPledge(gasUser, pledger)
 			cost.AddAssign(cost0)
