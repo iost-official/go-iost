@@ -47,15 +47,21 @@ func genGenesisTx(gConf *common.GenesisConfig) (*tx.Tx, *account.Account, error)
 	var acts []*tx.Action
 	adminInfo := gConf.AdminInfo
 
-	// deploy token.iost
+	// deploy the "token.iost" token sys contract
+	version := "1.0.0"
+	if gConf.ChainID == 1020 {
+		// local dev net, use latest
+		version = "1.0.6"
+	}
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
-		fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.SystemContractABI("token.iost", "1.0.6").B64Encode())))
+		fmt.Sprintf(`["%v", "%v"]`, "token.iost", native.SystemContractABI("token.iost", version).B64Encode())))
+	// deploy the "token721.iost" nft sys contract
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
 		fmt.Sprintf(`["%v", "%v"]`, "token721.iost", native.SystemContractABI("token721.iost", "1.0.0").B64Encode())))
-	// deploy iost.gas
+	// deploy the "gas.iost" gas sys contract
 	acts = append(acts, tx.NewAction("system.iost", "initSetCode",
 		fmt.Sprintf(`["%v", "%v"]`, "gas.iost", native.SystemContractABI("gas.iost", "1.0.0").B64Encode())))
-	// deploy issue.iost and create iost
+	// deploy issue.iost and create iost token
 	code, err := compile("issue.iost", gConf.ContractPath, "issue.js")
 	if err != nil {
 		return nil, nil, err

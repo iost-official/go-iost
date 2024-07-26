@@ -48,6 +48,7 @@ type GenesisConfig struct {
 	ContractPath     string
 	AdminInfo        *Witness
 	FoundationInfo   *Witness
+	ChainID          uint32
 }
 
 // DBConfig config of the database

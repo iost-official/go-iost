@@ -53,9 +53,6 @@ const GasFulfillSeconds int64 = 2 * 24 * 3600
 // GasIncreaseRate gas increase per IOST per second
 var GasIncreaseRate = GasLimit.Sub(GasImmediateReward).DivInt(GasFulfillSeconds)
 
-// IOSTRatio ...
-const IOSTRatio int64 = 100000000
-
 // PledgerInfo ...
 type PledgerInfo struct {
 	Pledger string

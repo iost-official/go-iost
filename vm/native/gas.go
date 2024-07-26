@@ -186,6 +186,7 @@ var ( // nolint: deadcode
 			}
 			minPledge := database.GasMinPledgePerAction(&h.DB().TokenHandler)
 			if pledgeAmount.LessThan(minPledge) {
+				// TODO: test this format
 				return nil, cost, fmt.Errorf("min pledge num is %d", minPledge)
 			}
 			cost0, err = pledge(h, pledger, gasUser, pledgeAmount)

@@ -199,6 +199,7 @@ class RAMContract {
         const feeRate = 0.02;
         let fee = this._round(feeRate * rawPrice);
         if (fee < 0.01) {
+            // min fee is 0.01 IOST
             fee = 0.01;
         }
         const price = rawPrice + fee;
