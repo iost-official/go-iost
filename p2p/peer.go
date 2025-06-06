@@ -38,7 +38,7 @@ const (
 // Peer's jobs are:
 //   - managing streams which are responsible for sending and reading messages.
 //   - recording messages we have sent and received so as to reduce redundant message in network.
-//   - maintaning a priority queue of message to be sending.
+//   - maintaining a priority queue of message to be sending.
 type Peer struct {
 	id          peer.ID
 	addr        multiaddr.Multiaddr
