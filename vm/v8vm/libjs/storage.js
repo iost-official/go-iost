@@ -7,6 +7,9 @@ let IOSTContractStorage = (function () {
             if (typeof v !== 'string') {
                 throw new Error("storage put must be string");
             }
+            if (v.length > 65536) {
+                throw new Error("input string too long");
+            }
             if (p === undefined) {
                 p = "";
             }

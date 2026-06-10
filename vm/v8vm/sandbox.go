@@ -1,54 +1,14 @@
 package v8
 
-/*
-#include <stdlib.h>
-#include "v8/vm.h"
-char* goBlockInfo(SandboxPtr, CStr *, size_t *);
-char* goTxInfo(SandboxPtr, CStr *, size_t *);
-char* goContextInfo(SandboxPtr, CStr *, size_t *);
-char* goCall(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
-char* goCallWithAuth(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
-char* goRequireAuth(SandboxPtr, const CStr, const CStr, bool *, size_t *);
-char* goReceipt(SandboxPtr, const CStr, size_t *);
-char* goEvent(SandboxPtr, const CStr, size_t *);
-
-char* goPut(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
-char* goHas(SandboxPtr, const CStr, const CStr, bool *, size_t *);
-char* goGet(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
-char* goDel(SandboxPtr, const CStr, const CStr, size_t *);
-char* goMapPut(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
-char* goMapHas(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
-char* goMapGet(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
-char* goMapDel(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
-char* goMapKeys(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
-char* goMapLen(SandboxPtr, const CStr, const CStr, size_t *, size_t *);
-
-char* goGlobalHas(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
-char* goGlobalGet(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
-char* goGlobalMapHas(SandboxPtr, const CStr, const CStr, const CStr, const CStr, bool *, size_t *);
-char* goGlobalMapGet(SandboxPtr, const CStr, const CStr, const CStr, const CStr, CStr *, size_t *);
-char* goGlobalMapKeys(SandboxPtr, const CStr,  const CStr, const CStr, CStr *, size_t *);
-char* goGlobalMapLen(SandboxPtr, const CStr, const CStr, const CStr, size_t *, size_t *);
-
-char* goConsoleLog(SandboxPtr, const CStr, const CStr);
-
-CStr goSha3(SandboxPtr, const CStr, size_t *);
-CStr goSha3Hex(SandboxPtr, const CStr, size_t *);
-CStr goRipemd160Hex(SandboxPtr, const CStr, size_t *);
-int goVerify(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
-*/
-import "C"
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"time"
-	"unsafe"
-
 	"strings"
-
 	"sync"
+	"time"
 
+	"github.com/Gaurav-Gosain/quickjs"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/vm/host"
 )
@@ -65,92 +25,273 @@ var (
 type Sandbox struct {
 	id      int // nolint
 	flags   int64
-	isolate C.IsolateWrapperPtr
-	context C.SandboxPtr
+	rt      *quickjs.Runtime
+	ctx     *quickjs.Context
 	host    *host.Host
+	gasUsed int64
 }
 
-// var sbxMap = make(map[C.SandboxPtr]*Sandbox)
 var sbxMap sync.Map
-
-// GetSandbox from sandbox map by sandbox ptr
-func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
-	valInterface, ok := sbxMap.Load(cSbx)
-	if !ok {
-		return nil, ok
-	}
-	sbx, ok := valInterface.(*Sandbox)
-	return sbx, ok
-}
 
 // NewSandbox generate new sandbox for VM and insert into sandbox map
 func NewSandbox(e *VM, flags int64) *Sandbox {
-	cPath := C.CString(e.jsPath)
-	defer C.free(unsafe.Pointer(cPath))
+	rt, err := quickjs.NewRuntime()
+	if err != nil {
+		panic(err)
+	}
+	rt.SetMemoryLimit(100 * 1024 * 1024) // 100MB
+	rt.SetMaxStackSize(2 * 1024 * 1024)  // 2MB - let QuickJS catch stack overflow before WASM crashes
 
-	cSbx := C.newSandbox(e.isolate, C.int64_t(flags))
-	C.setJSPath(cSbx, cPath)
+	ctx, err := rt.NewContext()
+	if err != nil {
+		panic(err)
+	}
 
 	s := &Sandbox{
-		isolate: e.isolate,
-		context: cSbx,
-		flags:   flags,
+		rt:    rt,
+		ctx:   ctx,
+		flags: flags,
 	}
+	// Store in map BEFORE Init so that Go callbacks triggered during
+	// library loading can resolve the sandbox via getSbx.
+	sbxMap.Store(ctx, s)
 	s.Init(e.vmType)
-	sbxMap.Store(cSbx, s)
-
 	return s
 }
 
 // Release release sandbox and delete from map
 func (sbx *Sandbox) Release() {
-	if sbx.context != nil {
-		sbxMap.Delete(sbx.context)
-		C.releaseSandbox(sbx.context)
+	if sbx.ctx != nil {
+		sbxMap.Delete(sbx.ctx)
+		sbx.ctx.Close()
+		sbx.ctx = nil
 	}
-	sbx.context = nil
+	if sbx.rt != nil {
+		sbx.rt.Close()
+		sbx.rt = nil
+	}
+}
+
+// gasIncrReplacer replaces _IOSTInstruction_counter.incr(...) with
+// __IOST_internal_gas_acc += ... to avoid thousands of wazero Go callbacks.
+// It properly removes the matching closing parenthesis.
+func gasIncrReplacer(code string) string {
+	const prefix = "_IOSTInstruction_counter.incr("
+	var result strings.Builder
+	i := 0
+	for i < len(code) {
+		idx := strings.Index(code[i:], prefix)
+		if idx == -1 {
+			result.WriteString(code[i:])
+			break
+		}
+		idx += i
+		result.WriteString(code[i:idx])
+		result.WriteString("__IOST_internal_gas_acc += ")
+		// find matching ')' for the incr( call
+		start := idx + len(prefix)
+		depth := 1
+		j := start
+		for j < len(code) && depth > 0 {
+			switch code[j] {
+			case '(':
+				depth++
+			case ')':
+				depth--
+			}
+			j++
+		}
+		// write the argument without the outermost parentheses
+		if depth == 0 {
+			result.WriteString(code[start : j-1])
+		} else {
+			// unmatched paren - write everything to end
+			result.WriteString(code[start:])
+			break
+		}
+		i = j
+	}
+	return result.String()
 }
 
 // Init add system functions
 func (sbx *Sandbox) Init(vmType vmPoolType) {
-	// init require
-	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
-	C.InitGoBlockchain(
-		(C.blockInfoFunc)(C.goBlockInfo),
-		(C.txInfoFunc)(C.goTxInfo),
-		(C.contextInfoFunc)(C.goContextInfo),
-		(C.callFunc)(C.goCall),
-		(C.callFunc)(C.goCallWithAuth),
-		(C.requireAuthFunc)(C.goRequireAuth),
-		(C.receiptFunc)(C.goReceipt),
-		(C.eventFunc)(C.goEvent),
-	)
-	C.InitGoStorage(
-		(C.putFunc)(C.goPut),
-		(C.hasFunc)(C.goHas),
-		(C.getFunc)(C.goGet),
-		(C.delFunc)(C.goDel),
-		(C.mapPutFunc)(C.goMapPut),
-		(C.mapHasFunc)(C.goMapHas),
-		(C.mapGetFunc)(C.goMapGet),
-		(C.mapDelFunc)(C.goMapDel),
-		(C.mapKeysFunc)(C.goMapKeys),
-		(C.mapLenFunc)(C.goMapLen),
+	ctx := sbx.ctx
 
-		(C.globalHasFunc)(C.goGlobalHas),
-		(C.globalGetFunc)(C.goGlobalGet),
-		(C.globalMapHasFunc)(C.goGlobalMapHas),
-		(C.globalMapGetFunc)(C.goGlobalMapGet),
-		(C.globalMapKeysFunc)(C.goGlobalMapKeys),
-		(C.globalMapLenFunc)(C.goGlobalMapLen),
+	// Inject native helpers
+	if vmType == CompileVMPool {
+		// Compile VM only needs _cLog and _native_require
+		ctx.SetGlobal("_cLog", ctx.Function("_cLog", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+			return ctx.Undefined()
+		}))
+
+		// Load compile base libraries in one script (same as old V8 compileCodeFormat)
+		compileBootstrap := fmt.Sprintf(
+			"let exports = {};\n"+
+				"let module = {};\n"+
+				"module.exports = {};\n"+
+				"%s\n"+
+				"const esprima = module.exports;\n"+
+				"%s\n"+
+				"const escodegen = module.exports;\n"+
+				"%s\n"+
+				"%s\n",
+			esprimaJS, escodegenJS, validateJS, injectGasJS,
+		)
+		if _, err := ctx.Eval(compileBootstrap); err != nil {
+			panic(fmt.Sprintf("load compile bootstrap error: %v", err))
+		}
+		return
+	}
+
+	// Run VM: inject all host bindings
+	ctx.SetGlobal("_cLog", newCLog(ctx))
+
+	// QuickJS ctx.Function cannot be used with 'new', so we inject raw Go
+	// helpers with _create suffix and wrap them in JS constructors.
+	ctx.SetGlobal("_IOSTBlockchain_create", ctx.Function("_IOSTBlockchain_create", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+		return newIOSTBlockchain(ctx)
+	}))
+	ctx.SetGlobal("_IOSTStorage_create", ctx.Function("_IOSTStorage_create", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+		return newIOSTStorage(ctx)
+	}))
+	ctx.SetGlobal("_IOSTInstruction_create", ctx.Function("_IOSTInstruction_create", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+		return newIOSTInstruction(ctx)
+	}))
+	ctx.SetGlobal("__IOSTCrypto_create", ctx.Function("__IOSTCrypto_create", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+		return newIOSTCrypto(ctx)
+	}))
+
+	if _, err := ctx.Eval(`
+function IOSTBlockchain() { return _IOSTBlockchain_create(); }
+function IOSTStorage() { return _IOSTStorage_create(); }
+function IOSTInstruction() { return _IOSTInstruction_create(); }
+function _IOSTCrypto() { return __IOSTCrypto_create(); }
+`); err != nil {
+		panic(fmt.Sprintf("inject constructor wrappers error: %v", err))
+	}
+
+	// Initialize the batched gas accumulator before loading libraries.
+	if _, err := ctx.Eval("var __IOST_internal_gas_acc = 0;"); err != nil {
+		panic(fmt.Sprintf("init gas accumulator error: %v", err))
+	}
+	// Verify that a strict-mode IIFE can access the global accumulator.
+	if _, err := ctx.Eval("(function(){'use strict'; __IOST_internal_gas_acc += 5;})();"); err != nil {
+		panic(fmt.Sprintf("strict mode gas acc test error: %v", err))
+	}
+	// Load runtime base libraries in one script (same as old V8 codeFormat)
+	// Replace incr() calls with batched JS accumulation to avoid wazero
+	// callback overhead which can be ~10ms per call.
+	runtimeBootstrap := fmt.Sprintf(
+		"let module = {};\n"+
+			"module.exports = {};\n"+
+			"%s\n"+
+			"%s\n"+
+			"let BigNumber = module.exports;\n"+
+			"%s\n"+
+			"%s\n"+
+			"%s\n"+
+			"%s\n",
+		gasIncrReplacer(jsonJS), gasIncrReplacer(bignumberJS), gasIncrReplacer(int64JS), gasIncrReplacer(float64JS), gasIncrReplacer(utilsJS), gasIncrReplacer(consoleJS),
 	)
-	C.InitGoCrypto(
-		(C.sha3Func)(C.goSha3),
-		(C.sha3HexFunc)(C.goSha3Hex),
-		(C.ripemd160HexFunc)(C.goRipemd160Hex),
-		(C.verifyFunc)(C.goVerify),
-	)
-	C.loadVM(sbx.context, C.int(vmType))
+	if _, err := ctx.Eval(runtimeBootstrap); err != nil {
+		panic(fmt.Sprintf("load runtime bootstrap error: %v", err))
+	}
+
+	// Pre-load storage and blockchain modules into global cache.
+	// We cannot call ctx.Eval from inside a Go callback (wazero reentrancy bug),
+	// so we pre-load them here and inject pure-JS _native_require/_native_run.
+	for _, mod := range []struct{ name, src string }{{"storage", storageJS}, {"blockchain", blockchainJS}} {
+		jsCode := fmt.Sprintf(`
+(function(){
+var module = { exports: {} };
+(function(exports, require, module, __filename, __dirname) {
+%s
+})(module.exports, null, module, '%s.js', '');
+globalThis.__modules_%s = module.exports;
+})();
+`, mod.src, mod.name, mod.name)
+		if _, err := ctx.Eval(jsCode); err != nil {
+			panic(fmt.Sprintf("load %s module error: %v", mod.name, err))
+		}
+	}
+
+	// Inject pure-JS require/run helpers that use the pre-loaded modules.
+	if _, err := ctx.Eval(`
+_native_require = function(id) { return ''; };
+_native_run = function(source, filename) {
+	return function(exports, require, module, __filename, __dirname) {
+		if (filename === 'storage.js') {
+			module.exports = globalThis.__modules_storage;
+		} else if (filename === 'blockchain.js') {
+			module.exports = globalThis.__modules_blockchain;
+		}
+	};
+};
+`); err != nil {
+		panic(fmt.Sprintf("inject require helpers error: %v", err))
+	}
+
+	// Load vm.js (it will require storage.js and blockchain.js via _native_require/_native_run)
+	if _, err := ctx.Eval(gasIncrReplacer(vmJS)); err != nil {
+		panic(fmt.Sprintf("load vm.js error: %v", err))
+	}
+
+	// Remove _native_run from global scope after vm.js has captured it.
+	// The old V8 sandbox only exposed _native_run during Init, not during Execute.
+	if _, err := ctx.Eval("_native_run = undefined;"); err != nil {
+		panic(fmt.Sprintf("remove _native_run error: %v", err))
+	}
+
+	// QuickJS may not define Atomics/Intl/WebAssembly; environment.js
+	// assigns them to null in strict mode, which throws if undefined.
+	// _native_log is referenced by environment.js but not used in QJS path.
+	if _, err := ctx.Eval(`
+var _native_log = function(){};
+if (typeof Atomics === 'undefined') { var Atomics = {}; }
+if (typeof Intl === 'undefined') { var Intl = {}; }
+if (typeof WebAssembly === 'undefined') { var WebAssembly = {}; }
+`); err != nil {
+		panic(fmt.Sprintf("inject missing globals error: %v", err))
+	}
+
+	// Capture methods that environment.js sets to null so we can restore them.
+	if _, err := ctx.Eval(`
+var __savedArrayFrom = Array.from;
+var __savedArrayOf = Array.of;
+var __savedFunction = Function;
+`); err != nil {
+		panic(fmt.Sprintf("capture globals error: %v", err))
+	}
+
+	// Load environment.js with batched gas replacement.
+	if _, err := ctx.Eval(gasIncrReplacer(environmentJS)); err != nil {
+		panic(fmt.Sprintf("load environment.js error: %v", err))
+	}
+
+	// Restore Array.from and Array.of (the old V8 apparently kept them working).
+	if _, err := ctx.Eval(`
+Array.from = __savedArrayFrom;
+Array.of = __savedArrayOf;
+`); err != nil {
+		panic(fmt.Sprintf("restore Array methods error: %v", err))
+	}
+
+	// Block dangerous dynamic-code features to match old V8 sandbox.
+	// environment.js sets Function = null, so we restore it first via the
+	// captured reference, then replace it with a blocked version.
+	if _, err := ctx.Eval(`
+		var __blockedEval = function() { throw new Error("Code generation from strings disallowed for this context"); };
+		globalThis.eval = __blockedEval;
+
+		var __origFunction = __savedFunction;
+		var __origProto = __origFunction.prototype;
+		var __blockedFunction = function() { throw new Error("Function is not a constructor"); };
+		__origProto.constructor = __blockedFunction;
+		globalThis.Function = __blockedFunction;
+	`); err != nil {
+		panic(fmt.Sprintf("block eval/function error: %v", err))
+	}
 }
 
 // GetFlags ...
@@ -160,7 +301,7 @@ func (sbx *Sandbox) GetFlags() int64 {
 
 // SetGasLimit set gas limit in context
 func (sbx *Sandbox) SetGasLimit(limit int64) {
-	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
+	sbx.gasUsed = 0
 }
 
 // SetHost set host in sandbox and set gas limit
@@ -169,63 +310,37 @@ func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.SetGasLimit(host.GasLimitValue())
 }
 
-// SetJSPath set js path and ReloadVM
-func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
-	cPath := C.CString(path)
-	defer C.free(unsafe.Pointer(cPath))
-	C.setJSPath(sbx.context, cPath)
-	C.loadVM(sbx.context, C.int(vmType))
-}
-
 // Validate contract before save, return err if invalid
 func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 	code := moduleReplacer.Replace(contract.Code)
-	cCode := newCStr(code)
-	defer C.free(unsafe.Pointer(cCode.data))
-
 	abi, _ := json.Marshal(contract.Info.Abi)
-	cAbi := newCStr(string(abi))
-	defer C.free(unsafe.Pointer(cAbi.data))
 
-	var (
-		cResult C.CStr
-		cErrMsg C.CStr
-	)
-	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg) // nolint
-
-	result := GoString(cResult)
-	C.free(unsafe.Pointer(cResult.data))
-
-	if ret == 1 || result != "success" {
-		errMsg := GoString(cErrMsg)
-		C.free(unsafe.Pointer(cErrMsg.data))
-		return fmt.Errorf("validate code error: %v, result: %v", errMsg, result)
+	jsCode := "(function(){\nconst source = \"" + code + "\";\nconst abi = " + string(abi) + ";\nreturn validate(source, abi);\n})();"
+	result, err := sbx.ctx.Eval(jsCode)
+	if err != nil {
+		return fmt.Errorf("validate code error: %v", err)
 	}
-
+	resStr := result.String()
+	if resStr != "success" {
+		return fmt.Errorf("validate code error: %v", resStr)
+	}
 	return nil
 }
 
 // Compile contract before execution, return compiled code
 func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	code := moduleReplacer.Replace(contract.Code)
-	cCode := newCStr(code)
-	defer C.free(unsafe.Pointer(cCode.data))
 
-	var (
-		cCompiledCode C.CStr
-		cErrMsg       C.CStr
-	)
-	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg) // nolint
-	if ret == 1 {
-		errMsg := GoString(cErrMsg)
-		C.free(unsafe.Pointer(cErrMsg.data))
-		return "", errors.New(errMsg)
+	jsCode := "(function(){\nconst source = \"" + code + "\";\nreturn injectGas(source);\n})();"
+	result, err := sbx.ctx.Eval(jsCode)
+	if err != nil {
+		return "", err
 	}
-
-	compiledCode := GoString(cCompiledCode)
-	C.free(unsafe.Pointer(cCompiledCode.data))
-
-	return compiledCode, nil
+	rs := result.String()
+	if rs == "" {
+		return "", errors.New("inject gas failed")
+	}
+	return rs, nil
 }
 
 // Prepare for contract, inject code
@@ -235,14 +350,9 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 	if function == "constructor" {
 		return fmt.Sprintf(`
 %s
-var obj = new module.exports;
+var _obj = new module.exports;
 
 var ret = 0;
-// store kv that was constructed by contract.
-//Object.keys(obj).forEach((key) => {
-//   let val = obj[key];
-//   ret = IOSTContractStorage.put(key, val);
-//});
 ret;
 `, code), nil
 	}
@@ -254,49 +364,124 @@ ret;
 
 	return fmt.Sprintf(`
 %s;
-const obj = new module.exports;
+const _obj = new module.exports;
 
 // run contract with specified function and args
-let rs = obj.%s(%s);
+let rs = _obj.%s(%s);
 if ((typeof rs === 'function') || (typeof rs === 'object')) {
 	_IOSTInstruction_counter.incr(12);
-	rs = JSON.stringify(rs);
+	try {
+		rs = JSON.stringify(rs);
+	} catch (e) {
+		throw new Error('JSON.stringify failed: ' + (e && e.message ? e.message : e));
+	}
+}
+if (typeof rs === 'string' && rs.length > %d) {
+	throw new Error("result too long");
 }
 rs;
-`, code, function, argStr), nil
+`, code, function, argStr, resultMaxLength), nil
 }
+
+var preloadBlockCode = `
+var blockInfo = JSON.parse(blockchain.blockInfo());
+var block = {
+   number: blockInfo.number,
+   parentHash: blockInfo.parent_hash,
+   witness: blockInfo.witness,
+   time: blockInfo.time
+};
+
+var txInfo = JSON.parse(blockchain.txInfo());
+var tx = {
+   time: txInfo.time,
+   hash: txInfo.hash,
+   expiration: txInfo.expiration,
+   gasLimit: txInfo.gas_limit,
+   gasRatio: txInfo.gas_ratio,
+   authList: txInfo.auth_list,
+   publisher: txInfo.publisher
+};
+`
 
 // Execute prepared code, return results, gasUsed
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	now := time.Now()
 	if !sbx.host.Deadline().After(now) {
-		// the deadline is already passed
-		// we just even need not run the code
-		// the "execution killed" string will be matched and converted to a timeout err outside
 		return "", 0, errors.New("execution killed")
 	}
-	cCode := newCStr(preparedCode)
-	defer C.free(unsafe.Pointer(cCode.data))
-	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
 
-	rs := C.Execute(sbx.context, cCode, expireTime)
-	defer C.free(unsafe.Pointer(rs.Value.data))
-	defer C.free(unsafe.Pointer(rs.Err.data))
+	// preload block info (old V8 RealExecute uses JS blockchain.blockInfo()/txInfo(),
+	// but QJS Go callbacks after environment.js can corrupt the global scope.
+	// We build the preload code in Go to avoid the problematic JS->Go->JS round-trip.
+	blkInfo, cost1 := sbx.host.BlockInfo()
+	txInfo, cost2 := sbx.host.TxInfo()
+	sbx.gasUsed += int64(cost1.CPU + cost2.CPU)
 
-	gasUsed := rs.gasUsed
+	preloadCode := fmt.Sprintf(`
+var blockInfo = JSON.parse('%s');
+var block = {
+   number: blockInfo.number,
+   parentHash: blockInfo.parent_hash,
+   witness: blockInfo.witness,
+   time: blockInfo.time
+};
 
-	if rs.Value.size > resultMaxLength {
-		return "", int64(gasUsed), ErrResultTooLong
+var txInfo = JSON.parse('%s');
+var tx = {
+   time: txInfo.time,
+   hash: txInfo.hash,
+   expiration: txInfo.expiration,
+   gasLimit: txInfo.gas_limit,
+   gasRatio: txInfo.gas_ratio,
+   authList: txInfo.auth_list,
+   publisher: txInfo.publisher
+};
+`, strings.ReplaceAll(string(blkInfo), "'", "\\'"), strings.ReplaceAll(string(txInfo), "'", "\\'"))
+
+	if _, err := sbx.ctx.Eval(preloadCode); err != nil {
+		return "", sbx.gasUsed, err
 	}
 
-	result := GoString(rs.Value)
+	// reset gas accumulator and old counter for this execution
+	if _, err := sbx.ctx.Eval("__IOST_internal_gas_acc = 0;"); err != nil {
+		return "", sbx.gasUsed, err
+	}
+	sbx.gasUsed = 0
 
-	var err error
-	if rs.Err.data != nil {
-		err = errors.New(GoString(rs.Err))
+	// Transform prepared code to use batched gas accumulation
+	preparedCode = gasIncrReplacer(preparedCode)
+
+	result, err := sbx.ctx.Eval(preparedCode)
+
+	// Read the batched gas accumulator even if execution failed,
+	// because gas is charged for work done before the error.
+	gasVal, _ := sbx.ctx.Eval("__IOST_internal_gas_acc;")
+	if gasVal.IsNumber() {
+		if g, err2 := gasVal.Int64(); err2 == nil {
+			sbx.gasUsed += g
+		}
 	}
 
-	return result, int64(gasUsed), err
+	if err != nil {
+		return "", sbx.gasUsed, err
+	}
+
+	// Match old V8 behavior: undefined -> "", null -> "null", others -> string value
+	var str string
+	if result.IsUndefined() {
+		str = ""
+	} else if result.IsNull() {
+		str = "null"
+	} else {
+		str = result.String()
+	}
+
+	if len(str) > resultMaxLength {
+		return "", sbx.gasUsed, ErrResultTooLong
+	}
+
+	return str, sbx.gasUsed, nil
 }
 
 func formatFuncArgs(args []any) (string, error) {

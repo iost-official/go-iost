@@ -1,9 +1,5 @@
 package v8
 
-/*
-#include "v8/vm.h"
-*/
-import "C"
 import "strings"
 
 // Module JavaScript module.

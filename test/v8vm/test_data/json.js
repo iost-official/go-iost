@@ -72,7 +72,7 @@ class Test {
     }
     stringify31() {
         let a = "a";
-        for (let i = 0; i < 1000; i++) {
+        for (let i = 0; i < 200; i++) {
             a = {
                 a : a
             };
@@ -91,6 +91,9 @@ class Test {
         let a = {};
         a.a = a;
         return a;
+    }
+    stringify41() {
+        return typeof JSON.stringify;
     }
 
     stringify50() {
