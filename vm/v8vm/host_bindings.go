@@ -114,7 +114,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 			return ctx.ThrowError("IOSTContractStorage_Put invalid argument length")
 		}
 		k := args[0].String()
-		v := args[1].String()
+		v := args[1].StringBytes()
 		ramPayer := ""
 		if len(args) > 2 {
 			ramPayer = args[2].String()
@@ -151,7 +151,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		if val == nil {
 			return ctx.Null()
 		}
-		return ctx.String(dbValToString(val))
+		return ctx.StringLen(dbValToString(val))
 	}))
 	obj.Set("del", ctx.Function("del", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
 		if len(args) < 1 {
@@ -172,7 +172,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		k := args[0].String()
 		f := args[1].String()
-		v := args[2].String()
+		v := args[2].StringBytes()
 		ramPayer := ""
 		if len(args) > 3 {
 			ramPayer = args[3].String()
@@ -211,7 +211,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		if val == nil {
 			return ctx.Null()
 		}
-		return ctx.String(dbValToString(val))
+		return ctx.StringLen(dbValToString(val))
 	}))
 	obj.Set("mapDel", ctx.Function("mapDel", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
 		if len(args) < 2 {
@@ -267,7 +267,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		if val == nil {
 			return ctx.Null()
 		}
-		return ctx.String(dbValToString(val))
+		return ctx.StringLen(dbValToString(val))
 	}))
 	obj.Set("globalMapHas", ctx.Function("globalMapHas", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
 		if len(args) < 3 {
@@ -292,7 +292,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		if val == nil {
 			return ctx.Null()
 		}
-		return ctx.String(dbValToString(val))
+		return ctx.StringLen(dbValToString(val))
 	}))
 	obj.Set("globalMapKeys", ctx.Function("globalMapKeys", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
 		if len(args) < 2 {

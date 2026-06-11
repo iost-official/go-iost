@@ -3,6 +3,7 @@ module github.com/iost-official/go-iost/v3
 go 1.24.0
 
 require (
+	github.com/Gaurav-Gosain/quickjs v0.0.0-20251229184449-65b9e11b7e4c
 	github.com/Jeffail/tunny v0.1.4
 	github.com/bitly/go-simplejson v0.5.1
 	github.com/bits-and-blooms/bloom/v3 v3.6.0
@@ -44,7 +45,6 @@ require (
 )
 
 require (
-	github.com/Gaurav-Gosain/quickjs v0.0.0-20251229184449-65b9e11b7e4c // indirect
 	github.com/benbjohnson/clock v1.3.5 // indirect
 	github.com/beorn7/perks v1.0.1 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
@@ -57,7 +57,6 @@ require (
 	github.com/davidlazar/go-crypto v0.0.0-20200604182044-b73af7476f6c // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/elastic/gosigar v0.14.2 // indirect
-	github.com/fastschema/qjs v0.0.6 // indirect
 	github.com/flynn/noise v1.1.0 // indirect
 	github.com/francoispqt/gojay v1.2.13 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
@@ -156,3 +155,5 @@ require (
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	lukechampine.com/blake3 v1.2.1 // indirect
 )
+
+replace github.com/Gaurav-Gosain/quickjs => ./third_party/quickjs

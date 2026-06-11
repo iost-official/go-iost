@@ -87,7 +87,7 @@ func gasIncrReplacer(code string) string {
 		}
 		idx += i
 		result.WriteString(code[i:idx])
-		result.WriteString("__IOST_internal_gas_acc += ")
+		result.WriteString("__IOST_internal_gas_acc += ((")
 		// find matching ')' for the incr( call
 		start := idx + len(prefix)
 		depth := 1
@@ -103,10 +103,18 @@ func gasIncrReplacer(code string) string {
 		}
 		// write the argument without the outermost parentheses
 		if depth == 0 {
-			result.WriteString(code[start : j-1])
+			arg := code[start : j-1]
+			result.WriteString(arg)
+			result.WriteString(") - (")
+			result.WriteString(arg)
+			result.WriteString(") % 1)")
 		} else {
 			// unmatched paren - write everything to end
-			result.WriteString(code[start:])
+			arg := code[start:]
+			result.WriteString(arg)
+			result.WriteString(") - (")
+			result.WriteString(arg)
+			result.WriteString(") % 1)")
 			break
 		}
 		i = j
@@ -292,6 +300,18 @@ Array.of = __savedArrayOf;
 	`); err != nil {
 		panic(fmt.Sprintf("block eval/function error: %v", err))
 	}
+
+	// Re-inject the native constructors that environment.js has nulled out.
+	// The old V8 C++ code did this via InitBlockchain/InitStorage after loading
+	// environment.js; we must do the same here.
+	if _, err := ctx.Eval(`
+		IOSTBlockchain = function() { return _IOSTBlockchain_create(); };
+		IOSTStorage    = function() { return _IOSTStorage_create(); };
+		IOSTInstruction= function() { return _IOSTInstruction_create(); };
+		_IOSTCrypto    = function() { return __IOSTCrypto_create(); };
+	`); err != nil {
+		panic(fmt.Sprintf("re-inject native constructors error: %v", err))
+	}
 }
 
 // GetFlags ...
@@ -317,12 +337,15 @@ func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 
 	jsCode := "(function(){\nconst source = \"" + code + "\";\nconst abi = " + string(abi) + ";\nreturn validate(source, abi);\n})();"
 	result, err := sbx.ctx.Eval(jsCode)
-	if err != nil {
-		return fmt.Errorf("validate code error: %v", err)
+	resStr := ""
+	if err == nil {
+		resStr = result.String()
 	}
-	resStr := result.String()
-	if resStr != "success" {
-		return fmt.Errorf("validate code error: %v", resStr)
+	if err != nil || resStr != "success" {
+		if err == nil {
+			err = errors.New("")
+		}
+		return fmt.Errorf("validate code error: %v, result: %v", err, resStr)
 	}
 	return nil
 }
@@ -353,7 +376,7 @@ func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args [
 var _obj = new module.exports;
 
 var ret = 0;
-ret;
+return ret;
 `, code), nil
 	}
 
@@ -379,19 +402,8 @@ if ((typeof rs === 'function') || (typeof rs === 'object')) {
 if (typeof rs === 'string' && rs.length > %d) {
 	throw new Error("result too long");
 }
-rs;
+return rs;
 `, code, function, argStr, resultMaxLength), nil
-}
-
-// jsStringEscape escapes a string so it can be safely embedded in a
-// JavaScript single-quoted string literal.  Both backslashes and single
-// quotes must be escaped, otherwise JSON escape sequences (e.g. \u000b)
-// are interpreted by the JS parser and turn into literal control
-// characters, which makes JSON.parse fail on the resulting string.
-func jsStringEscape(s string) string {
-	s = strings.ReplaceAll(s, "\\", "\\\\")
-	s = strings.ReplaceAll(s, "'", "\\'")
-	return s
 }
 
 // Execute prepared code, return results, gasUsed
@@ -401,24 +413,23 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 		return "", 0, errors.New("execution killed")
 	}
 
-	// preload block info (old V8 RealExecute uses JS blockchain.blockInfo()/txInfo(),
-	// but QJS Go callbacks after environment.js can corrupt the global scope.
-	// We build the preload code in Go to avoid the problematic JS->Go->JS round-trip.
-	blkInfo, cost1 := sbx.host.BlockInfo()
-	txInfo, cost2 := sbx.host.TxInfo()
-	sbx.gasUsed += cost1.CPU + cost2.CPU
+	// Reset gas used so that Init-time library loading gas is not counted.
+	sbx.gasUsed = 0
 
-	preloadCode := fmt.Sprintf(`
-var blockInfo = JSON.parse('%s');
-var block = {
+	// Preload block/tx globals exactly like the old V8 sandbox.cc did.
+	// We use JS blockchain.blockInfo()/txInfo() so the JSON string is
+	// passed directly to JSON.parse (no JS-string-literal round-trip).
+	if _, err := sbx.ctx.Eval(`
+const blockInfo = JSON.parse(blockchain.blockInfo());
+const block = {
    number: blockInfo.number,
    parentHash: blockInfo.parent_hash,
    witness: blockInfo.witness,
    time: blockInfo.time
 };
 
-var txInfo = JSON.parse('%s');
-var tx = {
+const txInfo = JSON.parse(blockchain.txInfo());
+const tx = {
    time: txInfo.time,
    hash: txInfo.hash,
    expiration: txInfo.expiration,
@@ -427,13 +438,11 @@ var tx = {
    authList: txInfo.auth_list,
    publisher: txInfo.publisher
 };
-`, jsStringEscape(string(blkInfo)), jsStringEscape(string(txInfo)))
-
-	if _, err := sbx.ctx.Eval(preloadCode); err != nil {
+`); err != nil {
 		return "", sbx.gasUsed, err
 	}
 
-	// reset gas accumulator and old counter for this execution
+	// reset gas accumulator for this execution
 	if _, err := sbx.ctx.Eval("__IOST_internal_gas_acc = 0;"); err != nil {
 		return "", sbx.gasUsed, err
 	}
@@ -442,7 +451,27 @@ var tx = {
 	// Transform prepared code to use batched gas accumulation
 	preparedCode = gasIncrReplacer(preparedCode)
 
-	result, err := sbx.ctx.Eval(preparedCode)
+	// Wrap in IIFE with try-catch so thrown primitives (strings, undefined,
+	// etc.) are converted to Error objects.  The QuickJS Go bridge only
+	// extracts the "message" property for errors; for primitives it sees
+	// "undefined" and loses the real value.
+	wrappedCode := fmt.Sprintf(`
+(function() {
+    try {
+        %s
+    } catch (e) {
+        if (e instanceof Error) {
+            throw e;
+        } else if (typeof e === 'string') {
+            throw new Error(e);
+        } else {
+            throw new Error(String(e));
+        }
+    }
+})();
+`, preparedCode)
+
+	result, err := sbx.ctx.Eval(wrappedCode)
 
 	// Read the batched gas accumulator even if execution failed,
 	// because gas is charged for work done before the error.
@@ -464,7 +493,7 @@ var tx = {
 	} else if result.IsNull() {
 		str = "null"
 	} else {
-		str = result.String()
+		str = result.StringBytes()
 	}
 
 	if len(str) > resultMaxLength {

@@ -81,7 +81,7 @@
             } catch (e) {
                 throw new Error("estimateGas failed: " + (e && e.message ? e.message : e));
             }
-            gas += 2 * rs.length;
+            gas += 3 * rs.length + 4;
         }
 
         __IOST_internal_gas_acc += gas;
