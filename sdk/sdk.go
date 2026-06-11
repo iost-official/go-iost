@@ -444,7 +444,7 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 		}
 		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
 			s.log("Transaction executed err")
-			return fmt.Errorf(txReceipt.Message)
+			return fmt.Errorf("%s", txReceipt.Message)
 		}
 		if r.Status == rpcpb.TransactionResponse_PACKED {
 			if s.verbose {

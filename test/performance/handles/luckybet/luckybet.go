@@ -105,7 +105,7 @@ func (t *luckyBetHandler) Prepare() error {
 		return err
 	}
 	if tx.StatusCode(resp.StatusCode) != tx.Success {
-		return fmt.Errorf("publish contract fail " + (resp.String()))
+		return fmt.Errorf("publish contract fail %v", resp.String())
 	}
 
 	t.testID = testID

@@ -18,9 +18,10 @@ export GOBASE = $(shell pwd)
 export GOARCH=amd64
 export CGO_ENABLED=0
 
-ifeq ($(shell uname),Linux)
-	GO_TEST := $(GO_TEST) -race
-endif
+# -race requires CGO, which is disabled now that V8/C++ is removed.
+# ifeq ($(shell uname),Linux)
+# 	GO_TEST := $(GO_TEST) -race
+# endif
 
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/v3/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/v3/core/global.GitHash=$(shell git rev-parse HEAD) -X github.com/iost-official/go-iost/v3/core/global.CodeVersion=$(VERSION)
