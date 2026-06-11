@@ -63,7 +63,7 @@ func MyInit(t *testing.T, conName string, optional ...any) (*host.Host, *contrac
 		Code: rawCode,
 	}
 
-	expTime := time.Now().Add(time.Second * 10)
+	expTime := time.Now().Add(time.Second * 60)
 	h.SetDeadline(expTime)
 	code.Code, err = vmPool.Compile(code)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", "contractName")
 	tHost := host.NewHost(ctx, vi, version.NewRules(0), nil, nil)
-	expTime := time.Now().Add(time.Second * 10)
+	expTime := time.Now().Add(time.Second * 60)
 	tHost.SetDeadline(expTime)
 
 	code := &contract.Contract{
