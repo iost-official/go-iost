@@ -588,8 +588,8 @@ func TestEngine_Danger(t *testing.T) {
 	}
 
 	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
-	if err != nil || cost.ToGas() != int64(5052865) {
-		t.Fatalf("LoadAndCall objadd should cost 5052865, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
+	if err != nil || cost.ToGas() != int64(5052845) {
+		t.Fatalf("LoadAndCall objadd should cost 5052845, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "tooBigArray")
@@ -899,53 +899,53 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify10")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(4648))
+		So(cost.ToGas(), ShouldEqual, int64(4887))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify11")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(4399))
+		So(cost.ToGas(), ShouldEqual, int64(4362))
 	})
 
 	Convey("test stringify2", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify20")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(573858))
+		So(cost.ToGas(), ShouldEqual, int64(610553))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify21")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(633875))
+		So(cost.ToGas(), ShouldEqual, int64(628475))
 	})
 
 	Convey("test stringify3", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify30")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(146521))
+		So(cost.ToGas(), ShouldEqual, int64(152328))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify31")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(258069))
+		So(cost.ToGas(), ShouldEqual, int64(257668))
 	})
 
 	Convey("test stringify4", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify40")
 		So(err.Error(), ShouldContainSubstring, "Converting circular structure to JSON")
-		So(cost.ToGas(), ShouldEqual, int64(217))
+		So(cost.ToGas(), ShouldEqual, int64(216))
 	})
 
 	Convey("test stringify5", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify50")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1165))
+		So(cost.ToGas(), ShouldEqual, int64(1184))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 
 		rtn, cost, err = vmPool.LoadAndCall(host, code, "stringify51")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1010))
+		So(cost.ToGas(), ShouldEqual, int64(1035))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 	})
@@ -954,7 +954,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify60")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1267))
+		So(cost.ToGas(), ShouldEqual, int64(1315))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"a":{"b":{"c":""}}} {"a":{"b":{"c":""}}}`)
 	})
@@ -967,7 +967,7 @@ func TestEngine_Libstring(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall ops error: %v\n", err)
 	}
-	if cost.ToGas() != 1110 {
+	if cost.ToGas() != 1082 {
 		t.Errorf("cost except 1082, got %d\n", cost.ToGas())
 	}
 }
@@ -979,7 +979,7 @@ func TestEngine_Libbignumber(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadAndCall ops error: %v\n", err)
 	}
-	if cost.ToGas() != 15710 {
-		t.Errorf("cost except 15976, got %d\n", cost.ToGas())
+	if cost.ToGas() != 15615 {
+		t.Errorf("cost except 15615, got %d\n", cost.ToGas())
 	}
 }

@@ -3,6 +3,8 @@ package genesis
 import (
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/iost-official/go-iost/v3/account"
@@ -11,6 +13,17 @@ import (
 	"github.com/iost-official/go-iost/v3/db"
 	"github.com/iost-official/go-iost/v3/ilog"
 )
+
+func getContractPath() string {
+	base := os.Getenv("GOBASE")
+	if base == "" {
+		// fallback: locate project root from this source file
+		_, b, _, _ := runtime.Caller(0)
+		base = filepath.Join(filepath.Dir(b), "..", "..")
+		base, _ = filepath.Abs(base)
+	}
+	return filepath.Join(base, "config", "genesis", "contract") + string(filepath.Separator)
+}
 
 func randWitness(idx int) *common.Witness {
 	k := account.EncodePubkey(crypto.Ed25519.GetPubkey(crypto.Ed25519.GenSeckey()))
@@ -29,7 +42,7 @@ func TestGenGenesis(t *testing.T) {
 		os.RemoveAll("mvcc")
 	}()
 	k := account.EncodePubkey(crypto.Ed25519.GetPubkey(crypto.Ed25519.GenSeckey()))
-	//fmt.Println("path", os.Getenv("GOBASE") + "//config/genesis/contract/")
+	//fmt.Println("path", getContractPath())
 	blk, err := GenGenesis(d, &common.GenesisConfig{
 		WitnessInfo: []*common.Witness{
 			randWitness(1),
@@ -46,7 +59,7 @@ func TestGenGenesis(t *testing.T) {
 			IOSTDecimal:       8,
 		},
 		InitialTimestamp: "2006-01-02T15:04:05Z",
-		ContractPath:     os.Getenv("GOBASE") + "//config/genesis/contract/",
+		ContractPath:     getContractPath(),
 		AdminInfo:        randWitness(8),
 		FoundationInfo:   &common.Witness{ID: "f8", Owner: k, Active: k, Balance: 0},
 	})

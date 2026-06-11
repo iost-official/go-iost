@@ -29,11 +29,16 @@ type Simulator struct {
 	Logger   *ilog.Logger
 	Mvcc     db.MVCCDB
 	GasLimit int64
+	dbPath   string
 }
 
 // NewSimulator get a simulator with default settings
 func NewSimulator() *Simulator {
-	mvccdb, err := db.NewMVCCDB("mvcc")
+	dbPath, err := os.MkdirTemp("", "mvcc-*")
+	if err != nil {
+		panic(err)
+	}
+	mvccdb, err := db.NewMVCCDB(dbPath)
 	if err != nil {
 		panic(err)
 	}
@@ -51,6 +56,7 @@ func NewSimulator() *Simulator {
 		},
 		Logger:   ilog.DefaultLogger(),
 		GasLimit: 100000000,
+		dbPath:   dbPath,
 	}
 	return s
 }
@@ -260,5 +266,7 @@ func (s *Simulator) RunTx(stx *tx.Tx) (*tx.TxReceipt, error) {
 // Clear mvccdb
 func (s *Simulator) Clear() {
 	s.Mvcc.Close()
-	os.RemoveAll("mvcc")
+	if s.dbPath != "" {
+		os.RemoveAll(s.dbPath)
+	}
 }
