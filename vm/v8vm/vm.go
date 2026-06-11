@@ -78,8 +78,6 @@ func (e *VM) recycle(poolType vmPoolType) {
 	if rand.Int()%(vmRefLimit-e.refCount) == 0 {
 		// release runtime completely
 		e.refCount = 0
-	} else {
-		// just notify GC if supported; QuickJS has no explicit low-memory notification
 	}
 
 	// then regen new sandbox

@@ -45,27 +45,3 @@ var validateJS string
 
 //go:embed libjs/inject_gas.js
 var injectGasJS string
-
-// runtimeLibs are loaded into every run VM.
-var runtimeLibs = []struct {
-	name string
-	src  string
-}{
-	{"json.js", jsonJS},
-	{"bignumber.js", bignumberJS},
-	{"int64.js", int64JS},
-	{"float64.js", float64JS},
-	{"utils.js", utilsJS},
-	{"console.js", consoleJS},
-}
-
-// compileLibs are concatenated and loaded into every compile VM.
-var compileLibs = []struct {
-	name string
-	src  string
-}{
-	{"esprima.js", esprimaJS},
-	{"escodegen.js", escodegenJS},
-	{"validate.js", validateJS},
-	{"inject_gas.js", injectGasJS},
-}

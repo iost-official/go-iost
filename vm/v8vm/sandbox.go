@@ -383,27 +383,6 @@ rs;
 `, code, function, argStr, resultMaxLength), nil
 }
 
-var preloadBlockCode = `
-var blockInfo = JSON.parse(blockchain.blockInfo());
-var block = {
-   number: blockInfo.number,
-   parentHash: blockInfo.parent_hash,
-   witness: blockInfo.witness,
-   time: blockInfo.time
-};
-
-var txInfo = JSON.parse(blockchain.txInfo());
-var tx = {
-   time: txInfo.time,
-   hash: txInfo.hash,
-   expiration: txInfo.expiration,
-   gasLimit: txInfo.gas_limit,
-   gasRatio: txInfo.gas_ratio,
-   authList: txInfo.auth_list,
-   publisher: txInfo.publisher
-};
-`
-
 // Execute prepared code, return results, gasUsed
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	now := time.Now()
@@ -416,7 +395,7 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	// We build the preload code in Go to avoid the problematic JS->Go->JS round-trip.
 	blkInfo, cost1 := sbx.host.BlockInfo()
 	txInfo, cost2 := sbx.host.TxInfo()
-	sbx.gasUsed += int64(cost1.CPU + cost2.CPU)
+	sbx.gasUsed += cost1.CPU + cost2.CPU
 
 	preloadCode := fmt.Sprintf(`
 var blockInfo = JSON.parse('%s');

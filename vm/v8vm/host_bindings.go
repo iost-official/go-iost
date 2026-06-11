@@ -30,17 +30,17 @@ func newIOSTBlockchain(ctx *quickjs.Context) quickjs.Value {
 
 	obj.Set("blockInfo", ctx.Function("blockInfo", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
 		blkInfo, cost := sbx.host.BlockInfo()
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.String(string(blkInfo))
 	}))
 	obj.Set("txInfo", ctx.Function("txInfo", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
 		txInfo, cost := sbx.host.TxInfo()
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.String(string(txInfo))
 	}))
 	obj.Set("contextInfo", ctx.Function("contextInfo", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
 		ctxInfo, cost := sbx.host.ContextInfo()
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.String(string(ctxInfo))
 	}))
 	obj.Set("call", ctx.Function("call", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
@@ -51,7 +51,7 @@ func newIOSTBlockchain(ctx *quickjs.Context) quickjs.Value {
 		api := args[1].String()
 		jarg := args[2].String()
 		callRs, cost, err := sbx.host.Call(contract, api, jarg)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if err != nil {
 			return ctx.ThrowError(err.Error())
 		}
@@ -66,7 +66,7 @@ func newIOSTBlockchain(ctx *quickjs.Context) quickjs.Value {
 		api := args[1].String()
 		jarg := args[2].String()
 		callRs, cost, err := sbx.host.CallWithAuth(contract, api, jarg)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if err != nil {
 			return ctx.ThrowError(err.Error())
 		}
@@ -80,7 +80,7 @@ func newIOSTBlockchain(ctx *quickjs.Context) quickjs.Value {
 		accountID := args[0].String()
 		permission := args[1].String()
 		ok, cost := sbx.host.RequireAuth(accountID, permission)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Bool(ok)
 	}))
 	obj.Set("receipt", ctx.Function("receipt", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
@@ -89,7 +89,7 @@ func newIOSTBlockchain(ctx *quickjs.Context) quickjs.Value {
 		}
 		content := args[0].String()
 		cost := sbx.host.Receipt(content)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Null()
 	}))
 	obj.Set("event", ctx.Function("event", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
@@ -98,7 +98,7 @@ func newIOSTBlockchain(ctx *quickjs.Context) quickjs.Value {
 		}
 		content := args[0].String()
 		cost := sbx.host.PostEvent(content)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Null()
 	}))
 
@@ -126,7 +126,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		} else {
 			cost, err = sbx.host.Put(k, v, ramPayer)
 		}
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if err != nil {
 			return ctx.ThrowError(err.Error())
 		}
@@ -138,7 +138,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		k := args[0].String()
 		ret, cost := sbx.host.Has(k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Bool(ret)
 	}))
 	obj.Set("get", ctx.Function("get", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
@@ -147,7 +147,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		k := args[0].String()
 		val, cost := sbx.host.Get(k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if val == nil {
 			return ctx.Null()
 		}
@@ -159,7 +159,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		k := args[0].String()
 		cost, err := sbx.host.Del(k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if err != nil {
 			return ctx.ThrowError(err.Error())
 		}
@@ -184,7 +184,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		} else {
 			cost, err = sbx.host.MapPut(k, f, v, ramPayer)
 		}
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if err != nil {
 			return ctx.ThrowError(err.Error())
 		}
@@ -197,7 +197,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		k := args[0].String()
 		f := args[1].String()
 		ret, cost := sbx.host.MapHas(k, f)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Bool(ret)
 	}))
 	obj.Set("mapGet", ctx.Function("mapGet", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
@@ -207,7 +207,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		k := args[0].String()
 		f := args[1].String()
 		val, cost := sbx.host.MapGet(k, f)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if val == nil {
 			return ctx.Null()
 		}
@@ -220,7 +220,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		k := args[0].String()
 		f := args[1].String()
 		cost, err := sbx.host.MapDel(k, f)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if err != nil {
 			return ctx.ThrowError(err.Error())
 		}
@@ -232,7 +232,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		k := args[0].String()
 		fstr, cost := sbx.host.MapKeys(k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		j, _ := json.Marshal(fstr)
 		return ctx.String(string(j))
 	}))
@@ -242,7 +242,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		k := args[0].String()
 		l, cost := sbx.host.MapLen(k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Int32(int32(l))
 	}))
 
@@ -253,7 +253,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		c := args[0].String()
 		k := args[1].String()
 		ret, cost := sbx.host.GlobalHas(c, k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Bool(ret)
 	}))
 	obj.Set("globalGet", ctx.Function("globalGet", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
@@ -263,7 +263,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		c := args[0].String()
 		k := args[1].String()
 		val, cost := sbx.host.GlobalGet(c, k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if val == nil {
 			return ctx.Null()
 		}
@@ -277,7 +277,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		k := args[1].String()
 		f := args[2].String()
 		ret, cost := sbx.host.GlobalMapHas(c, k, f)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Bool(ret)
 	}))
 	obj.Set("globalMapGet", ctx.Function("globalMapGet", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
@@ -288,7 +288,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		k := args[1].String()
 		f := args[2].String()
 		val, cost := sbx.host.GlobalMapGet(c, k, f)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		if val == nil {
 			return ctx.Null()
 		}
@@ -301,7 +301,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		c := args[0].String()
 		k := args[1].String()
 		fstr, cost := sbx.host.GlobalMapKeys(c, k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		j, _ := json.Marshal(fstr)
 		return ctx.String(string(j))
 	}))
@@ -312,7 +312,7 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		c := args[0].String()
 		k := args[1].String()
 		l, cost := sbx.host.GlobalMapLen(c, k)
-		sbx.gasUsed += int64(cost.CPU)
+		sbx.gasUsed += cost.CPU
 		return ctx.Int32(int32(l))
 	}))
 
@@ -402,36 +402,6 @@ func newIOSTCrypto(ctx *quickjs.Context) quickjs.Value {
 			return ctx.Int32(0)
 		}
 		return ctx.Int32(1)
-	}))
-
-	return obj
-}
-
-func newConsole(ctx *quickjs.Context) quickjs.Value {
-	obj := ctx.Object()
-	sbx := getSbx(ctx)
-
-	obj.Set("log", ctx.Function("log", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("console log invalid argument length")
-		}
-		levelStr := args[0].String()
-		detailStr := args[1].String()
-
-		if sbx.host.Logger() == nil {
-			return ctx.ThrowError("no logger error")
-		}
-
-		loggerVal := reflect.ValueOf(sbx.host.Logger())
-		loggerFunc := loggerVal.MethodByName(levelStr)
-		if !loggerFunc.IsValid() {
-			return ctx.ThrowError("log invalid level")
-		}
-
-		loggerFunc.Call([]reflect.Value{
-			reflect.ValueOf(detailStr),
-		})
-		return ctx.Undefined()
 	}))
 
 	return obj
