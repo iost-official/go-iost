@@ -205,7 +205,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 
 func init() {
 	// TODO The number of pool need adjust
-	vmPool = v8.NewVMPool(10, 400)
+	vmPool = v8.NewVMPool(10, 50)
 	vmPool.Init()
 }
 
