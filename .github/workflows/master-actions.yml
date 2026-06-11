@@ -25,7 +25,7 @@ jobs:
           GOBIN=/usr/local/bin/ make lint-tool
           golangci-lint version
           PATH=/usr/local/bin/:$PATH make lint
-          make test
+          GO_TEST_FLAGS=-p 1 make test
 
   #  Docker_Test:
   #    runs-on: ubuntu-18.04
@@ -95,4 +95,4 @@ jobs:
           GOBIN=/usr/local/bin/ make lint-tool
           golangci-lint version
           PATH=/usr/local/bin/:$PATH make lint
-          make test
+          GO_TEST_FLAGS=-p 1 make test

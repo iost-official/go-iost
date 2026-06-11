@@ -1,6 +1,6 @@
 GO = go
 GO_BUILD = $(GO) build
-GO_TEST := $(GO) test -timeout 600s
+GO_TEST := $(GO) test -timeout 600s $(GO_TEST_FLAGS)
 GO_INSTALL := $(GO) install
 
 PROJECT_NAME := $(shell basename "$(PWD)")
