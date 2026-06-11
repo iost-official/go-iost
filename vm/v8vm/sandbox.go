@@ -383,6 +383,17 @@ rs;
 `, code, function, argStr, resultMaxLength), nil
 }
 
+// jsStringEscape escapes a string so it can be safely embedded in a
+// JavaScript single-quoted string literal.  Both backslashes and single
+// quotes must be escaped, otherwise JSON escape sequences (e.g. \u000b)
+// are interpreted by the JS parser and turn into literal control
+// characters, which makes JSON.parse fail on the resulting string.
+func jsStringEscape(s string) string {
+	s = strings.ReplaceAll(s, "\\", "\\\\")
+	s = strings.ReplaceAll(s, "'", "\\'")
+	return s
+}
+
 // Execute prepared code, return results, gasUsed
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	now := time.Now()
@@ -416,7 +427,7 @@ var tx = {
    authList: txInfo.auth_list,
    publisher: txInfo.publisher
 };
-`, strings.ReplaceAll(string(blkInfo), "'", "\\'"), strings.ReplaceAll(string(txInfo), "'", "\\'"))
+`, jsStringEscape(string(blkInfo)), jsStringEscape(string(txInfo)))
 
 	if _, err := sbx.ctx.Eval(preloadCode); err != nil {
 		return "", sbx.gasUsed, err
