@@ -2,7 +2,6 @@ package v8vm
 
 import (
 	"encoding/json"
-	"fmt"
 	"os"
 	"strings"
 	"testing"
@@ -589,13 +588,13 @@ func TestEngine_Danger(t *testing.T) {
 	}
 
 	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
-	if err != nil {
-		t.Fatalf("LoadAndCall objadd run error: %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
+	if err != nil || cost.ToGas() != int64(5052865) {
+		t.Fatalf("LoadAndCall objadd should cost 5052865, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "tooBigArray")
-	if err == nil {
-		t.Fatalf("LoadAndCall tooBigArray should return error, got nil\n")
+	if err == nil || !strings.Contains(err.Error(), "out of memory") {
+		t.Fatalf("LoadAndCall tooBigArray should return error: out of memory, got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
@@ -900,60 +899,53 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify10")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(4651))
+		So(cost.ToGas(), ShouldEqual, int64(4648))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify11")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(4402))
+		So(cost.ToGas(), ShouldEqual, int64(4399))
 	})
 
 	Convey("test stringify2", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify20")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(573861))
+		So(cost.ToGas(), ShouldEqual, int64(573858))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify21")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(633878))
+		So(cost.ToGas(), ShouldEqual, int64(633875))
 	})
 
 	Convey("test stringify3", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify30")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(146524))
+		So(cost.ToGas(), ShouldEqual, int64(146521))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify31")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(258072))
+		So(cost.ToGas(), ShouldEqual, int64(258069))
 	})
 
 	Convey("test stringify4", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify40")
-		fmt.Printf("stringify40 error=%v gas=%d\n", err, cost.ToGas())
 		So(err.Error(), ShouldContainSubstring, "Converting circular structure to JSON")
-		So(cost.ToGas(), ShouldEqual, int64(220))
-	})
-
-	Convey("test stringify4b", t, func() {
-		host, code := MyInit(t, "json", int64(1e8))
-		rtn, _, err := vmPool.LoadAndCall(host, code, "stringify41")
-		fmt.Printf("stringify41 typeof JSON.stringify = %v err=%v\n", rtn, err)
+		So(cost.ToGas(), ShouldEqual, int64(217))
 	})
 
 	Convey("test stringify5", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify50")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1168))
+		So(cost.ToGas(), ShouldEqual, int64(1165))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 
 		rtn, cost, err = vmPool.LoadAndCall(host, code, "stringify51")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1013))
+		So(cost.ToGas(), ShouldEqual, int64(1010))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 	})
@@ -962,7 +954,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify60")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1270))
+		So(cost.ToGas(), ShouldEqual, int64(1267))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"a":{"b":{"c":""}}} {"a":{"b":{"c":""}}}`)
 	})

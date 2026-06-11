@@ -92,9 +92,6 @@ class Test {
         a.a = a;
         return a;
     }
-    stringify41() {
-        return typeof JSON.stringify;
-    }
 
     stringify50() {
         function replacer(key, value) {
