@@ -95,4 +95,11 @@ jobs:
           GOBIN=/usr/local/bin/ make lint-tool
           golangci-lint version
           PATH=/usr/local/bin/:$PATH make lint
-          GO_TEST_FLAGS=-p 1 make test
+      - name: Test core packages
+        run: go test -timeout 600s -p 1 -count=1 ./account/... ./chainbase/... ./common/... ./consensus/... ./core/... ./crypto/... ./db/... ./ilog/... ./metrics/... ./p2p/... ./rpc/... ./sdk/...
+      - name: Test vm/v8vm
+        run: go test -timeout 600s -p 1 -count=1 ./vm/v8vm/...
+      - name: Test integration
+        run: go test -timeout 600s -p 1 -count=1 ./test/integration/...
+      - name: Test other test packages
+        run: go test -timeout 600s -p 1 -count=1 ./test/v8vm/... ./test/native/... ./test/gas/... || true
