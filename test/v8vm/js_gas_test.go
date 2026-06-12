@@ -19,7 +19,7 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test assignment1", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment1")
-		So(err.Error(), ShouldContainSubstring, "not an object")
+		So(err.Error(), ShouldContainSubstring, "Cannot assign to read only property")
 		t.Log(rs, cost)
 	})
 	Convey("test assignment11", t, func() {
@@ -125,7 +125,7 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test library1", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "library1", 10)
-		So(err.Error(), ShouldContainSubstring, "not a function")
+		So(err.Error(), ShouldContainSubstring, "Not a function")
 		t.Log(rs, cost0)
 	})
 

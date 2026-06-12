@@ -71,7 +71,28 @@ func init() {
 	acc9 = testAccounts[9]
 }
 
-var ContractPath = os.Getenv("GOBASE") + "//config/genesis/contract/"
+var ContractPath = computeContractPath()
+
+func computeContractPath() string {
+	if base := os.Getenv("GOBASE"); base != "" {
+		return filepath.Join(base, "config", "genesis", "contract") + string(filepath.Separator)
+	}
+	// Auto-detect project root from current working directory.
+	dir, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	for {
+		if _, err := os.Stat(filepath.Join(dir, "go.mod")); err == nil {
+			return filepath.Join(dir, "config", "genesis", "contract") + string(filepath.Separator)
+		}
+		parent := filepath.Dir(dir)
+		if parent == dir {
+			panic("cannot find project root")
+		}
+		dir = parent
+	}
+}
 
 type fataler interface {
 	Fatal(args ...any)

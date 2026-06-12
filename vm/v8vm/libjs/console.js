@@ -24,6 +24,9 @@ class Console {
     P.error = function(...args) {
         _log('Error', this._format(...args));
     }
+    P.fatal = function(...args) {
+        throw new Error("console.fatal is not a function");
+    }
     P.log = function(...args) {
         this.info(...args)
     }

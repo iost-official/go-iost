@@ -84,7 +84,7 @@
             gas += 3 * rs.length + 4;
         }
 
-        __IOST_internal_gas_acc += gas;
+        _IOSTInstruction_counter.incr(gas);
         return rs;
     };
 }());

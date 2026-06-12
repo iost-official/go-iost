@@ -7,7 +7,7 @@ import (
 	"reflect"
 	"strconv"
 
-	"github.com/Gaurav-Gosain/quickjs"
+	"github.com/dop251/goja"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/crypto"
@@ -16,108 +16,98 @@ import (
 
 const cryptGasBase = 100
 
-func getSbx(ctx *quickjs.Context) *Sandbox {
-	v, ok := sbxMap.Load(ctx)
-	if !ok {
-		panic("get sandbox failed")
-	}
-	return v.(*Sandbox)
-}
+func newIOSTBlockchain(sbx *Sandbox) *goja.Object {
+	obj := sbx.rt.NewObject()
 
-func newIOSTBlockchain(ctx *quickjs.Context) quickjs.Value {
-	obj := ctx.Object()
-	sbx := getSbx(ctx)
-
-	obj.Set("blockInfo", ctx.Function("blockInfo", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+	obj.Set("blockInfo", func(call goja.FunctionCall) goja.Value {
 		blkInfo, cost := sbx.host.BlockInfo()
 		sbx.gasUsed += cost.CPU
-		return ctx.String(string(blkInfo))
-	}))
-	obj.Set("txInfo", ctx.Function("txInfo", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+		return sbx.rt.ToValue(string(blkInfo))
+	})
+	obj.Set("txInfo", func(call goja.FunctionCall) goja.Value {
 		txInfo, cost := sbx.host.TxInfo()
 		sbx.gasUsed += cost.CPU
-		return ctx.String(string(txInfo))
-	}))
-	obj.Set("contextInfo", ctx.Function("contextInfo", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
+		return sbx.rt.ToValue(string(txInfo))
+	})
+	obj.Set("contextInfo", func(call goja.FunctionCall) goja.Value {
 		ctxInfo, cost := sbx.host.ContextInfo()
 		sbx.gasUsed += cost.CPU
-		return ctx.String(string(ctxInfo))
-	}))
-	obj.Set("call", ctx.Function("call", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 3 {
-			return ctx.ThrowError("IOSTBlockchain_call invalid argument length")
+		return sbx.rt.ToValue(string(ctxInfo))
+	})
+	obj.Set("call", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 3 {
+			panic(sbx.rt.NewTypeError("IOSTBlockchain_call invalid argument length"))
 		}
-		contract := args[0].String()
-		api := args[1].String()
-		jarg := args[2].String()
+		contract := call.Argument(0).String()
+		api := call.Argument(1).String()
+		jarg := call.Argument(2).String()
 		callRs, cost, err := sbx.host.Call(contract, api, jarg)
 		sbx.gasUsed += cost.CPU
 		if err != nil {
-			return ctx.ThrowError(err.Error())
+			panic(sbx.rt.NewTypeError(err.Error()))
 		}
 		rsStr, _ := json.Marshal(callRs)
-		return ctx.String(string(rsStr))
-	}))
-	obj.Set("callWithAuth", ctx.Function("callWithAuth", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 3 {
-			return ctx.ThrowError("IOSTBlockchain_callWithAuth invalid argument length")
+		return sbx.rt.ToValue(string(rsStr))
+	})
+	obj.Set("callWithAuth", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 3 {
+			panic(sbx.rt.NewTypeError("IOSTBlockchain_callWithAuth invalid argument length"))
 		}
-		contract := args[0].String()
-		api := args[1].String()
-		jarg := args[2].String()
+		contract := call.Argument(0).String()
+		api := call.Argument(1).String()
+		jarg := call.Argument(2).String()
 		callRs, cost, err := sbx.host.CallWithAuth(contract, api, jarg)
 		sbx.gasUsed += cost.CPU
 		if err != nil {
-			return ctx.ThrowError(err.Error())
+			panic(sbx.rt.NewTypeError(err.Error()))
 		}
 		rsStr, _ := json.Marshal(callRs)
-		return ctx.String(string(rsStr))
-	}))
-	obj.Set("requireAuth", ctx.Function("requireAuth", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTBlockchain_requireAuth invalid argument length")
+		return sbx.rt.ToValue(string(rsStr))
+	})
+	obj.Set("requireAuth", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTBlockchain_requireAuth invalid argument length"))
 		}
-		accountID := args[0].String()
-		permission := args[1].String()
+		accountID := call.Argument(0).String()
+		permission := call.Argument(1).String()
 		ok, cost := sbx.host.RequireAuth(accountID, permission)
 		sbx.gasUsed += cost.CPU
-		return ctx.Bool(ok)
-	}))
-	obj.Set("receipt", ctx.Function("receipt", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTBlockchain_receipt invalid argument length")
+		return sbx.rt.ToValue(ok)
+	})
+	obj.Set("receipt", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTBlockchain_receipt invalid argument length"))
 		}
-		content := args[0].String()
+		content := call.Argument(0).String()
 		cost := sbx.host.Receipt(content)
 		sbx.gasUsed += cost.CPU
-		return ctx.Null()
-	}))
-	obj.Set("event", ctx.Function("event", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTBlockchain_event invalid argument length")
+		return goja.Null()
+	})
+	obj.Set("event", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTBlockchain_event invalid argument length"))
 		}
-		content := args[0].String()
+		content := call.Argument(0).String()
 		cost := sbx.host.PostEvent(content)
 		sbx.gasUsed += cost.CPU
-		return ctx.Null()
-	}))
+		return goja.Null()
+	})
 
 	return obj
 }
 
-func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
-	obj := ctx.Object()
-	sbx := getSbx(ctx)
+func newIOSTStorage(sbx *Sandbox) *goja.Object {
+	obj := sbx.rt.NewObject()
 
-	obj.Set("put", ctx.Function("put", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_Put invalid argument length")
+	obj.Set("put", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_Put invalid argument length"))
 		}
-		k := args[0].String()
-		v := args[1].StringBytes()
+		k := call.Argument(0).String()
+		v := call.Argument(1).String()
 		ramPayer := ""
-		if len(args) > 2 {
-			ramPayer = args[2].String()
+		if len(call.Arguments) > 2 {
+			ramPayer = call.Argument(2).String()
 		}
 		var cost contract.Cost
 		var err error
@@ -128,54 +118,54 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		sbx.gasUsed += cost.CPU
 		if err != nil {
-			return ctx.ThrowError(err.Error())
+			panic(sbx.rt.NewTypeError(err.Error()))
 		}
-		return ctx.Null()
-	}))
-	obj.Set("has", ctx.Function("has", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTContractStorage_Has invalid argument length")
+		return goja.Null()
+	})
+	obj.Set("has", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_Has invalid argument length"))
 		}
-		k := args[0].String()
+		k := call.Argument(0).String()
 		ret, cost := sbx.host.Has(k)
 		sbx.gasUsed += cost.CPU
-		return ctx.Bool(ret)
-	}))
-	obj.Set("get", ctx.Function("get", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTContractStorage_Get invalid argument length")
+		return sbx.rt.ToValue(ret)
+	})
+	obj.Set("get", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_Get invalid argument length"))
 		}
-		k := args[0].String()
+		k := call.Argument(0).String()
 		val, cost := sbx.host.Get(k)
 		sbx.gasUsed += cost.CPU
 		if val == nil {
-			return ctx.Null()
+			return goja.Null()
 		}
-		return ctx.StringLen(dbValToString(val))
-	}))
-	obj.Set("del", ctx.Function("del", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTContractStorage_Del invalid argument length")
+		return sbx.rt.ToValue(dbValToString(val))
+	})
+	obj.Set("del", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_Del invalid argument length"))
 		}
-		k := args[0].String()
+		k := call.Argument(0).String()
 		cost, err := sbx.host.Del(k)
 		sbx.gasUsed += cost.CPU
 		if err != nil {
-			return ctx.ThrowError(err.Error())
+			panic(sbx.rt.NewTypeError(err.Error()))
 		}
-		return ctx.Null()
-	}))
+		return goja.Null()
+	})
 
-	obj.Set("mapPut", ctx.Function("mapPut", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 3 {
-			return ctx.ThrowError("IOSTContractStorage_MapPut invalid argument length")
+	obj.Set("mapPut", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 3 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapPut invalid argument length"))
 		}
-		k := args[0].String()
-		f := args[1].String()
-		v := args[2].StringBytes()
+		k := call.Argument(0).String()
+		f := call.Argument(1).String()
+		v := call.Argument(2).String()
 		ramPayer := ""
-		if len(args) > 3 {
-			ramPayer = args[3].String()
+		if len(call.Arguments) > 3 {
+			ramPayer = call.Argument(3).String()
 		}
 		var cost contract.Cost
 		var err error
@@ -186,252 +176,246 @@ func newIOSTStorage(ctx *quickjs.Context) quickjs.Value {
 		}
 		sbx.gasUsed += cost.CPU
 		if err != nil {
-			return ctx.ThrowError(err.Error())
+			panic(sbx.rt.NewTypeError(err.Error()))
 		}
-		return ctx.Null()
-	}))
-	obj.Set("mapHas", ctx.Function("mapHas", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_MapHas invalid argument length")
+		return goja.Null()
+	})
+	obj.Set("mapHas", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapHas invalid argument length"))
 		}
-		k := args[0].String()
-		f := args[1].String()
+		k := call.Argument(0).String()
+		f := call.Argument(1).String()
 		ret, cost := sbx.host.MapHas(k, f)
 		sbx.gasUsed += cost.CPU
-		return ctx.Bool(ret)
-	}))
-	obj.Set("mapGet", ctx.Function("mapGet", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_MapGet invalid argument length")
+		return sbx.rt.ToValue(ret)
+	})
+	obj.Set("mapGet", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapGet invalid argument length"))
 		}
-		k := args[0].String()
-		f := args[1].String()
+		k := call.Argument(0).String()
+		f := call.Argument(1).String()
 		val, cost := sbx.host.MapGet(k, f)
 		sbx.gasUsed += cost.CPU
 		if val == nil {
-			return ctx.Null()
+			return goja.Null()
 		}
-		return ctx.StringLen(dbValToString(val))
-	}))
-	obj.Set("mapDel", ctx.Function("mapDel", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_MapDel invalid argument length")
+		return sbx.rt.ToValue(dbValToString(val))
+	})
+	obj.Set("mapDel", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapDel invalid argument length"))
 		}
-		k := args[0].String()
-		f := args[1].String()
+		k := call.Argument(0).String()
+		f := call.Argument(1).String()
 		cost, err := sbx.host.MapDel(k, f)
 		sbx.gasUsed += cost.CPU
 		if err != nil {
-			return ctx.ThrowError(err.Error())
+			panic(sbx.rt.NewTypeError(err.Error()))
 		}
-		return ctx.Null()
-	}))
-	obj.Set("mapKeys", ctx.Function("mapKeys", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTContractStorage_MapKeys invalid argument length")
+		return goja.Null()
+	})
+	obj.Set("mapKeys", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapKeys invalid argument length"))
 		}
-		k := args[0].String()
+		k := call.Argument(0).String()
 		fstr, cost := sbx.host.MapKeys(k)
 		sbx.gasUsed += cost.CPU
 		j, _ := json.Marshal(fstr)
-		return ctx.String(string(j))
-	}))
-	obj.Set("mapLen", ctx.Function("mapLen", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTContractStorage_MapLen invalid argument length")
+		return sbx.rt.ToValue(string(j))
+	})
+	obj.Set("mapLen", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapLen invalid argument length"))
 		}
-		k := args[0].String()
+		k := call.Argument(0).String()
 		l, cost := sbx.host.MapLen(k)
 		sbx.gasUsed += cost.CPU
-		return ctx.Int32(int32(l))
-	}))
+		return sbx.rt.ToValue(int32(l))
+	})
 
-	obj.Set("globalHas", ctx.Function("globalHas", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_GlobalHas invalid argument length")
+	obj.Set("globalHas", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalHas invalid argument length"))
 		}
-		c := args[0].String()
-		k := args[1].String()
+		c := call.Argument(0).String()
+		k := call.Argument(1).String()
 		ret, cost := sbx.host.GlobalHas(c, k)
 		sbx.gasUsed += cost.CPU
-		return ctx.Bool(ret)
-	}))
-	obj.Set("globalGet", ctx.Function("globalGet", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_GlobalGet invalid argument length")
+		return sbx.rt.ToValue(ret)
+	})
+	obj.Set("globalGet", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalGet invalid argument length"))
 		}
-		c := args[0].String()
-		k := args[1].String()
+		c := call.Argument(0).String()
+		k := call.Argument(1).String()
 		val, cost := sbx.host.GlobalGet(c, k)
 		sbx.gasUsed += cost.CPU
 		if val == nil {
-			return ctx.Null()
+			return goja.Null()
 		}
-		return ctx.StringLen(dbValToString(val))
-	}))
-	obj.Set("globalMapHas", ctx.Function("globalMapHas", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 3 {
-			return ctx.ThrowError("IOSTContractStorage_GlobalMapHas invalid argument length")
+		return sbx.rt.ToValue(dbValToString(val))
+	})
+	obj.Set("globalMapHas", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 3 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapHas invalid argument length"))
 		}
-		c := args[0].String()
-		k := args[1].String()
-		f := args[2].String()
+		c := call.Argument(0).String()
+		k := call.Argument(1).String()
+		f := call.Argument(2).String()
 		ret, cost := sbx.host.GlobalMapHas(c, k, f)
 		sbx.gasUsed += cost.CPU
-		return ctx.Bool(ret)
-	}))
-	obj.Set("globalMapGet", ctx.Function("globalMapGet", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 3 {
-			return ctx.ThrowError("IOSTContractStorage_GlobalMapGet invalid argument length")
+		return sbx.rt.ToValue(ret)
+	})
+	obj.Set("globalMapGet", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 3 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapGet invalid argument length"))
 		}
-		c := args[0].String()
-		k := args[1].String()
-		f := args[2].String()
+		c := call.Argument(0).String()
+		k := call.Argument(1).String()
+		f := call.Argument(2).String()
 		val, cost := sbx.host.GlobalMapGet(c, k, f)
 		sbx.gasUsed += cost.CPU
 		if val == nil {
-			return ctx.Null()
+			return goja.Null()
 		}
-		return ctx.StringLen(dbValToString(val))
-	}))
-	obj.Set("globalMapKeys", ctx.Function("globalMapKeys", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_GlobalMapKeys invalid argument length")
+		return sbx.rt.ToValue(dbValToString(val))
+	})
+	obj.Set("globalMapKeys", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapKeys invalid argument length"))
 		}
-		c := args[0].String()
-		k := args[1].String()
+		c := call.Argument(0).String()
+		k := call.Argument(1).String()
 		fstr, cost := sbx.host.GlobalMapKeys(c, k)
 		sbx.gasUsed += cost.CPU
 		j, _ := json.Marshal(fstr)
-		return ctx.String(string(j))
-	}))
-	obj.Set("globalMapLen", ctx.Function("globalMapLen", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.ThrowError("IOSTContractStorage_GlobalMapLen invalid argument length")
+		return sbx.rt.ToValue(string(j))
+	})
+	obj.Set("globalMapLen", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapLen invalid argument length"))
 		}
-		c := args[0].String()
-		k := args[1].String()
+		c := call.Argument(0).String()
+		k := call.Argument(1).String()
 		l, cost := sbx.host.GlobalMapLen(c, k)
 		sbx.gasUsed += cost.CPU
-		return ctx.Int32(int32(l))
-	}))
+		return sbx.rt.ToValue(int32(l))
+	})
 
 	return obj
 }
 
-func newIOSTInstruction(ctx *quickjs.Context) quickjs.Value {
-	obj := ctx.Object()
-	sbx := getSbx(ctx)
+func newIOSTInstruction(sbx *Sandbox) *goja.Object {
+	obj := sbx.rt.NewObject()
 
-	obj.Set("incr", ctx.Function("incr", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTContractInstruction_Incr invalid argument length")
+	obj.Set("incr", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTContractInstruction_Incr invalid argument length"))
 		}
-		n, err := args[0].Int32()
-		if err != nil {
-			return ctx.ThrowError("IOSTContractInstruction_Incr value must be number")
-		}
+		n := call.Argument(0).ToInteger()
 		if n < 0 {
-			return ctx.ThrowError("IOSTContractInstruction_Incr invalid gas")
+			panic(sbx.rt.NewTypeError("IOSTContractInstruction_Incr invalid gas"))
 		}
-		sbx.gasUsed += int64(n)
-		return ctx.Int32(int32(sbx.gasUsed))
-	}))
-	obj.Set("count", ctx.Function("count", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		return ctx.Int32(int32(sbx.gasUsed))
-	}))
+		sbx.gasUsed += n
+		if sbx.gasUsed > sbx.gasLimit {
+			panic(sbx.rt.NewTypeError("out of gas"))
+		}
+		return sbx.rt.ToValue(int32(sbx.gasUsed))
+	})
+	obj.Set("count", func(call goja.FunctionCall) goja.Value {
+		return sbx.rt.ToValue(int32(sbx.gasUsed))
+	})
 
 	return obj
 }
 
-func newIOSTCrypto(ctx *quickjs.Context) quickjs.Value {
-	obj := ctx.Object()
+func newIOSTCrypto(sbx *Sandbox) *goja.Object {
+	obj := sbx.rt.NewObject()
 
-	obj.Set("sha3", ctx.Function("sha3", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTCrypto_sha3 invalid argument length")
+	obj.Set("sha3", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTCrypto_sha3 invalid argument length"))
 		}
-		msg := args[0].String()
+		msg := call.Argument(0).String()
 		val := common.Base58Encode(common.Sha3([]byte(msg)))
-		sbx := getSbx(ctx)
 		sbx.gasUsed += int64(len(msg) + cryptGasBase)
-		return ctx.String(val)
-	}))
-	obj.Set("sha3Hex", ctx.Function("sha3Hex", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTCrypto_sha3Hex invalid argument length")
+		return sbx.rt.ToValue(val)
+	})
+	obj.Set("sha3Hex", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTCrypto_sha3Hex invalid argument length"))
 		}
-		msg := args[0].String()
+		msg := call.Argument(0).String()
 		msgBytes, err := hex.DecodeString(msg)
-		sbx := getSbx(ctx)
 		sbx.gasUsed += int64(len(msgBytes) + cryptGasBase)
 		if err != nil {
-			return ctx.String("")
+			return sbx.rt.ToValue("")
 		}
 		val := hex.EncodeToString(common.Sha3(msgBytes))
-		return ctx.String(val)
-	}))
-	obj.Set("ripemd160Hex", ctx.Function("ripemd160Hex", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 1 {
-			return ctx.ThrowError("IOSTCrypto_ripemd160Hex invalid argument length")
+		return sbx.rt.ToValue(val)
+	})
+	obj.Set("ripemd160Hex", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 1 {
+			panic(sbx.rt.NewTypeError("IOSTCrypto_ripemd160Hex invalid argument length"))
 		}
-		msg := args[0].String()
+		msg := call.Argument(0).String()
 		msgBytes, err := hex.DecodeString(msg)
-		sbx := getSbx(ctx)
 		sbx.gasUsed += int64(len(msgBytes) + cryptGasBase)
 		if err != nil {
-			return ctx.String("")
+			return sbx.rt.ToValue("")
 		}
 		val := hex.EncodeToString(common.Ripemd160(msgBytes))
-		return ctx.String(val)
-	}))
-	obj.Set("verify", ctx.Function("verify", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 4 {
-			return ctx.ThrowError("IOSTCrypto_verify invalid argument length")
+		return sbx.rt.ToValue(val)
+	})
+	obj.Set("verify", func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 4 {
+			panic(sbx.rt.NewTypeError("IOSTCrypto_verify invalid argument length"))
 		}
-		algoStr := args[0].String()
-		msgBytes := common.Base58Decode(args[1].String())
-		sigBytes := common.Base58Decode(args[2].String())
-		pubkeyBytes := common.Base58Decode(args[3].String())
-		sbx := getSbx(ctx)
+		algoStr := call.Argument(0).String()
+		msgBytes := common.Base58Decode(call.Argument(1).String())
+		sigBytes := common.Base58Decode(call.Argument(2).String())
+		pubkeyBytes := common.Base58Decode(call.Argument(3).String())
 		sbx.gasUsed += int64(len(msgBytes) + cryptGasBase)
 		if algoStr != "secp256k1" && algoStr != "ed25519" {
-			return ctx.Int32(0)
+			return sbx.rt.ToValue(int32(0))
 		}
 		if !crypto.NewAlgorithm(algoStr).Verify(msgBytes, pubkeyBytes, sigBytes) {
-			return ctx.Int32(0)
+			return sbx.rt.ToValue(int32(0))
 		}
-		return ctx.Int32(1)
-	}))
+		return sbx.rt.ToValue(int32(1))
+	})
 
 	return obj
 }
 
-func newCLog(ctx *quickjs.Context) quickjs.Value {
-	return ctx.Function("_cLog", func(ctx *quickjs.Context, this quickjs.Value, args []quickjs.Value) quickjs.Value {
-		if len(args) < 2 {
-			return ctx.Undefined()
+func newCLog(sbx *Sandbox) func(goja.FunctionCall) goja.Value {
+	return func(call goja.FunctionCall) goja.Value {
+		if len(call.Arguments) < 2 {
+			return goja.Undefined()
 		}
-		levelStr := args[0].String()
-		detailStr := args[1].String()
+		levelStr := call.Argument(0).String()
+		detailStr := call.Argument(1).String()
 
-		sbx := getSbx(ctx)
 		if sbx.host == nil || sbx.host.Logger() == nil {
 			fmt.Printf("[JSLOG %s] %s\n", levelStr, detailStr)
-			return ctx.Undefined()
+			return goja.Undefined()
 		}
 
 		loggerVal := reflect.ValueOf(sbx.host.Logger())
 		loggerFunc := loggerVal.MethodByName(levelStr)
 		if !loggerFunc.IsValid() {
-			return ctx.Undefined()
+			return goja.Undefined()
 		}
 
 		loggerFunc.Call([]reflect.Value{
 			reflect.ValueOf(detailStr),
 		})
-		return ctx.Undefined()
-	})
+		return goja.Undefined()
+	}
 }
 
 func dbValToString(val any) string {
