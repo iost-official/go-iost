@@ -35,10 +35,10 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test assignment2", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment2", 10)
-		So(err.Error(), ShouldContainSubstring, "Array.from is not a function")
+		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 		rs, cost, err = vmPool.LoadAndCall(host, code, "assignment2", 1000000)
-		So(err.Error(), ShouldContainSubstring, "Array.from is not a function")
+		So(err, ShouldBeNil)
 		t.Log(rs, cost)
 	})
 
@@ -119,13 +119,13 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test function1", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "function1", 10)
-		So(err.Error(), ShouldContainSubstring, "Code generation from strings disallowed for this context")
+		So(err.Error(), ShouldContainSubstring, "Function is not a constructor")
 		t.Log(rs, cost0)
 	})
 
 	Convey("test library1", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "library1", 10)
-		So(err.Error(), ShouldContainSubstring, "a is not a function")
+		So(err.Error(), ShouldContainSubstring, "Not a function")
 		t.Log(rs, cost0)
 	})
 
@@ -223,6 +223,6 @@ func TestInjectGas(t *testing.T) {
 	Convey("test bignumber0", t, func() {
 		_, cost0, err := vmPool.LoadAndCall(host, code, "bignumber0", "")
 		So(err, ShouldBeNil)
-		So(cost0.ToGas(), ShouldEqual, int64(433))
+		So(cost0.ToGas(), ShouldEqual, int64(829))
 	})
 }

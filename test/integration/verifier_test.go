@@ -725,7 +725,7 @@ func TestGasLimit2(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.Equal(t, "", r.Status.Message)
-	assert.Equal(t, int64(7441100), r.GasUsage)
+	assert.Equal(t, int64(7442300), r.GasUsage)
 	balance0 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc0.ID), Scale: s.Visitor.Decimal("iost")}
 	balance2 := common.Decimal{Value: s.Visitor.TokenBalance("iost", acc1.ID), Scale: s.Visitor.Decimal("iost")}
 	assert.Equal(t, "980", balance0.String())

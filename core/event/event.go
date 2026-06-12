@@ -127,5 +127,5 @@ func (ec *Collector) sendEvent(e *Event, meta *Meta) {
 
 // Post a event.
 func (ec *Collector) Post(e *Event, meta *Meta) {
-	go ec.sendEvent(e, meta)
+	ec.sendEvent(e, meta)
 }

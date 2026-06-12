@@ -73,7 +73,7 @@ func (k *KeyPairInfo) Encrypt(password []byte) error {
 	}
 	salt := make([]byte, 48) // encryptKey + iv + hashSalt
 	if _, err := io.ReadFull(rand.Reader, salt[0:32]); err != nil {
-		return fmt.Errorf("reading from crypto/rand failed: " + err.Error())
+		return fmt.Errorf("reading from crypto/rand failed: %v", err)
 	}
 	key, err := scrypt.Key(password, salt[0:32], 32768, 8, 1, 32)
 	if err != nil {

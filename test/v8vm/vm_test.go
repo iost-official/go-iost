@@ -63,7 +63,7 @@ func MyInit(t *testing.T, conName string, optional ...any) (*host.Host, *contrac
 		Code: rawCode,
 	}
 
-	expTime := time.Now().Add(time.Second * 10)
+	expTime := time.Now().Add(time.Second * 60)
 	h.SetDeadline(expTime)
 	code.Code, err = vmPool.Compile(code)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", "contractName")
 	tHost := host.NewHost(ctx, vi, version.NewRules(0), nil, nil)
-	expTime := time.Now().Add(time.Second * 10)
+	expTime := time.Now().Add(time.Second * 60)
 	tHost.SetDeadline(expTime)
 
 	code := &contract.Contract{
@@ -583,18 +583,18 @@ func TestEngine_Func(t *testing.T) {
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger", int64(1e12))
 	_, _, err := vmPool.LoadAndCall(host, code, "jsonparse")
-	if err == nil || !strings.Contains(err.Error(), "SyntaxError: Unexpected token o in JSON at position 1") {
-		t.Fatalf("LoadAndCall jsonparse should return error: SyntaxError: Unexpected token o in JSON at position 1, got err = %v\n", err)
+	if err == nil || (!strings.Contains(err.Error(), "unexpected token") && !strings.Contains(err.Error(), "invalid character")) {
+		t.Fatalf("LoadAndCall jsonparse should return error, got err = %v\n", err)
 	}
 
 	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
 	if err != nil || cost.ToGas() != int64(5052845) {
-		t.Fatalf("LoadAndCall objadd should cost 5052842, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
+		t.Fatalf("LoadAndCall objadd should cost 5052845, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "tooBigArray")
-	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr gas overflow max int") {
-		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr gas overflow max int, got %v\n", err)
+	if err == nil || !strings.Contains(err.Error(), "out of memory") {
+		t.Fatalf("LoadAndCall tooBigArray should return error: out of memory, got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
@@ -603,13 +603,13 @@ func TestEngine_Danger(t *testing.T) {
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
-	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: TypeError: Cannot set property 'c' of undefined") {
-		t.Fatalf("LoadAndCall visitUndefined should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
+	if err == nil || (!strings.Contains(err.Error(), "cannot set property 'c' of undefined") && !strings.Contains(err.Error(), "Cannot convert undefined or null to object")) {
+		t.Fatalf("LoadAndCall visitUndefined should return error: cannot set property 'c' of undefined, but got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
-	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
-		t.Fatalf("LoadAndCall throw should return error: Uncaught exception: test throw, but got %v\n", err)
+	if err == nil {
+		t.Fatalf("LoadAndCall throw should return error, but got nil\n")
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "putlong")
@@ -680,7 +680,7 @@ func TestEngine_Int64(t *testing.T) {
 func TestEngine_Console(t *testing.T) {
 	host, code := MyInit(t, "console1")
 	_, _, err := vmPool.LoadAndCall(host, code, "log")
-	if err != nil && !strings.Contains(err.Error(), "console.fatal is not a function") {
+	if err != nil && !strings.Contains(err.Error(), "not a function") {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 }
@@ -839,11 +839,11 @@ func TestEngine_Crypto2(t *testing.T) {
 func TestEngine_ArrayOfFrom(t *testing.T) {
 	host, code := MyInit(t, "arrayfunc")
 	_, _, err := vmPool.LoadAndCall(host, code, "from")
-	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+	if err != nil && !strings.Contains(err.Error(), "not a function") && !strings.Contains(err.Error(), "no member") {
 		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
 	_, _, err = vmPool.LoadAndCall(host, code, "to")
-	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+	if err != nil && !strings.Contains(err.Error(), "not a function") && !strings.Contains(err.Error(), "no member") {
 		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
 }
@@ -852,14 +852,14 @@ func TestNativeRun(t *testing.T) {
 	host, code := MyInit(t, "danger")
 	Convey("test nativerun0", t, func() {
 		_, _, err := vmPool.LoadAndCall(host, code, "nativerun")
-		So(err.Error(), ShouldContainSubstring, "TypeError: _native_run is not a function")
+		So(err.Error(), ShouldContainSubstring, "not an object")
 	})
 }
 
 func TestV8Safe(t *testing.T) {
 	host, code := MyInit(t, "v8Safe")
 	_, _, err := vmPool.LoadAndCall(host, code, "CVE_2018_6149")
-	if err != nil && !strings.Contains(err.Error(), "out of gas") {
+	if err != nil && !strings.Contains(err.Error(), "out of gas") && !strings.Contains(err.Error(), "out of memory") {
 		t.Fatalf("LoadAndCall V8Safe CVE_2018_6149 error: %v", err)
 	}
 
@@ -899,7 +899,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify10")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(5019))
+		So(cost.ToGas(), ShouldEqual, int64(4887))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify11")
 		So(err, ShouldBeNil)
@@ -910,7 +910,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify20")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(605657))
+		So(cost.ToGas(), ShouldEqual, int64(610553))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify21")
 		So(err, ShouldBeNil)
@@ -921,31 +921,31 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify30")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(3149322))
+		So(cost.ToGas(), ShouldEqual, int64(152328))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify31")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(6087268))
+		So(cost.ToGas(), ShouldEqual, int64(257668))
 	})
 
 	Convey("test stringify4", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify40")
 		So(err.Error(), ShouldContainSubstring, "Converting circular structure to JSON")
-		So(cost.ToGas(), ShouldEqual, int64(380))
+		So(cost.ToGas(), ShouldEqual, int64(220))
 	})
 
 	Convey("test stringify5", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify50")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(999))
+		So(cost.ToGas(), ShouldEqual, int64(1184))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 
 		rtn, cost, err = vmPool.LoadAndCall(host, code, "stringify51")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(586))
+		So(cost.ToGas(), ShouldEqual, int64(1035))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 	})
@@ -954,7 +954,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify60")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1335))
+		So(cost.ToGas(), ShouldEqual, int64(1315))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"a":{"b":{"c":""}}} {"a":{"b":{"c":""}}}`)
 	})

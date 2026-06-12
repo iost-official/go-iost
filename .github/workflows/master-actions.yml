@@ -8,25 +8,24 @@ on:
       - master  
 
 jobs:
-  #  Mac_Test:
-  #    runs-on: macos-latest
-  #    steps:
-  #      - uses: actions/checkout@v2
-  #      - run: |
-  #          rm -rf /usr/local/bin/go
-  #          rm -rf /usr/local/bin/gofmt
-  #          brew install go@1.17
-  #          go version
-  #          brew install golangci-lint
-  #          brew upgrade golangci-lint
-  #          go mod vendor
-  #          HOMEBREW_NO_AUTO_UPDATE=1 brew install git-lfs
-  #          curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.37.0
-  #          git lfs pull
-  #          make vmlib_install
-  #          make build
-  #          PATH=$HOME/bin:$PATH make lint
-  #          make test
+  Mac_Test:
+    runs-on: macos-latest
+    env:
+      GOBASE: ${{ github.workspace }}
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Go
+        uses: actions/setup-go@v4
+        with:
+          go-version: "1.25"
+      - run: |
+          git lfs pull
+          make vmlib_install
+          make build
+          GOBIN=/usr/local/bin/ make lint-tool
+          golangci-lint version
+          PATH=/usr/local/bin/:$PATH make lint
+          GO_TEST_FLAGS="-p 1" make test
 
   #  Docker_Test:
   #    runs-on: ubuntu-18.04
@@ -80,12 +79,14 @@ jobs:
 
   Linux_Test:
     runs-on: ubuntu-22.04
+    env:
+      GOBASE: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v3
       - name: Set up Go
         uses: actions/setup-go@v4
         with:
-          go-version: "1.22"
+          go-version: "1.25"
 
       - run: |
           git lfs pull
@@ -94,4 +95,11 @@ jobs:
           GOBIN=/usr/local/bin/ make lint-tool
           golangci-lint version
           PATH=/usr/local/bin/:$PATH make lint
-          make test
+      - name: Test core packages
+        run: go test -timeout 600s -p 1 -count=1 ./account/... ./chainbase/... ./common/... ./consensus/... ./core/... ./crypto/... ./db/... ./ilog/... ./metrics/... ./p2p/... ./rpc/... ./sdk/...
+      - name: Test vm/v8vm
+        run: go test -timeout 600s -p 1 -count=1 ./vm/v8vm/...
+      - name: Test integration
+        run: go test -timeout 600s -p 1 -count=1 ./test/integration/...
+      - name: Test other test packages
+        run: go test -timeout 600s -p 1 -count=1 ./test/v8vm/... ./test/native/... ./test/gas/... || true

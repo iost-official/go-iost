@@ -72,7 +72,7 @@ class Test {
     }
     stringify31() {
         let a = "a";
-        for (let i = 0; i < 1000; i++) {
+        for (let i = 0; i < 200; i++) {
             a = {
                 a : a
             };

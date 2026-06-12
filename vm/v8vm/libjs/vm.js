@@ -150,3 +150,9 @@ const _IOSTSpreadElement = function (args) {
     return args;
 }
 const console = new Console;
+
+// Expose blockchain and storage globals so Execute preloads can use them
+// directly (matching the old V8 sandbox.cc behaviour where vm.js was
+// loaded in the global context).
+globalThis.blockchain = blockchain;
+globalThis.storage = storage;

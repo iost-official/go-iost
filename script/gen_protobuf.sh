@@ -1,17 +1,6 @@
 #!/bin/bash
 
-if [ $(uname) == Darwin ]; then
-	export CGO_LDFLAGS=-L$(pwd)/vm/v8vm/v8/libv8/_darwin_amd64
-	export CGO_CFLAGS=-I$(pwd)/vm/v8vm/v8/include/_darwin_amd64
-	export DYLD_LIBRARY_PATH=$(pwd)/vm/v8vm/v8/libv8/_darwin_amd64
-fi
-
-if [ $(uname) == Linux ]; then
-	export CGO_LDFLAGS=-L$(pwd)/vm/v8vm/v8/libv8/_linux_amd64
-	export CGO_CFLAGS=-I$(pwd)/vm/v8vm/v8/include/_linux_amd64
-	export LD_LIBRARY_PATH=$(pwd)/vm/v8vm/v8/libv8/_linux_amd64
-fi
-
+# V8 native library paths are no longer needed after migrating to goja (pure Go).
 
 function install_tools() {
 	go install github.com/grpc-ecosystem/grpc-gateway/v2/protoc-gen-grpc-gateway@latest
