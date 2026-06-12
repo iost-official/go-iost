@@ -1,4 +1,4 @@
-//  JSON.stringify wrapper with gas estimation for QuickJS
+//  JSON.stringify wrapper with gas estimation for goja
 (function () {
     "use strict";
 

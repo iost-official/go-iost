@@ -12,7 +12,21 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
-const resultMaxLength = 65536 // byte
+const resultMaxLength = 65536 // UTF-16 code units, matching JS String.prototype.length
+
+// jsStringLength returns the number of UTF-16 code units in s, which is what
+// JavaScript reports for string.length.
+func jsStringLength(s string) int {
+	n := 0
+	for _, r := range s {
+		if r > 0xFFFF {
+			n += 2
+		} else {
+			n++
+		}
+	}
+	return n
+}
 
 // Error message
 var (
@@ -352,7 +366,9 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	var timer *time.Timer
 	if d > 0 {
 		timer = time.AfterFunc(d, func() {
-			sbx.rt.Interrupt("execution killed")
+			if sbx.rt != nil {
+				sbx.rt.Interrupt("execution killed")
+			}
 		})
 		defer timer.Stop()
 	} else {
@@ -419,7 +435,7 @@ const tx = {
 		str = result.String()
 	}
 
-	if len(str) > resultMaxLength {
+	if jsStringLength(str) > resultMaxLength {
 		return "", sbx.gasUsed, ErrResultTooLong
 	}
 

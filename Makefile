@@ -51,13 +51,13 @@ lint:
 	golangci-lint run
 
 vmlib:
-	@echo "vmlib target is deprecated: V8 has been replaced with QuickJS"
+	@echo "vmlib target is deprecated: V8/QuickJS have been replaced with goja"
 
 vmlib_install:
-	@echo "vmlib_install target is deprecated: V8 has been replaced with QuickJS"
+	@echo "vmlib_install target is deprecated: V8/QuickJS have been replaced with goja"
 
 vmlib_linux:
-	@echo "vmlib_linux target is deprecated: V8 has been replaced with QuickJS"
+	@echo "vmlib_linux target is deprecated: V8/QuickJS have been replaced with goja"
 
 test:
 	$(GO) clean -testcache

@@ -9,7 +9,7 @@ import (
 
 const vmRefLimit = 60
 
-// VM contains a QuickJS runtime and sandbox.
+// VM contains a goja runtime and sandbox.
 type VM struct {
 	sandbox              *Sandbox
 	releaseChannel       chan *VM
