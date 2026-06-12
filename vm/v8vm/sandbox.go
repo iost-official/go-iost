@@ -348,9 +348,16 @@ func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	sbx.rt.ClearInterrupt()
 
 	// Start a watcher that interrupts if the deadline is exceeded.
-	stopWatcher := make(chan struct{})
-	go sbx.deadlineWatcher(stopWatcher)
-	defer close(stopWatcher)
+	d := time.Until(sbx.deadline)
+	var timer *time.Timer
+	if d > 0 {
+		timer = time.AfterFunc(d, func() {
+			sbx.rt.Interrupt("execution killed")
+		})
+		defer timer.Stop()
+	} else {
+		return "", 0, errors.New("execution killed")
+	}
 
 	// Preload block/tx globals.
 	if _, err := sbx.rt.RunString(`
@@ -417,22 +424,6 @@ const tx = {
 	}
 
 	return str, sbx.gasUsed, nil
-}
-
-func (sbx *Sandbox) deadlineWatcher(stop chan struct{}) {
-	d := time.Until(sbx.deadline)
-	if d <= 0 {
-		sbx.rt.Interrupt("execution killed")
-		return
-	}
-	timer := time.NewTimer(d)
-	defer timer.Stop()
-	select {
-	case <-stop:
-		return
-	case <-timer.C:
-		sbx.rt.Interrupt("execution killed")
-	}
 }
 
 func formatFuncArgs(args []any) (string, error) {
