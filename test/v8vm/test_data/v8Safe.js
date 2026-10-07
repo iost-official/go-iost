@@ -83,7 +83,7 @@ class v8Safe {
 
         class Derived extends Array {
             constructor(a) {
-                const a = 1;
+                const b = 1;
             }
         }
 

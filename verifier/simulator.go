@@ -21,6 +21,12 @@ import (
 
 var txTime = 2 * common.MaxTxTimeLimit
 
+// simTxTimeout is the wall-clock execution budget for simulator txs. goja is
+// a pure interpreter (1-2 orders of magnitude slower than JIT V8), and shared
+// CI runners are slow; gas limits already bound execution deterministically,
+// so the simulator must not depend on tight wall-clock deadlines.
+const simTxTimeout = 30 * time.Second
+
 // Simulator of txs and contract
 type Simulator struct {
 	Visitor  *database.Visitor
@@ -29,11 +35,16 @@ type Simulator struct {
 	Logger   *ilog.Logger
 	Mvcc     db.MVCCDB
 	GasLimit int64
+	dbPath   string
 }
 
 // NewSimulator get a simulator with default settings
 func NewSimulator() *Simulator {
-	mvccdb, err := db.NewMVCCDB("mvcc")
+	dbPath, err := os.MkdirTemp("", "mvcc-*")
+	if err != nil {
+		panic(err)
+	}
+	mvccdb, err := db.NewMVCCDB(dbPath)
 	if err != nil {
 		panic(err)
 	}
@@ -51,6 +62,7 @@ func NewSimulator() *Simulator {
 		},
 		Logger:   ilog.DefaultLogger(),
 		GasLimit: 100000000,
+		dbPath:   dbPath,
 	}
 	return s
 }
@@ -239,7 +251,7 @@ func (s *Simulator) RunTx(stx *tx.Tx) (*tx.TxReceipt, error) {
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
-	err = isolator.PrepareTx(stx, 3*time.Second)
+	err = isolator.PrepareTx(stx, simTxTimeout)
 
 	if err != nil {
 		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
@@ -260,5 +272,7 @@ func (s *Simulator) RunTx(stx *tx.Tx) (*tx.TxReceipt, error) {
 // Clear mvccdb
 func (s *Simulator) Clear() {
 	s.Mvcc.Close()
-	os.RemoveAll("mvcc")
+	if s.dbPath != "" {
+		os.RemoveAll(s.dbPath)
+	}
 }

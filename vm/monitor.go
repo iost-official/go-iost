@@ -13,7 +13,9 @@ import (
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/core/tx"
+	"github.com/iost-official/go-iost/v3/core/version"
 	"github.com/iost-official/go-iost/v3/ilog"
+	gojavm "github.com/iost-official/go-iost/v3/vm/gojavm"
 	"github.com/iost-official/go-iost/v3/vm/host"
 	"github.com/iost-official/go-iost/v3/vm/native"
 	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
@@ -31,7 +33,19 @@ func NewMonitor() *Monitor {
 	}
 	jsvm := Factory("javascript")
 	m.vms["javascript"] = jsvm
+	gojaVM := Factory("javascript-goja")
+	m.vms["javascript-goja"] = gojaVM
 	return m
+}
+
+// jsVM selects the JavaScript engine for the given block rules: goja after
+// the 3.10.0 hardfork, the C++ V8 engine before it. nil rules (defensive
+// default) select V8, the pre-fork engine.
+func (m *Monitor) jsVM(rules *version.Rules) VM {
+	if rules != nil && rules.IsFork3_10_0 {
+		return m.vms["javascript-goja"]
+	}
+	return m.vms["javascript"]
 }
 
 func (m *Monitor) prepareContract(h *host.Host, contractName, api, jarg string) (c *contract.Contract, abi *contract.ABI, args []any, err error) {
@@ -115,7 +129,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 	}
 
 	vm, ok := m.vms[c.Info.Lang]
-	if !ok {
+	if c.Info.Lang == "javascript" {
+		vm = m.jsVM(h.Rules)
+	} else if !ok {
 		vm = Factory(c.Info.Lang)
 		m.vms[c.Info.Lang] = vm
 	}
@@ -239,25 +255,23 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 }
 
 // Compile ...
-func (m *Monitor) Compile(con *contract.Contract) (string, error) {
+func (m *Monitor) Compile(con *contract.Contract, rules *version.Rules) (string, error) {
 	switch con.Info.Lang {
 	case "native":
 		return "", nil
 	case "javascript":
-		jsvm := m.vms["javascript"]
-		return jsvm.Compile(con)
+		return m.jsVM(rules).Compile(con)
 	}
 	return "", errors.New("vm unsupported")
 }
 
 // Validate ...
-func (m *Monitor) Validate(con *contract.Contract) error {
+func (m *Monitor) Validate(con *contract.Contract, rules *version.Rules) error {
 	switch con.Info.Lang {
 	case "native":
 		return nil
 	case "javascript":
-		jsvm := m.vms["javascript"]
-		return jsvm.Validate(con)
+		return m.jsVM(rules).Validate(con)
 	}
 	return errors.New("vm unsupported")
 }
@@ -273,6 +287,10 @@ func Factory(lang string) VM {
 		vm := v8.NewVMPool(10, 400)
 		vm.Init()
 		//vm.SetJSPath(jsPath)
+		return vm
+	case "javascript-goja":
+		vm := gojavm.NewVMPool(10, 400)
+		vm.Init()
 		return vm
 	}
 	return nil

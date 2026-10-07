@@ -12,8 +12,8 @@ import (
 	"github.com/iost-official/go-iost/v3/db"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/vm/database"
+	gojavm "github.com/iost-official/go-iost/v3/vm/gojavm"
 	"github.com/iost-official/go-iost/v3/vm/host"
-	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
 	"github.com/wcharczuk/go-chart/v2"
 )
 
@@ -158,7 +158,7 @@ var (
 	}
 )
 
-var vmPool *v8.VMPool
+var vmPool *gojavm.VMPool
 var testDataPath = "./test_data/"
 var baseCPUCost = int64(30000)
 
@@ -205,7 +205,7 @@ func runOp(vi *database.Visitor, name string, api string, num int) (float64, int
 
 func init() {
 	// TODO The number of pool need adjust
-	vmPool = v8.NewVMPool(10, 400)
+	vmPool = gojavm.NewVMPool(10, 50)
 	vmPool.Init()
 }
 

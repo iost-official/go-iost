@@ -17,8 +17,8 @@ import (
 // Monitor monitor interface
 type Monitor interface {
 	Call(host *Host, contractName, api string, jarg string) (rtn []any, cost contract.Cost, err error)
-	Validate(con *contract.Contract) error
-	Compile(con *contract.Contract) (string, error)
+	Validate(con *contract.Contract, rules *version.Rules) error
+	Compile(con *contract.Contract, rules *version.Rules) (string, error)
 }
 
 // Host host struct, used as isolate of vm
@@ -105,7 +105,7 @@ func (h *Host) CallWithAuth(contract, api, jarg string) ([]any, contract.Cost, e
 
 func (h *Host) checkAbiValid(c *contract.Contract) (contract.Cost, error) {
 	cost := contract.Cost0()
-	err := h.monitor.Validate(c)
+	err := h.monitor.Validate(c, h.Rules)
 	cost.AddAssign(CodeSavageCost(len(c.Encode())))
 	return cost, err
 }
@@ -189,7 +189,7 @@ func (h *Host) SetCode(c *contract.Contract, owner string) (contract.Cost, error
 		return cost, err
 	}
 
-	code, err := h.monitor.Compile(c)
+	code, err := h.monitor.Compile(c, h.Rules)
 	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err
@@ -266,7 +266,7 @@ func (h *Host) UpdateCode(c *contract.Contract, id database.SerializedJSON) (con
 		return cost, err
 	}
 
-	code, err := h.monitor.Compile(c)
+	code, err := h.monitor.Compile(c, h.Rules)
 	cost.AddAssign(CodeSavageCost(len(c.Code)))
 	if err != nil {
 		return cost, err

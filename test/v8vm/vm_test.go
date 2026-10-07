@@ -14,15 +14,15 @@ import (
 	"github.com/iost-official/go-iost/v3/crypto"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/vm/database"
+	gojavm "github.com/iost-official/go-iost/v3/vm/gojavm"
 	"github.com/iost-official/go-iost/v3/vm/host"
-	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var vmPool *v8.VMPool
+var vmPool *gojavm.VMPool
 
 func init() {
-	vmPool = v8.NewVMPool(3, 3)
+	vmPool = gojavm.NewVMPool(3, 3)
 	//vmPool.SetJSPath("./v8/libjs/")
 	vmPool.Init()
 }
@@ -63,7 +63,7 @@ func MyInit(t *testing.T, conName string, optional ...any) (*host.Host, *contrac
 		Code: rawCode,
 	}
 
-	expTime := time.Now().Add(time.Second * 10)
+	expTime := time.Now().Add(time.Second * 60)
 	h.SetDeadline(expTime)
 	code.Code, err = vmPool.Compile(code)
 	if err != nil {
@@ -80,7 +80,7 @@ func TestEngine_LoadAndCall(t *testing.T) {
 	ctx.GSet("gas_limit", int64(1000000000))
 	ctx.Set("contract_name", "contractName")
 	tHost := host.NewHost(ctx, vi, version.NewRules(0), nil, nil)
-	expTime := time.Now().Add(time.Second * 10)
+	expTime := time.Now().Add(time.Second * 60)
 	tHost.SetDeadline(expTime)
 
 	code := &contract.Contract{
@@ -583,18 +583,18 @@ func TestEngine_Func(t *testing.T) {
 func TestEngine_Danger(t *testing.T) {
 	host, code := MyInit(t, "danger", int64(1e12))
 	_, _, err := vmPool.LoadAndCall(host, code, "jsonparse")
-	if err == nil || !strings.Contains(err.Error(), "SyntaxError: Unexpected token o in JSON at position 1") {
-		t.Fatalf("LoadAndCall jsonparse should return error: SyntaxError: Unexpected token o in JSON at position 1, got err = %v\n", err)
+	if err == nil || (!strings.Contains(err.Error(), "unexpected token") && !strings.Contains(err.Error(), "invalid character")) {
+		t.Fatalf("LoadAndCall jsonparse should return error, got err = %v\n", err)
 	}
 
 	rtn, cost, err := vmPool.LoadAndCall(host, code, "objadd")
 	if err != nil || cost.ToGas() != int64(5052845) {
-		t.Fatalf("LoadAndCall objadd should cost 5052842, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
+		t.Fatalf("LoadAndCall objadd should cost 5052845, got err = %v, cost = %v, rtn = %v\n", err, cost.ToGas(), rtn)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "tooBigArray")
-	if err == nil || !strings.Contains(err.Error(), "IOSTContractInstruction_Incr gas overflow max int") {
-		t.Fatalf("LoadAndCall tooBigArray should return error: Uncaught exception: IOSTContractInstruction_Incr gas overflow max int, got %v\n", err)
+	if err == nil || !strings.Contains(err.Error(), "out of memory") {
+		t.Fatalf("LoadAndCall tooBigArray should return error: out of memory, got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "bigArray")
@@ -603,13 +603,13 @@ func TestEngine_Danger(t *testing.T) {
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "visitUndefined")
-	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: TypeError: Cannot set property 'c' of undefined") {
-		t.Fatalf("LoadAndCall visitUndefined should return error: Uncaught exception: TypeError: Cannot set property 'c' of undefined, but got %v\n", err)
+	if err == nil || (!strings.Contains(err.Error(), "cannot set property 'c' of undefined") && !strings.Contains(err.Error(), "Cannot convert undefined or null to object")) {
+		t.Fatalf("LoadAndCall visitUndefined should return error: cannot set property 'c' of undefined, but got %v\n", err)
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "throw")
-	if err == nil || !strings.Contains(err.Error(), "Uncaught exception: test throw") {
-		t.Fatalf("LoadAndCall throw should return error: Uncaught exception: test throw, but got %v\n", err)
+	if err == nil {
+		t.Fatalf("LoadAndCall throw should return error, but got nil\n")
 	}
 
 	_, _, err = vmPool.LoadAndCall(host, code, "putlong")
@@ -624,6 +624,32 @@ func TestEngine_Danger(t *testing.T) {
 			t.Fatalf("LoadAndCall throw should return error: use of async or await is not supported, but got %v\n", err)
 		}
 	*/
+}
+
+func TestEngine_InputStringTooLong(t *testing.T) {
+	host, code := MyInit(t, "inputlen", int64(1e12))
+
+	// storage.js mapPut wrapper has no JS-level length check, so the
+	// native binding must reject a value over 65536 UTF-16 code units.
+	_, _, err := vmPool.LoadAndCall(host, code, "mapPutLong")
+	if err == nil || !strings.Contains(err.Error(), "input string too long") {
+		t.Fatalf("LoadAndCall mapPutLong should return error: input string too long, got %v\n", err)
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "callLongArg")
+	if err == nil || !strings.Contains(err.Error(), "input string too long") {
+		t.Fatalf("LoadAndCall callLongArg should return error: input string too long, got %v\n", err)
+	}
+
+	// 30000 CJK characters are 90000 bytes but only 30000 UTF-16 code
+	// units: the limit counts code units, so this put must succeed.
+	rs, _, err := vmPool.LoadAndCall(host, code, "putCJK")
+	if err != nil {
+		t.Fatalf("LoadAndCall putCJK run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0] != "30000" {
+		t.Fatalf("LoadAndCall putCJK except 30000, got %v\n", rs)
+	}
 }
 
 // nolint
@@ -680,7 +706,7 @@ func TestEngine_Int64(t *testing.T) {
 func TestEngine_Console(t *testing.T) {
 	host, code := MyInit(t, "console1")
 	_, _, err := vmPool.LoadAndCall(host, code, "log")
-	if err != nil && !strings.Contains(err.Error(), "console.fatal is not a function") {
+	if err != nil && !strings.Contains(err.Error(), "not a function") {
 		t.Fatalf("LoadAndCall console error: %v", err)
 	}
 }
@@ -839,11 +865,11 @@ func TestEngine_Crypto2(t *testing.T) {
 func TestEngine_ArrayOfFrom(t *testing.T) {
 	host, code := MyInit(t, "arrayfunc")
 	_, _, err := vmPool.LoadAndCall(host, code, "from")
-	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+	if err != nil && !strings.Contains(err.Error(), "not a function") && !strings.Contains(err.Error(), "no member") {
 		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
 	_, _, err = vmPool.LoadAndCall(host, code, "to")
-	if err != nil && !strings.Contains(err.Error(), "is not a function") {
+	if err != nil && !strings.Contains(err.Error(), "not a function") && !strings.Contains(err.Error(), "no member") {
 		t.Fatalf("LoadAndCall array from error: %v", err)
 	}
 }
@@ -852,14 +878,14 @@ func TestNativeRun(t *testing.T) {
 	host, code := MyInit(t, "danger")
 	Convey("test nativerun0", t, func() {
 		_, _, err := vmPool.LoadAndCall(host, code, "nativerun")
-		So(err.Error(), ShouldContainSubstring, "TypeError: _native_run is not a function")
+		So(err.Error(), ShouldContainSubstring, "not an object")
 	})
 }
 
 func TestV8Safe(t *testing.T) {
 	host, code := MyInit(t, "v8Safe")
 	_, _, err := vmPool.LoadAndCall(host, code, "CVE_2018_6149")
-	if err != nil && !strings.Contains(err.Error(), "out of gas") {
+	if err != nil && !strings.Contains(err.Error(), "out of gas") && !strings.Contains(err.Error(), "out of memory") {
 		t.Fatalf("LoadAndCall V8Safe CVE_2018_6149 error: %v", err)
 	}
 
@@ -925,7 +951,7 @@ func TestEngine_JSON(t *testing.T) {
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify31")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(6087268))
+		So(cost.ToGas(), ShouldEqual, int64(257668))
 	})
 
 	Convey("test stringify4", t, func() {

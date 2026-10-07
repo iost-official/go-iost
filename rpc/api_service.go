@@ -1094,9 +1094,9 @@ func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetB
 			BlockNumber: bn,
 		}
 
-		if rblk.Block.Transactions != nil && len(rblk.Block.Transactions) > 0 {
+		if len(rblk.Block.Transactions) > 0 {
 			for _, t := range rblk.Block.Transactions {
-				if t.Actions != nil && len(t.Actions) > 0 {
+				if len(t.Actions) > 0 {
 					for _, a := range t.Actions {
 						if (contract != "" && a.Contract == contract && action_name == "") ||
 							(contract == "" && action_name != "" && a.ActionName == action_name) ||
@@ -1111,7 +1111,7 @@ func (as *APIService) GetBlockTxsByContract(ctx context.Context, req *rpcpb.GetB
 			}
 		}
 
-		if rblktx.TxList != nil && len(rblktx.TxList) > 0 {
+		if len(rblktx.TxList) > 0 {
 			res.BlocktxList = append(res.BlocktxList, rblktx)
 		}
 	}

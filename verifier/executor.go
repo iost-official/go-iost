@@ -96,7 +96,7 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 		return nil, err
 	}
 	if r.Status.Code != tx.Success {
-		return nil, fmt.Errorf(r.Status.Message)
+		return nil, fmt.Errorf("%s", r.Status.Message)
 	}
 	isolator.Commit()
 	isolator.ClearTx()
