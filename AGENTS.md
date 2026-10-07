@@ -121,13 +121,14 @@ Default `chain_id` for the local dev config is `1020` (iwallet defaults to `1024
 
 ## JavaScript VMs (`vm/v8vm` and `vm/gojavm`)
 
-Two engines coexist. `vm/v8vm` holds the C++ V8 engine (CGO; prebuilt `libv8`/`libvm` libraries restored via git-lfs), and `vm/monitor.go` routes all JavaScript execution to it (`v8.NewVMPool(10, 400)`). `vm/gojavm` holds the `github.com/dop251/goja` engine (pure Go); outside tests nothing imports it yet — it will be wired in via a hardfork-height dispatch in `vm/monitor.go`.
+Two engines coexist. `vm/v8vm` holds the C++ V8 engine (CGO; prebuilt `libv8`/`libvm` libraries restored via git-lfs), and `vm/gojavm` holds the `github.com/dop251/goja` engine (pure Go). `vm/monitor.go` dispatches JavaScript execution between them by block rules (`IsFork3_10_0`; see the note at the top of this file).
 
 Key goja engine files (`vm/gojavm`):
 
 - `vm/gojavm/sandbox.go` — creates a goja runtime, loads runtime libs, executes contract code with gas/deadline enforcement.
 - `vm/gojavm/host_bindings.go` — Go callbacks exposed to JS (`IOSTBlockchain`, `IOSTStorage`, `IOSTInstruction`, `_IOSTCrypto`).
-- `vm/gojavm/libjs/*.js` — embedded JS runtime libraries (`//go:embed`).
+- `vm/jslib/*.js` — consensus JS runtime libraries shared by both engines (single source of truth; the V8 C++ build packs them from here via `vm/v8vm/v8/Makefile` `js_bin`).
+- `vm/gojavm/libjs/*.js` — goja-specific runtime files only (`console.js`, `storage.js`, `vm.js`, `v8sort.js`), embedded via `//go:embed`.
 - `vm/gojavm/pool.go` — VM pool for compile and run sandboxes.
 - `vm/monitor.go` — factory that creates the VM pool (`v8.NewVMPool(10, 400)`, currently the V8 engine).
 

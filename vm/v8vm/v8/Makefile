@@ -6,7 +6,10 @@ LDFLAGS=-fvisibility=hidden
 
 LIBS=-lv8_libbase -lv8_libplatform
 
-JSFILES = $(shell ls ./libjs | grep -v include)
+SHARED_JS_DIR = ../../jslib
+SHARED_JS = $(notdir $(wildcard $(SHARED_JS_DIR)/*.js))
+
+JSFILES := $(shell ls ./libjs | grep -v include) $(SHARED_JS)
 
 OS_NAME = $(shell uname -s)
 LC_OS_NAME = $(shell echo $(OS_NAME) | tr '[A-Z]' '[a-z]')
@@ -51,6 +54,9 @@ deploy:
 clean:
 	-rm -rf *.o
 	-rm -rf *$(LIB_SUFFIX)
+	-rm -f $(addprefix ./libjs/,$(SHARED_JS))
 
 js_bin:
+	@$(foreach file, $(SHARED_JS), cp $(SHARED_JS_DIR)/$(file) ./libjs/;)
 	@$(foreach file, $(JSFILES), xxd -i ./libjs/$(file) | sed 's/\([0-9a-f]\{1,2\}\)$$/\1, 0x00/' > ./libjs/include/$(file).h;)
+	@$(foreach file, $(SHARED_JS), rm ./libjs/$(file);)
