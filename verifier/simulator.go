@@ -21,6 +21,12 @@ import (
 
 var txTime = 2 * common.MaxTxTimeLimit
 
+// simTxTimeout is the wall-clock execution budget for simulator txs. goja is
+// a pure interpreter (1-2 orders of magnitude slower than JIT V8), and shared
+// CI runners are slow; gas limits already bound execution deterministically,
+// so the simulator must not depend on tight wall-clock deadlines.
+const simTxTimeout = 30 * time.Second
+
 // Simulator of txs and contract
 type Simulator struct {
 	Visitor  *database.Visitor
@@ -245,7 +251,7 @@ func (s *Simulator) RunTx(stx *tx.Tx) (*tx.TxReceipt, error) {
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
-	err = isolator.PrepareTx(stx, 3*time.Second)
+	err = isolator.PrepareTx(stx, simTxTimeout)
 
 	if err != nil {
 		return &tx.TxReceipt{}, fmt.Errorf("prepare tx error: %v", err)
