@@ -11,6 +11,10 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	dbPath := flag.String("db", "data/replay/storage/StateDB", "StateDB 路径")
 	cid := flag.String("c", "", "合约 ID")
 	out := flag.String("o", "", "输出文件（默认打印到 stdout）")
@@ -19,7 +23,7 @@ func main() {
 	m, err := db.NewMVCCDB(*dbPath)
 	if err != nil {
 		fmt.Println("open statedb failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	defer m.Close()
 
@@ -29,12 +33,12 @@ func main() {
 	code, err := m.Get("state", "c-"+*cid)
 	if err != nil {
 		fmt.Println("get contract failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	con := &contract.Contract{}
 	if err := con.Decode(code); err != nil {
 		fmt.Println("decode contract failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	if *out == "" {
 		fmt.Println(con.Code)
@@ -42,4 +46,5 @@ func main() {
 		os.WriteFile(*out, []byte(con.Code), 0644)
 		fmt.Fprintf(os.Stderr, "written to %s (%d bytes)\n", *out, len(con.Code))
 	}
+	return 0
 }

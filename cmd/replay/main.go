@@ -20,6 +20,10 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	var (
 		dbPath  = flag.String("db", "data/replay/storage/", "重放目标的 storage 目录（内含快照解压出的 BlockChainDB/StateDB/BlockCacheWAL）")
 		srcPath = flag.String("src", "data/srcdb/BlockChainDB", "源 BlockChainDB（从已同步的 V8 节点拷贝，提供待重放的块）")
@@ -53,7 +57,7 @@ func main() {
 	src, err := block.NewBlockChain(*srcPath)
 	if err != nil {
 		fmt.Println("open source BlockChainDB failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	srcLen := src.Length()
 	fmt.Printf("source chain length: %d\n", srcLen)
@@ -61,7 +65,7 @@ func main() {
 	cBase, err := chainbase.New(conf)
 	if err != nil {
 		fmt.Println("chainbase init failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	defer cBase.Close()
 
@@ -95,7 +99,7 @@ func main() {
 			for i, t := range blk.Txs {
 				fmt.Printf("  tx[%d] %s\n", i, t.String())
 			}
-			os.Exit(2)
+			return 2
 		}
 		processed++
 		if d := time.Since(ta); d > 100*time.Millisecond {
@@ -109,4 +113,5 @@ func main() {
 		}
 	}
 	fmt.Printf("DONE: replayed %d blocks, no divergence in [%d, %d)\n", processed, start, end)
+	return 0
 }

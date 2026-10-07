@@ -23,6 +23,10 @@ import (
 )
 
 func main() {
+	os.Exit(run())
+}
+
+func run() int {
 	statePath := flag.String("state", "data/replay/storage/StateDB", "StateDB 路径（其当前 tag 应为待测块的父块状态）")
 	srcPath := flag.String("src", "data/srcdb/BlockChainDB", "源 BlockChainDB 路径")
 	num := flag.Int64("block", 0, "块高度")
@@ -51,18 +55,18 @@ func main() {
 	src, err := block.NewBlockChain(*srcPath)
 	if err != nil {
 		fmt.Println("open source chain failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	blk, err := src.GetBlockByNumber(*num)
 	if err != nil {
 		fmt.Println("get block failed:", err)
-		os.Exit(1)
+		return 1
 	}
 
 	stateDB, err := db.NewMVCCDB(*statePath)
 	if err != nil {
 		fmt.Println("open statedb failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	defer stateDB.Close()
 
@@ -77,7 +81,7 @@ func main() {
 	lg.Stop()
 	if err := isolator.Prepare(blk.Head, vi, &lg); err != nil {
 		fmt.Println("isolator prepare failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	if *isBase {
 		isolator.TriggerBlockBaseMode()
@@ -85,7 +89,7 @@ func main() {
 	to := common.MaxTxTimeLimit * 50
 	if err := isolator.PrepareTx(t, to); err != nil {
 		fmt.Println("prepare tx failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	start := time.Now()
 	_, err = isolator.Run()
@@ -93,7 +97,7 @@ func main() {
 	receipt, err := isolator.PayCost()
 	if err != nil {
 		fmt.Println("paycost failed:", err)
-		os.Exit(1)
+		return 1
 	}
 	fmt.Printf("actual gas: %d (diff %d)\n", receipt.GasUsage, receipt.GasUsage-want.GasUsage)
 
@@ -129,4 +133,5 @@ func main() {
 			fmt.Println("parse histogram failed:", err, "\nraw:", r[:min(200, len(r))])
 		}
 	}
+	return 0
 }
