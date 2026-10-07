@@ -29,6 +29,10 @@ func init() {
 }
 
 var (
+	// enableEthAddressAutoSignUp 保持 false：eth 地址自动开户（PR #1215）
+	// 原定于 3.10.0 fork 上线，已撤下；相关代码暂时保留备查。
+	enableEthAddressAutoSignUp = false
+
 	transferTokenABIV3 = &abi{
 		name: "transfer",
 		args: []string{"string", "string", "string", "string", "string"},
@@ -46,7 +50,10 @@ var (
 			if !h.IsValidAccount(from) {
 				return nil, cost, fmt.Errorf("invalid account %v", from)
 			}
-			if h.IsFork3_10_0 && h.IsEthAddress(to) && !h.IsValidAccount(to) {
+			// ETH 地址自动开户原定于 3.10.0 fork 上线，已撤下不再启用；
+			// 代码暂时保留备查。3.10.0 fork 的实际内容为 VM 引擎切换
+			// （见 core/version/fork.go 与 vm/monitor.go）。
+			if enableEthAddressAutoSignUp && h.IsFork3_10_0 && h.IsEthAddress(to) && !h.IsValidAccount(to) {
 				// create this address
 				_, cost0, err := h.CallWithAuth("auth.iost", "signUp", fmt.Sprintf("[\"%s\",\"\",\"\"]", to))
 				cost.AddAssign(cost0)

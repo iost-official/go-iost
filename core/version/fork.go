@@ -50,7 +50,11 @@ func IsFork3_9_0(num int64) bool {
 	return isForked(chainConf.Block3_9_0, num)
 }
 
-// IsFork3_10_0 ...
+// IsFork3_10_0 reports whether the 3.10.0 hardfork is active at the given
+// block height. The content of the 3.10.0 fork is the JavaScript VM engine
+// switch from C++ V8 to goja (see vm/monitor.go jsVM). The ETH address
+// support originally scheduled for this fork has been withdrawn (the code
+// remains but is disabled; see vm/native/token_v3.go).
 func IsFork3_10_0(num int64) bool {
 	return isForked(chainConf.Block3_10_0, num)
 }
