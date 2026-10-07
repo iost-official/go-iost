@@ -13,7 +13,7 @@ This file contains practical guidance for AI coding agents working on the `go-io
 
 Module path: `github.com/iost-official/go-iost/v3`
 
-> **Note:** The repo currently carries two JavaScript engines: the C++ V8 engine in `vm/v8vm` (CGO, used for all execution) and the `dop251/goja` engine in `vm/gojavm` (pure Go, not yet wired into execution — a hardfork-height dispatch is planned). Go 1.25+ is required. Treat this file as the authoritative source for development setup.
+> **Note:** The repo currently carries two JavaScript engines: the C++ V8 engine in `vm/v8vm` (CGO, used for all execution) and the `dop251/goja` engine in `vm/gojavm` (pure Go). `vm/monitor.go` dispatches JavaScript execution/compile/validate by block rules: pre-3.10.0-fork blocks run on V8, post-fork on goja (`IsFork3_10_0`, mainnet height 520,000,000; non-mainnet chain IDs activate at height 0, so local dev chains always run goja). Go 1.25+ is required. Treat this file as the authoritative source for development setup.
 
 ## Environment Requirements
 
@@ -109,7 +109,7 @@ Default `chain_id` for the local dev config is `1020` (iwallet defaults to `1024
 |---|---|
 | `cmd/iserver`, `cmd/iwallet`, `cmd/itest` | CLI entry points |
 | `vm/v8vm` | JavaScript smart-contract runtime: C++ V8 engine (CGO) |
-| `vm/gojavm` | goja-based JavaScript engine (pure Go); not yet wired into execution |
+| `vm/gojavm` | goja-based JavaScript engine (pure Go); active from the 3.10.0 fork height |
 | `vm/host` | Host environment exposed to contracts (storage, blockchain context, gas) |
 | `core/contract`, `core/tx`, `core/block` | Core blockchain data structures |
 | `consensus/pob` | Proof-of-Believability consensus |
