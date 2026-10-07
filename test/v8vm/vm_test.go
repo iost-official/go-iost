@@ -14,15 +14,15 @@ import (
 	"github.com/iost-official/go-iost/v3/crypto"
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/vm/database"
+	gojavm "github.com/iost-official/go-iost/v3/vm/gojavm"
 	"github.com/iost-official/go-iost/v3/vm/host"
-	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
 	. "github.com/smartystreets/goconvey/convey"
 )
 
-var vmPool *v8.VMPool
+var vmPool *gojavm.VMPool
 
 func init() {
-	vmPool = v8.NewVMPool(3, 3)
+	vmPool = gojavm.NewVMPool(3, 3)
 	//vmPool.SetJSPath("./v8/libjs/")
 	vmPool.Init()
 }

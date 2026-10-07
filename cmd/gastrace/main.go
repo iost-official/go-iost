@@ -1,5 +1,5 @@
 // gastrace：对指定块中的指定交易做单交易执行追踪。配合沙箱的
-// IOST_GAS_TRACE 钩子（见 vm/v8vm/sandbox.go），输出 gas 计费直方图，
+// IOST_GAS_TRACE 钩子（见 vm/gojavm/sandbox.go），输出 gas 计费直方图，
 // 用于对比 V8 与 goja 两个引擎对同一交易的计费序列差异。
 package main
 

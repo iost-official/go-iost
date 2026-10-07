@@ -16,12 +16,21 @@ DEV_DOCKER_RUN = docker run --rm -v `pwd`:/go-iost $(DOCKER_DEVIMAGE)
 
 export GOBASE = $(shell pwd)
 export GOARCH=amd64
-export CGO_ENABLED=0
+export CGO_ENABLED=1
 
-# -race requires CGO, which is disabled now that V8/C++ is removed.
-# ifeq ($(shell uname),Linux)
-# 	GO_TEST := $(GO_TEST) -race
-# endif
+ifeq ($(shell uname),Darwin)
+	#export CGO_LDFLAGS=-L$(shell pwd)/vm/v8vm/v8/libv8/_darwin_amd64
+	#export CGO_CFLAGS=-I$(shell pwd)/vm/v8vm/v8/include/_darwin_amd64
+	export DYLD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_darwin_amd64
+	GO_TEST := $(GO_TEST) -exec "env DYLD_LIBRARY_PATH=$(DYLD_LIBRARY_PATH)" 
+endif
+
+ifeq ($(shell uname),Linux)
+	export CGO_LDFLAGS=-L$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
+	export CGO_CFLAGS=-I$(shell pwd)/vm/v8vm/v8/include/_linux_amd64
+	export LD_LIBRARY_PATH=$(shell pwd)/vm/v8vm/v8/libv8/_linux_amd64
+	GO_TEST := $(GO_TEST) -race 
+endif
 
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/v3/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/v3/core/global.GitHash=$(shell git rev-parse HEAD) -X github.com/iost-official/go-iost/v3/core/global.CodeVersion=$(VERSION)
@@ -32,8 +41,12 @@ all: build
 
 build: iserver iwallet itest
 
-iserver: $(eval SHELL:=/bin/bash)
+iserver: $(eval SHELL:=/bin/bash) 
 	$(GO_BUILD) -ldflags "$(LD_FLAGS)" -o $(TARGET_DIR)/iserver ./cmd/iserver
+	@if [[ "`uname`" == "Darwin"* ]]; then \
+		echo change libvm dylib path; \
+		install_name_tool -change libvm.dylib $(DYLD_LIBRARY_PATH)/libvm.dylib ./target/iserver; \
+	fi
 
 iwallet:
 	$(GO_BUILD) -o $(TARGET_DIR)/iwallet ./cmd/iwallet
@@ -51,13 +64,13 @@ lint:
 	golangci-lint run
 
 vmlib:
-	@echo "vmlib target is deprecated: V8/QuickJS have been replaced with goja"
+	(cd vm/v8vm/v8/; make clean js_bin vm install; cd ../../..)
 
 vmlib_install:
-	@echo "vmlib_install target is deprecated: V8/QuickJS have been replaced with goja"
+	(cd vm/v8vm/v8/; make deploy; cd ../../..)
 
 vmlib_linux:
-	@echo "vmlib_linux target is deprecated: V8/QuickJS have been replaced with goja"
+	$(DEV_DOCKER_RUN) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
 
 test:
 	$(GO) clean -testcache

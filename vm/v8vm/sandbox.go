@@ -1,14 +1,54 @@
 package v8
 
+/*
+#include <stdlib.h>
+#include "v8/vm.h"
+char* goBlockInfo(SandboxPtr, CStr *, size_t *);
+char* goTxInfo(SandboxPtr, CStr *, size_t *);
+char* goContextInfo(SandboxPtr, CStr *, size_t *);
+char* goCall(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goCallWithAuth(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goRequireAuth(SandboxPtr, const CStr, const CStr, bool *, size_t *);
+char* goReceipt(SandboxPtr, const CStr, size_t *);
+char* goEvent(SandboxPtr, const CStr, size_t *);
+
+char* goPut(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
+char* goHas(SandboxPtr, const CStr, const CStr, bool *, size_t *);
+char* goGet(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
+char* goDel(SandboxPtr, const CStr, const CStr, size_t *);
+char* goMapPut(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
+char* goMapHas(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
+char* goMapGet(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goMapDel(SandboxPtr, const CStr, const CStr, const CStr, size_t *);
+char* goMapKeys(SandboxPtr, const CStr, const CStr, CStr *, size_t *);
+char* goMapLen(SandboxPtr, const CStr, const CStr, size_t *, size_t *);
+
+char* goGlobalHas(SandboxPtr, const CStr, const CStr, const CStr, bool *, size_t *);
+char* goGlobalGet(SandboxPtr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goGlobalMapHas(SandboxPtr, const CStr, const CStr, const CStr, const CStr, bool *, size_t *);
+char* goGlobalMapGet(SandboxPtr, const CStr, const CStr, const CStr, const CStr, CStr *, size_t *);
+char* goGlobalMapKeys(SandboxPtr, const CStr,  const CStr, const CStr, CStr *, size_t *);
+char* goGlobalMapLen(SandboxPtr, const CStr, const CStr, const CStr, size_t *, size_t *);
+
+char* goConsoleLog(SandboxPtr, const CStr, const CStr);
+
+CStr goSha3(SandboxPtr, const CStr, size_t *);
+CStr goSha3Hex(SandboxPtr, const CStr, size_t *);
+CStr goRipemd160Hex(SandboxPtr, const CStr, size_t *);
+int goVerify(SandboxPtr, const CStr, const CStr, const CStr, const CStr, size_t *);
+*/
+import "C"
 import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"os"
-	"strings"
 	"time"
+	"unsafe"
 
-	"github.com/dop251/goja"
+	"strings"
+
+	"sync"
+
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/vm/host"
 )
@@ -23,224 +63,94 @@ var (
 // Sandbox is an execution environment that allows separate, unrelated, JavaScript
 // code to run in a single instance of IVM.
 type Sandbox struct {
-	id       int // nolint
-	flags    int64
-	rt       *goja.Runtime
-	host     *host.Host
-	gasUsed  int64
-	gasLimit int64
-	deadline time.Time
+	id      int // nolint
+	flags   int64
+	isolate C.IsolateWrapperPtr
+	context C.SandboxPtr
+	host    *host.Host
 }
 
-// NewSandbox generate new sandbox for VM.
+// var sbxMap = make(map[C.SandboxPtr]*Sandbox)
+var sbxMap sync.Map
+
+// GetSandbox from sandbox map by sandbox ptr
+func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
+	valInterface, ok := sbxMap.Load(cSbx)
+	if !ok {
+		return nil, ok
+	}
+	sbx, ok := valInterface.(*Sandbox)
+	return sbx, ok
+}
+
+// NewSandbox generate new sandbox for VM and insert into sandbox map
 func NewSandbox(e *VM, flags int64) *Sandbox {
-	rt := goja.New()
+	cPath := C.CString(e.jsPath)
+	defer C.free(unsafe.Pointer(cPath))
+
+	cSbx := C.newSandbox(e.isolate, C.int64_t(flags))
+	C.setJSPath(cSbx, cPath)
 
 	s := &Sandbox{
-		rt:    rt,
-		flags: flags,
+		isolate: e.isolate,
+		context: cSbx,
+		flags:   flags,
 	}
 	s.Init(e.vmType)
+	sbxMap.Store(cSbx, s)
+
 	return s
 }
 
-// Release release sandbox resources.
+// Release release sandbox and delete from map
 func (sbx *Sandbox) Release() {
-	if sbx.rt != nil {
-		sbx.rt.ClearInterrupt()
-		sbx.rt = nil
+	if sbx.context != nil {
+		sbxMap.Delete(sbx.context)
+		C.releaseSandbox(sbx.context)
 	}
+	sbx.context = nil
 }
 
-// Init add system functions.
+// Init add system functions
 func (sbx *Sandbox) Init(vmType vmPoolType) {
-	rt := sbx.rt
-
-	if vmType == CompileVMPool {
-		// Compile VM only needs _cLog (stub) and the compile-time libraries.
-		rt.Set("_cLog", func(goja.FunctionCall) goja.Value { return goja.Undefined() })
-		rt.Set("console", map[string]func(goja.FunctionCall) goja.Value{
-			"log":   func(goja.FunctionCall) goja.Value { return goja.Undefined() },
-			"debug": func(goja.FunctionCall) goja.Value { return goja.Undefined() },
-			"info":  func(goja.FunctionCall) goja.Value { return goja.Undefined() },
-			"warn":  func(goja.FunctionCall) goja.Value { return goja.Undefined() },
-			"error": func(goja.FunctionCall) goja.Value { return goja.Undefined() },
-		})
-
-		compileBootstrap := fmt.Sprintf(
-			"let exports = {};\n"+
-				"let module = {};\n"+
-				"module.exports = {};\n"+
-				"%s\n"+
-				"const esprima = module.exports;\n"+
-				"%s\n"+
-				"const escodegen = module.exports;\n"+
-				"%s\n"+
-				"%s\n",
-			esprimaJS, escodegenJS, validateJS, injectGasJS,
-		)
-		if _, err := rt.RunString(compileBootstrap); err != nil {
-			panic(fmt.Sprintf("load compile bootstrap error: %v", err))
-		}
-		return
-	}
-
-	// Run VM: inject all host bindings.
-	rt.Set("_cLog", newCLog(sbx))
-
-	// Native constructors.
-	rt.Set("IOSTBlockchain", func(call goja.ConstructorCall) *goja.Object {
-		return newIOSTBlockchain(sbx)
-	})
-	rt.Set("IOSTStorage", func(call goja.ConstructorCall) *goja.Object {
-		return newIOSTStorage(sbx)
-	})
-	rt.Set("IOSTInstruction", func(call goja.ConstructorCall) *goja.Object {
-		return newIOSTInstruction(sbx)
-	})
-	rt.Set("_IOSTCrypto", func(call goja.ConstructorCall) *goja.Object {
-		return newIOSTCrypto(sbx)
-	})
-
-	// Load runtime base libraries in one script.
-	runtimeBootstrap := fmt.Sprintf(
-		"let module = {};\n"+
-			"module.exports = {};\n"+
-			"%s\n"+
-			"%s\n"+
-			"let BigNumber = module.exports;\n"+
-			"%s\n"+
-			"%s\n"+
-			"%s\n"+
-			"%s\n",
-		jsonJS, bignumberJS, int64JS, float64JS, utilsJS, consoleJS,
+	// init require
+	C.InitGoConsole((C.consoleFunc)(C.goConsoleLog))
+	C.InitGoBlockchain(
+		(C.blockInfoFunc)(C.goBlockInfo),
+		(C.txInfoFunc)(C.goTxInfo),
+		(C.contextInfoFunc)(C.goContextInfo),
+		(C.callFunc)(C.goCall),
+		(C.callFunc)(C.goCallWithAuth),
+		(C.requireAuthFunc)(C.goRequireAuth),
+		(C.receiptFunc)(C.goReceipt),
+		(C.eventFunc)(C.goEvent),
 	)
-	if _, err := rt.RunString(runtimeBootstrap); err != nil {
-		panic(fmt.Sprintf("load runtime bootstrap error: %v", err))
-	}
+	C.InitGoStorage(
+		(C.putFunc)(C.goPut),
+		(C.hasFunc)(C.goHas),
+		(C.getFunc)(C.goGet),
+		(C.delFunc)(C.goDel),
+		(C.mapPutFunc)(C.goMapPut),
+		(C.mapHasFunc)(C.goMapHas),
+		(C.mapGetFunc)(C.goMapGet),
+		(C.mapDelFunc)(C.goMapDel),
+		(C.mapKeysFunc)(C.goMapKeys),
+		(C.mapLenFunc)(C.goMapLen),
 
-	// Pre-load storage and blockchain modules into global cache.
-	for _, mod := range []struct{ name, src string }{{"storage", storageJS}, {"blockchain", blockchainJS}} {
-		jsCode := fmt.Sprintf(`
-(function(){
-var module = { exports: {} };
-(function(exports, require, module, __filename, __dirname) {
-%s
-})(module.exports, null, module, '%s.js', '');
-globalThis.__modules_%s = module.exports;
-})();
-`, mod.src, mod.name, mod.name)
-		if _, err := rt.RunString(jsCode); err != nil {
-			panic(fmt.Sprintf("load %s module error: %v", mod.name, err))
-		}
-	}
-
-	// Inject pure-JS require/run helpers that use the pre-loaded modules.
-	if _, err := rt.RunString(`
-_native_require = function(id) { return ''; };
-_native_run = function(source, filename) {
-	return function(exports, require, module, __filename, __dirname) {
-		if (filename === 'storage.js') {
-			module.exports = globalThis.__modules_storage;
-		} else if (filename === 'blockchain.js') {
-			module.exports = globalThis.__modules_blockchain;
-		}
-	};
-};
-`); err != nil {
-		panic(fmt.Sprintf("inject require helpers error: %v", err))
-	}
-
-	// Load vm.js.
-	if _, err := rt.RunString(vmJS); err != nil {
-		panic(fmt.Sprintf("load vm.js error: %v", err))
-	}
-
-	// Remove _native_run from global scope after vm.js has captured it.
-	if _, err := rt.RunString("_native_run = undefined;"); err != nil {
-		panic(fmt.Sprintf("remove _native_run error: %v", err))
-	}
-
-	// Polyfill missing globals before environment.js tries to null them.
-	if _, err := rt.RunString(`
-var _native_log = function(){};
-if (typeof Atomics === 'undefined') { var Atomics = {}; }
-if (typeof Intl === 'undefined') { var Intl = {}; }
-if (typeof WebAssembly === 'undefined') { var WebAssembly = {}; }
-if (typeof SharedArrayBuffer === 'undefined') { var SharedArrayBuffer = {}; }
-if (typeof DataView === 'undefined') { var DataView = {}; }
-`); err != nil {
-		panic(fmt.Sprintf("inject missing globals error: %v", err))
-	}
-
-	// Capture methods that environment.js sets to null so we can restore them.
-	if _, err := rt.RunString(`
-var __savedArrayFrom = Array.from;
-var __savedArrayOf = Array.of;
-var __savedFunction = Function;
-`); err != nil {
-		panic(fmt.Sprintf("capture globals error: %v", err))
-	}
-
-	// Install V8-faithful sort BEFORE environment.js so that environment.js
-	// wraps it (charging 1+length per call) exactly like it wraps native sort
-	// on mainnet V8 nodes.
-	if _, err := rt.RunString(v8sortJS); err != nil {
-		panic(fmt.Sprintf("load v8sort error: %v", err))
-	}
-
-	// Load environment.js.
-	if _, err := rt.RunString(environmentJS); err != nil {
-		panic(fmt.Sprintf("load environment.js error: %v", err))
-	}
-
-	// NOTE: Array.from/Array.of stay nulled by environment.js, matching the
-	// upstream V8 sandbox. Contracts calling them must fail (ErrorRuntime),
-	// exactly as on mainnet.
-
-	// Block dangerous dynamic-code features.
-	if _, err := rt.RunString(`
-var __blockedEval = function() { throw new Error("Code generation from strings disallowed for this context"); };
-globalThis.eval = __blockedEval;
-
-var __origFunction = __savedFunction;
-var __origProto = __origFunction.prototype;
-var __blockedFunction = function() { throw new Error("Function is not a constructor"); };
-__origProto.constructor = __blockedFunction;
-globalThis.Function = __blockedFunction;
-`); err != nil {
-		panic(fmt.Sprintf("block eval/function error: %v", err))
-	}
-
-	// Re-inject the native constructors that environment.js has nulled out.
-	if _, err := rt.RunString(`
-IOSTBlockchain = function() { return new IOSTBlockchain(); };
-IOSTStorage    = function() { return new IOSTStorage(); };
-IOSTInstruction= function() { return new IOSTInstruction(); };
-_IOSTCrypto    = function() { return new _IOSTCrypto(); };
-`); err != nil {
-		panic(fmt.Sprintf("re-inject native constructors error: %v", err))
-	}
-
-	// Wrap Array constructor to reject pathologically large allocations,
-	// matching the old V8 memory-limit behavior.
-	if _, err := rt.RunString(`
-const __origArray = Array;
-const __wrappedArray = function() {
-    if (arguments.length === 1 && typeof arguments[0] === 'number' && arguments[0] > 100000000) {
-        throw new Error("out of memory");
-    }
-    if (arguments.length === 1 && typeof arguments[0] === 'number' && arguments[0] < 0) {
-        throw new RangeError("Invalid array length");
-    }
-    return __origArray.apply(this, arguments);
-};
-__wrappedArray.prototype = __origArray.prototype;
-Object.setPrototypeOf(__wrappedArray, __origArray);
-Array = __wrappedArray;
-`); err != nil {
-		panic(fmt.Sprintf("wrap Array constructor error: %v", err))
-	}
+		(C.globalHasFunc)(C.goGlobalHas),
+		(C.globalGetFunc)(C.goGlobalGet),
+		(C.globalMapHasFunc)(C.goGlobalMapHas),
+		(C.globalMapGetFunc)(C.goGlobalMapGet),
+		(C.globalMapKeysFunc)(C.goGlobalMapKeys),
+		(C.globalMapLenFunc)(C.goGlobalMapLen),
+	)
+	C.InitGoCrypto(
+		(C.sha3Func)(C.goSha3),
+		(C.sha3HexFunc)(C.goSha3Hex),
+		(C.ripemd160HexFunc)(C.goRipemd160Hex),
+		(C.verifyFunc)(C.goVerify),
+	)
+	C.loadVM(sbx.context, C.int(vmType))
 }
 
 // GetFlags ...
@@ -248,65 +158,92 @@ func (sbx *Sandbox) GetFlags() int64 {
 	return sbx.flags
 }
 
-// SetGasLimit set gas limit in context.
+// SetGasLimit set gas limit in context
 func (sbx *Sandbox) SetGasLimit(limit int64) {
-	sbx.gasUsed = 0
-	sbx.gasLimit = limit
+	C.setSandboxGasLimit(sbx.context, C.size_t(limit))
 }
 
-// SetHost set host in sandbox and set gas limit.
+// SetHost set host in sandbox and set gas limit
 func (sbx *Sandbox) SetHost(host *host.Host) {
 	sbx.host = host
 	sbx.SetGasLimit(host.GasLimitValue())
 }
 
-// Validate contract before save, return err if invalid.
+// SetJSPath set js path and ReloadVM
+func (sbx *Sandbox) SetJSPath(path string, vmType vmPoolType) {
+	cPath := C.CString(path)
+	defer C.free(unsafe.Pointer(cPath))
+	C.setJSPath(sbx.context, cPath)
+	C.loadVM(sbx.context, C.int(vmType))
+}
+
+// Validate contract before save, return err if invalid
 func (sbx *Sandbox) Validate(contract *contract.Contract) error {
 	code := moduleReplacer.Replace(contract.Code)
-	abi, _ := json.Marshal(contract.Info.Abi)
+	cCode := newCStr(code)
+	defer C.free(unsafe.Pointer(cCode.data))
 
-	jsCode := "(function(){\nconst source = \"" + code + "\";\nconst abi = " + string(abi) + ";\nreturn validate(source, abi);\n})();"
-	result, err := sbx.rt.RunString(jsCode)
-	resStr := ""
-	if err == nil {
-		resStr = result.String()
+	abi, _ := json.Marshal(contract.Info.Abi)
+	cAbi := newCStr(string(abi))
+	defer C.free(unsafe.Pointer(cAbi.data))
+
+	var (
+		cResult C.CStr
+		cErrMsg C.CStr
+	)
+	ret := C.validate(sbx.context, cCode, cAbi, &cResult, &cErrMsg) // nolint
+
+	result := GoString(cResult)
+	C.free(unsafe.Pointer(cResult.data))
+
+	if ret == 1 || result != "success" {
+		errMsg := GoString(cErrMsg)
+		C.free(unsafe.Pointer(cErrMsg.data))
+		return fmt.Errorf("validate code error: %v, result: %v", errMsg, result)
 	}
-	if err != nil || resStr != "success" {
-		if err == nil {
-			err = errors.New("")
-		}
-		return fmt.Errorf("validate code error: %v, result: %v", err, resStr)
-	}
+
 	return nil
 }
 
-// Compile contract before execution, return compiled code.
+// Compile contract before execution, return compiled code
 func (sbx *Sandbox) Compile(contract *contract.Contract) (string, error) {
 	code := moduleReplacer.Replace(contract.Code)
+	cCode := newCStr(code)
+	defer C.free(unsafe.Pointer(cCode.data))
 
-	jsCode := "(function(){\nconst source = \"" + code + "\";\nreturn injectGas(source);\n})();"
-	result, err := sbx.rt.RunString(jsCode)
-	if err != nil {
-		return "", err
+	var (
+		cCompiledCode C.CStr
+		cErrMsg       C.CStr
+	)
+	ret := C.compile(sbx.context, cCode, &cCompiledCode, &cErrMsg) // nolint
+	if ret == 1 {
+		errMsg := GoString(cErrMsg)
+		C.free(unsafe.Pointer(cErrMsg.data))
+		return "", errors.New(errMsg)
 	}
-	rs := result.String()
-	if rs == "" {
-		return "", errors.New("inject gas failed")
-	}
-	return rs, nil
+
+	compiledCode := GoString(cCompiledCode)
+	C.free(unsafe.Pointer(cCompiledCode.data))
+
+	return compiledCode, nil
 }
 
-// Prepare for contract, inject code.
+// Prepare for contract, inject code
 func (sbx *Sandbox) Prepare(contract *contract.Contract, function string, args []any) (string, error) {
 	code := contract.Code
 
 	if function == "constructor" {
 		return fmt.Sprintf(`
 %s
-var _obj = new module.exports;
+var obj = new module.exports;
 
 var ret = 0;
-return ret;
+// store kv that was constructed by contract.
+//Object.keys(obj).forEach((key) => {
+//   let val = obj[key];
+//   ret = IOSTContractStorage.put(key, val);
+//});
+ret;
 `, code), nil
 	}
 
@@ -317,147 +254,49 @@ return ret;
 
 	return fmt.Sprintf(`
 %s;
-const _obj = new module.exports;
+const obj = new module.exports;
 
 // run contract with specified function and args
-let rs = _obj.%s(%s);
+let rs = obj.%s(%s);
 if ((typeof rs === 'function') || (typeof rs === 'object')) {
 	_IOSTInstruction_counter.incr(12);
-	try {
-		rs = JSON.stringify(rs);
-	} catch (e) {
-		throw new Error('JSON.stringify failed: ' + (e && e.message ? e.message : e));
-	}
+	rs = JSON.stringify(rs);
 }
-if (typeof rs === 'string' && rs.length > %d) {
-	throw new Error("result too long");
-}
-return rs;
-`, code, function, argStr, resultMaxLength), nil
+rs;
+`, code, function, argStr), nil
 }
 
-// Execute prepared code, return results, gasUsed.
+// Execute prepared code, return results, gasUsed
 func (sbx *Sandbox) Execute(preparedCode string) (string, int64, error) {
 	now := time.Now()
 	if !sbx.host.Deadline().After(now) {
+		// the deadline is already passed
+		// we just even need not run the code
+		// the "execution killed" string will be matched and converted to a timeout err outside
 		return "", 0, errors.New("execution killed")
 	}
+	cCode := newCStr(preparedCode)
+	defer C.free(unsafe.Pointer(cCode.data))
+	expireTime := C.longlong(sbx.host.Deadline().UnixNano())
 
-	// Reset gas used so that Init-time library loading gas is not counted.
-	sbx.gasUsed = 0
-	sbx.gasLimit = sbx.host.GasLimitValue()
-	sbx.deadline = sbx.host.Deadline()
+	rs := C.Execute(sbx.context, cCode, expireTime)
+	defer C.free(unsafe.Pointer(rs.Value.data))
+	defer C.free(unsafe.Pointer(rs.Err.data))
 
-	// Clear any stale interrupt flag before this execution.
-	sbx.rt.ClearInterrupt()
+	gasUsed := rs.gasUsed
 
-	// Start a watcher that interrupts if the deadline is exceeded.
-	d := time.Until(sbx.deadline)
-	var timer *time.Timer
-	if d > 0 {
-		timer = time.AfterFunc(d, func() {
-			if sbx.rt != nil {
-				sbx.rt.Interrupt("execution killed")
-			}
-		})
-		defer timer.Stop()
-	} else {
-		return "", 0, errors.New("execution killed")
+	if rs.Value.size > resultMaxLength {
+		return "", int64(gasUsed), ErrResultTooLong
 	}
 
-	// Preload block/tx globals.
-	if _, err := sbx.rt.RunString(`
-const blockInfo = JSON.parse(blockchain.blockInfo());
-const block = {
-   number: blockInfo.number,
-   parentHash: blockInfo.parent_hash,
-   witness: blockInfo.witness,
-   time: blockInfo.time
-};
+	result := GoString(rs.Value)
 
-const txInfo = JSON.parse(blockchain.txInfo());
-const tx = {
-   time: txInfo.time,
-   hash: txInfo.hash,
-   expiration: txInfo.expiration,
-   gasLimit: txInfo.gas_limit,
-   gasRatio: txInfo.gas_ratio,
-   authList: txInfo.auth_list,
-   publisher: txInfo.publisher
-};
-`); err != nil {
-		return "", sbx.gasUsed, err
+	var err error
+	if rs.Err.data != nil {
+		err = errors.New(GoString(rs.Err))
 	}
 
-	sbx.gasUsed = 0
-
-	// Wrap in IIFE with try-catch so thrown primitives are converted to Error objects.
-	var wrappedCode string
-	if os.Getenv("IOST_GAS_TRACE") != "" {
-		// 追踪模式：包装 incr 记录计费直方图，返回值替换为直方图 JSON。
-		wrappedCode = fmt.Sprintf(`
-(function() {
-    var __gasHist = {};
-    var __traceOn = true;
-    var __origIncr = _IOSTInstruction_counter.incr;
-    _IOSTInstruction_counter.incr = function(n) {
-        if (!__traceOn) { return __origIncr.call(_IOSTInstruction_counter, n); }
-        var k = String(n);
-        __gasHist[k] = (__gasHist[k] || 0) + 1;
-        return __origIncr.call(_IOSTInstruction_counter, n);
-    };
-    try {
-        var __rs = (function() {
-%s
-        })();
-    } catch (e) {
-        __traceOn = false;
-        return "GASTRACE-ERR:" + (e && e.message ? e.message : String(e));
-    }
-    __traceOn = false;
-    return "GASTRACE:" + JSON.stringify(__gasHist);
-})();
-`, preparedCode)
-	} else {
-		wrappedCode = fmt.Sprintf(`
-(function() {
-    try {
-        %s
-    } catch (e) {
-        if (e instanceof Error) {
-            throw e;
-        } else if (typeof e === 'string') {
-            throw new Error(e);
-        } else {
-            throw new Error(String(e));
-        }
-    }
-})();
-`, preparedCode)
-	}
-
-	result, err := sbx.rt.RunString(wrappedCode)
-
-	if err != nil {
-		return "", sbx.gasUsed, err
-	}
-
-	var str string
-	if goja.IsUndefined(result) {
-		str = ""
-	} else if goja.IsNull(result) {
-		str = "null"
-	} else if s, ok := result.Export().(string); ok {
-		str = s
-	} else {
-		str = result.String()
-	}
-
-	if len(str) > resultMaxLength {
-		return "", sbx.gasUsed, ErrResultTooLong
-	}
-
-	return str, sbx.gasUsed, nil
+	return result, int64(gasUsed), err
 }
 
 func formatFuncArgs(args []any) (string, error) {

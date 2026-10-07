@@ -13,13 +13,13 @@ This file contains practical guidance for AI coding agents working on the `go-io
 
 Module path: `github.com/iost-official/go-iost/v3`
 
-> **Note:** The top-level `README.md` is currently outdated. It still references the old C++ V8 JavaScript engine and Go 1.20. The current codebase uses `dop251/goja` (pure Go) and requires Go 1.25+. Treat this file as the authoritative source for development setup.
+> **Note:** The repo currently carries two JavaScript engines: the C++ V8 engine in `vm/v8vm` (CGO, used for all execution) and the `dop251/goja` engine in `vm/gojavm` (pure Go, not yet wired into execution — a hardfork-height dispatch is planned). Go 1.25+ is required. Treat this file as the authoritative source for development setup.
 
 ## Environment Requirements
 
-- **Go:** 1.25 or later (required by `dop251/goja`)
-- **CGO:** Disabled (`CGO_ENABLED=0` is set in the `Makefile`)
-- **Architecture:** Historically amd64-only because of the old V8 native dependency. With the migration to goja, arm64/darwin builds work as well, but the `Makefile` still forces `GOARCH=amd64` for release builds.
+- **Go:** 1.25 or later
+- **CGO:** Enabled (`CGO_ENABLED=1` in the `Makefile`); the C++ V8 engine in `vm/v8vm` links prebuilt native libraries fetched via git-lfs. Run `git lfs pull` after checkout to materialize them. On macOS, running V8-linked binaries/tests needs `DYLD_LIBRARY_PATH=$PWD/vm/v8vm/v8/libv8/_darwin_amd64` (the `Makefile` sets this for `make test`).
+- **Architecture:** amd64-only because of the V8 native dependency; the `Makefile` forces `GOARCH=amd64`. (The pure-Go `vm/gojavm` package itself builds on any architecture.)
 - **OS:** Linux and macOS are both used in CI (`ubuntu-22.04` and `macos-latest`).
 
 ## Quick Build
@@ -44,9 +44,9 @@ Built artifacts land in `target/`.
 # Fast, broad test run (matches Linux_Test core packages)
 go test -timeout 600s -p 1 -count=1 ./account/... ./chainbase/... ./common/... \
   ./consensus/... ./core/... ./crypto/... ./db/... ./ilog/... ./metrics/... \
-  ./p2p/... ./rpc/... ./sdk/... ./vm/v8vm/...
+  ./p2p/... ./rpc/... ./sdk/... ./vm/...
 
-# VM-specific tests live under test/v8vm
+# goja-engine tests live under test/v8vm (they import vm/gojavm)
 go test -timeout 600s -p 1 -count=1 ./test/v8vm/...
 
 # Integration tests
@@ -108,7 +108,8 @@ Default `chain_id` for the local dev config is `1020` (iwallet defaults to `1024
 | Directory | Purpose |
 |---|---|
 | `cmd/iserver`, `cmd/iwallet`, `cmd/itest` | CLI entry points |
-| `vm/v8vm` | JavaScript smart-contract runtime (now goja-based) |
+| `vm/v8vm` | JavaScript smart-contract runtime: C++ V8 engine (CGO) |
+| `vm/gojavm` | goja-based JavaScript engine (pure Go); not yet wired into execution |
 | `vm/host` | Host environment exposed to contracts (storage, blockchain context, gas) |
 | `core/contract`, `core/tx`, `core/block` | Core blockchain data structures |
 | `consensus/pob` | Proof-of-Believability consensus |
@@ -118,21 +119,21 @@ Default `chain_id` for the local dev config is `1020` (iwallet defaults to `1024
 | `config/genesis` | Genesis contracts and configuration |
 | `test/v8vm`, `test/integration`, `test/native`, `test/gas` | Test suites |
 
-## JavaScript VM (`vm/v8vm`)
+## JavaScript VMs (`vm/v8vm` and `vm/gojavm`)
 
-The old C++ V8 engine and the intermediate QuickJS/wazero implementation have been removed. The current implementation uses `github.com/dop251/goja`.
+Two engines coexist. `vm/v8vm` holds the C++ V8 engine (CGO; prebuilt `libv8`/`libvm` libraries restored via git-lfs), and `vm/monitor.go` routes all JavaScript execution to it (`v8.NewVMPool(10, 400)`). `vm/gojavm` holds the `github.com/dop251/goja` engine (pure Go); outside tests nothing imports it yet — it will be wired in via a hardfork-height dispatch in `vm/monitor.go`.
 
-Key files:
+Key goja engine files (`vm/gojavm`):
 
-- `vm/v8vm/sandbox.go` — creates a goja runtime, loads runtime libs, executes contract code with gas/deadline enforcement.
-- `vm/v8vm/host_bindings.go` — Go callbacks exposed to JS (`IOSTBlockchain`, `IOSTStorage`, `IOSTInstruction`, `_IOSTCrypto`).
-- `vm/v8vm/libjs/*.js` — embedded JS runtime libraries (`//go:embed`).
-- `vm/v8vm/pool.go` — VM pool for compile and run sandboxes.
-- `vm/monitor.go` — factory that creates the VM pool (`v8.NewVMPool(10, 400)`).
+- `vm/gojavm/sandbox.go` — creates a goja runtime, loads runtime libs, executes contract code with gas/deadline enforcement.
+- `vm/gojavm/host_bindings.go` — Go callbacks exposed to JS (`IOSTBlockchain`, `IOSTStorage`, `IOSTInstruction`, `_IOSTCrypto`).
+- `vm/gojavm/libjs/*.js` — embedded JS runtime libraries (`//go:embed`).
+- `vm/gojavm/pool.go` — VM pool for compile and run sandboxes.
+- `vm/monitor.go` — factory that creates the VM pool (`v8.NewVMPool(10, 400)`, currently the V8 engine).
 
-Important implementation details:
+Important goja engine implementation details:
 
-- Runtime libraries are embedded at build time; `vm.jspath` in `config/iserver.yml` is obsolete and ignored.
+- Runtime libraries are embedded at build time; `vm.jspath` in `config/iserver.yml` is obsolete and ignored by the goja engine.
 - Gas is enforced in `_IOSTInstruction_counter.incr()` inside `host_bindings.go`.
 - Execution deadline is enforced via `goja.Runtime.Interrupt()` triggered by `time.AfterFunc`.
 - The result length limit is measured in UTF-16 code units to match JS `String.prototype.length`.
@@ -159,8 +160,8 @@ All jobs currently use Go 1.25.
 ## Coding Conventions
 
 - Run `gofmt -s -w` on changed Go files; `make format` formats the whole tree.
-- Follow existing package naming; the JS VM package is still called `v8vm` for historical reasons.
-- Avoid introducing new CGO dependencies. The project is intentionally CGO-free now.
+- Follow existing package naming: the C++ V8 engine is package `v8` in `vm/v8vm`; the goja engine is package `gojavm` in `vm/gojavm`.
+- The build requires CGO for `vm/v8vm` (V8); avoid introducing additional CGO dependencies beyond it.
 - Keep changes minimal. Prefer targeted fixes over large refactors.
 - If a change touches JS-host bindings or gas accounting, add/update tests in `test/v8vm` or `test/integration`.
 
@@ -172,7 +173,7 @@ All jobs currently use Go 1.25.
 make protobuf
 ```
 
-This runs `script/gen_protobuf.sh`. The old V8 library exports were removed; it is now a standard protobuf generation script.
+This runs `script/gen_protobuf.sh`, which exports the V8 native library paths (CGO flags) needed while the V8 engine is present.
 
 ### Build Docker image
 
@@ -207,6 +208,7 @@ make debug              # build + run local iserver with config/iserver.yml
 make e2e_test_local     # build + run a_case/t_case/c_case locally
 make image              # build Docker image via Dockerfile.run
 make protobuf           # regenerate protobuf/GRPC bindings
+make vmlib_install      # install V8 libvm into /usr/local/lib (needed on fresh machines)
 make clean              # remove target/
 make clear_debug_file   # remove local dev storage/logs
 ```
