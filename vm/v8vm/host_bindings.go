@@ -16,6 +16,42 @@ import (
 
 const cryptGasBase = 100
 
+// inputMaxLength mirrors INPUT_MAX_LENGTH of the upstream C++ V8 sandbox
+// (sandbox.h NewCStrChecked): string arguments longer than this many UTF-16
+// code units are rejected before any metering or host call.
+const inputMaxLength = 65536
+
+// countUTF16 returns the number of UTF-16 code units in s, matching
+// JavaScript's String.prototype.length.
+func countUTF16(s string) int {
+	n := 0
+	for _, r := range s {
+		if r > 0xFFFF {
+			n += 2
+		} else {
+			n++
+		}
+	}
+	return n
+}
+
+// checkInputArgs panics with a JS-visible error if any of the first n
+// arguments is a string longer than inputMaxLength UTF-16 code units.
+// Non-string arguments are left to the existing conversion flow.
+func checkInputArgs(sbx *Sandbox, call goja.FunctionCall, n int) {
+	for i := 0; i < n && i < len(call.Arguments); i++ {
+		s, ok := call.Arguments[i].(goja.String)
+		if !ok {
+			continue
+		}
+		str := s.String()
+		// UTF-16 code units never exceed the UTF-8 byte length.
+		if len(str) > inputMaxLength && countUTF16(str) > inputMaxLength {
+			panic(sbx.rt.NewTypeError("input string too long"))
+		}
+	}
+}
+
 func newIOSTBlockchain(sbx *Sandbox) *goja.Object {
 	obj := sbx.rt.NewObject()
 
@@ -38,6 +74,7 @@ func newIOSTBlockchain(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 3 {
 			panic(sbx.rt.NewTypeError("IOSTBlockchain_call invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		contract := call.Argument(0).String()
 		api := call.Argument(1).String()
 		jarg := call.Argument(2).String()
@@ -53,6 +90,7 @@ func newIOSTBlockchain(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 3 {
 			panic(sbx.rt.NewTypeError("IOSTBlockchain_callWithAuth invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		contract := call.Argument(0).String()
 		api := call.Argument(1).String()
 		jarg := call.Argument(2).String()
@@ -68,6 +106,7 @@ func newIOSTBlockchain(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTBlockchain_requireAuth invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 2)
 		accountID := call.Argument(0).String()
 		permission := call.Argument(1).String()
 		ok, cost := sbx.host.RequireAuth(accountID, permission)
@@ -78,6 +117,7 @@ func newIOSTBlockchain(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTBlockchain_receipt invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 1)
 		content := call.Argument(0).String()
 		cost := sbx.host.Receipt(content)
 		sbx.gasUsed += cost.CPU
@@ -87,6 +127,7 @@ func newIOSTBlockchain(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTBlockchain_event invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 1)
 		content := call.Argument(0).String()
 		cost := sbx.host.PostEvent(content)
 		sbx.gasUsed += cost.CPU
@@ -103,6 +144,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_Put invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		k := call.Argument(0).String()
 		v := call.Argument(1).String()
 		ramPayer := ""
@@ -126,6 +168,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_Has invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 2)
 		k := call.Argument(0).String()
 		ret, cost := sbx.host.Has(k)
 		sbx.gasUsed += cost.CPU
@@ -135,6 +178,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_Get invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 2)
 		k := call.Argument(0).String()
 		val, cost := sbx.host.Get(k)
 		sbx.gasUsed += cost.CPU
@@ -147,6 +191,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_Del invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 2)
 		k := call.Argument(0).String()
 		cost, err := sbx.host.Del(k)
 		sbx.gasUsed += cost.CPU
@@ -160,6 +205,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 3 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapPut invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 4)
 		k := call.Argument(0).String()
 		f := call.Argument(1).String()
 		v := call.Argument(2).String()
@@ -184,6 +230,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapHas invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		k := call.Argument(0).String()
 		f := call.Argument(1).String()
 		ret, cost := sbx.host.MapHas(k, f)
@@ -194,6 +241,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapGet invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		k := call.Argument(0).String()
 		f := call.Argument(1).String()
 		val, cost := sbx.host.MapGet(k, f)
@@ -207,6 +255,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapDel invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		k := call.Argument(0).String()
 		f := call.Argument(1).String()
 		cost, err := sbx.host.MapDel(k, f)
@@ -220,6 +269,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapKeys invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 2)
 		k := call.Argument(0).String()
 		fstr, cost := sbx.host.MapKeys(k)
 		sbx.gasUsed += cost.CPU
@@ -230,6 +280,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_MapLen invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 2)
 		k := call.Argument(0).String()
 		l, cost := sbx.host.MapLen(k)
 		sbx.gasUsed += cost.CPU
@@ -240,6 +291,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalHas invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		c := call.Argument(0).String()
 		k := call.Argument(1).String()
 		ret, cost := sbx.host.GlobalHas(c, k)
@@ -250,6 +302,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalGet invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		c := call.Argument(0).String()
 		k := call.Argument(1).String()
 		val, cost := sbx.host.GlobalGet(c, k)
@@ -263,6 +316,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 3 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapHas invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 4)
 		c := call.Argument(0).String()
 		k := call.Argument(1).String()
 		f := call.Argument(2).String()
@@ -274,6 +328,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 3 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapGet invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 4)
 		c := call.Argument(0).String()
 		k := call.Argument(1).String()
 		f := call.Argument(2).String()
@@ -288,6 +343,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapKeys invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		c := call.Argument(0).String()
 		k := call.Argument(1).String()
 		fstr, cost := sbx.host.GlobalMapKeys(c, k)
@@ -299,6 +355,7 @@ func newIOSTStorage(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 2 {
 			panic(sbx.rt.NewTypeError("IOSTContractStorage_GlobalMapLen invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 3)
 		c := call.Argument(0).String()
 		k := call.Argument(1).String()
 		l, cost := sbx.host.GlobalMapLen(c, k)
@@ -340,6 +397,7 @@ func newIOSTCrypto(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTCrypto_sha3 invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 1)
 		msg := call.Argument(0).String()
 		val := common.Base58Encode(common.Sha3([]byte(msg)))
 		sbx.gasUsed += int64(len(msg) + cryptGasBase)
@@ -349,6 +407,7 @@ func newIOSTCrypto(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTCrypto_sha3Hex invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 1)
 		msg := call.Argument(0).String()
 		msgBytes, err := hex.DecodeString(msg)
 		sbx.gasUsed += int64(len(msgBytes) + cryptGasBase)
@@ -362,6 +421,7 @@ func newIOSTCrypto(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 1 {
 			panic(sbx.rt.NewTypeError("IOSTCrypto_ripemd160Hex invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 1)
 		msg := call.Argument(0).String()
 		msgBytes, err := hex.DecodeString(msg)
 		sbx.gasUsed += int64(len(msgBytes) + cryptGasBase)
@@ -375,6 +435,7 @@ func newIOSTCrypto(sbx *Sandbox) *goja.Object {
 		if len(call.Arguments) < 4 {
 			panic(sbx.rt.NewTypeError("IOSTCrypto_verify invalid argument length"))
 		}
+		checkInputArgs(sbx, call, 4)
 		algoStr := call.Argument(0).String()
 		msgBytes := common.Base58Decode(call.Argument(1).String())
 		sigBytes := common.Base58Decode(call.Argument(2).String())
@@ -397,6 +458,7 @@ func newCLog(sbx *Sandbox) func(goja.FunctionCall) goja.Value {
 		if len(call.Arguments) < 2 {
 			return goja.Undefined()
 		}
+		checkInputArgs(sbx, call, 2)
 		levelStr := call.Argument(0).String()
 		detailStr := call.Argument(1).String()
 

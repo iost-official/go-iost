@@ -45,3 +45,6 @@ var validateJS string
 
 //go:embed libjs/inject_gas.js
 var injectGasJS string
+
+//go:embed libjs/v8sort.js
+var v8sortJS string

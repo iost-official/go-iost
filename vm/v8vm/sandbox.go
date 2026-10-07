@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -12,21 +13,7 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
-const resultMaxLength = 65536 // UTF-16 code units, matching JS String.prototype.length
-
-// jsStringLength returns the number of UTF-16 code units in s, which is what
-// JavaScript reports for string.length.
-func jsStringLength(s string) int {
-	n := 0
-	for _, r := range s {
-		if r > 0xFFFF {
-			n += 2
-		} else {
-			n++
-		}
-	}
-	return n
-}
+const resultMaxLength = 65536 // byte
 
 // Error message
 var (
@@ -195,18 +182,21 @@ var __savedFunction = Function;
 		panic(fmt.Sprintf("capture globals error: %v", err))
 	}
 
+	// Install V8-faithful sort BEFORE environment.js so that environment.js
+	// wraps it (charging 1+length per call) exactly like it wraps native sort
+	// on mainnet V8 nodes.
+	if _, err := rt.RunString(v8sortJS); err != nil {
+		panic(fmt.Sprintf("load v8sort error: %v", err))
+	}
+
 	// Load environment.js.
 	if _, err := rt.RunString(environmentJS); err != nil {
 		panic(fmt.Sprintf("load environment.js error: %v", err))
 	}
 
-	// Restore Array.from and Array.of.
-	if _, err := rt.RunString(`
-Array.from = __savedArrayFrom;
-Array.of = __savedArrayOf;
-`); err != nil {
-		panic(fmt.Sprintf("restore Array methods error: %v", err))
-	}
+	// NOTE: Array.from/Array.of stay nulled by environment.js, matching the
+	// upstream V8 sandbox. Contracts calling them must fail (ErrorRuntime),
+	// exactly as on mainnet.
 
 	// Block dangerous dynamic-code features.
 	if _, err := rt.RunString(`
@@ -402,7 +392,34 @@ const tx = {
 	sbx.gasUsed = 0
 
 	// Wrap in IIFE with try-catch so thrown primitives are converted to Error objects.
-	wrappedCode := fmt.Sprintf(`
+	var wrappedCode string
+	if os.Getenv("IOST_GAS_TRACE") != "" {
+		// 追踪模式：包装 incr 记录计费直方图，返回值替换为直方图 JSON。
+		wrappedCode = fmt.Sprintf(`
+(function() {
+    var __gasHist = {};
+    var __traceOn = true;
+    var __origIncr = _IOSTInstruction_counter.incr;
+    _IOSTInstruction_counter.incr = function(n) {
+        if (!__traceOn) { return __origIncr.call(_IOSTInstruction_counter, n); }
+        var k = String(n);
+        __gasHist[k] = (__gasHist[k] || 0) + 1;
+        return __origIncr.call(_IOSTInstruction_counter, n);
+    };
+    try {
+        var __rs = (function() {
+%s
+        })();
+    } catch (e) {
+        __traceOn = false;
+        return "GASTRACE-ERR:" + (e && e.message ? e.message : String(e));
+    }
+    __traceOn = false;
+    return "GASTRACE:" + JSON.stringify(__gasHist);
+})();
+`, preparedCode)
+	} else {
+		wrappedCode = fmt.Sprintf(`
 (function() {
     try {
         %s
@@ -417,6 +434,7 @@ const tx = {
     }
 })();
 `, preparedCode)
+	}
 
 	result, err := sbx.rt.RunString(wrappedCode)
 
@@ -435,7 +453,7 @@ const tx = {
 		str = result.String()
 	}
 
-	if jsStringLength(str) > resultMaxLength {
+	if len(str) > resultMaxLength {
 		return "", sbx.gasUsed, ErrResultTooLong
 	}
 

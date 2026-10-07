@@ -626,6 +626,32 @@ func TestEngine_Danger(t *testing.T) {
 	*/
 }
 
+func TestEngine_InputStringTooLong(t *testing.T) {
+	host, code := MyInit(t, "inputlen", int64(1e12))
+
+	// storage.js mapPut wrapper has no JS-level length check, so the
+	// native binding must reject a value over 65536 UTF-16 code units.
+	_, _, err := vmPool.LoadAndCall(host, code, "mapPutLong")
+	if err == nil || !strings.Contains(err.Error(), "input string too long") {
+		t.Fatalf("LoadAndCall mapPutLong should return error: input string too long, got %v\n", err)
+	}
+
+	_, _, err = vmPool.LoadAndCall(host, code, "callLongArg")
+	if err == nil || !strings.Contains(err.Error(), "input string too long") {
+		t.Fatalf("LoadAndCall callLongArg should return error: input string too long, got %v\n", err)
+	}
+
+	// 30000 CJK characters are 90000 bytes but only 30000 UTF-16 code
+	// units: the limit counts code units, so this put must succeed.
+	rs, _, err := vmPool.LoadAndCall(host, code, "putCJK")
+	if err != nil {
+		t.Fatalf("LoadAndCall putCJK run error: %v\n", err)
+	}
+	if len(rs) != 1 || rs[0] != "30000" {
+		t.Fatalf("LoadAndCall putCJK except 30000, got %v\n", rs)
+	}
+}
+
 // nolint
 func TestEngine_Int64(t *testing.T) {
 	host, code := MyInit(t, "int64Test")
@@ -899,7 +925,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify10")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(4887))
+		So(cost.ToGas(), ShouldEqual, int64(5019))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify11")
 		So(err, ShouldBeNil)
@@ -910,7 +936,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify20")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(610553))
+		So(cost.ToGas(), ShouldEqual, int64(605657))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify21")
 		So(err, ShouldBeNil)
@@ -921,7 +947,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify30")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(152328))
+		So(cost.ToGas(), ShouldEqual, int64(3149322))
 
 		_, cost, err = vmPool.LoadAndCall(host, code, "stringify31")
 		So(err, ShouldBeNil)
@@ -932,20 +958,20 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		_, cost, err := vmPool.LoadAndCall(host, code, "stringify40")
 		So(err.Error(), ShouldContainSubstring, "Converting circular structure to JSON")
-		So(cost.ToGas(), ShouldEqual, int64(220))
+		So(cost.ToGas(), ShouldEqual, int64(380))
 	})
 
 	Convey("test stringify5", t, func() {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify50")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1184))
+		So(cost.ToGas(), ShouldEqual, int64(999))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 
 		rtn, cost, err = vmPool.LoadAndCall(host, code, "stringify51")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1035))
+		So(cost.ToGas(), ShouldEqual, int64(586))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"week":45,"month":7}`)
 	})
@@ -954,7 +980,7 @@ func TestEngine_JSON(t *testing.T) {
 		host, code := MyInit(t, "json", int64(1e8))
 		rtn, cost, err := vmPool.LoadAndCall(host, code, "stringify60")
 		So(err, ShouldBeNil)
-		So(cost.ToGas(), ShouldEqual, int64(1315))
+		So(cost.ToGas(), ShouldEqual, int64(1335))
 		So(len(rtn), ShouldEqual, int64(1))
 		So(rtn[0], ShouldEqual, `{"a":{"b":{"c":""}}} {"a":{"b":{"c":""}}}`)
 	})

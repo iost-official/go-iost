@@ -35,10 +35,10 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test assignment2", t, func() {
 		rs, cost, err := vmPool.LoadAndCall(host, code, "assignment2", 10)
-		So(err, ShouldBeNil)
+		So(err.Error(), ShouldContainSubstring, "no member")
 		t.Log(rs, cost)
 		rs, cost, err = vmPool.LoadAndCall(host, code, "assignment2", 1000000)
-		So(err, ShouldBeNil)
+		So(err.Error(), ShouldContainSubstring, "no member")
 		t.Log(rs, cost)
 	})
 
@@ -223,6 +223,6 @@ func TestInjectGas(t *testing.T) {
 	Convey("test bignumber0", t, func() {
 		_, cost0, err := vmPool.LoadAndCall(host, code, "bignumber0", "")
 		So(err, ShouldBeNil)
-		So(cost0.ToGas(), ShouldEqual, int64(829))
+		So(cost0.ToGas(), ShouldEqual, int64(433))
 	})
 }
