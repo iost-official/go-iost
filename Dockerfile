@@ -1,4 +1,4 @@
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
 # Install project
 WORKDIR /workdir
@@ -9,4 +9,4 @@ COPY config/docker/iserver.yml /var/lib/iserver/
 COPY config/genesis/ /var/lib/iserver/genesis/
 
 ENV PATH="/workdir:${PATH}"
-CMD ["iserver", "-f", "/var/lib/iserver/iserver.yml", "2>&1"]
+CMD ["iserver", "-f", "/var/lib/iserver/iserver.yml"]

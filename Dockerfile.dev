@@ -1,23 +1,23 @@
-FROM ubuntu:22.04
+FROM ubuntu:26.04
 
-ENV GOVERSION 1.21.0
+ENV GOVERSION=1.27.2
 
 # Install Base Tools
 RUN apt update && \
-        apt install -y git make curl g++ && \
+        apt install -y git make curl g++ xxd && \
         rm -rf /var/lib/apt/lists
 
 # Install Go
 RUN mkdir /goroot && \
-    curl https://storage.googleapis.com/golang/go${GOVERSION}.linux-amd64.tar.gz | \
+    curl https://dl.google.com/go/go${GOVERSION}.linux-amd64.tar.gz | \
     tar xzf - -C /goroot --strip-components=1
 
-ENV CGO_ENABLED 1
-ENV GOROOT /goroot
-ENV PATH $GOROOT/bin:$PATH
+ENV CGO_ENABLED=1
+ENV GOROOT=/goroot
+ENV PATH=$GOROOT/bin:$PATH
 
 # Install golangci-lint
-RUN curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh| sh -s -- -b /usr/local/bin v1.54.2
+RUN /bin/bash -o pipefail -c 'curl -sfL https://raw.githubusercontent.com/golangci/golangci-lint/v2.14.0/install.sh | sh -s -- -b /usr/local/bin v2.14.0'
 RUN git config --global --add safe.directory '*'
 
 WORKDIR /go-iost

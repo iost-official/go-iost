@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -444,7 +445,7 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 		}
 		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
 			s.log("Transaction executed err")
-			return fmt.Errorf(txReceipt.Message)
+			return errors.New(txReceipt.Message)
 		}
 		if r.Status == rpcpb.TransactionResponse_PACKED {
 			if s.verbose {

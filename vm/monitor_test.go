@@ -1,6 +1,7 @@
 package vm
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
@@ -240,4 +241,80 @@ module.exports = Contract;
 		t.Fatal(rs, co, e)
 	}
 
+}
+
+// Argument values and error messages feed contract execution and transaction receipts.
+func TestUnmarshalArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		types   []string
+		data    string
+		want    []any
+		wantErr string
+	}{
+		{
+			name:    "incomplete JSON",
+			types:   []string{"number"},
+			data:    "[1,",
+			wantErr: "error in data: unexpected EOF, [1,",
+		},
+		{
+			name:    "invalid JSON literal",
+			types:   []string{"bool"},
+			data:    "[truX]",
+			wantErr: "error in data: invalid character 'X' in literal true (expecting 'e'), [truX]",
+		},
+		{
+			name:  "int64 boundaries and precision",
+			types: []string{"number", "number", "number"},
+			data:  "[-9223372036854775808,9007199254740993,9223372036854775807]",
+			want:  []any{int64(-9223372036854775808), int64(9007199254740993), int64(9223372036854775807)},
+		},
+		{
+			name:    "int64 overflow",
+			types:   []string{"number"},
+			data:    "[9223372036854775808]",
+			wantErr: `error parse number arg &{9223372036854775808}, strconv.ParseInt: parsing "9223372036854775808": value out of range`,
+		},
+		{
+			name:    "fractional number",
+			types:   []string{"number"},
+			data:    "[1.5]",
+			wantErr: `error parse number arg &{1.5}, strconv.ParseInt: parsing "1.5": invalid syntax`,
+		},
+		{
+			name:  "JSON null",
+			types: []string{"json"},
+			data:  "[null]",
+			want:  []any{[]byte("null")},
+		},
+		{
+			name:    "null is not a number",
+			types:   []string{"number"},
+			data:    "[null]",
+			wantErr: "error parse number arg &{<nil>}, invalid value type",
+		},
+		{
+			name:  "trailing comma compatibility",
+			types: []string{"number"},
+			data:  "[1,]",
+			want:  []any{int64(1)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := UnmarshalArgs(&contract.ABI{Name: "test", Args: tt.types}, tt.data)
+			var gotErr string
+			if err != nil {
+				gotErr = err.Error()
+			}
+			if gotErr != tt.wantErr {
+				t.Fatalf("error = %q, want %q", gotErr, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("arguments = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
 }

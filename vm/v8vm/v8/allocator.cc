@@ -2,6 +2,7 @@
 // Created by Shiqi Liu on 2018/10/29.
 //
 #include "allocator.h"
+#include <stdlib.h>
 
 ArrayBufferAllocator::ArrayBufferAllocator(){
     this->current_allocated_size = 0;

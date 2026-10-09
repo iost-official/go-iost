@@ -97,7 +97,7 @@ func (t *transferHandler) Prepare() error {
 		return err
 	}
 	if tx.StatusCode(resp.StatusCode) != tx.Success {
-		return fmt.Errorf("publish contract fail " + (resp.String()))
+		return fmt.Errorf("publish contract fail %s", resp.String())
 	}
 
 	t.testID = testID

@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # boot.sh
 # Author Yuanyi<yuanyi@iost.io>
@@ -6,7 +6,7 @@
 # Distributed under terms of the LGPLv3 license.
 #
 
-set -ue
+set -euo pipefail
 
 PREFIX=${PREFIX:="/data/iserver"}
 INET=${INET:="mainnet"}
@@ -58,22 +58,24 @@ install_docker() {
 }
 
 install_docker_compose() {
-    _SYS=$(uname)
-    if [ x$_SYS = x"Linux" ]; then
-        >&2 echo Installing docker-compose ...
-        sudo curl -L "https://github.com/docker/compose/releases/download/1.23.2/docker-compose-$(uname -s)-$(uname -m)" -o $USR_LOCAL_BIN/docker-compose
-        sudo chmod +x $USR_LOCAL_BIN/docker-compose
-        docker-compose version >/dev/null && return 0
+    if [ "$(uname)" != "Linux" ]; then
+        >&2 echo "Install Docker Compose manually: https://docs.docker.com/compose/install/"
+        return 1
     fi
-    >&2 echo Install docker-compose failed. See https://docs.docker.com/compose/install/.
-    return 1
+    local compose_dir=/usr/local/lib/docker/cli-plugins
+    >&2 echo "Installing Docker Compose ..."
+    sudo mkdir -p "$compose_dir"
+    sudo curl -fSL "https://github.com/docker/compose/releases/download/v5.6.0/docker-compose-linux-$(uname -m)" -o "$compose_dir/docker-compose"
+    sudo chmod +x "$compose_dir/docker-compose"
+    docker compose version
 }
 
 pre_check() {
     curl --version &>/dev/null
     ${PYTHON} -V &>/dev/null || { >&2 echo "Python not found. You might need to set '$PYTHON' manually."; return 1; }
-    docker version &>/dev/null || install_docker
-    docker-compose version &>/dev/null || install_docker_compose
+    command -v docker >/dev/null 2>&1 || install_docker
+    docker version >/dev/null
+    docker compose version &>/dev/null || install_docker_compose
 }
 
 init_prefix() {
@@ -152,7 +154,7 @@ print_servi() {
         echo
         echo To set the Servi node online:
         printf "\n\t"
-        echo "iwallet sys plogin --acount <your-account>"
+        echo "iwallet sys plogin --account <your-account>"
         echo
         echo See full doc at https://developers.iost.io/docs/en/4-running-iost-node/Become-Servi-Node.html
         echo
@@ -192,15 +194,17 @@ services:
       - $PREFIX:/var/lib/iserver:Z
     ulimits:
       nofile: 51200
+    security_opt:
+      - seccomp:unconfined
 EOF
 
-docker-compose pull
+docker compose pull
 
 #
 # Generate key producer pair
 #
 
-( docker run --rm iostio/iost-node:$VERSION iwallet --verbose=false key; ) >> $PRODUCER_KEY_FILE
+( docker run --rm --security-opt seccomp=unconfined iostio/iost-node:$VERSION iwallet --verbose=false key; ) >> $PRODUCER_KEY_FILE
 
 #
 # Get genesis info
@@ -223,7 +227,7 @@ sed -i.bak 's/  seckey: .*$/  seckey: '$PRIKEY'/g' iserver.yml
 # Start iServer
 #
 
-docker-compose up -d
+docker compose up -d
 
 until $($CURL localhost:30001/getNodeInfo &>/dev/null); do
     >&2 printf '.'

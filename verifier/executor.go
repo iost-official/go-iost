@@ -1,7 +1,7 @@
 package verifier
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/iost-official/go-iost/v3/common"
@@ -96,7 +96,7 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 		return nil, err
 	}
 	if r.Status.Code != tx.Success {
-		return nil, fmt.Errorf(r.Status.Message)
+		return nil, errors.New(r.Status.Message)
 	}
 	isolator.Commit()
 	isolator.ClearTx()
