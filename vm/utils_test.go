@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"testing"
 
-	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/tx"
@@ -13,6 +12,7 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/vm/database"
 	"github.com/iost-official/go-iost/v3/vm/host"
+	"go.uber.org/mock/gomock"
 )
 
 var testKps = make([]*account.KeyPair, 0)

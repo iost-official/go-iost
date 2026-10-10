@@ -5,9 +5,9 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/golang/mock/gomock"
 	core_mock "github.com/iost-official/go-iost/v3/core/mocks"
 	db_mock "github.com/iost-official/go-iost/v3/db/mocks"
+	. "go.uber.org/mock/gomock"
 
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/block"
