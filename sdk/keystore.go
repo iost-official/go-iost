@@ -173,11 +173,15 @@ func (a *AccountInfo) Encrypt(password []byte) error {
 	if a.IsEncrypted() {
 		return fmt.Errorf("account already encrypted")
 	}
+	encrypted := make(map[*KeyPairInfo]struct{}, len(a.Keypairs))
 	for _, k := range a.Keypairs {
-		err := k.Encrypt(password)
-		if err != nil {
+		if _, ok := encrypted[k]; ok {
+			continue
+		}
+		if err := k.Encrypt(password); err != nil {
 			return err
 		}
+		encrypted[k] = struct{}{}
 	}
 	return nil
 }

@@ -10,9 +10,10 @@ import (
 	"github.com/iost-official/go-iost/v3/common"
 )
 
+var amountPattern = regexp.MustCompile("^([0-9]+[.])?[0-9]+$")
+
 func checkAmount(amount string, token string) error {
-	matched, err := regexp.MatchString("^([0-9]+[.])?[0-9]+$", amount)
-	if err != nil || !matched {
+	if !amountPattern.MatchString(amount) {
 		return fmt.Errorf("invalid amount: %v", amount)
 	}
 	f1, err := common.NewDecimalFromString(amount, -1)

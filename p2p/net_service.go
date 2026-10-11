@@ -18,6 +18,7 @@ import (
 	"github.com/libp2p/go-libp2p/p2p/muxer/yamux"
 	"github.com/libp2p/go-libp2p/p2p/security/noise"
 	tls "github.com/libp2p/go-libp2p/p2p/security/tls"
+	"github.com/libp2p/go-libp2p/p2p/transport/tcp"
 
 	multiaddr "github.com/multiformats/go-multiaddr"
 )
@@ -143,6 +144,7 @@ func (ns *NetService) startHost(pk crypto.PrivKey, listenAddr string) (host.Host
 	}
 	opts := []libp2p.Option{
 		libp2p.Identity(pk),
+		libp2p.Transport(tcp.NewTCPTransport),
 		libp2p.NATPortMap(),
 		libp2p.ListenAddrStrings(fmt.Sprintf("/ip4/%s/tcp/%d", tcpAddr.IP, tcpAddr.Port)),
 		libp2p.ChainOptions(muxOptions...),

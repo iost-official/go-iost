@@ -12,7 +12,10 @@ import (
 )
 
 // fix amount string
-var tokenABIsV2 *abiSet
+var (
+	tokenABIsV2   *abiSet
+	amountPattern = regexp.MustCompile("^([0-9]+[.])?[0-9]+$")
+)
 
 func init() {
 	tokenABIsV2 = newAbiSet()
@@ -30,9 +33,8 @@ func init() {
 }
 
 func refineAmount(amountStr string, decimal int64) (string, error) {
-	matched, err := regexp.MatchString("^([0-9]+[.])?[0-9]+$", amountStr)
-	if err != nil || !matched {
-		return "", fmt.Errorf("invalid amount %v %v", amountStr, err)
+	if !amountPattern.MatchString(amountStr) {
+		return "", fmt.Errorf("invalid amount %v %v", amountStr, nil)
 	}
 	amount, err := common.NewDecimalFromString(amountStr, int(decimal))
 	if err != nil {

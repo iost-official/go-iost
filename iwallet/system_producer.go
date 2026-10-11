@@ -183,13 +183,13 @@ var plistCmd = &cobra.Command{
 			for i, producerKey := range pks {
 				i, producerKey := i, producerKey // bind current value to closure
 				go func() {
+					defer wg.Done()
 					response, err := getContractStorage("vote_producer.iost", "producerKeyToId", producerKey)
 					if err != nil {
 						fmt.Printf("cannot get producer id of %v: %v", producerKey, err)
 						return
 					}
 					result[i] = response.Data
-					wg.Done()
 				}()
 			}
 			wg.Wait()

@@ -109,6 +109,9 @@ func loadAccount(ensureDecrypt bool) (*AccountInfo, error) {
 		}
 	} else {
 		acc, err = defaultFileAccountStore.LoadAccount(accountName)
+		if err != nil {
+			return nil, err
+		}
 	}
 	if ensureDecrypt {
 		err = ensureDecryptAccount(acc)
