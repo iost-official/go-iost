@@ -6,6 +6,7 @@
 - Improve node service reliability and resource handling
 - Fix iwallet signing and command issues
 - Improve SDK and wallet key management
+- Disable the v3.10.0 fork
 
 ## v3.11.5
 Fri Jun 28 06:30:05 UTC 2024

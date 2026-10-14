@@ -18,20 +18,20 @@ type ChainConfig struct {
 var (
 	mainNetChainConf = &ChainConfig{
 		Block3_9_0:  220000000,
-		Block3_10_0: 520000000,
+		Block3_10_0: -1,
 		Block4_0_0:  476520000,
 	}
 
 	testNetChainConf = &ChainConfig{
 		Block3_9_0:  0,
-		Block3_10_0: 0,
-		Block4_0_0:  2000, // TODO: set testnet activation height before release.
+		Block3_10_0: -1,
+		Block4_0_0:  0,
 	}
 
 	defaultChainConf = &ChainConfig{
 		Block3_9_0:  0,
-		Block3_10_0: 0,
-		Block4_0_0:  2000,
+		Block3_10_0: -1,
+		Block4_0_0:  0,
 	}
 )
 
@@ -56,7 +56,7 @@ func IsFork3_9_0(num int64) bool {
 
 // IsFork3_10_0 ...
 func IsFork3_10_0(num int64) bool {
-	return isForked(chainConf.Block3_10_0, num)
+	return chainConf.Block3_10_0 >= 0 && isForked(chainConf.Block3_10_0, num)
 }
 
 // IsFork4_0_0 reports whether block num uses the 4.0.0 rules.
