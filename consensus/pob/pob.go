@@ -229,9 +229,10 @@ func (p *PoB) generateBlock(num int, t1 int64, oldWitnessList []string) (*block.
 	dropList, _, err := v.Gen(
 		blk, head.Block, head.WitnessList, p.produceDB, pTx,
 		&verifier.Config{
-			Mode:        0,
-			Timeout:     limitTime - time.Since(t3),
-			TxTimeLimit: common.MaxTxTimeLimit,
+			CheckTxContent: p.txPool.HasContent,
+			Mode:           0,
+			Timeout:        limitTime - time.Since(t3),
+			TxTimeLimit:    common.MaxTxTimeLimit,
 		},
 	)
 	if err != nil {

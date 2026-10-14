@@ -2,6 +2,7 @@ package verifier
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/iost-official/go-iost/v3/common"
@@ -65,6 +66,9 @@ func (v *Executor) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 
 // Gen gen block
 func (v *Executor) Gen(blk, parent *block.Block, witnessList *blockcache.WitnessList, db database.IMultiValue, iter *txpool.SortedTxMap, c *Config) (droplist []*tx.Tx, errs []error, err error) {
+	if blk.Head.Number > 0 && c.CheckTxContent == nil {
+		return nil, nil, fmt.Errorf("missing transaction content checker")
+	}
 	isolator := &vm.Isolator{}
 	baseTx, err := NewBaseTx(blk, parent, witnessList)
 	if err != nil {
@@ -77,7 +81,7 @@ func (v *Executor) Gen(blk, parent *block.Block, witnessList *blockcache.Witness
 	blk.Txs = append(blk.Txs, baseTx)
 	blk.Receipts = append(blk.Receipts, r)
 	var pi = NewProvider(iter)
-	err = baseGen(blk, db, pi, isolator, c)
+	err = baseGen(blk, parent, db, pi, isolator, c)
 	droplist, errs = pi.List()
 	pi.Close()
 	return
@@ -105,13 +109,14 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 }
 
 // nolint:gocyclo
-func baseGen(blk *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
+func baseGen(blk, parent *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
 	blockTxLimit := 50
 	blockGasLimit := common.MaxBlockGasLimit
 	txLimitSameSender := 10
 	var tn time.Time
 	to := time.Now().Add(c.Timeout)
 
+	contentSet := make(map[string]struct{})
 	senderCount := make(map[string]int)
 L:
 	for tn.Before(to) {
@@ -156,6 +161,21 @@ L:
 			provider.Drop(t, ErrExpiredTx)
 			continue L
 		}
+		content := string(t.ContentHash())
+		if _, found := contentSet[content]; found {
+			provider.Drop(t, ErrDuplicateContent)
+			continue L
+		}
+		if blk.Head.Number > 0 {
+			found, checkErr := c.CheckTxContent(t, parent)
+			if checkErr != nil {
+				return checkErr
+			}
+			if found {
+				provider.Drop(t, ErrDuplicateContent)
+				continue L
+			}
+		}
 		if t.GasLimit > blockGasLimit {
 			continue L
 		}
@@ -196,6 +216,7 @@ L:
 		isolator.Commit()
 		blk.Txs = append(blk.Txs, t)
 		blk.Receipts = append(blk.Receipts, r)
+		contentSet[content] = struct{}{}
 		if len(blk.Txs) >= blockTxLimit {
 			break L
 		}

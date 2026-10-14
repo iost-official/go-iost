@@ -142,6 +142,21 @@ func (mr *MockTxPoolMockRecorder) GetFromPending(hash any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetFromPending", reflect.TypeOf((*MockTxPool)(nil).GetFromPending), hash)
 }
 
+// HasContent mocks base method.
+func (m *MockTxPool) HasContent(t *tx.Tx, chainBlock *block.Block) (bool, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "HasContent", t, chainBlock)
+	ret0, _ := ret[0].(bool)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// HasContent indicates an expected call of HasContent.
+func (mr *MockTxPoolMockRecorder) HasContent(t, chainBlock any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "HasContent", reflect.TypeOf((*MockTxPool)(nil).HasContent), t, chainBlock)
+}
+
 // PendingTx mocks base method.
 func (m *MockTxPool) PendingTx() (*txpool.SortedTxMap, *blockcache.BlockCacheNode) {
 	m.ctrl.T.Helper()

@@ -220,6 +220,9 @@ func (t *Tx) Hash() []byte {
 	return t.hash
 }
 
+// ContentHash returns the hash of the base transaction fields.
+func (t *Tx) ContentHash() []byte { return t.baseHash() }
+
 // VerifySelf verify tx's signature and some base fields.
 func (t *Tx) VerifySelf() error { // nolint
 	if t.ChainID != ChainID {
