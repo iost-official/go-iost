@@ -101,21 +101,31 @@ func (f *forkChain) SetForkBCN(n *blockcache.BlockCacheNode) {
 }
 
 type blockTx struct {
-	txMap        *sync.Map // map[string]*tx.Tx
-	txReceiptMap *sync.Map // map[string]*tx.TxReceipt
+	txMap        *sync.Map           // map[string]*tx.Tx
+	txReceiptMap *sync.Map           // map[string]*tx.TxReceipt
+	contentMap   map[string]struct{} // Immutable; excludes the base transaction.
+	baseTxHash   string
 	ParentHash   []byte
 	time         int64
+	number       int64
 }
 
 func newBlockTx(blk *block.Block) *blockTx {
 	b := &blockTx{
 		txMap:        new(sync.Map),
 		txReceiptMap: new(sync.Map),
+		contentMap:   make(map[string]struct{}, len(blk.Txs)),
 		ParentHash:   blk.Head.ParentHash,
 		time:         blk.Head.Time,
+		number:       blk.Head.Number,
 	}
-	for _, v := range blk.Txs {
+	for i, v := range blk.Txs {
 		b.txMap.Store(string(v.Hash()), v)
+		if i == 0 {
+			b.baseTxHash = string(v.Hash())
+		} else {
+			b.contentMap[string(v.ContentHash())] = struct{}{}
+		}
 	}
 	for _, v := range blk.Receipts {
 		b.txReceiptMap.Store(string(v.TxHash), v)
@@ -138,9 +148,10 @@ func (b *blockTx) getTxAndReceipt(hash []byte) (*tx.Tx, *tx.TxReceipt) {
 
 // SortedTxMap is a red black tree of tx.
 type SortedTxMap struct {
-	tree  *redblacktree.Tree
-	txMap map[string]*tx.Tx
-	rw    *sync.RWMutex
+	tree       *redblacktree.Tree
+	txMap      map[string]*tx.Tx
+	contentMap map[string]map[string]struct{}
+	rw         *sync.RWMutex
 }
 
 func compareTx(a, b any) int {
@@ -174,9 +185,10 @@ func compareTx(a, b any) int {
 // NewSortedTxMap returns a new SortedTxMap instance.
 func NewSortedTxMap() *SortedTxMap {
 	return &SortedTxMap{
-		tree:  redblacktree.NewWith(compareTx),
-		txMap: make(map[string]*tx.Tx),
-		rw:    new(sync.RWMutex),
+		tree:       redblacktree.NewWith(compareTx),
+		txMap:      make(map[string]*tx.Tx),
+		contentMap: make(map[string]map[string]struct{}),
+		rw:         new(sync.RWMutex),
 	}
 }
 
@@ -190,22 +202,61 @@ func (st *SortedTxMap) Get(hash []byte) *tx.Tx {
 // Add adds a tx in SortedTxMap.
 func (st *SortedTxMap) Add(tx *tx.Tx) {
 	st.rw.Lock()
+	defer st.rw.Unlock()
 	st.tree.Put(tx, true)
-	st.txMap[string(tx.Hash())] = tx
-	st.rw.Unlock()
+	hash, content := string(tx.Hash()), string(tx.ContentHash())
+	st.txMap[hash] = tx
+	if st.contentMap[content] == nil {
+		st.contentMap[content] = make(map[string]struct{})
+	}
+	st.contentMap[content][hash] = struct{}{}
 }
 
 // Del deletes a tx in SortedTxMap.
 func (st *SortedTxMap) Del(hash []byte) {
 	st.rw.Lock()
 	defer st.rw.Unlock()
+	st.del(string(hash))
+}
 
-	tx := st.txMap[string(hash)]
+func (st *SortedTxMap) del(hash string) {
+	tx := st.txMap[hash]
 	if tx == nil {
 		return
 	}
 	st.tree.Remove(tx)
-	delete(st.txMap, string(hash))
+	delete(st.txMap, hash)
+	content := string(tx.ContentHash())
+	delete(st.contentMap[content], hash)
+	if len(st.contentMap[content]) == 0 {
+		delete(st.contentMap, content)
+	}
+}
+
+// HasContent reports whether any pending transaction has the given content hash.
+func (st *SortedTxMap) HasContent(hash []byte) bool {
+	st.rw.RLock()
+	defer st.rw.RUnlock()
+	return len(st.contentMap[string(hash)]) != 0
+}
+
+// DelContent removes all entries with the given content hash.
+func (st *SortedTxMap) DelContent(hash []byte) {
+	st.rw.Lock()
+	defer st.rw.Unlock()
+	for fullHash := range st.contentMap[string(hash)] {
+		st.del(fullHash)
+	}
+}
+
+func (st *SortedTxMap) clearExpired(timestamp int64) {
+	st.rw.Lock()
+	defer st.rw.Unlock()
+	for hash, t := range st.txMap {
+		if t.IsExpired(timestamp) {
+			st.del(hash)
+		}
+	}
 }
 
 // Size returns the size of SortedTxMap.

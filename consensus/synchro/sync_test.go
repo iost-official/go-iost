@@ -9,7 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/chainbase"
 	"github.com/iost-official/go-iost/v3/consensus/synchro/pb"
 	"github.com/iost-official/go-iost/v3/core/block"
@@ -20,6 +19,7 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/p2p"
 	p2p_mock "github.com/iost-official/go-iost/v3/p2p/mocks"
+	"go.uber.org/mock/gomock"
 	"google.golang.org/protobuf/proto"
 )
 

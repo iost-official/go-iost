@@ -42,7 +42,7 @@ vm: vm.cc.o allocator.cc.o console.cc.o require.cc.o storage.cc.o blockchain.cc.
 	$(CXX) $(CXXFLAGS) -c $< -o $<.o
 
 install:
-	-mv libvm$(LIB_SUFFIX) $(INSTALL_PATH)
+	mv libvm$(LIB_SUFFIX) $(INSTALL_PATH)
 
 deploy:
 	$(INSTALL) $(INSTALL_PATH)/*$(LIB_SUFFIX) /usr/local/lib
@@ -52,5 +52,9 @@ clean:
 	-rm -rf *.o
 	-rm -rf *$(LIB_SUFFIX)
 
+js_bin: SHELL := /bin/bash
 js_bin:
-	@$(foreach file, $(JSFILES), xxd -i ./libjs/$(file) | sed 's/\([0-9a-f]\{1,2\}\)$$/\1, 0x00/' > ./libjs/include/$(file).h;)
+	@set -e -o pipefail; \
+	for file in $(JSFILES); do \
+		xxd -i "./libjs/$$file" | sed 's/\([0-9a-f]\{1,2\}\)$$/\1, 0x00/' > "./libjs/include/$$file.h"; \
+	done

@@ -22,16 +22,13 @@ type encoder struct {
 	w  *PageWriter
 
 	crc       hash.Hash64
-	buf       []byte
 	uint64buf []byte
 }
 
 func newEncoder(w io.Writer, prevCrc uint64, pageOffset int) *encoder {
 	return &encoder{
-		w:   NewPageWriter(w, walPageBytes, pageOffset),
-		crc: pcrc.New(prevCrc, crc64Table),
-		// 1MB buffer save the allocation fee
-		buf:       make([]byte, 1024*1024),
+		w:         NewPageWriter(w, walPageBytes, pageOffset),
+		crc:       pcrc.New(prevCrc, crc64Table),
 		uint64buf: make([]byte, 8),
 	}
 }

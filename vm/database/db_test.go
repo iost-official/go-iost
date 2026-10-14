@@ -4,9 +4,9 @@ import (
 	"os"
 	"testing"
 
-	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/core/version"
 	"github.com/iost-official/go-iost/v3/db"
+	. "go.uber.org/mock/gomock"
 )
 
 func sliceEqual(a, b []string) bool {

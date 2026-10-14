@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 # upgrade.sh
 # Author Yuanyi<yuanyi@iost.io>
@@ -6,7 +6,7 @@
 # Distributed under terms of the LGPLv3 license.
 #
 
-set -ue
+set -euo pipefail
 
 PREFIX=${PREFIX:="/data/iserver"}
 
@@ -72,11 +72,20 @@ update_container_security_opt() {
 
 cd $PREFIX
 
+if command -v docker-compose >/dev/null 2>&1; then
+    COMPOSE=(docker-compose)
+elif docker compose version >/dev/null 2>&1; then
+    COMPOSE=(docker compose)
+else
+    >&2 echo "Docker Compose not found. Install Docker Compose before upgrading."
+    exit 1
+fi
+
 update_container_restart_policy
 update_container_ulimit
 update_container_security_opt
-docker-compose pull
-docker-compose up -d
+"${COMPOSE[@]}" pull
+"${COMPOSE[@]}" up -d
 
 until $($CURL localhost:30001/getNodeInfo &>/dev/null); do
     >&2 printf '.'

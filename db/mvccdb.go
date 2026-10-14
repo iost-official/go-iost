@@ -123,7 +123,7 @@ func (m *CommitManager) Tags() []string {
 	return res
 }
 
-// FreeBefore will free the momery of commits before the commit
+// FreeBefore will free the memory of commits before the commit
 func (m *CommitManager) FreeBefore(c *Commit) {
 	m.rwmu.Lock()
 	defer m.rwmu.Unlock()

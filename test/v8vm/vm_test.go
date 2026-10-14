@@ -7,7 +7,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/core/version"
@@ -17,6 +16,7 @@ import (
 	"github.com/iost-official/go-iost/v3/vm/host"
 	v8 "github.com/iost-official/go-iost/v3/vm/v8vm"
 	. "github.com/smartystreets/goconvey/convey"
+	. "go.uber.org/mock/gomock"
 )
 
 var vmPool *v8.VMPool
@@ -31,7 +31,6 @@ var testDataPath = "./test_data/"
 
 func Init(t *testing.T) *database.Visitor {
 	mc := NewController(t)
-	defer mc.Finish()
 	db := database.NewMockIMultiValue(mc)
 	vi := database.NewVisitor(100, db, version.NewRules(0))
 	return vi

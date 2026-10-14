@@ -18,7 +18,6 @@ func TestRequireAuth_ByKey(t *testing.T) {
 
 	db, host := myinit(t, ctx)
 
-	db.EXPECT().Commit().Return()
 	db.EXPECT().Get("state", "m-auth.iost-auth-a").DoAndReturn(func(a, b string) (string, error) {
 		ac := account.NewAccount("a")
 		ac.Permissions["pa"] = &account.Permission{
@@ -65,7 +64,6 @@ func TestAuthority_ByUser(t *testing.T) {
 
 	db, host := myinit(t, ctx)
 
-	db.EXPECT().Commit().Return()
 	db.EXPECT().Get("state", "m-auth.iost-auth-a").DoAndReturn(func(a, b string) (string, error) {
 		ac := account.NewAccount("a")
 		ac.Permissions["pa"] = &account.Permission{
@@ -132,7 +130,6 @@ func TestAuthority_Active(t *testing.T) {
 
 	db, host := myinit(t, ctx)
 
-	db.EXPECT().Commit().Return()
 	db.EXPECT().Get("state", "m-auth.iost-auth-a").AnyTimes().DoAndReturn(func(a, b string) (string, error) {
 		ac := account.NewAccount("a")
 		ac.Permissions["owner"] = &account.Permission{
@@ -204,7 +201,6 @@ func TestAuthority_Owner(t *testing.T) {
 
 	db, host := myinit(t, ctx)
 
-	db.EXPECT().Commit().Return()
 	db.EXPECT().Get("state", "m-auth.iost-auth-a").DoAndReturn(func(a, b string) (string, error) {
 		ac := account.NewAccount("a")
 		ac.Permissions["owner"] = &account.Permission{

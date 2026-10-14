@@ -64,7 +64,7 @@ func (pool *TxPImpl) loop() {
 
 // PendingTx is return pendingTx
 func (pool *TxPImpl) PendingTx() (*SortedTxMap, *blockcache.BlockCacheNode) {
-	return pool.pendingTx, pool.forkChain.NewHead
+	return pool.pendingTx, pool.forkChain.GetNewHead()
 }
 
 // AddLinkedNode add the findBlock
@@ -98,12 +98,16 @@ func (pool *TxPImpl) AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error 
 // AddTx add the transaction
 func (pool *TxPImpl) AddTx(t *tx.Tx, from string) error {
 	pool.mu.Lock()
-	err := pool.verifyDuplicate(t)
+	if pool.pendingTx.Get(t.Hash()) != nil {
+		pool.mu.Unlock()
+		return ErrDupPendingTx
+	}
+	err := pool.verifyTx(t)
 	if err != nil {
 		pool.mu.Unlock()
 		return err
 	}
-	err = pool.verifyTx(t)
+	err = pool.verifyDuplicate(t)
 	if err != nil {
 		pool.mu.Unlock()
 		return err
@@ -242,24 +246,22 @@ func (pool *TxPImpl) clearBlock() {
 }
 
 func (pool *TxPImpl) verifyDuplicate(t *tx.Tx) error {
-	if pool.pendingTx.Get(t.Hash()) != nil {
+	contentHash := t.ContentHash()
+	if pool.pendingTx.HasContent(contentHash) {
 		return ErrDupPendingTx
 	}
-	if t, _ := pool.getTxAndReceiptInChain(t.Hash(), pool.forkChain.GetNewHead().Block); t != nil {
+	found, err := pool.HasContent(t, pool.forkChain.GetNewHead().Block)
+	if err != nil {
+		return err
+	}
+	if found {
 		return ErrDupChainTx
 	}
 	return nil
 }
 
 func (pool *TxPImpl) clearTimeoutTx() {
-	iter := pool.pendingTx.Iter()
-	t, ok := iter.Next()
-	for ok {
-		if t.IsExpired(time.Now().UnixNano()) {
-			pool.pendingTx.Del(t.Hash())
-		}
-		t, ok = iter.Next()
-	}
+	pool.pendingTx.clearExpired(time.Now().UnixNano())
 }
 
 func (pool *TxPImpl) updateForkChain(newHead *blockcache.BlockCacheNode) tFork {
@@ -305,7 +307,7 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 		if oldHead == nil || oldHead == forkBCN || oldHead.Block.Head.Time < filterLimit {
 			break
 		}
-		for _, t := range oldHead.Block.Txs {
+		for _, t := range oldHead.Txs {
 			pool.pendingTx.Add(t)
 		}
 		oldHead = oldHead.GetParent()
@@ -316,8 +318,8 @@ func (pool *TxPImpl) doChainChangeByForkBCN() {
 		if newHead == nil || newHead == forkBCN || newHead.Block.Head.Time < filterLimit {
 			break
 		}
-		for _, t := range newHead.Block.Txs {
-			pool.DelTx(t.Hash())
+		for i, t := range newHead.Txs {
+			pool.removeConfirmed(t, i == 0)
 		}
 		newHead = newHead.GetParent()
 	}
@@ -350,7 +352,8 @@ func (pool *TxPImpl) doChainChangeByTimeout() {
 				break
 			}
 			nb.txMap.Range(func(k, v any) bool {
-				pool.DelTx(v.(*tx.Tx).Hash())
+				transaction := v.(*tx.Tx)
+				pool.removeConfirmed(transaction, k.(string) == nb.baseTxHash)
 				return true
 			})
 			nb, ok = pool.findBlock(nb.ParentHash)

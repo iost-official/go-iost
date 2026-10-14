@@ -4,9 +4,9 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/core/version"
 	"github.com/iost-official/go-iost/v3/vm/database"
+	. "go.uber.org/mock/gomock"
 )
 
 func watchTime(f func()) time.Duration {
@@ -30,7 +30,6 @@ func sliceEqual(a, b []string) bool {
 
 func myinit(t *testing.T, ctx *Context) (*database.MockIMultiValue, *Host) {
 	mockCtrl := NewController(t)
-	defer mockCtrl.Finish()
 	db := database.NewMockIMultiValue(mockCtrl)
 	bdb := database.NewVisitor(100, db, version.NewRules(0))
 
@@ -49,7 +48,7 @@ func TestHost_Put(t *testing.T) {
 	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Put(Any(), Any(), Any()).Do(func(a, b, c string) {
-		if a != "state" || b != "b-contractName-hello" || c != "sworld" {
+		if a != "state" || b != "b-contractName-hello" || c != "sworld@contractName" {
 			t.Fatal(a, b, c)
 		}
 	})
@@ -61,6 +60,7 @@ func TestHost_Put(t *testing.T) {
 	if host.cost["contractName"].Data != 37 {
 		t.Fatal(host.cost)
 	}
+	host.DB().Commit()
 }
 
 func TestHost_Put2(t *testing.T) {
@@ -122,7 +122,6 @@ func TestHost_Del(t *testing.T) {
 	})
 
 	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld@contractName", nil)
-	mock.EXPECT().Get("state", "b-contractName-hello").Return("sworld@contractName", nil)
 
 	_, _ = host.Del("hello")
 	host.FlushCacheCost()
@@ -165,7 +164,7 @@ func TestHost_MapPut(t *testing.T) {
 	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Put("state", "m-contractName-hello-1", Any()).Do(func(a, b, c string) {
-		if a != "state" || b != "m-contractName-hello-1" || c != "sworld" {
+		if a != "state" || b != "m-contractName-hello-1" || c != "sworld@contractName" {
 			t.Fatal(a, b, c)
 		}
 	})
@@ -189,6 +188,7 @@ func TestHost_MapPut(t *testing.T) {
 	if host.cost["contractName"].Data != 39 {
 		t.Fatal(host.cost)
 	}
+	host.DB().Commit()
 }
 
 func TestHost_MapPut_Owner(t *testing.T) {
@@ -200,7 +200,7 @@ func TestHost_MapPut_Owner(t *testing.T) {
 	mock, host := myinit(t, ctx)
 
 	mock.EXPECT().Put("state", "m-contractName-hello-1", Any()).Do(func(a, b, c string) {
-		if c != "sworld" {
+		if c != "sworld@abc" {
 			t.Fatal(c)
 		}
 	})
@@ -224,6 +224,7 @@ func TestHost_MapPut_Owner(t *testing.T) {
 	if host.cost["abc"].Data != 30 {
 		t.Fatal(host.cost)
 	}
+	host.DB().Commit()
 }
 
 func TestHost_MapGet(t *testing.T) {

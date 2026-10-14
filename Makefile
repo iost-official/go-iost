@@ -4,8 +4,8 @@ GO_TEST := $(GO) test -timeout 600s
 GO_INSTALL := $(GO) install
 
 PROJECT_NAME := $(shell basename "$(PWD)")
-BUILDER_VERSION = 3.11.0
-VERSION = 3.11.5
+BUILDER_VERSION = 4.0.0
+VERSION = 4.0.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -35,7 +35,7 @@ endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/v3/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/v3/core/global.GitHash=$(shell git rev-parse HEAD) -X github.com/iost-official/go-iost/v3/core/global.CodeVersion=$(VERSION)
 
-.PHONY: all build iserver iwallet itest lint test e2e_test image push devimage swagger protobuf install clean debug clear_debug_file env
+.PHONY: all build iserver iwallet itest lint test e2e_test_local e2e_test image push devimage swagger protobuf install clean debug clear_debug_file env
 
 all: build
 
@@ -58,16 +58,16 @@ format:
 	find . -name "*.go" |xargs gofmt -s -w
 
 lint-tool:
-	env GOARCH= go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	env GOARCH= go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 
 lint:
 	golangci-lint run
 
 vmlib:
-	(cd vm/v8vm/v8/; make clean js_bin vm install; cd ../../..)
+	$(MAKE) -C vm/v8vm/v8 clean js_bin vm install
 
 vmlib_install:
-	(cd vm/v8vm/v8/; make deploy; cd ../../..)
+	$(MAKE) -C vm/v8vm/v8 deploy
 
 vmlib_linux:
 	$(DEV_DOCKER_RUN) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
@@ -81,20 +81,10 @@ else
 endif
 
 e2e_test_local: clear_debug_file build
-	target/iserver -f config/iserver.yml &
-	sleep 20
-	$(TARGET_DIR)/itest run a_case
-	$(TARGET_DIR)/itest run t_case
-	$(TARGET_DIR)/itest run c_case
-	killall iserver
+	bash ./script/e2e_test_local.sh "$(TARGET_DIR)"
 
-e2e_test: image
-	docker rm -f iserver || true
-	docker run -d --name iserver $(DOCKER_IMAGE)
-	sleep 20
-	docker exec -it iserver ./itest run a_case
-	docker exec -it iserver ./itest run t_case
-	docker exec -it iserver ./itest run c_case
+e2e_test: release_image
+	bash ./script/e2e_test.sh "$(DOCKER_RELEASE_IMAGE)"
 
 image:
 	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
@@ -122,7 +112,7 @@ docker_test:
 dev_image_tag:
 	docker tag $(DOCKER_DEVIMAGE) iostio/iost-dev:latest
 
-docker_full_test: devimage dev_image_tag image docker_lint docker_test e2e_test
+docker_full_test: devimage docker_lint docker_test e2e_test
 
 devpush: dev_image_tag
 	docker push $(DOCKER_DEVIMAGE)

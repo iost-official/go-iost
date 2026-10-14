@@ -153,6 +153,16 @@ func (c *ChainBase) addExistingBlock(node *blockcache.BlockCacheNode, replay boo
 		return errOutOfLimit
 	}
 	ok := c.stateDB.Checkout(string(blk.HeadHash()))
+	if ok && blk.Head.Rules().IsFork4_0_0 {
+		if err := cverifier.VerifyBlockHead(blk, parentNode.Block); err != nil {
+			c.bCache.Del(node)
+			return err
+		}
+		if err := verifier.VerifyBlockContent(blk, parentNode.Block, c.txPool.HasContent); err != nil {
+			c.bCache.Del(node)
+			return err
+		}
+	}
 	if !ok {
 		c.stateDB.Checkout(string(blk.Head.ParentHash))
 		err := c.verifyBlock(blk, parentNode.Block, node.GetParent().WitnessList)
@@ -197,12 +207,18 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 		return errWitness
 	}
 	ilog.Debugf("[pob] start to verify block if foundchain, number: %v, hash = %v, witness = %v", blk.Head.Number, common.Base58Encode(blk.HeadHash()), blk.Head.Witness[4:6])
-	blkTxSet := make(map[string]bool, len(blk.Txs))
+	useContentHash := blk.Head.Rules().IsFork4_0_0
+	var blkTxSet map[string]bool
+	if !useContentHash {
+		blkTxSet = make(map[string]bool, len(blk.Txs))
+	}
 	for i, t := range blk.Txs {
-		if blkTxSet[string(t.Hash())] {
+		if !useContentHash && blkTxSet[string(t.Hash())] {
 			return errDoubleTx
 		}
-		blkTxSet[string(t.Hash())] = true
+		if !useContentHash {
+			blkTxSet[string(t.Hash())] = true
+		}
 
 		if i == 0 {
 			// base tx
@@ -212,7 +228,7 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 		if t.Delay > 0 {
 			return errDelayTx
 		}
-		if c.txPool.ExistTxs(t.Hash(), parent) {
+		if !useContentHash && c.txPool.ExistTxs(t.Hash(), parent) {
 			ilog.Infof("FoundChain: %v, %v", t, common.Base58Encode(t.Hash()))
 			return errTxDup
 		}
@@ -223,12 +239,16 @@ func (c *ChainBase) verifyBlock(blk, parent *block.Block, witnessList *blockcach
 	}
 	v := verifier.Verifier{}
 	if c.config.SPV != nil && c.config.SPV.IsSPV {
+		if useContentHash {
+			return verifier.VerifyBlockContent(blk, parent, c.txPool.HasContent)
+		}
 		// in SPV mode, only verify the block structure, not exec the txs
 		return nil
 	}
 	return v.Verify(blk, parent, witnessList, c.stateDB, &verifier.Config{
-		Mode:        0,
-		Timeout:     common.MaxBlockTimeLimit,
-		TxTimeLimit: common.MaxTxTimeLimit,
+		CheckTxContent: c.txPool.HasContent,
+		Mode:           0,
+		Timeout:        common.MaxBlockTimeLimit,
+		TxTimeLimit:    common.MaxTxTimeLimit,
 	})
 }

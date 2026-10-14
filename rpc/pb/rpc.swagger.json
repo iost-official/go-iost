@@ -30,7 +30,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -64,7 +64,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -103,7 +103,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -137,7 +137,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -176,7 +176,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -216,7 +216,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -248,7 +248,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -280,7 +280,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -319,7 +319,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -342,7 +342,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -381,7 +381,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -415,7 +415,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -449,7 +449,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -488,7 +488,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -511,7 +511,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -534,7 +534,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -573,7 +573,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -596,7 +596,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -636,7 +636,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -682,7 +682,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -728,7 +728,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -774,7 +774,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -819,7 +819,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -858,7 +858,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -890,7 +890,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -921,7 +921,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -959,7 +959,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -992,7 +992,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -1026,7 +1026,7 @@
                   "$ref": "#/definitions/rpcpbSubscribeResponse"
                 },
                 "error": {
-                  "$ref": "#/definitions/googlerpcStatus"
+                  "$ref": "#/definitions/googleRpcStatus"
                 }
               },
               "title": "Stream result of rpcpbSubscribeResponse"
@@ -1035,7 +1035,7 @@
           "default": {
             "description": "An unexpected error response.",
             "schema": {
-              "$ref": "#/definitions/googlerpcStatus"
+              "$ref": "#/definitions/googleRpcStatus"
             }
           }
         },
@@ -1201,6 +1201,55 @@
       },
       "description": "The message defines account ram information."
     },
+    "BlockInfo": {
+      "type": "object",
+      "properties": {
+        "mode": {
+          "type": "integer",
+          "format": "int32",
+          "title": "pack mode"
+        },
+        "thread": {
+          "type": "integer",
+          "format": "int32",
+          "title": "transaction execution thread number"
+        },
+        "batchIndex": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "title": "transaction index of every batch execution"
+        }
+      },
+      "title": "The message defines block extra information"
+    },
+    "ContractABI": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "title": "abi name"
+        },
+        "args": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "title": "abi arguments"
+        },
+        "amountLimit": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/rpcpbAmountLimit"
+          },
+          "title": "abi amount limt"
+        }
+      },
+      "description": "The message defines the ABI struct."
+    },
     "EventTopic": {
       "type": "string",
       "enum": [
@@ -1208,7 +1257,7 @@
         "CONTRACT_EVENT"
       ],
       "default": "CONTRACT_RECEIPT",
-      "title": "- CONTRACT_RECEIPT: contract receipt\n - CONTRACT_EVENT: contract event"
+      "description": "- CONTRACT_RECEIPT: contract receipt\n - CONTRACT_EVENT: contract event"
     },
     "GetBatchContractStorageRequestKeyField": {
       "type": "object",
@@ -1231,7 +1280,7 @@
         "MAP"
       ],
       "default": "KV",
-      "title": "- KV: written by storage.put(..., ...)\n - MAP: written by storage.mapPut(..., ..., ...)"
+      "description": "- KV: written by storage.put(..., ...)\n - MAP: written by storage.mapPut(..., ..., ...)"
     },
     "ListContractStorageResponseData": {
       "type": "object",
@@ -1378,7 +1427,7 @@
         }
       }
     },
-    "googlerpcStatus": {
+    "googleRpcStatus": {
       "type": "object",
       "properties": {
         "code": {
@@ -1544,7 +1593,7 @@
           "title": "transaction count"
         },
         "info": {
-          "$ref": "#/definitions/rpcpbBlockInfo",
+          "$ref": "#/definitions/BlockInfo",
           "title": "extra information"
         },
         "origInfo": {
@@ -1573,30 +1622,6 @@
           }
         }
       }
-    },
-    "rpcpbBlockInfo": {
-      "type": "object",
-      "properties": {
-        "mode": {
-          "type": "integer",
-          "format": "int32",
-          "title": "pack mode"
-        },
-        "thread": {
-          "type": "integer",
-          "format": "int32",
-          "title": "transaction execution thread number"
-        },
-        "batchIndex": {
-          "type": "array",
-          "items": {
-            "type": "integer",
-            "format": "int32"
-          },
-          "title": "transaction index of every batch execution"
-        }
-      },
-      "title": "The message defines block extra information"
     },
     "rpcpbBlockResponse": {
       "type": "object",
@@ -1760,37 +1785,12 @@
           "type": "array",
           "items": {
             "type": "object",
-            "$ref": "#/definitions/rpcpbContractABI"
+            "$ref": "#/definitions/ContractABI"
           },
           "title": "contract abis"
         }
       },
       "description": "The message defines the contract struct."
-    },
-    "rpcpbContractABI": {
-      "type": "object",
-      "properties": {
-        "name": {
-          "type": "string",
-          "title": "abi name"
-        },
-        "args": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "title": "abi arguments"
-        },
-        "amountLimit": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "$ref": "#/definitions/rpcpbAmountLimit"
-          },
-          "title": "abi amount limt"
-        }
-      },
-      "description": "The message defines the ABI struct."
     },
     "rpcpbContractVote": {
       "type": "object",

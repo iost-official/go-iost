@@ -1,7 +1,6 @@
 package txpool
 
 import (
-	_ "github.com/golang/mock/mockgen/model"
 	"github.com/iost-official/go-iost/v3/core/block"
 	"github.com/iost-official/go-iost/v3/core/blockcache"
 	"github.com/iost-official/go-iost/v3/core/tx"
@@ -20,5 +19,6 @@ type TxPool interface {
 	// TODO: The following interfaces need to be moved from txpool to chainbase.
 	AddLinkedNode(linkedNode *blockcache.BlockCacheNode) error
 	ExistTxs(hash []byte, chainBlock *block.Block) bool
+	HasContent(t *tx.Tx, chainBlock *block.Block) (bool, error)
 	GetFromChain(hash []byte) (*tx.Tx, *tx.TxReceipt, error)
 }

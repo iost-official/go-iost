@@ -1,19 +1,19 @@
 package vm
 
 import (
+	"reflect"
 	"testing"
 	"time"
 
-	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/core/contract"
 	"github.com/iost-official/go-iost/v3/core/version"
 	"github.com/iost-official/go-iost/v3/vm/database"
 	"github.com/iost-official/go-iost/v3/vm/host"
+	. "go.uber.org/mock/gomock"
 )
 
 func Init(t *testing.T) (*Monitor, *MockVM, *database.MockIMultiValue, *database.Visitor) {
 	mc := NewController(t)
-	defer mc.Finish()
 	vm := NewMockVM(mc)
 	db := database.NewMockIMultiValue(mc)
 	vi := database.NewVisitor(100, db, version.NewRules(0))
@@ -37,9 +37,9 @@ func TestMonitor_Call(t *testing.T) {
 
 	flag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), Any(), Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...string) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), Any(), Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []any, cost contract.Cost, err error) {
 		flag = true
-		return []string{"world"}, cost, nil
+		return []any{"world"}, cost, nil
 	})
 
 	c := contract.Contract{
@@ -61,7 +61,13 @@ func TestMonitor_Call(t *testing.T) {
 		return c.Encode(), nil
 	})
 
-	monitor.Call(h, "Contract", "abi", "[\"1\"]")
+	rtn, _, err := monitor.Call(h, "Contract", "abi", "[\"1\"]")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !reflect.DeepEqual(rtn, []any{"world"}) {
+		t.Fatal(rtn)
+	}
 
 	if !flag {
 		t.Fatal(flag)
@@ -83,16 +89,16 @@ func TestMonitor_Context(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []any, cost contract.Cost, err error) {
 		outerFlag = true
 		monitor.Call(h, "Contract", "inner", "[\"hello\"]")
 
-		return []string{"world"}, cost, nil
+		return []any{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []any, cost contract.Cost, err error) {
 		innerFlag = true
-		return []string{"world"}, cost, nil
+		return []any{"world"}, cost, nil
 	})
 	c := contract.Contract{
 		ID:   "Contract",
@@ -142,22 +148,22 @@ func TestMonitor_HostCall(t *testing.T) {
 	outerFlag := false
 	innerFlag := false
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "outer", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []any, cost contract.Cost, err error) {
 		cost = contract.Cost0()
 		outerFlag = true
 		h.Call("Contract", "inner", "[\"hello\"]")
 
-		return []string{"world"}, cost, nil
+		return []any{"world"}, cost, nil
 	})
 
-	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []string, cost contract.Cost, err error) {
+	vm.EXPECT().LoadAndCall(Any(), Any(), "inner", Any()).DoAndReturn(func(h *host.Host, c *contract.Contract, api string, args ...any) (rtn []any, cost contract.Cost, err error) {
 		cost = contract.Cost0()
 		innerFlag = true
 		if h.Context().Value("abi_name") != "inner" {
 			t.Fatal(h.Context())
 		}
 
-		return []string{"world"}, cost, nil
+		return []any{"world"}, cost, nil
 	})
 	c := contract.Contract{
 		ID:   "Contract",
@@ -240,4 +246,80 @@ module.exports = Contract;
 		t.Fatal(rs, co, e)
 	}
 
+}
+
+// Argument values and error messages feed contract execution and transaction receipts.
+func TestUnmarshalArgs(t *testing.T) {
+	tests := []struct {
+		name    string
+		types   []string
+		data    string
+		want    []any
+		wantErr string
+	}{
+		{
+			name:    "incomplete JSON",
+			types:   []string{"number"},
+			data:    "[1,",
+			wantErr: "error in data: unexpected EOF, [1,",
+		},
+		{
+			name:    "invalid JSON literal",
+			types:   []string{"bool"},
+			data:    "[truX]",
+			wantErr: "error in data: invalid character 'X' in literal true (expecting 'e'), [truX]",
+		},
+		{
+			name:  "int64 boundaries and precision",
+			types: []string{"number", "number", "number"},
+			data:  "[-9223372036854775808,9007199254740993,9223372036854775807]",
+			want:  []any{int64(-9223372036854775808), int64(9007199254740993), int64(9223372036854775807)},
+		},
+		{
+			name:    "int64 overflow",
+			types:   []string{"number"},
+			data:    "[9223372036854775808]",
+			wantErr: `error parse number arg &{9223372036854775808}, strconv.ParseInt: parsing "9223372036854775808": value out of range`,
+		},
+		{
+			name:    "fractional number",
+			types:   []string{"number"},
+			data:    "[1.5]",
+			wantErr: `error parse number arg &{1.5}, strconv.ParseInt: parsing "1.5": invalid syntax`,
+		},
+		{
+			name:  "JSON null",
+			types: []string{"json"},
+			data:  "[null]",
+			want:  []any{[]byte("null")},
+		},
+		{
+			name:    "null is not a number",
+			types:   []string{"number"},
+			data:    "[null]",
+			wantErr: "error parse number arg &{<nil>}, invalid value type",
+		},
+		{
+			name:  "trailing comma compatibility",
+			types: []string{"number"},
+			data:  "[1,]",
+			want:  []any{int64(1)},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := UnmarshalArgs(&contract.ABI{Name: "test", Args: tt.types}, tt.data)
+			var gotErr string
+			if err != nil {
+				gotErr = err.Error()
+			}
+			if gotErr != tt.wantErr {
+				t.Fatalf("error = %q, want %q", gotErr, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Fatalf("arguments = %#v, want %#v", got, tt.want)
+			}
+		})
+	}
 }

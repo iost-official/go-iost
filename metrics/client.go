@@ -2,6 +2,7 @@ package metrics
 
 import (
 	"errors"
+	"net/http"
 	"sync/atomic"
 	"time"
 
@@ -11,14 +12,15 @@ import (
 	"github.com/prometheus/client_golang/prometheus/push"
 )
 
+const (
+	pushInterval = 500 * time.Millisecond
+	pushTimeout  = 10 * time.Second
+)
+
 // errors
 var (
 	ErrNilPusher         = errors.New("pusher is nil")
 	ErrPusherUnavailable = errors.New("pusher addr unavailable")
-)
-
-var (
-	pushInterval = time.Millisecond * 500
 )
 
 // Client is the struct responsible for sending different type of metrics.
@@ -41,7 +43,9 @@ func NewClient() *Client {
 
 // SetPusher sets the pusher with the given addr.
 func (c *Client) SetPusher(addr, username, password string) error {
-	c.pusher = push.New(addr, "iost")
+	c.pusher = push.New(addr, "iost").Client(&http.Client{
+		Timeout: pushTimeout,
+	})
 	c.pusher.BasicAuth(username, password)
 	for _, colloctor := range c.collectorCache {
 		c.pusher.Collector(colloctor)

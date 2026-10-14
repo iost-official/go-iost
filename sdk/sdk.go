@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -53,7 +54,7 @@ type IOSTDevSDK struct {
 	rpcConn *grpc.ClientConn
 }
 
-// NewIOSTDevSDK creatimg an SDK with reasonable params
+// NewIOSTDevSDK creates an SDK with reasonable params
 func NewIOSTDevSDK() *IOSTDevSDK {
 	return &IOSTDevSDK{
 		server:              "localhost:30002",
@@ -444,7 +445,7 @@ func (s *IOSTDevSDK) checkTransaction(txHash string) error {
 		}
 		if txReceipt.StatusCode != rpcpb.TxReceipt_SUCCESS {
 			s.log("Transaction executed err")
-			return fmt.Errorf(txReceipt.Message)
+			return errors.New(txReceipt.Message)
 		}
 		if r.Status == rpcpb.TransactionResponse_PACKED {
 			if s.verbose {

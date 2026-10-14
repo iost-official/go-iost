@@ -87,6 +87,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
+		defer f.Close()
 		// 开启 CPU profiling
 		pprof.StartCPUProfile(f)
 		defer pprof.StopCPUProfile()

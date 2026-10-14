@@ -6,7 +6,6 @@ import (
 	"testing"
 	"time"
 
-	. "github.com/golang/mock/gomock"
 	"github.com/iost-official/go-iost/v3/account"
 	"github.com/iost-official/go-iost/v3/common"
 	"github.com/iost-official/go-iost/v3/core/block"
@@ -20,6 +19,7 @@ import (
 	"github.com/iost-official/go-iost/v3/p2p"
 	"github.com/iost-official/go-iost/v3/vm/database"
 	. "github.com/smartystreets/goconvey/convey"
+	. "go.uber.org/mock/gomock"
 )
 
 var (

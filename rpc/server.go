@@ -28,8 +28,10 @@ import (
 )
 
 const (
-	maxConcurrentStreams = 200
-	connectionLimit      = 128
+	maxConcurrentStreams     = 200
+	connectionLimit          = 128
+	gatewayReadHeaderTimeout = 10 * time.Second
+	gatewayIdleTimeout       = 2 * time.Minute
 )
 
 // Server is the rpc server including grpc server and json gateway server.
@@ -119,8 +121,10 @@ func (s *Server) startGateway() error {
 		AllowedOrigins: s.allowOrigins,
 	})
 	s.gatewayServer = &http.Server{
-		Addr:    s.gatewayAddr,
-		Handler: c.Handler(mux),
+		Addr:              s.gatewayAddr,
+		Handler:           c.Handler(mux),
+		ReadHeaderTimeout: gatewayReadHeaderTimeout,
+		IdleTimeout:       gatewayIdleTimeout,
 	}
 	go func() {
 		if err := s.gatewayServer.ListenAndServe(); err != http.ErrServerClosed {

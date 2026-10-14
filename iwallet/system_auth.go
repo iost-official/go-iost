@@ -69,8 +69,8 @@ var assignPermCmd = &cobra.Command{
 var revokePermCmd = &cobra.Command{
 	Use:     "revoke-permission permission item",
 	Aliases: []string{"revokeperm"},
-	Short:   "revoke item to permission",
-	Long:    "revoke item to permission",
+	Short:   "revoke item from permission",
+	Long:    "revoke item from permission",
 	Example: `  iwallet sys revokeperm myactive someone@perm
   iwallet sys revokeperm myactive EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE`,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -143,8 +143,8 @@ var assignGroupCmd = &cobra.Command{
 var revokeGroupCmd = &cobra.Command{
 	Use:     "revoke-group group item",
 	Aliases: []string{"revokegroup"},
-	Short:   "revoke item to group",
-	Long:    "revoke item to group",
+	Short:   "revoke item from group",
+	Long:    "revoke item from group",
 	Example: `  iwallet sys revokeperm myactive someone@perm
   iwallet sys revokeperm myactive EhNiaU4DzUmjCrvynV3gaUeuj2VjB1v2DCmbGD5U2nSE`,
 	Args: func(cmd *cobra.Command, args []string) error {
@@ -176,10 +176,10 @@ var bindPermCmd = &cobra.Command{
 }
 
 var unbindPermCmd = &cobra.Command{
-	Use:     "revoke-pemission-in-group permission group",
+	Use:     "revoke-permission-in-group permission group",
 	Aliases: []string{"unbindperm"},
-	Short:   "unbind permission into a group",
-	Long:    "unbind permission into a group",
+	Short:   "unbind permission from a group",
+	Long:    "unbind permission from a group",
 	Example: `  iwallet sys unbindperm myperm mygroup`,
 	Args: func(cmd *cobra.Command, args []string) error {
 		if err := checkArgsNumber(cmd, args, "permission", "group"); err != nil {

@@ -73,7 +73,7 @@ func (k *KeyPairInfo) Encrypt(password []byte) error {
 	}
 	salt := make([]byte, 48) // encryptKey + iv + hashSalt
 	if _, err := io.ReadFull(rand.Reader, salt[0:32]); err != nil {
-		return fmt.Errorf("reading from crypto/rand failed: " + err.Error())
+		return fmt.Errorf("reading from crypto/rand failed: %s", err.Error())
 	}
 	key, err := scrypt.Key(password, salt[0:32], 32768, 8, 1, 32)
 	if err != nil {
@@ -173,11 +173,15 @@ func (a *AccountInfo) Encrypt(password []byte) error {
 	if a.IsEncrypted() {
 		return fmt.Errorf("account already encrypted")
 	}
+	encrypted := make(map[*KeyPairInfo]struct{}, len(a.Keypairs))
 	for _, k := range a.Keypairs {
-		err := k.Encrypt(password)
-		if err != nil {
+		if _, ok := encrypted[k]; ok {
+			continue
+		}
+		if err := k.Encrypt(password); err != nil {
 			return err
 		}
+		encrypted[k] = struct{}{}
 	}
 	return nil
 }

@@ -1,62 +1,61 @@
+version: "2"
+
 run:
   timeout: 4m
   tests: false
 
-linters-settings:
-  gocyclo:
-    min-complexity: 15
-  gocritic:
-    disabled-checks:
-      - ifElseChain
-      - singleCaseSwitch
-      - commentFormatting
-      - appendAssign
-issues:
-  exclude-rules:
-    - linters:
-        - staticcheck
-      text: "SA1019: rand.Seed" 
-
 linters:
+  default: none
   enable:
     - govet
-    - gosimple
     - ineffassign
     - misspell
     - staticcheck
-    - typecheck
     - unconvert
-    - gofmt
     - asciicheck
     - dogsled
     - gocritic
-    - goimports
-    - gomodguard
+    - gomodguard_v2
     - goprintffuncname
     - testpackage
     - whitespace
     - unused
-  disable:
-    - errcheck
-    - unparam
-    - nolintlint
-    - gomnd
-    - goerr113
-    - stylecheck
-    - wsl
-    - nakedret
-    - nestif
-    - prealloc
-    - dupl
-    - funlen
-    - lll
-    - gosec
-    - gochecknoglobals
-    - godox
-    - godot
-    - gochecknoinits
-    - gocognit
-    - goconst
-    - gocyclo
-    - structcheck
-    - depguard
+  settings:
+    gocritic:
+      disabled-checks:
+        - ifElseChain
+        - singleCaseSwitch
+        - commentFormatting
+        - appendAssign
+    staticcheck:
+      # Keep the former gosimple and staticcheck checks; stylecheck was disabled.
+      checks:
+        - "S*"
+        - "SA*"
+  exclusions:
+    # Preserve the v1 defaults for generated code and exclusions.
+    generated: lax
+    presets:
+      - comments
+      - common-false-positives
+      - legacy
+      - std-error-handling
+    rules:
+      - linters:
+          - staticcheck
+        text: 'SA1019: (math/)?rand\.Seed'
+    paths:
+      - third_party$
+      - builtin$
+      - examples$
+
+formatters:
+  enable:
+    - gofmt
+    - goimports
+  exclusions:
+    generated: lax
+    paths:
+      - third_party$
+      - builtin$
+      - examples$

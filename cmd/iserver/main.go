@@ -54,10 +54,22 @@ func initLogger(logConfig *common.LogConfig) {
 	ilog.InitLogger(logger)
 }
 
+func configLogString(conf *common.Config) string {
+	logConf := *conf
+	if conf.Metrics != nil && conf.Metrics.Password != "" {
+		metricsConf := *conf.Metrics
+		metricsConf.Password = "******"
+		logConf.Metrics = &metricsConf
+	}
+
+	return strings.ReplaceAll(logConf.YamlString(), conf.ACC.SecKey, conf.ACC.SecKey[:3]+"******")
+}
+
 func main() {
 	flag.Parse()
 	if *help {
 		flag.Usage()
+		return
 	}
 
 	if *configFile == "" {
@@ -75,7 +87,7 @@ func main() {
 
 	initLogger(conf.Log)
 
-	ilog.Infof("Config Information:\n%v", strings.ReplaceAll(conf.YamlString(), conf.ACC.SecKey, conf.ACC.SecKey[:3]+"******"))
+	ilog.Infof("Config Information:\n%v", configLogString(conf))
 
 	ilog.Infof("build time:%v", global.BuildTime)
 	ilog.Infof("git hash:%v", global.GitHash)

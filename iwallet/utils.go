@@ -183,7 +183,7 @@ func handleMultiSig(tx *rpcpb.TransactionRequest, signatureFiles []string, signK
 			if err != nil {
 				return fmt.Errorf("failed to load account from file %v: %v", f, err)
 			}
-			kp, err := accInfo.GetKeyPair("avtive")
+			kp, err := accInfo.GetKeyPair("active")
 			if err != nil {
 				return fmt.Errorf("failed to get key pair from file %v: %v", f, err)
 			}
