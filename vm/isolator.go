@@ -162,7 +162,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 	startTime := time.Now()
 	vmGasLimit := i.t.GasLimit/i.t.GasRatio - i.h.GasPaid()
 	if vmGasLimit <= 0 {
-		ilog.Fatalf("vmGasLimit < 0. It should not happen. %v / %v < %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPaid())
+		return nil, fmt.Errorf("insufficient gas budget: limit %v / ratio %v <= paid %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPaid())
 	}
 	i.h.Context().GSet("gas_limit", vmGasLimit)
 	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
