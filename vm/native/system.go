@@ -54,6 +54,9 @@ var (
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			codeRaw := args[0].(string)
+			if codeRaw == "" {
+				return nil, host.CommonErrorCost(1), errors.New("empty code")
+			}
 
 			if codeRaw[0] == '{' {
 				err = json.Unmarshal([]byte(codeRaw), con)
@@ -116,6 +119,9 @@ var (
 				return nil, cost, errors.New("can't call UpdateCode from other contract")
 			}
 
+			if codeRaw == "" {
+				return nil, host.CommonErrorCost(1), errors.New("empty code")
+			}
 			if codeRaw[0] == '{' {
 				err = json.Unmarshal([]byte(codeRaw), con)
 				if err != nil {
@@ -197,6 +203,9 @@ var (
 					return nil, cost, errors.New("invalid contractID or version")
 				}
 			} else {
+				if codeRaw == "" {
+					return nil, host.CommonErrorCost(1), errors.New("empty code")
+				}
 				if codeRaw[0] == '{' {
 					err = json.Unmarshal([]byte(codeRaw), con)
 					if err != nil {
