@@ -4,8 +4,8 @@ GO_TEST := $(GO) test -timeout 600s
 GO_INSTALL := $(GO) install
 
 PROJECT_NAME := $(shell basename "$(PWD)")
-BUILDER_VERSION = 4.0.0
-VERSION = 4.0.0
+BUILDER_VERSION = 4.10.0
+VERSION = 4.10.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
@@ -88,7 +88,7 @@ e2e_test: release_image
 
 image:
 	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
-	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
+	docker build -f Dockerfile.run --build-arg DEV_IMAGE="$(DOCKER_DEVIMAGE)" -t $(DOCKER_IMAGE) .
 
 release_image:
 	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)

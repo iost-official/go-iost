@@ -7,6 +7,10 @@ on:
     branches:
       - master  
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 jobs:
   #  Mac_Test:
   #    runs-on: macos-latest
@@ -49,40 +53,43 @@ jobs:
 
   E2E_Test:
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
 
       - run: |
-          git lfs pull
+          git lfs pull --include="vm/v8vm/v8/libv8/_linux_amd64/**" --exclude=""
           make devimage
           make e2e_test
 
   E2E_Test_Local:
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Set up Go
         uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.27.2"
+          go-version: "1.27.3"
           cache-dependency-path: go.sum
 
       - run: |
-          git lfs pull
+          git lfs pull --include="vm/v8vm/v8/libv8/_linux_amd64/**" --exclude=""
           make e2e_test_local
 
   Linux_Test:
     runs-on: ubuntu-22.04
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v7.0.1
       - name: Set up Go
         uses: actions/setup-go@v7.0.0
         with:
-          go-version: "1.27.2"
+          go-version: "1.27.3"
           cache-dependency-path: go.sum
 
       - run: |
-          git lfs pull
+          git lfs pull --include="vm/v8vm/v8/libv8/_linux_amd64/**" --exclude=""
           make vmlib_install
           make build
           GOBIN=/usr/local/bin/ make lint-tool

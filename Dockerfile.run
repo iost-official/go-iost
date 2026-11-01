@@ -1,4 +1,5 @@
-FROM iostio/iost-dev
+ARG DEV_IMAGE=iostio/iost-dev:4.10.0
+FROM ${DEV_IMAGE}
 
 # Install project
 WORKDIR /workdir
