@@ -125,7 +125,11 @@ func TestInjectGas(t *testing.T) {
 
 	Convey("test library1", t, func() {
 		rs, cost0, err := vmPool.LoadAndCall(host, code, "library1", 10)
-		So(err.Error(), ShouldContainSubstring, "a is not a function")
+		if host.IsFork4_10_0 {
+			So(err.Error(), ShouldContainSubstring, "require is not defined")
+		} else {
+			So(err.Error(), ShouldContainSubstring, "a is not a function")
+		}
 		t.Log(rs, cost0)
 	})
 

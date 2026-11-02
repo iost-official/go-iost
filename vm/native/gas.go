@@ -186,15 +186,24 @@ var ( // nolint: deadcode
 			if pledgeAmount.LessThan(database.GasMinPledgePerAction) {
 				return nil, cost, fmt.Errorf("min pledge num is %d", database.GasMinPledgePerAction)
 			}
-			cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
-			cost.AddAssign(cost0)
-			if err != nil {
-				return nil, cost, err
+			if !h.IsFork4_10_0 {
+				cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
+				cost.AddAssign(cost0)
+				if err != nil {
+					return nil, cost, err
+				}
 			}
 			contractName, cost0 := h.ContractName()
 			cost.AddAssign(cost0)
 			if pledger != "token.iost" {
 				_, cost0, err = h.Call("token.iost", "transfer", fmt.Sprintf(`["iost", "%v", "%v", "%v", ""]`, pledger, contractName, pledgeAmountStr))
+				cost.AddAssign(cost0)
+				if err != nil {
+					return nil, cost, err
+				}
+			}
+			if h.IsFork4_10_0 {
+				cost0, err = pledge(h, pledger, gasUser, pledgeAmount)
 				cost.AddAssign(cost0)
 				if err != nil {
 					return nil, cost, err

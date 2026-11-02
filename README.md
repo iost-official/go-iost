@@ -27,6 +27,8 @@ Please note that the IOST node utilizes the CGO V8 JavaScript engine and current
 Run from the repository root:
 
 - Build local binaries in `target/`: `make build`
+- Build the macOS VM library (deployment target 13.0): `make vmlib`
+- Build the Linux VM library in Ubuntu 22.04: `make vmlib_image && make vmlib_linux`
 - Start a local development network: `make debug`
 - Build a node runtime image: `make devimage && make release_image`
 - Build a development node image: `make devimage && make dev_image_tag && make image`

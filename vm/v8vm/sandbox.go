@@ -83,6 +83,17 @@ func GetSandbox(cSbx C.SandboxPtr) (*Sandbox, bool) {
 	return sbx, ok
 }
 
+func getHostSandbox(cSbx C.SandboxPtr) (*Sandbox, error) {
+	sbx, ok := GetSandbox(cSbx)
+	if !ok || sbx == nil || sbx.host == nil {
+		return nil, ErrGetSandbox
+	}
+	if err := sbx.host.CallError(); err != nil {
+		return nil, err
+	}
+	return sbx, nil
+}
+
 // NewSandbox generate new sandbox for VM and insert into sandbox map
 func NewSandbox(e *VM, flags int64) *Sandbox {
 	cPath := C.CString(e.jsPath)

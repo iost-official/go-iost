@@ -223,7 +223,7 @@ void IOSTContractStorage_Put(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> ramPayer = args[2];
-    if (!val->IsString()) {
+    if (IsFork4_10_0(isolate) && !ramPayer->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_Put ramPayer must be string.")
         );
@@ -457,7 +457,7 @@ void IOSTContractStorage_MapPut(const FunctionCallbackInfo<Value> &args) {
     }
 
     Local<Value> ramPayer = args[3];
-    if (!val->IsString()) {
+    if (IsFork4_10_0(isolate) && !ramPayer->IsString()) {
         Local<Value> err = Exception::Error(
             String::NewFromUtf8(isolate, "IOSTContractStorage_MapPut ramPayer must be string.")
         );

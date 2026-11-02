@@ -17,6 +17,9 @@ func NewAPI(h *Host) APIDelegate {
 }
 
 func (h *APIDelegate) receipt(s string) {
+	if h.h.CallError() != nil {
+		return
+	}
 	fn := h.h.Context().Value("contract_name").(string) + "/" + h.h.Context().Value("abi_name").(string)
 	rec := &tx.Receipt{
 		FuncName: fn,
@@ -27,7 +30,7 @@ func (h *APIDelegate) receipt(s string) {
 	h.h.ctx.GSet("receipts", append(rs, rec))
 
 	// post event for receipt
-	event.GetCollector().Post(event.NewEvent(event.ContractReceipt, rec.Content),
+	h.h.post(event.NewEvent(event.ContractReceipt, rec.Content),
 		&event.Meta{ContractID: h.h.Context().Value("contract_name").(string)})
 }
 

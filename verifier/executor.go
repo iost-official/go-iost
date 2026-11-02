@@ -52,6 +52,7 @@ func (v *Executor) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 	if err != nil {
 		return &tx.TxReceipt{}, err
 	}
+	defer isolator.ClearTx()
 	err = isolator.PrepareTx(t, limit)
 	if err != nil {
 		return &tx.TxReceipt{}, err

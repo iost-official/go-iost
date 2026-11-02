@@ -18,9 +18,9 @@ var (
 
 //export goBlockInfo
 func goBlockInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	blkInfo, cost := sbx.host.BlockInfo()
@@ -32,9 +32,9 @@ func goBlockInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
 
 //export goTxInfo
 func goTxInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	txInfo, cost := sbx.host.TxInfo()
@@ -46,9 +46,9 @@ func goTxInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
 
 //export goContextInfo
 func goContextInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	ctxInfo, cost := sbx.host.ContextInfo()
@@ -60,9 +60,9 @@ func goContextInfo(cSbx C.SandboxPtr, info *C.CStr, gasUsed *C.size_t) *C.char {
 
 //export goCall
 func goCall(cSbx C.SandboxPtr, contract, api, args C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	contractStr := GoString(contract)
@@ -87,9 +87,9 @@ func goCall(cSbx C.SandboxPtr, contract, api, args C.CStr, result *C.CStr, gasUs
 
 //export goCallWithAuth
 func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args C.CStr, result *C.CStr, gasUsed *C.size_t) *C.char {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	contractStr := GoString(contract)
@@ -114,9 +114,9 @@ func goCallWithAuth(cSbx C.SandboxPtr, contract, api, args C.CStr, result *C.CSt
 
 //export goRequireAuth
 func goRequireAuth(cSbx C.SandboxPtr, id, permission C.CStr, ok *C.bool, gasUsed *C.size_t) *C.char {
-	sbx, sbOk := GetSandbox(cSbx)
-	if !sbOk {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	pubKeyStr := GoString(id)
@@ -133,9 +133,9 @@ func goRequireAuth(cSbx C.SandboxPtr, id, permission C.CStr, ok *C.bool, gasUsed
 
 //export goReceipt
 func goReceipt(cSbx C.SandboxPtr, content C.CStr, gasUsed *C.size_t) *C.char {
-	sbx, sbOk := GetSandbox(cSbx)
-	if !sbOk {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	contentStr := GoString(content)
@@ -149,9 +149,9 @@ func goReceipt(cSbx C.SandboxPtr, content C.CStr, gasUsed *C.size_t) *C.char {
 
 //export goEvent
 func goEvent(cSbx C.SandboxPtr, content C.CStr, gasUsed *C.size_t) *C.char {
-	sbx, sbOk := GetSandbox(cSbx)
-	if !sbOk {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	contentStr := GoString(content)

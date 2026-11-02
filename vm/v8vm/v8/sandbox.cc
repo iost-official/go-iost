@@ -7,6 +7,7 @@
 #include "crypto.h"
 
 #include "vm.js.h"
+#include "require.js.h"
 #include "environment.js.h"
 #include <assert.h>
 #include <cstring>
@@ -22,6 +23,8 @@
 
 char *vmJsLib = reinterpret_cast<char *>(__libjs_vm_js);
 char *envJsLib = reinterpret_cast<char *>(__libjs_environment_js);
+extern unsigned char __libjs_storage_js[];
+extern unsigned char __libjs_blockchain_js[];
 
 const char *preloadBlockCode = R"(
 // load Block
@@ -81,6 +84,11 @@ void nativeLog(const FunctionCallbackInfo<Value> &info) {
 
 void nativeRun(const FunctionCallbackInfo<Value> &info) {
     Isolate *isolate = info.GetIsolate();
+    if (IsFork4_10_0(isolate)) {
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(isolate, "runtime compilation is unavailable")));
+        return;
+    }
 
     Local<Value> source = info[0];
     Local<Value> fileName = info[1];
@@ -121,10 +129,13 @@ Local<ObjectTemplate> createGlobalTpl(Isolate *isolate, int64_t flags) {
                   .ToLocalChecked(),
               v8::FunctionTemplate::New(isolate, nativeLog));
 
-    global->Set(
-                      String::NewFromUtf8(isolate, "_native_run", NewStringType::kNormal)
-                          .ToLocalChecked(),
-                      v8::FunctionTemplate::New(isolate, nativeRun));
+    if ((flags & (1LL << 1)) == 0) {
+        global->Set(
+            String::NewFromUtf8(isolate, "_native_run", NewStringType::kNormal).ToLocalChecked(),
+            FunctionTemplate::New(isolate, nativeRun));
+    } else {
+        global->Set(String::NewFromUtf8(isolate, "_native_run"), Undefined(isolate));
+    }
 
     return global;
 }
@@ -147,6 +158,8 @@ SandboxPtr newSandbox(IsolateWrapperPtr ptr, int64_t flags) {
     context->AllowCodeGenerationFromStrings(false);
 
     Sandbox *sbx = new Sandbox();
+    sbx->isFork4_10_0 = (flags & (1LL << 1)) != 0;
+    sbx->initialized = false;
     Local<Object> global = context->Global();
     global->SetInternalField(0, External::New(isolate, sbx));
 
@@ -265,6 +278,39 @@ std::string reportException(Isolate *isolate, Local<Context> ctx, TryCatch& tryC
     return ss.str();
 }
 
+static bool loadRuntime(Sandbox *sbx) {
+    Isolate *isolate = sbx->isolate;
+    Local<Context> context = sbx->context.Get(isolate);
+    TryCatch tryCatch(isolate);
+    tryCatch.SetVerbose(false);
+
+    if (!context->Global()->Set(context, String::NewFromUtf8(isolate, "_native_require"),
+                                Undefined(isolate)).FromMaybe(false)) {
+        return false;
+    }
+
+    // Only fixed built-in sources are compiled during initialization.
+    std::string code = "'use strict';\nconst storage = (function(){\nconst module = {exports: {}};\n";
+    code += reinterpret_cast<char *>(__libjs_storage_js);
+    code += "\nreturn module.exports;\n})();\nconst blockchain = (function(){\nconst module = {exports: {}};\n";
+    code += reinterpret_cast<char *>(__libjs_blockchain_js);
+    code += "\nreturn module.exports;\n})();\n";
+    code += vmJsLib;
+
+    Local<String> source = String::NewFromUtf8(isolate, code.c_str());
+    Local<Script> script = Script::Compile(source, String::NewFromUtf8(isolate, "vm.js"));
+    if (script.IsEmpty() || script->Run().IsEmpty()) {
+        return false;
+    }
+    source = String::NewFromUtf8(isolate, envJsLib);
+    script = Script::Compile(source, String::NewFromUtf8(isolate, "env.js"));
+    if (script.IsEmpty() || script->Run().IsEmpty()) {
+        return false;
+    }
+    return context->Global()->Delete(context, String::NewFromUtf8(isolate, "_native_run")).FromMaybe(false)
+        && context->Global()->Delete(context, String::NewFromUtf8(isolate, "_native_require")).FromMaybe(false);
+}
+
 void loadVM(SandboxPtr ptr, int vmType) {
     if (ptr == nullptr) {
         return;
@@ -283,9 +329,16 @@ void loadVM(SandboxPtr ptr, int vmType) {
         return;
     }
 
+    if (sbx->isFork4_10_0) {
+        sbx->initialized = loadRuntime(sbx);
+        return;
+    }
+
     // load vm
     const char *vmPath = "vm.js";
-    Local<String> source = String::NewFromUtf8(isolate, vmJsLib, NewStringType::kNormal).ToLocalChecked();
+    std::string legacyCode = reinterpret_cast<char *>(__libjs_require_js);
+    legacyCode += vmJsLib;
+    Local<String> source = String::NewFromUtf8(isolate, legacyCode.c_str(), NewStringType::kNormal).ToLocalChecked();
     Local<String> fileName = String::NewFromUtf8(isolate, vmPath, NewStringType::kNormal).ToLocalChecked();
     Local<Script> script = Script::Compile(source, fileName);
     if (!script.IsEmpty()) {
@@ -328,6 +381,11 @@ void RealExecute(SandboxPtr ptr, const CStr code, std::string &result, std::stri
 
     TryCatch tryCatch(isolate);
     tryCatch.SetVerbose(false);
+
+    if (sbx->isFork4_10_0 && !sbx->initialized) {
+        error = "sandbox initialization failed";
+        return;
+    }
 
     // preload block info.
     Local<String> source = String::NewFromUtf8(isolate, preloadBlockCode, NewStringType::kNormal).ToLocalChecked();

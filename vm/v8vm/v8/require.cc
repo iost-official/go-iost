@@ -38,6 +38,11 @@ void NewNativeRequire(const FunctionCallbackInfo<Value> &info) {
     }
     SandboxPtr sbxPtr = static_cast<SandboxPtr>(Local<External>::Cast(val)->Value());
     Sandbox *sbx = static_cast<Sandbox*>(sbxPtr);
+    if (sbx->isFork4_10_0) {
+        isolate->ThrowException(Exception::Error(
+            String::NewFromUtf8(isolate, "runtime module loading is unavailable")));
+        return;
+    }
 
     Local<Value> path = info[0];
     if (!path->IsString()) {

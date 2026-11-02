@@ -109,6 +109,9 @@ func (t *Teller) PayCost(c contract.Cost, who string) {
 
 // DoPay ...
 func (t *Teller) DoPay(gasRatio int64) (paidGas *common.Decimal, err error) {
+	t.h.settling = true
+	defer func() { t.h.settling = false }()
+
 	for payer, costOfPayer := range t.cost {
 		gas := &common.Decimal{
 			Value: gasRatio * costOfPayer.ToGas(),

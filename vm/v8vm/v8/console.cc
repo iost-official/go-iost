@@ -50,7 +50,10 @@ void NewConsoleLog(const FunctionCallbackInfo<Value> &args) {
     NewCStrChecked(levelStr, levelVal, isolate);
     NewCStrChecked(logStr, logVal, isolate);
 
-    CConsole(sbxPtr, levelStr, logStr);
+    char *err = CConsole(sbxPtr, levelStr, logStr);
+    if (err != nullptr) {
+        free(err);
+    }
 }
 
 void InitConsole(Isolate *isolate, Local<ObjectTemplate> globalTpl) {
