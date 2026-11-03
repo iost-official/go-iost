@@ -14,6 +14,7 @@ import (
 	"github.com/iost-official/go-iost/v3/ilog"
 	"github.com/iost-official/go-iost/v3/vm"
 	"github.com/iost-official/go-iost/v3/vm/database"
+	"github.com/iost-official/go-iost/v3/vm/host"
 )
 
 type Executor struct {
@@ -53,6 +54,7 @@ func (v *Executor) Try(bh *block.BlockHead, db database.IMultiValue, t *tx.Tx, l
 		return &tx.TxReceipt{}, err
 	}
 	defer isolator.ClearTx()
+	isolator.SetContractPolicy(!bh.Rules().IsFork4_10_0)
 	err = isolator.PrepareTx(t, limit)
 	if err != nil {
 		return &tx.TxReceipt{}, err
@@ -111,6 +113,8 @@ func blockBaseExec(blk *block.Block, db database.IMultiValue, isolator *vm.Isola
 
 // nolint:gocyclo
 func baseGen(blk, parent *block.Block, db database.IMultiValue, provider Provider, isolator *vm.Isolator, c *Config) (err error) {
+	isolator.SetContractPolicy(!blk.Head.Rules().IsFork4_10_0)
+	defer isolator.ClearTx()
 	blockTxLimit := 50
 	blockGasLimit := common.MaxBlockGasLimit
 	txLimitSameSender := 10
@@ -194,7 +198,16 @@ L:
 		var r *tx.TxReceipt
 		r, err = isolator.Run()
 		if err != nil {
-			ilog.Errorf("isolator run error %v %v", t.String(), err)
+			if errors.Is(err, host.ErrContractChangeRejected) {
+				ilog.Infof(
+					"skip contract change tx %v at block %v: %v",
+					common.Base58Encode(t.Hash()),
+					blk.Head.Number,
+					err,
+				)
+			} else {
+				ilog.Errorf("isolator run error %v %v", t.String(), err)
+			}
 			provider.Drop(t, err)
 			continue L
 		}

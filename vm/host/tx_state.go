@@ -1,7 +1,10 @@
 package host
 
-// CallError returns the first call error in this transaction.
+// CallError returns a policy rejection or the first active call error.
 func (h *Host) CallError() error {
+	if h.contractPolicyErr != nil {
+		return h.contractPolicyErr
+	}
 	if h.Rules == nil || !h.IsFork4_10_0 {
 		return nil
 	}
@@ -17,12 +20,13 @@ func (h *Host) SetCallError(err error) {
 
 // ResetTxState clears transaction-local execution state.
 func (h *Host) ResetTxState() {
+	if h.contractPolicyErr != nil || (h.Rules != nil && h.IsFork4_10_0) {
+		h.ClearCacheCost()
+	}
+	h.contractPolicyErr = nil
 	h.callErr = nil
 	h.settling = false
 	h.events = nil
-	if h.Rules != nil && h.IsFork4_10_0 {
-		h.ClearCacheCost()
-	}
 }
 
 func (h *Host) checkWrite() error {

@@ -50,6 +50,9 @@ var (
 		name: "setCode",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			if err = h.CheckContractChange("setCode"); err != nil {
+				return nil, contract.Cost0(), err
+			}
 
 			cost = contract.Cost0()
 			con := &contract.Contract{}
@@ -109,6 +112,9 @@ var (
 		name: "updateCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			if err = h.CheckContractChange("updateCode"); err != nil {
+				return nil, contract.Cost0(), err
+			}
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			codeRaw := args[0].(string)

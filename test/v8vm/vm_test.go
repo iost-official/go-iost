@@ -848,11 +848,23 @@ func TestEngine_ArrayOfFrom(t *testing.T) {
 }
 
 func TestNativeRun(t *testing.T) {
-	host, code := MyInit(t, "danger")
-	Convey("test nativerun0", t, func() {
-		_, _, err := vmPool.LoadAndCall(host, code, "nativerun")
-		So(err.Error(), ShouldContainSubstring, "TypeError: _native_run is not a function")
-	})
+	for _, test := range []struct {
+		name   string
+		fork   bool
+		errMsg string
+	}{
+		{"before_fork", false, "TypeError: _native_run is not a function"},
+		{"after_fork", true, "ReferenceError: _native_run is not defined"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			host, code := MyInit(t, "danger")
+			host.Rules.IsFork4_10_0 = test.fork
+			_, _, err := vmPool.LoadAndCall(host, code, "nativerun")
+			if err == nil || !strings.Contains(err.Error(), test.errMsg) {
+				t.Fatalf("expected %q, got %v", test.errMsg, err)
+			}
+		})
+	}
 }
 
 func TestV8Safe(t *testing.T) {

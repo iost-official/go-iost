@@ -43,6 +43,9 @@ type Host struct {
 	callErr  error
 	settling bool
 	events   []pendingEvent
+
+	restrictContracts bool
+	contractPolicyErr error
 }
 
 // NewHost get a new host

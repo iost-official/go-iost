@@ -29,7 +29,7 @@ func (p *EventPoster) PostEvent(data string) contract.Cost {
 }
 
 func (p *EventPoster) post(e *event.Event, meta *event.Meta) {
-	if p.h.Rules != nil && p.h.IsFork4_10_0 {
+	if p.h.ContractPolicy() || (p.h.Rules != nil && p.h.IsFork4_10_0) {
 		if p.h.CallError() == nil {
 			p.h.events = append(p.h.events, pendingEvent{event: e, meta: meta})
 		}

@@ -41,6 +41,11 @@ func (i *Isolator) TriggerBlockBaseMode() {
 	i.blockBaseMode = true
 }
 
+// SetContractPolicy selects local restrictions after Prepare, before execution.
+func (i *Isolator) SetContractPolicy(enabled bool) {
+	i.h.SetContractPolicy(enabled && !i.genesisMode && !i.blockBaseMode)
+}
+
 // Prepare Isolator
 func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
 	if db.Contract("system.iost") == nil {
@@ -165,7 +170,7 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 // Run actions in tx
 func (i *Isolator) Run() (receipt *tx.TxReceipt, err error) { // nolint
 	defer func() {
-		if err != nil && i.h.IsFork4_10_0 {
+		if err != nil && (i.h.IsFork4_10_0 || i.h.ContractPolicyError() != nil) {
 			i.rollback()
 		}
 	}()
@@ -182,6 +187,10 @@ func (i *Isolator) Run() (receipt *tx.TxReceipt, err error) { // nolint
 
 	for _, action := range i.t.Actions {
 		actionCost, status, ret, receipts, err := i.runAction(*action)
+		if policyErr := i.h.ContractPolicyError(); policyErr != nil {
+			i.tr.Status = status
+			return i.tr, policyErr
+		}
 		ilog.Debugf("run action : %v, result is %v\n", action, status.Code)
 		ilog.Debugf("used cost %v\n", actionCost)
 		ilog.Debugf("status %v\n", status)
@@ -231,8 +240,12 @@ func (i *Isolator) Run() (receipt *tx.TxReceipt, err error) { // nolint
 
 // PayCost as name
 func (i *Isolator) PayCost() (receipt *tx.TxReceipt, err error) {
+	if err = i.h.ContractPolicyError(); err != nil {
+		i.rollback()
+		return nil, err
+	}
 	defer func() {
-		if err != nil && i.h.IsFork4_10_0 {
+		if err != nil && (i.h.IsFork4_10_0 || i.h.ContractPolicyError() != nil) {
 			i.rollback()
 		}
 	}()
@@ -263,6 +276,10 @@ func (i *Isolator) PayCost() (receipt *tx.TxReceipt, err error) {
 
 // Commit flush changes to db
 func (i *Isolator) Commit() {
+	if i.h.ContractPolicyError() != nil {
+		i.rollback()
+		return
+	}
 	i.h.DB().Commit()
 	if i.tr != nil && i.tr.Status.Code == tx.Success && i.h.CallError() == nil {
 		i.h.FlushEvents()
@@ -294,9 +311,9 @@ func (i *Isolator) rollback() {
 	}
 	i.h.DB().Rollback()
 	i.h.ClearRAMCosts()
-	if i.h.IsFork4_10_0 {
+	i.h.ClearEvents()
+	if i.h.IsFork4_10_0 || i.h.ContractPolicyError() != nil {
 		i.h.ClearCacheCost()
-		i.h.ClearEvents()
 		i.h.Context().GSet("receipts", []*tx.Receipt{})
 		i.h.Context().GSet("amount_total", make(map[string]*common.Decimal))
 	}
