@@ -12,11 +12,14 @@ OS_NAME = $(shell uname -s)
 LC_OS_NAME = $(shell echo $(OS_NAME) | tr '[A-Z]' '[a-z]')
 
 ifeq ($(LC_OS_NAME), darwin)
+	# Minimum macOS target for Go 1.27.
+	MACOSX_DEPLOYMENT_TARGET ?= 13.0
 	CC=clang
 	CXX=clang++
 	LD=clang++
 	LIB_SUFFIX=.dylib
-	CXXFLAGS+=-I./include/_darwin_amd64
+	CXXFLAGS+=-I./include/_darwin_amd64 -mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
+	LDFLAGS+=-mmacosx-version-min=$(MACOSX_DEPLOYMENT_TARGET)
 	LIBS+=-lv8_init -lv8_initializers -lv8_libsampler -lv8_snapshot -lv8_base 
 	LIB_PATH=./libv8/_darwin_amd64
 	INSTALL=install

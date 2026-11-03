@@ -40,6 +40,12 @@ type Host struct {
 	monitor Monitor
 
 	deadline time.Time
+	callErr  error
+	settling bool
+	events   []pendingEvent
+
+	restrictContracts bool
+	contractPolicyErr error
 }
 
 // NewHost get a new host
@@ -73,7 +79,17 @@ func (h *Host) SetContext(ctx *Context) {
 	h.ctx = ctx
 }
 
-func (h *Host) call(cont, api, jarg string, withAuth bool) ([]any, contract.Cost, error) {
+func (h *Host) call(cont, api, jarg string, withAuth bool) (rtn []any, cost contract.Cost, err error) {
+	if err = h.CallError(); err != nil {
+		return nil, contract.Cost0(), err
+	}
+	defer func() {
+		h.SetCallError(err)
+		if err == nil {
+			err = h.CallError()
+		}
+	}()
+
 	reenter, cost := h.PushStack(cont, api, withAuth)
 	defer func() {
 		h.PopStack()
@@ -360,5 +376,13 @@ func (h *Host) ReadSettings() {
 
 // GetVMFlags return target vm bitwise flags
 func (h *Host) GetVMFlags() int64 {
-	return 1
+	const (
+		cryptoHashFlag int64 = 1
+		fork4_10_0Flag int64 = 1 << 1
+	)
+	flags := cryptoHashFlag
+	if h.Rules != nil && h.IsFork4_10_0 {
+		flags |= fork4_10_0Flag
+	}
+	return flags
 }

@@ -50,10 +50,16 @@ var (
 		name: "setCode",
 		args: []string{"string"},
 		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			if err = h.CheckContractChange("setCode"); err != nil {
+				return nil, contract.Cost0(), err
+			}
 
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			codeRaw := args[0].(string)
+			if codeRaw == "" {
+				return nil, host.CommonErrorCost(1), errors.New("empty code")
+			}
 
 			if codeRaw[0] == '{' {
 				err = json.Unmarshal([]byte(codeRaw), con)
@@ -106,6 +112,9 @@ var (
 		name: "updateCode",
 		args: []string{"string", "string"},
 		do: func(h *host.Host, args ...any) (rtn []any, cost contract.Cost, err error) {
+			if err = h.CheckContractChange("updateCode"); err != nil {
+				return nil, contract.Cost0(), err
+			}
 			cost = contract.Cost0()
 			con := &contract.Contract{}
 			codeRaw := args[0].(string)
@@ -116,6 +125,9 @@ var (
 				return nil, cost, errors.New("can't call UpdateCode from other contract")
 			}
 
+			if codeRaw == "" {
+				return nil, host.CommonErrorCost(1), errors.New("empty code")
+			}
 			if codeRaw[0] == '{' {
 				err = json.Unmarshal([]byte(codeRaw), con)
 				if err != nil {
@@ -197,6 +209,9 @@ var (
 					return nil, cost, errors.New("invalid contractID or version")
 				}
 			} else {
+				if codeRaw == "" {
+					return nil, host.CommonErrorCost(1), errors.New("empty code")
+				}
 				if codeRaw[0] == '{' {
 					err = json.Unmarshal([]byte(codeRaw), con)
 					if err != nil {

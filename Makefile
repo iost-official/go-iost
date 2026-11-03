@@ -4,13 +4,14 @@ GO_TEST := $(GO) test -timeout 600s
 GO_INSTALL := $(GO) install
 
 PROJECT_NAME := $(shell basename "$(PWD)")
-BUILDER_VERSION = 4.0.0
-VERSION = 4.0.0
+BUILDER_VERSION = 4.10.0
+VERSION = 4.10.0
 COMMIT = $(shell git rev-parse --short HEAD)
 PROJECT = github.com/iost-official/go-iost
 DOCKER_IMAGE = iostio/iost-node:$(VERSION)-$(COMMIT)
 DOCKER_RELEASE_IMAGE = iostio/iost-node:$(VERSION)
 DOCKER_DEVIMAGE = iostio/iost-dev:$(BUILDER_VERSION)
+DOCKER_VMLIB_IMAGE = iostio/iost-vmlib:22.04
 TARGET_DIR = target
 DEV_DOCKER_RUN = docker run --rm -v `pwd`:/go-iost $(DOCKER_DEVIMAGE)
 
@@ -35,7 +36,7 @@ endif
 BUILD_TIME := $(shell date +%Y%m%d_%H%M%S%z)
 LD_FLAGS := -X github.com/iost-official/go-iost/v3/core/global.BuildTime=$(BUILD_TIME) -X github.com/iost-official/go-iost/v3/core/global.GitHash=$(shell git rev-parse HEAD) -X github.com/iost-official/go-iost/v3/core/global.CodeVersion=$(VERSION)
 
-.PHONY: all build iserver iwallet itest lint test e2e_test_local e2e_test image push devimage swagger protobuf install clean debug clear_debug_file env
+.PHONY: all build iserver iwallet itest lint test e2e_test_local e2e_test image push devimage swagger protobuf install clean debug clear_debug_file env vmlib_image
 
 all: build
 
@@ -69,8 +70,11 @@ vmlib:
 vmlib_install:
 	$(MAKE) -C vm/v8vm/v8 deploy
 
-vmlib_linux:
-	$(DEV_DOCKER_RUN) bash -c 'cd vm/v8vm/v8/ && make clean js_bin vm install'
+vmlib_image:
+	docker build --platform linux/amd64 -t $(DOCKER_VMLIB_IMAGE) - < Dockerfile.vmlib
+
+vmlib_linux: vmlib_image
+	docker run --rm --platform linux/amd64 -v "$(CURDIR):/go-iost" $(DOCKER_VMLIB_IMAGE) make clean js_bin vm install
 
 test:
 	$(GO) clean -testcache
@@ -88,7 +92,7 @@ e2e_test: release_image
 
 image:
 	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)
-	docker build -f Dockerfile.run -t $(DOCKER_IMAGE) .
+	docker build -f Dockerfile.run --build-arg DEV_IMAGE="$(DOCKER_DEVIMAGE)" -t $(DOCKER_IMAGE) .
 
 release_image:
 	$(DEV_DOCKER_RUN) make BUILD_TIME=$(BUILD_TIME)

@@ -41,6 +41,11 @@ func (i *Isolator) TriggerBlockBaseMode() {
 	i.blockBaseMode = true
 }
 
+// SetContractPolicy selects local restrictions after Prepare, before execution.
+func (i *Isolator) SetContractPolicy(enabled bool) {
+	i.h.SetContractPolicy(enabled && !i.genesisMode && !i.blockBaseMode)
+}
+
 // Prepare Isolator
 func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *ilog.Logger) error {
 	if db.Contract("system.iost") == nil {
@@ -61,6 +66,8 @@ func (i *Isolator) Prepare(bh *block.BlockHead, db *database.Visitor, logger *il
 
 // PrepareTx read tx and ready to run
 func (i *Isolator) PrepareTx(t *tx.Tx, limit time.Duration) error {
+	i.h.ResetTxState()
+	i.tr = nil
 	i.t = t
 	i.limit = limit
 	i.h.SetDeadline(time.Now().Add(limit))
@@ -119,6 +126,9 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 	var rtn []any
 
 	rtn, cost, err = staticMonitor.Call(i.h, action.Contract, action.ActionName, action.Data)
+	if err == nil {
+		err = i.h.CallError()
+	}
 
 	if err != nil {
 		actionDesc := action.String()
@@ -158,11 +168,16 @@ func (i *Isolator) runAction(action tx.Action) (cost contract.Cost, status *tx.S
 }
 
 // Run actions in tx
-func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
+func (i *Isolator) Run() (receipt *tx.TxReceipt, err error) { // nolint
+	defer func() {
+		if err != nil && (i.h.IsFork4_10_0 || i.h.ContractPolicyError() != nil) {
+			i.rollback()
+		}
+	}()
 	startTime := time.Now()
 	vmGasLimit := i.t.GasLimit/i.t.GasRatio - i.h.GasPaid()
 	if vmGasLimit <= 0 {
-		ilog.Fatalf("vmGasLimit < 0. It should not happen. %v / %v < %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPaid())
+		return nil, fmt.Errorf("insufficient gas budget: limit %v / ratio %v <= paid %v", i.t.GasLimit, i.t.GasRatio, i.h.GasPaid())
 	}
 	i.h.Context().GSet("gas_limit", vmGasLimit)
 	i.h.Context().GSet("receipts", make([]*tx.Receipt, 0))
@@ -172,6 +187,10 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 
 	for _, action := range i.t.Actions {
 		actionCost, status, ret, receipts, err := i.runAction(*action)
+		if policyErr := i.h.ContractPolicyError(); policyErr != nil {
+			i.tr.Status = status
+			return i.tr, policyErr
+		}
 		ilog.Debugf("run action : %v, result is %v\n", action, status.Code)
 		ilog.Debugf("used cost %v\n", actionCost)
 		ilog.Debugf("status %v\n", status)
@@ -204,11 +223,7 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 				ilog.Warnf("isolator run action %v failed, status=%+v, will rollback", action, status)
 				executionKillCounter.Add(1, nil)
 			}
-			i.tr.Returns = nil
-			i.tr.Receipts = nil
-			i.h.DB().Rollback()
-			i.h.ClearRAMCosts()
-			i.tr.RAMUsage = make(map[string]int64)
+			i.rollback()
 			break
 		}
 
@@ -224,7 +239,16 @@ func (i *Isolator) Run() (*tx.TxReceipt, error) { // nolint
 }
 
 // PayCost as name
-func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
+func (i *Isolator) PayCost() (receipt *tx.TxReceipt, err error) {
+	if err = i.h.ContractPolicyError(); err != nil {
+		i.rollback()
+		return nil, err
+	}
+	defer func() {
+		if err != nil && (i.h.IsFork4_10_0 || i.h.ContractPolicyError() != nil) {
+			i.rollback()
+		}
+	}()
 	if i.t.GasLimit < i.h.GasPaid()*i.t.GasRatio {
 		ilog.Fatalf("total gas cost is above limit %v < %v * %v", i.t.GasLimit, i.h.GasPaid(), i.t.GasRatio)
 	}
@@ -232,11 +256,7 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 	if err != nil {
 		ilog.Errorf("DoPay failed, rollback %v", err)
 
-		i.tr.Returns = nil
-		i.tr.Receipts = nil
-		i.h.DB().Rollback()
-		i.h.ClearRAMCosts()
-		i.tr.RAMUsage = make(map[string]int64)
+		i.rollback()
 		i.tr.Status.Code = tx.ErrorBalanceNotEnough
 		i.tr.Status.Message = "balance not enough after executing actions: " + err.Error()
 		paidGas, err = i.h.DoPay(i.t.GasRatio)
@@ -256,7 +276,16 @@ func (i *Isolator) PayCost() (*tx.TxReceipt, error) {
 
 // Commit flush changes to db
 func (i *Isolator) Commit() {
+	if i.h.ContractPolicyError() != nil {
+		i.rollback()
+		return
+	}
 	i.h.DB().Commit()
+	if i.tr != nil && i.tr.Status.Code == tx.Success && i.h.CallError() == nil {
+		i.h.FlushEvents()
+	} else {
+		i.h.ClearEvents()
+	}
 }
 
 // ClearAll clear this isolator
@@ -266,12 +295,30 @@ func (i *Isolator) ClearAll() {
 
 // ClearTx clear this tx
 func (i *Isolator) ClearTx() {
+	i.h.ResetTxState()
 	i.h.SetContext(i.blockBaseCtx)
 	i.h.Context().GClear()
 	i.blockBaseMode = false
 	i.h.ClearCosts()
 	i.h.DB().Rollback()
 }
+
+func (i *Isolator) rollback() {
+	if i.tr != nil {
+		i.tr.Returns = nil
+		i.tr.Receipts = nil
+		i.tr.RAMUsage = make(map[string]int64)
+	}
+	i.h.DB().Rollback()
+	i.h.ClearRAMCosts()
+	i.h.ClearEvents()
+	if i.h.IsFork4_10_0 || i.h.ContractPolicyError() != nil {
+		i.h.ClearCacheCost()
+		i.h.Context().GSet("receipts", []*tx.Receipt{})
+		i.h.Context().GSet("amount_total", make(map[string]*common.Decimal))
+	}
+}
+
 func checkTxParams(t *tx.Tx) error {
 	return t.CheckGas()
 }

@@ -17,7 +17,7 @@ IOST is a smart contract platform designed with a strong emphasis on performance
 ### Environment Requirements
 
 - OS: Ubuntu 22.04 or later  
-- Go: 1.27.2 (used by CI and the development Docker image)
+- Go: 1.27.3 (used by CI and the development Docker image)
 - Docker base OS: Ubuntu 26.04 for development and node images
 
 Please note that the IOST node utilizes the CGO V8 JavaScript engine and currently only supports the x64 architecture.
@@ -27,6 +27,8 @@ Please note that the IOST node utilizes the CGO V8 JavaScript engine and current
 Run from the repository root:
 
 - Build local binaries in `target/`: `make build`
+- Build the macOS VM library (deployment target 13.0): `make vmlib`
+- Build the Linux VM library in Ubuntu 22.04: `make vmlib_image && make vmlib_linux`
 - Start a local development network: `make debug`
 - Build a node runtime image: `make devimage && make release_image`
 - Build a development node image: `make devimage && make dev_image_tag && make image`

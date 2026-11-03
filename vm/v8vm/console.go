@@ -23,9 +23,9 @@ var (
 
 //export goConsoleLog
 func goConsoleLog(cSbx C.SandboxPtr, logLevel, logDetail C.CStr) *C.char {
-	sbx, ok := GetSandbox(cSbx)
-	if !ok {
-		return C.CString(ErrGetSandbox.Error())
+	sbx, err := getHostSandbox(cSbx)
+	if err != nil {
+		return C.CString(err.Error())
 	}
 
 	levelStr := GoString(logLevel)

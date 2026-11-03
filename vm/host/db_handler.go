@@ -37,6 +37,9 @@ func IsValidKey(key string) error {
 
 // Put put kv to db
 func (h *DBHandler) Put(key string, value any, ramPayer ...string) (contract.Cost, error) {
+	if err := h.h.checkWrite(); err != nil {
+		return contract.Cost0(), err
+	}
 	err := IsValidKey(key)
 	if err != nil {
 		return CommonErrorCost(1), err
@@ -75,6 +78,9 @@ func (h *DBHandler) Get(key string) (value any, cost contract.Cost) {
 
 // Del delete key
 func (h *DBHandler) Del(key string) (contract.Cost, error) {
+	if err := h.h.checkWrite(); err != nil {
+		return contract.Cost0(), err
+	}
 	err := IsValidKey(key)
 	if err != nil {
 		return CommonErrorCost(1), err
@@ -93,6 +99,9 @@ func (h *DBHandler) Has(key string) (bool, contract.Cost) {
 
 // MapPut put kfv to db
 func (h *DBHandler) MapPut(key, field string, value any, ramPayer ...string) (contract.Cost, error) {
+	if err := h.h.checkWrite(); err != nil {
+		return contract.Cost0(), err
+	}
 	err := IsValidKey(key)
 	if err != nil {
 		return CommonErrorCost(1), err
@@ -140,6 +149,9 @@ func (h *DBHandler) MapKeys(key string) (fields []string, cost contract.Cost) {
 
 // MapDel delete field
 func (h *DBHandler) MapDel(key, field string) (contract.Cost, error) {
+	if err := h.h.checkWrite(); err != nil {
+		return contract.Cost0(), err
+	}
 	err := IsValidKey(key)
 	if err != nil {
 		return CommonErrorCost(1), err

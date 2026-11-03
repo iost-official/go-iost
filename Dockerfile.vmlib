@@ -1,0 +1,10 @@
+# Linux compatibility baseline.
+FROM ubuntu:22.04
+
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends g++ make xxd && \
+    rm -rf /var/lib/apt/lists/*
+
+WORKDIR /go-iost/vm/v8vm/v8
+
+CMD ["make", "clean", "js_bin", "vm", "install"]

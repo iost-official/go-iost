@@ -95,6 +95,16 @@ func getAmountLimitMap(h *host.Host, amountList []*contract.Amount) (map[string]
 // Call ...
 // nolint
 func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn []any, cost contract.Cost, err error) {
+	if err = h.CallError(); err != nil {
+		return nil, contract.Cost0(), err
+	}
+	defer func() {
+		h.SetCallError(err)
+		if err == nil {
+			err = h.CallError()
+		}
+	}()
+
 	// TODO: reorganize monitor to remove this code
 	callerName := h.Caller().Name
 	if api == "init" && callerName != "system.iost" && callerName != "" {
@@ -124,6 +134,12 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 
 	oldCacheCost := h.CacheCost()
 	h.ClearCacheCost()
+	if h.IsFork4_10_0 {
+		defer func() {
+			h.AddCacheCost(oldCacheCost)
+			h.SetDeadline(currentDeadline)
+		}()
+	}
 
 	// generate amount limit
 	oldReceiptLen := 0
@@ -152,6 +168,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 
 	rtn, cost0, err := vm.LoadAndCall(h, c, api, args...)
 	cost.AddAssign(cost0)
+	if err == nil {
+		err = h.CallError()
+	}
 	if err != nil {
 		return
 	}
@@ -234,7 +253,9 @@ func (m *Monitor) Call(h *host.Host, contractName, api string, jarg string) (rtn
 			return nil, cost, errors.New("pay ram failed. no permission. need " + p + "@active")
 		}
 	}
-	h.AddCacheCost(oldCacheCost)
+	if !h.IsFork4_10_0 {
+		h.AddCacheCost(oldCacheCost)
+	}
 	return
 }
 
