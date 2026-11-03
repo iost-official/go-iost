@@ -1,3 +1,15 @@
+## v4.10.0
+
+- Upgrade to Go 1.27.3 and update build, CI and image configurations
+- Improve error handling for insufficient Gas budgets to prevent unexpected node exits
+- Strengthen validation for contract deployment and updates to prevent unexpected node exits
+- Unify contract call error handling and roll back the entire transaction when a subcall fails
+- Adjust VM module loading and improve runtime isolation
+- Strengthen storage API parameter validation
+- Emit events only after successful transaction commit
+- Temporarily restrict standard contract deployment and updates before the new rules activate
+- Update Linux and macOS VM libraries and build configurations
+
 ## v4.0.0
 
 - Upgrade to Go 1.27.2 and Ubuntu 26.04
